@@ -1,0 +1,17 @@
+{
+  "name": "@dooboostore/core-node",
+  "version": "1.0.0",
+  "license": "MIT",
+  "scripts": {
+    "test": "echo test",
+    "typecheck": "tsc --noEmit"
+  },
+  "peerDependencies": {
+    "@dooboostore/core": "workspace:*"
+  },
+  "devDependencies": {
+    "tslib": "^2.8.1",
+    "@types/node": "^20",
+    "typescript": "^5.8.2"
+  }
+}

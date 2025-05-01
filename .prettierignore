@@ -1,0 +1,12 @@
+# Ignore all HTML files:
+.gitignore
+*.js
+*.md
+*.sh
+*.yaml
+*.json
+**/.next
+**/dist
+**/apps/*/build
+**/apps/*/public
+**/node_modules

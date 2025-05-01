@@ -1,0 +1,25 @@
+{
+  "name": "@dooboostore/simple-boot-http-server/example/quick-start",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "ts-node index.ts",
+    "start:watch": "ts-node-dev --respawn --transpile-only index.ts"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "ts-node": "^10.4.0",
+    "ts-node-dev": "^1.1.8",
+    "tsconfig-paths": "^3.12.0"
+  },
+  "peerDependencies": {
+    "reflect-metadata": "^0.2.2",
+    "@dooboostore/core": "workspace:*",
+    "@dooboostore/core-node": "workspace:*",
+    "@dooboostore/simple-boot": "workspace:*",
+    "@dooboostore/simple-boot-http-server": "workspace:*"
+  }
+}

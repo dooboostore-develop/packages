@@ -1,0 +1,24 @@
+{
+  "name": "dooboostore",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "prettier:check": "pnpm prettier --config .prettierrc.json --check './apps/**/*.{ts,tsx,js,jsx}' './packages/**/*.{ts,tsx,js,jsx}' ",
+    "prettier:write": "pnpm prettier --config .prettierrc.json --write './apps/**/*.{ts,tsx,js,jsx}' './packages/**/*.{ts,tsx,js,jsx}' ",
+    "clear": "rm -rf node_modules && rm -rf ./package-lock.json && rm -rf pnpm-lock.yaml && pnpm store prune && pnpm -r exec -- rm -rf node_modules"
+  },
+  "private": true,
+  "workspaces": ["@dooboostore/**", "apps/**"],
+  "pnpm": {
+    "shared-workspace-lockfile": true
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "prettier": "^3.3.3"
+  },
+  "dependencies": {
+  }
+}

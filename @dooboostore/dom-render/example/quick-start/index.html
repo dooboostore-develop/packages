@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>examples</title>
+</head>
+<body id="app">
+<h1>
+    ${this.name}$
+</h1>
+<ul>
+    <li dr-for-of="this.friends">
+    ${#it#.name}$
+    </li>
+</ul>
+<div dr-pre>
+    ${this.zz}$
+</div>
+<button dr-event-click="alert(1)">
+rr
+</button>
+</body>
+</html>
