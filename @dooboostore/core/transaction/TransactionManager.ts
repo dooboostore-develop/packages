@@ -1,5 +1,5 @@
 import { Transaction } from './Transaction';
-import { ConstructorType } from '@dooboostore/core/types';
+import { ConstructorType } from '../types';
 
 export class TransactionManager {
   private createdTransactions: Transaction[] = [];

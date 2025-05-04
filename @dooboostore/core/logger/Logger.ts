@@ -125,7 +125,7 @@ export class  Logger {
   //   console.dir(obj, option);
   // }
 
-  public warn(...args: any[]) {
+  public warn(msg: string,...args: any[]) {
     if (
       this.config?.level === LoggerLevel.ERROR ||
       this.config?.level === LoggerLevel.LOG ||
@@ -133,7 +133,7 @@ export class  Logger {
     ) {
       return;
     }
-    (console.warn ?? console.log)(...args);
+    (console.warn ?? console.log)(this._log(LoggerLevel.WARN, msg),...args);
   }
   // public warnDir(obj: any, option?: InspectOptions) {
   //   if (
@@ -146,7 +146,7 @@ export class  Logger {
   //   console.dir(obj, option);
   // }
 
-  public info(...args: any[]) {
+  public info(msg: string,...args: any[]) {
     if (
       this.config?.level === LoggerLevel.WARN ||
       this.config?.level === LoggerLevel.ERROR ||
@@ -155,7 +155,7 @@ export class  Logger {
     ) {
       return;
     }
-    (console.info ?? console.log)(...args);
+    (console.info ?? console.log)(this._log(LoggerLevel.INFO, msg),...args);
   }
   // public infoDir(obj: any, option?: InspectOptions) {
   //   if (
@@ -169,7 +169,7 @@ export class  Logger {
   //   console.dir(obj, option);
   // }
 
-  public debug(...args: any[]) {
+  public debug(msg: string, ...args: any[]) {
     if (
       this.config?.level === LoggerLevel.INFO ||
       this.config?.level === LoggerLevel.WARN ||
@@ -179,7 +179,7 @@ export class  Logger {
     ) {
       return;
     }
-    (console.debug ?? console.log)(...args);
+    (console.debug ?? console.log)(this._log(LoggerLevel.DEBUG, msg),...args);
   }
   // public debugDir(obj: any, option?: InspectOptions) {
   //   if (

@@ -21,6 +21,7 @@ export class IntentSchemeFilter implements Filter {
         const url = rr.reqUrl;
         const contentLength = Number(rr.reqHeader(HttpHeaders.ContentLength.toLowerCase() ?? '0'));
         const acceptType = rr.reqHeader(HttpHeaders.Accept);
+        const contentType = rr.reqHeader(HttpHeaders.ContentType);
         const intentScheme = rr.reqHeader(HttpHeaders.XSimpleBootSsrIntentScheme);
         if (acceptType === Mimes.ApplicationJsonPostSimpleBootSsrIntentScheme && intentScheme) {
             let intent = new Intent(`${intentScheme}:/${url}`);
@@ -28,7 +29,11 @@ export class IntentSchemeFilter implements Filter {
             // const responseHeader = {} as any;
             // responseHeader[HttpHeaders.ContentType] = Mimes.ApplicationJson;
             if (contentLength > 0) {
-                intent.data = [await rr.reqBodyJsonData(), rr];
+                if (contentType.includes(Mimes.ApplicationJson)) {
+                    intent.data = [await rr.reqBodyJsonData(), rr];
+                } else if (contentType.includes(Mimes.MultipartFormData)) {
+                    intent.data = [await rr.reqBodyMultipartFormDataObject(), rr];
+                }
                 const rdatas = this.intentManager.publish(intent);
                 const rdata = rdatas[0];
                 const wdata = rdata instanceof Promise ? await rdata : rdata;

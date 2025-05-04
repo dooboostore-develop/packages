@@ -1,3 +1,5 @@
+import { Expression } from '@dooboostore/core/expression/Expression';
+
 export enum PublishType {
   DATA_PARAMETERS = 'DATA_PARAMETERS',
   INLINE_DATA_PARAMETERS = 'INLINE_DATA_PARAMETERS',
@@ -84,30 +86,31 @@ export class Intent<T = any, E = any> {
   }
 
   getPathnameData(urlExpression: string) {
-    const urls = this.pathname.split('/');
-    const urlExpressions = urlExpression.split('/');
-    if (urls.length !== urlExpressions.length) {
-      return;
-    }
-    const data: { [name: string]: string } = {}
-    for (let i = 0; i < urlExpressions.length; i++) {
-      const it = urlExpressions[i];
-      const urlit = urls[i];
-      // ex) {serialNo:[0-9]+} or {no}  ..
-      const execResult = /^\{(.+)\}$/g.exec(it);
-      if (!execResult) {
-        if (it !== urlit) {
-          return;
-        }
-        continue;
-      }
-      // regex check
-      const [name, regex] = execResult[1].split(':'); // group1
-      if (regex && !new RegExp(regex).test(urlit)) {
-        return;
-      }
-      data[name] = urlit;
-    }
-    return data;
+    return Expression.Path.pathNameData(this.pathname, urlExpression);
+    // const urls = this.pathname.split('/');
+    // const urlExpressions = urlExpression.split('/');
+    // if (urls.length !== urlExpressions.length) {
+    //   return;
+    // }
+    // const data: { [name: string]: string } = {}
+    // for (let i = 0; i < urlExpressions.length; i++) {
+    //   const it = urlExpressions[i];
+    //   const urlit = urls[i];
+    //   // ex) {serialNo:[0-9]+} or {no}  ..
+    //   const execResult = /^\{(.+)\}$/g.exec(it);
+    //   if (!execResult) {
+    //     if (it !== urlit) {
+    //       return;
+    //     }
+    //     continue;
+    //   }
+    //   // regex check
+    //   const [name, regex] = execResult[1].split(':'); // group1
+    //   if (regex && !new RegExp(regex).test(urlit)) {
+    //     return;
+    //   }
+    //   data[name] = urlit;
+    // }
+    // return data;
   }
 }

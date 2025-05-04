@@ -3,7 +3,7 @@ import { Vector } from '../entity/Vector';
 import { Obj } from '../entity/object/obj/Obj';
 
 export namespace MathUtil {
-  export type BezierConfig = { p1x: number|'random', p1y: number|'random', p2x: number|'random', p2y: number|'random' } | [number|'random', number|'random', number|'random', number|'random'];
+  export type BezierConfig = { p1x: number | 'random', p1y: number | 'random', p2x: number | 'random', p2y: number | 'random' } | [number | 'random', number | 'random', number | 'random', number | 'random'];
   export const getMinByObjectArray = (objectArray: Array<any>, varName: string) => {
     let min;
     if (varName && objectArray && objectArray.length > 0) {
@@ -15,6 +15,27 @@ export namespace MathUtil {
     return min;
   };
 
+  export const hypot = (...data: number[]) => {
+    // 2차원 예시
+    // Math.hypot(3, 4);  // 결과: 5 (3² + 4² = 9 + 16 = 25, √25 = 5)
+
+// 3차원 예시
+//     Math.hypot(3, 4, 5);  // 결과: 7.0710678118654755
+
+    return Math.hypot(...data);
+  }
+
+  // 피타고라스 정리 함수
+  export const pythagorean = (a: number, b: number): number => {
+    /*
+    피타고라스 정리
+    a^2 + b^2 = c^2
+    c = √(a^2 + b^2)
+     */
+    // return Math.sqrt(start * start + end * end);
+    return Math.sqrt(a * a + b * b);
+  };
+
   export const getMaxByObjectArray = (objectArray: Array<any>, varName: string) => {
     let max;
     if (varName && objectArray && objectArray.length > 0) {
@@ -24,6 +45,25 @@ export namespace MathUtil {
       }
     }
     return max;
+  };
+
+  export const sum = (array: number[]) => {
+    return array.reduce((acc, curr) => acc + curr, 0);
+  }
+
+  export const avg = (array: number[]) => {
+    return array.length > 0 ? MathUtil.sum(array) / array.length : 0;
+  }
+
+  export const minMax = (data: number, minMax: { min: number, max: number }) => {
+    return Math.min(Math.max(data, minMax.min), minMax.max);
+  }
+  export const max = (array: number[]) => {
+    return array.length > 0 ? Math.max(...array) : undefined;
+  };
+
+  export const min = (array: number[]) => {
+    return array.length > 0 ? Math.min(...array) : undefined;
   };
 
   export const getSumByObjectArray = (objectArray: Array<any>, varName: string) => {
@@ -71,6 +111,9 @@ export namespace MathUtil {
     */
     return (data / tot) * 100;
   };
+  export const getRatioByTot = (tot: number, data: number) => {
+    return (data / tot)
+  };
 
   //전체값의 몇 퍼센트는 얼마? 계산법 공식    tot에서  wantPercent는 몇인가?
   export const getValueByTotInPercent = (tot: number, wantPercent: number) => {
@@ -80,6 +123,9 @@ export namespace MathUtil {
     답) 105
      */
     return (tot * wantPercent) / 100;
+  };
+  export const getValueByTotInRatio = (tot: number, ratio: number) => {
+    return (tot * ratio);
   };
 
   //숫자를 몇 퍼센트 증가시키는 공식    tot에서  wantPercent을 증가 시킨다
@@ -92,6 +138,9 @@ export namespace MathUtil {
      */
     return tot * (1 + wantPercent / 100);
   };
+  export const getValueRatioUp = (tot: number, ratio: number) => {
+    return tot * (1 + ratio);
+  }
 
   //숫자를 몇 퍼센트 감소하는 공식    tot에서  wantPercent을 증감 시킨다
   export const getValuePercentDown = (tot: number, wantPercent: number) => {
@@ -103,6 +152,10 @@ export namespace MathUtil {
      */
     return tot * (1 - wantPercent / 100);
   };
+  export const getValueRatioDown = (tot: number, ratio: number) => {
+    return tot * (1 - ratio);
+  }
+
 
   //바례식
   // A:B = C:X    => 30:50 = 33 : x
@@ -115,7 +168,7 @@ export namespace MathUtil {
   // https://matthewlein.com/tools/ceaser
   // https://easings.net/ko#
   // (0.250, 0.250, 0.750, 0.750); /* linear */
-  export const beziers = (points: (Point3D | {x:number; y: number, z:number})[], frame: number) => {
+  export const beziers = (points: (Point3D | { x: number; y: number, z: number })[], frame: number) => {
     const datas = new Array(frame).fill(undefined);
     for (let i = 0; i < datas.length; i++) {
       datas[i] = MathUtil.bezier(points, frame, i);
@@ -124,7 +177,7 @@ export namespace MathUtil {
   };
 
   // 처음점은 포함되지 않는다, 끝점은 포함된다.
-  export const bezier = (points: (Point3D | {x:number; y: number, z:number})[], frame: number, idx: number): Vector => {
+  export const bezier = (points: (Point3D | { x: number; y: number, z: number })[], frame: number, idx: number): Vector => {
     if (points && points.length > 0) {
       const pv = points.map(it => new Vector(it.x, it.y, it.z));
       const steps: Vector[] = [];
@@ -167,27 +220,27 @@ export namespace MathUtil {
 
 
     if (position.start instanceof Obj && position.end instanceof Obj) {
-      const x = MathUtil.cubicBezier({ start: position.start.x, end: position.end.x }, frameConfig, bezierConfig);
-      const y = MathUtil.cubicBezier({ start: position.start.y, end: position.end.y }, frameConfig, bezierConfig);
-      const z = MathUtil.cubicBezier({ start: position.start.z, end: position.end.z }, frameConfig, bezierConfig);
-      const v = MathUtil.cubicBezier({ start: position.start.volume, end: position.end.volume }, frameConfig, bezierConfig);
-      const m = MathUtil.cubicBezier({ start: position.start.mass, end: position.end.mass }, frameConfig, bezierConfig);
-      const e = MathUtil.cubicBezier({ start: position.start.e, end: position.end.e }, frameConfig, bezierConfig);
-      const r = MathUtil.cubicBezier({ start: position.start.rotate, end: position.end.rotate }, frameConfig, bezierConfig);
-      const w = MathUtil.cubicBezier({ start: position.start.width, end: position.end.width }, frameConfig, bezierConfig);
-      const h = MathUtil.cubicBezier({ start: position.start.height, end: position.end.height }, frameConfig, bezierConfig);
-      const t0 = MathUtil.cubicBezier({ start: position.start.transform[0], end: position.end.transform[0] }, frameConfig, bezierConfig);
-      const t1 = MathUtil.cubicBezier({ start: position.start.transform[1], end: position.end.transform[1] }, frameConfig, bezierConfig);
-      const t2 = MathUtil.cubicBezier({ start: position.start.transform[2], end: position.end.transform[2] }, frameConfig, bezierConfig);
-      const t3 = MathUtil.cubicBezier({ start: position.start.transform[3], end: position.end.transform[3] }, frameConfig, bezierConfig);
-      const t4 = MathUtil.cubicBezier({ start: position.start.transform[4], end: position.end.transform[4] }, frameConfig, bezierConfig);
-      const t5 = MathUtil.cubicBezier({ start: position.start.transform[5], end: position.end.transform[5] }, frameConfig, bezierConfig);
-      const colorR = MathUtil.cubicBezier({ start: position.start.color.r, end: position.end.color.r }, frameConfig, bezierConfig);
-      const colorG = MathUtil.cubicBezier({ start: position.start.color.g, end: position.end.color.g }, frameConfig, bezierConfig);
-      const colorB = MathUtil.cubicBezier({ start: position.start.color.b, end: position.end.color.b }, frameConfig, bezierConfig);
-      const colorA = MathUtil.cubicBezier({ start: position.start.color.a, end: position.end.color.a }, frameConfig, bezierConfig);
+      const x = MathUtil.cubicBezier({start: position.start.x, end: position.end.x}, frameConfig, bezierConfig);
+      const y = MathUtil.cubicBezier({start: position.start.y, end: position.end.y}, frameConfig, bezierConfig);
+      const z = MathUtil.cubicBezier({start: position.start.z, end: position.end.z}, frameConfig, bezierConfig);
+      const v = MathUtil.cubicBezier({start: position.start.volume, end: position.end.volume}, frameConfig, bezierConfig);
+      const m = MathUtil.cubicBezier({start: position.start.mass, end: position.end.mass}, frameConfig, bezierConfig);
+      const e = MathUtil.cubicBezier({start: position.start.e, end: position.end.e}, frameConfig, bezierConfig);
+      const r = MathUtil.cubicBezier({start: position.start.rotate, end: position.end.rotate}, frameConfig, bezierConfig);
+      const w = MathUtil.cubicBezier({start: position.start.width, end: position.end.width}, frameConfig, bezierConfig);
+      const h = MathUtil.cubicBezier({start: position.start.height, end: position.end.height}, frameConfig, bezierConfig);
+      const t0 = MathUtil.cubicBezier({start: position.start.transform[0], end: position.end.transform[0]}, frameConfig, bezierConfig);
+      const t1 = MathUtil.cubicBezier({start: position.start.transform[1], end: position.end.transform[1]}, frameConfig, bezierConfig);
+      const t2 = MathUtil.cubicBezier({start: position.start.transform[2], end: position.end.transform[2]}, frameConfig, bezierConfig);
+      const t3 = MathUtil.cubicBezier({start: position.start.transform[3], end: position.end.transform[3]}, frameConfig, bezierConfig);
+      const t4 = MathUtil.cubicBezier({start: position.start.transform[4], end: position.end.transform[4]}, frameConfig, bezierConfig);
+      const t5 = MathUtil.cubicBezier({start: position.start.transform[5], end: position.end.transform[5]}, frameConfig, bezierConfig);
+      const colorR = MathUtil.cubicBezier({start: position.start.color.r ?? 0, end: position.end.color.r ?? 0}, frameConfig, bezierConfig);
+      const colorG = MathUtil.cubicBezier({start: position.start.color.g ?? 0, end: position.end.color.g ?? 0}, frameConfig, bezierConfig);
+      const colorB = MathUtil.cubicBezier({start: position.start.color.b ?? 0, end: position.end.color.b ?? 0}, frameConfig, bezierConfig);
+      const colorA = MathUtil.cubicBezier({start: position.start.color.a ?? 255, end: position.end.color.a ?? 255}, frameConfig, bezierConfig);
       const objs = x.map((x, idx) => {
-        const obj = new Obj({x, y:y[idx], z:z[idx]});
+        const obj = new Obj({x, y: y[idx], z: z[idx]});
         obj.volume = v[idx];
         obj.mass = m[idx];
         obj.e = e[idx];
@@ -195,24 +248,24 @@ export namespace MathUtil {
         obj.width = w[idx];
         obj.height = h[idx];
         obj.transform = [t0[idx], t1[idx], t2[idx], t3[idx], t4[idx], t5[idx]];
-        obj.color = { r: colorR[idx], g: colorG[idx], b: colorB[idx], a: colorA[idx] };
+        obj.color = {r: colorR[idx], g: colorG[idx], b: colorB[idx], a: colorA[idx]};
         return obj;
       });
       return objs;
     } else if (position.start instanceof Point3D && position.end instanceof Point3D) {
-      const x = MathUtil.cubicBezier({ start: position.start.x, end: position.end.x }, frameConfig, bezierConfig);
-      const y = MathUtil.cubicBezier({ start: position.start.y, end: position.end.y }, frameConfig, bezierConfig);
-      const z = MathUtil.cubicBezier({ start: position.start.z, end: position.end.z }, frameConfig, bezierConfig);
+      const x = MathUtil.cubicBezier({start: position.start.x, end: position.end.x}, frameConfig, bezierConfig);
+      const y = MathUtil.cubicBezier({start: position.start.y, end: position.end.y}, frameConfig, bezierConfig);
+      const z = MathUtil.cubicBezier({start: position.start.z, end: position.end.z}, frameConfig, bezierConfig);
       return x.map((x, idx) => new Point3D(x, y[idx], z[idx]));
     }
 
 
-    const { start, end } = position as { start: number, end: number };
+    const {start, end} = position as { start: number, end: number };
 
     // ----
 
-    const { frame } = frameConfig;
-    let { p1x, p1y, p2x, p2y } = Array.isArray(bezierConfig) ? {p1x: bezierConfig[0], p1y: bezierConfig[1], p2x: bezierConfig[2], p2y: bezierConfig[3]} : bezierConfig;
+    const {frame} = frameConfig;
+    let {p1x, p1y, p2x, p2y} = Array.isArray(bezierConfig) ? {p1x: bezierConfig[0], p1y: bezierConfig[1], p2x: bezierConfig[2], p2y: bezierConfig[3]} : bezierConfig;
     p1x = p1x === 'random' ? Math.random() : p1x;
     p1y = p1y === 'random' ? Math.random() : p1y;
     p2x = p2x === 'random' ? Math.random() : p2x;
@@ -229,13 +282,13 @@ export namespace MathUtil {
       const t3 = Number(t2 * t);
       const mt = Number(1 - t);
       const mt2 = Number(mt * mt);
-      const mt3 =Number(mt2 * mt);
+      const mt3 = Number(mt2 * mt);
 
       return mt3 * 0 + 3 * mt2 * t * Number(p1y) + 3 * mt * t2 * Number(p2y) + t3 * 1;
     };
 
     // frame 수만큼 계산, 시작점, 끝점 제외
-    const targetFrame = frame +1;
+    const targetFrame = frame + 1;
     for (let i = 1; i < targetFrame; i++) {
       // const t = frame <= 1 ? 1 : (i + 1) / frame;
       // const t = frame <= 1 ? 1 : (i + 1) / frame;
@@ -323,7 +376,6 @@ export namespace MathUtil {
   //     }
   //     return frames;
   // }
-
 
 
 //   interface Point {

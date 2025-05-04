@@ -39,8 +39,8 @@ export const targetExceptionHandlers = (target: any, error: any): SaveExceptionH
     const emptyTargets = exceptionHandlers?.filter(it => it.config.type === undefined);
     const targets = exceptionHandlers?.filter(it => ObjectUtils.isPrototypeOfTarget(it.config.type, error));
     const targetSorts = targets?.sort((a, b) => {
-        const aPrototypeOfDepth = ObjectUtils.getPrototypeOfDepth(error, a.config.type);
-        const bPrototypeOfDepth = ObjectUtils.getPrototypeOfDepth(error, b.config.type);
+        const aPrototypeOfDepth = ObjectUtils.prototypeOfDepth(error, a.config.type);
+        const bPrototypeOfDepth = ObjectUtils.prototypeOfDepth(error, b.config.type);
         return aPrototypeOfDepth.length - bPrototypeOfDepth.length
     });
     return (targetSorts ?? []).concat(...emptyTargets ?? []);

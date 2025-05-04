@@ -4,6 +4,7 @@ import { Lifecycle, PostConstruct, Sim } from '@dooboostore/simple-boot/decorato
 import { Inject } from '@dooboostore/simple-boot/decorators/inject/Inject';
 import { SimOption } from '@dooboostore/simple-boot/SimOption';
 import { ConstructorType } from '@dooboostore/core/types';
+import { Intent } from '@dooboostore/simple-boot/intent/Intent';
 
 @Sim
 class User {
@@ -44,7 +45,7 @@ class User2 {
   scope: Lifecycle.Transient
 })
 @Router({
-  path: '',
+  path: '/',
   route: { '/user': User }
 })
 abstract class AppRouter {
@@ -104,6 +105,12 @@ let appRouter = app.sim(AppRouter);
 // console.log('!!!', appRouter)
 appRouter?.routeSay();
 
+
+const intent = new Intent('/');
+app.routing(intent).then(it => {
+  console.log('---', it, it.module)
+})
+console.log('-----------------------')
 // appRouter = app.sim(AppRouter);
 // appRouter?.routeSay();
 // ssd  ssd

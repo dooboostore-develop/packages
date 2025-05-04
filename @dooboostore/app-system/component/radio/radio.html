@@ -1,0 +1,13 @@
+<label class="${@this@.attribute.class}$">
+  <input
+    name="${@this@.attribute.name}$"
+    checked="${@this@.attribute.checked}$"
+    value="${@this@.attribute.value}$"
+    dr-on-init="@this@.onInitInputElement($element)"
+    dr-event-change="@this@.change($element.checked);"
+    type="radio"
+
+  />
+  ${@this@.attribute.checked}$
+  #innerHTML#
+</label>

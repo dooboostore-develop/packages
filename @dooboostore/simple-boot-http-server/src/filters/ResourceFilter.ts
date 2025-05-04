@@ -9,25 +9,31 @@ import { RequestResponse } from '../models/RequestResponse';
 import { parse } from 'url';
 
 export class ResourceFilter implements Filter {
-    constructor(private resourceDistPath: string, private resourceRegex: (string|RegExp)[] = []) {
+    constructor(private resourceDistPath: string, private resourceRegex: (string|RegExp | {request: string | RegExp, dist: string})[] = []) {
     }
 
     async onInit(app: SimpleBootHttpServer) {
     }
 
     async before(rr: RequestResponse, app: SimpleBootHttpServer) {
-        const url = (rr.reqUrl ?? '').replace(/\.\./g, '');
+        const url = (rr.reqUrlPathName ?? '').replace(/\.\./g, '');
         const urlObj = rr.reqUrlObject;
         // const requestUrl = parse(rr.reqUrl ?? '', true);
         let sw = true;
         const regExps = this.resourceRegex.filter(it => {
-            return it instanceof RegExp ? it.test(url) : RegExp(it).test(url);
+            return it instanceof RegExp
+                ? it.test(url)
+                : typeof it === 'string'
+                    ? RegExp(it).test(url)
+                    : RegExp(it.request).test(url);
         })
+        // console.log('regExps', regExps, url, this.resourceRegex);
         // eslint-disable-next-line no-unused-vars
         for (const it of regExps) {
-            const resourcePath = path.join(this.resourceDistPath, urlObj.pathname); // url.replace(it, '')
+            const resourcePath = path.join(this.resourceDistPath, typeof it === 'object' && 'dist' in it ? it.dist : urlObj.pathname);
+            // console.log('ResourceFilter', resourcePath, it, urlObj.pathname, url);
             sw = false;
-            console.log('-----', resourcePath);
+            // console.log('-----', resourcePath);
             if (fs.existsSync(resourcePath)) {
                 // const header = {} as any;
                 // header[HttpHeaders.ContentType] = mime.lookup(resourcePath);
@@ -39,6 +45,7 @@ export class ResourceFilter implements Filter {
             } else {
                 rr.resStatusCode(HttpStatus.NotFound)
                 await rr.resEnd();
+                break;
             }
             sw = false;
         }
