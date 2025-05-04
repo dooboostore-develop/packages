@@ -34,12 +34,12 @@ export class ScriptUtils {
       // eslint-disable-next-line no-new-func,no-unused-expressions
       Function(`"use strict"; ${script}; `).bind(destUser)();
     } catch (e) {
-      // console.error(e);
+      console.error(e);
     }
     return usingVars;
   }
 
-  public static evalReturn<T = any>(script: string | {bodyScript: string, returnScript: string}, thisTarget: any): T {
+  public static evalReturn<T = any>(script: string | {bodyScript: string, returnScript: string}, thisTarget: any = {}): T {
     // if (!script.startsWith('this.')) {
     //     script = 'this.' + script;
     // }
@@ -54,7 +54,7 @@ export class ScriptUtils {
     return this.eval(`${bodyScript}; return ${returnScript} `, thisTarget) as T;
   }
 
-  public static eval<T = any>(script: string, thisTarget: any): T | undefined {
+  public static eval<T = any>(script: string, thisTarget: any = {}): T | undefined {
     try {
       return Function(`"use strict"; ${script} `).bind(thisTarget)() as T;
     }catch (e) {

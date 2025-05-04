@@ -13,12 +13,12 @@ export namespace ObjectUtils {
 
     return JSON.parse(JSON.stringify(obj));
   };
-  export const getAllProtoTypeName = (target?: any): string[] => {
+  export const allProtoTypeName = (target?: any): string[] => {
     let data: string[] = [];
     if (target) {
       const proto = Object.getPrototypeOf(target);
       if (proto && (data = Object.keys(proto) || []).length > 0) {
-        data = data.concat(ObjectUtils.getAllProtoTypeName(proto));
+        data = data.concat(ObjectUtils.allProtoTypeName(proto));
       }
     }
     return data.filter(it => it !== 'constructor');
@@ -28,7 +28,7 @@ export namespace ObjectUtils {
     const allKeys = Array.from(new Set((Array.isArray(obj) ? obj : [obj]).flatMap(item => Object.keys(item))));
     return allKeys;
   };
-  export const getOwnPropertyNames = (target?: any): string[] => {
+  export const ownPropertyNames = (target?: any): string[] => {
     const data: string[] = [];
     if (target) {
       if (!target.prototype) {
@@ -41,7 +41,7 @@ export namespace ObjectUtils {
     return data.filter(it => it !== 'constructor');
   };
 
-  export const getProtoTypeName = (target?: any): string[] => {
+  export const protoTypeName = (target?: any): string[] => {
     let data: string[] = [];
     if (target) {
       const proto = Object.getPrototypeOf(target);
@@ -50,7 +50,7 @@ export namespace ObjectUtils {
     return data.filter(it => it !== 'constructor');
   };
 
-  export const getProtoTypes = (target?: any): Function[] => {
+  export const protoTypes = (target?: any): Function[] => {
     const data: Function[] = [];
     if (target) {
       const proto = Object.getPrototypeOf(target);
@@ -77,7 +77,7 @@ export namespace ObjectUtils {
     }
   };
 
-  export const getPrototypeOfDepth = (target: any, dest: ConstructorType<any> | Function | null | undefined): object[] => {
+  export const prototypeOfDepth = (target: any, dest: ConstructorType<any> | Function | null | undefined): object[] => {
     let object = target;
     const r = [];
     if (dest) {
@@ -92,7 +92,7 @@ export namespace ObjectUtils {
     return r;
   };
 
-  export const getAllProtoType = (start: ConstructorType<any> | Function): (ConstructorType<any> | Function)[] => {
+  export const allProtoType = (start: ConstructorType<any> | Function): (ConstructorType<any> | Function)[] => {
     const depth = (target: ConstructorType<any> | Function, bowl: (ConstructorType<any> | Function)[] = []) => {
       if (target.prototype) {
         bowl.push(target);
@@ -110,11 +110,11 @@ export namespace ObjectUtils {
     // return protos;
   };
 
-  export const getPrototypeOf = (start: any) => {
+  export const prototypeOf = (start: any) => {
     return Object.getPrototypeOf(start);
   };
 
-  export const getPrototypeKeyMap = (target: any): Map<Function, string> => {
+  export const prototypeKeyMap = (target: any): Map<Function, string> => {
     const data = new Map<Function, string>();
     if (target) {
       const proto = Object.getPrototypeOf(target);
@@ -125,40 +125,44 @@ export namespace ObjectUtils {
     return data;
   };
 
-  export const getPrototypeName = (target: any, fnc: Function): string | undefined => {
-    return ObjectUtils.getPrototypeKeyMap(target).get(fnc);
+  export const prototypeName = (target: any, fnc: Function): string | undefined => {
+    return ObjectUtils.prototypeKeyMap(target).get(fnc);
   };
 
 
-  export const getRandomKey = <T>(target: T): keyof T => {
+  export const pickRandomKey = <T>(target: T): keyof T => {
     
     const keys = Object.keys(target as any) as Array<keyof T>;
     return keys[Math.floor(Math.random() * keys.length)];
   };
 
-  export const getRandomValue = <T>(target: T): T[keyof T] => {
+  export const pickRandomValue = <T>(target: T): T[keyof T] => {
     const keys = Object.keys(target as any) as Array<keyof T>;
     return target[keys[Math.floor(Math.random() * keys.length)]];
   };
 
-  export const getRandomKeyValue = <T>(target: T): { key: keyof T, value: T[keyof T] } => {
+  export const pickRandomKeyValue = <T>(target: T): { key: keyof T, value: T[keyof T] } => {
     const keys = Object.keys(target as any) as Array<keyof T>;
     const key = keys[Math.floor(Math.random() * keys.length)];
     return { key, value: target[key] };
   };
 
-  export const getKeyValues = <T>(target: T): { key: keyof T, value: T[keyof T] }[] => {
+  export const keyValues = <T>(target: T): { key: keyof T, value: T[keyof T] }[] => {
     const keys = Object.keys(target as any) as Array<keyof T>;
     return keys.map(key => ({ key, value: target[key] }));
   };
 
-  export const getValues = <T>(target: T): (T[keyof  T])[] => {
+  export const values = <T>(target: T): (T[keyof  T])[] => {
     return Object.values(target as any);
   }
 
-  export const getKeys = <T>(target: T): (keyof T)[] => {
+  export const keys = <T>(target: T): (keyof T)[] => {
     return Object.keys(target as any) as (keyof T)[];
   }
+
+  export const keyLength = <T>(target: T): number => {
+    return ObjectUtils.keys(target).length;
+  };
 
 
   export const toDeleteUndefinedAndNull = <T>(target: T, config?: { deep?: boolean }): T => {

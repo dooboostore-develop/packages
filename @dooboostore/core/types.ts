@@ -241,5 +241,7 @@ export type MethodOnlyFieldPerFix<T, S extends string> = {
   [key in keyof T as `${S}${string & key}`]: T[key] extends (...args: any[]) => any ? T[key] : never;
 };
 // export const isDefined = <T>(value: T | undefined | null): value is T => value !== undefined && value !== null;
-export const isDefined = <T>(value: T | undefined | null): value is NonNullable<T> => value !== undefined && value !== null;
+// export const isDefined = <T>(value: T | undefined | null): value is NonNullable<T> => value !== undefined && value !== null;
+export const isDefined = <T>(value: T | undefined | null): value is T => value !== undefined && value !== null;
+
 export {};

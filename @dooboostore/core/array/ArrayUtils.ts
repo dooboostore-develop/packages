@@ -1,4 +1,7 @@
+
 export namespace ArrayUtils {
+  export type PickChanceType<T> = { data: T, chance: number };
+
   export const toShuffle = <T>(data: T[]): T[] => {
     const array = [...data];
     for (let i = array.length - 1; i > 0; i--) {
@@ -19,9 +22,28 @@ export namespace ArrayUtils {
   //   }
   // }
 
-  export function randomPick<T>(array: T[], count: number): T[];
-  export function randomPick<T>(array: T[]): T | undefined;
-  export function randomPick<T>(array: T[], count?: number): T[] | T | undefined {
+  export const popPick = <T>(array: T[]): T => {
+    const index = Math.floor(Math.random() * array.length);
+    return array.splice(index, 1)[0];
+  }
+
+  export const changePick = <T>(array: PickChanceType<T>[], config?: {}): T => {
+    const totalChance = array.reduce((sum, item) => sum + item.chance, 0);
+    let randomValue = Math.random() * totalChance;
+
+    for (const item of array) {
+      if (randomValue < item.chance) {
+        return item.data;
+      }
+      randomValue -= item.chance;
+    }
+    return pick(array.map(it=>it.data))
+  }
+
+  export function pick<T>(array: T[], count: number): T;
+  export function pick<T>(array: T[]): T | undefined;
+  export function pick<T>(array: T[][]): T[] | undefined;
+  export function pick<T>(array: T[], count?: number): T[] | T | undefined {
     if (array.length === 0 && count !== undefined) {
       return [];
     }
@@ -40,25 +62,53 @@ export namespace ArrayUtils {
       }
     }
     return result;
-  };
+  }
 
   export function maxLength<T>(array?: T[][]): { maxRows: number; maxCols: number, total: number; } {
     if (!array) {
-      return { maxRows: 0, maxCols: 0, total: 0 };
+      return {maxRows: 0, maxCols: 0, total: 0};
     }
     return {
       maxRows: array.length,
       maxCols: Math.max(...array.map(row => row.length), 0),
       total: array.reduce((total, row) => total + row.length, 0)
-    };
+    }
   }
 
-  export const push = <T>(array: T[] | null = [], data: T) => {
-    return [...(array ?? []), data];
+  // export const include = <T>(array:T[] | null = []) => {
+  //
+  // }
+  export const toPush = <T>(array: T[] | null = [], ...data: T[]) => {
+    return [...(array ?? []), ...data];
   }
-  export const filterOut = <T>(array: T[] | null = [], predicate: (item: T) => boolean): T[] => {
-    return (array??[]).filter(item => !predicate(item));
-  };
+
+  export const toRemove = <T>(array: T[] | null = [], ...data: T[]) => {
+    return (array ?? []).filter(item => !data.includes(item));
+  }
+
+  export const toFilterOut = <T>(array: T[] | null = [], predicate: (item: T) => boolean): T[] => {
+    return (array ?? []).filter(item => !predicate(item));
+  }
+
+  export const toFilter = <T>(array: T[] | null = [], predicate: (item: T) => boolean): T[] => {
+    return (array ?? []).filter(item => predicate(item));
+  }
+
+  export const hasAll = <T>(array: T[] | null = [], ...targetArray: T[]): boolean => {
+    return targetArray.every(item => (array ?? []).includes(item));
+  }
+
+  export const has = <T>(array: T[] | null = [], ...targetArray: T[]): boolean => {
+    return targetArray.some(item => (array ?? []).includes(item));
+  }
+
+  export const hasNot = <T>(array: T[] | null = [], ...targetArray: T[]): boolean => {
+    return targetArray.some(item => !(array ?? []).includes(item));
+  }
+
+  export const hasAllNot = <T>(array: T[] | null = [], ...targetArray: T[]): boolean => {
+    return targetArray.every(item => !(array ?? []).includes(item));
+  }
 
 // 여러 배열의 교집합, 합집합, 차집합, 대칭 차집합을 계산하는 함수
   export const relation = <T>(...arrays: T[][]): {

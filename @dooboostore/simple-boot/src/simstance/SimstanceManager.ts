@@ -355,7 +355,7 @@ export class SimstanceManager implements Runnable {
       }
 
       // function apply proxy
-      const protoTypeName = ObjectUtils.getOwnPropertyNames(target);
+      const protoTypeName = ObjectUtils.ownPropertyNames(target);
       protoTypeName.filter(it => typeof (target as any)[it] === 'function').forEach(it => {
         (target as any)[it] = new Proxy((target as any)[it], this.simProxyHandler!);
       });

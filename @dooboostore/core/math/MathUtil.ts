@@ -26,6 +26,22 @@ export namespace MathUtil {
     return max;
   };
 
+  export const sum = (array: number[]) => {
+    return array.reduce((acc, curr) => acc + curr, 0);
+  }
+
+  export const avg = (array: number[]) => {
+   return array.length > 0 ? MathUtil.sum(array) / array.length : 0;
+  }
+
+  export const max = (array: number[]) => {
+    return array.length > 0 ? Math.max(...array) : undefined;
+  };
+
+  export const min = (array: number[]) => {
+    return array.length > 0 ? Math.min(...array) : undefined;
+  };
+
   export const getSumByObjectArray = (objectArray: Array<any>, varName: string) => {
     let sum = 0;
     if (varName && objectArray && objectArray.length > 0) {
@@ -71,6 +87,9 @@ export namespace MathUtil {
     */
     return (data / tot) * 100;
   };
+  export const getRatioByTot = (tot: number, data: number) => {
+    return (data / tot)
+  };
 
   //전체값의 몇 퍼센트는 얼마? 계산법 공식    tot에서  wantPercent는 몇인가?
   export const getValueByTotInPercent = (tot: number, wantPercent: number) => {
@@ -80,6 +99,9 @@ export namespace MathUtil {
     답) 105
      */
     return (tot * wantPercent) / 100;
+  };
+  export const getValueByTotInRatio = (tot: number, ratio: number) => {
+   return (tot * ratio);
   };
 
   //숫자를 몇 퍼센트 증가시키는 공식    tot에서  wantPercent을 증가 시킨다
@@ -92,6 +114,9 @@ export namespace MathUtil {
      */
     return tot * (1 + wantPercent / 100);
   };
+  export const getValueRatioUp = (tot: number, ratio: number) => {
+    return tot * (1 + ratio);
+  }
 
   //숫자를 몇 퍼센트 감소하는 공식    tot에서  wantPercent을 증감 시킨다
   export const getValuePercentDown = (tot: number, wantPercent: number) => {
@@ -103,6 +128,10 @@ export namespace MathUtil {
      */
     return tot * (1 - wantPercent / 100);
   };
+  export const getValueRatioDown = (tot: number, ratio: number) => {
+    return tot * (1 - ratio);
+  }
+
 
   //바례식
   // A:B = C:X    => 30:50 = 33 : x
@@ -182,10 +211,10 @@ export namespace MathUtil {
       const t3 = MathUtil.cubicBezier({ start: position.start.transform[3], end: position.end.transform[3] }, frameConfig, bezierConfig);
       const t4 = MathUtil.cubicBezier({ start: position.start.transform[4], end: position.end.transform[4] }, frameConfig, bezierConfig);
       const t5 = MathUtil.cubicBezier({ start: position.start.transform[5], end: position.end.transform[5] }, frameConfig, bezierConfig);
-      const colorR = MathUtil.cubicBezier({ start: position.start.color.r, end: position.end.color.r }, frameConfig, bezierConfig);
-      const colorG = MathUtil.cubicBezier({ start: position.start.color.g, end: position.end.color.g }, frameConfig, bezierConfig);
-      const colorB = MathUtil.cubicBezier({ start: position.start.color.b, end: position.end.color.b }, frameConfig, bezierConfig);
-      const colorA = MathUtil.cubicBezier({ start: position.start.color.a, end: position.end.color.a }, frameConfig, bezierConfig);
+      const colorR = MathUtil.cubicBezier({ start: position.start.color.r??0, end: position.end.color.r??0 }, frameConfig, bezierConfig);
+      const colorG = MathUtil.cubicBezier({ start: position.start.color.g??0, end: position.end.color.g??0 }, frameConfig, bezierConfig);
+      const colorB = MathUtil.cubicBezier({ start: position.start.color.b??0, end: position.end.color.b??0 }, frameConfig, bezierConfig);
+      const colorA = MathUtil.cubicBezier({ start: position.start.color.a??255, end: position.end.color.a??255 }, frameConfig, bezierConfig);
       const objs = x.map((x, idx) => {
         const obj = new Obj({x, y:y[idx], z:z[idx]});
         obj.volume = v[idx];

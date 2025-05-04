@@ -68,8 +68,8 @@ export class Obj extends Vector {
       rotate: this.rotate,
       width: this.width,
       height: this.height,
-      transform: this.transform,
-      color: this.color
+      transform: [...this.transform],
+      color: {...this.color}
     });
   }
 
@@ -96,8 +96,8 @@ export class Obj extends Vector {
       this.rotate = data.rotate ?? this.rotate;
       this.width = data.width ?? this.width;
       this.height = data.height ?? this.height;
-      this.transform = data.transform ?? this.transform;
-      this.color = data.color ?? this.color;
+      this.transform = [...(data.transform ?? this.transform)];
+      this.color = {...(data.color ?? this.color)};
     }
   }
 
@@ -124,8 +124,8 @@ export class Obj extends Vector {
       this.rotate = data.rotate??0;
       this.width = data.width??0;
       this.height = data.height??0;
-      this.transform = data.transform??[1, 0, 0, 1, 0, 0];
-      this.color = data.color??{r:0,g:0,b:0,a:255};
+      this.transform = [...(data.transform??[1, 0, 0, 1, 0, 0])];
+      this.color = { ...(data.color??{r:0,g:0,b:0,a:255})};
     }
   }
 

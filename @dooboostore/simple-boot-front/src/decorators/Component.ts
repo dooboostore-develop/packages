@@ -4,6 +4,7 @@ import { ReflectUtils } from '@dooboostore/simple-boot/utils/reflect/ReflectUtil
 export const componentSelectors = new Map<string, ConstructorType<any>>();
 export interface ComponentConfig {
     selector?: string,
+    noStrip?: boolean,
     template?: string,
     styles?: (string)[]  | string
 }

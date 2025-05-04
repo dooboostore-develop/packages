@@ -65,13 +65,14 @@ export namespace ConvertUtils {
     return obj;
   };
 
-  export function toObject<T>(obj: URLSearchParams, config: {firstValue: true}) : FieldType<T, string>;
-  export function toObject(obj: URLSearchParams): {[key: string]: string | string[]};
+  export function toObject<T>(obj: URLSearchParams, config: { firstValue: true }): FieldType<T, string>;
+  export function toObject(obj: URLSearchParams): { [key: string]: string | string[] };
+  export function toObject<T>(obj: FormData): T;
   export function toObject(obj: any): any;
-  export function toObject(obj: URLSearchParams | any, config?: {firstValue: boolean}): any  {
-    if (obj instanceof URLSearchParams){
+  export function toObject(obj: URLSearchParams | FormData |any, config?: { firstValue: boolean }): any {
+    if (obj instanceof URLSearchParams) {
       const robj = {} as any;
-      obj.forEach((v,k) => {
+      obj.forEach((v, k) => {
         if (config?.firstValue && robj[k] === undefined) {
           robj[k] = v;
         } else if (!config?.firstValue) {
@@ -87,6 +88,19 @@ export namespace ConvertUtils {
         }
       })
       return robj;
+    } else if(obj instanceof FormData) {
+      // obj = Object.fromEntries(obj.entries());
+      const formDataToObject = (formData) => {
+        const obj = {};
+        // FormData의 모든 키를 순회
+        for (const key of formData.keys()) {
+          const values = formData.getAll(key); // 동일 키의 모든 값 가져오기
+          // 값이 하나면 단일 값으로, 여러 개면 배열로 저장
+          obj[key] = values.length > 1 ? values : values[0];
+        }
+        return obj;
+      }
+      return formDataToObject(obj);
     } else {
       // console.log(Object.prototype.toString.call(obj));
       if (ValidUtils.isMap(obj)) {
@@ -114,9 +128,9 @@ export namespace ConvertUtils {
     const datas = (Array.isArray(data) ? data : (data ? [data] : []));
     return datas;
   }
-  export const flatArray = <T>(data?: T | T[]) => {
-    const datas = (Array.isArray(data) ? data : (data ? [data] : []));
-    return datas.flat();
+  export const flatArray = <T>(...data: (T | Iterable<T>)[]): T[] => {
+    const datas = data.flatMap<T>((item) => (item instanceof Object && Symbol.iterator in item ? Array.from(item) : [item]));
+    return datas;
   };
 
   export const iteratorToArray = <T>(it: any): T[] => {
@@ -153,7 +167,7 @@ export namespace ConvertUtils {
   };
 
   export const copyObject = <T extends Record<string, any>>(obj: T, update: Partial<T> = {}): T => {
-    return { ...obj, ...update };
+    return {...obj, ...update};
   };
 
   export const copyArrayWithAddition = <T extends unknown[]>(arr: FilterTuple<T>, update?: T): T => {
@@ -199,8 +213,8 @@ export namespace ConvertUtils {
       acc.b += c.b ?? 0;
       acc.a += c.a ?? 0;
       return acc;
-    }, { r: 0, g: 0, b: 0, a: 0 }) as Required<RGBA>;
-    const avg = { r: Math.floor(sum.r / color.length), g: Math.floor(sum.g / color.length), b: Math.floor(sum.b / color.length), a: Math.floor(sum.a / color.length) };
+    }, {r: 0, g: 0, b: 0, a: 0}) as Required<RGBA>;
+    const avg = {r: Math.floor(sum.r / color.length), g: Math.floor(sum.g / color.length), b: Math.floor(sum.b / color.length), a: Math.floor(sum.a / color.length)};
     return avg;
   };
 
@@ -211,7 +225,7 @@ export namespace ConvertUtils {
     const g = parseInt(hexColor.slice(2, 4) || '0', 16);
     const b = parseInt(hexColor.slice(4, 6) || '0', 16);
     const a = hexColor.length > 6 ? parseInt(hexColor.slice(6, 8) || '0', 16) : 255;
-    return { r, g, b, a };
+    return {r, g, b, a};
   };
 
   export const minMaxCenterAvg = <T extends { [key: string]: number }>(obj: T[]): { [key in keyof T]?: MinMaxCenterAvg<number> } => {
@@ -225,13 +239,13 @@ export namespace ConvertUtils {
       const center = (min + max) / 2;
       const avg = values.reduce((sum, val) => sum + val, 0) / values.length;
 
-      result[key as keyof T] = { min, max, center, avg };
+      result[key as keyof T] = {min, max, center, avg};
     }
 
     return result;
   }
 
-  export const minMaxCenterRectAvg2D = (point2Ds: (Point2D | {x: number, y:number})[]): MinMaxCenterAvg<Point2D> & { minMaxRect: Rect } => {
+  export const minMaxCenterRectAvg2D = (point2Ds: (Point2D | { x: number, y: number })[]): MinMaxCenterAvg<Point2D> & { minMaxRect: Rect } => {
     const min = new Point2D(Number.MAX_SAFE_INTEGER, Number.MAX_SAFE_INTEGER);
     const max = new Point2D(Number.MIN_SAFE_INTEGER, Number.MIN_SAFE_INTEGER);
     let sum = new Point2D(0, 0);
@@ -246,11 +260,11 @@ export namespace ConvertUtils {
     const center = new Point2D((min.x + max.x) / 2, (min.y + max.y) / 2);
     const avg = new Point2D(sum.x / point2Ds.length, sum.y / point2Ds.length);
     const minMaxRect = new Rect(min.x, min.y, max.x - min.x, max.y - min.y);
-    return { min, max, center, avg, minMaxRect };
+    return {min, max, center, avg, minMaxRect};
   };
 
 
-  export const minMaxCenterAvg3D = (point3Ds: (Point3D | {x:number, y:number, z:number})[]): MinMaxCenterAvg<Point3D> => {
+  export const minMaxCenterAvg3D = (point3Ds: (Point3D | { x: number, y: number, z: number })[]): MinMaxCenterAvg<Point3D> => {
     const min = new Point3D(Number.MAX_VALUE, Number.MAX_VALUE, Number.MAX_VALUE);
     const max = new Point3D(Number.MIN_VALUE, Number.MIN_VALUE, Number.MIN_VALUE);
     let sum = new Point3D(0, 0, 0);
@@ -267,7 +281,7 @@ export namespace ConvertUtils {
     });
     const center = new Point3D((min.x + max.x) / 2, (min.y + max.y) / 2, (min.z + max.z) / 2);
     const avg = new Point3D(sum.x / point3Ds.length, sum.y / point3Ds.length, sum.z / point3Ds.length);
-    return { min, max, center, avg };
+    return {min, max, center, avg};
   };
 
   export const roundRectRadiiToFullRadii = (radii?: [number] | [number, number] | [number, number, number] | [number, number, number, number]) => {
@@ -326,6 +340,7 @@ export namespace ConvertUtils {
     // Map을 Record로 변환
     return Object.fromEntries(map) as Record<K, T[]>;
   }
+
 
   // const formDataToFormDataEntryValueObj = <T = { [key: string]: FormDataEntryValue | FormDataEntryValue[] }>(
   //   data: FormData | HTMLFormElement

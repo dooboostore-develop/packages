@@ -305,6 +305,12 @@ class data {
 * dr-value-link
   * Value and variable values are referencing each other. It affects each other when changing. (Immediate reflection event: input)
   * instance variable first
+* dr-checked-link
+  * Value and variable values are referencing each other. It affects each other when changing. (Immediate reflection event: input)
+  * instance variable first
+* dr-disabled-link
+  * Value and variable values are referencing each other. It affects each other when changing. (Immediate reflection event: input)
+  * instance variable first
 
 ```html
 dr-value: <input type="text" dr-value="@this@.office.name"> <br>

@@ -1,10 +1,8 @@
-import { ScriptUtils } from '@dooboostore/core-web/script/ScriptUtils';
 import { RawSet } from '../rawsets/RawSet';
 import { CreatorMetaData } from '../rawsets/CreatorMetaData';
 import { AfterCallBack, ElementSource, ExecuteState, OperatorExecuter, ReturnContainer, Source } from './OperatorExecuter';
 import { Render } from '../rawsets/Render';
-import { Promises } from '@dooboostore/core/promise';
-import { ElementUtils } from '@dooboostore/core-web/element/ElementUtils';
+import { ScriptUtils } from '@dooboostore/core-web/script/ScriptUtils';
 
 declare global {
   interface Window {
@@ -13,35 +11,29 @@ declare global {
 }
 
 // 여기서 사용자가 등록한 TargetElement가 들어간다.
-export class DrTargetElement extends OperatorExecuter<void> {
+export class DrTargetElementIsElement extends OperatorExecuter<string | null> {
   constructor(rawSet: RawSet, render: Render, returnContainer: ReturnContainer, elementSource: ElementSource, source: Source, afterCallBack: AfterCallBack) {
     source.operatorAround = undefined;
     super(rawSet, render, returnContainer, elementSource, source, afterCallBack, false);
   }
 
-  async execute(): Promise<ExecuteState> {
-    const targetElement = this.source.config?.targetElements?.find(it => it.name.toLowerCase() === this.elementSource.element.tagName.toLowerCase());
+  async execute(attr: string | null): Promise<ExecuteState> {
+    if (!attr) {
+      return ExecuteState.NO_EXECUTE;
+    }
+    const targetElement = this.source.config?.targetElements?.find(it => it.name.toLowerCase() === attr.toLowerCase());
     if (targetElement) {
       if (this.rawSet.point.start instanceof this.source.config.window.HTMLMetaElement && this.rawSet.point.end instanceof this.source.config.window.HTMLMetaElement) {
         this.rawSet.point.start.setAttribute('this-path', `this.__domrender_components.${this.rawSet.uuid}`)
         this.rawSet.point.end.setAttribute('this-path', `this.__domrender_components.${this.rawSet.uuid}`)
       }
 
+
       const documentFragment = await targetElement.callBack(this.elementSource.element, this.source.obj, this.rawSet, this.elementSource.attrs, this.source.config);
       if (documentFragment) {
         const detectAction = this.elementSource.element.getAttribute(RawSet.DR_DETECT_NAME);
-        // const dictionaryKey = this.elementSource.element.getAttribute(RawSet.DR_DICTIONARY_OPTIONKEYNAME);
-        // console.log('dictionaryKey', dictionaryKey);
-        // const render = (documentFragment as any).render;
         this.rawSet.dataSet.fragment = documentFragment;
-        // if (documentFragment) {
-        //     const tempDiv = this.source.config.window.document.createElement('div');
-        //     tempDiv.appendChild(documentFragment.cloneNode(true));
-        //     console.log('DocumentFragment innerHTML:', tempDiv.innerHTML);
-        // }
 
-        // this.rawSet.dataSet??={};
-        // this.rawSet.dataSet.data = render.component;
         if (detectAction && this.rawSet.dataSet.render) {
           // TODO: 없어져야될듯?
           this.rawSet.detect = {
@@ -53,10 +45,8 @@ export class DrTargetElement extends OperatorExecuter<void> {
             }
           };
         }
-        // fag.append(documentFragment)
 
-        // console.log('----------1', ElementUtils.toInnerHTML(documentFragment, {document: this.source.config.window.document}));
-        // await Promises.sleep(1000)
+
         let targetFragment = documentFragment;
         if (targetElement.noStrip) {
           // documentFragment.firstElementChild.classList.add(`${this.rawSet.uuid}___DrTargetElement`)
@@ -68,7 +58,7 @@ export class DrTargetElement extends OperatorExecuter<void> {
           // fragment.append(documentFragment.firstElementChild);
           targetFragment = fragment;
         }
-        // console.log('----------2', ElementUtils.toInnerHTML(targetFragment, {document: this.source.config.window.document}));
+
         const rr = RawSet.checkPointCreates(targetFragment, this.source.obj, this.source.config)
         if (targetElement.noStrip) {
           Array.from(targetFragment.childNodes||[]).forEach(child => {

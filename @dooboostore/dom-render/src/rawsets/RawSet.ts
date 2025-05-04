@@ -42,6 +42,7 @@ import { isOnInitRender } from '../lifecycle/OnInitRender';
 import { ObjectUtils } from '@dooboostore/core/object/ObjectUtils';
 import { isOnCreatedThisChild } from '../lifecycle/OnCreatedThisChild';
 import { isOnDestroyRender, OnDestroyRenderParams } from '../lifecycle/OnDestroyRender';
+import { DrTargetElementIsElement } from '../operators/DrTargetElementIsElement';
 
 export class RawSet {
   public static readonly DR_NAME = 'dr';
@@ -58,6 +59,7 @@ export class RawSet {
   public static readonly DR_INNERTEXT_NAME = 'dr-inner-text';
   public static readonly DR_DETECT_NAME = 'dr-detect';
   public static readonly DR_STRIP_NAME = 'dr-strip';
+  public static readonly DR_REPLACE_TARGET_ELEMENT_IS_NAME = 'dr-replace-target-element-is';
 
   public static readonly DR_IT_OPTIONNAME = 'dr-option-it';
   public static readonly DR_VAR_OPTIONNAME = 'dr-option-var';
@@ -98,6 +100,7 @@ export class RawSet {
     drBeforeOption: RawSet.DR_BEFORE_OPTIONNAME,
     drCompleteOption: RawSet.DR_COMPLETE_OPTIONNAME,
     drStripElement: RawSet.DR_STRIP_NAME,
+    drReplaceTargetElementIs: RawSet.DR_REPLACE_TARGET_ELEMENT_IS_NAME,
     drStripOption: RawSet.DR_STRIP_OPTIONNAME,
     drDestroyOption: RawSet.DR_DESTROY_OPTIONNAME,
     drHasKeysOption: RawSet.DR_HAS_KEYS_OPTIONNAME,
@@ -106,7 +109,25 @@ export class RawSet {
 
   public static readonly DR_TAGS = [];
 
-  public static readonly DR_ATTRIBUTES = [RawSet.DR_NAME, RawSet.DR_APPENDER_NAME, RawSet.DR_IF_NAME, RawSet.DR_FOR_OF_NAME, RawSet.DR_THIS_PROPERTY_NAME, RawSet.DR_FOR_NAME, RawSet.DR_THIS_NAME, RawSet.DR_FORM_NAME, RawSet.DR_PRE_NAME, RawSet.DR_INNERHTML_NAME, RawSet.DR_INNERTEXT_NAME, RawSet.DR_REPEAT_NAME, RawSet.DR_DETECT_NAME, RawSet.DR_STRIP_NAME] as const;
+  public static readonly DR_REPLACE_ACTION_ATTRIBUTES = [
+    RawSet.DR_REPLACE_TARGET_ELEMENT_IS_NAME
+  ]
+  public static readonly DR_ATTRIBUTES = [
+    RawSet.DR_NAME,
+    RawSet.DR_APPENDER_NAME,
+    RawSet.DR_IF_NAME,
+    RawSet.DR_FOR_OF_NAME,
+    RawSet.DR_THIS_PROPERTY_NAME,
+    RawSet.DR_FOR_NAME,
+    RawSet.DR_THIS_NAME,
+    RawSet.DR_FORM_NAME,
+    RawSet.DR_PRE_NAME,
+    RawSet.DR_INNERHTML_NAME,
+    RawSet.DR_INNERTEXT_NAME,
+    RawSet.DR_REPEAT_NAME,
+    RawSet.DR_DETECT_NAME,
+    RawSet.DR_STRIP_NAME,
+  ] as const;
 
   constructor(
     public uuid: string,
@@ -139,7 +160,9 @@ export class RawSet {
   // 중요
   getUsingTriggerVariables(config?: Config): Set<string> {
     const usingTriggerVariables = new Set<string>();
+    // console.log('------data', this.dataSet)
     this.dataSet.fragment.childNodes.forEach((cNode, key) => {
+    // console.log('-----aaaa-data', cNode, key)
       let script = '';
       if (cNode.nodeType === Node.TEXT_NODE) {
         script = `\`${(cNode as Text).textContent ?? ''}\``;
@@ -149,6 +172,7 @@ export class RawSet {
         const targetAttrNames = (config?.targetAttrs?.map(it => it.name) ?? []).concat(RawSet.DR_ATTRIBUTES); // .concat(EventManager.normalAttrMapAttrName);
         const targetScripts = targetAttrNames.map(it => element.getAttribute(it)).filter(it => it);
         const targetAttrMap = element.getAttribute(EventManager.normalAttrMapAttrName);
+        // console.log('targetAttrMap-->', targetAttrMap)
         if (targetAttrMap) {
           new Map<string, string>(JSON.parse(targetAttrMap)).forEach((v, k) => {
             targetScripts.push(v);
@@ -242,12 +266,12 @@ export class RawSet {
         // console.log('--->', RawSet.exporesionGrouops(textContent), textContent,runText, runText[0][1])
         let newNode: Node;
         if (textContent?.startsWith('#')) {
-          const r = ScriptUtils.eval(`${__render.bindScript} return ${runText}`, Object.assign(obj, { __render }));
+          const r = ScriptUtils.eval(`${__render.bindScript} return ${runText}`, Object.assign(obj, {__render}));
           const template = config.window.document.createElement('template') as HTMLTemplateElement;
           template.innerHTML = r;
           newNode = template.content;
         } else {
-          const r = ScriptUtils.eval(`${__render.bindScript}  return ${runText}`, Object.assign(obj, { __render }));
+          const r = ScriptUtils.eval(`${__render.bindScript}  return ${runText}`, Object.assign(obj, {__render}));
           newNode = config.window.document.createTextNode(r);
         }
         cNode.parentNode?.replaceChild(newNode, cNode);
@@ -273,6 +297,7 @@ export class RawSet {
           drInnerHTML: this.getAttributeAndDelete(element, RawSet.DR_INNERHTML_NAME),
           drInnerText: this.getAttributeAndDelete(element, RawSet.DR_INNERTEXT_NAME),
           drStripElement: this.getAttributeAndDelete(element, RawSet.DR_STRIP_NAME),
+          drReplaceTargetElementIs: this.getAttributeAndDelete(element, RawSet.DR_REPLACE_TARGET_ELEMENT_IS_NAME),
           drItOption: this.getAttributeAndDelete(element, RawSet.DR_IT_OPTIONNAME),
           drVarOption: this.getAttributeAndDelete(element, RawSet.DR_VAR_OPTIONNAME),
           drNextOption: this.getAttributeAndDelete(element, RawSet.DR_NEXT_OPTIONNAME),
@@ -286,21 +311,22 @@ export class RawSet {
         drAttrs.push(drAttr);
         // 아래 순서 중요
         const operators = [
-          new DrPre(this, __render, { raws, fag }, { element, attrName: RawSet.DR_PRE_NAME, attr: drAttr.drPre, attrs: drAttr }, { config, obj, operatorAround: config.operatorAround?.drPre }, { onAttrInitCallBacks, onElementInitCallBacks, onThisComponentSetCallBacks }),
-          new Dr(this, __render, { raws, fag }, { element, attrName: RawSet.DR_NAME, attr: drAttr.dr, attrs: drAttr }, { config, obj, operatorAround: config.operatorAround?.dr }, { onAttrInitCallBacks, onElementInitCallBacks, onThisComponentSetCallBacks }),
-          new DrIf(this, __render, { raws, fag }, { element, attrName: RawSet.DR_IF_NAME, attr: drAttr.drIf, attrs: drAttr }, { config, obj, operatorAround: config.operatorAround?.drIf }, { onAttrInitCallBacks, onElementInitCallBacks, onThisComponentSetCallBacks }),
-          new DrStripElement(this, __render, { raws, fag }, { element, attrName: RawSet.DR_STRIP_NAME, attr: drAttr.drStripElement, attrs: drAttr }, { config, obj, operatorAround: config.operatorAround?.drThis }, { onAttrInitCallBacks, onElementInitCallBacks, onThisComponentSetCallBacks }),
-          new DrThis(this, __render, { raws, fag }, { element, attrName: RawSet.DR_THIS_NAME, attr: drAttr.drThis, attrs: drAttr }, { config, obj, operatorAround: config.operatorAround?.drThis }, { onAttrInitCallBacks, onElementInitCallBacks, onThisComponentSetCallBacks }),
-          new DrForm(this, __render, { raws, fag }, { element, attrName: RawSet.DR_FOR_NAME, attr: drAttr.drForm, attrs: drAttr }, { config, obj, operatorAround: config.operatorAround?.drForm }, { onAttrInitCallBacks, onElementInitCallBacks, onThisComponentSetCallBacks }),
-          new DrInnerText(this, __render, { raws, fag }, { element, attrName: RawSet.DR_INNERTEXT_NAME, attr: drAttr.drInnerText, attrs: drAttr }, { config, obj, operatorAround: config.operatorAround?.drInnerText }, { onAttrInitCallBacks, onElementInitCallBacks, onThisComponentSetCallBacks }),
-          new DrInnerHTML(this, __render, { raws, fag }, { element, attrName: RawSet.DR_INNERHTML_NAME, attr: drAttr.drInnerHTML, attrs: drAttr }, { config, obj, operatorAround: config.operatorAround?.drInnerHTML }, { onAttrInitCallBacks, onElementInitCallBacks, onThisComponentSetCallBacks }),
-          new DrFor(this, __render, { raws, fag }, { element, attrName: RawSet.DR_FOR_NAME, attr: drAttr.drFor, attrs: drAttr }, { config, obj, operatorAround: config.operatorAround?.drFor }, { onAttrInitCallBacks, onElementInitCallBacks, onThisComponentSetCallBacks }),
-          new DrForOf(this, __render, { raws, fag }, { element, attrName: RawSet.DR_FOR_OF_NAME, attr: drAttr.drForOf, attrs: drAttr }, { config, obj, operatorAround: config.operatorAround?.drForOf }, { onAttrInitCallBacks, onElementInitCallBacks, onThisComponentSetCallBacks }),
-          new DrThisProperty(this, __render, { raws, fag }, { element, attrName: RawSet.DR_THIS_PROPERTY_NAME, attr: drAttr.drThisProperty, attrs: drAttr }, { config, obj, operatorAround: config.operatorAround?.drThisProperty }, { onAttrInitCallBacks, onElementInitCallBacks, onThisComponentSetCallBacks }),
-          new DrAppender(this, __render, { raws, fag }, { element, attrName: RawSet.DR_APPENDER_NAME, attr: drAttr.drAppender, attrs: drAttr }, { config, obj, operatorAround: config.operatorAround?.drAppender }, { onAttrInitCallBacks, onElementInitCallBacks, onThisComponentSetCallBacks }),
-          new DrRepeat(this, __render, { raws, fag }, { element, attrName: RawSet.DR_REPEAT_NAME, attr: drAttr.drRepeat, attrs: drAttr }, { config, obj, operatorAround: config.operatorAround?.drRepeat }, { onAttrInitCallBacks, onElementInitCallBacks, onThisComponentSetCallBacks }),
-          new DrTargetElement(this, __render, { raws, fag }, { element, attrs: drAttr }, { config, obj }, { onAttrInitCallBacks, onElementInitCallBacks, onThisComponentSetCallBacks }),
-          new DrTargetAttr(this, __render, { raws, fag }, { element, attrs: drAttr }, { config, obj }, { onAttrInitCallBacks, onElementInitCallBacks, onThisComponentSetCallBacks }),
+          new DrPre(this, __render, {raws, fag}, {element, attrName: RawSet.DR_PRE_NAME, attr: drAttr.drPre, attrs: drAttr}, {config, obj, operatorAround: config.operatorAround?.drPre}, {onAttrInitCallBacks, onElementInitCallBacks, onThisComponentSetCallBacks}),
+          new Dr(this, __render, {raws, fag}, {element, attrName: RawSet.DR_NAME, attr: drAttr.dr, attrs: drAttr}, {config, obj, operatorAround: config.operatorAround?.dr}, {onAttrInitCallBacks, onElementInitCallBacks, onThisComponentSetCallBacks}),
+          new DrIf(this, __render, {raws, fag}, {element, attrName: RawSet.DR_IF_NAME, attr: drAttr.drIf, attrs: drAttr}, {config, obj, operatorAround: config.operatorAround?.drIf}, {onAttrInitCallBacks, onElementInitCallBacks, onThisComponentSetCallBacks}),
+          new DrStripElement(this, __render, {raws, fag}, {element, attrName: RawSet.DR_STRIP_NAME, attr: drAttr.drStripElement, attrs: drAttr}, {config, obj, operatorAround: config.operatorAround?.drThis}, {onAttrInitCallBacks, onElementInitCallBacks, onThisComponentSetCallBacks}),
+          new DrThis(this, __render, {raws, fag}, {element, attrName: RawSet.DR_THIS_NAME, attr: drAttr.drThis, attrs: drAttr}, {config, obj, operatorAround: config.operatorAround?.drThis}, {onAttrInitCallBacks, onElementInitCallBacks, onThisComponentSetCallBacks}),
+          new DrForm(this, __render, {raws, fag}, {element, attrName: RawSet.DR_FOR_NAME, attr: drAttr.drForm, attrs: drAttr}, {config, obj, operatorAround: config.operatorAround?.drForm}, {onAttrInitCallBacks, onElementInitCallBacks, onThisComponentSetCallBacks}),
+          new DrInnerText(this, __render, {raws, fag}, {element, attrName: RawSet.DR_INNERTEXT_NAME, attr: drAttr.drInnerText, attrs: drAttr}, {config, obj, operatorAround: config.operatorAround?.drInnerText}, {onAttrInitCallBacks, onElementInitCallBacks, onThisComponentSetCallBacks}),
+          new DrInnerHTML(this, __render, {raws, fag}, {element, attrName: RawSet.DR_INNERHTML_NAME, attr: drAttr.drInnerHTML, attrs: drAttr}, {config, obj, operatorAround: config.operatorAround?.drInnerHTML}, {onAttrInitCallBacks, onElementInitCallBacks, onThisComponentSetCallBacks}),
+          new DrFor(this, __render, {raws, fag}, {element, attrName: RawSet.DR_FOR_NAME, attr: drAttr.drFor, attrs: drAttr}, {config, obj, operatorAround: config.operatorAround?.drFor}, {onAttrInitCallBacks, onElementInitCallBacks, onThisComponentSetCallBacks}),
+          new DrForOf(this, __render, {raws, fag}, {element, attrName: RawSet.DR_FOR_OF_NAME, attr: drAttr.drForOf, attrs: drAttr}, {config, obj, operatorAround: config.operatorAround?.drForOf}, {onAttrInitCallBacks, onElementInitCallBacks, onThisComponentSetCallBacks}),
+          new DrThisProperty(this, __render, {raws, fag}, {element, attrName: RawSet.DR_THIS_PROPERTY_NAME, attr: drAttr.drThisProperty, attrs: drAttr}, {config, obj, operatorAround: config.operatorAround?.drThisProperty}, {onAttrInitCallBacks, onElementInitCallBacks, onThisComponentSetCallBacks}),
+          new DrAppender(this, __render, {raws, fag}, {element, attrName: RawSet.DR_APPENDER_NAME, attr: drAttr.drAppender, attrs: drAttr}, {config, obj, operatorAround: config.operatorAround?.drAppender}, {onAttrInitCallBacks, onElementInitCallBacks, onThisComponentSetCallBacks}),
+          new DrRepeat(this, __render, {raws, fag}, {element, attrName: RawSet.DR_REPEAT_NAME, attr: drAttr.drRepeat, attrs: drAttr}, {config, obj, operatorAround: config.operatorAround?.drRepeat}, {onAttrInitCallBacks, onElementInitCallBacks, onThisComponentSetCallBacks}),
+          new DrTargetElementIsElement(this, __render, {raws, fag}, {element, attrName: RawSet.DR_REPLACE_TARGET_ELEMENT_IS_NAME, attr: drAttr.drReplaceTargetElementIs, attrs: drAttr}, {config, obj}, {onAttrInitCallBacks, onElementInitCallBacks, onThisComponentSetCallBacks}),
+          new DrTargetElement(this, __render, {raws, fag}, {element, attrs: drAttr}, {config, obj}, {onAttrInitCallBacks, onElementInitCallBacks, onThisComponentSetCallBacks}),
+          new DrTargetAttr(this, __render, {raws, fag}, {element, attrs: drAttr}, {config, obj}, {onAttrInitCallBacks, onElementInitCallBacks, onThisComponentSetCallBacks}),
         ];
 
         for (const operator of operators) {
@@ -336,7 +362,7 @@ export class RawSet {
                 const ${EventManager.FAG_VARNAME} = this.__render.fag;
                 const ${EventManager.SCRIPTS_VARNAME} = this.__render.scripts;
                 const ${EventManager.RAWSET_VARNAME} = this.__render.rawSet;
-                ${it.drCompleteOption}`, Object.assign(obj, { __render: render }));
+                ${it.drCompleteOption}`, Object.assign(obj, {__render: render}));
       }
     });
 
@@ -346,28 +372,39 @@ export class RawSet {
     // RawSet.generateStyleSheetsLocal(config);
     for (const it of onThisComponentSetCallBacks) {
       if (isOnInitRender(it.obj)) {
-        it.obj?.onInitRender?.();
+        it.obj?.onInitRender?.({}, this);
       }
     }
     for (const it of onElementInitCallBacks) {
-      // dr-on-init:arguments
-      if (it.targetElement?.__render?.element && it.targetElement?.__render?.component) {
-        const oninit = it.targetElement.__render.element.getAttribute(RawSet.DR_ON_INIT_ARGUMENTS_OPTIONNAME); // dr-on-component-init
-        let param = [];
-        if (oninit) {
-          const script = `${it.targetElement.__render.renderScript} return ${oninit} `;
-          param = ScriptUtils.eval(script, Object.assign(obj, {
-            __render: it.targetElement.__render
-          }));
-          if (!Array.isArray(param)) {
-            param = [param];
-          }
-        }
+      if (isOnInitRender(this.dataSet.render.currentThis)) {
+        // TODO: 나중에 파라미터 들어가야될듯. 지금은 리팩토링하느라 빠짐
+        // console.log('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!', it, this.dataSet);
+        // dr-on-init:arguments
 
-        if (isOnInitRender(it.targetElement.__render.component)) {
-          it.targetElement.__render.component.onInitRender?.(...param);
-        }
+        // if (isOnInitRender()) {
+        //   it.targetElement.__render.component.onInitRender?.(...param);
+        // }
+        // if (it.targetElement?.__render?.element && it.targetElement?.__render?.component) {
+        //   const oninit = it.targetElement.__render.element.getAttribute(RawSet.DR_ON_INIT_ARGUMENTS_OPTIONNAME); // dr-on-component-init
+        //   let param = [];
+        //   if (oninit) {
+        //     const script = `${it.targetElement.__render.renderScript} return ${oninit} `;
+        //     param = ScriptUtils.eval(script, Object.assign(obj, {
+        //       __render: it.targetElement.__render
+        //     }));
+        //     if (!Array.isArray(param)) {
+        //       param = [param];
+        //     }
+        //   }
+        //
+        //   if (isOnInitRender(it.targetElement.__render.component)) {
+        //     it.targetElement.__render.component.onInitRender?.(...param);
+        //   }
+        // }
+        this.dataSet.render.currentThis.onInitRender({}, this);
       }
+
+
       config?.onElementInit?.(it.name, obj, this, it.targetElement);
     }
 
@@ -557,17 +594,22 @@ export class RawSet {
           // return /[$#]\{.*?\}/g.test(StringUtils.deleteEnter((node as Text).data ?? '')) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
         } else if (node.nodeType === Node.ELEMENT_NODE) {
           const element = node as Element;
-          // console.log('------>', element);
-          const isElement = (config.targetElements?.map(it => it.name.toLowerCase()) ?? []).includes(element.tagName.toLowerCase());
+          const targetElementIs = element.getAttribute(RawSet.DR_REPLACE_TARGET_ELEMENT_IS_NAME);
+          const targetElementNames = config.targetElements?.map(it => it.name.toLowerCase()) ?? [];
+          const isElement = targetElementNames.includes(element.tagName.toLowerCase()) || targetElementNames.includes(targetElementIs?.toLowerCase());
+          // console.log('------targetElementIstargetElementIs>', targetElementNames, '---', isElement, targetElementIs);
           const targetAttrNames = (config.targetAttrs?.map(it => it.name) ?? []).concat(RawSet.DR_ATTRIBUTES);
           const normalAttrs = new Map<string, string>();
+          const linkVariables = new Map<string, string>();
+          const linkNames = EventManager.linkAttrs.map(it => it.name);
           const isAttr = element.getAttributeNames().filter(it => {
             const value = element.getAttribute(it);
-              // console.log('ccheck!!', value, RawSet.isExporesion(value));
-            if (value && RawSet.isExporesion(value)) {
 
+            // link일때
+            if (linkNames.includes(it)) {
+              linkVariables.set(it, value);
+            } else if (value && RawSet.isExporesion(value)) { // 표현식있을떄
               const variablePath = RawSet.exporesionGrouops(value)[0][1];
-
               // normal Attribute 초반에 셋팅해주기.
               const script = `return ${variablePath} `;
               const cval = ScriptUtils.eval(script, Object.assign(obj));
@@ -579,6 +621,10 @@ export class RawSet {
             const isTargetAttr = targetAttrNames.includes(it.toLowerCase());
             return isTargetAttr;
           }).length > 0;
+
+          if (linkVariables.size) {
+            element.setAttribute(EventManager.linkTargetMapAttrName, JSON.stringify(Array.from(linkVariables.entries())));
+          }
           // 기본 attribute를 처리하기위해
           if (normalAttrs.size) {
             element.setAttribute(EventManager.normalAttrMapAttrName, JSON.stringify(Array.from(normalAttrs.entries())));
@@ -603,7 +649,7 @@ export class RawSet {
         // const a = StringUtils.regexExec(/[$#]\{.*?\}/g, text);
         // const a = StringUtils.betweenRegexpStr('[$#]\\{', '\\}', text); // <--TODO: 나중에..
         const groups = RawSet.exporesionGrouops(text);
-        const map = groups.map(it => ({ uuid: `${RandomUtils.alphabet(40)}_${obj?.constructor?.name}`, content: it[0], regexArr: it }));
+        const map = groups.map(it => ({uuid: `${RandomUtils.alphabet(40)}_${obj?.constructor?.name}`, content: it[0], regexArr: it}));
         let lasterIndex = 0;
         for (let i = 0; i < map.length; i++) {
           const it = map[i];
@@ -623,7 +669,7 @@ export class RawSet {
             type = RawSetType.TEXT;
           }
           const node = document.createTextNode(preparedText);
-          const startEndPoint = RawSet.createStartEndPoint({ id: it.uuid, type }, config);
+          const startEndPoint = RawSet.createStartEndPoint({id: it.uuid, type}, config);
           // layout setting
           // console.log('createTextNode', node);
           template.content.append(node); // expression 앞 부분 넣어줘야 앞부분 일반 text 안짤린다.
@@ -640,7 +686,7 @@ export class RawSet {
             end: startEndPoint.end,
             parent: currentNode.parentNode,
             // thisVariableName: thisVariableName
-          }, {fragment:fragment, config: config}));
+          }, {fragment: fragment, config: config}));
           lasterIndex = regexArr.index + it.content.length;
         }
         template.content.append(config.window.document.createTextNode(text.substring(lasterIndex, text.length)));
@@ -649,10 +695,13 @@ export class RawSet {
         const uuid = `${RandomUtils.alphabet(40)}___${obj?.constructor?.name}`;
         const element = currentNode as Element;
         const fragment = config.window.document.createDocumentFragment();
-        const type: RawSetType = RawSetType.TARGET_ELEMENT;
-        const startEndPoint = RawSet.createStartEndPoint({ node: element, id: uuid, type }, config);
+        const elementType: RawSetType = RawSetType.TARGET_ELEMENT;
+        const startEndPoint = RawSet.createStartEndPoint({node: element, id: uuid, type: elementType}, config);
         // 여기서 등록한 component 추가한다.
-        const isElement = (config.targetElements?.map(it => it.name.toLowerCase()) ?? []).includes(element.tagName.toLowerCase());
+        const targetElementIs = element.getAttribute(RawSet.DR_REPLACE_TARGET_ELEMENT_IS_NAME);
+        const targetElementNames = config.targetElements?.map(it => it.name.toLowerCase()) ?? [];
+        const isElement = targetElementNames.includes(element.tagName.toLowerCase()) || targetElementNames.includes(targetElementIs?.toLowerCase());
+        // const isElement = targetElementNames.includes(element.tagName.toLowerCase());
         const targetAttrNames = (config.targetAttrs?.map(it => it.name) ?? []).concat(RawSet.DR_ATTRIBUTES);
         const isAttr = element.getAttributeNames().filter(it => targetAttrNames.includes(it.toLowerCase())).length > 0;
         currentNode?.parentNode?.insertBefore(startEndPoint.start, currentNode);
@@ -662,13 +711,14 @@ export class RawSet {
         // tempDiv.appendChild(fragment.cloneNode(true)); // fragment 복사본 추가
         // console.log('------',tempDiv.innerHTML);
         // console.log();
-        pars.push(new RawSet(uuid, isElement ? type : (isAttr ? RawSetType.TARGET_ATTR : RawSetType.UNKOWN), {
+        const rawSet = new RawSet(uuid, isElement ? elementType : (isAttr ? RawSetType.TARGET_ATTR : RawSetType.UNKOWN), {
           start: startEndPoint.start,
           node: currentNode,
           end: startEndPoint.end,
           parent: currentNode.parentNode,
           // thisVariableName: thisVariableName
-        }, {config: config, fragment: fragment}));
+        }, {config: config, fragment: fragment});
+        pars.push(rawSet);
       }
     }
     // console.log('parsparsparsparsparsparsparsparsparspars', pars);
@@ -693,7 +743,7 @@ export class RawSet {
       }
       end.setAttribute('id', `${data.id}-end`);
       end.setAttribute('dr-end-point', '');
-      return { start, end };
+      return {start, end};
     } else if (data.type === RawSetType.STYLE_TEXT) {
       return {
         start: config.window.document.createTextNode(`/*start text ${data.id}*/`),
@@ -923,16 +973,19 @@ export class RawSet {
 
     const componentKey = rawSet.uuid;
     const renderScript = `
+        var ${EventManager.RENDER_VARNAME} = this.__render; 
         var ${EventManager.RAWSET_VARNAME} = this.__render.rawSet; 
         var ${EventManager.COMPONENT_VARNAME} = this.__render.component; 
         var ${EventManager.ELEMENT_VARNAME} = this.__render.element; 
         var ${EventManager.ROUTER_VARNAME} = this.__render.router; 
         var ${EventManager.INNER_HTML_VARNAME} = this.__render.innerHTML; 
         var ${EventManager.ATTRIBUTE_VARNAME} = this.__render.attribute; 
-        var ${EventManager.PARENT_PATH_VARNAME} = this.__render.parentThisPath; 
-        var ${EventManager.PARENT_VARNAME} = this.__render.parentThis; 
-        var ${EventManager.NEAR_PATH_VARNAME} = this.__render.nearThisPath; 
-        var ${EventManager.NEAR_VARNAME} = this.__render.nearThis; 
+        var ${EventManager.PARENT_THIS_PATH_VARNAME} = this.__render.parentThisPath; 
+        var ${EventManager.CURRENT_THIS_VARNAME} = this.__render.currentThis; 
+        var ${EventManager.CURRENT_THIS_PATH_VARNAME} = this.__render.currentThisPath; 
+        var ${EventManager.PARENT_THIS_VARNAME} = this.__render.parentThis; 
+        var ${EventManager.NEAR_THIS_PATH_VARNAME} = this.__render.nearThisPath; 
+        var ${EventManager.NEAR_THIS_VARNAME} = this.__render.nearThis; 
         var ${EventManager.CREATOR_META_DATA_VARNAME} = this.__render.creatorMetaData;
       `;
 
@@ -944,6 +997,7 @@ export class RawSet {
     let render = {
       renderScript: renderScript,
       element: element,
+      getElement: () => config.window.document.querySelector(`[class*="${rawSet.uuid}"]`),
       innerHTML: element.innerHTML,
       // attribute: ObjectUtils.toDeleteKey(attribute, [...Object.values(RawSet.drAttrsOriginName), ...Object.values(EventManager.VARNAMES)]),
       rawSet: rawSet,
@@ -961,10 +1015,9 @@ export class RawSet {
     render.attribute = RawSet.getAttributeObject(element, {script: renderScript, obj: obj})
     render = Object.freeze(render);
 
-
     // dr-on-create data onCreateRender
     const onCreateDataScript = `return {rootParent: this, render: this.__render}`;
-    const onCreateDataParam = ScriptUtils.eval<OnCreateRenderDataParams>(onCreateDataScript, Object.assign(obj, { __render: render }));
+    const onCreateDataParam = ScriptUtils.eval<OnCreateRenderDataParams>(onCreateDataScript, Object.assign(obj, {__render: render}));
     if (isOnCreateRenderData(targetObj)) {
       targetObj?.onCreateRenderData(onCreateDataParam);
     }
@@ -991,9 +1044,9 @@ export class RawSet {
     // console.log('매번타나?');
     // 중요 dr-normal-attr-map
     // const normalAttrMap = element.getAttribute(EventManager.normalAttrMapAttrName);
-    const targetAttrObject = RawSet.getAttributeObject(element, { script: renderScript, obj: Object.assign(obj, { __render: render }) });
+    const targetAttrObject = RawSet.getAttributeObject(element, {script: renderScript, obj: Object.assign(obj, {__render: render})});
     if (targetAttrObject) {
-      rawSet.dataSet.render??={};
+      rawSet.dataSet.render ??= {};
       rawSet.dataSet.render.attribute = targetAttrObject;
       Object.entries(targetAttrObject).forEach(([key, cval], index) => {
         // console.log('ooooooooooooooooo', key, cval);
@@ -1012,7 +1065,7 @@ export class RawSet {
     const oninit = element.getAttribute(RawSet.DR_ON_CREATED_CALLBACK_OPTIONNAME); // dr-on-component-init
     if (oninit) {
       const script = `${renderScript}  ${oninit} `;
-      ScriptUtils.eval(script, Object.assign(obj, { __render: render }));
+      ScriptUtils.eval(script, Object.assign(obj, {__render: render}));
     }
 
     targetElement.querySelectorAll(eventManager.attrNames.map(it => `[${it}]`).join(',')).forEach(it => {
@@ -1034,10 +1087,10 @@ export class RawSet {
 
     // console.log('aa-asIs', targetElement.innerHTML);
     targetElement.getAttributeNames().forEach(it => targetElement.setAttribute(it, targetElement.getAttribute(it)!.replace(/#this#/g, drThis)));
-    const thisRandom = this.drThisEncoding(targetElement, drThis, { asIs: /@this@/g });
+    const thisRandom = this.drThisEncoding(targetElement, drThis, {asIs: /@this@/g});
     // console.log('@@@@@@@@@@@@@0', targetElement.innerHTML);
-    const nearThisRandom = this.drThisBindEncoding(targetElement, /@nearThis@/g, { config: config, otherReplaceVariablePath: rawSet.findNearThisPath() });
-    const parentThisRandom = this.drThisBindEncoding(targetElement, /@parentThis@/g, { config: config, otherReplaceVariablePath: rawSet.findParentThisPath() });
+    const nearThisRandom = this.drThisBindEncoding(targetElement, /@nearThis@/g, {config: config, otherReplaceVariablePath: rawSet.findNearThisPath()});
+    const parentThisRandom = this.drThisBindEncoding(targetElement, /@parentThis@/g, {config: config, otherReplaceVariablePath: rawSet.findParentThisPath()});
     // console.log('@@@@@@@@@@@@@1', targetElement.innerHTML, rawSet.findParentThisPath());
     // console.log('@@@@@@@@@@@@@-----------', rawSet.point?.parentRawSet?.point?.start, rawSet.point?.parentRawSet?.point?.start instanceof HTMLMetaElement);
     // if (rawSet.point?.parentRawSet?.point?.start instanceof HTMLMetaElement) {
@@ -1051,9 +1104,9 @@ export class RawSet {
     // console.log('------', rawSet.findParentThisPath());
     const vars = this.drVarEncoding(targetElement, drVarOption);
     this.drVarDecoding(targetElement, vars);
-    this.drThisDecoding(targetElement, { asIs: thisRandom, toBe: '@this@' });
-    this.drThisBindDecoding(targetElement, { config: config, asIs: nearThisRandom, toBe: '@nearThis@' });
-    this.drThisBindDecoding(targetElement, { config: config, asIs: parentThisRandom, toBe: '@parentThis@' });
+    this.drThisDecoding(targetElement, {asIs: thisRandom, toBe: '@this@'});
+    this.drThisBindDecoding(targetElement, {config: config, asIs: nearThisRandom, toBe: '@nearThis@'});
+    this.drThisBindDecoding(targetElement, {config: config, asIs: parentThisRandom, toBe: '@parentThis@'});
     // if (componentName) {
     //   RawSet.replaceInnerHTML(element, {asIs: componentNameReplaceKey, toBe: `#${componentName}#`})
     // }
@@ -1065,6 +1118,7 @@ export class RawSet {
       // console.log('------childNodes', Array.from(n.childNodes))
       Array.from(targetElement.childNodes).forEach(it => fag.append(it));
     } else {
+      targetElement.classList.add(`${rawSet.uuid}`)
       fag.append(targetElement);
     }
     // (fag as any).__domrender_this_variable_name = drThis;
@@ -1116,17 +1170,22 @@ export class RawSet {
   }
 
   public static createComponentTargetElement(
-    name: string,
-    objFactory: (element: Element, obj: any, rawSet: RawSet, counstructorParam: any[]) => any,
-    template: string = '',
-    styles: string | (string[]) = []
+    {name, objFactory, template = '', styles = [], noStrip}: {
+      name: string,
+      noStrip?: boolean;
+      objFactory: (element: Element, obj: any, rawSet: RawSet, counstructorParam: any[]) => any,
+      template: string,
+      styles: string | (string[])
+    }
   ): TargetElement {
+
     const targetElement: TargetElement = {
       name,
       styles,
       template,
+      noStrip,
       async callBack(element: Element, obj: any, rawSet: RawSet, attrs: Attrs, config: Config): Promise<DocumentFragment> {
-        const templateStyle = await RawSet.fetchTemplateStyle({ template: this.template, styles: this.styles });
+        const templateStyle = await RawSet.fetchTemplateStyle({template: this.template, styles: this.styles});
         this.template = templateStyle.template;
         this.styles = templateStyle.styles;
         obj.__domrender_components ??= {};
@@ -1138,10 +1197,10 @@ export class RawSet {
             var ${EventManager.ROUTER_VARNAME} = this.__render.router; 
             var ${EventManager.INNER_HTML_VARNAME} = this.__render.innerHTML; 
             var ${EventManager.ATTRIBUTE_VARNAME} = this.__render.attribute; 
-            var ${EventManager.PARENT_PATH_VARNAME} = this.__render.parentThisPath; 
-            var ${EventManager.PARENT_VARNAME} = this.__render.parentThis; 
-            var ${EventManager.NEAR_PATH_VARNAME} = this.__render.nearThisPath; 
-            var ${EventManager.NEAR_VARNAME} = this.__render.nearThis; 
+            var ${EventManager.PARENT_THIS_PATH_VARNAME} = this.__render.parentThisPath; 
+            var ${EventManager.PARENT_THIS_VARNAME} = this.__render.parentThis; 
+            var ${EventManager.NEAR_THIS_PATH_VARNAME} = this.__render.nearThisPath; 
+            var ${EventManager.NEAR_THIS_VARNAME} = this.__render.nearThis; 
             var ${EventManager.CREATOR_META_DATA_VARNAME} = this.__render.creatorMetaData;
         `;
         const parentThisPath = rawSet.findParentThisPath();
@@ -1153,6 +1212,7 @@ export class RawSet {
           element: element,
           innerHTML: element.innerHTML,
           // attribute: attribute,
+          getElement: () => config.window.document.querySelector(`[class*="${rawSet.uuid}"]`),
           rawSet: rawSet,
           router: config.router,
           componentKey: rawSet.uuid,
@@ -1170,7 +1230,7 @@ export class RawSet {
         //
         // // dr-constructor
         if (constructor) {
-          let param = ScriptUtils.evalReturn({bodyScript: renderScript, returnScript: constructor}, Object.assign(obj, { __render: render })) ?? [];
+          let param = ScriptUtils.evalReturn({bodyScript: renderScript, returnScript: constructor}, Object.assign(obj, {__render: render})) ?? [];
           if (!Array.isArray(param)) {
             param = [param];
           }
@@ -1269,13 +1329,13 @@ export class RawSet {
         element.innerHTML = style + (applayTemplate ?? '');
 
         // 여기서 targetElement의 옷을 벗긴다.
-        let data = await RawSet.drThisCreate(rawSet, element, `this.__domrender_components.${rawSet.uuid}`, '', true, obj, config);
+        let data = await RawSet.drThisCreate(rawSet, element, `this.__domrender_components.${rawSet.uuid}`, '', !noStrip, obj, config);
         // const tempDiv = document.createElement("div");
         // tempDiv.appendChild(data.cloneNode(true)); // 원본 보존
         // console.log('-------------ddddddddddddd', element.innerHTML, tempDiv.innerHTML);
         // let data = await RawSet.drThisCreate(rawSet, element, `this.__domrender_components.${componentKey}`, '', false, obj, config);
 
-        // 넘어온 innerHTML에 this가 있는걸 다시 복호화해서 제대로 작동하도록한다.
+        // 넘어온 innerHTML에 this가 있는걸 다시 복호화해서 제대로 작동하도록한다. 부모에서의 this면 부모껄로 작동되게
         if (innerHTMLThisRandom) {
           const template = config.window.document.createElement('template') as HTMLTemplateElement;
           template.content.append(data);
@@ -1358,7 +1418,7 @@ export class RawSet {
     return paths.reverse();
   };
 
-  public static getAttributeObject(element: Element, config: {script: string, obj: any}) {
+  public static getAttributeObject(element: Element, config: { script: string, obj: any }) {
     if (!element) {
       return undefined;
     }
@@ -1366,7 +1426,7 @@ export class RawSet {
     const normalAttribute = attribute[EventManager.normalAttrMapAttrName];
     if (normalAttribute) {
       new Map<string, string>(JSON.parse(normalAttribute)).forEach((v, k) => {
-        const cval = ScriptUtils.evalReturn({ bodyScript: config.script, returnScript: v }, config.obj);
+        const cval = ScriptUtils.evalReturn({bodyScript: config.script, returnScript: v}, config.obj);
         attribute[k] = cval;
       });
     }

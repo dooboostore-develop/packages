@@ -11,9 +11,9 @@ export type RouteData = {
 }
 export type RouterConfig<T = any> = { rootObject?: T, window: Window, disableAttach?: boolean };
 
-export abstract class Router {
+export abstract class Router<T=any> {
   private attachCallbacks = new Set<(routeData: RouteData) => void>();
-  private _config: RouterConfig<any>;
+  private _config: RouterConfig<T>;
 
   get searchParamObject() {
     return ConvertUtils.toObject(this.getSearchParams());

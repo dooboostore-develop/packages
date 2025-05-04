@@ -8,15 +8,31 @@ export class EventManager {
   public static readonly attrPrefix = 'dr-';
   public readonly eventNames = [
     'click', 'mousedown', 'mouseup', 'dblclick', 'mouseover', 'mouseout', 'mousemove', 'mouseenter', 'mouseleave', 'contextmenu',
-    'keyup', 'keydown', 'keypress',
-    'change', 'input', 'submit', 'resize', 'focus', 'blur'];
+    'keyup', 'keydown', 'keypress', 'toggle',
+    'change', 'input', 'submit', 'resize', 'focus', 'blur',
+    'close', 'cancel' // dialog cancel 이벤트는 close 이벤트의 하위 이벤트로, ESC 키나 취소 버튼으로 닫힐 때만 발생.    (close// 추가 로직 (예: 닫힘 후 처리))
+    /*
+    close 이벤트: <dialog>가 닫힐 때 발생. 사용자가 취소 버튼, 확인 버튼, 또는 dialog.close() 메서드로 닫을 때 모두 트리거됩니다.
+    cancel 이벤트: <dialog>가 ESC 키나 취소 버튼으로 닫힐 때 발생. close 이벤트의 하위 이벤트로 볼 수 있습니다.
+     */
+  ];
 
   public static ownerVariablePathAttrName = EventManager.attrPrefix + 'owner-variable-path';
 
   public readonly eventParam = EventManager.attrPrefix + 'event';
   public static readonly onInitAttrName = EventManager.attrPrefix + 'on-init';
   public static readonly valueAttrName = EventManager.attrPrefix + 'value';
-  public static readonly valueLinkAttrName = EventManager.attrPrefix + 'value-link';
+  // 양방향 제거  복잡성증가함.
+  public static linkAttrs = [
+    {name: EventManager.attrPrefix + 'value-link', property: 'value', event: 'input'},
+    {name: EventManager.attrPrefix + 'checked-link', property: 'checked', event: 'change'},
+    {name: EventManager.attrPrefix + 'open-link', property: 'open', event: 'toggle'},
+  ]
+  public static readonly linkTargetMapAttrName = EventManager.attrPrefix + 'link-variables';
+  // public static readonly valueLinkAttrName = EventManager.attrPrefix + 'value-link';
+  // public static readonly checkedLinkAttrName = EventManager.attrPrefix + 'checked-link';
+  // public static readonly disabledLinkAttrName = EventManager.attrPrefix + 'disabled-link';
+  // public static readonly openLinkAttrName = EventManager.attrPrefix + 'open-link';
   public static readonly attrAttrName = EventManager.attrPrefix + 'attr';
   public static readonly normalAttrMapAttrName = EventManager.attrPrefix + 'normal-attr-map';
   public static readonly styleAttrName = EventManager.attrPrefix + 'style';
@@ -27,6 +43,7 @@ export class EventManager {
   public static readonly SCRIPTS_VARNAME = '$scripts';
   public static readonly FAG_VARNAME = '$fag';
   public static readonly RAWSET_VARNAME = '$rawSet';
+  public static readonly RENDER_VARNAME = '$render';
   public static readonly NEAR_THIS_VARNAME = '$nearThis';
   public static readonly PARENT_THIS_VARNAME = '$parentThis';
   public static readonly ROOT_OBJECT_VARNAME = '$rootObject';
@@ -40,18 +57,17 @@ export class EventManager {
   public static readonly INNERHTML_VARNAME = '$innerHTML';
   public static readonly ATTRIBUTE_VARNAME = '$attribute';
   public static readonly CREATOR_META_DATA_VARNAME = '$creatorMetaData';
-  public static readonly PARENT_PATH_VARNAME = '$parentPath';
-  public static readonly PARENT_VARNAME = '$parentThis';
-  public static readonly NEAR_PATH_VARNAME = '$nearPath';
-  public static readonly NEAR_VARNAME = '$nearThis';
-  public static readonly VARNAMES = [EventManager.SCRIPTS_VARNAME, EventManager.FAG_VARNAME, EventManager.RAWSET_VARNAME, EventManager.RANGE_VARNAME, EventManager.ROUTER_VARNAME, EventManager.ELEMENT_VARNAME, EventManager.TARGET_VARNAME, EventManager.EVENT_VARNAME, EventManager.COMPONENT_VARNAME, EventManager.INNERHTML_VARNAME, EventManager.ATTRIBUTE_VARNAME, EventManager.ATTRIBUTE_VARNAME, EventManager.CREATOR_META_DATA_VARNAME, EventManager.PARENT_PATH_VARNAME, EventManager.PARENT_VARNAME, EventManager.attrAttrName];
+  public static readonly PARENT_THIS_PATH_VARNAME = '$parentPath';
+  public static readonly CURRENT_THIS_VARNAME = '$currentThis';
+  public static readonly CURRENT_THIS_PATH_VARNAME = '$currentThisPath';
+  public static readonly NEAR_THIS_PATH_VARNAME = '$nearThisPath';
+  public static readonly VARNAMES = [EventManager.SCRIPTS_VARNAME, EventManager.FAG_VARNAME, EventManager.RAWSET_VARNAME, EventManager.RANGE_VARNAME, EventManager.ROUTER_VARNAME, EventManager.ELEMENT_VARNAME, EventManager.TARGET_VARNAME, EventManager.EVENT_VARNAME, EventManager.COMPONENT_VARNAME, EventManager.INNERHTML_VARNAME, EventManager.ATTRIBUTE_VARNAME, EventManager.ATTRIBUTE_VARNAME, EventManager.CREATOR_META_DATA_VARNAME, EventManager.PARENT_THIS_PATH_VARNAME, EventManager.PARENT_THIS_VARNAME, EventManager.attrAttrName];
 
   public static readonly WINDOW_EVENT_POPSTATE = 'popstate';
   public static readonly WINDOW_EVENT_RESIZE = 'resize';
   public static readonly WINDOW_EVENTS = [EventManager.WINDOW_EVENT_POPSTATE, EventManager.WINDOW_EVENT_RESIZE];
   public readonly attrNames = [
     EventManager.valueAttrName,
-    EventManager.valueLinkAttrName,
     EventManager.attrAttrName,
     EventManager.normalAttrMapAttrName,
     EventManager.styleAttrName,
@@ -59,6 +75,7 @@ export class EventManager {
     EventManager.attrPrefix + 'window-event-' + EventManager.WINDOW_EVENT_POPSTATE,
     EventManager.attrPrefix + 'window-event-' + EventManager.WINDOW_EVENT_RESIZE,
     EventManager.onInitAttrName,
+    ...EventManager.linkAttrs.map(it=>it.name),
     this.eventParam
   ];
   readonly bindScript = `
@@ -160,7 +177,11 @@ export class EventManager {
             attribute: DomUtils.getAttributeToObject(it)
           })
         }));
-        it.setAttribute(k, data);
+        if (data === null) {
+          it.removeAttribute(k);
+        } else {
+          it.setAttribute(k, data);
+        }
       });
     });
 
@@ -172,57 +193,67 @@ export class EventManager {
     });
 
     // value-link event
-    this.procAttr<HTMLInputElement>(childNodes, EventManager.valueLinkAttrName, (it, varName) => {
-      if (varName) {
-        const ownerVariablePathName = it.getAttribute(EventManager.ownerVariablePathAttrName);
-        const mapScript = it.getAttribute(`${EventManager.valueLinkAttrName}:map`);
-        // const inMapScript = it.getAttribute(`${valueLinkAttrName}:in-map`);
-        let bindObj = obj;
-        if (ownerVariablePathName) {
-          bindObj = ScriptUtils.evalReturn(ownerVariablePathName, obj);
-        }
-        const getValue = this.getValue(obj, varName, bindObj);
-        // TODO: 아래 나중에 리팩토링 필요함
-        if (typeof getValue === 'function' && getValue) {
-          let setValue = it.value;
-          if (mapScript) {
-            setValue = ScriptUtils.eval(`${this.getBindScript(config)} return ${mapScript}`, Object.assign(bindObj, { __render: Object.freeze({ element: it, target: bindObj, range: Range.range, value: setValue, scripts: EventManager.setBindProperty(config?.scripts, obj), ...config?.eventVariables }) }));
+    EventManager.linkAttrs.forEach(linkInfo => {
+      this.procAttr<HTMLElement>(childNodes, linkInfo.name, (it, varName) => {
+        if (varName) {
+          const ownerVariablePathName = it.getAttribute(EventManager.ownerVariablePathAttrName);
+          const mapScript = it.getAttribute(`${linkInfo.name}:map`);
+          // const inMapScript = it.getAttribute(`${valueLinkAttrName}:in-map`);
+          let bindObj = obj;
+          if (ownerVariablePathName) {
+            bindObj = ScriptUtils.evalReturn(ownerVariablePathName, obj);
           }
-          getValue(setValue);
-        } else if (getValue) {
-          let setValue = getValue;
-          if (mapScript) {
-            setValue = ScriptUtils.eval(`${this.getBindScript(config)} return ${mapScript}`, Object.assign(bindObj, { __render: Object.freeze({ element: it, target: bindObj, range: Range.range, value: setValue, scripts: EventManager.setBindProperty(config?.scripts, obj), ...config?.eventVariables }) }));
+          const getValue = this.getValue(obj, varName, bindObj);
+          // TODO: 아래 나중에 리팩토링 필요함
+          if (typeof getValue === 'function' && getValue) {
+            let setValue = it[linkInfo.property];
+            if (mapScript) {
+              setValue = ScriptUtils.eval(`${this.getBindScript(config)} return ${mapScript}`, Object.assign(bindObj, { __render: Object.freeze({ element: it, target: bindObj, range: Range.range, value: setValue, scripts: EventManager.setBindProperty(config?.scripts, obj), ...config?.eventVariables }) }));
+            }
+            getValue(setValue);
+          } else if (getValue) {
+            let setValue = getValue;
+            if (mapScript) {
+              setValue = ScriptUtils.eval(`${this.getBindScript(config)} return ${mapScript}`, Object.assign(bindObj, { __render: Object.freeze({ element: it, target: bindObj, range: Range.range, value: setValue, scripts: EventManager.setBindProperty(config?.scripts, obj), ...config?.eventVariables }) }));
+            }
+            // console.log('------->',it.value, setValue)
+            if (setValue === null) {
+              it.removeAttribute(linkInfo.property);
+            } else {
+              console.log('-----------',it, setValue)
+              it[linkInfo.property] = setValue;
+            }
+            // 여기서 value가 먼저냐 value-link가 먼저냐 선을 정해야되는거네..-> 라고해서 undefined일때에는 element값을 먼저셋팅해준다.
+          } else if (getValue === undefined){
+            this.setValue(obj, varName, it[linkInfo.property]);
           }
-          it.value = setValue;
-          // 여기서 value가 먼저냐 value-link가 먼저냐 선을 정해야되는거네..-> 라고해서 undefined일때에는 element값을 먼저셋팅해준다.
-        } else if (getValue === undefined){
-          this.setValue(obj, varName, it.value);
-        }
 
-        it.addEventListener('input', (event) => {
-          let value = it.value;
-          if (mapScript) {
-            value = ScriptUtils.eval(`${this.getBindScript(config)} return ${mapScript}`, Object.assign(bindObj, {
-              __render: Object.freeze({
-                event,
-                element: it,
-                attribute: DomUtils.getAttributeToObject(it),
-                target: event.target,
-                range: Range.range,
-                scripts: EventManager.setBindProperty(config?.scripts, obj),
-                ...config?.eventVariables
-              })
-            }));
-          }
-          if (typeof this.getValue(obj, varName, bindObj) === 'function') {
-            this.getValue(obj, varName, bindObj)(value, event);
-          } else {
-            this.setValue(obj, varName, value);
-          }
-        });
-      }
-    });
+          it.addEventListener(linkInfo.event, (event) => {
+            let value = it[linkInfo.property];
+            if (mapScript) {
+              value = ScriptUtils.eval(`${this.getBindScript(config)} return ${mapScript}`, Object.assign(bindObj, {
+                __render: Object.freeze({
+                  event,
+                  element: it,
+                  attribute: DomUtils.getAttributeToObject(it),
+                  target: event.target,
+                  range: Range.range,
+                  scripts: EventManager.setBindProperty(config?.scripts, obj),
+                  ...config?.eventVariables
+                })
+              }));
+            }
+            if (typeof this.getValue(obj, varName, bindObj) === 'function') {
+              this.getValue(obj, varName, bindObj)(value, event);
+            } else {
+              this.setValue(obj, varName, value);
+            }
+          });
+        }
+      });
+    })
+
+
 
     // on-init event
     this.procAttr<HTMLInputElement>(childNodes, EventManager.onInitAttrName, (it, attribute) => {
@@ -260,31 +291,34 @@ export class EventManager {
     // console.log('-changeVar-->', obj, elements, varName);
     // forEach elements
     // value-link event
-    this.procAttr<HTMLInputElement>(elements, EventManager.valueLinkAttrName, (it, attribute) => {
-      const ownerVariablePathName = it.getAttribute(EventManager.ownerVariablePathAttrName);
-      let bindObj = obj;
-      if (ownerVariablePathName) {
-        bindObj = ScriptUtils.evalReturn(ownerVariablePathName, obj);
-      }
-      const mapScript = it.getAttribute(`${EventManager.valueLinkAttrName}:map`);
-      if (attribute && attribute === varName) {
-        const getValue = this.getValue(obj, attribute, bindObj);
-        if (typeof getValue === 'function' && getValue) {
-          let setValue = it.value;
-          if (mapScript) {
-            setValue = ScriptUtils.eval(`${this.getBindScript(config)} return ${mapScript}`, Object.assign(bindObj, { __render: Object.freeze({ element: it, target: bindObj, range: Range.range, value: setValue, scripts: EventManager.setBindProperty(config?.scripts, obj), ...config?.eventVariables }) }));
-          }
-          getValue(setValue);
-        } else { //  if (getValue !== undefined && getValue !== null)
-          let setValue = getValue;
-          if (mapScript) {
-            setValue = ScriptUtils.eval(`${this.getBindScript(config)} return ${mapScript}`, Object.assign(bindObj, { __render: Object.freeze({ element: it, target: bindObj, range: Range.range, value: setValue, scripts: EventManager.setBindProperty(config?.scripts, obj), ...config?.eventVariables }) }));
-          }
-          it.value = setValue;
+    EventManager.linkAttrs.forEach(linkInfo => {
+      this.procAttr<HTMLElement>(elements, linkInfo.name, (it, attribute) => {
+        const ownerVariablePathName = it.getAttribute(EventManager.ownerVariablePathAttrName);
+        let bindObj = obj;
+        if (ownerVariablePathName) {
+          bindObj = ScriptUtils.evalReturn(ownerVariablePathName, obj);
         }
-      }
-    });
+        const mapScript = it.getAttribute(`${linkInfo.name}:map`);
+        if (attribute && attribute === varName) {
+          const getValue = this.getValue(obj, attribute, bindObj);
+          if (typeof getValue === 'function' && getValue) {
+            let setValue = it[linkInfo.property];
+            if (mapScript) {
+              setValue = ScriptUtils.eval(`${this.getBindScript(config)} return ${mapScript}`, Object.assign(bindObj, { __render: Object.freeze({ element: it, target: bindObj, range: Range.range, value: setValue, scripts: EventManager.setBindProperty(config?.scripts, obj), ...config?.eventVariables }) }));
+            }
+            getValue(setValue);
+          } else { //  if (getValue !== undefined && getValue !== null)
+            let setValue = getValue;
+            if (mapScript) {
+              setValue = ScriptUtils.eval(`${this.getBindScript(config)} return ${mapScript}`, Object.assign(bindObj, { __render: Object.freeze({ element: it, target: bindObj, range: Range.range, value: setValue, scripts: EventManager.setBindProperty(config?.scripts, obj), ...config?.eventVariables }) }));
+            }
+            it[linkInfo.property] = setValue;
+          }
+        }
+      });
 
+
+    })
     // attribute
     this.procAttr(elements, EventManager.attrAttrName, (it, attribute) => {
       let script = attribute;
@@ -405,13 +439,16 @@ export class EventManager {
               attribute: DomUtils.getAttributeToObject(it)
             })
           }));
-          it.setAttribute(k, data);
+          if (data ===null) {
+            it.removeAttribute(k);
+          } else {
+            it.setAttribute(k, data);
+          }
         }
       });
     });
   }
 
-  // eslint-disable-next-line no-undef
   public addDrEvents(obj: any, eventName: string, elements: Set<Element> | Set<ChildNode>, config?: Config) {
     // console.log('-------?', config?.router)
     const attr = EventManager.attrPrefix + 'event-' + eventName;

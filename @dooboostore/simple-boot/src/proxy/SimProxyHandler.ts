@@ -93,7 +93,7 @@ export class SimProxyHandler implements ProxyHandler<any> {
     }
 
     private aopBefore(obj: any, protoType: Function) {
-        const propertyName = ObjectUtils.getPrototypeName(obj, protoType);
+        const propertyName = ObjectUtils.prototypeName(obj, protoType);
         if (propertyName && obj) {
             getProtoBefores(obj, propertyName).forEach(it => {
                 it.call(obj, protoType, propertyName)
@@ -110,7 +110,7 @@ export class SimProxyHandler implements ProxyHandler<any> {
     }
 
     private aopAfter(obj: any, protoType: Function) {
-        const propertyName = ObjectUtils.getPrototypeName(obj, protoType);
+        const propertyName = ObjectUtils.prototypeName(obj, protoType);
         if (propertyName) {
             getProtoAfters(obj, propertyName).forEach(it => {
                 it.call(obj, protoType, propertyName)

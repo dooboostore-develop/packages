@@ -6,6 +6,7 @@ import { WithRequiredProperty } from '../../../types';
 import { Obj } from './Obj';
 import BezierConfig = MathUtil.BezierConfig;
 import { ConvertUtils } from '../../../convert/ConvertUtils';
+import { ObjectUtils } from '../../../object/ObjectUtils';
 
 // export type Calc = { name: string, start: number; end: number };
 // export type CalcResult = Calc & { value: number };
@@ -20,6 +21,7 @@ export type TransactionConfig = {
   animationIterationCount?: number | 'infinite';
   animationDirection?: 'normal' | 'reverse';
   startPoint?: Obj;
+  startCalcs?: { [key: string]: number  | number[]};
   calcs?: { [key: string]: Calc | Calc[] } //{name: string, value: number, bezierConfig?: MathUtil.BezierConfig}[][];
   // calcs?: Calc[];
   // fillMode?:  'backwards' ;
@@ -30,9 +32,9 @@ type RequiredTransactionConfig = WithRequiredProperty<TransactionConfig, 'animat
 
 type TransactionControllConfig = {
   points: Obj[];
-  // calcs: {name: string, value: number}[];
   calcs?: { [key: string]: number[] | number[][] };
   pointPositionIndex: number;
+  transactionStartCalcs: { [key: string]: number  | number[]};
   transactionStartPoint: Obj;
   config: RequiredTransactionConfig;
 };
@@ -79,6 +81,9 @@ export abstract class RenderTransactionDrawObj<T = any> extends RenderDrawObj<T>
   }
 
   setCalc(key: string, value: number | number[]) {
+    // if ((this as any).syncSubLayer?.name === 'normalSpin_template' || (this as any).syncSubLayer?.name === 'normalSpin_slot'){
+    //  debugger;
+    // }
     this._calc[key] = value;
   }
 
@@ -106,8 +111,22 @@ export abstract class RenderTransactionDrawObj<T = any> extends RenderDrawObj<T>
   }
 
   makeTransactionControllConfig(transactionConfig: TransactionConfig) {
+    // if ((this as any).syncSubLayer?.name === 'normalSpin_template' || (this as any).syncSubLayer?.name === 'normalSpin_slot'){
+    //  console.log('mmmmmmmmm')
+    // }
+    // console.log('-------------', this)
+    // if ((this as any)._syncSubLayer?.name === "normalBounce_template" ) {
+    //  console.log('mmmmmmmmm', this.transform, this._currentTransactionControllConfig.transactionStartPoint.transform)
+    // }
     if (transactionConfig.startPoint) {
       this.updateObjWithDefaults(transactionConfig.startPoint);
+    }
+    const transactionStartCalc = ObjectUtils.deepCopy(this._calc);
+
+    if (transactionConfig.startCalcs) {
+      Object.entries(transactionConfig.startCalcs).forEach(([k,v])=> {
+        transactionStartCalc[k] = v;
+      })
     }
     const requiredConfig = this.defaultTransactionConfig(transactionConfig);
 
@@ -115,18 +134,29 @@ export abstract class RenderTransactionDrawObj<T = any> extends RenderDrawObj<T>
     const points: Obj[] = [];
     // 남은게 있음 트랜젝션 시작했을떄 시작점 기준으로
     // let startPoint = this.remainingCntTransaction() > 0 ? this._transactionConfig.points[0] : this.toPoint3D();
+    // console.log('---->',(this as any)._syncData?.name)
+    // if ((this as any)._syncData?.name === 'mcdonalds-event_item_issue' || (this as any).syncSu_syncDatabLayer?.name === 'mcdonalds-event_item_issue'){
+    //   console.log('make!!!', transactionStartCalc)
+    // }
     const currentPoint = this.copyObj();
     let startPoint: TargetPointType = { obj: currentPoint, bezierConfig: RenderTransactionDrawObj.DEFAULT_BEZIER };
     const drawFps = requiredConfig.drawFps;
     const size = Math.ceil(drawFps / targetPoints.length);
-    for (let i = 0; i < targetPoints.length; i++) {
-      const point = MathUtil.cubicBezier({ start: startPoint.obj, end: targetPoints[i].obj }, { frame: size }, targetPoints[i].bezierConfig ?? RenderTransactionDrawObj.DEFAULT_BEZIER);
-      points.push(startPoint.obj, ...point, targetPoints[i].obj);
-      // points.push(...point );
-      startPoint = targetPoints[i];
-    }
+    // if (targetPoints.length === 1) {
+    //   points.push(targetPoints[0].obj);
+    // } else {
+      for (let i = 0; i < targetPoints.length; i++) {
+        const point = MathUtil.cubicBezier({start: startPoint.obj, end: targetPoints[i].obj}, {frame: size}, targetPoints[i].bezierConfig ?? RenderTransactionDrawObj.DEFAULT_BEZIER);
+        points.push(startPoint.obj, ...point, targetPoints[i].obj);
+        startPoint = targetPoints[i];
+      }
+    // }
 
 
+    // if ((this as any)) {
+    //   // console.log('worldEngine Sync', layerDrawObject?.syncData?.name, layers)
+    //   console.log(requiredConfig)
+    // }
     // const data = points.map(it => Math.floor(it.y*100)/100);
     //   const data1 = targetPoints.map(it =>Math.floor(it.obj.y * 1000)/1000);
     // if (data[data.length-1] === 0) {
@@ -137,7 +167,11 @@ export abstract class RenderTransactionDrawObj<T = any> extends RenderDrawObj<T>
     // }
     // 하나도없을때 또는 0으로 셋팅시 바로 셋
     if (drawFps <= 0 && targetPoints.length > 0) {
-      this.updateObjWithDefaults(targetPoints[targetPoints.length - 1].obj);
+      // console.log('!@!!!!!!!!!!!!!!!!!!!!!!!!!!!!', transactionConfig.startPoint, targetPoints[targetPoints.length - 1].obj)
+      const lastPoint = targetPoints[targetPoints.length - 1].obj;
+      points.length = 0;
+      points.push(lastPoint);
+      this.updateObjWithDefaults(lastPoint);
     }
 
     const calcs: { [key: string]: number[] | number[][] } = {};
@@ -155,12 +189,9 @@ export abstract class RenderTransactionDrawObj<T = any> extends RenderDrawObj<T>
             const b = MathUtil.cubicBezier({ start: cstart[index] ?? 0, end: cend[index] ?? 0 }, { frame: size }, end.bezierConfig ?? RenderTransactionDrawObj.DEFAULT_BEZIER)
             // console.log('----------22>', index, cstart[index], cend[index], size, b);
             return b;
-          }); //.map(it => ConvertUtils.toArrayDirectionChange(it));
-          // @ts-ignore
+          });
           const ss = ConvertUtils.toArrayDirectionChange(rpoints) as number[][]
-          // (end.value as number[]).map((it,index) => MathUtil.cubicBezier({ start: startPoint[index], end: end.value[index] }, { frame: size }, end.bezierConfig ?? RenderTransactionDrawObj.DEFAULT_BEZIER))
           (points as number[][]).push(cstart, ...ss, cend);
-          // console.log('----cccccccccc---!!!!!', points);
         } else {
           const cstart = startPoint as number ??0;
           const point = MathUtil.cubicBezier({ start: cstart, end: end.value }, { frame: size }, end.bezierConfig ?? RenderTransactionDrawObj.DEFAULT_BEZIER);
@@ -175,16 +206,27 @@ export abstract class RenderTransactionDrawObj<T = any> extends RenderDrawObj<T>
       calcs[key] = points;
     });
     // console.log('calc------->', calcs);
+    // if ((this as any).syncSubLayer?.name === 'normalSpin_template' || (this as any).syncSubLayer?.name === 'normalSpin_slot'){
+    //   console.log('make!!!', transactionStartCalc)
+    // }
     const transactionControllConfig: TransactionControllConfig = {
       points: points,
       calcs: calcs,
       pointPositionIndex: 0,
+      transactionStartCalcs: transactionStartCalc,
       transactionStartPoint: currentPoint,
       config: requiredConfig
     };
+    // if (drawFps <= 0 && targetPoints.length > 0) {
+    //   console.log('!!!!!', transactionControllConfig)
+    // }
     return transactionControllConfig;
   }
 
+  // setPosition(position: {x:number, y:number, z: number}, config?:{deferTransaction?:boolean}) {
+  //
+  //
+  // }
   transaction(transactionConfig: TransactionConfig) {
     // console.log('!!!!!!!!!', this.isDoneTransaction(), transactionConfig.deferTransaction);
     if (this.isDoneTransaction() && transactionConfig.deferTransaction) {
@@ -239,7 +281,9 @@ export abstract class RenderTransactionDrawObj<T = any> extends RenderDrawObj<T>
     this.color.b = this._currentTransactionControllConfig.points[this._currentTransactionControllConfig.pointPositionIndex]?.color?.b ?? this.color.b;
     this.color.a = this._currentTransactionControllConfig.points[this._currentTransactionControllConfig.pointPositionIndex]?.color?.a ?? this.color.a;
 
-    // console.log('-!!!!!!!!!!!', this);
+    // if (this._currentTransactionControllConfig.points.length === 1) {
+    //   console.log('-!!!!!!!!!!!', this.x, this.y,this.z, this._currentTransactionControllConfig);
+    // }
 
     // calcs
     Object.entries(this._currentTransactionControllConfig.calcs ?? {}).forEach(([key, value]) => {
@@ -251,8 +295,9 @@ export abstract class RenderTransactionDrawObj<T = any> extends RenderDrawObj<T>
     super.render(draw, config);
 
 
+    // if (this.syncSubLayer.name === 'normalSpin_template' || this.syncSubLayer.name === 'normalSpin_slot')
     // if (this['syncSubLayer']?.name==='normalSpin_template') {
-    //   console.log('is???Doen', this.isDoneTransaction(), this, this._currentTransactionConfig.pointPositionIndex);
+    //   console.log('is???Doen', this.isDoneTransaction(), this);
     //   if (this.isDoneTransaction()) {
     //     // debugger;
     //   }
@@ -297,8 +342,17 @@ export abstract class RenderTransactionDrawObj<T = any> extends RenderDrawObj<T>
       //
       if (this._currentTransactionControllConfig.config.animationIterationCount === 'infinite') {
         // console.log('----infinite?',targetCalcs, targetPoints);
+        // Object.entries(this._calc).forEach(([k,v]) => {
+        //   this._calc[k] = 0;
+        // })
+        // if ((this as any).syncSubLayer?.name === 'normalSpin_template' || (this as any).syncSubLayer?.name === 'normalSpin_slot'){
+        //   console.log('iiiiiiiiiiiiiiiiiiii', this._currentTransactionControllConfig.transactionStartCalcs)
+        // }
+        // Object.entries(targetCalcs).forEach(([k,v]) => v.reverse());
+        // this._calc = this._currentTransactionControllConfig.transactionStartCalcs;
         this.transaction({
           ...this._currentTransactionControllConfig.config,
+          // startCalcs: this._currentTransactionControllConfig.transactionStartCalcs,
           targetPoint: targetPoints,
           calcs: targetCalcs
         });

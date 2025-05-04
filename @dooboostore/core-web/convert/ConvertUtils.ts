@@ -5,41 +5,59 @@ export namespace ConvertUtils {
 
 
   // 에러조심  CORS: SecurityError: Failed to execute 'convertToBlob' on 'OffscreenCanvas': Tainted "OffscreenCanvas" may not be exported.
-  export const toBlob = async (imageBitmap: ImageBitmap) => {
-    const canvas = new OffscreenCanvas(imageBitmap.width, imageBitmap.height);
-    const context = canvas.getContext('2d');
-    context?.drawImage(imageBitmap, 0, 0);
-    return canvas.convertToBlob({ type: 'image/png' });
-  }
-  // 에러조심  CORS: SecurityError: Failed to execute 'convertToBlob' on 'OffscreenCanvas': Tainted "OffscreenCanvas" may not be exported.
-  export const toBlobURL = async (imageBitmap: ImageBitmap): Promise<string> => {
-    // const canvas = new OffscreenCanvas(imageBitmap.width, imageBitmap.height);
-    // const context = canvas.getContext('2d');
-    // context?.drawImage(imageBitmap, 0, 0);
-    // return canvas.convertToBlob({ type: 'image/png' });
-
-
-    // 8. 캔버스를 DOM에 추가
-    // document.body.appendChild(canvas);
-
-    const promise = new Promise<string>((resolve, reject) => {
-      // 5. 캔버스 생성
+  // export const toBlob = async (imageBitmap: ImageBitmap) => {
+  //   const canvas = new OffscreenCanvas(imageBitmap.width, imageBitmap.height);
+  //   const context = canvas.getContext('2d');
+  //   context?.drawImage(imageBitmap, 0, 0);
+  //   return canvas.convertToBlob({ type: 'image/png' });
+  // }
+  const toBlob = async (imageBitmap: ImageBitmap) => {
+      // 1. Canvas 생성 및 설정
       const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
-
       canvas.width = imageBitmap.width;
       canvas.height = imageBitmap.height;
+      const context = canvas.getContext('2d');
 
-      // 7. ImageBitmap을 크기 조절하며 그리기
-      ctx.drawImage(imageBitmap, 0, 0);
-      document.body.appendChild(canvas);
-      canvas.toBlob((blob) => {
-        const imageUrl = URL.createObjectURL(blob);
-        // resolve(imageUrl);
-        const img = new Image();
-        img.src = imageUrl;
-        document.body.appendChild(img);
-      }, 'image/png');
+      // 2. ImageBitmap을 Canvas에 그리기
+      context.drawImage(imageBitmap, 0, 0);
+
+      // 3. Canvas를 Blob으로 변환 (Promise 사용)
+      return new Promise((resolve, reject) => {
+        canvas.toBlob((blob) => {
+          if (blob) {
+            resolve(blob);
+          } else {
+            reject(new Error('Blob 생성 실패'));
+          }
+        }, 'image/png'); // 'image/png' 또는 'image/jpeg' 선택 가능
+      });
+  }
+
+
+  // 에러조심  CORS: SecurityError: Failed to execute 'convertToBlob' on 'OffscreenCanvas': Tainted "OffscreenCanvas" may not be exported.
+  export const toBlobURL = async (imageBitmap: ImageBitmap): Promise<string> => {
+    const promise = new Promise<string>((resolve, reject) => {
+      try {
+        // 5. 캔버스 생성
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+
+        canvas.width = imageBitmap.width;
+        canvas.height = imageBitmap.height;
+
+        // 7. ImageBitmap을 크기 조절하며 그리기
+        ctx.drawImage(imageBitmap, 0, 0);
+        document.body.appendChild(canvas);
+        canvas.toBlob((blob) => {
+          const imageUrl = URL.createObjectURL(blob);
+          resolve(imageUrl);
+          const img = new Image();
+          img.src = imageUrl;
+          document.body.appendChild(img);
+        }, 'image/png');
+      } catch (e) {
+        reject(e);
+      }
     });
     // 선택적으로 캔버스에서 이미지로 변환해 표시
 

@@ -3,6 +3,7 @@ import template from './checkBox.html';
 import style from './checkBox.css';
 import { OnCreateRenderDataParams } from '@dooboostore/dom-render/lifecycle/OnCreateRenderData';
 import { ComponentBase } from '../ComponentBase';
+import { OtherData } from '@dooboostore/dom-render/lifecycle/OnChangeAttrRender';
 
 export namespace CheckBox {
   export const selector = 'CheckBox';
@@ -12,6 +13,7 @@ export namespace CheckBox {
   export type WrapAttribute = {
     class?: string;
     name?: string;
+    checked?: boolean;
     on_change_checked?: (checked: boolean) => void
   }
 
@@ -29,7 +31,7 @@ export namespace CheckBox {
     public name = 'Checked';
 
     constructor() {
-      super({ onlyParentType: Wrap });
+      super({ onlyParentType: Label });
     }
   }
 
@@ -42,18 +44,19 @@ export namespace CheckBox {
     public name = 'unChecked';
 
     constructor() {
-      super({ onlyParentType: Wrap });
+      super({ onlyParentType: Label });
     }
   }
 
   @Component({
     template: template,
     styles: style,
-    selector: `${selector}.Wrap`
+    selector: `${selector}.Label`
   })
-  export class Wrap extends ComponentBase<WrapAttribute> {
+  export class Label extends ComponentBase<WrapAttribute> {
     private name = 'wrap';
     private checked = false;
+    private inputElement?: HTMLInputElement;
 
     change(checked: boolean = this.checked) {
       this.checked = checked;
@@ -77,6 +80,16 @@ export namespace CheckBox {
       this.setChildrenHidden(this.checked);
     }
 
+    onInitInputElement(element: HTMLInputElement){
+      this.inputElement = element;
+    }
+    onChangeAttrRender(name: string, val: any, other: OtherData) {
+      super.onChangeAttrRender(name, val, other);
+      if (this.inputElement && this.attribute && this.attribute?.checked !== this.checked) {
+        this.inputElement.checked = !!this.attribute.checked;
+        this.change(this.attribute.checked);
+      }
+    }
 
   }
 }

@@ -20,7 +20,7 @@ export const getAfter = (target: any, propertyKey: string): AOPOption => {
 }
 
 export const getAfters = (target: any): MetaDataPropertyAtomic<any, AOPOption>[] => {
-    return ObjectUtils.getAllProtoTypeName(target)
+    return ObjectUtils.allProtoTypeName(target)
         .map(it => new MetaDataPropertyAtomic<any, AOPOption>(target, getAfter(target, it), it))
         .filter(it => it.metaData !== undefined) || [];
 }
@@ -39,7 +39,7 @@ export const getBefore = (target: any, propertyKey: string): AOPOption => {
 }
 
 export const getBefores = (target: any): MetaDataPropertyAtomic<any, AOPOption>[] => {
-    return ObjectUtils.getAllProtoTypeName(target)
+    return ObjectUtils.allProtoTypeName(target)
         .map(it => new MetaDataPropertyAtomic<any, AOPOption>(target, getBefore(target, it), it))
         .filter(it => it.metaData !== undefined) || [];
 }
