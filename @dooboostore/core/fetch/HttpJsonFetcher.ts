@@ -14,6 +14,9 @@ export class HttpJsonResponseError<T = any> extends Error {
   public body?: T;
   public response?: Response;
 }
+export const isHttpJsonResponseError = (data: any): data is HttpJsonResponseError => {
+  return data instanceof HttpJsonResponseError;
+}
 
 export abstract class HttpJsonFetcher<C, PIPE extends { responseData?: any }> extends HttpFetcher<C, any, PIPE> {
   private updateJsonFetchConfigAndData<R, T = R>(
@@ -102,17 +105,26 @@ export abstract class HttpJsonFetcher<C, PIPE extends { responseData?: any }> ex
   }
 
   protected execute(target: HttpFetcherTarget, config?: HttpJsonFetcherConfig<C, any>): Promise<any> {
-    return super.execute(target, config).then((it: Response) => {
+    return super.execute(target, config).then((response: Response) => {
+      // fetch에 있는 content-length는 서버에서 보낸값이 0 이여도 자체적으로 따로 판단해서 0이상이 나오는경우가 있다. 그리고 서버에서주는 header값도 믿긴 어렵다.
+      // const contentLength = response.headers.get('Content-Length');
+      // const hasBody = contentLength && parseInt(contentLength, 10) > 0;
+      // console.log('hgasbody', hasBody)
       if (config?.bypassTransform) {
-        return it;
+        return response;
       }
       if (config?.executeTransform) {
-        return config.executeTransform(it);
+        return config.executeTransform(response);
       } else {
         if (config?.transformText) {
-          return it?.text();
+          return response?.text();
         } else {
-          return it?.json?.();
+          return response?.text().then(it => {
+            if ((it??'').length>0) {
+              return JSON.parse(it);
+            }
+          })
+          // return response?.json?.();
         }
       }
     });

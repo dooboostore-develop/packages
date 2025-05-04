@@ -13,6 +13,7 @@ export namespace RandomUtils {
   //   }
   //   return array;
   // };
+
   export const uniqueInts = (min: number, max: number, count: number) => {
     const result: number[] = [];
     if (count > max - min) {
@@ -27,17 +28,18 @@ export namespace RandomUtils {
     return result;
   }
 
+
  export const chance = (percentage: number): boolean => {
    if (percentage < 0 || percentage > 1) {
      throw new Error('Percentage must be between 0 and 1');
    }
    return Math.random() < percentage;
  };
-
-
+  // max는 포함하지 않음
   export const int = (min?: number, max?: number) => {
     return Math.floor(RandomUtils.decimal(min, max));
   }
+
   // ex) 0,5   0~<5   <5는 포함하지 않습니다.   소수점포함
   export const decimal = (min?: number, max?: number) => {
     if (ValidUtils.isNullOrUndefined(min)) {
@@ -56,6 +58,7 @@ export namespace RandomUtils {
       return v.toString(16);
     });
   };
+
 
   export const uuid4 = (): string => {
     // // return uuid of form xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx
@@ -83,7 +86,6 @@ export namespace RandomUtils {
     return uuid;
   };
 
-
   export const hex = (): string => {
     const letters = '0123456789ABCDEF'.split('');
     let hex = '';
@@ -92,6 +94,7 @@ export namespace RandomUtils {
     }
     return hex;
   };
+
 
   export const rgb = (): string => {
     const letters = '0123456789ABCDEF'.split('');
@@ -102,7 +105,6 @@ export namespace RandomUtils {
     return color;
   };
 
-
   export const rgba = (): string => {
     const letters = '0123456789ABCDEF'.split('');
     let color = '#';
@@ -111,8 +113,8 @@ export namespace RandomUtils {
     }
     return color;
   };
-
   // (Math.random().toString(36)+'00000000000000000').slice(2, 10) + Date.now()
+
   export const alphabet = (len: number): string => {
     const letters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
     let color = '';
@@ -121,9 +123,4 @@ export namespace RandomUtils {
     }
     return color;
   };
-
-  export const pick = <T>(array: T[], config?:{}): T => {
-    return array[Math.floor(Math.random() * array.length)];
-  }
-
 }

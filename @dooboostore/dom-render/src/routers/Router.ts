@@ -1,6 +1,8 @@
 import { DomRenderProxy } from '../DomRenderProxy';
 import { EventManager } from '../events/EventManager';
 import { ConvertUtils } from '@dooboostore/core/convert/ConvertUtils';
+import ToURLSearchParamsParams = ConvertUtils.ToURLSearchParamsParams;
+import { Expression } from '@dooboostore/core/expression/Expression';
 // import { ConvertUtils } from '@dooboostore/core-web/convert/ConvertUtils';
 export type RouteData = {
   path: string;
@@ -11,9 +13,9 @@ export type RouteData = {
 }
 export type RouterConfig<T = any> = { rootObject?: T, window: Window, disableAttach?: boolean };
 
-export abstract class Router {
+export abstract class Router<T=any> {
   private attachCallbacks = new Set<(routeData: RouteData) => void>();
-  private _config: RouterConfig<any>;
+  private _config: RouterConfig<T>;
 
   get searchParamObject() {
     return ConvertUtils.toObject(this.getSearchParams());
@@ -32,16 +34,19 @@ export abstract class Router {
   public getSearchFirstParamsObject<T = any>()  {
     return ConvertUtils.toObject<T>(this.getSearchParams(),{firstValue: true});
   }
+  public getHashSearchFirstParamsObject<T = any>()  {
+    return ConvertUtils.toObject<T>(this.getHashSearchParams(),{firstValue: true});
+  }
 
   addAttachCallback(callback: (routeData: RouteData) => void) {
     this.attachCallbacks.add(callback);
   }
 
-  attach(): void {
+  async attach(): Promise<void> {
     const proxy = (this.config.rootObject as any)._DomRender_proxy as DomRenderProxy<any>;
     if (proxy) {
       const key = `___${EventManager.ROUTER_VARNAME}`;
-      proxy.render(key);
+      await proxy.render(key);
     }
     this.attachCallbacks.forEach(it => {
       it(this.getRouteData());
@@ -98,49 +103,28 @@ export abstract class Router {
   }
 
   getPathData(urlExpression: string, currentUrl = this.getPath()): any {
-    const urls = currentUrl.split('?')[0].split('/');
-    const urlExpressions = urlExpression.split('/');
-    if (urls.length !== urlExpressions.length) {
-      return;
-    }
-    const data: { [name: string]: string } = {};
-    for (let i = 0; i < urlExpressions.length; i++) {
-      const it = urlExpressions[i];
-      // it = regexpMap.get(it) ?? it;
-
-      const urlit = urls[i];
-      // ex) {serialNo:[0-9]+} or {no}  ..
-      const execResult = /^\{(.+)\}$/g.exec(it);
-      if (!execResult) {
-        if (it !== urlit) {
-          return;
-        }
-        continue;
-      }
-      // regex check
-      const [name, regex] = execResult[1].split(':'); // group1
-      const regExp = RegExp(regex);
-      if (regex && !regExp.test(urlit)) {
-        return;
-      }
-      data[name] = urlit;
-    }
-    return data;
+    return Expression.Path.pathNameData(currentUrl, urlExpression);
   }
 
-  go(config: { path: string, data?: any, expression?: string, title?: string, disabledPopEvent?: boolean }): void {
+  async go(config: { path: string, data?: any, expression?: string, title?: string, disabledPopEvent?: boolean }): Promise<void> {
     this.set(config.path, config.data, config.title);
     if (!this.config.disableAttach) {
-      this.attach();
+      await this.attach();
     }
     if (!config.disabledPopEvent) {
       this.dispatchPopStateEvent();
     }
   }
 
-  abstract set(path: string, data?: any, title?: string): void;
+  abstract set(path: string | {path?: string, searchParams: ToURLSearchParamsParams}, data?: any, title?: string): void;
+
+  abstract setDeleteSearchParam(name: string, data?: any, title?: string): void;
+
+  abstract setAddSearchParam(name: string, value: string, data?: any, title?: string): void;
 
   abstract getSearchParams(): URLSearchParams;
+
+  abstract getHashSearchParams(): URLSearchParams;
 
   abstract getUrl(): string;
 

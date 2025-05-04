@@ -241,5 +241,12 @@ export type MethodOnlyFieldPerFix<T, S extends string> = {
   [key in keyof T as `${S}${string & key}`]: T[key] extends (...args: any[]) => any ? T[key] : never;
 };
 // export const isDefined = <T>(value: T | undefined | null): value is T => value !== undefined && value !== null;
-export const isDefined = <T>(value: T | undefined | null): value is NonNullable<T> => value !== undefined && value !== null;
+// export const isDefined = <T>(value: T | undefined | null): value is NonNullable<T> => value !== undefined && value !== null;
+export const isDefined = <T>(value: T | undefined | null): value is T => value !== undefined && value !== null;
+/*
+declare type ClassDecorator = <TFunction extends Function>(target: TFunction) => TFunction | void;
+declare type PropertyDecorator = (target: Object, propertyKey: string | symbol) => void;
+declare type MethodDecorator = <T>(target: Object, propertyKey: string | symbol, descriptor: TypedPropertyDescriptor<T>) => TypedPropertyDescriptor<T> | void;
+declare type ParameterDecorator = (target: Object, propertyKey: string | symbol, parameterIndex: number) => void;
+ */
 export {};

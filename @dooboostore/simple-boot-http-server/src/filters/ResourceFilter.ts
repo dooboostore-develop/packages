@@ -27,7 +27,7 @@ export class ResourceFilter implements Filter {
         for (const it of regExps) {
             const resourcePath = path.join(this.resourceDistPath, urlObj.pathname); // url.replace(it, '')
             sw = false;
-            console.log('-----', resourcePath);
+            // console.log('-----', resourcePath);
             if (fs.existsSync(resourcePath)) {
                 // const header = {} as any;
                 // header[HttpHeaders.ContentType] = mime.lookup(resourcePath);
@@ -39,6 +39,7 @@ export class ResourceFilter implements Filter {
             } else {
                 rr.resStatusCode(HttpStatus.NotFound)
                 await rr.resEnd();
+                break;
             }
             sw = false;
         }

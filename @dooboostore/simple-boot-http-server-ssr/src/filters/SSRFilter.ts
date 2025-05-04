@@ -12,6 +12,8 @@ import {SimpleBootFront} from '@dooboostore/simple-boot-front/SimpleBootFront';
 import {AsyncBlockingQueue} from '@dooboostore/simple-boot/queues/AsyncBlockingQueue';
 import {RandomUtils} from '@dooboostore/core/random/RandomUtils';
 import * as JSDOM from 'jsdom';
+import { Expression } from '@dooboostore/core/expression/Expression';
+import { NotFoundError } from '@dooboostore/simple-boot-http-server/errors/NotFoundError';
 
 export type FactoryAndParams = {
     frontDistPath: string;
@@ -100,9 +102,21 @@ export class SSRFilter implements Filter {
                 (simpleBootFront.option.window as any).ssrUse = true;
                 delete (simpleBootFront.option.window as any).server_side_data;
 
+
+                const url = rr.reqUrlObj({host:'localhost'});
+                // intent router check first
+                const intent = await simpleBootFront.getIntent(url.pathname);
+                // route를 못찾은상태에서 router path까지 안맞으면 404 처리한다.  route랑 router랑 다르니깐 헛갈리지말도록
+                if (intent.module === undefined && (!Expression.Path.pathNameData(rr.reqUrlPathName, intent.getRouterPath()))) {
+                    throw new NotFoundError({message:`Not Found: ${rr.reqUrlPathName}`});
+                }
+
                 // runRouting!!
-                await simpleBootFront.goRouting(rr.reqUrl);
+                await simpleBootFront.goRouting(url.toString());
+                // console.log('------intent', intent)
                 await new Promise((r)=> setTimeout(r, 0)); // <--중요: 이거 넣어야지 두번불러지는게 없어지는듯? 뭐지 event loop 변경된건가?
+                // const e = Expression.Path.pathNameData(rr.reqUrlPathName, intent.getRouterPath())
+                // console.log('------intent', rr.reqUrl, rr.reqUrlPathName, intent.module, intent.getRouterPath(), e)
                 let html = simpleBootFront.option.window.document.documentElement.outerHTML;
                 const serverSideData = (simpleBootFront.option.window as any).server_side_data;
                 if (serverSideData) {

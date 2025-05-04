@@ -134,6 +134,63 @@ class User implements OnSimCreate {
 </details>
 
 
+## OnSimCreateCompleted
+Sim Proxy after Completed callBack proxy this
+```typescript
+
+@Sim({
+  symbol: AuthService.SYMBOL,
+  proxy:SymbolIntentApiServiceProxy
+})
+export class FrontAuthService implements AuthService, OnSimCreate, OnSimCreateCompleted<FrontAuthService> {
+
+  constructor(
+          private apiService: ApiService,
+          private authStore: AuthStore
+  ) {
+  }
+
+  async my(data?: ((config?: Config) => Promise<AuthService.MyResponse>)): Promise<AuthService.MyResponse> {
+    return data!();
+  }
+
+  resetPassword(request: AuthService.ResetPasswordRequest, data?: (config: Config<AuthService.ResetPasswordRequest> ) => Promise<void>): Promise<void> {
+    return data!({body: request});
+  }
+
+  async sign(request: AuthService.SignRequest, data?: (config: Config<AuthService.SignRequest>) => Promise<AuthService.SignResponse>): Promise<AuthService.SignResponse> {
+    return data!({body:request});
+  }
+
+  async signOut(data: (config?: Config<void>) => Promise<void>): Promise<void> {
+    return data!();
+  }
+
+  onSimCreate() {
+  }
+
+  onSimCreateProxyCompleted(currentThis: FrontAuthService): void {
+    if (ValidUtils.isBrowser()) {
+      const myFetch = () => {
+        currentThis.my().then(it => {
+          currentThis.authStore.publish(it);
+        })
+      }
+      myFetch();
+      currentThis.apiService.observable.pipe(filter(isStoreAfterFetch)).subscribe(it =>{
+        // console.log('------->',it.fetch.target, it.response.headers.get('Authorization'))
+        if (it.response.status === HttpStatus.Ok && it.response.headers.get('Authorization')) {
+          myFetch();
+        } else if (it.response.status === HttpStatus.Unauthorized) {
+          currentThis.authStore.publish(undefined);
+        }
+      })
+    }
+  }
+
+}
+```
+
 
 
 

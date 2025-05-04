@@ -17,15 +17,19 @@ export enum Lifecycle {
 export const sims = new Map<ConstructorType<any> | Function, Set<ConstructorType<any> | Function>>();
 export const containers = new Set<SimpleApplication>();
 
+
+export type SimConfigProxy = ((ProxyHandler<any> | ConstructorType<any> | Function)) | (ProxyHandler<any> | ConstructorType<any> | Function)[];
+export type SimConfigUsing = (ConstructorType<any> | Function | object) | ((ConstructorType<any> | Function | object)[]);
+
 export interface SimConfig {
   symbol?: Symbol | (Symbol[]);
   scheme?: string | (string[]);
   scope?: Lifecycle;
   container?: string | (string[]);
   autoCreate?: boolean;
-  proxy?: ((ProxyHandler<any> | ConstructorType<any> | Function)) | (ProxyHandler<any> | ConstructorType<any> | Function)[];
+  proxy?: SimConfigProxy;
   type?: (ConstructorType<any> | Function) | (ConstructorType<any> | Function)[];
-  using?: (ConstructorType<any> | Function | object) | ((ConstructorType<any> | Function | object)[]);
+  using?: SimConfigUsing;
 }
 
 export const SimMetadataKey = Symbol('Sim');

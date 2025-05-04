@@ -1,6 +1,29 @@
 import { Subscription } from '../message/Subscription';
+import { ConstructorType } from '../types';
+import { ValidUtils } from '../valid/ValidUtils';
 
 export namespace Promises {
+  export const filterCatch = async (promise: Promise<any>, has: ConstructorType<any> | ((e: any) => boolean) | ((ConstructorType<any> | ((e: any) => void))[])) => {
+    try {
+      await promise;
+      return undefined;
+    } catch (e) {
+      const targetHas = Array.isArray(has) ? has : [has]
+      for (let ha of targetHas) {
+        if (ValidUtils.isConstructor(ha)) {
+          if (e instanceof ha) {
+            return e;
+          }
+        } else {
+          if ((ha as Function)(e)) {
+            return e;
+          }
+        }
+      }
+      throw e;
+    }
+    return undefined;
+  }
   export const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
   export const sleepReject = (ms: number) => new Promise((resolve, reject) => setTimeout(reject, ms));
   export const settle = async <T, E = unknown>(promise: Promise<T>): Promise<Promises.SettledResult<T, E>> => {
@@ -14,11 +37,12 @@ export namespace Promises {
     | (Omit<PromiseRejectedResult, 'reason'> & { reason: E });
 
   export const loopGapDelay = <T>(config: {
-    factory: (config: {age:number}) => Promise<T>,
-    then?: (data: T, config:{age: number})=> void,
-    catch?: (e: any, config:{age: number})=> void,
-    delayThen?: (config:{age: number, isCatch: boolean, data?: T}) => void,
-    delay?: number, afterDelay?: number}
+                                    factory: (config: { age: number }) => Promise<T>,
+                                    then?: (data: T, config: { age: number }) => void,
+                                    catch?: (e: any, config: { age: number }) => void,
+                                    delayThen?: (config: { age: number, isCatch: boolean, data?: T }) => void,
+                                    delay?: number, afterDelay?: number
+                                  }
   ): Subscription => {
     let stop = false;
     let age = 0;
@@ -28,16 +52,16 @@ export namespace Promises {
       let t: T;
       let isCatch = false;
       try {
-         t = await config.factory(executeConfig);
+        t = await config.factory(executeConfig);
         config.then?.(t, executeConfig);
-      } catch(e) {
+      } catch (e) {
         isCatch = true;
         config.catch?.(e, executeConfig);
       }
       await sleep(config.afterDelay ?? 0);
       config.delayThen?.({...executeConfig, isCatch: isCatch, data: t});
       if (!stop)
-      return loop();
+        return loop();
     };
 
     setTimeout(() => {
@@ -94,16 +118,16 @@ export namespace Promises {
     })
       .then(data => {
         promiseData = data;
-        config?.then?.(data, { before: before });
+        config?.then?.(data, {before: before});
       })
       .catch(e => {
-        config?.catch?.(e, { before: before, after: after });
+        config?.catch?.(e, {before: before, after: after});
         if (!config?.disabledCatchThrow) {
           throw e;
         }
       })
       .finally(() => {
-        config?.finally?.({ before: before, after: after, data: promiseData });
+        config?.finally?.({before: before, after: after, data: promiseData});
       });
   };
 
@@ -116,7 +140,7 @@ export namespace Promises {
       reject = rej;
     });
 
-    return { promise, resolve, reject };
+    return {promise, resolve, reject};
   }
 
 
@@ -131,16 +155,50 @@ export namespace Promises {
     type PendingState = PendingType & { isFulfilled: false; isRejected: false; isPending: true };
     type UndefinedResultState = { status?: undefined; isFulfilled: false; isRejected: false; isPending: false };
     export type State<T, E = unknown> = FulfilledState<T> | RejectState<E> | PendingState;
+    export type StateFactory<T, E = unknown> = State<T, E> & { factory: () => StateFactory<T, E> };
+    export type PromiseState<T, E = unknown> = State<T, E> & Promise<T>;
+    export type PromiseStateFactory<T, E = unknown> = PromiseState<T, E> & { factory: () => PromiseStateFactory<T, E> };
 
-    export const awaitWrap = async <T, E = unknown>(
-      promise: Promise<T>
-    ): Promise<Promises.Result.State<T, E> & Promise<T>> => {
-      const data = wrap<T, E>(promise);
-      const result = await data;
-      return data;
-    };
-    export const wrap = <T, E = unknown>(promise: Promise<T>) => {
-      const promiseResult = promise as State<T, E> & Promise<T>;
+
+    export async function awaitWrap<T, E = unknown>(promise: Promise<T>): Promise<State<T, E>>;
+    export async function awaitWrap<T, E = unknown>(promise: () => Promise<T>): Promise<StateFactory<T, E>>;
+    export async function awaitWrap<T, E = unknown>(promise: Promise<T> | (()=>Promise<T>)): Promise<State<T, E> | StateFactory<T, E>> {
+      const data = typeof promise === 'function' ? wrap<T, E>(promise) : wrap<T, E>(promise);
+      // try {
+
+      try {
+        await data;
+      }catch (e) {
+      }
+
+      const rData = {
+        status: (data as any).status,
+        isFulfilled: (data as any).isFulfilled,
+        isRejected: (data as any).isRejected,
+        isPending: (data as any).isPending,
+        value: (data as any).value,
+        reason: (data as any).reason,
+      } as any;
+      if (typeof promise === 'function') {
+        rData.factory = () => {
+          return awaitWrap(promise);
+        }
+        return rData;
+      } else {
+        return rData;
+      }
+    }
+
+    export function wrap<T, E = unknown>(promise: Promise<T>): PromiseState<T, E>;
+    export function wrap<T, E = unknown>(promise: () => Promise<T>): PromiseStateFactory<T, E>;
+    export function wrap<T, E = unknown>(promise: Promise<T> | (() => Promise<T>)): (PromiseState<T, E>) | PromiseStateFactory<T, E> {
+      const promiseResult = (typeof promise === 'function' ? promise() : promise) as State<T, E> & Promise<T>;
+      if (typeof promise === 'function') {
+        const p = promiseResult as unknown as PromiseStateFactory<T, E> & Promise<T>;
+        p.factory = () => {
+          return wrap(promise);
+        }
+      }
       if (promiseResult.status === undefined) {
         const p = promiseResult as unknown as PendingState & Promise<T>;
         p.status = 'pending';
@@ -149,6 +207,7 @@ export namespace Promises {
         p.isRejected = false;
         p.then(
           result => {
+            console.log('result??',result)
             const p = promiseResult as unknown as FulfilledState<T>;
             p.status = 'fulfilled';
             p.isFulfilled = true;
@@ -157,6 +216,7 @@ export namespace Promises {
             p.value = result;
           },
           reason => {
+            console.log('rejet??',reason)
             const p = promiseResult as unknown as RejectState<E>;
             p.status = 'rejected';
             p.isFulfilled = false;
@@ -165,10 +225,8 @@ export namespace Promises {
             p.reason = reason;
           }
         );
-        return promiseResult;
-      } else {
-        return promiseResult;
       }
-    };
+      return promiseResult;
+    }
   }
 }

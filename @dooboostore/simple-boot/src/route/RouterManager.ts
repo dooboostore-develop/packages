@@ -7,6 +7,7 @@ import { SimstanceManager } from '../simstance/SimstanceManager';
 import { getOnRoute, onRoutes } from '../decorators/route/OnRoute';
 import { RouteFilter } from './RouteFilter';
 import { Sim } from '../decorators/SimDecorator';
+import { Expression } from '@dooboostore/core/expression/Expression';
 
 @Sim
 export class RouterManager {
@@ -126,6 +127,7 @@ export class RouterManager {
 
       const routerStrings = parentRouters.slice(1).map(it => it.getConfig<RouterConfig>(RouterMetadataKey)?.path || '');
       const isRoot = this.isRootUrl(routerConfig.path, routerStrings, path)
+      // console.log('----------routerConfig.path', routerConfig.path, 'isRoot', isRoot, 'routerStrings', routerStrings, 'path', path);
       if (isRoot) {
         parentRouters.push(router);
         // first find child routers
@@ -150,10 +152,17 @@ export class RouterManager {
   }
 
   private isRootUrl(path: string | undefined, parentRoots: string[], url: string): boolean {
-    return url.startsWith(parentRoots.join('') + (path || ''))
+    const searchString = parentRoots.join('') + (path || '');
+    const searchs  = searchString.split('/')
+    const urls = url.split('/')
+    const trimmedUrls = urls.slice(0, searchs.length).join('/');
+    // console.log('!!searchString', searchString, 'url', trimmedUrls);
+    return !!Expression.Path.pathNameData(trimmedUrls, searchString);
+    // return url.startsWith(searchString)
   }
 
   private findRouting(router: SimAtomic, routerData: RouterConfig, parentRoots: string[], intent: Intent): RouterModule | undefined {
+    // console.log('findRouting', routerData.route);
     const urlRoot = parentRoots.join('') + routerData.path
     if (routerData.route) {
       for (const it of Object.keys(routerData.route).filter(it => !it.startsWith('_'))) {
