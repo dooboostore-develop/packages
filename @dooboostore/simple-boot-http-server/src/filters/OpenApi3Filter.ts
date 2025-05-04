@@ -125,7 +125,7 @@ export class OpenApi3Filter implements Filter {
     }
     async onInit(app: SimpleBootHttpServer){
     }
-    async before(rr: RequestResponse, app: SimpleBootHttpServer) {
+    async proceedBefore({rr, app}: {rr: RequestResponse, app: SimpleBootHttpServer, carrier: Map<string, any>}) {
         if (rr.reqUrl === this.config.path) {
             const map = app.routerManager.routingMap();
             // let routers = app.simstanceManager.getSimAtomics().filter((it: SimAtomic) => it.getConfig(RouterMetadataKey));
@@ -152,7 +152,7 @@ export class OpenApi3Filter implements Filter {
         return true;
     }
 
-    async after(rr: RequestResponse, app: SimpleBootHttpServer) {
+    async proceedAfter({rr, app}: {rr: RequestResponse, app: SimpleBootHttpServer, carrier: Map<string, any>}) {
         return true;
     }
 }

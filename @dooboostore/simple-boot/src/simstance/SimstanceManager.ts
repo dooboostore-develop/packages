@@ -1,5 +1,5 @@
 import 'reflect-metadata'
-import { ConstructorType } from '@dooboostore/core/types';
+import { ConstructorType, isDefined } from '@dooboostore/core/types';
 import { SimNoSuch } from '../throwable/SimNoSuch'
 import { getPostConstructs, getSim, Lifecycle, sims } from '../decorators/SimDecorator';
 import { ObjectUtils } from '@dooboostore/core/object/ObjectUtils';
@@ -10,19 +10,23 @@ import { SimOption } from '../SimOption';
 import { SimProxyHandler } from '../proxy/SimProxyHandler';
 import { ConvertUtils } from '@dooboostore/core/convert/ConvertUtils';
 import { Runnable } from '@dooboostore/core/runs/Runnable';
+import { isOnSimCreate } from '../lifecycle/OnSimCreate';
+import { isOnSimCreateProxyCompleted } from '../lifecycle/OnSimCreateCompleted';
+import { SimpleApplication } from '../SimpleApplication';
 
 export type FirstCheckMaker = (obj: { target: Object, targetKey?: string | symbol }, token: ConstructorType<any>, idx: number, saveInjectConfig?: SaveInjectConfig) => any | undefined;
 export type Carrier = { newInstances: any[], depth: number };
-export class SimstanceManager implements Runnable {
+export class SimstanceManager implements Runnable<void, Map<ConstructorType<any> | Function, any>> {
   private _storage = new Map<ConstructorType<any> | Function, Map<ConstructorType<any> | Function, undefined | any>>()
   private simProxyHandler: SimProxyHandler;
   private otherInstanceSim?: Map<ConstructorType<any> | Function, any>;
 
-  constructor(private option: SimOption) {
+  constructor(private simpleApplication: SimpleApplication, private option: SimOption) {
+    this.setStoreSet(SimpleApplication, this.simpleApplication);
     this.setStoreSet(SimstanceManager, this);
     this.setStoreSet((option as any).constructor, option);
     this.setStoreSet(SimOption, option);
-    this.simProxyHandler = new SimProxyHandler(this, option);
+    this.simProxyHandler = new SimProxyHandler(this.simpleApplication,this, option);
   }
 
   get storage() {
@@ -187,7 +191,9 @@ export class SimstanceManager implements Runnable {
       // console.log('%c *************************','color: blue', registed?.type ?? targetKey ,newInstanceCarrier, newInstanceCarrier?.newInstances.length)
       // console.dir(newInstanceCarrier, {depth:10});
       // console.table(newInstanceCarrier);
-      newSim?.onSimCreate?.();
+      if (isOnSimCreate(newSim)) {
+        newSim.onSimCreate();
+      }
       // console.groupEnd();
       return newSim
     }
@@ -205,18 +211,24 @@ export class SimstanceManager implements Runnable {
     let p = this.proxy(r);
     const config = getSim(target);
     if (config?.proxy) {
-      const proxys = Array.isArray(config.proxy) ? config.proxy : [config.proxy];
+      const proxys = (Array.isArray(config.proxy) ? config.proxy : [config.proxy]).filter(isDefined);
       proxys.forEach(it => {
+        // console.log('proxy-----------------', p)
         if (typeof it === 'object') {
           p = new Proxy(p, it);
         } else {
-          p = new Proxy(p, this.getOrNewSim({target: it}));
+          const simConfig = getSim(it);
+          p = new Proxy(p, simConfig ? this.getOrNewSim({target: it}) : this.newSim({target: it}));
         }
+        // console.log('proxy-pp----------------', p)
       })
     }
     newInstanceCarrier?.newInstances.push(p);
     // 순환참조 막기위한 콜백 처리
     simCreateAfter?.(p);
+    if (isOnSimCreateProxyCompleted(p)) {
+      p.onSimCreateProxyCompleted(p);
+    }
     // this.callBindPostConstruct(p);
     return p;
   }
@@ -355,7 +367,7 @@ export class SimstanceManager implements Runnable {
       }
 
       // function apply proxy
-      const protoTypeName = ObjectUtils.getOwnPropertyNames(target);
+      const protoTypeName = ObjectUtils.ownPropertyNames(target);
       protoTypeName.filter(it => typeof (target as any)[it] === 'function').forEach(it => {
         (target as any)[it] = new Proxy((target as any)[it], this.simProxyHandler!);
       });
@@ -405,7 +417,7 @@ export class SimstanceManager implements Runnable {
     // auto start run
     this.getSimAtomics().forEach(it => {
       if (it.getConfig()?.autoCreate) {
-        console.log('autoStart---?', it.type);
+        // console.log('autoStart---?', it.type);
         it.getValue();
       }
     })

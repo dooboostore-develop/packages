@@ -9,9 +9,11 @@ import {HttpStatus} from '@dooboostore/simple-boot-http-server/codes/HttpStatus'
 import {SimpleBootHttpServer} from '@dooboostore/simple-boot-http-server/SimpleBootHttpServer';
 import {SimFrontOption} from '@dooboostore/simple-boot-front/option/SimFrontOption';
 import {SimpleBootFront} from '@dooboostore/simple-boot-front/SimpleBootFront';
-import {AsyncBlockingQueue} from '@dooboostore/simple-boot/queues/AsyncBlockingQueue';
+import {AsyncBlockingQueue} from '@dooboostore/core/queues/AsyncBlockingQueue';
 import {RandomUtils} from '@dooboostore/core/random/RandomUtils';
 import * as JSDOM from 'jsdom';
+import { Expression } from '@dooboostore/core/expression/Expression';
+import { NotFoundError } from '@dooboostore/simple-boot-http-server/errors/NotFoundError';
 
 export type FactoryAndParams = {
     frontDistPath: string;
@@ -25,19 +27,22 @@ export type FactoryAndParams = {
     using: ConstructorType<any>[];
     domExcludes: ConstructorType<any>[];
     ssrExcludeFilter?: (rr: RequestResponse) => boolean;
+    simpleBootFront?: {
+        notFoundError?: boolean;
+    }
 }
 export class SSRFilter implements Filter {
     private simpleBootFrontPool: SimpleBootFront[] = [];
     private simpleBootFrontQueue = new AsyncBlockingQueue<SimpleBootFront>();
     private indexHTML: string;
     private welcomUrl = 'http://localhost'
-    constructor(public factory: FactoryAndParams, public otherInstanceSim?: Map<ConstructorType<any>, any>) {
-        factory.frontDistIndexFileName = factory.frontDistIndexFileName || 'index.html';
-        this.indexHTML = JsdomInitializer.loadFile(this.factory.frontDistPath, factory.frontDistIndexFileName);
+    constructor(public config: FactoryAndParams, public otherInstanceSim?: Map<ConstructorType<any>, any>) {
+        config.frontDistIndexFileName = config.frontDistIndexFileName || 'index.html';
+        this.indexHTML = JsdomInitializer.loadFile(this.config.frontDistPath, config.frontDistIndexFileName);
     }
 
     async onInit(app: SimpleBootHttpServer) {
-        for (let i = 0; i < this.factory.poolOption.min; i++) {
+        for (let i = 0; i < this.config.poolOption.min; i++) {
             await this.pushQueue()
         }
         // console.log('SimpleBootHttpSSRFactory init success ', + this.simpleBootFrontPool.length)
@@ -54,7 +59,7 @@ export class SSRFilter implements Filter {
     // }
 
     async makeJsdom() {
-        const jsdom = await new JsdomInitializer(this.factory.frontDistPath, this.factory.frontDistIndexFileName || 'index.html', {url: this.welcomUrl}).run();
+        const jsdom = await new JsdomInitializer(this.config.frontDistPath, this.config.frontDistIndexFileName || 'index.html', {url: this.welcomUrl}).run();
         return jsdom;
     }
 
@@ -63,8 +68,8 @@ export class SSRFilter implements Filter {
         // const jsdom = await this.makeJsdom();
         const window = jsdom.window as unknown as Window & typeof globalThis;
         (window as any).ssrUse = false;
-        const option = this.factory.factorySimFrontOption(window);
-        const simpleBootFront = await this.factory.factory.create(option, this.factory.using, this.factory.domExcludes);
+        const option = this.config.factorySimFrontOption(window);
+        const simpleBootFront = await this.config.factory.create(option, this.config.using, this.config.domExcludes);
         simpleBootFront.run(this.otherInstanceSim);
         (simpleBootFront as any).jsdom = jsdom;
         return simpleBootFront;
@@ -81,13 +86,13 @@ export class SSRFilter implements Filter {
     //         this.simpleBootFrontPool.delete(destorFront.option.name!);
     //     }
     async pushQueue() {
-        if (this.simpleBootFrontPool.length < this.factory.poolOption.max) {
+        if (this.simpleBootFrontPool.length < this.config.poolOption.max) {
             this.enqueueFrontApp(await this.makeFront(await this.makeJsdom()));
         }
     }
 
-    async before(rr: RequestResponse) {
-        if (this.factory.ssrExcludeFilter?.(rr)) {
+    async proceedBefore({rr, app}: {rr: RequestResponse, app: SimpleBootHttpServer, carrier: Map<string, any>}) {
+        if (this.config.ssrExcludeFilter?.(rr)) {
             return false;
         }
         if ((rr.reqHasAcceptHeader(Mimes.TextHtml) || rr.reqHasAcceptHeader(Mimes.All))) {
@@ -100,9 +105,23 @@ export class SSRFilter implements Filter {
                 (simpleBootFront.option.window as any).ssrUse = true;
                 delete (simpleBootFront.option.window as any).server_side_data;
 
+
+                const url = rr.reqUrlObj({host: 'localhost'});
+                if (this.config.simpleBootFront?.notFoundError) {
+                    // intent router check first
+                    const intent = await simpleBootFront.getIntent(url.pathname);
+                    // route를 못찾은상태에서 router path까지 안맞으면 404 처리한다.  route랑 router랑 다르니깐 헛갈리지말도록
+                    if (intent.module === undefined && (!intent.getRouterPathData(rr.reqUrlPathName))) {
+                        throw new NotFoundError({message: `Not Found: ${rr.reqUrlPathName}`});
+                    }
+                }
+
                 // runRouting!!
-                await simpleBootFront.goRouting(rr.reqUrl);
+                 simpleBootFront.goRouting(url.toString());
+                // console.log('------intent', intent)
                 await new Promise((r)=> setTimeout(r, 0)); // <--중요: 이거 넣어야지 두번불러지는게 없어지는듯? 뭐지 event loop 변경된건가?
+                // const e = Expression.Path.pathNameData(rr.reqUrlPathName, intent.getRouterPath())
+                // console.log('------intent', rr.reqUrl, rr.reqUrlPathName, intent.module, intent.getRouterPath(), e)
                 let html = simpleBootFront.option.window.document.documentElement.outerHTML;
                 const serverSideData = (simpleBootFront.option.window as any).server_side_data;
                 if (serverSideData) {
@@ -218,9 +237,9 @@ export class SSRFilter implements Filter {
         await rr.resEnd(html);
     }
 
-    async after(rr: RequestResponse, app: SimpleBootHttpServer, sw: boolean) {
+    async proceedAfter({rr, app}: {rr: RequestResponse, app: SimpleBootHttpServer, carrier: Map<string, any>}) {
         // console.log('done--------', sw)
-        return sw;
+        return true;
     }
 
 }

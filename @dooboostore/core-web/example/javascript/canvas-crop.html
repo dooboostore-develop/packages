@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Canvas Crop and Scale</title>
+    <style>
+        body { margin: 0; overflow: hidden; display: flex; justify-content: center; align-items: center; min-height: 100vh; background-color: #f0f0f0; }
+        canvas { border: 1px solid #ccc; background-color: #fff; }
+    </style>
+</head>
+<body>
+    <canvas id="myCanvas" width="800" height="400"></canvas>
+
+    <script>
+        const canvas = document.getElementById('myCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Function to draw a stick figure
+        function drawStickFigure(context, x, y, scale = 1) {
+            context.save();
+            context.translate(x, y);
+            context.scale(scale, scale);
+
+            context.strokeStyle = 'black';
+            context.lineWidth = 2;
+
+            // Head
+            context.beginPath();
+            context.arc(50, 30, 20, 0, Math.PI * 2);
+            context.stroke();
+
+            // Body
+            context.beginPath();
+            context.moveTo(50, 50);
+            context.lineTo(50, 100);
+            context.stroke();
+
+            // Arms
+            context.beginPath();
+            context.moveTo(50, 60);
+            context.lineTo(20, 80);
+            context.moveTo(50, 60);
+            context.lineTo(80, 80);
+            context.stroke();
+
+            // Legs
+            context.beginPath();
+            context.moveTo(50, 100);
+            context.lineTo(30, 140);
+            context.moveTo(50, 100);
+            context.lineTo(70, 140);
+            context.stroke();
+
+            context.restore();
+        }
+
+        // Define the area where the stick figure will be drawn (source area)
+        const sourceArea = {
+            x: 50,
+            y: 50,
+            width: 100,
+            height: 150
+        };
+
+        // Draw the stick figure in the source area
+        ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear canvas
+        drawStickFigure(ctx, sourceArea.x, sourceArea.y);
+
+        // Draw a rectangle around the source area for visualization
+        ctx.strokeStyle = 'blue';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(sourceArea.x, sourceArea.y, sourceArea.width, sourceArea.height);
+
+        // Define the destination area (next to the original, scaled by 2x)
+        const destinationArea = {
+            x: sourceArea.x + sourceArea.width + 50, // 50px margin
+            y: sourceArea.y,
+            scale: 2 // Scale factor
+        };
+
+        // Draw the stick figure again in the destination area with 2x scale
+        drawStickFigure(ctx, destinationArea.x, destinationArea.y, destinationArea.scale);
+
+        // Draw a rectangle around the destination area for visualization
+        ctx.strokeStyle = 'red';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(destinationArea.x, destinationArea.y, sourceArea.width * destinationArea.scale, sourceArea.height * destinationArea.scale);
+
+    </script>
+</body>
+</html>

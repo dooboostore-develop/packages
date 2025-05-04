@@ -6,7 +6,8 @@ import { HttpHeaders } from '../codes/HttpHeaders';
 export type CrossDomainHeaderEndPointConfig = {
     accessControlAllowOrigin?: string | string[],
     accessControlAllowMethods?: string | string[],
-    accessControlAllowHeaders?: string | string[]
+    accessControlAllowHeaders?: string | string[],
+    accessControlExposeHeaders?: string | string[]
 }
 export class CrossDomainHeaderEndPoint implements EndPoint {
     constructor(private config?: CrossDomainHeaderEndPointConfig) {
@@ -26,6 +27,9 @@ export class CrossDomainHeaderEndPoint implements EndPoint {
         }
         if (this.config?.accessControlAllowHeaders) {
             rr.resSetHeader(HttpHeaders.AccessControlAllowHeaders, Array.isArray(this.config.accessControlAllowHeaders) ? this.config.accessControlAllowHeaders.join(', ') : this.config.accessControlAllowHeaders);
+        }
+        if (this.config?.accessControlExposeHeaders) {
+            rr.resSetHeader(HttpHeaders.AccessControlExposeHeaders, Array.isArray(this.config.accessControlExposeHeaders) ? this.config.accessControlExposeHeaders.join(', ') : this.config.accessControlExposeHeaders);
         }
     }
 

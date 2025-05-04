@@ -42,7 +42,7 @@ export function OnRoute(configOrTarget?: OnRouteOption | any, propertyKey?: stri
     // };
 }
 
-export const getOnRoute = (target: any, propertyKey: string | symbol): OnRouteOption => {
+export const getOnRoute = (target: any, propertyKey: string | symbol): OnRouteOption | undefined => {
     if (target !== null && undefined !== target && typeof target === 'object') {
         target = target.constructor;
     }

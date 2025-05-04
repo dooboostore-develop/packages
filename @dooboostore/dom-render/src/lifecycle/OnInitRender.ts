@@ -1,5 +1,7 @@
+import { RawSet } from '../rawsets/RawSet';
+
 export interface OnInitRender {
-    onInitRender(...param: any[]): void;
+    onInitRender(param: any, rawSet:RawSet): void;
 }
 
 export function isOnInitRender(obj: any): obj is OnInitRender {

@@ -19,14 +19,25 @@ export class DrAppender extends OperatorExecuterAttrRequire<string> {
                     ${this.render.bindScript}
                     ${this.elementSource.attrs.drBeforeOption ?? ''}
                         const ifWrap = document.createElement('div');
-                        ifWrap.setAttribute('${RawSet.DR_STRIP_OPTIONNAME}', 'true');
-                        ifWrap.setAttribute('${RawSet.DR_IF_NAME}', '${this.elementSource.attrs.drAppender} && ${this.elementSource.attrs.drAppender}.length > 0');
+                        // ifWrap.setAttribute('${RawSet.DR_STRIP_OPTIONNAME}', 'true');
+                        // ifWrap.setAttribute('${RawSet.DR_IF_NAME}', '${this.elementSource.attrs.drAppender} && ${this.elementSource.attrs.drAppender}.length > 0');
                         const n = this.__render.element.cloneNode(true);
                         Object.entries(this.__render.drAttr).filter(([k,v]) => k !== 'drAppender' && v).forEach(([k, v]) => n.setAttribute(this.__render.drAttrsOriginName[k], v));
-                        n.setAttribute('${RawSet.DR_FOR_OF_NAME}', '${this.elementSource.attrs.drAppender}[' + (${this.elementSource.attrs.drAppender}.length-1) + ']');
-                        n.setAttribute('${RawSet.DR_NEXT_OPTIONNAME}', '${this.elementSource.attrs.drAppender},' + ${this.elementSource.attrs.drAppender}.length);
-                        ifWrap.append(n);
-                        this.__render.fag.append(ifWrap);
+                        const length = ${this.elementSource.attrs.drAppender}.length;
+                        if (length > 0) {
+                            n.setAttribute('${RawSet.DR_FOR_OF_NAME}', '${this.elementSource.attrs.drAppender}[' + (length-1) + ']');
+                            n.setAttribute('${RawSet.DR_NEXT_OPTIONNAME}', '${this.elementSource.attrs.drAppender},' + length);
+                        } else {
+                            n.setAttribute('${RawSet.DR_FOR_OF_NAME}', '${this.elementSource.attrs.drAppender}[0]');
+                            n.setAttribute('${RawSet.DR_NEXT_OPTIONNAME}', '${this.elementSource.attrs.drAppender},' + 1);
+                        }
+                        // console.log('appender--->', Array.from(n.getAttributeNames()).map(it=>({name:it,attr: n.getAttribute(it)})));
+                        // const drOptionThis = n.getAttribute('${RawSet.DR_THIS_OPTIONNAME}');
+                        // if (drOptionThis) {
+                        // }
+                        // ifWrap.append(n);
+                        // this.__render.fag.append(ifWrap);
+                        this.__render.fag.append(n);
                     ${this.elementSource.attrs.drAfterOption ?? ''}
                     }catch(e){}
                     `, Object.assign(this.source.obj, {

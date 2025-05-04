@@ -45,7 +45,7 @@ export const Validation = (validator: Validator): ReflectField => {
     }
 }
 
-export const getValidator = (target: any, propertyKey: string): Validator => {
+export const getValidator = (target: any, propertyKey: string): Validator | undefined => {
     return ReflectUtils.getMetadata(ValidationMetadataKey, target, propertyKey);
 }
 
@@ -53,7 +53,7 @@ export const getValidators = (target: any): SaveValidator[] => {
     if (target !== null && undefined !== target && typeof target === 'object') {
         target = target.constructor;
     }
-    return ReflectUtils.getMetadata(ValidationMetadataKey, target);
+    return ReflectUtils.getMetadata(ValidationMetadataKey, target) ?? [];
 }
 
 export const Regexp = (regexp: RegExp) => {

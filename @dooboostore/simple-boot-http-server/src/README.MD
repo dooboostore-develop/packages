@@ -1,195 +1,269 @@
-SIMPLE-BOOT-HTTP-SERVER
-===
-http web server  
+# SIMPLE-BOOT-HTTP-SERVER
+
+### A lightweight and powerful HTTP web server framework for Node.js.
 ![typescript](https://img.shields.io/badge/-typescript-black?logo=typescript) [![typescript](https://img.shields.io/badge/-npm-black?logo=npm)](https://www.npmjs.com/package/simple-boot-http-server) [![license](https://img.shields.io/badge/license-MIT-green)](LICENSE.md)
 
-* URL, Method, Mapping
-* Filter
-* EndPoint
-* Advice(ExceptionHandler)
+- **Declarative Routing**: Use decorators (`@Router`, `@Route`) to map URLs to classes and methods.
+- **HTTP Method Mapping**: Decorators for all standard HTTP methods (`@GET`, `@POST`, `@PUT`, `@DELETE`, etc.).
+- **Request/Response Handling**: A unified `RequestResponse` object to manage the HTTP transaction.
+- **Middleware/Filters**: Intercept requests and responses for cross-cutting concerns like logging, authentication, or CORS.
+- **Endpoints**: Define logic to be executed at different stages of the request lifecycle (e.g., on request start, close, or error).
+- **Global Exception Handling**: Centralized error handling using `@Sim` advice classes.
+- **Session Management**: Built-in session management with customizable storage providers.
+- **HTTPS and HTTP/2 Support**: Configure the server to run over HTTPS.
 
+### Dependencies
 
-### dependencies  
-* simple-boot-core [![typescript](https://img.shields.io/badge/-npm-black?logo=npm)](https://www.npmjs.com/package/simple-boot-core) 
+- **simple-boot**: The core dependency injection and application framework.
 
+## 🚀 Quick Start
 
-## 🚀 Quick start
 ```shell
 npm init -y
-npm install simple-boot-http-server
+npm install @dooboostore/simple-boot @dooboostore/simple-boot-http-server reflect-metadata
 tsc --init --experimentalDecorators --emitDecoratorMetadata
 ```
 
 ```typescript
-import {HttpServerOption} from 'simple-boot-http-server/option/HttpServerOption';
-import {SimpleBootHttpServer} from 'simple-boot-http-server';
-import {Sim} from '@dooboostore/simple-boot/decorators/SimDecorator';
-import {Route, Router} from '@dooboostore/simple-boot/decorators/route/Router';
-import {GET} from 'simple-boot-http-server/decorators/MethodMapping';
-import {Mimes} from 'simple-boot-http-server/codes/Mimes';
-import {RequestResponse} from 'simple-boot-http-server/models/RequestResponse';
-import {ReqHeader} from 'simple-boot-http-server/models/datas/ReqHeader';
-import {RouterModule} from '@dooboostore/simple-boot/route/RouterModule';
+// index.ts
+import 'reflect-metadata';
+import { SimpleBootHttpServer, HttpServerOption, RequestResponse, GET, Mimes } from '@dooboostore/simple-boot-http-server';
+import { Sim, Router, Route, RouterModule } from '@dooboostore/simple-boot';
+import { ReqHeader } from '@dooboostore/simple-boot-http-server/models/datas/ReqHeader';
 
-@Sim() @Router({path: ''})
+@Sim
+@Router({ path: '' })
 export class AppRouter {
-    @Route({path: '/'}) @GET({res: {contentType: Mimes.ApplicationJson}})
+    @Route({ path: '/' })
+    @GET({ res: { contentType: Mimes.ApplicationJson } })
     index(rr: RequestResponse, header: ReqHeader, routerModule: RouterModule) {
-        return {name: 'visualkhh'}
+        console.log('Request from:', header['user-agent']);
+        return { message: 'Welcome to Simple Boot HTTP Server!' };
     }
 }
 
 const httpServerOption = new HttpServerOption({
     listen: {
+        port: 3000,
         listeningListener: (server, httpServer) => {
-            console.log('server on', httpServer.address());
+            const address = httpServer.address();
+            console.log(`Server is running on http://localhost:${address.port}`);
         }
     }
 });
 
-const app = new SimpleBootHttpServer(AppRouter, httpServerOption);
+const app = new SimpleBootHttpServer(httpServerOption);
 app.run();
-
-// 💥 GET /
-// {"name": "visualkhh"}
 ```
+
 ```shell
+# Run the server
 npx ts-node index.ts
-```
-```shell
-curl -XGET http://localhost:8081
-#result: {"name": "visualkhh"}
+# Server is running on http://localhost:3000
+
+# In another terminal
+curl http://localhost:3000
+# {"message":"Welcome to Simple Boot HTTP Server!"}
 ```
 
-# 😃 examples
-- [examples](./examples)
+# 😃 Examples
 
-## URL, Method, Mapping
-### URL MAPPING
-* @Route({path: '/'})
-### METHOD MAPPING
-> * @GET
-> * @POST
-> * @PATCH
-> * @OPTIONS
-> * @HEAD
-> * @TRACE
-> * @CONNECT
-> * OTHER
->   * @UrlMapping
-### Method Decorator options
+- [More examples](./examples)
+
+## URL & Method Mapping
+
+Simple Boot provides decorators for all standard HTTP methods to map incoming requests to your class methods. These are combined with `@Route` from `@dooboostore/simple-boot` to define endpoints.
+
+### Available Method Decorators
+
+-   `@GET`
+-   `@POST`
+-   `@PUT`
+-   `@DELETE`
+-   `@PATCH`
+-   `@OPTIONS`
+-   `@HEAD`
+-   `@TRACE`
+-   `@CONNECT`
+-   `@UrlMapping`: A generic decorator where you can specify the method as a string.
+
+### Example Usage
+
+```typescript
+import { Sim, Router, Route, RouterModule } from '@dooboostore/simple-boot';
+import {
+    GET, POST, PUT, DELETE,
+    Mimes,
+    RequestResponse,
+    ReqJsonBody
+} from '@dooboostore/simple-boot-http-server';
+
+@Sim
+@Router({ path: '/api/items' })
+export class ItemApi {
+
+    @Route({ path: '' })
+    @GET({ res: { contentType: Mimes.ApplicationJson } })
+    getAllItems() {
+        // Logic to get all items
+        return [{ id: 1, name: 'Item 1' }, { id: 2, name: 'Item 2' }];
+    }
+
+    @Route({ path: '/{id}' })
+    @GET({ res: { contentType: Mimes.ApplicationJson } })
+    getItemById(routerModule: RouterModule) {
+        const itemId = routerModule.pathData?.id;
+        // Logic to get item by ID
+        return { id: itemId, name: `Item ${itemId}` };
+    }
+
+    @Route({ path: '' })
+    @POST({
+        req: { contentType: [Mimes.ApplicationJson] },
+        res: { status: 201, contentType: Mimes.ApplicationJson }
+    })
+    createItem(body: ReqJsonBody) {
+        console.log('Creating new item:', body);
+        // Logic to create a new item
+        return { success: true, id: 3, ...body };
+    }
+
+    @Route({ path: '/{id}' })
+    @PUT({ req: { contentType: [Mimes.ApplicationJson] } })
+    updateItem(routerModule: RouterModule, body: ReqJsonBody) {
+        const itemId = routerModule.pathData?.id;
+        console.log(`Updating item ${itemId}:`, body);
+        // Logic to update an item
+        return { success: true, id: itemId, ...body };
+    }
+
+    @Route({ path: '/{id}' })
+    @DELETE({ res: { status: 204 } })
+    deleteItem(routerModule: RouterModule) {
+        const itemId = routerModule.pathData?.id;
+        console.log(`Deleting item ${itemId}`);
+        // Logic to delete an item
+        // No content returned for 204
+    }
+}
+```
+
+### Decorator Options
+
+The method decorators accept a `MappingConfig` object to control request and response properties.
+
 ```typescript
 export type MappingConfig = {
-    method: HttpMethod | string,
-    description?: {
-        name?: string;
-        detail?: string;
-    };
-
+    method: HttpMethod | string;
+    description?: { name?: string; detail?: string; };
     req?: {
-        contentType?: (Mimes|string)[];
-        accept?: (Mimes|string)[];
+        contentType?: (Mimes | string)[];
+        accept?: (Mimes | string)[];
     };
-
     res?: {
         status?: number;
-        header?: {[key: string]: string};
+        header?: { [key: string]: string };
         contentType?: Mimes | string;
     }
-    resolver?: Resolver|ConstructorType<Resolver>;
+    resolver?: Resolver | ConstructorType<Resolver>;
 }
-```  
+```
 
+## Filters
 
-## Filter
-return
- - true: after call chain 
- - false: after NoCall chain
+Filters allow you to intercept the request-response cycle. The `before` method runs before the route handler, and `after` runs after. Returning `false` from `before` will stop the chain.
+
 ```typescript
-export class FirstFilter implements Filter {
+import { Filter, RequestResponse, SimpleBootHttpServer } from '@dooboostore/simple-boot-http-server';
+
+export class LoggingFilter implements Filter {
     async before(rr: RequestResponse, app: SimpleBootHttpServer): Promise<boolean> {
-        console.log('filter before')
-        return true;
+        console.log(`[${new Date().toISOString()}] Received ${rr.reqMethod()} request for ${rr.reqUrl}`);
+        return true; // Continue the chain
     }
-    
+
     async after(rr: RequestResponse, app: SimpleBootHttpServer, sw: boolean): Promise<boolean> {
-        console.log('filter after')
+        console.log(`Request finished with status ${rr.resStatusCode()}`);
         return true;
-    }    
-}
-const httpServerOption = new HttpServerOption({
-    filters: [new FirstFilter()],
-    listen: {
-        listeningListener: (server, httpServer) => {
-            console.log('server on', httpServer.address());
-        }
     }
-});
+}
 
-const app = new SimpleBootHttpServer(AppRouter, httpServerOption);
-app.run();
-// 💥 CALL
-// filter before
-// filter after
+// In HttpServerOption
+const option = new HttpServerOption({
+    filters: [LoggingFilter]
+});
 ```
 
-## Advice(ExceptionHandler)
+## Global Advice & Exception Handling
+
+Define global exception handlers in an `Advice` class. This class is managed by `@Sim` and can catch errors thrown from anywhere in the application.
+
 ```typescript
-import {NotFoundError} from './NotFoundError';
+import { Sim, ExceptionHandler } from '@dooboostore/simple-boot';
+import { RequestResponse, NotFoundError } from '@dooboostore/simple-boot-http-server';
 
 @Sim
-export class Advice {
-    @ExceptionHandler({type: NotFoundError})
-    catch(rr: RequestResponse, e: any) {
-        rr.resSetHeaders({error: 'NotFound'});
-        console.log('exception--->', rr.reqUrl, e);
+export class GlobalErrorHandler {
+    @ExceptionHandler({ type: NotFoundError })
+    handleNotFound(rr: RequestResponse, e: NotFoundError) {
+        rr.resStatusCode(404).resSetHeader('X-Error-Message', 'Resource not found');
+        console.error(`Not found error for URL: ${rr.reqUrl}`, e);
+    }
+
+    @ExceptionHandler()
+    handleAll(rr: RequestResponse, e: any) {
+        console.error('An unexpected error occurred:', e);
+        // Avoid sending detailed error in production
+        rr.resStatusCode(500).resWriteJson({ error: 'Internal Server Error' });
     }
 }
 
-const httpServerOption = new HttpServerOption({
-    globalAdvice: Advice,
-    noSuchRouteEndPointMappingThrow: rr => new NotFoundError(),
-    listen: {
-        listeningListener: (server, httpServer) => {
-            console.log('server on', httpServer.address());
-        }
-    }
+// In HttpServerOption
+const option = new HttpServerOption({
+    globalAdvice: GlobalErrorHandler,
+    noSuchRouteEndPointMappingThrow: (rr) => new NotFoundError({ message: `No route for ${rr.reqUrl}` }),
 });
-
-const app = new SimpleBootHttpServer(AppRouter, httpServerOption);
-app.run();
-// 💥 CALL
-// exception---> NotFound
 ```
 
-## EndPoint
-```typescript
-@Sim
-class CloseEndPoint implements EndPoint {
-    async endPoint(rr: RequestResponse, app: SimpleBootHttpServer) {
-        console.log('close request response')
-    }
-}
-@Sim
-class ErrorEndPoint implements EndPoint {
-    async endPoint(rr: RequestResponse, app: SimpleBootHttpServer) {
-        console.log('error')
-    }
-}
-const httpServerOption = new HttpServerOption({
-    errorEndPoints: [CloseEndPoint],
-    closeEndPoints: [ErrorEndPoint],
-    listen: {
-        listeningListener: (server, httpServer) => {
-            console.log('server on', httpServer.address());
-        }
-    }
-});
+## Endpoints
 
-const app = new SimpleBootHttpServer(AppRouter, httpServerOption);
-app.run();
-// 💥 normal CALL
-// close request response
-// 💥 error
-// error
+Endpoints are hooks that run at specific points in the request lifecycle.
+
+- **`requestEndPoints`**: Run as soon as a request is received.
+- **`closeEndPoints`**: Run when the client connection is closed.
+- **`errorEndPoints`**: Run if an error occurs on the response stream.
+
+```typescript
+import { EndPoint, RequestResponse, SimpleBootHttpServer } from '@dooboostore/simple-boot-http-server';
+
+@Sim
+class ConnectionLogger implements EndPoint {
+    async endPoint(rr: RequestResponse, app: SimpleBootHttpServer) {
+        console.log(`Connection closed for ${rr.reqRemoteAddress}`);
+    }
+}
+
+// In HttpServerOption
+const option = new HttpServerOption({
+    closeEndPoints: [ConnectionLogger]
+});
+```
+
+## Session Management
+
+The server has built-in session management. It automatically creates a session ID cookie and provides a `SessionManager` to store and retrieve session data.
+
+```typescript
+import { RequestResponse } from '@dooboostore/simple-boot-http-server';
+
+// In a route handler
+async function handleSession(rr: RequestResponse) {
+    const session = await rr.reqSession();
+
+    let visitCount = session.visitCount || 0;
+    visitCount++;
+    session.visitCount = visitCount;
+
+    return { message: `You have visited ${visitCount} times.` };
+}
 ```
