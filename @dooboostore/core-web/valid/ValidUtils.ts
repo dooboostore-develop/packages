@@ -1,4 +1,7 @@
+import {ValidUtils as CoreValidUtils} from '@dooboostore/core/valid/ValidUtils';
+
 export namespace ValidUtils {
+  export const coreValidUtils = CoreValidUtils;
   export const isBrowser = (callBack?: (win: Window) => void): boolean => {
     const boolean = (typeof window !== 'undefined') && (typeof Window !== 'undefined');
     if (boolean && callBack) {

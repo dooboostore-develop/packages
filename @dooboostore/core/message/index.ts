@@ -4,6 +4,7 @@ export * from './Observable';
 export * from './Subscription';
 
 export const debounce = <T>(fn: (data: T) => void, delay: number) => {
+  // @ts-ignore
   let timer: NodeJS.Timeout | null = null;
   return (data: T) => {
     if (timer) {
@@ -17,6 +18,7 @@ export const debounce = <T>(fn: (data: T) => void, delay: number) => {
 };
 
 export const throttleTime = <Args extends [...unknown[]]>(fn: (...args: Args) => void, delay: number) => {
+  // @ts-ignore
   let timer: NodeJS.Timeout | null = null;
   return (...args: Args) => {
     if (!timer) {

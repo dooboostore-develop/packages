@@ -1,12 +1,17 @@
 import { Dictionary } from '../types';
 import { ValidUtils } from '../valid/ValidUtils';
 
-export class StringUtils {
-  public static deleteEnter(data: string) {
+export namespace StringUtils {
+  export const deleteEnter = (data: string) => {
     return data.replace(/\r?\n/g, '')
   }
 
-  public static regexExec(regex: RegExp, text: string) {
+  export const pickEmoji = (data: string) => {
+    return data.match(/[\p{Emoji}]/gu) ?? [];
+  }
+
+
+  export const regexExec = (regex: RegExp, text: string) => {
     let varExec = regex.exec(text)
     const usingVars = [];
     while (varExec) {
@@ -16,40 +21,42 @@ export class StringUtils {
     return usingVars;
   }
 
-  public static regexExecArrayReplace(origin: string, regexpExecArrayOrRegex: RegExpExecArray[] | RegExp, replace: string | ((data: RegExpExecArray) => string)) {
+  export const regexExecArrayReplace = (origin: string, regexpExecArrayOrRegex: RegExpExecArray[] | RegExp, replace: string | ((data: RegExpExecArray) => string)) => {
+    // console.log('------origin', origin ,regexpExecArrayOrRegex, replace)
     const regexpExecArrays = Array.isArray(regexpExecArrayOrRegex) ? regexpExecArrayOrRegex : StringUtils.regexExec(regexpExecArrayOrRegex, origin);
     regexpExecArrays.reverse().forEach(it => {
       const r = typeof replace === 'string' ? replace : replace(it);
       origin = origin.substr(0, it.index) + origin.substr(it.index).replace(it[0], r);
     })
+    // console.log('------origin2', origin)
     return origin;
   }
 
-
-  public static escapeSpecialCharacterRegExp(data: string) {
+  export const escapeSpecialCharacterRegExp = (data: string) => {
     return data.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
   }
 
-  public static trim = (data: string) => data.trim();
+  export const trim =  (data: string) => data.trim();
 
-  public static rsubString = (data_s: string, blen_n: number): string =>
+  export const rsubString =  (data_s: string, blen_n: number): string =>
     data_s.substring(data_s.length - blen_n, data_s.length);
-  public static lsubString = (data_s: string, alen_n: number): string => data_s.substring(0, alen_n);
 
-  public static lpad = (fill_s: string, len_n: number, full_s: string): string => {
+  export const lsubString =  (data_s: string, alen_n: number): string => data_s.substring(0, alen_n);
+
+  export const lpad =  (fill_s: string, len_n: number, full_s: string): string =>  {
     while (len_n > full_s.length) {
       full_s = fill_s + full_s;
     }
     return StringUtils.rsubString(full_s, len_n);
   };
-  public static rpad = (fill_s: string, len_n: number, full_s: string): string => {
+  export const rpad = (fill_s: string, len_n: number, full_s: string): string => {
     while (len_n > full_s.length) {
       full_s += fill_s;
     }
     return StringUtils.lsubString(full_s, len_n);
   };
 
-  public static lappend = (count_n: number, input_s: string): string => {
+  export const lappend = (count_n: number, input_s: string): string => {
     let s = '';
     let i = 0;
     while (i++ < count_n) {
@@ -59,7 +66,7 @@ export class StringUtils {
   };
 
 
-  public static unescape = (html: string): string => {
+  export const unescape =  (html: string): string => {
     if (!html) return '';
 
     const htmlEntity: Dictionary<string> = {
@@ -109,11 +116,11 @@ export class StringUtils {
     });
   };
 
-  public static executeExpression = (formatString: string, object: Record<string, string | number>) => {
+  export const executeExpression = (formatString: string, object: Record<string, string | number>) => {
     return formatString.replace(/\${([^{}]*)}/g, (matched, piece) => String(object[piece] ?? matched));
   };
 
-  public static ellipsis = (text: string, length: number) => {
+  export const ellipsis = (text: string, length: number) => {
     if (text.length > length) return `${text.slice(0, length)}...`;
     return text;
   };
@@ -127,7 +134,7 @@ export class StringUtils {
    * @param {string} options.consonant - The postposition to append if the text ends with a consonant(자음).
    * @returns {string} - The text with the appropriate postposition appended.
    */
-  public static appendPostposition = (text: string, { vowel, consonant }: {
+  export const appendPostposition =  (text: string, { vowel, consonant }:  {
       vowel: string;
       consonant: string;
     }): string => {

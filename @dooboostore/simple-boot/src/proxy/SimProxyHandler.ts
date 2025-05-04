@@ -5,16 +5,20 @@ import {SimOption} from '../SimOption';
 import {ExceptionHandlerSituationType, SaveExceptionHandlerConfig, targetExceptionHandler} from '../decorators/exception/ExceptionDecorator';
 import { ConstructorType } from '@dooboostore/core/types';
 import {SituationTypeContainer, SituationTypeContainers} from '../decorators/inject/Inject';
+import { SimpleApplication } from '../SimpleApplication';
 
 export class SimProxyHandler implements ProxyHandler<any> {
-    constructor(private simstanceManager: SimstanceManager, private simOption: SimOption) {
+    constructor(private simpleApplication: SimpleApplication, private simstanceManager: SimstanceManager, private simOption: SimOption) {
         // console.log('SimProxyHandler', simstanceManager, simOption)
     }
 
+    // 잘받게 해놨네 ㅋㅋ  simstanceManager
     public get(target: any, name: string): any {
-        if (name === '_SimpleBoot_simstanceManager') {
+        if (name === '_SimpleBoot_application') {
+            return this.simpleApplication;
+        } else if (name === '_SimpleBoot_simstanceManager') {
             return this.simstanceManager;
-        } else if (name === '_SimpleBoot_simOption') {
+        }else if (name === '_SimpleBoot_simOption') {
             return this.simOption;
         } else {
             return target[name]
@@ -32,7 +36,9 @@ export class SimProxyHandler implements ProxyHandler<any> {
         try {
             this.aopBefore(thisArg, target);
             try {
-                r = target.apply(thisArg, argumentsList);
+                // @ts-ignore
+                r = Reflect.apply(target, thisArg, argumentsList);
+                // r = target.apply(thisArg, argumentsList);
                 // eslint-disable-next-line no-useless-catch
             } catch (e) {
                 throw e;
@@ -93,7 +99,7 @@ export class SimProxyHandler implements ProxyHandler<any> {
     }
 
     private aopBefore(obj: any, protoType: Function) {
-        const propertyName = ObjectUtils.getPrototypeName(obj, protoType);
+        const propertyName = ObjectUtils.prototypeName(obj, protoType);
         if (propertyName && obj) {
             getProtoBefores(obj, propertyName).forEach(it => {
                 it.call(obj, protoType, propertyName)
@@ -110,7 +116,7 @@ export class SimProxyHandler implements ProxyHandler<any> {
     }
 
     private aopAfter(obj: any, protoType: Function) {
-        const propertyName = ObjectUtils.getPrototypeName(obj, protoType);
+        const propertyName = ObjectUtils.prototypeName(obj, protoType);
         if (propertyName) {
             getProtoAfters(obj, propertyName).forEach(it => {
                 it.call(obj, protoType, propertyName)

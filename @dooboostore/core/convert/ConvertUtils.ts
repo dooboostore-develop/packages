@@ -4,11 +4,12 @@ import { Point2D } from '../entity/Point2D';
 import { Point3D } from '../entity/Point3D';
 import { Rect } from '../entity/Rect';
 import { ObjectUtils } from '../object/ObjectUtils';
+import { IOS3166_1_Code } from '../code/IOS3166_1';
 
 export namespace ConvertUtils {
   export type RGBA = { r?: number, g?: number, b?: number, a?: number };
   export type MinMaxCenterAvg<T> = { min: T, max: T, center: T, avg: T };
-
+  export type ToURLSearchParamsParams = { [key: string]: any } | URLSearchParams | [string, unknown][] | string;
   export const objToGetURL = (obj: any): string => {
     return Object.keys(obj).reduce((prev, key, i) => (
       `${prev}${i !== 0 ? '&' : ''}${key}=${obj[key]}`
@@ -65,13 +66,30 @@ export namespace ConvertUtils {
     return obj;
   };
 
-  export function toObject<T>(obj: URLSearchParams, config: {firstValue: true}) : FieldType<T, string>;
-  export function toObject(obj: URLSearchParams): {[key: string]: string | string[]};
+  export const snakeToCamelCase = (str: string): string => {
+    return str.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
+  }
+  export const camelToSnakeCase = (str: string): string => {
+    return str.replace(/([a-z])([A-Z])/g, '$1_$2').toLowerCase();
+  };
+
+  export function toFormData (obj: any)  {
+    const formData = new FormData();
+    for (const key in obj)
+      formData.append(key, obj[key]);
+    return formData;
+  }
+
+  export function toObject<T>(obj: URLSearchParams, config: { firstValue: true }): FieldType<T, string>;
+  export function toObject(obj: URLSearchParams): { [key: string]: string | string[] };
+  export function toObject<T>(obj: FormData): T;
+  export function toObject<T>(obj: [string, unknown][]): T;
+  export function toObject<T>(obj:  Iterable<any>): T;
   export function toObject(obj: any): any;
-  export function toObject(obj: URLSearchParams | any, config?: {firstValue: boolean}): any  {
-    if (obj instanceof URLSearchParams){
+  export function toObject(obj: URLSearchParams | FormData |any, config?: { firstValue: boolean }): any {
+    if (obj instanceof URLSearchParams) {
       const robj = {} as any;
-      obj.forEach((v,k) => {
+      obj.forEach((v, k) => {
         if (config?.firstValue && robj[k] === undefined) {
           robj[k] = v;
         } else if (!config?.firstValue) {
@@ -87,7 +105,26 @@ export namespace ConvertUtils {
         }
       })
       return robj;
-    } else {
+    } else if(obj instanceof FormData) {
+      // new Map().entries()
+      // Object.entries({})
+      // obj = Object.fromEntries(obj.entries());
+      const formDataToObject = (formData) => {
+        const obj = {};
+        // FormData의 모든 키를 순회
+        for (const key of formData.keys()) {
+          const values = formData.getAll(key); // 동일 키의 모든 값 가져오기
+          // 값이 하나면 단일 값으로, 여러 개면 배열로 저장
+          obj[key] = values.length > 1 ? values : values[0];
+        }
+        return obj;
+      }
+      return formDataToObject(obj);
+    } else if (obj && typeof obj[Symbol.iterator] === 'function') {
+      return Object.fromEntries(obj);
+    } else if (Array.isArray(obj)) {
+      return Object.fromEntries(obj);
+    }else {
       // console.log(Object.prototype.toString.call(obj));
       if (ValidUtils.isMap(obj)) {
         const map = obj as Map<string, any>;
@@ -110,13 +147,17 @@ export namespace ConvertUtils {
     }
   };
 
-  export const toArray = <T>(data?: T | T[]): T[] => {
+  export const toArray = <T>(data?: T | T[] | Set<T>): T[] => {
+    if (data instanceof Set) {
+      return Array.from(data.values());
+    }
+
     const datas = (Array.isArray(data) ? data : (data ? [data] : []));
     return datas;
   }
-  export const flatArray = <T>(data?: T | T[]) => {
-    const datas = (Array.isArray(data) ? data : (data ? [data] : []));
-    return datas.flat();
+  export const flatArray = <T>(...data: (T | Iterable<T>)[]): T[] => {
+    const datas = data.flatMap<T>((item) => (item instanceof Object && Symbol.iterator in item ? Array.from(item) : [item]));
+    return datas;
   };
 
   export const iteratorToArray = <T>(it: any): T[] => {
@@ -152,8 +193,18 @@ export namespace ConvertUtils {
     return data.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   };
 
+  export const decodeHTMLEscape = (data: string): string => {
+    // HTML 엔티티 이스케이프를 디코드합니다.
+        return data.replace(/&amp;/g, '&')
+                   .replace(/&lt;/g, '<')
+                   .replace(/&gt;/g, '>')
+                   .replace(/&quot;/g, '"')
+                   .replace(/&#39;/g, "'")
+                   .replace(/&#x2F;/g, '/');
+  }
+
   export const copyObject = <T extends Record<string, any>>(obj: T, update: Partial<T> = {}): T => {
-    return { ...obj, ...update };
+    return {...obj, ...update};
   };
 
   export const copyArrayWithAddition = <T extends unknown[]>(arr: FilterTuple<T>, update?: T): T => {
@@ -199,8 +250,8 @@ export namespace ConvertUtils {
       acc.b += c.b ?? 0;
       acc.a += c.a ?? 0;
       return acc;
-    }, { r: 0, g: 0, b: 0, a: 0 }) as Required<RGBA>;
-    const avg = { r: Math.floor(sum.r / color.length), g: Math.floor(sum.g / color.length), b: Math.floor(sum.b / color.length), a: Math.floor(sum.a / color.length) };
+    }, {r: 0, g: 0, b: 0, a: 0}) as Required<RGBA>;
+    const avg = {r: Math.floor(sum.r / color.length), g: Math.floor(sum.g / color.length), b: Math.floor(sum.b / color.length), a: Math.floor(sum.a / color.length)};
     return avg;
   };
 
@@ -211,7 +262,7 @@ export namespace ConvertUtils {
     const g = parseInt(hexColor.slice(2, 4) || '0', 16);
     const b = parseInt(hexColor.slice(4, 6) || '0', 16);
     const a = hexColor.length > 6 ? parseInt(hexColor.slice(6, 8) || '0', 16) : 255;
-    return { r, g, b, a };
+    return {r, g, b, a};
   };
 
   export const minMaxCenterAvg = <T extends { [key: string]: number }>(obj: T[]): { [key in keyof T]?: MinMaxCenterAvg<number> } => {
@@ -225,13 +276,13 @@ export namespace ConvertUtils {
       const center = (min + max) / 2;
       const avg = values.reduce((sum, val) => sum + val, 0) / values.length;
 
-      result[key as keyof T] = { min, max, center, avg };
+      result[key as keyof T] = {min, max, center, avg};
     }
 
     return result;
   }
 
-  export const minMaxCenterRectAvg2D = (point2Ds: (Point2D | {x: number, y:number})[]): MinMaxCenterAvg<Point2D> & { minMaxRect: Rect } => {
+  export const minMaxCenterRectAvg2D = (point2Ds: (Point2D | { x: number, y: number })[]): MinMaxCenterAvg<Point2D> & { minMaxRect: Rect } => {
     const min = new Point2D(Number.MAX_SAFE_INTEGER, Number.MAX_SAFE_INTEGER);
     const max = new Point2D(Number.MIN_SAFE_INTEGER, Number.MIN_SAFE_INTEGER);
     let sum = new Point2D(0, 0);
@@ -246,11 +297,11 @@ export namespace ConvertUtils {
     const center = new Point2D((min.x + max.x) / 2, (min.y + max.y) / 2);
     const avg = new Point2D(sum.x / point2Ds.length, sum.y / point2Ds.length);
     const minMaxRect = new Rect(min.x, min.y, max.x - min.x, max.y - min.y);
-    return { min, max, center, avg, minMaxRect };
+    return {min, max, center, avg, minMaxRect};
   };
 
 
-  export const minMaxCenterAvg3D = (point3Ds: (Point3D | {x:number, y:number, z:number})[]): MinMaxCenterAvg<Point3D> => {
+  export const minMaxCenterAvg3D = (point3Ds: (Point3D | { x: number, y: number, z: number })[]): MinMaxCenterAvg<Point3D> => {
     const min = new Point3D(Number.MAX_VALUE, Number.MAX_VALUE, Number.MAX_VALUE);
     const max = new Point3D(Number.MIN_VALUE, Number.MIN_VALUE, Number.MIN_VALUE);
     let sum = new Point3D(0, 0, 0);
@@ -267,7 +318,7 @@ export namespace ConvertUtils {
     });
     const center = new Point3D((min.x + max.x) / 2, (min.y + max.y) / 2, (min.z + max.z) / 2);
     const avg = new Point3D(sum.x / point3Ds.length, sum.y / point3Ds.length, sum.z / point3Ds.length);
-    return { min, max, center, avg };
+    return {min, max, center, avg};
   };
 
   export const roundRectRadiiToFullRadii = (radii?: [number] | [number, number] | [number, number, number] | [number, number, number, number]) => {
@@ -325,6 +376,69 @@ export namespace ConvertUtils {
     const map = groupByMap(array, keySelector);
     // Map을 Record로 변환
     return Object.fromEntries(map) as Record<K, T[]>;
+  }
+
+
+
+  export const toURLSearchParams = (data: ToURLSearchParamsParams): URLSearchParams =>{
+    const searchParams = new URLSearchParams();
+    if (typeof data === 'string') {
+      new URLSearchParams(data).forEach((value, key) => {
+        searchParams.append(key, value);
+      });
+    } else if (typeof data === 'object') {
+      const forTarget = data instanceof URLSearchParams ? data.entries() : (Array.isArray(data) ? data : Object.entries(data));
+      for (const [k, v] of Array.from(forTarget)) {
+        if (Array.isArray(v)) {
+          v.forEach(it => searchParams.append(k, it));
+        } else {
+          searchParams.append(k, v as any);
+        }
+      }
+    }
+    return searchParams;
+  }
+  // export const RelativeHumanReadableTimeLabels = {
+  //   [IOS3166_1_Code.KOR]: {
+  //     justNow: '방금 전',
+  //     minutesAgo: '분 전',
+  //     hoursAgo: '시간 전',
+  //     daysAgo: '일 전',
+  //   }
+  //
+  // }
+  // export type RelativeHumanReadableTimeLabel = {
+  //   justNow: string,
+  //   minutesAgo: string,
+  //   hoursAgo: string,
+  //   daysAgo: string,
+  // };
+  // export type RelativeHumanReadableTimeConfig = {
+  //   label:  RelativeHumanReadableTimeLabel;
+  // }
+  // export const formatRelativeHumanReadableTime = (date: Date | string | number, config: RelativeHumanReadableTimeConfig): string => {
+  //   if (!(date instanceof Date)) {
+  //     date = new Date(date);
+  //   }
+  //   const now = new Date();
+  //   const diffMs = now.getTime() - date.getTime();
+  //   const diffMinutes = Math.floor(diffMs / (1000 * 60));
+  //   const diffHours = Math.floor(diffMinutes / 60);
+  //
+  //   if (diffMinutes < 1) return config.label.justNow;
+  //   if (diffMinutes < 60) return `${diffMinutes}${config.label.minutesAgo}`;
+  //   if (diffHours < 24) return `${diffHours}${}`;
+  //   return `${Math.floor(diffHours / 24)}일 전`;
+  // }
+
+ /**
+  * 문자열 JSON을 키-값 쌍 배열로 변환합니다.
+  *
+  * @param {string} stringJson - JSON 형식의 문자열 (예: "{value: this.child.obj.name}")
+  * @return {Array<{ key: string, value: string }>} 키-값 쌍 배열
+  */
+  export const stringJsonToKeyPairs = (stringJson: string) => {
+   return Array.from(stringJson.matchAll(/(\w+):\s*([^,}]+)/g)).map(match => ({key: match[1], value: match[2]}))
   }
 
   // const formDataToFormDataEntryValueObj = <T = { [key: string]: FormDataEntryValue | FormDataEntryValue[] }>(

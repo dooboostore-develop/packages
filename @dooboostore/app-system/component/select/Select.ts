@@ -3,7 +3,7 @@ import { ComponentBase } from '../ComponentBase';
 import { OnCreateRender } from '@dooboostore/dom-render/lifecycle/OnCreateRender';
 
 export namespace Select {
-  export const selector = 'Select';
+  export const selector = 'System:Select';
 
   export type Attribute = {
     class?: string;
@@ -15,18 +15,19 @@ export namespace Select {
     styles: '',
     selector: `${selector}.Option`
   })
-  export class Body extends ComponentBase<Attribute> {
+  export class SelectOption extends ComponentBase<Attribute> {
     constructor() {
-      super({onlyParentType: [Wrap]});
+      super({onlyParentType: [Select]});
     }
   }
 
   @Component({
-    template: '<select class="${`${@this@.attribute.class} select-container`}$">#innerHTML#</select>',
+    template: '',
     styles: '',
-    selector: `${selector}.Wrap`
+    selector: `${selector}`
   })
-  export class Wrap extends ComponentBase<Attribute> implements OnCreateRender{
+  export class Select extends ComponentBase<Attribute> implements OnCreateRender{
+    private element?: HTMLSelectElement;
     onCreateRender(...param: any[]): void {
     }
     onDestroyRender(...metaData: any[]): void {
