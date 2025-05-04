@@ -20,16 +20,11 @@ export type ChangePickArrayElementMix<T, M, K extends keyof T> = Omit<T, K> & Pi
 export interface ConstructorType<T> {
   new (...args: any[]): T;
 }
+export type Method = (...args: any[]) => any;
 export type GenericClassDecorator<T> = (target: T) => void;
-export type ReflectField = (
-  target: Object | { constructor: ConstructorType<any>; [key: string]: Function },
-  propertyKey: string | symbol
-) => void;
-export type ReflectMethod = (
-  target: any | ConstructorType<any> | { constructor: ConstructorType<any>; [key: string]: Function },
-  propertyKey: string,
-  descriptor: PropertyDescriptor
-) => any;
+// declare type ClassDecorator = <TFunction extends Function>(target: TFunction) => TFunction | void;
+// export type ReflectField = PropertyDecorator
+// export type ReflectMethod = MethodDecorator
 export type MethodParameter = (target: Object, propertyKey: string | symbol, parameterIndex: number) => void;
 
 type Reverse<TupleType extends any[], ReversedTupleType extends any[] = []> = {
@@ -241,5 +236,12 @@ export type MethodOnlyFieldPerFix<T, S extends string> = {
   [key in keyof T as `${S}${string & key}`]: T[key] extends (...args: any[]) => any ? T[key] : never;
 };
 // export const isDefined = <T>(value: T | undefined | null): value is T => value !== undefined && value !== null;
-export const isDefined = <T>(value: T | undefined | null): value is NonNullable<T> => value !== undefined && value !== null;
+// export const isDefined = <T>(value: T | undefined | null): value is NonNullable<T> => value !== undefined && value !== null;
+export const isDefined = <T>(value: T | undefined | null): value is T => value !== undefined && value !== null;
+/*
+declare type ClassDecorator = <TFunction extends Function>(target: TFunction) => TFunction | void;
+declare type PropertyDecorator = (target: Object, propertyKey: string | symbol) => void;
+declare type MethodDecorator = <T>(target: Object, propertyKey: string | symbol, descriptor: TypedPropertyDescriptor<T>) => TypedPropertyDescriptor<T> | void;
+declare type ParameterDecorator = (target: Object, propertyKey: string | symbol, parameterIndex: number) => void;
+ */
 export {};

@@ -29,9 +29,15 @@ export type BeforeProxyFetchParams<T = RequestInfo | URL> = {
   init?: RequestInit;
 };
 export type AfterProxyFetchParams<T = RequestInfo | URL> = {
+  fetch: {
+    target: URL;
+    requestInit: RequestInit;
+  }
   config: BeforeProxyFetchParams<T>;
   response: Response;
 };
+
+export type FetchSet = { target: URL, requestInit?: RequestInit };
 
 export abstract class HttpFetcher<
   CONFIG,
@@ -102,6 +108,10 @@ export abstract class HttpFetcher<
     return config.response;
   }
 
+  abstract beforeFetch(fetch: FetchSet): void;
+
+  abstract afterFetch(fetch: FetchSet, response: Response): void;
+
   protected async execute(
     target: HttpFetcherTarget,
     config?: HttpFetcherConfig<CONFIG, RESPONSE>
@@ -111,22 +121,7 @@ export abstract class HttpFetcher<
       // const url: URL |  string = target.url;
       // if (typeof target.url === 'string') {
       // }
-      const searchParams = new URLSearchParams();
-      // const url = typeof target.url === 'string' ? new URL(target.url) : target.url;
-      if (typeof target.searchParams === 'string') {
-        new URLSearchParams(target.searchParams).forEach((value, key) => {
-          searchParams.append(key, value);
-        });
-      } else if (typeof target.searchParams === 'object') {
-        const forTarget = target.searchParams instanceof URLSearchParams ? target.searchParams.entries() : (Array.isArray(target.searchParams) ? target.searchParams : Object.entries(target.searchParams));
-        for (const [k, v] of Array.from(forTarget)) {
-          if (Array.isArray(v)) {
-            v.forEach(it => searchParams.append(k, it));
-          } else {
-            searchParams.append(k, v as any);
-          }
-        }
-      }
+      const searchParams = ConvertUtils.toURLSearchParams(target.searchParams);
 
       try {
         const url = typeof target.url === 'string' ? new URL(target.url) : target.url;
@@ -145,7 +140,7 @@ export abstract class HttpFetcher<
     }
 
     // before proxy fetch
-    const beforeProxyData = { requestInfo: target, init: config?.fetch } as BeforeProxyFetchParams<URL>;
+    const beforeProxyData = {requestInfo: target, init: config?.fetch} as BeforeProxyFetchParams<URL>;
     let beforeData = config?.beforeProxyFetch
       ? await config?.beforeProxyFetch(config as any)
       : beforeProxyData.requestInfo;
@@ -160,7 +155,7 @@ export abstract class HttpFetcher<
     if (config?.fetch && 'timeout' in config.fetch) {
       const abortController = new AbortController();
       abortedTimeout = setTimeout(() => {
-        if (config.fetch?.signal) {
+        if (config?.fetch?.signal) {
           const inputSignal = config.fetch.signal;
           const listener = () => {
             if (!abortController.signal.aborted) {
@@ -177,11 +172,16 @@ export abstract class HttpFetcher<
       config.fetch.signal = abortController.signal;
     }
 
+    this.beforeFetch({target, requestInit: config?.fetch});
     return fetch(target, config?.fetch)
       .then(async it => {
+        // console.log('httpFetch!!!', Array.from(it.headers))
+        this.afterFetch({target: target as URL, requestInit: config?.fetch}, it);
         // after proxy fetch
-        const afterProxyData = { config: beforeData, response: it };
+        // @ts-ignore
+        const afterProxyData: AfterProxyFetchParams<any> = {fetch: {target: target as URL, requestInit: config.fetch}, config: beforeData, response: it};
         it = config?.afterProxyFetch ? await config.afterProxyFetch(afterProxyData) : it;
+        // @ts-ignore
         it = config?.skipGlobalAfterProxyFetch ? it : await this.afterProxyFetch(afterProxyData);
         config?.fetchResponseAfterCallBack?.(it, config);
         if (!config?.allowedResponseNotOk && !it.ok) {
