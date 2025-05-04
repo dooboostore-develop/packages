@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>examples</title>
+</head>
+<body id="app">
+<div>
+<ul>
+    <li dr-appender="@this@.appender">
+<!--        #it#-->
+        ${#it#}$
+    </li>
+</ul>
+    <button dr-event-click="@this@.append()">appending</button>
+    <button dr-event-click="@this@.modifyAppender(0)">idx 0 modify</button>
+    <button dr-event-click="@this@.clearAppend()">appender clear</button>
+</div>
+<!--<detailsss></detailsss>-->
+<!--<input type="text" dr-value-link="@this@.name">-->
+<!--[${@this@.name}}$]-->
+<!--<input type="text" dr-value-link="@this@.name" data-wow="${@this@.name}$" wow="${@this@.name}$">-->
+<!--<button dr-event-click="console.log(this.name)">aa</button>-->
+<!--<button dr-event-click="this.name = new Date().toString()">aaaaa</button>-->
+<!--<hr/>-->
+<!--<home></home>-->
+<!--<profile wow="${@this@.checked}$"></profile>-->
+<!--<div wow="${@this@.checked}$" dr-replace-target-element-is="profile"></div>-->
+<!--<button dr-event-click="@this@.checked=!@this@.checked">change</button>-->
+
+<!--<input type="checkbox" dr-checked-link="@this@.checked" >-->
+<!--<button dr-event-click="console.log(this.checked)">aa</button>-->
+<!--<button dr-event-click="this.checked = null">aaaaa</button>-->
+<!--<div></div>-->
+<!--<div>aa</div>-->
+<!--<home></home>-->
+<!--<div>sa</div>-->
+<!--<div dr-if="true" dr-option-strip="false" >aaaaaaaaaaaaaaa</div>-->
+<!--<div dr-this="this.sub0" wow="${@this@.name}$" dr-strip="true"></div>-->
+<!--<input type="text" dr-value-link="@this@.name"/>-->
+<!--<input type="text" wow="${@this@.name}$"/>-->
+<!--<div style="background-color: red">-->
+<!--    <div dr-if="@this@.hidden">-->
+<!--    wow-->
+<!--    </div>-->
+<!--</div>-->
+<!--<button dr-event-click="@this@.hidden = !@this@.hidden ">change</button>-->
+<!--<user  wow="${@this@.name}$"></user>-->
+<!--<button dr-event-click="this.changeName()">changeName </button>-->
+<!--<div dr-for="var i = 1 ; i <= 9 ; i++" dr-it="i">-->
+<!--    ${#it#}$ *-->
+<!--    <scope dr-for="var y = 1 ; y <= 9 ; y++" dr-it="y" dr-var="superIt=#it#" dr-strip="true">-->
+<!--        #it# = ${$var.superIt * #it#}$-->
+<!--    </scope>-->
+<!--</div>-->
+</body>
+</html>

@@ -82,12 +82,51 @@ const data = DomRender.run(new Data(), document.querySelector('#app')!);
 
 
 ## style  css
+```typescript
+export class IndexComponent implements OnInitRender, OnDestroyRender, OnInit, OnSimCreate, OnDrThisBind, OnDrThisUnBind, OnCreateRender, OnCreateRenderData, OnCreatedThisChild {
+  private canvas: HTMLCanvasElement | null = null;
+  private ctx: CanvasRenderingContext2D | null = null;
+
+  name = 'IndexComponent';
+  age = 10;
+  color = 'red';
+  img = 'url(\'https://pbs.twimg.com/media/F1FHR-saMAAMTKm?format=jpg&name=360x360\')';
+  //...
+}
+```
+```css
+.sign-container{
+    cursor: pointer;
+    width: 32px;
+    height: 28px;
+    background-image: ${@this@.img}$;
+    background-position: center; /* 정가운데 */
+    background-size: contain; /* 이미지 전체 표시 */
+    background-repeat: no-repeat; /* 반복 방지 */
+}
+```
 ```css
 .#uuid# {
 color:${@this@.color}$;
 }
 ```
-uuid: rawSetUUID  
+```css
+## .wow
+```
+```css
+@media (width >= /*$@this@.ss$*/) {
+    #profileDialog {
+        max-width: ${@this@.ss}$;  /* 너비 조정 */
+    }
+}
+```
+```html
+<button dr-event-click="@this@.ss = '50rem'">aa</button>
+```
+
+selector expression: /*$@this@.ss$*/ 
+uuid: rawSetUUID
+##: escape scope
 
 
 
@@ -102,7 +141,7 @@ uuid: rawSetUUID
   <div dr-if="this.gender === 'M'">gender: M</div> <!-- No Render -->
 <script>
   let data = {
-    gender: 'F'
+    gender: 'F',
   };
   data = DomRender.run(data , document.querySelector('#app'));
 </script>
@@ -305,12 +344,21 @@ class data {
 * dr-value-link
   * Value and variable values are referencing each other. It affects each other when changing. (Immediate reflection event: input)
   * instance variable first
+* dr-checked-link
+  * Value and variable values are referencing each other. It affects each other when changing. (Immediate reflection event: input)
+  * instance variable first
+* dr-disabled-link
+  * Value and variable values are referencing each other. It affects each other when changing. (Immediate reflection event: input)
+  * instance variable first
 
 ```html
 dr-value: <input type="text" dr-value="@this@.office.name"> <br>
 dr-value-link: <input type="text" dr-value-link="@this@.office.addr.street"> <br>
 ```
 </details>
+
+## dr-on-rendered-init
+- rendered call
 
 ## other
 <details>
@@ -338,6 +386,7 @@ dr-value-link: <input type="text" dr-value-link="@this@.office.addr.street"> <br
   <summary>dr-style<strong>🔻(click)</strong></summary>
 
 ```html
+<div dr-style="{'background-image': 'url(\''+@this@.my?.image+'\')'}" >aa</div>
 <div dr-style="{fontSize: @this@.age + 'px'}"> style </div>
 <div dr-style="{'font-size': '20px'}"> style</div>
 <div dr-style="'font-size: ' + @this@.age +'px; margin: ' + @this@.age + 'px'"> style </div>
@@ -835,13 +884,18 @@ lazy loading rollup config
         })
 ```
 
+## parameter
+- dr-option-component-inner-html-name
+- dr-option-component-name
+
 - callback
  - onChangeAttrRender
  -   onCreateRenderData<T = any>(data: OnCreateRenderDataParams<T>): void
    - type OnCreateRenderDataParams<T = any> = { parent: T, render: Render };
  - OnCreateThisChild
    - thisChild created callback
-
+ - OnChildRenderedByProperty
+   - onChildRenderedByProperty(key: string, value: any, config: {rawSets:RawSet[]}): void; 
 - event
   - dr-event-...:filter  event filter!!
     - ex) dr-event-change:filter="false"
@@ -860,6 +914,7 @@ lazy loading rollup config
   - dr-on-create:callback: component created init callback script
   - dr-on-create:arguments: component onCreatedRender arguments
   - dr-on-init:arguments: component onInitRender arguments
+  - dr-on-rendered-init: rendered
     - $component: component  instance
     - $element: element instance
     - $attribute: element attribute object
@@ -867,8 +922,9 @@ lazy loading rollup config
     - $creatorMetaData: metaData
   - #component#: component instance
   - #innerHTML#: element innerHTML
-  - dr-component-name: renaming component variable name (default: component)
-  - dr-inner-html-name: renaming innerHTML variable name (default: innerHTML)
+  - dr-option-this-name: renaming component variable name (default: component)
+  - dr-option-component-name: renaming component variable name (default: component)
+  - dr-option-inner-html-name: renaming innerHTML variable name (default: innerHTML)
 ---
 
 # License

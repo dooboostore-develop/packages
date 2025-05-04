@@ -5,7 +5,7 @@ export namespace ElementUtils {
 
   export type LoadImageCallbackType = { onload: (img: HTMLImageElement) => void, onerror: OnErrorEventHandler };
   export type LoadAudioCallbackType = { onload: (img: HTMLAudioElement) => void, onerror: (e: ErrorEvent) => void };
-  export type LoadImageBitMapCallbackType = { onload: (img: ImageBitmap) => void, onerror: (e:any)=>void };
+  export type LoadImageBitMapCallbackType = { onload: (img: ImageBitmap) => void, onerror: (e: any) => void };
 
   export function loadImage(src: string): Promise<HTMLImageElement>;
   export function loadImage(src: string, callback: LoadImageCallbackType): void;
@@ -54,7 +54,7 @@ export namespace ElementUtils {
       return response.blob();
     }).then(it => {
       return createImageBitmap(it);
-    }).then(it =>{
+    }).then(it => {
       targetCallback(it);
     }).catch(it => {
       catchCallback(it);
@@ -86,5 +86,22 @@ export namespace ElementUtils {
     });
     audio.load();
     return promise;
+  }
+
+  export const toInnerHTML = (documentFragment: DocumentFragment, config: { document: Document }) => {
+    // if (documentFragment) {
+    const tempDiv = config.document.createElement('div');
+    tempDiv.appendChild(documentFragment.cloneNode(true));
+    console.log('DocumentFragment innerHTML:', tempDiv.innerHTML);
+    return tempDiv.innerHTML;
+    // }
+  }
+
+  export const nodeList = (documentFragment: DocumentFragment) => {
+    return Array.from(documentFragment.childNodes)
+  }
+
+  export const cloneNodeList = (documentFragment: DocumentFragment) => {
+    return Array.from(documentFragment.childNodes).map(node => node.cloneNode(true));
   }
 }

@@ -28,8 +28,8 @@ export class SimpleApplication {
     //   this.rootRouter = rootRouter;
     // }
 
-    this.simstanceManager = new SimstanceManager(option);
-    this.simstanceManager.setStoreSet(SimpleApplication, this);
+    this.simstanceManager = new SimstanceManager(this, option);
+    // this.simstanceManager.setStoreSet(SimpleApplication, this);
     this.simstanceManager.setStoreSet(SimstanceManager, this.simstanceManager);
 
     this.intentManager = this.simstanceManager.proxy(new IntentManager(this.simstanceManager));

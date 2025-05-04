@@ -11,7 +11,7 @@ export class DrForOf extends OperatorExecuterAttrRequire<string> {
     }
 
     async executeAttrRequire(attr: string): Promise<ExecuteState> {
-        const itRandom = RawSet.drItOtherEncoding(this.elementSource.element);
+        const itRandom = RawSet.drItOtherEncoding(this.elementSource.element, 'DrForOf');
         const vars = RawSet.drVarEncoding(this.elementSource.element, this.elementSource.attrs.drVarOption ?? '');
         const newTemp = this.source.config.window.document.createElement('temp');
         ScriptUtils.eval(`

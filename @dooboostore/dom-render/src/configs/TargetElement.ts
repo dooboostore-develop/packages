@@ -6,6 +6,7 @@ import {Render} from '../rawsets/Render';
 
 export type TargetElement = {
     name: string;
+    noStrip?:boolean;
     template?: string;
     styles?: string | (string[]);
     callBack: (target: Element, obj: any, rawSet: RawSet, attrs: Attrs, config: Config) => Promise<DocumentFragment>;

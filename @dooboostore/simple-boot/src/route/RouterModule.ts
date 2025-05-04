@@ -1,9 +1,11 @@
-import { ConstructorType } from '@dooboostore/core/types';
+import { ConstructorType, isDefined } from '@dooboostore/core/types';
 import {SimAtomic} from '../simstance/SimAtomic';
 import {Intent} from '../intent/Intent';
 import {SimstanceManager} from '../simstance/SimstanceManager';
 import {getInjection} from '../decorators/inject/Injection';
 import { MethodNoSuch } from '../throwable/MethodNoSuch';
+import { getRoute, getRouter, getRoutes } from '../decorators/route/Router';
+import { Expression } from '@dooboostore/core/expression/Expression';
 
 export class RouterModule<R = SimAtomic, M = any> {
     public pathData?: { [name: string]: string };
@@ -12,6 +14,18 @@ export class RouterModule<R = SimAtomic, M = any> {
     public propertyKeys?: (string | symbol)[];
 
     constructor(private simstanceManager: SimstanceManager, public router?: R, public module?: ConstructorType<M> | Function, public routerChains: R[] = []) {
+    }
+
+    getRouterPath(join = '') {
+        return this.getRouterPaths().map(it=>it??'').join(join)
+    }
+
+    getRouterPaths() {
+        return this.routerChains.map(it => getRouter(it instanceof SimAtomic ? it.type : it)?.path);
+    }
+
+    getRouterPathData(pathName: string) {
+       return Expression.Path.pathNameData(pathName, this.getRouterPath());
     }
 
     getModuleInstance<T = M>(): T | undefined ;

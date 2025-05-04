@@ -11,7 +11,7 @@ export class DrStripElement extends OperatorExecuterAttrRequire<string> {
   }
 
   async executeAttrRequire(attr: string): Promise<ExecuteState> {
-    const itRandom = RawSet.drItOtherEncoding(this.elementSource.element);
+    // const itRandom = RawSet.drItOtherEncoding(this.elementSource.element, 'DrStripElement');
     // const vars = RawSet.drVarEncoding(this.elementSource.element, this.elementSource.attrs.drVarOption ?? '');
     const newTemp = this.source.config.window.document.createElement('temp');
     // Object.entries(this.__render.drAttr).filter(([k,v]) => k !== 'drIf' && v).forEach(([k, v]) => n.setAttribute(this.__render.drAttrsOriginName[k], v)); <-- 이부분은 다른 attr에도 적용을 할지말지 생각해야됨  엘리먼트 존재유무에 따라서 적용을 할지말지 결정해야됨

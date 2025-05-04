@@ -37,8 +37,10 @@ export class Appender<T = any> implements Iterable<T> {
 
     push(...items: T[]): void {
         // console.log('----2>', items, this.length);
-        (items as any).index = this.length;
-        this[this.length++] = items;
+        if (items.length > 0) {
+            (items as any).index = this.length;
+            this[this.length++] = items;
+        }
         // console.log('---22->', this.length)
         // const appender = this.childs[this.lastIndex];
         // appender.values = items;
@@ -53,6 +55,17 @@ export class Appender<T = any> implements Iterable<T> {
     //     // }
     //     this.length = this.length - 1;
     // }
+
+    // 인덱스 접근을 위한 getter와 setter 추가
+    // get(index: number): T | undefined {
+    //     return this.storage[index];
+    // }
+    //
+    // set(index: number, value: T): void {
+    //     this.storage[index] = value;
+    //     this.length = Math.max(this.length, index + 1);
+    // }
+
 
     clear(): void {
         // console.log('length', this.length);
