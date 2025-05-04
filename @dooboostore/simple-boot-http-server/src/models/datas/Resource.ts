@@ -11,7 +11,7 @@ export class Resource {
 
     get absolutePath(): string {
         if (this.path instanceof RequestResponse) {
-            return path.join(this.rootPath, this.path.reqUrlObj.pathname);
+            return path.join(this.rootPath, this.path.reqUrlObj().pathname);
         } else if (this.path instanceof URL) {
             return path.join(this.rootPath, this.path.pathname);
         } else {

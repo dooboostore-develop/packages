@@ -1,17 +1,73 @@
-import { ConstructorType } from '@dooboostore/core/types';
+import { ConstructorType, isDefined } from '@dooboostore/core/types';
 import {SimAtomic} from '../simstance/SimAtomic';
 import {Intent} from '../intent/Intent';
 import {SimstanceManager} from '../simstance/SimstanceManager';
 import {getInjection} from '../decorators/inject/Injection';
 import { MethodNoSuch } from '../throwable/MethodNoSuch';
+import { getRoute, getRouter, getRoutes } from '../decorators/route/Router';
+import { Expression } from '@dooboostore/core/expression/Expression';
 
 export class RouterModule<R = SimAtomic, M = any> {
-    public pathData?: { [name: string]: string };
-    public data?: any;
-    public intent?: Intent;
-    public propertyKeys?: (string | symbol)[];
+    private _pathData?: Expression.Path.PathNameData;
+    private _data?: any;
+    private _intent?: Intent;
+    private _propertyKeys?: (string | symbol)[];
+    private _path?: string;
+
+    public get path(): string | undefined {
+        return this._path;
+    }
+
+    public set path(value: string | undefined) {
+        this._path = value;
+    }
+
+    public get data(): any {
+        return this._data;
+    }
+
+    public set data(value: any) {
+        this._data = value;
+    }
+
+    public get intent(): Intent | undefined {
+        return this._intent;
+    }
+
+    public set intent(value: Intent | undefined) {
+        this._intent = value;
+    }
+
+    public get propertyKeys(): (string | symbol)[] | undefined {
+        return this._propertyKeys;
+    }
+
+    public set propertyKeys(value: (string | symbol)[] | undefined) {
+        this._propertyKeys = value;
+    }
+
+    public get pathData(): Expression.Path.PathNameData | undefined {
+        return this._pathData;
+    }
+
+    public set pathData(value: Expression.Path.PathNameData | undefined) {
+        this._pathData = value;
+    }
+
 
     constructor(private simstanceManager: SimstanceManager, public router?: R, public module?: ConstructorType<M> | Function, public routerChains: R[] = []) {
+    }
+
+    getRouterPath(join = '') {
+        return this.getRouterPaths().map(it=>it??'').join(join)
+    }
+
+    getRouterPaths() {
+        return this.routerChains.map(it => getRouter(it instanceof SimAtomic ? it.type : it)?.path);
+    }
+
+    getRouterPathData(pathName: string) {
+       return Expression.Path.pathNameData(pathName, this.getRouterPath());
     }
 
     getModuleInstance<T = M>(): T | undefined ;

@@ -23,7 +23,7 @@ export class ReflectUtils {
         }
     }
 
-    static getMetadata(metadataKey: any, target: any, propertyKey?: string | symbol) {
+    static getMetadata<T = any>(metadataKey: any, target: any, propertyKey?: string | symbol): T | undefined {
         if (propertyKey) {
             return Reflect.getMetadata(metadataKey, target, propertyKey);
         } else {

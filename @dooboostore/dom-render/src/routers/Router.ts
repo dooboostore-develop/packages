@@ -1,19 +1,23 @@
 import { DomRenderProxy } from '../DomRenderProxy';
 import { EventManager } from '../events/EventManager';
 import { ConvertUtils } from '@dooboostore/core/convert/ConvertUtils';
-// import { ConvertUtils } from '@dooboostore/core-web/convert/ConvertUtils';
+import ToURLSearchParamsParams = ConvertUtils.ToURLSearchParamsParams;
+import { Expression } from '@dooboostore/core/expression/Expression';
 export type RouteData = {
   path: string;
   url: string;
   data?: any;
   searchParams: URLSearchParams;
   pathData?: any;
+  router: Router;
 }
 export type RouterConfig<T = any> = { rootObject?: T, window: Window, disableAttach?: boolean };
 
-export abstract class Router {
-  private attachCallbacks = new Set<(routeData: RouteData) => void>();
-  private _config: RouterConfig<any>;
+export type RouteAction = string | { path?: string, searchParams?: ToURLSearchParamsParams };
+
+export abstract class Router<T = any> {
+  private changeCallbacks = new Set<(routeData: RouteData) => void>();
+  private _config: RouterConfig<T>;
 
   get searchParamObject() {
     return ConvertUtils.toObject(this.getSearchParams());
@@ -26,26 +30,34 @@ export abstract class Router {
 
   constructor(config: RouterConfig<any>) {
     this._config = config;
+    this._config.window.addEventListener('popstate', () => {
+      this.changeCallbacks.forEach(it => {
+        it(this.getRouteData());
+      })
+    })
     // this.go({path:this.getUrl()});
   }
 
-  public getSearchFirstParamsObject<T = any>()  {
-    return ConvertUtils.toObject<T>(this.getSearchParams(),{firstValue: true});
+
+  public getSearchFirstParamsObject<T = any>(defaultValue?: T) {
+    const a = ConvertUtils.toObject<T>(this.getSearchParams(), {firstValue: true});
+    return Object.assign({}, defaultValue, a);
   }
 
-  addAttachCallback(callback: (routeData: RouteData) => void) {
-    this.attachCallbacks.add(callback);
+  public getHashSearchFirstParamsObject<T = any>() {
+    return ConvertUtils.toObject<T>(this.getHashSearchParams(), {firstValue: true});
   }
 
-  attach(): void {
+  addChangeCallback(callback: (routeData: RouteData) => void) {
+    this.changeCallbacks.add(callback);
+  }
+
+  async attach(): Promise<void> {
     const proxy = (this.config.rootObject as any)._DomRender_proxy as DomRenderProxy<any>;
     if (proxy) {
       const key = `___${EventManager.ROUTER_VARNAME}`;
-      proxy.render(key);
+      await proxy.render(key);
     }
-    this.attachCallbacks.forEach(it => {
-      it(this.getRouteData());
-    });
   }
 
   testRegexp(regexp: string): boolean {
@@ -78,11 +90,16 @@ export abstract class Router {
         newVar.pathData = data;
       }
     }
+    newVar.router = this;
     return Object.freeze(newVar);
   }
 
   pushState(data: any, title: string, path: string) {
     this.config.window.history.pushState(data, title, path);
+  }
+
+  replaceState(data: any, title: string, path: string) {
+    this.config.window.history.replaceState(data, title, path);
   }
 
   dispatchPopStateEvent() {
@@ -98,49 +115,59 @@ export abstract class Router {
   }
 
   getPathData(urlExpression: string, currentUrl = this.getPath()): any {
-    const urls = currentUrl.split('?')[0].split('/');
-    const urlExpressions = urlExpression.split('/');
-    if (urls.length !== urlExpressions.length) {
-      return;
-    }
-    const data: { [name: string]: string } = {};
-    for (let i = 0; i < urlExpressions.length; i++) {
-      const it = urlExpressions[i];
-      // it = regexpMap.get(it) ?? it;
-
-      const urlit = urls[i];
-      // ex) {serialNo:[0-9]+} or {no}  ..
-      const execResult = /^\{(.+)\}$/g.exec(it);
-      if (!execResult) {
-        if (it !== urlit) {
-          return;
-        }
-        continue;
-      }
-      // regex check
-      const [name, regex] = execResult[1].split(':'); // group1
-      const regExp = RegExp(regex);
-      if (regex && !regExp.test(urlit)) {
-        return;
-      }
-      data[name] = urlit;
-    }
-    return data;
+    return Expression.Path.pathNameData(currentUrl, urlExpression);
   }
 
-  go(config: { path: string, data?: any, expression?: string, title?: string, disabledPopEvent?: boolean }): void {
-    this.set(config.path, config.data, config.title);
+  async go(config: { path: RouteAction, data?: any, replace?: boolean, title?: string, disabledPopEvent?: boolean } | string): Promise<void> {
+    if (typeof config === 'string') {
+      config = {path: config};
+    }
+
+    if (config?.replace) {
+      this.replace(config.path, config.data, config.title);
+    } else {
+      this.push(config.path, config.data, config.title);
+    }
     if (!this.config.disableAttach) {
-      this.attach();
+      await this.attach();
     }
     if (!config.disabledPopEvent) {
       this.dispatchPopStateEvent();
     }
   }
 
-  abstract set(path: string, data?: any, title?: string): void;
+  toUrl(data: RouteAction) {
+    let targetPath: string;
+    if (typeof data === 'string') {
+      targetPath = data;
+    } else {
+      const tpath = data.path ?? this.getPath();
+      const s = data.searchParams ? ConvertUtils.toURLSearchParams(data.searchParams).toString() : '';
+      targetPath = `${tpath}${s.length > 0 ? '?' : ''}${s}`;
+    }
+    return targetPath;
+  }
 
-  abstract getSearchParams(): URLSearchParams;
+
+  abstract push(path: RouteAction, data?: any, title?: string): void;
+
+  abstract replace(path: RouteAction, data?: any, title?: string): void;
+
+  abstract pushDeleteSearchParam(name: string | string[], data?: any, title?: string): void;
+
+  abstract pushDeleteHashSearchParam(name: string | string[], data?: any, title?: string): void;
+
+  abstract pushAddSearchParam(params:[[string, string]], data?: any, title?: string): void;
+
+  abstract replaceDeleteSearchParam(name: string | string[], data?: any, title?: string): void;
+
+  abstract replaceDeleteHashSearchParam(name: string | string[], data?: any, title?: string): void;
+
+  abstract replaceAddSearchParam(params:[[string, string]], data?: any, title?: string): void;
+
+  abstract getSearchParams(data?:{delete?:string[], append?:[[string, string]]}): URLSearchParams;
+
+  abstract getHashSearchParams(data?:{delete?:string[], append?:[[string, string]]}): URLSearchParams;
 
   abstract getUrl(): string;
 

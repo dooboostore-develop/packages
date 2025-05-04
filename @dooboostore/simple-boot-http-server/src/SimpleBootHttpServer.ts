@@ -1,7 +1,8 @@
 import {SimpleApplication} from '@dooboostore/simple-boot/SimpleApplication';
 import {HttpServerOption} from './option/HttpServerOption';
 import { ConstructorType } from '@dooboostore/core/types';
-import {IncomingMessage, Server, ServerResponse} from 'http'
+import {IncomingMessage, Server as HttpServer, ServerResponse} from 'http'
+import { Server as HttpsServer, ServerOptions as HttpsServerOption } from 'https'; // Add HTTPS support
 import {RequestResponse} from './models/RequestResponse';
 import {getUrlMapping, getUrlMappings, SaveMappingConfig, UrlMappingSituationType} from './decorators/MethodMapping';
 import {HttpStatus} from './codes/HttpStatus';
@@ -28,7 +29,7 @@ import {SessionManager} from './session/SessionManager';
 import { InjectSituationType } from './inject/InjectSituationType';
 
 export class SimpleBootHttpServer extends SimpleApplication {
-    public server?: Server;
+    public server?: HttpServer | HttpsServer;
     private sessionManager: SessionManager;
     constructor(public option: HttpServerOption = new HttpServerOption()) {
         super(option);
@@ -46,11 +47,28 @@ export class SimpleBootHttpServer extends SimpleApplication {
     }
 
     private startServer() {
-        const server = this.option.serverOption ? new Server(this.option.serverOption) : new Server();
-        this.server = server;
+
+        // const a = this.option.serverOption as HttpsServerOption;
+        // this.option.serverOption?.
+
+        if (this.option.serverOption && 'key' in this.option.serverOption && 'cert' in this.option.serverOption) {
+            this.server = new HttpsServer(this.option.serverOption);
+            const httpServer = new HttpServer();
+            httpServer.on('request', (req: IncomingMessage, res: ServerResponse) => {
+                res.writeHead(301, { Location: `https://${req.headers.host}${req.url}` });
+                res.end();
+            });
+            httpServer.listen(80, this.option.listen.hostname, () => {
+                console.log('HTTP redirect server running on port 80');
+            });
+        } else if (this.option.serverOption) {
+            this.server =  new HttpServer(this.option.serverOption);
+        } else {
+            this.server = new HttpServer();
+        }
         // const thisRef = this;
-        server.on('request', async (req: IncomingMessage, res: ServerResponse) => {
-            console.log('request', req.url);
+        this.server.on('request', async (req: IncomingMessage, res: ServerResponse) => {
+            // console.log('request', req.url);
             const transactionManager = this.option.transactionManagerFactory ? await this.option.transactionManagerFactory() : undefined;
             res.on('close', async () => {
                 if (this.option.closeEndPoints) {
@@ -89,7 +107,7 @@ export class SimpleBootHttpServer extends SimpleApplication {
                 }
             });
 
-            const rr = new RequestResponse(req, res, this.sessionManager);
+            const rr = new RequestResponse(req, res,{sessionManager:  this.sessionManager, option: this.option});
             /*
                 default setting first
              */
@@ -116,14 +134,17 @@ export class SimpleBootHttpServer extends SimpleApplication {
                     }
                 }
 
-                const filter: { filter: Filter, sw: boolean }[] = [];
+                const filter = {
+                    carrier: new Map<string, any>(),
+                    filters: [] as { filter: Filter, sw: boolean }[]
+                };
                 for (let i = 0; this.option.filters && i < this.option.filters.length; i++) {
                     const it = this.option.filters[i];
                     const execute = (typeof it === 'function' ? this.simstanceManager.getOrNewSim({target:it}) : it) as Filter;
                     let sw = true;
-                    if (execute?.before) {
-                        sw = await execute.before(rr, this);
-                        filter.push({filter: execute, sw});
+                    if (execute?.proceedBefore) {
+                        sw = await execute.proceedBefore({rr, app: this, carrier: filter.carrier});
+                        filter.filters.push({filter: execute, sw});
                     }
                     if (!sw) {
                         break;
@@ -220,9 +241,9 @@ export class SimpleBootHttpServer extends SimpleApplication {
                                 } else if (paramType === ReqJsonBody) {
                                     otherStorage.set(ReqJsonBody, await rr.reqBodyReqJsonBody())
                                 } else if (paramType === URLSearchParams) {
-                                    otherStorage.set(URLSearchParams, rr.reqUrlSearchParamsType)
+                                    otherStorage.set(URLSearchParams, rr.reqUrlSearchParams)
                                 } else if (paramType === ReqMultipartFormBody) {
-                                    otherStorage.set(ReqMultipartFormBody, rr.reqBodyReqMultipartFormBody())
+                                    otherStorage.set(ReqMultipartFormBody, rr.reqBodyMultipartFormData())
                                 } else if (paramType === ReqHeader) {
                                     otherStorage.set(ReqHeader, rr.reqHeaderObj)
                                 }
@@ -263,8 +284,8 @@ export class SimpleBootHttpServer extends SimpleApplication {
                 }
 
                 // after
-                for (const it of filter.reverse()) {
-                    if (it.filter?.after && !await it.filter.after(rr, this, it.sw)) {
+                for (const it of filter.filters.reverse()) {
+                    if (it.filter?.proceedAfter && !await it.filter.proceedAfter({rr, app:this, before: it.sw, carrier: filter.carrier})) {
                         break;
                     }
                 }
@@ -300,8 +321,9 @@ export class SimpleBootHttpServer extends SimpleApplication {
                 rr.resEnd();
             }
         });
-        server.listen(this.option.listen.port, this.option.listen.hostname, this.option.listen.backlog, () => {
-            this.option.listen.listeningListener?.(this, server);
+
+        this.server.listen(this.option.listen.port, this.option.listen.hostname, this.option.listen.backlog, () => {
+            this.option.listen.listeningListener?.(this, this.server);
         });
     }
 }

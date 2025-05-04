@@ -1,0 +1,34 @@
+.details-form-container {
+
+}
+
+.details-form-bottom-left-container {
+    position: absolute;
+    left: 0;
+    top: 100%;
+    /*margin-top: 0px;*/
+    /*width: max-content;*/
+}
+
+.details-form-bottom-right-container {
+    position: absolute;
+    right: 0;
+    top: 100%;
+    /*margin-top: 0px;*/
+    /*width: max-content;*/
+}
+
+.details-form-top-left-container {
+    position: absolute;
+    left: 0;
+    bottom: 100%;
+    /*margin-bottom: 0px;*/
+    /*width: max-content;*/
+}
+
+.details-form-top-right-container {
+    position: absolute;
+    right: 0;
+    bottom: 100%;
+    /*margin-bottom: 0px;*/
+}

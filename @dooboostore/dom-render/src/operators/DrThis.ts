@@ -10,6 +10,7 @@ export class DrThis extends OperatorExecuterAttrRequire<string> {
     if (attr && this.elementSource.attrs.drThis) {
       let thisPath = this.elementSource.attrs.drThis;
       if (attr instanceof ComponentSet) {
+        // console.log('drThis!!!!!!!!!!->', attr)
         // if (this.rawSet.data) {
         //   const destroyOptions = this.elementSource.attrs.drDestroyOption?.split(',') ?? [];
         //   debugger;

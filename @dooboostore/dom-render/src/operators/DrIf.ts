@@ -11,7 +11,7 @@ export class DrIf extends OperatorExecuterAttrRequire<string> {
   }
 
   async executeAttrRequire(attr: string): Promise<ExecuteState> {
-    const itRandom = RawSet.drItOtherEncoding(this.elementSource.element);
+    const itRandom = RawSet.drItOtherEncoding(this.elementSource.element, 'DrIf');
     const vars = RawSet.drVarEncoding(this.elementSource.element, this.elementSource.attrs.drVarOption ?? '');
     const newTemp = this.source.config.window.document.createElement('temp');
     // Object.entries(this.__render.drAttr).filter(([k,v]) => k !== 'drIf' && v).forEach(([k, v]) => n.setAttribute(this.__render.drAttrsOriginName[k], v)); <-- 이부분은 다른 attr에도 적용을 할지말지 생각해야됨  엘리먼트 존재유무에 따라서 적용을 할지말지 결정해야됨
@@ -27,8 +27,9 @@ export class DrIf extends OperatorExecuterAttrRequire<string> {
                     Object.entries(this.__render.drAttr).filter(([k,v]) => k !== 'drIf' && v).forEach(([k, v]) => n.setAttribute(this.__render.drAttrsOriginName[k], v));
                     var destIt = ${this.elementSource.attrs.drItOption};
                     if (destIt !== undefined) {
-                        n.getAttributeNames().forEach(it => n.setAttribute(it, n.getAttribute(it).replace(/\\#it\\#/g, destIt)))
-                        n.innerHTML = n.innerHTML.replace(/\\#it\\#/g, destIt);
+                     // 여기가 ..아주 헛갈리는데...
+                        Array.from(n.getAttributeNames()).forEach(it => n.setAttribute(it, n.getAttribute(it).replace(/\\#DrIFIt\\#/g, destIt)))
+                        n.innerHTML = n.innerHTML.replace(/\\#DrIFIt\\#/g, destIt);
                     }
                     if (this.__render.drStripOption === 'true') {
                         Array.from(n.childNodes).forEach(it => this.__render.fag.append(it));

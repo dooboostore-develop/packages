@@ -1,23 +1,37 @@
 import { PostConstruct, Sim } from '@dooboostore/simple-boot/decorators/SimDecorator';
-import { AfterProxyFetchParams, BeforeProxyFetchParams, FetcherRequest, HttpFetcherConfig, HttpFetcherTarget, HttpJsonFetcher } from '@dooboostore/core/fetch';
+import { AfterProxyFetchParams, BeforeProxyFetchParams, FetcherRequest, FetchSet, HttpFetcherConfig, HttpFetcherTarget, HttpJsonFetcher, RequestInfo } from '@dooboostore/core/fetch';
 import { Alert } from '../alert/Alert';
-import { Subject } from 'rxjs';
+import { config, pipe, Subject } from 'rxjs';
 import { AlertService } from '../alert/AlertService';
+import { SimstanceManager } from '@dooboostore/simple-boot/simstance/SimstanceManager';
+import { isDefined } from '@dooboostore/core/types';
 
-export namespace ApiService {
+export namespace ApiServiceInterceptor {
+  export const TOKEN = Symbol('ApiServiceInterceptor');
+    export const resolveAll = (simstanceManager: SimstanceManager):ApiServiceInterceptor[] => {
+      try {
+        // simstanceManager.findSims()
+        return (simstanceManager.findSims<ApiServiceInterceptor>(ApiServiceInterceptor.TOKEN) ?? []).map(it => it.getValue()).filter(isDefined);
+      } catch (e) {
+        return [];
+      }
+    };
 
   export type BeforeProxyExecuteParams = {
     target: HttpFetcherTarget;
     config?: HttpFetcherConfig<ApiService.ApiServiceConfig>;
   };
+}
+export interface ApiServiceInterceptor {
+  afterProxyFetch?<T = RequestInfo | URL>(config: AfterProxyFetchParams<T>): Promise<Response>;
+  beforeProxyFetch?<T = RequestInfo | URL>(config: BeforeProxyFetchParams<T>): Promise<BeforeProxyFetchParams<T>>;
+  beforeProxyExecute?(config: ApiServiceInterceptor.BeforeProxyExecuteParams): Promise<ApiServiceInterceptor.BeforeProxyExecuteParams>;
+}
 
-  // export interface ApiServiceInterceptor {
-  //   afterProxyFetch?<T = RequestInfo | URL>(config: AfterProxyFetchParams<T>): Promise<Response>;
-  //
-  //   beforeProxyFetch?<T = RequestInfo | URL>(config: BeforeProxyFetchParams<T>): Promise<BeforeProxyFetchParams<T>>;
-  //
-  //   beforeProxyExecute?(config: BeforeProxyExecuteParams): Promise<BeforeProxyExecuteParams>;
-  // }
+
+export namespace ApiService {
+
+
 
   export type AlertConfig = {
     title?: string;
@@ -64,27 +78,57 @@ export namespace ApiService {
     config: FetcherRequest<URL, any, HttpFetcherConfig<ApiServiceConfig>>;
     pipe: PIPE;
   };
-  export type StoreDataAfterFetch = { type: 'afterFetch'; response: Response };
-  export type StoreDataBeforeFetch<T = RequestInfo | URL> = { type: 'beforeFetch'; config: BeforeProxyFetchParams<T> };
+  export type StoreDataAfterFetch = { type: 'afterFetchData'; response: Response };
+  export type StoreDataBeforeFetch<T = RequestInfo | URL> = { type: 'beforeFetchData'; config: BeforeProxyFetchParams<T> };
   export type StoreDataFinal = {
     type: 'final';
     config: FetcherRequest<URL, any, HttpFetcherConfig<ApiServiceConfig>>;
     pipe: PIPE;
   };
+  export type StoreBeforeFetch = { type: 'beforeFetch'; fetch: FetchSet };
+  export type StoreAfterFetch = { type: 'afterFetch'; fetch: FetchSet, response: Response };
   export type StoreData =
     | StoreDataBeforeFetch
     | StoreDataAfterFetch
     | StoreDataProgress
     | StoreDataSuccess
     | StoreDataError
-    | StoreDataFinal;
+    | StoreDataFinal
+    | StoreBeforeFetch
+    | StoreAfterFetch
+
+}
+
+export const isStoreAfterFetch = (data: ApiService.StoreData): data is ApiService.StoreAfterFetch => {
+  return data.type === 'afterFetch';
+}
+export const isStoreAfterFetchData = (data: ApiService.StoreData): data is ApiService.StoreAfterFetch => {
+  return data.type === 'afterFetchData';
+}
+export const isStoreBeforeFetch = (data: ApiService.StoreData): data is ApiService.StoreBeforeFetch => {
+  return data.type === 'beforeFetch';
+}
+export const isStoreBeforeFetchData = (data: ApiService.StoreData): data is ApiService.StoreBeforeFetch => {
+  return data.type === 'beforeFetchData';
+}
+export const isStoreProgress = (data: ApiService.StoreData): data is ApiService.StoreDataProgress => {
+  return data.type === 'progress';
+}
+export const isStoreSuccess = (data: ApiService.StoreData): data is ApiService.StoreDataSuccess => {
+  return data.type === 'success';
+}
+export const isStoreError = (data: ApiService.StoreData): data is ApiService.StoreDataError => {
+  return data.type === 'error';
+}
+export const isStoreFinal = (data: ApiService.StoreData): data is ApiService.StoreDataFinal => {
+  return data.type === 'final';
 }
 
 @Sim
 export class ApiService extends HttpJsonFetcher<ApiService.ApiServiceConfig, ApiService.PIPE> {
   private subject = new Subject<ApiService.StoreData>();
   private alertService?: AlertService<any>;
-  constructor(alertService: AlertService<any>) {
+  constructor(private simstanceManager: SimstanceManager, alertService: AlertService<any>) {
     super();
     this.alertService = alertService;
     // console.log('%c ApiService constructor', 'color: #ff0000');
@@ -105,30 +149,39 @@ export class ApiService extends HttpJsonFetcher<ApiService.ApiServiceConfig, Api
     return {};
   }
 
-  // async beforeProxyFetch<T = RequestInfo | URL>(config: BeforeProxyFetchParams<T>) {
-  // let interceptors = ApiService.ApiServiceInterceptor.resolveAll();
-  // for (const interceptor of interceptors) {
-  //   if (interceptor.beforeProxyFetch) {
-  //     config = await interceptor.beforeProxyFetch(config);
-  //   }
-  // }
-  // @ts-ignore
-  //   this.subject.next({ type: 'beforeFetch', config: config as BeforeProxyFetchParams });
-  //   return config;
-  // }
+  async beforeProxyFetch<T = RequestInfo | URL>(config: BeforeProxyFetchParams<T>) {
+  let interceptors = ApiServiceInterceptor.resolveAll(this.simstanceManager);
+    for (const interceptor of interceptors) {
+      if (interceptor.beforeProxyFetch) {
+        config = await interceptor.beforeProxyFetch(config);
+      }
+    }
+    // @ts-ignore
+    this.subject.next({ type: 'beforeFetchData', config: config as BeforeProxyFetchParams});
+    return config;
+  }
 
-  // async afterProxyFetch<T = RequestInfo | URL>(config: { config: BeforeProxyFetchParams<T>; response: Response }) {
-  // let interceptors = ApiService.ApiServiceInterceptor.resolveAll();
-  // // console.log('afterProxyFetch------------>', interceptors);
-  // let r = config.response;
-  // for (const interceptor of interceptors) {
-  //   if (interceptor.afterProxyFetch) {
-  //     r = await interceptor.afterProxyFetch({ ...config, response: r });
-  //   }
-  // }
-  // this.subject.next({ type: 'afterFetch', response: r });
-  // return r;
-  // }
+  async afterProxyFetch<T = RequestInfo | URL>(config: AfterProxyFetchParams<T>) {
+  // console.log('afterProxyFetch!!!!11', config);
+  let interceptors = ApiServiceInterceptor.resolveAll(this.simstanceManager);
+  let r = config.response;
+  for (const interceptor of interceptors) {
+    if (interceptor.afterProxyFetch) {
+      r = await interceptor.afterProxyFetch(config);
+    }
+  }
+  // console.log('afterProxyFetch!!!!22', r);
+  this.subject.next({ type: 'afterFetchData', response: r });
+  return r;
+  }
+
+  beforeFetch(fetch: FetchSet): void {
+    this.subject.next({type: 'beforeFetch', fetch});
+  }
+
+  afterFetch(fetch: FetchSet, response: Response): void {
+    this.subject.next({type: 'afterFetch', fetch, response});
+  }
 
   protected before(
     config: FetcherRequest<URL, any, HttpFetcherConfig<ApiService.ApiServiceConfig>>,
@@ -194,13 +247,13 @@ export class ApiService extends HttpJsonFetcher<ApiService.ApiServiceConfig, Api
     target: HttpFetcherTarget,
     config?: HttpFetcherConfig<ApiService.ApiServiceConfig>
   ): Promise<any> {
-    let r: ApiService.BeforeProxyExecuteParams = {target, config};
-    // const interceptor = ApiService.ApiServiceInterceptor.resolveAll() ?? [];
-    // for (const apiServiceInterceptor of interceptor) {
-    //   if (apiServiceInterceptor.beforeProxyExecute) {
-    //     r = await apiServiceInterceptor.beforeProxyExecute?.(r);
-    //   }
-    // }
+    let r: ApiServiceInterceptor.BeforeProxyExecuteParams = {target, config};
+    const interceptor = ApiServiceInterceptor.resolveAll(this.simstanceManager) ?? [];
+    for (const apiServiceInterceptor of interceptor) {
+      if (apiServiceInterceptor.beforeProxyExecute) {
+        r = await apiServiceInterceptor.beforeProxyExecute?.(r);
+      }
+    }
     return super.execute(r.target, r.config);
   }
 }

@@ -1,11 +1,15 @@
 import { ConstructorType, GenericClassDecorator } from '@dooboostore/core/types';
 import { ReflectUtils } from '@dooboostore/simple-boot/utils/reflect/ReflectUtils';
+import { SimConfigProxy, SimConfigUsing } from '@dooboostore/simple-boot/decorators/SimDecorator';
 
 export const componentSelectors = new Map<string, ConstructorType<any>>();
 export interface ComponentConfig {
-    selector?: string,
-    template?: string,
-    styles?: (string)[]  | string
+    selector?: string;
+    noStrip?: boolean;
+    template?: string;
+    styles?: (string)[]  | string;
+    proxy?: SimConfigProxy;
+    using?: SimConfigUsing;
 }
 
 export const ComponentMetadataKey = Symbol('Component');

@@ -20,6 +20,7 @@ export enum HttpHeaders {
     AccessControlAllowOrigin = 'Access-Control-Allow-Origin',
     AccessControlAllowMethods = 'Access-Control-Allow-Methods',
     AccessControlAllowHeaders = 'Access-Control-Allow-Headers',
+    AccessControlExposeHeaders = 'Access-Control-Expose-Headers',
     Expect = 'Expect',
     From = 'From',
     MaxForwards = 'Max-Forwards',

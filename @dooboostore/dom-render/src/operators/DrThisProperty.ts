@@ -12,7 +12,7 @@ export class DrThisProperty extends OperatorExecuterAttrRequire<string> {
     }
 
     async executeAttrRequire(attr: string): Promise<ExecuteState> {
-        const itRandom = RawSet.drItOtherEncoding(this.elementSource.element);
+        const itRandom = RawSet.drItOtherEncoding(this.elementSource.element, 'DrThisProperty');
         const vars = RawSet.drVarEncoding(this.elementSource.element, this.elementSource.attrs.drVarOption ?? '');
         const newTemp = this.source.config.window.document.createElement('temp');
         const dictioanry = ScriptUtils.evalReturn(attr, this.source.obj)

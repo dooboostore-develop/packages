@@ -41,7 +41,7 @@ export class JsdomInitializer {
         // @ts-ignore
         // global.Error = ErrorBase;
         // @ts-ignore
-        global.navigator = jsdom.window.navigator;
+        // global.navigator = jsdom.window.navigator;
         global.NodeFilter = jsdom.window.NodeFilter;
         global.Node = jsdom.window.Node;
         global.HTMLElement = jsdom.window.HTMLElement;

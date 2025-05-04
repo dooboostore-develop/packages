@@ -3,21 +3,22 @@ import template from './checkBox.html';
 import style from './checkBox.css';
 import { OnCreateRenderDataParams } from '@dooboostore/dom-render/lifecycle/OnCreateRenderData';
 import { ComponentBase } from '../ComponentBase';
+import { OtherData } from '@dooboostore/dom-render/lifecycle/OnChangeAttrRender';
 
 export namespace CheckBox {
-  export const selector = 'CheckBox';
+  export const selector = 'System:CheckBox';
   export type Attribute = {
     class?: string;
   }
   export type WrapAttribute = {
     class?: string;
     name?: string;
-    on_change_checked?: (checked: boolean) => void
+    checked?: boolean;
+    change?: (checked: boolean) => void
   }
 
   class CheckBoxBase extends ComponentBase<Attribute> {
     public hidden = true;
-
   }
 
   @Component({
@@ -29,7 +30,7 @@ export namespace CheckBox {
     public name = 'Checked';
 
     constructor() {
-      super({ onlyParentType: Wrap });
+      super({ onlyParentType: CheckBox });
     }
   }
 
@@ -42,25 +43,23 @@ export namespace CheckBox {
     public name = 'unChecked';
 
     constructor() {
-      super({ onlyParentType: Wrap });
+      super({ onlyParentType: CheckBox });
     }
   }
 
   @Component({
     template: template,
     styles: style,
-    selector: `${selector}.Wrap`
+    selector: `${selector}`
   })
-  export class Wrap extends ComponentBase<WrapAttribute> {
-    private name = 'wrap';
+  export class CheckBox extends ComponentBase<WrapAttribute> {
     private checked = false;
+    private inputElement?: HTMLInputElement;
 
     change(checked: boolean = this.checked) {
       this.checked = checked;
       this.setChildrenHidden(checked);
-      if (this.attribute?.on_change_checked) {
-        this.attribute.on_change_checked(checked);
-      }
+      this.attribute?.change?.(checked);
     }
 
     private setChildrenHidden(checked: boolean) {
@@ -77,6 +76,20 @@ export namespace CheckBox {
       this.setChildrenHidden(this.checked);
     }
 
+    onInitInputElement(element: HTMLInputElement){
+      // console.log('---cr', element)
+      this.inputElement = element;
+      this.inputElement.checked = !!this.attribute?.checked;
+      this.change(this.attribute?.checked);
+    }
+    onChangeAttrRender(name: string, val: any, other: OtherData) {
+      super.onChangeAttrRender(name, val, other);
+      // console.log('------', name, val, this.inputElement)
+      if (this.inputElement && this.attribute && this.attribute?.checked !== this.checked) {
+        this.inputElement.checked = !!this.attribute.checked;
+        this.change(this.attribute.checked);
+      }
+    }
 
   }
 }

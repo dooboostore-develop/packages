@@ -1,0 +1,179 @@
+/*!* --- 프로필 다이얼로그 --- *!*/
+/*#profileDialog { max-width: 420px; } !* 너비 조정 *!*/
+
+/*dialog {*/
+/*    border: none; border-radius: 14px; !* 더 둥글게 *!*/
+/*    box-shadow: 0 12px 35px rgba(0, 0, 0, 0.18);*/
+/*    padding: 0; width: 90%; overflow: hidden;*/
+/*}*/
+/*#profileDialog::backdrop {*/
+/*    background-color: rgba(0, 0, 0, 0.55);*/
+/*}*/
+/*.dialog-content { display: flex; flex-direction: column; position: relative; max-height: calc(100dvh - 40px); !* 뷰포트 높이 고려 *! }*/
+/*dialog .close-button {*/
+/*    position: absolute; top: 0; right: 0; background: none; border: none;*/
+/*    outline: none;*/
+/*    font-size: 1rem; !* Adjusted font size *!*/
+/*    color: #adb5bd; cursor: pointer;*/
+/*    padding: 8px; line-height: 1; z-index: 10; border-radius: 50%;*/
+/*    width: 38px; height: 38px; display:flex; align-items:center; justify-content:center;*/
+/*}*/
+/*dialog .close-button:hover { background-color:#f1f3f5; color: #343a40; }*/
+
+
+/*.header {*/
+/*    flex-grow: 1; padding: 10px 8px; text-align: center; background: none;*/
+/*    border: none; border-bottom: 2px solid transparent; !* 두께 줄림 *! cursor: pointer;*/
+/*    font-size: 1rem; !* Adjusted font size *!*/
+/*    font-weight: 500; color: #495057;*/
+/*    display: inline-flex; align-items: center; justify-content: center; gap: 6px;*/
+/*}*/
+
+/*hr {*/
+/*    border: none;*/
+/*    border-top: 1px solid #cdcdcd;*/
+/*}*/
+
+/*!* New styles for profile update UI *!*/
+/*.profile-tab-content {*/
+/*    padding: 10px 20px;*/
+/*    overflow-y: auto;*/
+/*    flex-grow: 1;*/
+/*}*/
+
+/*.profile-tabs {*/
+/*    padding: 10px 20px; !* Add padding to the form itself *!*/
+/*}*/
+
+/*.form-group {*/
+/*    margin-bottom: 15px;*/
+/*    display: flex;*/
+/*    grid-template-columns: auto 1fr; !* Align label and input *!*/
+/*    align-items: center;*/
+/*    gap: 10px; !* Gap between label and input *!*/
+/*    width: 100%; !* Ensure form-group takes full width *!*/
+/*}*/
+
+/*.form-group label {*/
+/*    display: block;*/
+/*    font-weight: 600;*/
+/*    color: #333;*/
+/*    white-space: nowrap; !* Prevent label from wrapping *!*/
+/*    font-size: 1rem; !* Adjusted font size *!*/
+/*}*/
+
+/*.profile-image-upload-group {*/
+/*    grid-template-columns: 1fr; !* Full width for image upload *!*/
+/*    text-align: center;*/
+/*}*/
+
+/*.profile-image-preview-container {*/
+/*    position: relative;*/
+/*    width: 100px;*/
+/*    height: 100px;*/
+/*    margin: 0 auto;*/
+/*    border-radius: 50%; !* Ensure overlay matches image shape *!*/
+/*    overflow: visible; !* Allow icon to be outside the image bounds *!*/
+/*}*/
+
+/*.current-profile-image {*/
+/*    width: 100%;*/
+/*    height: 100%;*/
+/*    border-radius: 50%;*/
+/*    object-fit: cover;*/
+/*    border: 2px solid #eee;*/
+/*    box-shadow: 0 2px 5px rgba(0,0,0,0.1);*/
+/*}*/
+
+/*.upload-icon-label {*/
+/*    position: absolute;*/
+/*    bottom: -5px; !* Adjusted position *!*/
+/*    right: -5px;  !* Adjusted position *!*/
+/*    background-color: transparent; !* Make background transparent *!*/
+/*    color: #717171; !* Change color on hover *!*/
+/*    display: flex;*/
+/*    justify-content: center;*/
+/*    align-items: center;*/
+/*    font-size: 1rem; !* Icon size *!*/
+/*    cursor: pointer;*/
+/*}*/
+
+/*.upload-icon-label:hover {*/
+/*    color: #8a8a8a; !* Subtle color for the icon *!*/
+/*}*/
+
+/*input[type="file"] {*/
+/*    border: 1px solid #ccc;*/
+/*    padding: 8px;*/
+/*    border-radius: 5px;*/
+/*    width: 100%;*/
+/*    box-sizing: border-box;*/
+/*    font-size: 1rem; !* Adjusted font size *!*/
+/*}*/
+
+/*.world-name-input-container {*/
+/*    display: flex;*/
+/*    align-items: center;*/
+/*    border: 1px solid #ccc;*/
+/*    border-radius: 5px;*/
+/*    overflow: hidden;*/
+/*    flex-grow: 1; !* Allow it to take available space *!*/
+/*    width: 100%; !* Explicitly set width to 100% *!*/
+/*}*/
+
+/*.at-prefix {*/
+/*    padding: 8px 5px 8px 10px;*/
+/*    background-color: #f0f0f0;*/
+/*    border-right: 1px solid #ccc;*/
+/*    color: #555;*/
+/*    font-weight: bold;*/
+/*    font-size: 1rem; !* Adjusted font size *!*/
+/*}*/
+
+/*#worldNameInput {*/
+/*    flex-grow: 1;*/
+/*    border: none;*/
+/*    padding: 8px 10px;*/
+/*    outline: none;*/
+/*    font-size: 1rem; !* Adjusted font size *!*/
+/*    width: 100%; !* Explicitly set width to 100% *!*/
+/*}*/
+
+/*.save-button {*/
+/*    background-color: #468de4;*/
+/*    color: #ffffff;*/
+/*    border: none;*/
+/*    padding: 8px 15px;*/
+/*    cursor: pointer;*/
+/*    transition: background-color 0.2s ease;*/
+/*    font-size: 1rem; !* Adjusted font size *!*/
+/*}*/
+
+/*.save-button:hover {*/
+/*    background-color: #3083e4;*/
+/*}*/
+/*.world-name-group {*/
+/*    display: flex;*/
+/*    flex-direction: column;*/
+/*    gap:0.5rem;*/
+/*}*/
+/*.rejected {*/
+/*    font-size: 0.9rem;*/
+/*    color: #e74c3c;*/
+/*}*/
+
+/*.public-status-group .System-CheckBox {*/
+/*    display: flex;*/
+/*    align-items: center;*/
+/*    gap: 10px;*/
+/*    padding: 8px 10px;*/
+/*    border: 1px solid #ccc;*/
+/*    border-radius: 5px;*/
+/*    background-color: #f9f9f9;*/
+/*    flex-grow: 1; !* Allow it to take available space *!*/
+/*    font-size: 1rem; !* Adjusted font size *!*/
+/*}*/
+
+/*.public-status-group .System-CheckBox input[type="checkbox"] {*/
+/*    margin-right: 5px;*/
+/*}*/

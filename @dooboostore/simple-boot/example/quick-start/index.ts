@@ -1,9 +1,10 @@
 import { SimpleApplication } from '@dooboostore/simple-boot/SimpleApplication';
-import { Router } from '@dooboostore/simple-boot/decorators/route/Router';
+import { Route, Router } from '@dooboostore/simple-boot/decorators/route/Router';
 import { Lifecycle, PostConstruct, Sim } from '@dooboostore/simple-boot/decorators/SimDecorator';
 import { Inject } from '@dooboostore/simple-boot/decorators/inject/Inject';
 import { SimOption } from '@dooboostore/simple-boot/SimOption';
 import { ConstructorType } from '@dooboostore/core/types';
+import { Intent } from '@dooboostore/simple-boot/intent/Intent';
 
 @Sim
 class User {
@@ -25,6 +26,11 @@ class User1 {
   say() {
     console.log('User1 say');
   }
+
+
+  good() {
+
+  }
 }
 
 // @Sim({ scheme: 'User2', type: User, autoCreate: true })
@@ -40,14 +46,41 @@ class User2 {
   }
 }
 
+@Sim
+class Office {
+
+}
+
+@Sim
+@Router({
+  path: '/user',
+  route: {
+    '/office': Office
+  }
+})
+class SubRouter {
+
+  constructor() {
+    console.log('SubRouter');
+  }
+
+  routeSay() {
+  }
+
+  post() {
+  }
+}
+
+
 @Sim({
   scope: Lifecycle.Transient
 })
 @Router({
-  path: '',
-  route: { '/user': User }
+  // path: '/',
+  // route: { 'user': User },
+  routers: [SubRouter]
 })
-abstract class AppRouter {
+class AppRouter {
   private date = new Date().toISOString();
 
   constructor(@Inject({ type: User, scheme: 'User' }) private users: User[], private user2: User2, private user22: User2) {
@@ -88,22 +121,22 @@ class AppRouter2 extends AppRouter {
 
 // const a = Sim({ scheme: 'User2', type: User, autoCreate: true })(User2)
 
-const app = new SimpleApplication(new SimOption({ rootRouter: AppRouter2 }));
-app.addSim( User2);
-// app.addSim({ scheme: 'User2', type: User, autoCreate: true }, User2);
-// type 1
+const app = new SimpleApplication(new SimOption({ rootRouter: AppRouter }));
+app.addSim(User2);
 const other = new Map<ConstructorType<any> | Function, any>()
-// other.set(User2, new User2());
 app.run(other);
-// const a = app.simAtomic(AppRouter)
-// console.log('---->',a)
-// const c = a.getConfig()
-// console.log('---->',c)
-// app.sim(User).say();
-let appRouter = app.sim(AppRouter);
-// console.log('!!!', appRouter)
-appRouter?.routeSay();
+// let appRouter = app.sim(AppRouter);
+// appRouter?.routeSay();
 
+
+const intent = new Intent('/user/office');
+
+app.routing(intent).then(it => {
+
+  console.log('--s-sdssssd',it)
+  // console.log('---', it, it.module)
+})
+// console.log('-----------------------')
 // appRouter = app.sim(AppRouter);
 // appRouter?.routeSay();
 // ssd  ssd

@@ -2,9 +2,6 @@
     position: relative;
 }
 
-.details-container .details-summary-container {
-
+.details-container .details-body-container {
+    position: absolute;
 }
-/*.details-container .details-body-container {*/
-/*    position: absolute;*/
-/*}*/

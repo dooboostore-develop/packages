@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover,maximum-scale=1.0, user-scalable=no">
+    <title>examples</title>
+    <style>
+        .crop-canvas-container {
+            border: #2c3e50 1px solid;
+        }
+
+        .crop-content-container {
+            display: flex;
+            flex-direction: row;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .crop-canvas-text-options-container {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        #crop-canvas {
+            width: 100vw;
+            height: 500px;
+            touch-action: none; /* Prevent scrolling on canvas */
+        }
+
+        .crop-canvas-rect-container, .crop-canvas-rect-options-container, .crop-canvas-circle-container, .crop-canvas-triangle-container {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+    </style>
+</head>
+<body id="app">
+<h1>lib-web quick-start</h1>
+<div>
+    <h2>cropCanvas</h2>
+    <div class="crop-canvas-container">
+        <canvas id="crop-canvas" dr-on-rendered-init="@this@.onInitCanvasElement($element)"></canvas>
+    </div>
+    <div class="crop-content-container">
+        <fieldset>
+            <legend>
+                이미지 업로드
+            </legend>
+            <input id="crop-canvas-file-input" type="file">
+        </fieldset>
+        <hr/>
+        <fieldset id="shape-style-controller">
+            <legend>색 스타일</legend>
+            <label>Fill: <input id="shape-fill-color-input" type="color" value="#000000"></label>
+            <label>Fill Alpha: <input id="shape-fill-alpha-input" type="range" min="0" max="1" step="0.01" value="1"></label>
+            <label>Stroke: <input id="shape-stroke-color-input" type="color" value="#FFFFFF"></label>
+            <label>Stroke Alpha: <input id="shape-stroke-alpha-input" type="range" min="0" max="1" step="0.01" value="1"></label>
+            <label>Stroke Width: <input id="shape-stroke-width-input" type="number" value="2" min="0"></label>
+        </fieldset>
+        <fieldset>
+            <legend>도형 추가</legend>
+            <button id="crop-canvas-add-rect-button">사각형</button>
+            <button id="crop-canvas-add-circle-button">원</button>
+            <button id="crop-canvas-add-triangle-button">삼각형</button>
+            <button id="crop-canvas-add-star-button">별</button>
+            <button id="crop-canvas-add-heart-button">하트</button>
+            <button id="crop-canvas-add-speechBubble-button">말풍선</button>
+            <button id="crop-canvas-add-pentagon-button">오각형</button>
+            <button id="crop-canvas-add-octagon-button">팔각형</button>
+            <button id="crop-canvas-add-semicircle-button">반원</button>
+            <button id="crop-canvas-add-cross-button">십자가</button>
+        </fieldset>
+        <hr/>
+        <fieldset id="text-controller-container">
+            <legend>
+                텍스트
+            </legend>
+            <div class="crop-canvas-text-options-container">
+                <label>Text: <textarea id="crop-canvas-text-input" cols="10" rows="5"></textarea></label>
+                <label>Size: <input id="crop-canvas-text-size-input" type="number" value="100" min="1"></label>
+                <button id="crop-canvas-add-text-button">Add Text</button>
+            </div>
+        </fieldset>
+    </div>
+    <fieldset id="layer-order-controls" disabled>
+        <legend>레이어 순서</legend>
+        <button id="layer-to-front-button">맨 앞으로</button>
+        <button id="layer-to-back-button">맨 뒤로</button>
+    </fieldset>
+    <fieldset id="history-controls">
+        <legend>히스토리</legend>
+        <button id="history-back-button">뒤로</button>
+        <button id="history-next-button">앞으로</button>
+    </fieldset>
+    <button id="crop-canvas-crop-button">Crop Peck</button>
+</div>
+</body>
+</html>

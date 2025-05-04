@@ -16,11 +16,12 @@ export class IntentSchemeFilter implements Filter {
     async onInit(app: SimpleBootHttpServer) {
     }
 
-    async before(rrr: RequestResponse) {
-        const rr = rrr;
+    async proceedBefore({rr, app}: {rr: RequestResponse, app: SimpleBootHttpServer, carrier: Map<string, any>}) {
+        // const rr = rrr;
         const url = rr.reqUrl;
         const contentLength = Number(rr.reqHeader(HttpHeaders.ContentLength.toLowerCase() ?? '0'));
         const acceptType = rr.reqHeader(HttpHeaders.Accept);
+        const contentType = rr.reqHeader(HttpHeaders.ContentType);
         const intentScheme = rr.reqHeader(HttpHeaders.XSimpleBootSsrIntentScheme);
         if (acceptType === Mimes.ApplicationJsonPostSimpleBootSsrIntentScheme && intentScheme) {
             let intent = new Intent(`${intentScheme}:/${url}`);
@@ -28,7 +29,11 @@ export class IntentSchemeFilter implements Filter {
             // const responseHeader = {} as any;
             // responseHeader[HttpHeaders.ContentType] = Mimes.ApplicationJson;
             if (contentLength > 0) {
-                intent.data = [await rr.reqBodyJsonData(), rr];
+                if (contentType.includes(Mimes.ApplicationJson)) {
+                    intent.data = [await rr.reqBodyJsonData(), rr];
+                } else if (contentType.includes(Mimes.MultipartFormData)) {
+                    intent.data = [await rr.reqBodyMultipartFormDataObject(), rr];
+                }
                 const rdatas = this.intentManager.publish(intent);
                 const rdata = rdatas[0];
                 const wdata = rdata instanceof Promise ? await rdata : rdata;
@@ -36,7 +41,7 @@ export class IntentSchemeFilter implements Filter {
                 rr.resSetHeader(HttpHeaders.ContentType, [Mimes.ApplicationJson])
                 await rr.resEnd(wdata ? JSON.stringify(wdata) : undefined);
             } else {
-                intent.data = rr.reqUrlSearchParams.length > 0 ? [rr.reqUrlSearchParamsObj, rr] : [rr];
+                intent.data = rr.reqUrlSearchParamTuples.length > 0 ? [rr.reqUrlSearchParamsObj, rr] : [rr];
                 const rdatas = this.intentManager.publish(intent);
                 const rdata = rdatas[0];
                 const wdata = rdata instanceof Promise ? await rdata : rdata;
@@ -51,7 +56,7 @@ export class IntentSchemeFilter implements Filter {
         }
     }
 
-    async after(rr: RequestResponse) {
+    async proceedAfter({rr, app}: {rr: RequestResponse, app: SimpleBootHttpServer, carrier: Map<string, any>}) {
         return true;
     }
 

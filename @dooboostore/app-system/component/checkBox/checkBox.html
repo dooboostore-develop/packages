@@ -1,8 +1,8 @@
 <label class="${@this@.attribute.class}$">
   <input
     name="${@this@.attribute.name}$"
+    dr-on-init="@this@.onInitInputElement($element)"
     dr-event-change="@this@.change($element.checked);"
-    dr-event-change:dispatch
     type="checkbox" hidden="hidden"/>
   #innerHTML#
 </label>

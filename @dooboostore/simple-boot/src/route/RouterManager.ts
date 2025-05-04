@@ -7,6 +7,8 @@ import { SimstanceManager } from '../simstance/SimstanceManager';
 import { getOnRoute, onRoutes } from '../decorators/route/OnRoute';
 import { RouteFilter } from './RouteFilter';
 import { Sim } from '../decorators/SimDecorator';
+import { Expression } from '@dooboostore/core/expression/Expression';
+import { isRouterAction } from '../route/RouterAction';
 
 @Sim
 export class RouterManager {
@@ -51,21 +53,29 @@ export class RouterManager {
           const current = executeModule.routerChains[i];
           const next = executeModule.routerChains[i + 1];
           const value = current.getValue()! as any;
-          if (next) {
-            await value?.canActivate?.(intent, next?.getValue() ?? null);
+          if (isRouterAction(value)) {
+            // console.log('routerAction!!!!!!!!!')
+            if (next) {
+              await value.canActivate({intent, routerModule: executeModule, routerManager: this}, next?.getValue() ?? null);
+            }
           }
         }
       }
       this.activeRouterModule = executeModule;
 
       // not found page TODO: notFound 됐을때 처음 router있을시 canActivate 호출
+      const moduleInstance = executeModule.getModuleInstance();
       if (!executeModule?.module) {
         const routerChain = executeModule.routerChains[executeModule.routerChains.length - 1];
-        await (routerChain?.getValue() as any)?.canActivate?.(intent, executeModule.getModuleInstance());
+        const value = routerChain?.getValue() as any;
+        if (isRouterAction(value)) {
+          await value.canActivate({intent, routerModule: executeModule, routerManager: this}, moduleInstance);
+        }
       } else { // find page
-        let module = null;
-        module = executeModule.getModuleInstance();
-        await (executeModule.router?.getValue()! as any)?.canActivate?.(intent, module);
+        const value = executeModule.router?.getValue()! as any;
+        if (isRouterAction(value)) {
+          await value.canActivate({intent, routerModule: executeModule, routerManager: this}, moduleInstance);
+        }
       }
 
       // 라우팅 완료된 후 호출 되어야 할 decoration TODO: 리펙토링 필요
@@ -93,15 +103,18 @@ export class RouterManager {
       }
       return this.activeRouterModule as RouterModule<any, any>;
     } else {
+      const routerModule = new RouterModule(this.simstanceManager, rootRouter, undefined, routers);
       if (routers.length && routers.length > 0) {
         for (let i = 0; i < routers.length; i++) {
           const current = routers[i];
           const next = routers[i + 1];
           const value = current.getValue()! as any;
-          await value?.canActivate?.(intent, next?.getValue() ?? null);
+            // console.log('routerAction!!!!!!!!!3')
+          if (isRouterAction(value)) {
+            await value.canActivate({intent, routerModule: routerModule, routerManager: this}, next?.getValue() ?? null);
+          }
         }
       }
-      const routerModule = new RouterModule(this.simstanceManager, rootRouter, undefined, routers);
       this.activeRouterModule = routerModule;
       return this.activeRouterModule as RouterModule<any, any>;
     }
@@ -126,6 +139,7 @@ export class RouterManager {
 
       const routerStrings = parentRouters.slice(1).map(it => it.getConfig<RouterConfig>(RouterMetadataKey)?.path || '');
       const isRoot = this.isRootUrl(routerConfig.path, routerStrings, path)
+      // console.log('----------routerConfig.path', routerConfig.path, 'isRoot', isRoot, 'routerStrings', routerStrings, 'path', path);
       if (isRoot) {
         parentRouters.push(router);
         // first find child routers
@@ -150,19 +164,28 @@ export class RouterManager {
   }
 
   private isRootUrl(path: string | undefined, parentRoots: string[], url: string): boolean {
-    return url.startsWith(parentRoots.join('') + (path || ''))
+    const searchString = parentRoots.join('') + (path || '');
+    const searchs  = searchString.split('/')
+    const urls = url.split('/')
+    const trimmedUrls = urls.slice(0, searchs.length).join('/');
+    // console.log('!!searchString', searchString, 'url', trimmedUrls);
+    return !!Expression.Path.pathNameData(trimmedUrls, searchString);
+    // return url.startsWith(searchString)
   }
 
   private findRouting(router: SimAtomic, routerData: RouterConfig, parentRoots: string[], intent: Intent): RouterModule | undefined {
+    // console.log('findRouting', routerData.route);
     const urlRoot = parentRoots.join('') + routerData.path
     if (routerData.route) {
       for (const it of Object.keys(routerData.route).filter(it => !it.startsWith('_'))) {
-        const pathnameData = intent.getPathnameData(urlRoot + it);
+        const path = urlRoot + it;
+        const pathnameData = intent.getPathnameData(path);
         if (pathnameData) {
           try {
             const dataSet = this.findRouteProperty(routerData.route, it, intent);
             const rm = new RouterModule(this.simstanceManager, router, dataSet.child);
             rm.data = dataSet.data;
+            rm.path = path;
             rm.pathData = pathnameData;
             rm.propertyKeys = dataSet.propertyKeys;
             return rm;

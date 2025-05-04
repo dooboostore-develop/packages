@@ -9,11 +9,11 @@ export class ThrowFilter implements Filter {
     async onInit(app: SimpleBootHttpServer){
     }
 
-    async before(rr: RequestResponse, app: SimpleBootHttpServer) {
+    async proceedBefore({rr, app}: {rr: RequestResponse, app: SimpleBootHttpServer, carrier: Map<string, any>}) {
         return true;
     }
 
-    async after(rr: RequestResponse, app: SimpleBootHttpServer) {
+    async proceedAfter({rr, app}: {rr: RequestResponse, app: SimpleBootHttpServer, carrier: Map<string, any>}) {
         const sw = rr.resIsDone();
         if (!sw) {
             throw this.error;

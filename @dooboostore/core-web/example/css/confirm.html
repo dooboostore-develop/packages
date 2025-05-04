@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>아이템 삭제 확인</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+            background-color: #E0E0E0; /* 배경을 약간 어둡게 하여 모달이 잘 보이도록 합니다. */
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center; /* 데모 버튼을 중앙에 배치 */
+        }
+
+        /* 모달 배경 (오버레이) */
+        .modal-overlay {
+            display: none; /* 평소에는 숨김 */
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.5); /* 반투명 검정 배경 */
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* 모달 컨텐츠 */
+        .modal-content {
+            background-color: #ffffff;
+            margin: auto; /* 수직/수평 중앙 정렬 */
+            padding: 25px;
+            border-radius: 12px; /* 부드러운 모서리 */
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            width: 90%;
+            max-width: 400px; /* 최대 너비 */
+            box-sizing: border-box;
+            animation: fadeInModal 0.3s ease-out;
+        }
+
+        @keyframes fadeInModal {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #eeeeee; /* 구분선 */
+            margin-bottom: 20px;
+        }
+
+        .modal-header h4 {
+            margin: 0;
+            font-size: 1.1em; /* 18px 정도 */
+            font-weight: 600; /* 기존 UI 제목과 유사한 굵기 */
+            color: #333333;
+        }
+
+        .modal-close-button {
+            color: #aaaaaa;
+            font-size: 1.5em; /* 24px 정도 */
+            font-weight: bold;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+
+        .modal-close-button:hover,
+        .modal-close-button:focus {
+            color: #333333;
+            text-decoration: none;
+        }
+
+        .modal-body p {
+            font-size: 0.95em; /* 15px 정도 */
+            color: #555555;
+            line-height: 1.6;
+            margin: 0 0 10px 0;
+        }
+
+        .modal-body p:last-child {
+            margin-bottom: 0;
+        }
+
+        .modal-body #itemNameToDelete {
+            font-weight: bold;
+            color: #D93C79; /* 제공된 이미지의 'inActive' 버튼 색상과 유사하게 */
+        }
+
+        .modal-footer {
+            padding-top: 20px;
+            text-align: right; /* 버튼 오른쪽 정렬 */
+            border-top: 1px solid #eeeeee; /* 구분선 */
+            margin-top: 25px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px; /* 부드러운 버튼 모서리 */
+            font-size: 0.9em; /* 14px 정도 */
+            font-weight: 500;
+            cursor: pointer;
+            margin-left: 10px;
+            transition: background-color 0.2s ease-in-out, opacity 0.2s ease-in-out;
+        }
+
+        .btn-secondary {
+            background-color: #f0f0f0;
+            color: #333333;
+            border: 1px solid #cccccc;
+        }
+
+        .btn-secondary:hover {
+            background-color: #e0e0e0;
+        }
+
+        .btn-danger {
+            background-color: #D93C79; /* 제공된 이미지의 'inActive' 버튼 색상과 유사하게 */
+            color: white;
+        }
+
+        .btn-danger:hover {
+            opacity: 0.85;
+        }
+
+        /* 데모용 버튼 스타일 */
+        .demo-button {
+            padding: 12px 25px;
+            font-size: 1em;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+        .demo-button:hover {
+            background-color: #0056b3;
+        }
+
+    </style>
+</head>
+<body>
+
+<!-- 아이템 삭제 확인 모달 -->
+<div id="deleteConfirmModal" class="modal-overlay">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h4>아이템 삭제 확인</h4>
+            <span class="modal-close-button" id="closeModalButton">×</span>
+        </div>
+        <div class="modal-body">
+            <p>정말로 '<span id="itemNameToDelete"></span>' 아이템을 삭제하시겠습니까?</p>
+            <p>이 작업은 되돌릴 수 없습니다.</p>
+        </div>
+        <div class="modal-footer">
+            <button id="cancelDeleteButton" class="btn btn-secondary">취소</button>
+            <button id="confirmDeleteButton" class="btn btn-danger">삭제</button>
+        </div>
+    </div>
+</div>
+
+<!-- 모달을 띄우기 위한 데모 버튼 -->
+<button id="showDeleteModalTrigger" class="demo-button">샘플 아이템 삭제하기</button>
+
+<script>
+    // 모달 요소 가져오기
+    const modalOverlay = document.getElementById('deleteConfirmModal');
+    const itemNameToDeleteSpan = document.getElementById('itemNameToDelete');
+    const closeModalButton = document.getElementById('closeModalButton');
+    const cancelDeleteButton = document.getElementById('cancelDeleteButton');
+    const confirmDeleteButton = document.getElementById('confirmDeleteButton');
+    const showDeleteModalTrigger = document.getElementById('showDeleteModalTrigger');
+
+    let currentItemName = ''; // 현재 삭제할 아이템 이름을 저장할 변수
+    let deleteCallback = null; // 삭제 확정 시 실행할 콜백 함수
+
+    // 모달 보여주기 함수
+    function showDeleteConfirmModal(itemName, callback) {
+        currentItemName = itemName;
+        deleteCallback = callback; // 콜백 함수 저장
+        itemNameToDeleteSpan.textContent = currentItemName;
+        modalOverlay.style.display = 'flex'; // flex를 사용하여 중앙 정렬
+    }
+
+    // 모달 숨기기 함수
+    function hideDeleteConfirmModal() {
+        modalOverlay.style.display = 'none';
+        currentItemName = '';
+        deleteCallback = null;
+    }
+
+    // "삭제" 버튼 클릭 이벤트
+    confirmDeleteButton.addEventListener('click', () => {
+        console.log(`'${currentItemName}' 아이템 삭제가 확정되었습니다.`);
+        // 여기에 실제 아이템 삭제 로직을 추가합니다.
+        // 예: 서버 API 호출 등
+        if (deleteCallback && typeof deleteCallback === 'function') {
+            deleteCallback(currentItemName); // 저장된 콜백 함수 실행
+        }
+        hideDeleteConfirmModal();
+    });
+
+    // "취소" 버튼 클릭 이벤트
+    cancelDeleteButton.addEventListener('click', hideDeleteConfirmModal);
+
+    // 모달 닫기(X) 버튼 클릭 이벤트
+    closeModalButton.addEventListener('click', hideDeleteConfirmModal);
+
+    // 모달 외부 클릭 시 닫기 (오버레이 클릭)
+    modalOverlay.addEventListener('click', (event) => {
+        if (event.target === modalOverlay) {
+            hideDeleteConfirmModal();
+        }
+    });
+
+    // ESC 키로 모달 닫기
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && modalOverlay.style.display === 'flex') {
+            hideDeleteConfirmModal();
+        }
+    });
+
+
+    // --- 데모용 로직 ---
+    showDeleteModalTrigger.addEventListener('click', () => {
+        // 실제 애플리케이션에서는 삭제하려는 아이템의 실제 이름과
+        // 삭제 후 실행할 로직을 콜백으로 전달합니다.
+        const itemToDelete = 'mcdonalds-event'; // 예시 아이템 이름
+        showDeleteConfirmModal(itemToDelete, (itemName) => {
+            alert(`'${itemName}' 아이템이 성공적으로 삭제되었다고 가정합니다!`);
+            // 여기에 삭제 후 UI 업데이트 로직 등을 추가할 수 있습니다.
+        });
+    });
+
+</script>
+
+</body>
+</html>

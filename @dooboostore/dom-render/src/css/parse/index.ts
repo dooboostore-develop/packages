@@ -1,19 +1,19 @@
 // http://www.w3.org/TR/CSS21/grammar.html
 // https://github.com/visionmedia/css-parse/pull/49#issuecomment-30088027
 
-interface Position {
+export interface Position {
   start: { line: number; column: number };
   end: { line: number; column: number };
   source?: string;
   content: string;
 }
 
-interface ParseOptions {
+export interface ParseOptions {
   source?: string;
   silent?: boolean;
 }
 
-interface StyleSheet {
+export interface StyleSheet {
   type: 'stylesheet';
   stylesheet: {
     source?: string;
@@ -22,7 +22,7 @@ interface StyleSheet {
   };
 }
 
-interface Rule {
+export interface Rule {
   type: string;
   selectors?: string[];
   declarations?: Declaration[];
@@ -80,7 +80,7 @@ export default function parse(css: string, options: ParseOptions = {}): StyleShe
   /**
    * Store position information for a node
    */
-  class Position implements Position {
+  class Position {
     end: { line: number; column: number };
     content: string;
     source?: string;
@@ -243,6 +243,7 @@ export default function parse(css: string, options: ParseOptions = {}): StyleShe
     const prop = match(/^(\*?[-#\/\*\\\w]+(\[[0-9a-z_-]+\])?)\s*/);
     if (!prop) return null;
     const propValue = trim(prop[0]);
+
 
     // :
     if (!match(/^:\s*/)) error("property missing ':'");

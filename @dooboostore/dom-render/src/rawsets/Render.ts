@@ -8,6 +8,7 @@ export type Render = {
     bindScript?: string;
     renderScript?: string;
     element?: any;
+    getElement?: <T extends Element>()=>T;
     attribute?: any;
     creatorMetaData?: CreatorMetaData;
     router?: Router;

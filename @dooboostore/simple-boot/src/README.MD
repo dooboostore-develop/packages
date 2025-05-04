@@ -1,429 +1,465 @@
-SIMPLE-BOOT-CORE
-===
-### It provides convenience in service development.  
-![typescript](https://img.shields.io/badge/-typescript-black?logo=typescript) [![typescript](https://img.shields.io/badge/-npm-black?logo=npm)](https://www.npmjs.com/package/simple-boot-core) [![license](https://img.shields.io/badge/license-MIT-green)](LICENSE.md)  
+# SIMPLE-BOOT
 
-* Object management.
-   * Dependency Injection (DI)
-   * Life cycle provided.
-* Aspect Oriented Programming (AOP)
-* ExceptionHandler (Global or Local)
-* Router System 
-* Intent Event System
+### It provides convenience in service development.
+![typescript](https://img.shields.io/badge/-typescript-black?logo=typescript) [![typescript](https://img.shields.io/badge/-npm-black?logo=npm)](https://www.npmjs.com/package/simple-boot-core) [![license](https://img.shields.io/badge/license-MIT-green)](LICENSE.md)
 
+- **Object management**
+    - Dependency Injection (DI)
+    - Lifecycle callbacks
+- **Aspect-Oriented Programming (AOP)**
+- **Powerful Exception Handling** (Global and Local)
+- **Flexible Router System**
+- **Intent-based Event System**
+- **Method-level Caching**
+- **Data Validation**
 
-## 🚀 Quick start
+## 🚀 Quick Start
+
 ```shell
 npm init -y
-npm install simple-boot-core
+npm install @dooboostore/simple-boot reflect-metadata
 tsc --init --experimentalDecorators --emitDecoratorMetadata
 ```
+
 ```typescript
 // index.ts
-import {SimpleApplication} from 'simple-boot-core';
-import {Router} from 'simple-boot-core/decorators/route/Router';
-import {Sim} from 'simple-boot-core/decorators/SimDecorator';
-@Sim
-class User {
+import 'reflect-metadata';
+import { SimpleApplication, Sim, Router } from '@dooboostore/simple-boot';
+
+@Sim // Decorator can be used without parentheses
+class Greeter {
   say() {
-    console.log('say~ hello');
+    console.log('Hello, Simple Boot!');
   }
 }
 
-@Sim @Router({ path: '', route: {'/user': User}})
+@Sim
+@Router({ path: '', route: { '/user': Greeter } })
 class AppRouter {}
 
-const app = new SimpleApplication(AppRouter);
-
-// type 1
+const app = new SimpleApplication({ rootRouter: AppRouter });
 app.run();
-app.sim(User).say();
 
-// type 2
-// app.run().getOrNewSim(User).say();
+// Get instance and call method
+const greeter = app.sim(Greeter);
+greeter?.say();
 
-// type 3
-// app.run();
-// const atomic = app.simAtomic(User);
-// atomic.value.say();
-
-// type 4 routing
-// app.run();
-// app.routing('/user').then(it => {
-//     it.getModuleInstance<User>()?.say();
-// })
-
+// Or, route to the module and execute
+app.routing('/user').then(routerModule => {
+    routerModule.getModuleInstance<Greeter>()?.say();
+});
 ```
+
 ```shell
 npx ts-node index.ts
-# say~ hello
+# Hello, Simple Boot!
+# Hello, Simple Boot!
 ```
 
-# 😃 examples
-- [examples](./examples)
+# 😃 Examples
 
-## Object management.
+- [More examples](./examples)
+
+## Object Management
+
 <details>
-  <summary>Dependency Injection (DI) <strong>🔻(click)</strong></summary>
+  <summary><strong>Dependency Injection (DI) & @Sim</strong> 🔻(click)</summary>
 
-## @Sim
-Decorators must be declared to be managed.
+`@Sim` is the core decorator that marks a class for management by the Simple Boot container. It can be used with or without parentheses (`@Sim` or `@Sim()`). It handles dependency injection automatically based on constructor parameter types.
+
 ```typescript
-@Sim
+@Sim // Using without parentheses for default settings
 class ProjectService {
-  sum(x: number, y: number) {
+  sum(x: number, y: number): number {
     return x + y;
   }
 }
 
-@Sim
+@Sim() // Using with parentheses is also valid
 class User {
+  constructor(private projectService: ProjectService) {}
 
-  constructor(private projectService: ProjectService) {
-  }
-
-  say() {
-    console.log(`say~ hello: ${this.projectService.sum(5, 25)}`);
+  calculate() {
+    const result = this.projectService.sum(5, 25);
+    console.log(`Calculation result is: ${result}`);
   }
 }
-// 💥 call say()
-// say~ hello: 30
+
+// somewhere in your app
+const user = app.sim(User);
+user?.calculate(); //-> Calculation result is: 30
 ```
-## SimConfig
+
+### `SimConfig`
+
+You can provide a configuration object to `@Sim` to customize its behavior.
+
 ```typescript
 export enum Lifecycle {
-  /**
-   * The default registration scope, Each resolve will return the same instance (including resolves from child containers)
-   */
-  Singleton = 'Singleton',
-  /**
-   * a new instance will be created with each resolve
-   */
-  Transient = 'Transient'
+  Singleton = 'Singleton', // (Default) Same instance every time.
+  Transient = 'Transient'  // A new instance is created on each request.
 }
 
 export interface SimConfig {
-  symbol?: Symbol | (Symbol[]);
-  scheme?: string | (string[]);
-  scope?: Lifecycle;
-  autoCreate?: boolean;  // auto start = auto new
-  proxy?: ((ProxyHandler<any> | ConstructorType<any> | Function)) | (ProxyHandler<any> | ConstructorType<any> | Function)[];
-  type?: (ConstructorType<any> | Function) | (ConstructorType<any> | Function)[];
-  using?: (ConstructorType<any> | Function) | (ConstructorType<any> | Function)[];
+  symbol?: Symbol | Symbol[]; // Register with a Symbol for lookup
+  scheme?: string | string[]; // Register with a string scheme for lookup
+  scope?: Lifecycle;        // Singleton or Transient
+  autoCreate?: boolean;     // Create instance automatically on startup
+  proxy?: Function | Function[]; // Apply proxy handlers
+  type?: Function | Function[]; // Register under a different type (e.g., an interface)
+  using?: Function | Function[]; // Explicitly declare dependencies
 }
-@Sim({...config})
-class test {}
+
+@Sim({ scope: Lifecycle.Transient, scheme: 'MyService' })
+class MyTransientService {}
 ```
+
 </details>
 
 <details>
-  <summary>Life cycle provided <strong>🔻(click)</strong></summary>
+  <summary><strong>Lifecycle Callbacks</strong> 🔻(click)</summary>
 
-## OnSimCreate interface
-Sim Object created just one call
+Classes managed by `@Sim` can hook into lifecycle events.
+
+- **`OnSimCreate`**: Called immediately after the instance is created.
+- **`@PostConstruct`**: A decorator for a method that should be called after the instance is created. It's an alternative to `OnSimCreate`.
+- **`OnSimCreateCompleted`**: Called after all proxy objects and AOP features have been applied to the instance. The original, proxied `this` is passed as an argument.
+
 ```typescript
+import { OnSimCreate, OnSimCreateCompleted, PostConstruct, Sim } from '@dooboostore/simple-boot';
+
 @Sim
-class User implements OnSimCreate {
+class MyComponent implements OnSimCreate, OnSimCreateCompleted<MyComponent> {
+  constructor() {
+    console.log('1. Constructor called');
+  }
+
   onSimCreate(): void {
-    console.log('on Create')
+    console.log('2. onSimCreate called');
+  }
+
+  @PostConstruct()
+  initialize() {
+      console.log('3. @PostConstruct method called');
+  }
+
+  onSimCreateProxyCompleted(proxyThis: MyComponent): void {
+    console.log('4. onSimCreateProxyCompleted called');
+    // proxyThis is the fully initialized, proxied instance
   }
 }
-// output 💥
-// on Create
 ```
+
 </details>
 
-
-
-
-
-## Aspect Oriented Programming (AOP)
 <details>
-  <summary>Method call AOP <strong>🔻(click)</strong></summary>
+<summary><strong>Manual Injection with @Inject</strong> 🔻(click)</summary>
 
-## @Before @After
+Use `@Inject` for more complex scenarios, like injecting a specific implementation for an interface or abstract class using a `scheme` or `symbol`.
+
 ```typescript
+abstract class UserServiceBase {}
+
+@Sim({ scheme: 'UserService' })
+class UserServiceImpl extends UserServiceBase { /* ... */ }
+
 @Sim
-class User {
-
-  @Before({property: 'say'})
-  sayBefore() {
-    console.log('sayBefore')
-  }
-
-  @After({property: 'say'})
-  sayAfter() {
-    console.log('sayAfter')
-  }
-
-  say() {
-    console.log(`say~ hello`);
-  }
+class UserController {
+  constructor(
+    @Inject({ scheme: 'UserService' }) private userService: UserServiceBase
+  ) {}
 }
-// 💥 call say()
-// sayBefore
-// say~ hello
-// sayAfter
 ```
+
 </details>
 
+## Aspect-Oriented Programming (AOP)
 
-## @Inject
+<details>
+  <summary><strong>Method Call AOP (@Before, @After, @Around)</strong> 🔻(click)</summary>
+
+Simple Boot provides decorators to intercept method calls.
+
+- **`@Before`**: Runs before the target method.
+- **`@After`**: Runs after the target method completes (regardless of success or failure).
+- **`@Around`**: A powerful decorator that wraps the original method, allowing you to control the arguments before execution and the return value after.
+
 ```typescript
+import { Sim, Before, After, Around, AroundForceReturn } from '@dooboostore/simple-boot';
 
-@Sim({
-  scheme: UserServiceBaseSchema
-})
-export class UserService extends UserServiceBase implements OnSimCreate {
-...
+const LoggingAround = () => Around({
+    before: (obj, propertyKey, args) => {
+        console.log(`[${propertyKey}] Before with args:`, args);
+        // You can modify arguments here
+        return args.map(arg => typeof arg === 'number' ? arg * 2 : arg);
+    },
+    after: (obj, propertyKey, args, beforeReturn) => {
+        console.log(`[${propertyKey}] After with result:`, beforeReturn);
+        // You can force a different return value
+        if (beforeReturn > 10) {
+            throw new AroundForceReturn("Value is too high!");
+        }
+        return beforeReturn;
+    }
+});
+
+@Sim
+class Calculator {
+    @Before({ property: 'add' })
+    logBefore() {
+        console.log('Preparing to add...');
+    }
+
+    @After({ property: 'add' })
+    logAfter() {
+        console.log('Addition complete.');
+    }
+
+    @LoggingAround()
+    add(a: number, b: number): number {
+        console.log('Executing add method');
+        return a + b;
+    }
 }
-export class SignInupModalComponent implements OnInit {
-  containerElement?: HTMLDivElement;
-  backgroundElement?: HTMLDivElement;
-  public form = new PageValidator();
-  // private userService?: UserServiceBase;
-  // public anonService?: AnonService;
-  private openParams: OpenParams | undefined;
 
-  constructor(private navigation: Navigation,
-              private alertService: AlertService,
-              @Inject({scheme: UserServiceBaseSchema}) private userService: UserServiceBase,
-              private petService: PetService
-  ) {
-  ...
-  }
+// Calling calculator.add(3, 4) would output:
+// Preparing to add...
+// [add] Before with args: [ 3, 4 ]
+// Executing add method
+// [add] After with result: 14
+// Addition complete.
+// The final return value would be "Value is too high!" because of AroundForceReturn.
 ```
 
-## ExceptionHandler (Global or Local)
-<details>
-  <summary>Local Exception Advice <strong>🔻(click)</strong></summary>
+</details>
 
-## @ExceptionHandler
+## Exception Handling
+
+<details>
+  <summary><strong>@ExceptionHandler (Local & Global)</strong> 🔻(click)</summary>
+
+Simple Boot provides a powerful exception handling mechanism using the `@ExceptionHandler` decorator, which can be used both locally within a class or globally in a dedicated `Advice` class.
+
+### Local Exception Handler
+
 ```typescript
+class MyError extends Error {}
+
 @Sim
-class User {
+class UserService {
+  @ExceptionHandler({ type: MyError })
+  handleMyError(e: MyError) {
+    console.error(`Caught a specific MyError: ${e.message}`);
+  }
 
   @ExceptionHandler()
-  otherException(@Inject({situationType: ExceptionHandlerSituationType.ERROR_OBJECT}) e: any) {
-    console.log(`otherException : ${e.message}`)
+  handleAllOtherErrors(e: any) {
+    console.error(`Caught a generic error:`, e);
   }
 
-  @ExceptionHandler({type: Error})
-  errorTypeException(e: Error) {
-    console.log(`errorTypeException : ${e.message}`)
+  doSomething() {
+    throw new MyError('Something went wrong!');
   }
-
-  say1() {
-    console.log(`say~ hello`);
-    throw {message: 'otherException'}
-  }
-
-  say2() {
-    console.log(`say~ hello`);
-    throw new Error('error');
-  }
-
 }
-
-// 💥 call say1()
-// say~ hello
-// { message: 'otherException' }
-// otherException : otherException
-
-// 💥 call say2()
-// say~ hello
-// Error: error at ...
-// errorTypeException : error
-
 ```
-</details>
-<details>
-  <summary>Global Exception Advice <strong>🔻(click)</strong></summary>
+
+### Global Exception Advice
+
+For cross-cutting concerns, you can define handlers in a global advice class.
 
 ```typescript
 @Sim
 class GlobalAdvice {
-  @ExceptionHandler()
-  otherException(@Inject({situationType: ExceptionHandlerSituationType.ERROR_OBJECT}) e: any) {
-    console.log(`otherException : ${e.message}`)
-  }
-
-  @ExceptionHandler({type: Error})
-  errorTypeException(e: Error) {
-    console.log(`errorTypeException : ${e.message}`)
+  @ExceptionHandler({ type: Error })
+  handleAllErrors(e: Error) {
+    console.log(`[Global Advice] An error occurred: ${e.message}`);
   }
 }
 
-@Sim
-class User {
-  say1() {
-    console.log(`say~ hello`);
-    throw {message: 'otherException'}
-  }
-
-  say2() {
-    console.log(`say~ hello`);
-    throw new Error('error');
-  }
-
-}
-const option = new SimOption([GlobalAdvice])
-new SimpleApplication(AppRouter, option).run().routing('/user').then(it => {
-  it.getModuleInstance<User>()?.say1();
-})
-// 💥 call say1()
-// say~ hello
-// { message: 'otherException' }
-// otherException : otherException
-
-// 💥 call say2()
-// say~ hello
-// Error: error at ...
-// errorTypeException : error
-
+// In your application setup
+const option = new SimOption({ advice: [GlobalAdvice] });
+const app = new SimpleApplication({ rootRouter: AppRouter }, option);
+app.run();
 ```
+
 </details>
 
+## Routing System
 
-
-## Route System
 <details>
-  <summary>@Router<strong>🔻(click)</strong></summary>
+  <summary><strong>@Router and @Route</strong> 🔻(click)</summary>
+
+Simple Boot's routing system maps URL paths to specific classes (`@Sim` modules) or methods within a router class.
+
+### Class-based Routing
+
+Map a path directly to a class. Simple Boot will instantiate it when the route is matched.
 
 ```typescript
 @Sim
+class UserPage {
+    // ... logic for the user page
+}
+
+@Sim
 @Router({
-  path: '',
+  path: '/app',
   route: {
-    '/user': User
+    '/users': UserPage
   }
 })
-class AppRouter {
-}
-```
-</details>
-<details>
-  <summary>RouterAction Interface<strong>🔻(click)</strong></summary>
+class AppRouter {}
 
-### route change call canActivate meehod
+// Navigating to '/app/users' will activate the UserPage module.
+```
+
+### Method-based Routing
+
+Use `@Route` on methods within a `@Router` class to handle specific paths.
 
 ```typescript
 @Sim
-@Router({
-  path: '',
-  route: {
-    '/user': User
-  }
-})
-class AppRouter implements RouterAction {
-
-  async canActivate(url: Intent, module: any) {
-    console.log('--', url, module)
+@Router({ path: '/api' })
+class ApiRouter {
+  @Route({ path: '/health' })
+  checkHealth() {
+    console.log('API is healthy!');
+    return { status: 'ok' };
   }
 
-}
-
-const option = new SimOption([GlobalAdvice])
-new SimpleApplication(AppRouter, option).run().routing('/user').then(it => {
-  it.getModuleInstance<User>()?.say();
-})
-// output 💥
-// -- Intent { uri: '/user', data: undefined, event: undefined } User { say: [Function (anonymous)], say2: [Function (anonymous)] }
-// say~ hello
-
-```
-</details>
-
-
-<details>
-  <summary>@Route<strong>🔻(click)</strong></summary>  
-
-```typescript
-@Sim
-@Router({
-  path: ''
-})
-class AppRouter {
-    
-  @Route({path:'/user'})
-  user1() {
-    console.log('user say1~')
-  }
-  
-  @Route({path:'/user'})
-  user2() {
-    console.log('user say2~')
-  }
-  
-  @Route({path:'/user-props'})
-  user2(props: string) {
-    console.log('user propss', props)
+  @Route({ path: '/users/{id}' })
+  getUser(routerModule: RouterModule) {
+    const userId = routerModule.pathData?.id;
+    console.log(`Fetching user with ID: ${userId}`);
+    // ... fetch user logic
   }
 }
 
-const option = new SimOption([GlobalAdvice])
-new SimpleApplication(AppRouter, option).run().routing('/user').then(it => {
-  it.propertyKeys?.forEach(key => {
-    it.executeModuleProperty(key);
-  });
-})
-new SimpleApplication(AppRouter, option).run().routing('/user-props').then(it => {
-  // direct call
-  let propertyKey = it.propertyKeys?.[0];
-  let moduleInstance = routerModule.getModuleInstance<(props: string) => void>(propertyKey);
-  moduleInstance('propData');
-})
-// output 💥
-// user say1~
-// user say2~
-
+// Navigating to '/api/health' calls the checkHealth method.
+// Navigating to '/api/users/123' calls the getUser method.
 ```
-</details>
 
+</details>
 
 ## Intent Event System
-<details>
-  <summary>Intent Message<strong>🔻(click)</strong></summary>
 
-* transmit data between objects and generate events
-* send data and generate events to @Sim scheme
-  - Support Object transmission
-  - Support query parameters
-  - Allocate directly to variables
-  -  Calling the method
+<details>
+  <summary><strong>Publishing and Subscribing with Intent</strong> 🔻(click)</summary>
+
+Simple Boot includes a powerful event system based on `Intent` objects. This allows for decoupled communication between different parts of your application.
+
+- **Publish**: Send an `Intent` to a specific `scheme` or `symbol`.
+- **Subscribe**: A method in a `@Sim` module can receive the intent.
+
 ```typescript
-@Sim({scheme: 'AppRouter'}) @Router({path: '',route: {'/user': User}})
-class AppRouter {
-  say(intent: Intent) {
-    console.log('say1-->', intent.data);
+// Publisher
+app.publishIntent('MyService://updateUser', { name: 'Jane Doe' });
+
+// Subscriber
+@Sim({ scheme: 'MyService' })
+class MyService {
+  updateUser(intent: Intent) {
+    console.log('Received data:', intent.data); //-> { name: 'Jane Doe' }
   }
 }
 ```
-```typescript
-const app = new SimpleApplication(AppRouter).run();
-app.publishIntent(new Intent('AppRouter://say1', {name: 'visualkhh', age: 99}));
-// output 💥
-// say1--> { name: 'visualkhh', age: 99 }
-```
-```typescript
-const intent = new Intent('AppRouter://say2', ['visualkhh', 99]);
-intent.publishType = PublishType.INLINE_DATA_PARAMETERS;
-app.publishIntent(intent);
-// output 💥
-// say2--> visualkhh 99
-```
-```typescript
-const global = new Intent('://say2'); // <-- global intent message event
-const queryParam = new Intent('scheme://say2?age=5&name=visualkhh'); // <-- query parameter
-queryParam.queryParams.name;
-queryParam.queryParams.age;
-```
+
 </details>
 
+## Caching System
+
+<details>
+  <summary><strong>@Cache Decorator</strong> 🔻(click)</summary>
+
+Simple Boot provides a method-level caching mechanism via the `@Cache` decorator. It can cache the results of a method and automatically handle cache eviction.
+
+### Basic Caching
+
+Cache the result of a method. The cache key is automatically generated from the class and method name.
+
+```typescript
+@Sim
+class DataService {
+    @Cache
+    fetchHeavyData() {
+        // This expensive operation runs only once.
+        console.log('Fetching data...');
+        return { data: 'some-heavy-data' };
+    }
+}
+```
+
+### Caching with Dynamic Keys and TTL
+
+```typescript
+@Sim
+class UserService {
+    @Cache({ key: (id: string) => `user:${id}`, ms: 5000 }) // Dynamic key, 5-second TTL
+    getUserById(id: string) {
+        console.log(`Fetching user ${id} from DB...`);
+        return { id, name: 'User ' + id };
+    }
+
+    @Cache({ deleteKey: (id: string) => `user:${id}` })
+    updateUser(id: string, data: any) {
+        console.log(`Updating user ${id}, cache will be cleared.`);
+        // ... update logic
+    }
+}
+```
+
+### CacheManager
+
+You can also interact with the cache programmatically by injecting the `CacheManager`.
+
+```typescript
+@Sim
+class MyCacheController {
+    constructor(private cacheManager: CacheManager) {}
+
+    clearUserCache(id: string) {
+        this.cacheManager.deleteCacheByKey(`user:${id}`);
+    }
+}
+```
+
+</details>
+
+## Validation System
+
+<details>
+  <summary><strong>@Validation Decorator</strong> 🔻(click)</summary>
+
+Simple Boot includes a validation system to ensure the integrity of class properties.
+
+```typescript
+import { Sim, Validation, NotEmpty, NotNull, Regexp, execValidationInValid, ValidException } from '@dooboostore/simple-boot';
+
+@Sim
+class UserProfile {
+    @Validation(NotEmpty)
+    @Validation(Regexp(/^[a-zA-Z]+$/))
+    name: string = '';
+
+    @Validation(NotNull)
+    age: number | null = null;
+}
+
+const profile = new UserProfile();
+profile.name = '123'; // Invalid name
+profile.age = null; // Invalid age
+
+const validationErrors = execValidationInValid(profile);
+
+if (validationErrors.length > 0) {
+    throw new ValidException(validationErrors);
+}
+//-> Throws ValidException with details about 'name' and 'age' fields.
+```
+
+</details>
 
 # License
-* MIT
-* visualkhh@gmail.com
 
-
-
+- MIT
+- visualkhh@gmail.com

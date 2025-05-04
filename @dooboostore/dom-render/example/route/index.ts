@@ -70,7 +70,7 @@ class CustomRouter extends Router<Index> {
     return new URLSearchParams(LocationUtils.hashSearch(this.config.window));
   }
 
-  set(path: string, data?: any, title: string = ''): void {
+  push(path: string, data?: any, title: string = ''): void {
     if (path === '/') {
       super.pushState(data, title, '');
     } else {

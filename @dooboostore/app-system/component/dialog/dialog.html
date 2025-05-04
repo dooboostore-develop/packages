@@ -1,0 +1,8 @@
+<dialog dr-class="{[@this@.attribute.class]:@this@.attribute.class}" dr-on-rendered-init="@this@.onInitElement($element)" dr-event-close="@this@.destroyDialog()"
+        dr-event-toggle="@this@.open = $element.open">
+
+    <button class="close-button" id="closeProfileDialogBtn" dr-event-click="@this@.closeDialog()">×</button>
+    <div class="dialog-content">
+        #innerHTML#
+    </div>
+</dialog>

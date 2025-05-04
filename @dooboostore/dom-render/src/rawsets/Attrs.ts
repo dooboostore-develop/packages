@@ -8,6 +8,7 @@ export type Attrs = {
     drRepeat: string | null;
     drThis: string | null;
     drStripElement: string | null;
+    drReplaceTargetElementIs: string | null;
     drForm: string | null;
     drPre: string | null;
     drInnerHTML: string | null;

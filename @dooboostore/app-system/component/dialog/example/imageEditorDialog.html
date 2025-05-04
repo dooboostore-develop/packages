@@ -1,0 +1,48 @@
+<!--<dialog id="profileDialog" dr-on-rendered-init="@this@.onInitDialog($element)" dr-event-close="@this@.destroyDialog()"-->
+<!--        dr-event-toggle="@this@.open = $element.open">-->
+<!--    <div class="dialog-content profile-dialog-content">-->
+<!--        <button class="close-button" id="closeProfileDialogBtn" dr-event-click="@this@.closeDialog()">×</button>-->
+<!--        <div class="header">-->
+<!--            <i class="fas fa-user-edit"></i>-->
+<!--            Update Profile-->
+<!--        </div>-->
+<!--    </div>-->
+<!--    <hr/>-->
+<!--    <div id="profile-tab-form" class="profile-tabs" >-->
+<!--        <div class="form-group profile-image-upload-group">-->
+<!--            <div class="profile-image-preview-container">-->
+<!--                <img dr-if="@this@.my?.world.profile" class="current-profile-image" dr-attr="{src:@this@.my?.world.profile}" alt="Current Profile Image"/>-->
+<!--                <label for="profileImageUpload" class="upload-icon-label"><i class="fas fa-camera"></i></label>-->
+<!--                <input type="file" id="profileImageUpload" accept="image/*" dr-event-change="@this@.onProfileImageChange($event)" hidden>-->
+<!--            </div>-->
+<!--        </div>-->
+<!--        <form class="form-group world-name-group" dr-on-init="@this@.onInitFrom($element)"-->
+<!--              dr-event-submit="@this@.formSubmit($element, $event)">-->
+<!--            <div class="world-name-input-container">-->
+<!--                <span class="at-prefix">@</span>-->
+<!--                <input type="text" id="worldNameInput" name="name" dr-value="@this@.my?.world.name">-->
+<!--                <button type="submit" class="save-button" >Save</button>-->
+<!--            </div>-->
+<!--            <System:PromiseSwitch data="${@this@.setWorldNamePromise}$" >-->
+<!--&lt;!&ndash;                <System:PromiseSwitch.Pending defaultView>&ndash;&gt;-->
+<!--&lt;!&ndash;                    <System:Skeleton radius="10px" width="50%"></System:Skeleton>&ndash;&gt;-->
+<!--&lt;!&ndash;                    <System:Skeleton radius="10px" width="80%"></System:Skeleton>&ndash;&gt;-->
+<!--&lt;!&ndash;&lt;!&ndash;                </System:PromiseSwitch.Pending>&ndash;&gt;&ndash;&gt;-->
+<!--&lt;!&ndash;                <System:PromiseSwitch.Fulfilled>&ndash;&gt;-->
+<!--&lt;!&ndash;                    <h2 class="profile-name" id="dialogProfileName">${@nearThis@.data?.name}$</h2>&ndash;&gt;-->
+<!--&lt;!&ndash;                    <p class="profile-summary" id="dialogProfileBio">${@nearThis@.data?.summary}$</p>&ndash;&gt;-->
+<!--&lt;!&ndash;                </System:PromiseSwitch.Fulfilled>&ndash;&gt;-->
+<!--                <System:PromiseSwitch.Rejected>-->
+<!--                    <div class="rejected">${@nearThis@.data.message}$ 😰</div>-->
+<!--                </System:PromiseSwitch.Rejected>-->
+<!--            </System:PromiseSwitch>-->
+<!--        </form>-->
+<!--&lt;!&ndash;        <div class="form-group public-status-group">&ndash;&gt;-->
+<!--&lt;!&ndash;            <label>Public World</label>&ndash;&gt;-->
+<!--&lt;!&ndash;            <System:CheckBox name="isPublic" checked="${@this@.my?.world.isPublic}" change="${(checked)=> @this@.onPublicStatusChange(checked)}">&ndash;&gt;-->
+<!--&lt;!&ndash;                <System:CheckBox.Checked>Public</System:CheckBox.Checked>&ndash;&gt;-->
+<!--&lt;!&ndash;                <System:CheckBox.UnChecked>Private</System:CheckBox.UnChecked>&ndash;&gt;-->
+<!--&lt;!&ndash;            </System:CheckBox>&ndash;&gt;-->
+<!--&lt;!&ndash;        </div>&ndash;&gt;-->
+<!--    </div>-->
+<!--</dialog>-->

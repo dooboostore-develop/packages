@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Clean Radio Player</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="radio-player-container">
+  <div class="station-selector">
+    <label for="station-select" class="visually-hidden">방송국 선택</label>
+    <select id="station-select" name="stations">
+      <option value="soma_chillits">CHILLITS | SomaFM | AAC-HE 64kb</option>
+      <option value="soma_groovesalad">GROOVE SALAD | SomaFM | MP3 128kb</option>
+      <option value="soma_dronezone">DRONE ZONE | SomaFM | AAC-HE 64kb</option>
+      <!-- 다른 방송국 옵션 추가 -->
+    </select>
+  </div>
+  <div class="audio-player-wrapper">
+    <audio controls class="audio-player">
+      <!-- 실제 오디오 소스는 여기에 추가하거나 JavaScript로 설정합니다. -->
+      <source src="YOUR_AUDIO_STREAM_URL" type="audio/aac">
+      Your browser does not support the audio element.
+    </audio>
+  </div>
+</div>
+
+</body>
+</html>
