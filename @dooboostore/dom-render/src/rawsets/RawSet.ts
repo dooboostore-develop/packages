@@ -649,8 +649,7 @@ export class RawSet {
             } else if (value && RawSet.isExpression(value)) { // 표현식있을떄
               const variablePath = RawSet.expressionGroups(value)[0][1];
               // normal Attribute 초반에 셋팅해주기.
-              const script = `return ${variablePath} `;
-              const cval = ScriptUtils.eval(script, Object.assign(obj));
+              const cval = ScriptUtils.evalReturn(variablePath, Object.assign(obj));
               if (cval === null) {
                 element.removeAttribute(it);
               } else {

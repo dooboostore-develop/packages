@@ -2,7 +2,7 @@ import 'reflect-metadata'
 import { SimstanceManager } from './simstance/SimstanceManager';
 import { SimOption } from './SimOption';
 import { IntentManager } from './intent/IntentManager';
-import { RouterManager } from './route/RouterManager';
+import { RouterManager, RoutingOption } from './route/RouterManager';
 import { Intent } from './intent/Intent';
 import { ConstructorType, GenericClassDecorator } from '@dooboostore/core/types';
 import { RouterModule } from './route/RouterModule';
@@ -94,13 +94,14 @@ public publishIntent(i: string, data?: any): any[];
     }
   }
 
-  public routing<R = SimAtomic, M = any>(i: string, data?: any): Promise<RouterModule<R, M>>;
-  public routing<R = SimAtomic, M = any>(i: Intent): Promise<RouterModule<R, M>>;
-  public routing<R = SimAtomic, M = any>(i: Intent | string, data?: any): Promise<RouterModule<R, M>> {
+  public routing<R = SimAtomic, M = any>(i: {path: string, data?: any}, option?: RoutingOption): Promise<RouterModule<R, M>>;
+  public routing<R = SimAtomic, M = any>(i: Intent, option?: RoutingOption): Promise<RouterModule<R, M>>;
+  public routing<R = SimAtomic, M = any>(i: {path: string, data?: any} | Intent, option?: RoutingOption): Promise<RouterModule<R, M>> {
     if (i instanceof Intent) {
-      return this.routerManager.routing<R, M>(i);
+      return this.routerManager.routing<R, M>(i, option);
     } else {
-      return this.routerManager.routing<R, M>(new Intent(i, data));
+       const intent =   new Intent(i.path,i.data) ;
+      return this.routerManager.routing<R, M>(intent, option);
     }
   }
 }

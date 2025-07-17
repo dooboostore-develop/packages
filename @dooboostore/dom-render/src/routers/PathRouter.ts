@@ -21,6 +21,7 @@ export class PathRouter extends Router {
   }
 
   push(path: RouteAction, data?: any, title: string = ''): void {
+    // console.log('pppppp?')
     super.pushState(data, title, this.toUrl(path));
   }
 
