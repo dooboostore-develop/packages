@@ -70,7 +70,7 @@ export function Sim(configOrTarget: SimConfig | ConstructorType<any> | Function)
   // console.groupEnd()
   if (typeof configOrTarget === 'function') {
     simProcess({}, configOrTarget);
-    // console.log('--------!!', Reflect.getMetadata('design:paramtypes', configOrTarget))
+    // console.log('---!', Reflect.getMetadata('design:paramtypes', configOrTarget))
   } else {
     return (target: ConstructorType<any> | Function) => {
       simProcess(configOrTarget, target);

@@ -38,7 +38,20 @@ export namespace Details {
   }
 
   @Component({
-    template: '<form class="${`${@this@.attribute.class} details-body-container details-form-${@this@.attribute.float}-container form`}$" dr-on-init="@this@.$element = $element;">#innerHTML#</form>',
+    template: '<div class="${`${@this@.attribute.class} details-body-container details-body-${@this@.attribute.float}-container`}$" dr-on-init="@this@.$element = $element;">#innerHTML#</div>',
+    selector: `${selector}.Body`
+  })
+  export class Body extends ComponentBase<BodyAttribute> {
+    private $element?: HTMLDivElement;
+    constructor() {
+      super({onlyParentType: [Details]});
+    }
+  }
+  export const isBody = (instance: any): instance is Body => {
+    return instance instanceof Body;
+  }
+  @Component({
+    template: '<form class="${`${@this@.attribute.class} details-body-container details-body-${@this@.attribute.float}-container details-form-container`}$" dr-on-init="@this@.$element = $element;">#innerHTML#</form>',
     styles: detailsFormStyle,
     selector: `${selector}.Form`
   })

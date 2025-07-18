@@ -179,6 +179,9 @@ export type FlatJoinDotKey<T> = {
     : // @ts-ignore
       `${P}`]: unknown;
 };
+export type FlatJoinDotKeyType<T> = keyof FlatJoinDotKey<T>;
+export type FlatJoinDotKeyFieldType<T, D> = FieldType<FlatJoinDotKey<T>,D>;
+export type FlatJoinDotKeyTypePartial<T, D> = Partial<FieldType<FlatJoinDotKey<T>,D>>;
 export type FlatJoinDotKeyExcludeStartWithUnderBar<T> = {
   [P in keyof T as T[P] extends any
     ? // @ts-ignore
