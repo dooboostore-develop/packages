@@ -98,6 +98,6 @@ export const getInject = (target: ConstructorType<any> | Function | any, propert
         const parameters: SaveInjectConfig[] = Reflect.getOwnMetadata(InjectMetadataKey, target, propertyKey);
         return parameters;
     } else {
-        return ReflectUtils.getMetadata(InjectMetadataKey, target);
+        return ReflectUtils.getMetadata(InjectMetadataKey, target)??[];
     }
 }

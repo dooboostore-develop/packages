@@ -15,16 +15,18 @@ export class DrForOf extends OperatorExecuterAttrRequire<string> {
     const itRandom = RawSet.drItOtherEncoding(this.elementSource.element, 'DrForOf');
     const vars = RawSet.drVarEncoding(this.elementSource.element, this.elementSource.attrs.drVarOption ?? '');
     const newTemp = this.source.config.window.document.createElement('temp');
-    // console.log('---------!!', this.elementSource.attrs)
+    // console.log('----!', this.elementSource.attrs)
+    // ScriptUtils.evalReturn()
     ScriptUtils.eval(`
                     ${this.render.bindScript}
                     ${this.elementSource.attrs.drBeforeOption ?? ''}
-                    var i = 0; 
+                    var i = -1; 
                     const forOf = ${attr};
                     const forOfStr = \`${attr}\`.trim();
                     // console.log('forOf---',forOf);
                     if (forOf) {
                         for(const it of forOf) {
+                            i++;
                             var destIt = it;
                             if (/\\[(.*,?)\\],/g.test(forOfStr)) {
                                 if (typeof it === 'string') {
@@ -38,11 +40,32 @@ export class DrForOf extends OperatorExecuterAttrRequire<string> {
                                 destIt = forOfStr + '[' + i +']'
                             }
                             const n = this.__render.element.cloneNode(true);
-                            // console.log('zzzzzzzzzzz', n);
+                            // console.log('zzzzzzzzzzz', n.getAttribute('${RawSet.DR_DETECT_ATTR_OPTIONNAME}'));
                             Object.entries(this.__render.drAttr).filter(([k,v]) => k !== 'drForOf' && k !== 'drNextOption' && v).forEach(([k, v]) => n.setAttribute(this.__render.drAttrsOriginName[k], v));
                             // console.log('---------'+destIt,n, Array.from(n.getAttributeNames()).map(it=>({name:it,attr: n.getAttribute(it)})));
-                            // console.log('---------',n.attributes);
+                            // console.log('---------destItdestIt',destIt);
                             n.getAttributeNames().forEach(it => n.setAttribute(it, n.getAttribute(it).replace(/\\#it\\#/g, destIt).replace(/\\#nearForOfIt\\#/g, destIt).replace(/\\#it\\#/g, destIt).replace(/\\#nearForOfIndex\\#/g, i)))
+                            const drOptionAttr = n.getAttribute('${RawSet.DR_DETECT_ATTR_OPTIONNAME}');
+                            if (drOptionAttr) {
+                              const drOptionAttrResult = $scriptUtils.evalReturn(drOptionAttr, this);
+                              Array.from(Object.entries(drOptionAttrResult??{})).forEach(([k,v])=>{
+                                if (v === null) {
+                                  n.removeAttribute(k);
+                                } else {
+                                  n.setAttribute(k,v);
+                                }
+                              })
+                            }
+                            
+                            const drOptionFilter = n.getAttribute('${RawSet.DR_DETECT_FILTER_OPTIONNAME}');
+                            if (drOptionFilter) {
+                              const drOptionFilterResult = $scriptUtils.evalReturn(drOptionFilter, this);
+                              // console.log('---drforof----', drOptionFilter, drOptionFilterResult)
+                              if (!drOptionFilterResult) {
+                                continue;
+                              }
+                            }
+
                             n.innerHTML = n.innerHTML.replace(/\\#it\\#/g, destIt).replace(/\\#index\\#/g, i);
                             const drOptionThis = n.getAttribute('${RawSet.DR_THIS_OPTIONNAME}');
                             if (drOptionThis) {
@@ -53,7 +76,7 @@ export class DrForOf extends OperatorExecuterAttrRequire<string> {
                             } else {
                                 this.__render.fag.append(n);
                             }
-                            i++;
+                           
                         }
                         
                         if('${this.elementSource.attrs.drNextOption}' !== 'null') {

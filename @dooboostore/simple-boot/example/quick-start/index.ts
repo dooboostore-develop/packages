@@ -1,6 +1,6 @@
 import { SimpleApplication } from '@dooboostore/simple-boot/SimpleApplication';
 import { Route, Router } from '@dooboostore/simple-boot/decorators/route/Router';
-import { Lifecycle, PostConstruct, Sim } from '@dooboostore/simple-boot/decorators/SimDecorator';
+import { Lifecycle, PostConstruct, Sim, SimConfig } from '@dooboostore/simple-boot/decorators/SimDecorator';
 import { Inject } from '@dooboostore/simple-boot/decorators/inject/Inject';
 import { SimOption } from '@dooboostore/simple-boot/SimOption';
 import { ConstructorType } from '@dooboostore/core/types';
@@ -33,6 +33,9 @@ class User1 {
   }
 }
 
+class User3 {
+
+}
 // @Sim({ scheme: 'User2', type: User, autoCreate: true })
 class User2 {
   uuid = Math.random();
@@ -42,7 +45,7 @@ class User2 {
   }
 
   say() {
-    console.log('User2 say');
+    console.log('User2 say', this.uuid);
   }
 }
 
@@ -122,20 +125,31 @@ class AppRouter2 extends AppRouter {
 // const a = Sim({ scheme: 'User2', type: User, autoCreate: true })(User2)
 
 const app = new SimpleApplication(new SimOption({ rootRouter: AppRouter }));
-app.addSim(User2);
-const other = new Map<ConstructorType<any> | Function, any>()
+const s = Symbol('aa')
+// app.addSim({symbol: s}, new User2());
+const other = new Map<ConstructorType<any> | Function | SimConfig, any>()
+other.set({symbol: s}, new User2())
+other.set({symbol: s, type:User2}, new User2())
+// other.set(User2, new User2())
+// other.set(User2, new User2())
+// other.set(User2, new User2())
+console.log('------', other)
 app.run(other);
-// let appRouter = app.sim(AppRouter);
-// appRouter?.routeSay();
+// let appRouter = app.sims(s);
+// appRouter?.say();
+// console.log('-------',appRouter)
+// appRouter.forEach(it => it.getValue()?.say())
 
+let user2 = app.sim(User2);
+user2?.say()
+// console.log('-------',user2)
 
-const intent = new Intent('/user/office');
+// const intent = new Intent('/user/office');
+// app.routing(intent).then(it => {
+//   console.log('--s-sdssssd',it)
+//   // console.log('---', it, it.module)
+// })
 
-app.routing(intent).then(it => {
-
-  console.log('--s-sdssssd',it)
-  // console.log('---', it, it.module)
-})
 // console.log('-----------------------')
 // appRouter = app.sim(AppRouter);
 // appRouter?.routeSay();

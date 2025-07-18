@@ -33,10 +33,13 @@ export interface SimConfig {
 }
 
 export const SimMetadataKey = Symbol('Sim');
-const simProcess = (config: SimConfig, target: ConstructorType<any> | Function) => {
-  // default setting
-  config.scope = config?.scope ?? Lifecycle.Singleton;
 
+export const simProcess = (config: SimConfig, target: ConstructorType<any> | Function | any) => {
+  // default setting
+  if (target != null && target !== undefined && typeof target === 'object') {
+    target = target.constructor;
+  }
+  config.scope = config?.scope ?? Lifecycle.Singleton;
   ReflectUtils.defineMetadata(SimMetadataKey, config, target);
   const adding = (targetKey: ConstructorType<any> | Function, target: ConstructorType<any> | Function = targetKey) => {
     const items = sims.get(targetKey) ?? new Set<ConstructorType<any> | Function>();
@@ -70,7 +73,7 @@ export function Sim(configOrTarget: SimConfig | ConstructorType<any> | Function)
   // console.groupEnd()
   if (typeof configOrTarget === 'function') {
     simProcess({}, configOrTarget);
-    // console.log('--------!!', Reflect.getMetadata('design:paramtypes', configOrTarget))
+    // console.log('---!', Reflect.getMetadata('design:paramtypes', configOrTarget))
   } else {
     return (target: ConstructorType<any> | Function) => {
       simProcess(configOrTarget, target);

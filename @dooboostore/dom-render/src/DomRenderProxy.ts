@@ -268,7 +268,7 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
         const path = 'this' + front;
         const data = ScriptUtils.evalReturn(path, this._domRender_proxy);
         // console.log('root-->', this._rawSets, path, data );
-        // console.log('-------!!!!!', fullPathStr, iterable, data, front, last);
+        // console.log('--!!!!', fullPathStr, iterable, data, front, last);
         // 왜여기서 promise를 했을까를 생각해보면......훔.. 변수변경과 화면 뿌려주는걸 동기로하면 성능이 안나오고 비현실적이다.  그래서 promise
         new Promise<RawSet[]>(async resolve => {
           let rData: RawSet[] = [];

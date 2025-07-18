@@ -417,7 +417,11 @@ dr-value-link: <input type="text" dr-value-link="@this@.office.addr.street"> <br
 
 ```html
 <select dr-value-link="@this@.currentContry" dr-event-change="@this@.contryChange($event)">
-  <option dr-for-of="@this@.languages" dr-value="#it#.key" dr-complete="@this@.currentContry='defaultValue'">${#it#.title}$</option>
+  <option dr-for-of="@this@.languages" dr-value="#it#.key" dr-option-complete="@this@.currentContry='defaultValue'">${#it#.title}$</option>
+</select>
+
+<select id="object-type" name="type" class="select-input" dr-value-link="@this@.selectedObjetActionType">
+  <option dr-for-of="Object.values(@this@.objetActionType)" dr-detect-option-attr="{value: #it#, selected: @this@.selectedObjetActionType === #it# ? 'selected' : null}" >${@this@.objetActionMetaData[#it#].enName}$</option>
 </select>
 ```
 #nearForOfIndex#

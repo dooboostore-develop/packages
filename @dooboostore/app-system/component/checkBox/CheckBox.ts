@@ -10,11 +10,12 @@ export namespace CheckBox {
   export type Attribute = {
     class?: string;
   }
+  export type ChangeOption = { type: 'initialize' | 'event' | 'attributeChange' };
   export type WrapAttribute = {
     class?: string;
     name?: string;
     checked?: boolean;
-    change?: (checked: boolean) => void
+    change?: (checked: boolean, option:ChangeOption) => void
   }
 
   class CheckBoxBase extends ComponentBase<Attribute> {
@@ -56,10 +57,10 @@ export namespace CheckBox {
     private checked = false;
     private inputElement?: HTMLInputElement;
 
-    change(checked: boolean = this.checked) {
+    change(option: ChangeOption, checked: boolean = this.checked) {
       this.checked = checked;
       this.setChildrenHidden(checked);
-      this.attribute?.change?.(checked);
+      this.attribute?.change?.(checked, option);
     }
 
     private setChildrenHidden(checked: boolean) {
@@ -80,14 +81,14 @@ export namespace CheckBox {
       // console.log('---cr', element)
       this.inputElement = element;
       this.inputElement.checked = !!this.attribute?.checked;
-      this.change(this.attribute?.checked);
+      this.change({type: 'initialize'},this.attribute?.checked);
     }
     onChangeAttrRender(name: string, val: any, other: OtherData) {
       super.onChangeAttrRender(name, val, other);
-      // console.log('------', name, val, this.inputElement)
+      // console.log('Checkbox ChangeAttr------', name, val, this.inputElement)
       if (this.inputElement && this.attribute && this.attribute?.checked !== this.checked) {
         this.inputElement.checked = !!this.attribute.checked;
-        this.change(this.attribute.checked);
+        this.change({type: 'attributeChange'},this.attribute.checked);
       }
     }
 

@@ -89,46 +89,60 @@ ctx.stroke(); // Render the path
     }
   }
 
-  export const textSize =(ctx:CanvasUtilsContext, config:{text: string, maxWidth:number, maxHeight: number, fontOption?: {fontWeight?: string, fontFamily?: string}}) => {
-    const maxWidth = config.maxWidth;
-    const maxHeight = config.maxHeight;
-    const text = config.text;
-    const fontOptions = config.fontOption;
-    if (maxWidth <= 0 || maxHeight <= 0) {
-      throw new Error('maxWidth and maxHeight must be positive numbers');
+  export const fontSize =(ctx:CanvasUtilsContext, config:{text: string, maxWidth:number, maxHeight: number, fontOption?: {fontWeight?: string, fontFamily?: string}}) => {
+    const { text, maxWidth, maxHeight, fontOption } = config;
+
+    if (!text || maxWidth <= 0 || maxHeight <= 0) {
+      return 0;
     }
 
+    // 기존 줄바꿈(\n)을 기준으로 텍스트를 나눕니다. 자동 줄바꿈은 수행하지 않습니다.
     const lines = text.split('\n').filter(line => line.trim().length > 0);
     if (lines.length === 0) {
-      return 0; // 빈 텍스트 처리
+      return 0;
     }
 
-    let minSize = 1;
-    let maxSize = 1000;
-    let bestSize = minSize;
+    const lineHeightMultiplier = 1.2; // 줄 높이 배율
 
-    const lineHeightMultiplier = 1.2;
+    // 1. 높이 제약 조건에 기반한 최대 폰트 크기 계산
+    // (전체 텍스트 높이 = 줄 수 * 폰트 크기 * 줄 높이 배율)
+    const maxFontSizeByHeight = Math.floor(maxHeight / (lines.length * lineHeightMultiplier));
+    if (maxFontSizeByHeight <= 0) {
+        return 0; // 1px 폰트도 높이에 맞지 않으면 0 반환
+    }
+
+    // 2. 너비 제약 조건에 기반한 최대 폰트 크기 계산 (이진 탐색)
+    // 텍스트의 각 줄이 maxWidth를 넘지 않도록 하는 최대 폰트 크기를 찾습니다.
+    let minSizeForWidth = 1;
+    // 이진 탐색의 상한선은 높이 제약으로 얻은 값으로 설정하여 불필요한 탐색을 줄입니다.
+    let maxSizeForWidth = maxFontSizeByHeight;
+    let bestSizeForWidth = 0;
+
     const maxIterations = 100; // 무한 루프 방지
-
     let iteration = 0;
-    while (minSize <= maxSize && iteration < maxIterations) {
-      const midSize = Math.floor((minSize + maxSize) / 2);
-      ctx.font = `${fontOptions.fontWeight || 'normal'} ${midSize}px ${fontOptions.fontFamily??''}`;
 
-      const lineWidths = lines.map(line => ctx.measureText(line).width);
-      const maxLineWidth = Math.max(...lineWidths);
-      const totalHeight = midSize * lineHeightMultiplier * lines.length;
+    while (minSizeForWidth <= maxSizeForWidth && iteration < maxIterations) {
+      const midSize = Math.floor((minSizeForWidth + maxSizeForWidth) / 2);
+      if (midSize === 0) break; // 폰트 크기가 0이 되면 중단
 
-      if (maxLineWidth <= maxWidth && totalHeight <= maxHeight) {
-        bestSize = midSize;
-        minSize = midSize + 1;
+      ctx.font = `${fontOption?.fontWeight || 'normal'} ${midSize}px ${fontOption?.fontFamily || 'sans-serif'}`;
+
+      // 가장 긴 줄의 너비를 측정합니다. (자동 줄바꿈 없음)
+      const maxLineWidth = Math.max(...lines.map(line => ctx.measureText(line).width));
+
+      if (maxLineWidth <= maxWidth) {
+        // 현재 폰트 크기로 가장 긴 줄이 너비 제약을 만족하면, 더 큰 크기를 시도
+        bestSizeForWidth = midSize;
+        minSizeForWidth = midSize + 1;
       } else {
-        maxSize = midSize - 1;
+        // 현재 폰트 크기로 가장 긴 줄이 너비 제약을 초과하면, 더 작은 크기를 시도
+        maxSizeForWidth = midSize - 1;
       }
       iteration++;
     }
 
-    return bestSize;
+    // 3. 높이 제약과 너비 제약 중 더 엄격한(작은) 폰트 크기를 반환합니다.
+    return Math.min(bestSizeForWidth, maxFontSizeByHeight);
   }
   export const textMetrics =(context: CanvasUtilsContext, text: string):TextMetrics => {
     return context.measureText( text )

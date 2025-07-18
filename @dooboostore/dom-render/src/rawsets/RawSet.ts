@@ -59,7 +59,14 @@ export class RawSet {
   public static readonly DR_STRIP_NAME = 'dr-strip';
   public static readonly DR_REPLACE_TARGET_ELEMENT_IS_NAME = 'dr-replace-target-element-is';
 
+  // 감지처리되는 옵션
+  public static readonly DR_DETECT_IF_OPTIONNAME = 'dr-detect-option-if';
+  public static readonly DR_DETECT_FILTER_OPTIONNAME = 'dr-detect-option-filter';
+  public static readonly DR_DETECT_ATTR_OPTIONNAME = 'dr-detect-option-attr';
+
   public static readonly DR_THIS_OPTIONNAME = 'dr-option-this';
+  public static readonly DR_ATTR_OPTIONNAME = 'dr-option-attr';
+  public static readonly DR_IF_OPTIONNAME = 'dr-option-if';
   public static readonly DR_IT_OPTIONNAME = 'dr-option-it';
   public static readonly DR_VAR_OPTIONNAME = 'dr-option-var';
   public static readonly DR_AFTER_OPTIONNAME = 'dr-option-after';
@@ -178,13 +185,14 @@ export class RawSet {
         // console.log('--', expressionGroups, script)
       } else if (cNode.nodeType === Node.ELEMENT_NODE) {
         const element = cNode as Element;
-        const targetAttrNames = (config?.targetAttrs?.map(it => it.name) ?? []).concat(RawSet.DR_ATTRIBUTES); // .concat(EventManager.normalAttrMapAttrName);
-        const targetScripts = targetAttrNames.map(it => element.getAttribute(it)).filter(it => it);
+        const targetAttrNames = (config?.targetAttrs?.map(it => it.name) ?? [])
+          .concat(RawSet.DR_ATTRIBUTES, RawSet.DR_DETECT_FILTER_OPTIONNAME, RawSet.DR_DETECT_IF_OPTIONNAME, RawSet.DR_DETECT_ATTR_OPTIONNAME); // .concat(EventManager.normalAttrMapAttrName);
+        const targetScripts = targetAttrNames.map(it => element.getAttribute(it)).filter(it => it).map(it=>`(${it})`);
         const targetAttrMap = element.getAttribute(EventManager.normalAttrMapAttrName);
         // console.log('targetAttrMap-->', targetAttrMap)
         if (targetAttrMap) {
           new Map<string, string>(JSON.parse(targetAttrMap)).forEach((v, k) => {
-            targetScripts.push(v);
+            targetScripts.push(`(${v})`);
           });
         }
         script = targetScripts.join(';');
@@ -201,7 +209,7 @@ export class RawSet {
       }
       if (script) {
 
-        script = script.replace(/#[^#]*#/g, '')
+        script = script.replace(/#[^#]*#/g, '({})')
         // script = script.replace('}$','}');
         // script = script.replace('@this@','this');
         // console.log('----------->', script)
@@ -247,6 +255,7 @@ export class RawSet {
         element: cNode,
         attribute: attribute,
         rootObject: obj,
+        scriptUtils: ScriptUtils,
         nearThis: this.findNearThis(obj),
         parentThis: this.findParentThis(obj),
         bindScript: `
@@ -258,6 +267,7 @@ export class RawSet {
                     const ${EventManager.ROUTER_VARNAME} = this.__render.router;
                     const ${EventManager.NEAR_THIS_VARNAME} = this.__render.nearThis;
                     const ${EventManager.PARENT_THIS_VARNAME} = this.__render.parentThis;
+                    const ${EventManager.SCRIPT_UTILS_VARNAME} = this.__render.scriptUtils;
                     const ${EventManager.ROOT_OBJECT_VARNAME} = this.__render.rootObject;
             `
       }) as unknown as Render;

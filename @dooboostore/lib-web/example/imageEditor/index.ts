@@ -1,10 +1,12 @@
-import { CropCanvas } from '../src/canvas/CropCanvas';
+import { ImageEditorCanvas } from '@dooboostore/lib-web/canvas/ImageEditorCanvas';
+import { ImageUtils } from '@dooboostore/core/image/ImageUtils';
 
 document.addEventListener('DOMContentLoaded', () => {
   console.log('DOM fully loaded and parsed');
 
   // --- DOM Elements ---
   const inputFileElement = document.querySelector('#crop-canvas-file-input') as HTMLInputElement;
+  const inputImgUrlElement = document.querySelector('#crop-canvas-img-url-input') as HTMLInputElement;
 
   // Unified Shape Controls
   const shapeStyleController = document.querySelector('#shape-style-controller') as HTMLFieldSetElement;
@@ -25,6 +27,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const addOctagonButton = document.querySelector('#crop-canvas-add-octagon-button') as HTMLButtonElement;
   const addSemicircleButton = document.querySelector('#crop-canvas-add-semicircle-button') as HTMLButtonElement;
   const addCrossButton = document.querySelector('#crop-canvas-add-cross-button') as HTMLButtonElement;
+  const inputImgUrlUploadButton = document.querySelector('#crop-canvas-img-url-upload-button') as HTMLInputElement;
 
   // Text Controls
   const textControllerContainer = document.querySelector('#text-controller-container') as HTMLFieldSetElement;
@@ -84,7 +87,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // --- Canvas Initialization with UI Sync Callback ---
-  const cropCanvas = new CropCanvas(window, {
+  const cropCanvas = new ImageEditorCanvas(window, {
     canvas: '#crop-canvas',
     handle: {
         option: {}, // Add missing 'option' property
@@ -188,6 +191,13 @@ document.addEventListener('DOMContentLoaded', () => {
   addOctagonButton.addEventListener('click', () => cropCanvas.addOctagon(getShapeOptionsFromUI(), cropStrokeOptions));
   addSemicircleButton.addEventListener('click', () => cropCanvas.addSemicircle(getShapeOptionsFromUI(), cropStrokeOptions));
   addCrossButton.addEventListener('click', () => cropCanvas.addCross(getShapeOptionsFromUI(), cropStrokeOptions));
+  inputImgUrlUploadButton.addEventListener('click', async () => {
+    if (inputImgUrlElement.value) {
+      const b = await ImageUtils.loadImageBitMap(inputImgUrlElement.value)
+      await cropCanvas.addImage(b, getShapeOptionsFromUI());
+    }
+
+  });
 
   addTextButton.addEventListener('click', () => {
     const text = inputTextElement.value;

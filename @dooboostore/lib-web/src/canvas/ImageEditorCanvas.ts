@@ -62,7 +62,7 @@ export type CropCanvasConfig = {
 export type CropCanvasHandle = { option: ImageBitmapOptions, callback: (img: ImageBitmap) => void };
 export type CropCanvasRunParameter = { img: ImageBitmap | HTMLImageElement | Blob, handle?: CropCanvasHandle, cropStroke?: CropStrokeOptions };
 
-export class CropCanvas implements Runnable<void, CropCanvasRunParameter> {
+export class ImageEditorCanvas implements Runnable<void, CropCanvasRunParameter> {
   private canvas: HTMLCanvasElement;
   private ctx: CanvasRenderingContext2D;
   private config: CropCanvasConfig;
@@ -88,10 +88,12 @@ export class CropCanvas implements Runnable<void, CropCanvasRunParameter> {
   private readonly pointHandleSize = 15;
   private readonly handleSize = 16;
   private readonly handleHitAreaSize = 40;
-  private actionButtonSize = 50;
+  private actionButtonSize = 35;
   private cropButtonPos: Point = { x: 0, y: 0 };
   private eraseButtonPos: Point = { x: 0, y: 0 };
   private deleteButtonPos: Point = { x: 0, y: 0 };
+  private bringToFrontButtonPos: Point = { x: 0, y: 0 };
+  private sendToBackButtonPos: Point = { x: 0, y: 0 };
   private doneButtonPos: Point = { x: 0, y: 0 };
   private cancelButtonPos: Point = { x: 0, y: 0 };
   private handle?: CropCanvasHandle;
@@ -341,6 +343,14 @@ export class CropCanvas implements Runnable<void, CropCanvasRunParameter> {
     const selectedLayer = this.getSelectedLayer();
     if (selectedLayer) {
         // Check for action button clicks first to give them priority
+        if (this.isPointInBringToFrontButton(pointerPos)) {
+            this.bringSelectedLayerToFront();
+            return;
+        }
+        if (this.isPointInSendToBackButton(pointerPos)) {
+            this.sendSelectedLayerToBack();
+            return;
+        }
         if (this.isPointInCropButton(pointerPos)) {
             this.layerToCropId = selectedLayer.id;
             this.setMode('crop');
@@ -1516,7 +1526,7 @@ export class CropCanvas implements Runnable<void, CropCanvasRunParameter> {
     const selectedLayer = this.getSelectedLayer();
 
     if (this.mode === 'none' && selectedLayer) {
-        if (this.isPointInCropButton(mousePos) || this.isPointInEraseButton(mousePos) || this.isPointInDeleteButton(mousePos)) {
+        if (this.isPointInCropButton(mousePos) || this.isPointInEraseButton(mousePos) || this.isPointInDeleteButton(mousePos) || this.isPointInBringToFrontButton(mousePos) || this.isPointInSendToBackButton(mousePos)) {
             cursor = 'pointer';
         } else {
             const handle = this.getHandleAt(mousePos, selectedLayer);
@@ -1850,9 +1860,17 @@ export class CropCanvas implements Runnable<void, CropCanvasRunParameter> {
     const centerX = (minX + maxX) / 2;
     const buttonY = maxY + this.actionButtonSize / 2 + 10;
     const buttonSpacing = this.actionButtonSize + 10;
-    this.cropButtonPos = { x: centerX - buttonSpacing, y: buttonY };
-    this.eraseButtonPos = { x: centerX, y: buttonY };
-    this.deleteButtonPos = { x: centerX + buttonSpacing, y: buttonY };
+    const totalWidth = buttonSpacing * 4;
+    const startX = centerX - totalWidth / 2;
+
+    this.bringToFrontButtonPos = { x: startX, y: buttonY };
+    this.sendToBackButtonPos = { x: startX + buttonSpacing, y: buttonY };
+    this.cropButtonPos = { x: startX + buttonSpacing * 2, y: buttonY };
+    this.eraseButtonPos = { x: startX + buttonSpacing * 3, y: buttonY };
+    this.deleteButtonPos = { x: startX + buttonSpacing * 4, y: buttonY };
+
+    this.drawButton(this.sendToBackButtonPos.x, this.sendToBackButtonPos.y, '⬇');
+    this.drawButton(this.bringToFrontButtonPos.x, this.bringToFrontButtonPos.y, '⬆');
     this.drawButton(this.cropButtonPos.x, this.cropButtonPos.y, '✂');
     this.drawButton(this.eraseButtonPos.x, this.eraseButtonPos.y, '⌫');
     this.drawButton(this.deleteButtonPos.x, this.deleteButtonPos.y, '🗑️');
@@ -1868,24 +1886,47 @@ export class CropCanvas implements Runnable<void, CropCanvasRunParameter> {
   }
 
   private drawButton(x: number, y: number, text: string) {
+    const size = this.actionButtonSize;
+    const halfSize = size / 2;
+    const borderRadius = size * 0.2;
+
     this.ctx.save();
     this.ctx.translate(x, y);
-    this.ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+
+    // Shadow for depth
+    this.ctx.shadowColor = 'rgba(0, 0, 0, 0.2)';
+    this.ctx.shadowBlur = 3;
+    this.ctx.shadowOffsetY = 2;
+
+    // Button Body
+    this.ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
     this.ctx.beginPath();
-    this.ctx.arc(0, 0, this.actionButtonSize / 2, 0, 2 * Math.PI);
+    this.ctx.roundRect(-halfSize, -halfSize, size, size, borderRadius);
     this.ctx.fill();
+
+    // Reset shadow for text
+    this.ctx.shadowColor = 'transparent';
+
+    // Text
     this.ctx.fillStyle = '#333';
-    this.ctx.font = `${this.actionButtonSize * 0.5}px Arial`;
+    this.ctx.font = `bold ${size * 0.5}px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif`;
     this.ctx.textAlign = 'center';
     this.ctx.textBaseline = 'middle';
-    this.ctx.fillText(text, 0, 0);
+    this.ctx.fillText(text, 0, 1); // Slight offset for better visual centering
+
     this.ctx.restore();
   }
 
-  private isPointInButton = (p: Point, b: Point) => Math.sqrt((p.x - b.x) ** 2 + (p.y - b.y) ** 2) <= this.actionButtonSize / 2;
+  private isPointInButton = (p: Point, b: Point) => {
+    const halfSize = this.actionButtonSize / 2;
+    return p.x >= b.x - halfSize && p.x <= b.x + halfSize &&
+           p.y >= b.y - halfSize && p.y <= b.y + halfSize;
+  };
   private isPointInCropButton = (p: Point) => this.isPointInButton(p, this.cropButtonPos);
   private isPointInEraseButton = (p: Point) => this.isPointInButton(p, this.eraseButtonPos);
   private isPointInDeleteButton = (p: Point) => this.isPointInButton(p, this.deleteButtonPos);
+  private isPointInBringToFrontButton = (p: Point) => this.isPointInButton(p, this.bringToFrontButtonPos);
+  private isPointInSendToBackButton = (p: Point) => this.isPointInButton(p, this.sendToBackButtonPos);
   private isPointInDoneButton = (p: Point) => this.isPointInButton(p, this.doneButtonPos);
   private isPointInCancelButton = (p: Point) => this.isPointInButton(p, this.cancelButtonPos);
 

@@ -5,11 +5,12 @@ import template from './dialog.html'
 
 export namespace Dialog {
   export const selector = 'System:Dialog';
-  export type Attribute = {
+  export type Attribute<D> = {
     show?: null;
     class?: string;
     close?: () => void
-    toggle?: (element:HTMLDialogElement) => void
+    toggle?: (element:HTMLDialogElement) => void,
+    data?: D
   }
 
 
@@ -18,7 +19,7 @@ export namespace Dialog {
     // styles: style,
     selector: `${selector}`
   })
-  export class Dialog extends ComponentBase<Attribute> {
+  export class Dialog<D = any> extends ComponentBase<Attribute<D>> {
     private element?: HTMLDialogElement;
 
     closeDialog() {
@@ -55,7 +56,9 @@ export namespace Dialog {
     close() {
       this.element?.close();
     }
+    setData(data?: D) {
 
+    }
     onChangeAttrRender(name: string, value: any, other: OtherData) {
       super.onChangeAttrRender(name, value, other);
       if (this.equalsAttributeName(name, 'show') && this.element) {
@@ -64,6 +67,8 @@ export namespace Dialog {
         } else {
           this.close();
         }
+      } else if (name === 'data') {
+        this.setData(this.attribute?.data)
       }
     }
   }

@@ -5,3 +5,35 @@
 .details-container .details-body-container {
     position: absolute;
 }
+
+
+.details-container .details-body-bottom-left-container {
+    position: absolute;
+    left: 0;
+    top: 100%;
+    /*margin-top: 0px;*/
+    /*width: max-content;*/
+}
+
+.details-container .details-body-bottom-right-container {
+    position: absolute;
+    right: 0;
+    top: 100%;
+    /*margin-top: 0px;*/
+    /*width: max-content;*/
+}
+
+.details-container .details-body-top-left-container {
+    position: absolute;
+    left: 0;
+    bottom: 100%;
+    /*margin-bottom: 0px;*/
+    /*width: max-content;*/
+}
+
+.details-container .details-body-top-right-container {
+    position: absolute;
+    right: 0;
+    bottom: 100%;
+    /*margin-bottom: 0px;*/
+}

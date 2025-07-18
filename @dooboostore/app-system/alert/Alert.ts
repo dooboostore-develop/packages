@@ -7,7 +7,7 @@ export abstract class Alert<T> {
   result?: T | void;
   isActive = false;
   activeBefore: ((() => void) | (() => Promise<void>))[] = [];
-  avtiveAfter: ((() => void) | (() => Promise<void>))[] = [];
+  activeAfter: ((() => void) | (() => Promise<void>))[] = [];
   deActiveBefore: ((() => void) | (() => Promise<void>))[] = [];
   deActiveAfter: ((() => void) | (() => Promise<void>))[] = [];
   data: Map<string, any> = new Map();
@@ -29,7 +29,7 @@ export abstract class Alert<T> {
   }
 
   addOpenAfter(fn: (() => void) | (() => Promise<void>)) {
-    this.avtiveAfter.push(fn);
+    this.activeAfter.push(fn);
   }
 
   addCloseBefore(fn: (() => void) | (() => Promise<void>)) {
@@ -43,38 +43,49 @@ export abstract class Alert<T> {
   setData(key: string, value: any) {
     this.data.set(key, value);
   }
+
   getData(key: string) {
     return this.data.get(key);
   }
 
-  active() {
-    Promise.allSettled(this.activeBefore.map(it => it()))
-      .then(it => {
-        this.result = this.make();
-        this.alertService?.publish({ action: AlertAction.ACTIVE, alert: this });
-        this.isActive = true;
-        if (this.config?.closeTime !== undefined && this.config?.closeTime > 0) {
-          setTimeout(() => {
-            this.deActive();
-          }, this.config.closeTime);
-        }
-        this.config?.active?.(this.result, this);
-      })
-      .finally(() => {
-        Promise.allSettled(this.avtiveAfter.map(it => it())).then(it => {});
+  async active(): Promise<void> {
+    try {
+      await Promise.allSettled(this.activeBefore.map(it => it()))
+        .then(it => {
+          this.result = this.make();
+          this.alertService?.publish({action: AlertAction.ACTIVE, alert: this});
+          this.isActive = true;
+          if (this.config?.closeTime !== undefined && this.config?.closeTime > 0) {
+            setTimeout(() => {
+              this.deActive();
+            }, this.config.closeTime);
+          }
+          this.config?.active?.(this.result, this);
+        });
+    } catch (e) {
+
+    } finally {
+      await Promise.allSettled(this.activeAfter.map(it => it())).then(it => {
       });
+    }
+
   }
 
-  deActive() {
-    Promise.allSettled(this.deActiveBefore.map(it => it()))
-      .then(it => {
-        this.alertService?.publish({ action: AlertAction.DE_ACTIVE, alert: this });
-        this.isActive = false;
-        this.config?.deActive?.(this.result, this);
-      })
-      .finally(() => {
-        Promise.allSettled(this.deActiveAfter.map(it => it())).then(it => {});
+  async deActive(): Promise<void> {
+    try {
+      await Promise.allSettled(this.deActiveBefore.map(it => it()))
+        .then(it => {
+          this.alertService?.publish({action: AlertAction.DE_ACTIVE, alert: this});
+          this.isActive = false;
+          this.config?.deActive?.(this.result, this);
+        })
+    } catch (e) {
+
+    } finally {
+      await Promise.allSettled(this.deActiveAfter.map(it => it())).then(it => {
       });
+
+    }
   }
 
   protected abstract make(): T | void;

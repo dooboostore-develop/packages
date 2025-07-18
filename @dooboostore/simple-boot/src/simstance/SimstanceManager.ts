@@ -1,7 +1,7 @@
 import 'reflect-metadata'
 import { ConstructorType, isDefined } from '@dooboostore/core/types';
 import { SimNoSuch } from '../throwable/SimNoSuch'
-import { getPostConstructs, getSim, Lifecycle, sims } from '../decorators/SimDecorator';
+import { getPostConstructs, getSim, Lifecycle, SimConfig, simProcess, sims } from '../decorators/SimDecorator';
 import { ObjectUtils } from '@dooboostore/core/object/ObjectUtils';
 import { SimAtomic } from './SimAtomic';
 import { ReflectUtils } from '../utils/reflect/ReflectUtils';
@@ -58,21 +58,29 @@ export class SimstanceManager implements Runnable<void, Map<ConstructorType<any>
   }
 
   findSims<T = any>(symbol: Symbol): SimAtomic<T>[] ;
-  findSims<T = any>(data: { scheme?: string, type?: ConstructorType<any> }): SimAtomic<T>[] ;
-  findSims<T = any>(data: { scheme?: string, type?: ConstructorType<any> } | Symbol): SimAtomic<T>[] {
+  findSims<T = any>(data: { scheme?: string, type?: ConstructorType<any> | Function }): SimAtomic<T>[] ;
+  findSims<T = any>(data: { scheme?: string, type?: ConstructorType<any> | Function } | Symbol): SimAtomic<T>[] {
     let r: SimAtomic<T>[] = []
     if (data) {
       const simAtomics = this.getSimAtomics();
       r = simAtomics.filter(it => {
         let b = false;
         const config = it.getConfig();
-        const symbols = ConvertUtils.flatArray(config?.symbol);
-        const schemes = ConvertUtils.flatArray(config?.scheme);
+        // console.log('-=--', config)
+        const symbols = ConvertUtils.flatArray(config?.symbol).filter(isDefined);
+        const schemes = ConvertUtils.flatArray(config?.scheme).filter(isDefined);
         if (typeof data === 'symbol') {
           b = symbols.includes(data);
         } else {
-          const {scheme, type} = data as { scheme?: string, type?: ConstructorType<any> };
+          const {scheme, type} = data as { scheme?: string, type?: ConstructorType<any> | Function };
           b = (scheme ? schemes.includes(scheme) : true) && (type ? it.type === type : true);
+          if (type) {
+            const configTypes = ConvertUtils.flatArray(config?.type).filter(isDefined);
+            const match = configTypes.includes(type)
+            if (match) {
+              b = true;
+            }
+          }
         }
         return b
       }) as unknown as SimAtomic<T>[];
@@ -82,8 +90,8 @@ export class SimstanceManager implements Runnable<void, Map<ConstructorType<any>
   }
 
   findFirstSim<T = any>(symbol: Symbol): SimAtomic<T> | undefined ;
-  findFirstSim<T = any>(data: { scheme?: string, type?: ConstructorType<any> }): SimAtomic<T> | undefined ;
-  findFirstSim<T = any>(data: { scheme?: string, type?: ConstructorType<any> } | Symbol): SimAtomic<T> | undefined {
+  findFirstSim<T = any>(data: { scheme?: string, type?: ConstructorType<any>| Function }): SimAtomic<T> | undefined ;
+  findFirstSim<T = any>(data: { scheme?: string, type?: ConstructorType<any>| Function } | Symbol): SimAtomic<T> | undefined {
     if (typeof data === 'symbol') {
       return this.findSims(data)[0];
     } else {
@@ -383,13 +391,27 @@ export class SimstanceManager implements Runnable<void, Map<ConstructorType<any>
     return target;
   }
 
-  run(otherInstanceSim: Map<ConstructorType<any> | Function, any> = new Map()) {
-    this.otherInstanceSim = otherInstanceSim;
+  run(otherInstanceSim: Map<ConstructorType<any> | Function | SimConfig, any> = new Map()) {
+    this.otherInstanceSim = new Map();
+    for (const [k, v] of Array.from(otherInstanceSim.entries())) {
+      let type: Function | ConstructorType<any>;
+      if (typeof k === 'object') {
+        // 명확하게 instance를 넘긴거니 타입으로 처리안하기 위해 임의 타입으로 처리한다.
+        type = new Function;
+        simProcess(k, type);
+      } else {
+        type = k;
+      }
+      this.otherInstanceSim.set(type, v);
+      // it => ({type: it[0], value: it[1], action: this.setStoreSet.bind(this)})
+    }
+    // this.otherInstanceSim = otherInstanceSim;
     const types = Array.from(this.otherInstanceSim?.entries()).map(it => ({type: it[0], value: it[1], action: this.setStoreSet.bind(this)}));
     types.push(...Array.from(sims.entries()).map(it => ({type: it[0], value: it[1], action: this.register.bind(this)})));
-    const myContainers = ConvertUtils.flatArray(this.option.container);
+    const myContainers = ConvertUtils.flatArray(this.option.container).filter(isDefined);
     types.forEach(it => {
-      const targetContainers = ConvertUtils.flatArray(getSim(it.type)?.container);
+      let type: Function | ConstructorType<any> = it.type;
+      const targetContainers = ConvertUtils.flatArray(getSim(it.type)?.container).filter(isDefined);
       let isInclude = false;
       if (myContainers.length <= 0 && targetContainers.length <= 0) {
         isInclude = true;
@@ -401,13 +423,13 @@ export class SimstanceManager implements Runnable<void, Map<ConstructorType<any>
       // const isInclude = (myContainers.length <= 0 || targetContainers.length <= 0) ? true : myContainers.some(it => targetContainers.includes(it));
       // const isInclude = (targetContainers.length <= 0) ? true : (myContainers.length > 0 ? true : (myContainers.some(it => targetContainers.includes(it))));
       // const isInclude = (myContainers.length <= 0 || targetContainers.length <= 0) ? true : (myContainers.some(it => containers.includes(it)));
-      if (typeof this.option.excludeSim === 'function' && this.option.excludeSim(it.type)) {
+      if (typeof this.option.excludeSim === 'function' && this.option.excludeSim(type)) {
         if (isInclude) {
-          it.action(it.type, it.value);
+          it.action(type, it.value);
         }
-      } else if (Array.isArray(this.option.excludeSim) && !this.option.excludeSim.includes(it.type)) {
+      } else if (Array.isArray(this.option.excludeSim) && !this.option.excludeSim.includes(type)) {
         if (isInclude) {
-          it.action(it.type, it.value);
+          it.action(type, it.value);
         }
       }
     });

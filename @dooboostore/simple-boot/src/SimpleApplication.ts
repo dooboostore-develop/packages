@@ -21,7 +21,7 @@ export class SimpleApplication {
   // constructor(rootRouter?: ConstructorType<Object> | Function);
   // constructor(rootRouter?: ConstructorType<Object> | Function, option?: SimOption);
   // constructor(rootRouter?: (ConstructorType<Object> | Function) | SimOption, option = new SimOption()) {
-  constructor(public option: SimOption = new SimOption()){
+  constructor(public option: SimOption = new SimOption()) {
     // if (option.rootRouter instanceof SimOption) {
     //   option = rootRouter;
     // } else if (typeof option.rootRouter === 'function') {
@@ -31,7 +31,7 @@ export class SimpleApplication {
     this.simstanceManager = new SimstanceManager(this, option);
     // this.simstanceManager.setStoreSet(SimpleApplication, this);
     this.simstanceManager.setStoreSet(SimstanceManager, this.simstanceManager);
-
+    // cacheManager는 사용자가 불러다 사용할때 뜨도록. 미리 추가안해준다.
     this.intentManager = this.simstanceManager.proxy(new IntentManager(this.simstanceManager));
     this.routerManager = this.simstanceManager.proxy(new RouterManager(this.simstanceManager, option.rootRouter));
     this.simstanceManager.setStoreSet(IntentManager, this.intentManager);
@@ -51,14 +51,24 @@ export class SimpleApplication {
     return this.routerManager;
   }
 
-  public run(otherInstanceSim?: Map<ConstructorType<any> | Function, any>) {
+  public run(otherInstanceSim?: Map<ConstructorType<any> | Function | SimConfig, any>) {
     this.simstanceManager.run(otherInstanceSim);
     return this.simstanceManager;
   }
 
-  public simAtomic<T>(type: ConstructorType<T> | Function) {
-    const routerAtomic = new SimAtomic<T>(type, this.simstanceManager);
-    return routerAtomic;
+  public simAtomic<T>(type: ConstructorType<T> | Function | Symbol) {
+    if (typeof type === 'symbol') {
+      return this.simstanceManager.findFirstSim(type);
+    } else if (typeof type === 'function') {
+      return new SimAtomic<T>(type, this.simstanceManager);
+    }
+  }
+  public simAtomics<T>(type: ConstructorType<T> | Function | Symbol) {
+    if (typeof type === 'symbol') {
+      return this.simstanceManager.findSims(type) ?? [];
+    } else if (typeof type === 'function') {
+      return this.simstanceManager.findSims({type}) ?? [];
+    }
   }
 
   public getInstance<T>(type: ConstructorType<T>) {
@@ -70,13 +80,16 @@ export class SimpleApplication {
     }
   }
 
-  public sim<T>(type: ConstructorType<T> | Function) {
-    return this.simAtomic<T>(type).getValue();
+  public sim<T>(type: ConstructorType<T> | Function | Symbol): T | undefined {
+    return this.simAtomic<T>(type)?.getValue();
+  }
+  public sims<T>(type: ConstructorType<T> | Function | Symbol) {
+    return this.simAtomics(type)
   }
 
   public addSim(target: ConstructorType<any> | Function): void;
   public addSim(config: SimConfig, target: ConstructorType<any>): GenericClassDecorator<ConstructorType<any> | Function>;
-  public addSim(configOrTarget: SimConfig | ConstructorType<any> | Function, target?:ConstructorType<any>): void | GenericClassDecorator<ConstructorType<any> | Function> {
+  public addSim(configOrTarget: SimConfig | ConstructorType<any> | Function, target?: ConstructorType<any>): void | GenericClassDecorator<ConstructorType<any> | Function> {
     const r: any = Sim(configOrTarget as any);
     if (typeof r === 'function' && target) {
       r(target);
@@ -84,7 +97,7 @@ export class SimpleApplication {
   }
 
 
-public publishIntent(i: string, data?: any): any[];
+  public publishIntent(i: string, data?: any): any[];
   public publishIntent(i: Intent): any[];
   public publishIntent(i: Intent | string, data?: any): any[] {
     if (i instanceof Intent) {
@@ -94,13 +107,13 @@ public publishIntent(i: string, data?: any): any[];
     }
   }
 
-  public routing<R = SimAtomic, M = any>(i: {path: string, data?: any}, option?: RoutingOption): Promise<RouterModule<R, M>>;
+  public routing<R = SimAtomic, M = any>(i: { path: string, data?: any }, option?: RoutingOption): Promise<RouterModule<R, M>>;
   public routing<R = SimAtomic, M = any>(i: Intent, option?: RoutingOption): Promise<RouterModule<R, M>>;
-  public routing<R = SimAtomic, M = any>(i: {path: string, data?: any} | Intent, option?: RoutingOption): Promise<RouterModule<R, M>> {
+  public routing<R = SimAtomic, M = any>(i: { path: string, data?: any } | Intent, option?: RoutingOption): Promise<RouterModule<R, M>> {
     if (i instanceof Intent) {
       return this.routerManager.routing<R, M>(i, option);
     } else {
-       const intent =   new Intent(i.path,i.data) ;
+      const intent = new Intent(i.path, i.data);
       return this.routerManager.routing<R, M>(intent, option);
     }
   }

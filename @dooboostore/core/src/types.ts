@@ -172,6 +172,13 @@ export type GetDotPath<T, P extends string> = P extends `${infer K}.${infer R}`
       ? T
       : never;
 
+export type FlatJoinKey<T, J = '.'> = {
+  [P in keyof T as T[P] extends object
+    ? // @ts-ignore
+      `${P}${J}${keyof FlatJoinDotKey<T[P]>}` | `${P}`
+    : // @ts-ignore
+      `${P}`]: unknown;
+};
 export type FlatJoinDotKey<T> = {
   [P in keyof T as T[P] extends object
     ? // @ts-ignore
@@ -179,6 +186,10 @@ export type FlatJoinDotKey<T> = {
     : // @ts-ignore
       `${P}`]: unknown;
 };
+export type FlatJoinDotKeyType<T> = keyof FlatJoinDotKey<T>;
+export type FlatJoinKeyType<T, J> = keyof FlatJoinKey<T, J>;
+export type FlatJoinDotKeyFieldType<T, D> = FieldType<FlatJoinDotKey<T>,D>;
+export type FlatJoinDotKeyTypePartial<T, D> = Partial<FieldType<FlatJoinDotKey<T>,D>>;
 export type FlatJoinDotKeyExcludeStartWithUnderBar<T> = {
   [P in keyof T as T[P] extends any
     ? // @ts-ignore

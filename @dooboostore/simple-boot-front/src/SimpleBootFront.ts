@@ -133,11 +133,11 @@ export class SimpleBootFront extends SimpleApplication {
       if (this.domRenderRouter) {
         // console.log('?????????????????????????????')
         const intent = new Intent(this.domRenderRouter.getUrl() || '/');
-        console.log('intent-----------', intent)
+        // console.log('intent-----------', intent)
         // TODO: 왜 canActivate가 두번 호출되는지 확인 필요!! 그래서 setTimeout으로 처리함 원인 모르겠음 아 씨발
         setTimeout(() => {
           this.routing<SimAtomic, any>(intent).then(it => {
-            console.log('-----------routing!!!', it)
+            // console.log('------', it)
             this.afterSetting();
           });
         }, 0)

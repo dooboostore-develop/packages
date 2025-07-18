@@ -1,9 +1,12 @@
 import { Sim } from '../decorators/SimDecorator';
 import { SimpleApplication } from '../SimpleApplication';
-import {   findCacheByKey as CfindCacheByKey,
+import {
+  findCacheByKey as CfindCacheByKey,
   findCacheByKeyStartWith as CfindCacheByKeyStartWith,
   deleteCacheByKey as CdeleteCacheByKey,
-  deleteCacheByKeyStartWith as CdeleteCacheByKeyStartWith, } from '../decorators/cache/CacheDecorator';
+  getCacheSet as CgetCacheSet,
+  deleteCacheByKeyStartWith as CdeleteCacheByKeyStartWith, getCacheSet,
+} from '../decorators/cache/CacheDecorator';
 
 @Sim
 export class CacheManager {
@@ -26,6 +29,11 @@ export class CacheManager {
 
   deleteCacheByKeyStartWith(key: string){
     return CdeleteCacheByKeyStartWith(this.simpleApplication, key)
+  }
+
+
+  getCacheSet(){
+    return CgetCacheSet(this.simpleApplication)
   }
 
 }

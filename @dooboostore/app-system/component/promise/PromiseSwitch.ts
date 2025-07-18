@@ -100,7 +100,7 @@ export namespace PromiseSwitch {
         pendings.filter(it => it.hidden).forEach(it => it.hidden = false);
       } else if (this.promiseState.status === 'fulfilled') {
         const value = this.promiseState.value;
-        console.log('-----------fulfilled promises', value);
+        // console.log('-----------fulfilled promises', value);
         full.filter(it => !it.hidden).forEach(it => it.hidden = true)
         fulfilleds.forEach(it => {
           it.setData(value)
@@ -118,7 +118,7 @@ export namespace PromiseSwitch {
 
     onChangeAttrRender(name: string, value: any, other: OtherData) {
       super.onChangeAttrRender(name, value, other);
-      console.log('-----------changer promises', name, value, this.getChildren(Default));
+      // console.log('-----------changer promises', name, value, this.getChildren(Default));
       if (this.equalsAttributeName(name, 'data') && value) {
         this.childStateChange();
         this.attribute?.change?.({status: 'pending'});

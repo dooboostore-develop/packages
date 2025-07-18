@@ -46,6 +46,7 @@ export class EventManager {
   public static readonly NEAR_THIS_VARNAME = '$nearThis';
   public static readonly PARENT_THIS_VARNAME = '$parentThis';
   public static readonly ROOT_OBJECT_VARNAME = '$rootObject';
+  public static readonly SCRIPT_UTILS_VARNAME = '$scriptUtils';
   public static readonly RANGE_VARNAME = '$range';
   public static readonly ROUTER_VARNAME = '$router';
   public static readonly INNER_HTML_VARNAME = '$innerHTML';

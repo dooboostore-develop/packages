@@ -26,6 +26,12 @@ export class SimAtomic<T = object> {
     // return this.simstanceManager.getOrNewSim({target:this.type, newInstanceCarrier: config?.newInstanceCarrier});
     if (!this.value) {
       this.value = this.simstanceManager.getOrNewSim({target: this.type, newInstanceCarrier: config?.newInstanceCarrier});
+      // const findFirstSim = this.simstanceManager.findFirstSim({type: this.type});
+      // if (findFirstSim) {
+      //   this.value = findFirstSim.getValue(config);
+      // } else {
+      //   this.value = this.simstanceManager.getOrNewSim({target: this.type, newInstanceCarrier: config?.newInstanceCarrier});
+      // }
     }
     return this.value;
     // const types = ConvertUtils.flatArray(this.getConfig()?.type);

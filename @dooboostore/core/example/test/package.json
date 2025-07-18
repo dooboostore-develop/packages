@@ -1,5 +1,5 @@
 {
-  "name": "@dooboostore/core/quick-start",
+  "name": "@dooboostore/core/example/quick-start",
   "version": "1.0.0",
   "main": "index.js",
   "license": "MIT",

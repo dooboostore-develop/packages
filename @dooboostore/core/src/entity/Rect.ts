@@ -1,6 +1,7 @@
 import { Point2D } from './Point2D';
 import { MathUtil } from '../math/MathUtil';
 import AngleUnitType = MathUtil.AngleUnitType;
+import { isSize, Size } from './Size';
 
 type ValueLinkControl<T> = { value: T, noLink: boolean | Rect };
 const isValueLinkControl = <T = any>(data: any): data is ValueLinkControl<T> => {
@@ -14,12 +15,17 @@ export class Rect {
   private _height: number
   private linkRects?: Set<Rect>;
 
+  constructor(size: Size);
   constructor(point: { x: number, y: number }, endPoint: { x: number, y: number });
   constructor(point: Point2D, endPoint: Point2D);
   constructor(point: Point2D, width?: number, height?: number);
   constructor(x: number, y: number, width?: number, height?: number);
-  constructor(xOrPoint: number | Point2D | { x: number, y: number }, yOrPointOrWidth: number | Point2D | { x: number, y: number }, widthOrHeight = 0, heightOrUndefined = 0) {
-    if (typeof xOrPoint === 'object' && typeof yOrPointOrWidth === 'object') {
+  constructor(xOrPoint: number | Point2D | { x: number, y: number } | Size, yOrPointOrWidth?: number | Point2D | { x: number, y: number }, widthOrHeight = 0, heightOrUndefined = 0) {
+    if (isSize(xOrPoint)) {
+      this._start = new Point2D(0, 0);
+      this._width = xOrPoint.width;
+      this._height = xOrPoint.height;
+    } else if (typeof xOrPoint === 'object' && typeof yOrPointOrWidth === 'object') {
       this._start = xOrPoint instanceof Point2D ? xOrPoint : new Point2D(xOrPoint.x, xOrPoint.y);
       this.end = yOrPointOrWidth instanceof Point2D ? yOrPointOrWidth : new Point2D(yOrPointOrWidth.x, yOrPointOrWidth.y);
     } else if (typeof xOrPoint === 'object' && typeof yOrPointOrWidth === 'number') {
@@ -97,8 +103,9 @@ export class Rect {
     this._start.x = this.end.x - value;
     this.applyStartXPercentLinks({value: percentDiff, noLink});
   }
-  set widthFromEnd(inputValue: number ) {
-   this.setWidthFromEnd(inputValue);
+
+  set widthFromEnd(inputValue: number) {
+    this.setWidthFromEnd(inputValue);
   }
 
   // 언제쓰는거지 ㅡㅡ?
@@ -109,29 +116,32 @@ export class Rect {
     this._start.y = diff;
     this.applyStartYPercentLinks({value: percentDiff, noLink});
   }
-  set heightFromEnd(inputValue: number ) {
-   this.setHeightFromEnd(inputValue);
+
+  set heightFromEnd(inputValue: number) {
+    this.setHeightFromEnd(inputValue);
   }
 
-  setWidthFromCenter(inputValue: number| ValueLinkControl<number>) {
+  setWidthFromCenter(inputValue: number | ValueLinkControl<number>) {
     let {value, noLink} = this.valueLinkControl(inputValue);
     const diff = this.center.x - (value / 2);
     const percentDiff = MathUtil.getPercentByTotal(this.start.x, diff);
     this._start.x = diff;
     this.applyStartXPercentLinks(percentDiff);
   }
+
   set widthFromCenter(inputValue: number) {
-   this.setWidthFromCenter(inputValue);
+    this.setWidthFromCenter(inputValue);
   }
 
-  setHeightFromCenter(inputValue: number| ValueLinkControl<number>) {
+  setHeightFromCenter(inputValue: number | ValueLinkControl<number>) {
     let {value, noLink} = this.valueLinkControl(inputValue);
     const diff = this.center.y - (value / 2);
     const percentDiff = MathUtil.getPercentByTotal(this.start.y, diff);
     this._start.y = diff;
     this.applyStartYPercentLinks(percentDiff);
   }
-  set heightFromCenter(inputValue: number| ValueLinkControl<number>) {
+
+  set heightFromCenter(inputValue: number | ValueLinkControl<number>) {
     let {value, noLink} = this.valueLinkControl(inputValue);
     const diff = this.center.y - (value / 2);
     const percentDiff = MathUtil.getPercentByTotal(this.start.y, diff);
@@ -338,7 +348,7 @@ export class Rect {
     return r;
   }
 
-  toRotate(r: number, {rotatePoint = this.center, type = 'degreeAngle'}: {rotatePoint?: {x:number, y:number}, type?: AngleUnitType}): Point2D[] {
+  toRotate(r: number, {rotatePoint = this.center, type = 'degreeAngle'}: { rotatePoint?: { x: number, y: number }, type?: AngleUnitType }): Point2D[] {
     const angle = MathUtil.radians(r, {type});
     const centerPoint = rotatePoint instanceof Point2D ? rotatePoint : new Point2D(rotatePoint.x, rotatePoint.y);
 
@@ -453,6 +463,25 @@ export class Rect {
     );
   }
 
+  /**
+   * 주어진 width에 맞춰 비율에 따라 height를 스케일링하여 새로운 Rect를 반환합니다.
+   * @param width 새로운 width 값
+   * @returns 비율에 맞게 height가 조정된 Rect
+   */
+  toScaleByWidth(width: number): Rect {
+    const ratio = this.height / this.width;
+    return new Rect(this.x, this.y, width, width * ratio);
+  }
+  /**
+   * 주어진 height에 맞춰 비율에 따라 width를 스케일링하여 새로운 Rect를 반환합니다.
+   * @param height 새로운 height 값
+   * @returns 비율에 맞게 width가 조정된 Rect
+   */
+  toScaleByHeight(height: number): Rect {
+    const ratio = this.width / this.height;
+    return new Rect(this.x, this.y, height * ratio, height);
+  }
+
   toRatio(point: Rect | { x: number, y: number, w: number, h: number }): Rect {
     return new Rect(
       this.getXRatio(point.x),
@@ -513,7 +542,7 @@ export class Rect {
     this.setX({value: MathUtil.getValueByTotalInPercent(this.width, value), noLink});
   }
 
-  set xByWidthPercent(wPercent: number ) {
+  set xByWidthPercent(wPercent: number) {
     this.setXByWidthPercent(wPercent);
   }
 
@@ -521,6 +550,7 @@ export class Rect {
     let {value, noLink} = this.valueLinkControl(wRatio);
     this.setX({value: MathUtil.getValueByTotalInRatio(this.width, value), noLink});
   }
+
   set xByWidthRatio(wRatio: number) {
     this.setXByWidthRatio(wRatio);
   }
@@ -529,6 +559,7 @@ export class Rect {
     let {value, noLink} = this.valueLinkControl(hPercent);
     this.setY({value: MathUtil.getValueByTotalInPercent(this.height, value), noLink});
   }
+
   set yByHeightPercent(hPercent: number) {
     this.setYByHeightPercent(hPercent);
   }
@@ -537,6 +568,7 @@ export class Rect {
     let {value, noLink} = this.valueLinkControl(ratio);
     this.setY({value: MathUtil.getValueByTotalInRatio(this.height, value), noLink});
   }
+
   set yByHeightRatio(ratio: number) {
     this.setYByHeightRatio(ratio);
   }
@@ -625,10 +657,10 @@ export class Rect {
     );
   }
 
-  public isIn(data: {x: number, y:number}): boolean;
+  public isIn(data: { x: number, y: number }): boolean;
   public isIn(data: Point2D): boolean;
   public isIn(data: Rect): boolean
-  public isIn(data: Point2D | Rect | {x:number, y:number}): boolean {
+  public isIn(data: Point2D | Rect | { x: number, y: number }): boolean {
     if (data instanceof Rect) {
       return this.isIn(data.start) && this.isIn(data.end);
     } else {
@@ -640,7 +672,7 @@ export class Rect {
   public isOut(data: Rect): boolean;
   public isOut(data: Point2D | Rect) {
     if (data instanceof Rect) {
-      return !this.isIn(data.start) && !this.isIn(data.end);
+      return !this.isOverlap(data);
     } else {
       return !this.isIn(data);
     }
@@ -650,7 +682,44 @@ export class Rect {
   public isOverlap(data: Rect): boolean;
   public isOverlap(data: Point2D | Rect) {
     if (data instanceof Rect) {
-      return (this.isOverlap(data.leftTop) || this.isOverlap(data.rightTop) || this.isOverlap(data.rightBottom) || this.isOverlap(data.leftBottom)) || (data.start.x < this.x && data.start.y < this.y && data.end.x > this.end.x && data.end.y > this.end.y);
+      /*
+ 새로운 로직은 반대로 "겹치지 않는 조건"을 찾고, 그 조건에 해당하지 않으면 "겹친다"고 판단하는
+  방식입니다. 이 방법이 훨씬 간단하고 모든 경우를 처리할 수 있습니다.
+
+  두 사각형(A와 B)이 겹치지 않으려면, 다음 네 가지 조건 중 하나라도 만족해야 합니다.
+   1. A가 B의 완전히 왼쪽에 있을 때
+       * A의 오른쪽 끝(this.endX)이 B의 왼쪽 시작(data.x)보다 왼쪽에 있는 경우
+       * 코드: this.endX < data.x
+
+
+   2. A가 B의 완전히 오른쪽에 있을 때
+       * A의 왼쪽 시작(this.x)이 B의 오른쪽 끝(data.endX)보다 오른쪽에 있는 경우
+       * 코드: this.x > data.endX
+
+
+   3. A가 B의 완전히 위쪽에 있을 때
+       * A의 아래쪽 끝(this.endY)이 B의 위쪽 시작(data.y)보다 위쪽에 있는 경우
+       * 코드: this.endY < data.y
+
+
+   4. A가 B의 완전히 아래쪽에 있을 때
+       * A의 위쪽 시작(this.y)이 B의 아래쪽 끝(data.endY)보다 아래쪽에 있는 경우
+       * 코드: this.y > data.endY
+       */
+      const noOverlap = this.endX < data.x ||
+        this.x > data.endX ||
+        this.endY < data.y ||
+        this.y > data.endY;
+      return !noOverlap;
+      // return (
+      //   this.isOverlap(data.leftTop) ||
+      //   this.isOverlap(data.rightTop) ||
+      //   this.isOverlap(data.rightBottom) ||
+      //   this.isOverlap(data.leftBottom)) ||
+      //   (
+      //     data.start.x < this.x && data.start.y < this.y &&
+      //     data.end.x > this.end.x && data.end.y > this.end.y
+      //   );
     } else {
       return this.isIn(data);
     }

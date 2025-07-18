@@ -46,7 +46,7 @@ export class SSRWorker {
             (this.simpleBootFront.option.window as any).ssrUse = true;
             delete (this.simpleBootFront.option.window as any).server_side_data;
 
-            // runRouting!!
+            // run
             await this.simpleBootFront.goRouting(url);
             let html = this.simpleBootFront.option.window.document.documentElement.outerHTML;
 

@@ -1,5 +1,5 @@
 {
-  "name": "@dooboostore/core-web/example/playground",
+  "name": "@dooboostore/lib-web/example/imageEditor",
   "version": "1.0.0",
   "main": "index.js",
   "license": "MIT",
@@ -33,6 +33,7 @@
   "peerDependencies": {
     "reflect-metadata": "^0.2.2",
     "@dooboostore/core": "workspace:*",
-    "@dooboostore/core-web": "workspace:*"
+    "@dooboostore/core-web": "workspace:*",
+    "@dooboostore/lib-web": "workspace:*"
   }
 }
