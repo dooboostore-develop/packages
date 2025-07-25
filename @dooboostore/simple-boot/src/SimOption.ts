@@ -24,15 +24,15 @@ export class SimOption {
   public container?: string;
   public advice: ConstructorType<any>[];
   public proxy?: ProxyHandlerType;
-  public excludeSim: ((ConstructorType<any> | Function)[]) | ((type: (ConstructorType<any> | Function)) => boolean);
+  // public excludeSim: ((ConstructorType<any> | Function)[]) | ((type: (ConstructorType<any> | Function)) => boolean);
   public using?: SimConfigUsing;
   public cache?: CacheConfig
 
-  constructor({rootRouter, container, cache, excludeSim = [], advice = [], proxy, using}: InitOptionType = {}) {
+  constructor({rootRouter, container, cache,  advice = [], proxy, using}: InitOptionType = {}) {
     this.rootRouter = rootRouter;
     this.container = container;
     this.advice = advice;
-    this.excludeSim = excludeSim;
+    // this.excludeSim = excludeSim;
     this.proxy = proxy;
     this.using = using;
     this.cache = cache;

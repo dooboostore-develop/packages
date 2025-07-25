@@ -23,7 +23,7 @@ export const ExceptionHandler = (config: ExceptionHandlerConfig = {}): ReflectMe
     }
 }
 
-export const getExceptionHandler = (target: any, propertyKey: string): ExceptionHandlerConfig => {
+export const getExceptionHandler = (target: any, propertyKey: string): ExceptionHandlerConfig | undefined => {
     return ReflectUtils.getMetadata(ExceptionHandlerMetadataKey, target, propertyKey);
 }
 

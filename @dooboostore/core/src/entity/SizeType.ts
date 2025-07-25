@@ -1,9 +1,9 @@
-export type Size = {
+export type SizeType = {
   width: number;
   height: number;
 };
 
-export const isSize = (obj: any): obj is Size =>
+export const isSizeType = (obj: any): obj is SizeType =>
   !!obj &&
   typeof obj.width === 'number' &&
   typeof obj.height === 'number';

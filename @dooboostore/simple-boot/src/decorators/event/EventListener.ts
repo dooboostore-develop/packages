@@ -10,6 +10,6 @@ export const EventListener = (option: EventListenerOption) => {
     return ReflectUtils.metadata(EventListenerMetadataKey, option);
 }
 
-export const getEventListener = (target: any, propertyKey: string): EventListenerOption => {
+export const getEventListener = (target: any, propertyKey: string): EventListenerOption | undefined => {
     return ReflectUtils.getMetadata(EventListenerMetadataKey, target, propertyKey);
 }

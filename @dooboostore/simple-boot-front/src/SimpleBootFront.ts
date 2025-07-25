@@ -160,7 +160,7 @@ export class SimpleBootFront extends SimpleApplication {
   }
 
   public writeRootRouter() {
-    const routerAtomic = new SimAtomic(this.option.rootRouter, this.getSimstanceManager());
+    const routerAtomic = new SimAtomic({targetKeyType: this.option.rootRouter, originalType: this.option.rootRouter}, this.getSimstanceManager());
     const target = this.option.window.document.querySelector(this.option.selector);
     if (target && routerAtomic.getValue()) {
       const id = 'root-router';

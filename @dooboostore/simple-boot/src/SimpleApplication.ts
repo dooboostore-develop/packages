@@ -60,7 +60,8 @@ export class SimpleApplication {
     if (typeof type === 'symbol') {
       return this.simstanceManager.findFirstSim(type);
     } else if (typeof type === 'function') {
-      return new SimAtomic<T>(type, this.simstanceManager);
+      return this.simstanceManager.findFirstSim({type:type});
+      // return new SimAtomic<T>(type, this.simstanceManager);
     }
   }
   public simAtomics<T>(type: ConstructorType<T> | Function | Symbol) {
