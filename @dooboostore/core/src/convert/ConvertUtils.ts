@@ -30,6 +30,11 @@ export namespace ConvertUtils {
     return new Map(JSON.parse(jsonStr));
   };
 
+
+  export const decodeURIString = (data: string) => {
+    return decodeURIComponent(data);
+  }
+
   export const objToStrMap = (obj: any): Map<string, string> => {
     const strMap = new Map();
     for (const k of Object.keys(obj)) {
