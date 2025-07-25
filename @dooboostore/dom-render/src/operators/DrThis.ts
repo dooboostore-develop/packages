@@ -7,6 +7,7 @@ import { isOnDrThisBind } from '../lifecycle/dr-this/OnDrThisBind';
 
 export class DrThis extends OperatorExecuterAttrRequire<string> {
   async executeAttrRequire(attr: any): Promise<ExecuteState> {
+    // console.log('drThis!!!!!!!!!!!!!',this.elementSource.attrs.drThis);
     if (attr && this.elementSource.attrs.drThis) {
       let thisPath = this.elementSource.attrs.drThis;
       if (attr instanceof ComponentSet) {

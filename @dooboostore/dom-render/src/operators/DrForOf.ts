@@ -67,10 +67,12 @@ export class DrForOf extends OperatorExecuterAttrRequire<string> {
                             }
 
                             n.innerHTML = n.innerHTML.replace(/\\#it\\#/g, destIt).replace(/\\#index\\#/g, i);
-                            const drOptionThis = n.getAttribute('${RawSet.DR_THIS_OPTIONNAME}');
-                            if (drOptionThis) {
-                             n.setAttribute('${RawSet.DR_THIS_NAME}', drOptionThis)
-                            }
+                            // console.log('!@@@@', n.innerHTML);
+                            // DR_THIS_OPTIONNAME 는 제거한다 꼬인다. strip 할때 막 꼬여버린다.
+                            // const drOptionThis = n.getAttribute('${RawSet.DR_THIS_OPTIONNAME}');
+                            // if (drOptionThis) {
+                            //  n.setAttribute('${RawSet.DR_THIS_NAME}', drOptionThis)
+                            // }
                             if (this.__render.drStripOption === 'true') {
                                 Array.from(n.childNodes).forEach(it => this.__render.fag.append(it));
                             } else {

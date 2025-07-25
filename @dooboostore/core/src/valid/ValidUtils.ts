@@ -1,7 +1,7 @@
-import { ConstructorType, FilterFalsy, FilterNullish, NonNullable, Nullish } from '../types';
+import { ConstructorType, FilterFalsy, FilterNullish, NonNullable, Nullable, Nullish, NullOrUndefined } from '../types';
 
 export namespace ValidUtils {
-  export const isNullOrUndefined = (data: any): boolean => {
+  export const isNullOrUndefined = <T>(data: T): data is NullOrUndefined<T> => {
     return data == null || undefined === data;
   }
 

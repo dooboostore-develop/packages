@@ -20,6 +20,9 @@ import { ScriptRunnable } from './script/ScriptRunnable';
 import { Router } from '@dooboostore/dom-render/routers/Router';
 import { HashRouter } from '@dooboostore/dom-render/routers/HashRouter';
 import { PathRouter } from '@dooboostore/dom-render/routers/PathRouter';
+import { RandomUtils } from '@dooboostore/core/random/RandomUtils';
+import { isOnInit } from './lifecycle/OnInit';
+import { EventManager } from '@dooboostore/dom-render/events/EventManager';
 
 export class SimpleBootFront extends SimpleApplication {
   public domRendoerExcludeProxy: ConstructorType<any>[] = [
@@ -116,7 +119,32 @@ export class SimpleBootFront extends SimpleApplication {
 
     // this.navigation.domRenderConfig = this.domRenderConfig;
     // rootRouter first draw
-    this.initWriteRootRouter();
+    const target = this.option.window.document.querySelector(this.option.selector) as HTMLElement;
+    const targetChildNodes = Array.from(target.childNodes)
+    let isClenBody = targetChildNodes.length > 0
+
+    // console.log('------------', EventManager.attrNames)
+
+    // 이미 body가 존재할때 기존거 동작이 되어버림에 따라 지워준다
+    // this.option.window.addEventListener('popstate', (event) => { 에서 처리후  자식들 지워준다  깜빡임 없에기위해
+    if (isClenBody) {
+      const deleteAttr = [...EventManager.attrNames, ...RawSet.DR_ATTRIBUTES];
+      const iterator = this.option.window.document.createNodeIterator(
+        target,
+        NodeFilter.SHOW_ELEMENT
+      );
+      let currentNode;
+      while ((currentNode = iterator.nextNode())) {
+        const element = currentNode as Element;
+        deleteAttr.forEach(attrName => {
+          if (element.hasAttribute(attrName)) {
+            element.removeAttribute(attrName);
+          }
+        });
+      }
+    }
+    // const targetChildren = target.children();
+    const routerAndSettingData = this.initWriteRootRouter(target);
 
     this.domRenderConfig.eventVariables = {
       $router: this.domRenderRouter,
@@ -139,6 +167,17 @@ export class SimpleBootFront extends SimpleApplication {
           this.routing<SimAtomic, any>(intent).then(it => {
             // console.log('------', it)
             this.afterSetting();
+
+            // console.log('------------!!!!!', targetChildNodes, targetChildNodes.length);
+            if (isClenBody) {
+              setTimeout(() => {
+                while (target.firstChild && (target.firstChild as HTMLElement).id !== (routerAndSettingData.startEndPoint.start as HTMLElement).id) {
+                  // console.log('remove??????')
+                  target.removeChild(target.firstChild);
+                }
+              }, 0);
+              isClenBody = false
+            }
           });
         }, 0)
       }
@@ -146,40 +185,65 @@ export class SimpleBootFront extends SimpleApplication {
     return simstanceManager;
   }
 
-  public initWriteRootRouter() {
-    const routerAtomic = this.writeRootRouter();
-    const target = this.option.window.document.querySelector(this.option.selector);
-    if (target && routerAtomic && routerAtomic.getValue()) {
-      const val = routerAtomic.getValue() as any;
+  public initWriteRootRouter(target: Element) {
+    const routerAndSettingData = this.writeRootRouter(target);
+    // console.log('--start', startEndPoint);
+
+    // while (target.firstChild && target.firstChild !== startEndPoint.start) {
+    //   console.log('remove??????')
+    //   target.removeChild(target.firstChild);
+    // }
+    //         console.log('remove??????end?')
+
+    if (target && routerAndSettingData.routerAtomic && routerAndSettingData.routerAtomic.getValue()) {
+      const val = routerAndSettingData.routerAtomic.getValue() as any;
       // 여기서 domrender 시작하네??
       const domRenderProxy = val._DomRender_proxy as DomRenderProxy<any>
       domRenderProxy.initRender(target);
       // console.log('initWriteRootRouter', val);
-      (val as any)?.onInit?.();
+      if (isOnInit(val)) {
+        val.onInit();
+      }
+      // setTimeout(()=>{ // ssr일때 이미 채워져서 내려오는경우 깜빡임 없애기위해서.
+      //   while (target.firstChild && (target.firstChild as HTMLElement).id !== (startEndPoint.start as HTMLElement).id) {
+      //     console.log('remove??????')
+      //     target.removeChild(target.firstChild);
+      //   }
+      // },100);
     }
+    return routerAndSettingData;
   }
 
-  public writeRootRouter() {
-    const routerAtomic = new SimAtomic(this.option.rootRouter, this.getSimstanceManager());
-    const target = this.option.window.document.querySelector(this.option.selector);
+  public writeRootRouter(target: Element) {
+    const routerAtomic = new SimAtomic({targetKeyType: this.option.rootRouter, originalType: this.option.rootRouter}, this.getSimstanceManager());
+    // const target = this.option.window.document.querySelector(this.option.selector);
+
+    const id = `root-router-${RandomUtils.uuid()}`;
+    const startEndPoint = RawSet.createStartEndPoint({node: target, id, type: RawSetType.TARGET_ELEMENT}, this.domRenderConfig);
     if (target && routerAtomic.getValue()) {
-      const id = 'root-router';
-      const startEndPoint = RawSet.createStartEndPoint({node: target, id, type: RawSetType.TARGET_ELEMENT}, this.domRenderConfig);
-      target.innerHTML = '';
+      // target.innerHTML = '';
+      // p.appendChild(startEndPoint.start);
+      // p.insertAdjacentHTML('beforeend', this.getComponentInnerHtml(this.option.rootRouter, id));
+      // p.appendChild(startEndPoint.end);
+      //
       target.appendChild(startEndPoint.start);
       target.insertAdjacentHTML('beforeend', this.getComponentInnerHtml(this.option.rootRouter, id));
       target.appendChild(startEndPoint.end);
+      // target.innerHTML = this.getComponentInnerHtml(this.option.rootRouter, id);
+      // target.insertBefore(startEndPoint.start, target.firstChild);
+      // target.appendChild(startEndPoint.start);
+      // target.appendChild(startEndPoint.end);
     }
-    return routerAtomic;
+    return {startEndPoint, routerAtomic};
   }
 
   async goRouting(url: string) {
-    await this.domRenderRouter.go({path:url, disabledPopEvent: false});
+    await this.domRenderRouter.go({path: url, disabledPopEvent: false});
     this.afterSetting();
   }
 
   async getIntent(url: string | Intent) {
-    const intent = typeof url === 'string' ? new Intent(url): url;
+    const intent = typeof url === 'string' ? new Intent(url) : url;
     const data = await this.routing<SimAtomic, any>(intent);
     return data;
 

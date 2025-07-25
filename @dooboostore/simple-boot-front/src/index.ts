@@ -75,7 +75,7 @@ class User {
 export class Index implements RouterAction {
   child?: any;
   constructor(public sim: SimstanceManager) {
-    console.log('simstanceManager--------', sim);
+    // console.log('simstanceManager--------', sim);
   }
   async canActivate(url: any, module: any) {
     this.child = module;

@@ -6,3 +6,6 @@ export type OnInitParameter = {
 export interface OnInit {
     onInit(...data: any): any;
 }
+export const isOnInit = (obj: any): obj is OnInit => {
+    return obj && typeof obj.onInit === 'function';
+}

@@ -143,6 +143,7 @@ export abstract class Router<T = any> {
     } else {
       const tpath = data.path ?? this.getPath();
       const s = data.searchParams ? ConvertUtils.toURLSearchParams(data.searchParams).toString() : '';
+      // data.searchParams
       targetPath = `${tpath}${s.length > 0 ? '?' : ''}${s}`;
     }
     return targetPath;

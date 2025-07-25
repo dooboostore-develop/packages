@@ -259,7 +259,8 @@ export class EventManager {
 
 
     // on-init event
-    this.procAttr<HTMLInputElement>(childNodes, EventManager.onInitAttrName, (it, attribute) => {
+    this.procAttr<HTMLElement>(childNodes, EventManager.onInitAttrName, (it, attribute) => {
+      // it.removeAttribute(EventManager.onInitAttrName);
       let script = attribute;
       if (script) {
         script = 'return ' + script;
@@ -289,7 +290,7 @@ export class EventManager {
     // console.log('--------onRenderedEvent', obj, childNodes);
     // console.log(document.querySelectorAll(`[${EventManager.onRenderedInitAttrName}]`))
     this.procAttr<HTMLInputElement>(childNodes, EventManager.onRenderedInitAttrName, (it, attribute) => {
-      // console.log('---------', it);
+      // it.removeAttribute(EventManager.onRenderedInitAttrName);
       if (!it.isConnected) {
         return;
       }

@@ -64,6 +64,10 @@ export class RawSet {
   public static readonly DR_DETECT_FILTER_OPTIONNAME = 'dr-detect-option-filter';
   public static readonly DR_DETECT_ATTR_OPTIONNAME = 'dr-detect-option-attr';
 
+
+  /**
+   * @deprecated
+   */
   public static readonly DR_THIS_OPTIONNAME = 'dr-option-this';
   public static readonly DR_ATTR_OPTIONNAME = 'dr-option-attr';
   public static readonly DR_IF_OPTIONNAME = 'dr-option-if';
@@ -644,6 +648,12 @@ export class RawSet {
           const targetElementIs = element.getAttribute(RawSet.DR_REPLACE_TARGET_ELEMENT_IS_NAME);
           const targetElementNames = config.targetElements?.map(it => it.name.toLowerCase()) ?? [];
           const isElement = targetElementNames.includes(element.tagName.toLowerCase()) || targetElementNames.includes(targetElementIs?.toLowerCase());
+          // if (isElement) {
+          //   (element as HTMLElement).style.display = 'none';
+          //   (element as HTMLElement).style.width = '100px';
+          //   (element as HTMLElement).style.height = '100px';
+          //   console.log((element as HTMLElement).outerHTML)
+          // }
           // console.log('------targetElementIstargetElementIs>', targetElementNames, '---', isElement, targetElementIs);
           // const targetAttrNames = (config.targetAttrs?.map(it => it.name) ?? []).concat([...RawSet.DR_ATTRIBUTES,...EventManager.RAWSET_CHECK_ATTRIBUTE]);
           const targetAttrNames = (config.targetAttrs?.map(it => it.name) ?? []).concat([...RawSet.DR_ATTRIBUTES]);
@@ -657,8 +667,9 @@ export class RawSet {
             if (linkNames.includes(it)) {
               linkVariables.set(it, value);
             } else if (value && RawSet.isExpression(value)) { // 표현식있을떄
-              const variablePath = RawSet.expressionGroups(value)[0][1];
+              let variablePath = RawSet.expressionGroups(value)[0][1];
               // normal Attribute 초반에 셋팅해주기.
+              variablePath = variablePath.replace(/#[^#]*#/g, '({})')
               const cval = ScriptUtils.evalReturn(variablePath, Object.assign(obj));
               if (cval === null) {
                 element.removeAttribute(it);
@@ -752,6 +763,9 @@ export class RawSet {
         const targetElementIs = element.getAttribute(RawSet.DR_REPLACE_TARGET_ELEMENT_IS_NAME);
         const targetElementNames = config.targetElements?.map(it => it.name.toLowerCase()) ?? [];
         const isElement = targetElementNames.includes(element.tagName.toLowerCase()) || targetElementNames.includes(targetElementIs?.toLowerCase());
+        // if (isElement) {
+        //   (element as HTMLElement).style.display = 'none'
+        // }
         // const isElement = targetElementNames.includes(element.tagName.toLowerCase());
         const targetAttrNames = (config.targetAttrs?.map(it => it.name) ?? []).concat(RawSet.DR_ATTRIBUTES);
         const isAttr = element.getAttributeNames().filter(it => targetAttrNames.includes(it.toLowerCase())).length > 0;
@@ -1033,6 +1047,7 @@ export class RawSet {
 
     const componentKey = rawSet.uuid;
     const renderScript = ` /*drThisCreate*/
+        // console.log('-----', this.__render);
         var ${EventManager.RENDER_VARNAME} = this.__render; 
         var ${EventManager.RAWSET_VARNAME} = this.__render.rawSet; 
         var ${EventManager.COMPONENT_VARNAME} = this.__render.component; 
@@ -1054,6 +1069,7 @@ export class RawSet {
     const nearThisPath = rawSet.findNearThisPath();
     const nearThis = rawSet.findNearThis(obj);
     // console.log('ttttttttttttttttt',parentThisPath, parentThis, nearThisPath, nearThis);
+    // console.log('-element.innerHTMLelement.innerHTMLelement.innerHTML',element.innerHTML);
     let render = {
       renderScript: renderScript,
       element: element,
@@ -1072,7 +1088,7 @@ export class RawSet {
       scripts: EventManager.setBindProperty(config.scripts ?? {}, obj)
     } as Render;
     // const attribute = DomUtils.getAttributeToObject(element);
-    render.attribute = RawSet.getAttributeObject(element, {script: renderScript, obj: obj})
+    render.attribute = RawSet.getAttributeObject(element, {script: renderScript, obj: obj, renderData: render})
     render = Object.freeze(render);
 
     // dr-on-create data onCreateRender
@@ -1105,7 +1121,7 @@ export class RawSet {
     // console.log('매번타나?');
     // 중요 dr-normal-attr-map
     // const normalAttrMap = element.getAttribute(EventManager.normalAttrMapAttrName);
-    const targetAttrObject = RawSet.getAttributeObject(element, {script: renderScript, obj: Object.assign(obj, {__render: render})});
+    const targetAttrObject = RawSet.getAttributeObject(element, {script: renderScript, obj: obj, renderData: render});
     if (targetAttrObject) {
       rawSet.dataSet.render ??= {};
       rawSet.dataSet.render.attribute = targetAttrObject;
@@ -1137,15 +1153,20 @@ export class RawSet {
     // console.log('targetElement',targetElement);
     // attribute
     // const componentName = element.getAttribute(RawSet.DR_COMPONENT_NAME_OPTIONNAME) ?? 'component';
-    // const innerHTMLName = element.getAttribute(RawSet.DR_COMPONENT_INNER_HTML_NAME_OPTIONNAME) ?? 'innerHTML';
-    // const componentNameReplaceKey = RandomUtils.uuid();
-    // const innerHTMLNameReplaceKey = RandomUtils.uuid();
+    const componentNameReplaceKey = RandomUtils.uuid();
     // if (componentName) {
     //   RawSet.replaceInnerHTML(element, {asIs: `#${componentName}#`, toBe: 'this'})
     // }
+    // const innerHTMLName = element.getAttribute(RawSet.DR_COMPONENT_INNER_HTML_NAME_OPTIONNAME) ?? 'innerHTML';
+    // const innerHTMLNameReplaceKey = RandomUtils.uuid();
     // if (innerHTMLName) {
     //   RawSet.replaceInnerHTML(element, {asIs: `#${innerHTMLName}#`, toBe: innerHTMLNameReplaceKey})
     // }
+    // 이걸 왜 뺐었지... 다시넣었음  그런데 조금 로직이.. 검증이..
+    const innerHTMLName = targetElement.getAttribute(RawSet.DR_COMPONENT_INNER_HTML_NAME_OPTIONNAME) ?? 'innerHTML';
+    if (innerHTMLName) {
+      RawSet.replaceInnerHTML(targetElement, {asIs: `#${innerHTMLName}#`, toBe: element.innerHTML})
+    }
 
     // console.log('aa-asIs', targetElement.innerHTML);
     const optionThisName = targetElement.getAttribute(RawSet.DR_THIS_NAME_OPTIONNAME);
@@ -1184,7 +1205,7 @@ export class RawSet {
     //   RawSet.replaceInnerHTML(element, {asIs: componentNameReplaceKey, toBe: `#${componentName}#`})
     // }
     // if (innerHTMLName) {
-    //   RawSet.replaceInnerHTML(element, {asIs: innerHTMLNameReplaceKey, toBe: `#${innerHTMLName}#`})
+    //   RawSet.replaceInnerHTML(targetElement, {asIs: innerHTMLNameReplaceKey, toBe: `#${innerHTMLName}#`})
     // }
     // console.log('ddddddddddddd', targetElement.innerHTML);
     if (drStripOption && (drStripOption === true || drStripOption === 'true')) {
@@ -1263,7 +1284,9 @@ export class RawSet {
         this.styles = templateStyle.styles;
         obj.__domrender_components ??= {};
         const domrenderComponents = obj.__domrender_components;
+        // debugger;
         const renderScript = ` /*createComponentTargetElement*/
+            // console.log('-------------------',this.__render);
             var ${EventManager.RAWSET_VARNAME} = this.__render.rawSet; 
             var ${EventManager.COMPONENT_VARNAME} = this.__render.component; 
             var ${EventManager.ELEMENT_VARNAME} = this.__render.element; 
@@ -1298,7 +1321,7 @@ export class RawSet {
         const constructor = element.getAttribute(RawSet.DR_ON_CONSTRUCTOR_ARGUMENTS_OPTIONNAME);
         let constructorParam = [];
         // script 부분은 처리되어 바인딩 시켜준다
-        render.attribute = RawSet.getAttributeObject(element, {script: renderScript, obj: obj})
+        render.attribute = RawSet.getAttributeObject(element, {script: renderScript, obj: obj, renderData: render})
         render = Object.freeze(render);
         //
         // // dr-constructor
@@ -1492,7 +1515,7 @@ export class RawSet {
     return paths.reverse();
   };
 
-  public static getAttributeObject(element: Element, config: { script: string, obj: any }) {
+  public static getAttributeObject(element: Element, config: { script: string, obj: any, renderData?: any }) {
     if (!element) {
       return undefined;
     }
@@ -1500,7 +1523,7 @@ export class RawSet {
     const normalAttribute = attribute[EventManager.normalAttrMapAttrName];
     if (normalAttribute) {
       new Map<string, string>(JSON.parse(normalAttribute)).forEach((v, k) => {
-        const cval = ScriptUtils.evalReturn({bodyScript: config.script, returnScript: v}, config.obj);
+        const cval = ScriptUtils.evalReturn({bodyScript: config.script, returnScript: v}, Object.assign(config.obj, config.renderData ? {__render:config.renderData} : undefined));
         attribute[k] = cval;
       });
     }

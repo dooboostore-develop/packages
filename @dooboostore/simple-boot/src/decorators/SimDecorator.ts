@@ -14,7 +14,7 @@ export enum Lifecycle {
   Transient = 'Transient'
 }
 
-export const sims = new Map<ConstructorType<any> | Function, Set<ConstructorType<any> | Function>>();
+export const sims = new Map<ConstructorType<any> | Function, Set<ConstructorType<any> | Function | any>>();
 export const containers = new Set<SimpleApplication>();
 
 
@@ -34,15 +34,20 @@ export interface SimConfig {
 
 export const SimMetadataKey = Symbol('Sim');
 
+const isNotNullObjetInstance = (target: any) => target != null && target !== undefined && typeof target === 'object';
+
 export const simProcess = (config: SimConfig, target: ConstructorType<any> | Function | any) => {
   // default setting
-  if (target != null && target !== undefined && typeof target === 'object') {
-    target = target.constructor;
+  let targetType: ConstructorType<any> | Function;
+  if (isNotNullObjetInstance(target)) {
+    targetType = target.constructor;
+  } else {
+    targetType = target;
   }
   config.scope = config?.scope ?? Lifecycle.Singleton;
-  ReflectUtils.defineMetadata(SimMetadataKey, config, target);
-  const adding = (targetKey: ConstructorType<any> | Function, target: ConstructorType<any> | Function = targetKey) => {
-    const items = sims.get(targetKey) ?? new Set<ConstructorType<any> | Function>();
+  ReflectUtils.defineMetadata(SimMetadataKey, config, targetType);
+  const adding = (targetKey: ConstructorType<any> | Function, target: ConstructorType<any> | Function | any = targetKey) => {
+    const items = sims.get(targetKey) ?? new Set<ConstructorType<any> | Function | any>();
     items.add(target);
     sims.set(targetKey, items);
   }
@@ -54,14 +59,13 @@ export const simProcess = (config: SimConfig, target: ConstructorType<any> | Fun
     })
   } else if (config.type) {
     adding(config?.type, target);
+  } else {
+    adding(target)
   }
-  // else {
-  //   adding(target)
-  // }
-  adding(target)
+  // adding(targetType)
   // console.log('----------->', sims)
 }
- const a = Math.random()+Date.now();
+ // const a = Math.random()+Date.now();
 export function Sim(target: ConstructorType<any> | Function): void;
 export function Sim(config: SimConfig): GenericClassDecorator<ConstructorType<any> | Function>;
 export function Sim(configOrTarget: SimConfig | ConstructorType<any> | Function): void | GenericClassDecorator<ConstructorType<any> | Function> {
