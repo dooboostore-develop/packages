@@ -55,7 +55,7 @@ export class RouterModule<R = SimAtomic, M = any> {
     }
 
 
-    constructor(private simstanceManager: SimstanceManager, public router?: R, public module?: ConstructorType<M> | Function, public routerChains: R[] = []) {
+    constructor(private simstanceManager: SimstanceManager, public router?: R, public module?: {targetKeyType? : ConstructorType<any> | Function, originalType: ConstructorType<any> | Function}, public routerChains: R[] = []) {
     }
 
     getRouterPath(join = '') {
@@ -72,7 +72,7 @@ export class RouterModule<R = SimAtomic, M = any> {
 
     getModuleInstance<T = M>(): T | undefined ;
     getModuleInstance<T = M>(propertyKey?: string | symbol, instanceBind: boolean | any = true): T | undefined {
-        const instance = this.simstanceManager.getOrNewSim<T>({target:this.module});
+        const instance = this.simstanceManager.getOrNewSim<T>({target:this.module?.targetKeyType, originTypeTarget: this.module?.originalType});
         if (propertyKey && this.propertyKeys && this.propertyKeys.includes(propertyKey)) {
             let instanceElement = (instance as any)[propertyKey];
             if (instanceBind && typeof instanceBind === 'boolean') {

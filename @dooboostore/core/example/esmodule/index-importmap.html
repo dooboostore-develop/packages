@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <title>Core ESM Bundle Test</title>
+    <style>
+      body { font-family: sans-serif; transition: background-color 0.5s; }
+      h1, p { color: white; text-shadow: 1px 1px 2px black; }
+    </style>
+    <script type="importmap">
+      {
+        "imports": {
+          "@dooboostore/core": "../../src/dist/dist/bundle.js"
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <h1>@dooboostore/core ESM Bundle Test</h1>
+    <p>Check the console for a random color code.</p>
+    <script type="module">
+      import { RandomUtils } from '@dooboostore/core';
+
+      const randomColor = RandomUtils.rgb();
+      console.log('Random Color:', randomColor);
+      document.body.style.backgroundColor = randomColor;
+    </script>
+  </body>
+</html>

@@ -23,7 +23,7 @@ export class IntentManager {
             target.push(...(intent.scheme ? this.simstanceManager.getSimConfig(intent.scheme) : this.simstanceManager.getSimAtomics()));
         }
         target.forEach((data) => {
-            let orNewSim = this.simstanceManager?.getOrNewSim({target:data.type}) as any;
+            let orNewSim = this.simstanceManager?.getOrNewSim({target:data.type.targetKeyType, originTypeTarget: data.type.originalType}) as any;
             if (orNewSim) {
                 if (intent.paths.length > 0) {
                     let callthis = orNewSim;

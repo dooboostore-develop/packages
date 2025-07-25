@@ -3,8 +3,8 @@ import { DomRenderFinalProxy } from '../types/Types';
 export type ComponentSetConfig = {objPath?: string | null, beforeComponentSet?: ComponentSet};
 export class ComponentSet<T = any> {
     private _config: ComponentSetConfig;
-    private _template: string;
-    private _styles: string[] | string;
+    private _template?: string;
+    private _styles?: string[] | string;
     constructor(public obj: T, source: {template?: string, styles?: (string[]) | string}, config?: ComponentSetConfig) {
         this._template = source.template;
         this._styles = source.styles;

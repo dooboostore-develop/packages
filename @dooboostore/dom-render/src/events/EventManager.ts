@@ -22,6 +22,7 @@ export class EventManager {
   public static readonly eventParam = EventManager.attrPrefix + 'event';
   public static readonly onInitAttrName = EventManager.attrPrefix + 'on-init';
   public static readonly valueAttrName = EventManager.attrPrefix + 'value';
+  // TODO: link  걸려있고  dr-event-change 같이 걸려있으면 dr-event-change가 먼저 발동되면서  link에서 부르는 변수값에 먼저 값이 셋팅이 안되어 있는 버그? 의도? 여튼 이런게 있다  link는 왠만하면 양방향 안쓰는거 권한다.
   public static linkAttrs = [
     {name: EventManager.attrPrefix + 'value-link', property: 'value', event: 'input'},
     {name: EventManager.attrPrefix + 'hidden-link', property: 'value', event: 'input'},
@@ -259,7 +260,8 @@ export class EventManager {
 
 
     // on-init event
-    this.procAttr<HTMLInputElement>(childNodes, EventManager.onInitAttrName, (it, attribute) => {
+    this.procAttr<HTMLElement>(childNodes, EventManager.onInitAttrName, (it, attribute) => {
+      // it.removeAttribute(EventManager.onInitAttrName);
       let script = attribute;
       if (script) {
         script = 'return ' + script;
@@ -289,7 +291,7 @@ export class EventManager {
     // console.log('--------onRenderedEvent', obj, childNodes);
     // console.log(document.querySelectorAll(`[${EventManager.onRenderedInitAttrName}]`))
     this.procAttr<HTMLInputElement>(childNodes, EventManager.onRenderedInitAttrName, (it, attribute) => {
-      // console.log('---------', it);
+      // it.removeAttribute(EventManager.onRenderedInitAttrName);
       if (!it.isConnected) {
         return;
       }
@@ -382,7 +384,7 @@ export class EventManager {
       const hasDispatch = it.hasAttribute(`${attr}:dispatch`);
       // console.log('hasDispatch',hasDispatch, attr, it);
       it.addEventListener(eventName, (event) => {
-        let filter = true;
+        let filter:boolean = true;
         const filterScript = it.getAttribute(`${attr}:filter`);
         const thisTarget = Object.assign(obj, {
           __render: Object.freeze({
@@ -397,7 +399,7 @@ export class EventManager {
           })
         });
         if (filterScript) {
-          filter = ScriptUtils.eval(`${this.getBindScript(config)} return ${filterScript}`, thisTarget);
+          filter = ScriptUtils.eval<boolean>(`${this.getBindScript(config)} return ${filterScript}`, thisTarget) ?? false;
         }
         if (filter) {
           ScriptUtils.eval(`${this.getBindScript(config)} ${script} `, thisTarget);

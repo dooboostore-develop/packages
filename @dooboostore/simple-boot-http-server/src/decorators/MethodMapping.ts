@@ -1,7 +1,7 @@
 import 'reflect-metadata';
 import { ConstructorType } from '@dooboostore/core/types';
 import { ReflectMethod } from '@dooboostore/simple-boot/types/Types';
-import { ReflectUtils } from '@dooboostore/simple-boot/utils/reflect/ReflectUtils';
+import { ReflectUtils } from '@dooboostore/core/reflect/ReflectUtils';
 import { Resolver } from '../resolvers/Resolver';
 import { Mimes } from '../codes/Mimes';
 import { HttpMethod } from '../codes/HttpMethod';

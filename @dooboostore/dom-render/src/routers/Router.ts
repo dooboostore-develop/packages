@@ -1,6 +1,7 @@
 import { DomRenderProxy } from '../DomRenderProxy';
 import { EventManager } from '../events/EventManager';
 import { ConvertUtils } from '@dooboostore/core/convert/ConvertUtils';
+import { Observable, Store, Subject } from '@dooboostore/core/message';
 import ToURLSearchParamsParams = ConvertUtils.ToURLSearchParamsParams;
 import { Expression } from '@dooboostore/core/expression/Expression';
 export type RouteData = {
@@ -16,13 +17,15 @@ export type RouterConfig<T = any> = { rootObject?: T, window: Window, disableAtt
 export type RouteAction = string | { path?: string, searchParams?: ToURLSearchParamsParams };
 
 export abstract class Router<T = any> {
-  private changeCallbacks = new Set<(routeData: RouteData) => void>();
+  private subject = new Subject<RouteData>();
   private _config: RouterConfig<T>;
 
+  get observable(): Observable<RouteData> {
+    return this.subject.asObservable();
+  }
   get searchParamObject() {
     return ConvertUtils.toObject(this.getSearchParams());
   }
-
 
   get config() {
     return this._config;
@@ -30,13 +33,8 @@ export abstract class Router<T = any> {
 
   constructor(config: RouterConfig<any>) {
     this._config = config;
-    this._config.window.addEventListener('popstate', () => {
-      this.changeCallbacks.forEach(it => {
-        it(this.getRouteData());
-      })
-    })
-    // this.go({path:this.getUrl()});
   }
+
 
 
   public getSearchFirstParamsObject<T = any>(defaultValue?: T) {
@@ -46,10 +44,6 @@ export abstract class Router<T = any> {
 
   public getHashSearchFirstParamsObject<T = any>() {
     return ConvertUtils.toObject<T>(this.getHashSearchParams(), {firstValue: true});
-  }
-
-  addChangeCallback(callback: (routeData: RouteData) => void) {
-    this.changeCallbacks.add(callback);
   }
 
   async attach(): Promise<void> {
@@ -94,12 +88,14 @@ export abstract class Router<T = any> {
     return Object.freeze(newVar);
   }
 
-  pushState(data: any, title: string, path: string) {
-    this.config.window.history.pushState(data, title, path);
+  pushState(data: any, title: string | undefined, path: string) {
+    this.config.window.history.pushState(data, title??'', path);
+    this.subject.next(this.getRouteData());
   }
 
-  replaceState(data: any, title: string, path: string) {
-    this.config.window.history.replaceState(data, title, path);
+  replaceState(data: any, title: string | undefined, path: string) {
+    this.config.window.history.replaceState(data, title??'', path);
+    this.subject.next(this.getRouteData());
   }
 
   dispatchPopStateEvent() {
@@ -143,6 +139,7 @@ export abstract class Router<T = any> {
     } else {
       const tpath = data.path ?? this.getPath();
       const s = data.searchParams ? ConvertUtils.toURLSearchParams(data.searchParams).toString() : '';
+      // data.searchParams
       targetPath = `${tpath}${s.length > 0 ? '?' : ''}${s}`;
     }
     return targetPath;

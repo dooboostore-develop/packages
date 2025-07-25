@@ -1,0 +1,11 @@
+export enum AlertType {
+  DANGER = 'DANGER',
+  NORMAL = 'NORMAL',
+  PROGRESS = 'PROGRESS',
+  SUCCESS = 'SUCCESS',
+  ERROR = 'ERROR',
+  INFO = 'INFO',
+  WARNING = 'WARNING',
+  CONSOLE = 'CONSOLE',
+  ETC = 'ETC'
+}

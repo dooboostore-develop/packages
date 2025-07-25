@@ -6,25 +6,25 @@ DOM-RENDER
 * all internal variables are managed by proxy. (DomRenderProxy)
 
 # 🚀 Quick start 
-```html
-<script src="https://cdn.jsdelivr.net/npm/dom-render@1.0.91/dist/bundle.js"></script>
+```typescript
+import { DomRender } from '@dooboostore/dom-render';
+
+class AppData {
+  name: string = 'my name is dom-render';
+}
+
+const data = new AppData();
+DomRender.run(data, document.querySelector('#app')!);
 ```
 ```html
 <!DOCTYPE html>
 <html lang="en">
-<head``>
+<head>
   <meta charset="UTF-8">
   <title>Title</title>
 </head>
 <body id="app">
 ${this.name}$
-<script src="https://cdn.jsdelivr.net/npm/dom-render@1.0.86/dist/bundle.js"></script>
-<script>
-  let data = {
-    name: 'my name is dom-render'
-  };
-  data = DomRender.run(data , document.querySelector('#app'));
-</script>
 </body>
 </html>
 ```
@@ -42,13 +42,17 @@ ${this.name}$
 <body id="app">
 ${this.name}$  <!-- outout: <i>my name is dom-render</i> -->
 #{this.name}# <!-- outout text is italic: my name is dom-render -->
-<script>
-  let data = {
-    name: '<i>my name is dom-render</i>'
-  };
-  data = DomRender.run(data , document.querySelector('#app'));
-</script>
 </body>
+```
+```typescript
+import { DomRender } from '@dooboostore/dom-render';
+
+class AppData {
+  name: string = '<i>my name is dom-render</i>';
+}
+
+const data = new AppData();
+DomRender.run(data, document.querySelector('#app')!);
 ```
 </details>
 
@@ -141,13 +145,17 @@ uuid: rawSetUUID
 <body id="app">
   <div dr-if="true">true</div>  <!-- render -->
   <div dr-if="this.gender === 'M'">gender: M</div> <!-- No Render -->
-<script>
-  let data = {
-    gender: 'F',
-  };
-  data = DomRender.run(data , document.querySelector('#app'));
-</script>
 </body>
+```
+```typescript
+import { DomRender } from '@dooboostore/dom-render';
+
+class AppData {
+  gender: string = 'F';
+}
+
+const data = new AppData();
+DomRender.run(data, document.querySelector('#app')!);
 ```
 </details>
 
@@ -326,6 +334,197 @@ class data {
 </details>
 
 
+## Component Property binding with `@attribute` decorator
+<details>
+  <summary>@attribute<strong>🔻(click)</strong></summary>
+
+You can bind component properties directly to HTML attributes using the `@attribute` decorator. When the attribute on the custom element changes, the corresponding property in the component class instance is automatically updated.
+
+This requires your component to extend `ComponentBase`.
+
+### Usage
+
+The `@attribute` decorator options:
+
+*   `name: string`: Binds the property to a specifically named attribute. If not provided, the property name is used.
+*   `converter: (value: string | null) => any`: A function to convert the string attribute value to another type.
+
+### Example
+
+**Component (`MyComponent.ts`)**
+```typescript
+import { ComponentBase, attribute } from '@dooboostore/dom-render';
+
+// Assuming MyComponent is registered with the tag 'my-component'
+export class MyComponent extends ComponentBase<{ 'title': string, 'show-icon': string, 'created-at': string }> {
+    @attribute
+    title: string = 'Default Title';
+
+    @attribute({
+        name: 'show-icon',
+        converter: (val) => val === 'true'
+    })
+    showIcon: boolean; // The converter handles string -> boolean
+
+    @attribute({
+        name: 'created-at',
+        converter: (val) => val ? new Date(val) : null
+    })
+    createdAt: Date | null;
+}
+```
+
+**Template (`index.html`)**
+```html
+<my-component
+    title="Hello World!"
+    show-icon="true"
+    created-at="2025-08-30T12:00:00Z">
+</my-component>
+
+<script>
+    // After some time, change the attribute
+    setTimeout(() => {
+        const comp = document.querySelector('my-component');
+        comp.setAttribute('title', 'New Title!');
+        comp.setAttribute('show-icon', 'false');
+        comp.setAttribute('created-at', new Date().toISOString());
+    }, 2000);
+</script>
+```
+When attributes change, the `converter` function will be executed before the value is assigned to the property. For `showIcon`, the string `"true"` or `"false"` will be converted to a boolean. For `createdAt`, the date string will be converted to a `Date` object.
+
+</details>
+
+## Element Query with `@query` decorator
+<details>
+  <summary>@query<strong>🔻(click)</strong></summary>
+
+You can get a reference to DOM elements within your component's template using the `@query` decorator. It takes a CSS selector as an argument.
+
+- If the decorated property is **not an array type**, it returns the **first** matching element (like `querySelector`).
+- If the decorated property **is an array type** (e.g., `HTMLElement[]`), it returns **all** matching elements as an array (like `querySelectorAll`).
+- When applied to a **method**, the method will be called with the queried element(s) as arguments after the component has been rendered. If the method expects a single element, the first match is passed. If it expects an array, all matches are passed.
+
+This is useful for directly accessing and manipulating elements you need to interact with from your component's logic.
+
+**Note:** This feature relies on TypeScript's decorator metadata (`emitDecoratorMetadata: true` in `tsconfig.json`).
+
+### Usage Example
+
+```typescript
+import { ComponentBase, query } from '@dooboostore/dom-render';
+
+// Assuming MyComponent is rendered with the template below
+export class MyComponent extends ComponentBase<{}> {
+    // Gets the first element matching the selector
+    @query('h3.title')
+    private titleEl: HTMLHeadingElement;
+
+    // Gets all elements matching the selector as an array
+    @query('ul.item-list > li')
+    private items: HTMLLIElement[];
+
+    onInitRender() {
+        // The elements are available after the component has been rendered.
+        if (this.titleEl) {
+            this.titleEl.style.color = 'blue';
+        }
+
+        if (this.items && this.items.length > 0) {
+            this.items.forEach((item, index) => {
+                item.textContent = `Item ${index + 1} (updated)`;
+            });
+        }
+    }
+
+    // Method query: This method will be called with the first element matching '.my-button'
+    @query('.my-button')
+    private setupButton(button: HTMLButtonElement) {
+        if (button) {
+            button.addEventListener('click', () => alert('Button clicked from method query!'));
+        }
+    }
+
+    // Method query: This method will be called with an array of all elements matching 'span.item'
+    @query('span.item')
+    private processItems(spans: HTMLSpanElement[]) {
+        spans.forEach(span => {
+            span.style.fontWeight = 'bold';
+        });
+    }
+}
+```
+
+### Template
+```html
+<!-- Template for MyComponent -->
+<div>
+    <h3 class="title">Original Title</h3>
+    <ul class="item-list">
+        <li>Item 1</li>
+        <li>Item 2</li>
+        <li>Item 3</li>
+    </ul>
+    <button class="my-button">Click Me</button>
+    <p><span class="item">First Span</span> <span class="item">Second Span</span></p>
+</div>
+```
+The `@query` decorator will assign the corresponding element(s) to the decorated property or pass them to the decorated method. The property will be `null`/`undefined` (for single query) or an empty array (for multiple query) if no elements are found or before the component is rendered. For methods, they will only be called if matching elements are found.
+
+</details>
+
+</details>
+
+## DOM Event Binding with `@event` decorator
+<details>
+  <summary>@event<strong>🔻(click)</strong></summary>
+
+You can bind component methods directly to DOM events on elements within your component's template using the `@event` decorator.
+
+The decorator takes an options object with two properties:
+- `query: string`: A CSS selector to find the target element(s).
+- `name: string`: The name of the DOM event to listen for (e.g., `'click'`, `'input'`).
+
+The framework will automatically add the event listener when the component is initialized and remove it when the component is destroyed, preventing memory leaks.
+
+### Usage Example
+
+```typescript
+import { ComponentBase, event } from '@dooboostore/dom-render';
+
+// Assuming MyComponent is rendered with the template below
+export class MyComponent extends ComponentBase<{}> {
+
+    // This method will be called when any element matching 'button.action' is clicked.
+    @event({ query: 'button.action', name: 'click' })
+    onActionClick(e: MouseEvent) {
+        console.log('Action button clicked!', e.target);
+        alert('Action!');
+    }
+
+    // This method will be called for the 'input' event on all text inputs.
+    @event({ query: 'input[type="text"]', name: 'input' })
+    onTextInput(e: Event) {
+        const target = e.target as HTMLInputElement;
+        console.log(`Text changed in ${target.id}: ${target.value}`);
+    }
+}
+```
+
+### Template
+```html
+<!-- Template for MyComponent -->
+<div>
+    <input type="text" id="firstname" placeholder="First Name">
+    <input type="text" id="lastname" placeholder="Last Name">
+    <button class="action">Submit</button>
+</div>
+```
+In this example, when the "Submit" button is clicked, the `onActionClick` method is executed. When the user types in either of the text inputs, the `onTextInput` method is executed for each keystroke.
+
+</details>
+
 ## nearThis
 ```html
 <div dr-this="@this@.dictionary">  (${@nearThis@.name}$)   ${$nearThis.name}$  </div>
@@ -465,16 +664,22 @@ dr-value-link: <input type="text" dr-value-link="@this@.office.addr.street"> <br
   age: <input name="age">
   <button type="submit">submit</button>
 </form>
-<script>
-  let data = {
-    form: {},
-    submit() {
-      console.log(this.form);
-    }
-  };
-  data = DomRender.run(data , document.querySelector('#app'));
-</script>
 </body>
+```
+```typescript
+import { DomRender } from '@dooboostore/dom-render';
+
+class FormData {
+  form: any = {};
+
+  submit() {
+    console.log(this.form);
+  }
+}
+
+const data = new FormData();
+DomRender.run(data, document.querySelector('#app')!);
+```
 <!-- 💥 submit call --> 
 <!-- console: {name: 'name data', age: 'age data'}  -->
 ```
@@ -490,23 +695,32 @@ dr-value-link: <input type="text" dr-value-link="@this@.office.addr.street"> <br
     age: <input name="age">
     <button type="submit">submit</button>
 </form>
-<script>
-    const form = new FormValidator();
-    form.name = new NotEmptyValidator();
-    form.age = new NotEmptyValidator();
-    let data = {
-        form,
-        submit() {
-            if (this.form.valid()){
-                console.log('valid');
-            } else {
-                console.log('inValid');
-            }
-        }
-    };
-    data = DomRender.run(data , document.querySelector('#app'));
-</script>
 </body>
+```
+```typescript
+import { DomRender } from '@dooboostore/dom-render';
+import { FormValidator, NotEmptyValidator } from '@dooboostore/dom-render/validator';
+
+class FormDataWithValidator {
+    form: FormValidator = new FormValidator();
+
+    constructor() {
+        this.form.name = new NotEmptyValidator();
+        this.form.age = new NotEmptyValidator();
+    }
+
+    submit() {
+        if (this.form.valid()){
+            console.log('valid');
+        } else {
+            console.log('inValid');
+        }
+    }
+}
+
+const data = new FormDataWithValidator();
+DomRender.run(data, document.querySelector('#app')!);
+```
 ```
 validator
 - Validator (abstract)

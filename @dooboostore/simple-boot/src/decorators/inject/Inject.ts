@@ -1,7 +1,7 @@
 import 'reflect-metadata'
 import { ConstructorType } from '@dooboostore/core/types';
 import {MethodParameter} from '../../types/Types'
-import {ReflectUtils} from '../../utils/reflect/ReflectUtils';
+import { ReflectUtils } from '@dooboostore/core/reflect/ReflectUtils';
 import {ExceptionHandlerSituationType} from '../exception/ExceptionDecorator';
 
 export enum InjectSituationType {
@@ -79,8 +79,8 @@ const injectProcess = (config: InjectConfig, target: Object, propertyKey: string
     }
 }
 export function Inject(target: Object, propertyKey: string | symbol | undefined, parameterIndex: number): void;
-export function Inject(config: InjectConfig): MethodParameter;
-export function Inject(configOrTarget: Object | InjectConfig, propertyKey?: string | symbol | undefined, parameterIndex?: number): void | MethodParameter {
+export function Inject(config: InjectConfig): ParameterDecorator;
+export function Inject(configOrTarget: Object | InjectConfig, propertyKey?: string | symbol | undefined, parameterIndex?: number): void | ParameterDecorator {
     if (propertyKey && parameterIndex !== undefined) {
         injectProcess({}, configOrTarget, propertyKey, parameterIndex);
     } else {

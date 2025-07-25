@@ -1,9 +1,29 @@
-import { ConstructorType, FilterFalsy, FilterNullish, NonNullable, Nullish } from '../types';
+import { ConstructorType, FilterFalsy, FilterNullish, NonNullable, Nullable, Nullish, NullOrUndefined } from '../types';
 
 export namespace ValidUtils {
-  export const isNullOrUndefined = (data: any): boolean => {
-    return data == null || undefined === data;
+
+  export const  isArrowFunction = (fn: any): fn is Function  => {
+    // 1. 함수가 아니면 false
+    if (typeof fn !== 'function') {
+      return false;
+    }
+    // 2. prototype 속성이 없으면 화살표 함수 (또는 prototype이 없는 다른 callable)
+    // 3. 클래스는 'class' 키워드로 시작하므로 제외
+    return typeof fn.prototype === 'undefined' && !fn.toString().startsWith('class');
   }
+
+  function isConstructorLike(fn: any): boolean {
+    // 1. 함수여야 하고,
+    // 2. prototype 속성을 가져야 함
+    return typeof fn === 'function' && typeof fn.prototype !== 'undefined';
+  }
+
+
+
+
+  export const isNullOrUndefined = (data: unknown): data is (null | undefined) => {
+  return data == null || undefined === data;
+}
 
   export const isConstructor = (obj: ConstructorType<any> | ((e: any) => void)): obj is ConstructorType<any> => {
     // 함수이면서 prototype 속성이 있고 prototype이 객체인지 확인
@@ -27,7 +47,7 @@ export namespace ValidUtils {
       return data.size > 0;
     }
 
-    if (typeof data === 'object') {
+    if (typeof data === 'object' && data !== null) {
       return Object.keys(data).length > 0;
     }
 

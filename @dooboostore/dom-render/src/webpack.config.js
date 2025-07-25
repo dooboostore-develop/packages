@@ -1,47 +1,35 @@
 const path = require('path');
-const HtmlWebpackPlugin = require('html-webpack-plugin');
 
 module.exports = {
   entry: './index.ts',
-  devtool: 'source-map',
+  mode: 'production',
   output: {
-    path: path.resolve(__dirname, 'dist'),
+    path: path.resolve(__dirname, 'dist', 'dist'),
     filename: 'bundle.js',
-    clean: true
+    library: {
+      type: 'module',
+    },
+  },
+  experiments: {
+    outputModule: true,
   },
   resolve: {
-    extensions: ['.ts', '.js']
+    extensions: ['.ts', '.js'],
   },
   module: {
     rules: [
       {
         test: /\.ts$/,
-        use: 'ts-loader',
-        exclude: /node_modules/,
-      },
-      {
-        test: /\.html$/,
-        type: 'asset/source',
-        exclude: /index\.html$/,
-      },
-      {
-        test: /\.css$/,
-        type: 'asset/source',
+        use: {
+          loader: 'ts-loader',
+          options: {
+            compilerOptions: {
+              noEmit: false,
+            },
+          },
+        },
+        exclude: /node_modules\/(?!@dooboostore)/,
       },
     ],
   },
-  plugins: [
-    // new HtmlWebpackPlugin({
-    //   template: './index.html',
-    //   inject: true,
-    // }),
-  ],
-  devServer: {
-    static: {
-      directory: path.join(__dirname, 'dist'),
-    },
-    compress: true,
-    port: 8081,
-    hot: true,
-  },
-}; 
+};

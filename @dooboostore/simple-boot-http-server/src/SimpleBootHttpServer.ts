@@ -12,7 +12,7 @@ import {Filter} from './filters/Filter';
 import {ExceptionHandlerSituationType, targetExceptionHandler} from '@dooboostore/simple-boot/decorators/exception/ExceptionDecorator';
 import {getInject, SituationTypeContainer, SituationTypeContainers} from '@dooboostore/simple-boot/decorators/inject/Inject';
 import {EndPoint} from './endpoints/EndPoint';
-import {ReflectUtils} from '@dooboostore/simple-boot/utils/reflect/ReflectUtils';
+import {ReflectUtils} from '@dooboostore/core/reflect/ReflectUtils';
 import {ReqFormUrlBody} from './models/datas/body/ReqFormUrlBody';
 import {ReqJsonBody} from './models/datas/body/ReqJsonBody';
 import {ReqHeader} from './models/datas/ReqHeader';

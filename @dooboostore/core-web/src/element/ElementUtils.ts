@@ -48,10 +48,10 @@ export namespace ElementUtils {
     }
     const audio = new Audio('path/to/audio1.mp3');
     audio.addEventListener('canplay', () => {
-      targetCallback(audio);
+      targetCallback?.(audio);
     });
     audio.addEventListener('error', (e) => {
-      callback.onerror(e);
+      callback?.onerror(e);
     });
     audio.load();
     return promise;
@@ -72,5 +72,39 @@ export namespace ElementUtils {
 
   export const cloneNodeList = (documentFragment: DocumentFragment) => {
     return Array.from(documentFragment.childNodes).map(node => node.cloneNode(true));
+  }
+
+  export const querySelector  = (e: Element | {start: Element, end: Element}, selector: string) => {
+    const elements = ElementUtils.querySelectorAll(e,selector);
+    if (elements.length > 0 ) {
+      return elements[0];
+    } else {
+      return null;
+    }
+  }
+
+  export const querySelectorAll = (e: Element | {start: Node, end: Node}, selector: string) => {
+    if (e instanceof Element) {
+      return Array.from(e.querySelectorAll(selector));
+    } else {
+      const startNode = e.start;
+      const endNode = e.end;
+      if (startNode && endNode && startNode.parentNode === endNode.parentNode) {
+        const elements: Element[] = [];
+        let currentNode: Node | null = startNode.nextSibling;
+        while (currentNode && currentNode !== endNode) {
+          if (currentNode.nodeType === Node.ELEMENT_NODE) {
+            const currentElement = currentNode as Element;
+            if (currentElement.matches(selector)) {
+              elements.push(currentElement);
+            }
+            elements.push(...Array.from(currentElement.querySelectorAll(selector)));
+          }
+          currentNode = currentNode.nextSibling;
+        }
+        return elements;
+      }
+    }
+    return [];
   }
 }

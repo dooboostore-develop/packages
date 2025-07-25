@@ -12,7 +12,6 @@
     "allowJs": true,
     "resolveJsonModule": true,
     "importHelpers": true,
-    "allowImportingTsExtensions": true,
     "noEmit": true,
     "baseUrl": "."
   },

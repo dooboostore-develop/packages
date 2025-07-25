@@ -1,7 +1,8 @@
 import 'reflect-metadata'
 import { ConstructorType, GenericClassDecorator } from '@dooboostore/core/types';
-import { ReflectUtils } from '../utils/reflect/ReflectUtils';
+import { ReflectUtils } from '@dooboostore/core/reflect/ReflectUtils';
 import { SimpleApplication } from '../SimpleApplication';
+import { ValidUtils } from '@dooboostore/core/valid/ValidUtils';
 
 export enum Lifecycle {
   /**
@@ -14,7 +15,7 @@ export enum Lifecycle {
   Transient = 'Transient'
 }
 
-export const sims = new Map<ConstructorType<any> | Function, Set<ConstructorType<any> | Function>>();
+export const sims = new Map<ConstructorType<any> | Function, Set<ConstructorType<any> | Function | any>>();
 export const containers = new Set<SimpleApplication>();
 
 
@@ -34,15 +35,36 @@ export interface SimConfig {
 
 export const SimMetadataKey = Symbol('Sim');
 
-export const simProcess = (config: SimConfig, target: ConstructorType<any> | Function | any) => {
+const isNotNullObjetInstance = (target: any) => target != null && target !== undefined && typeof target === 'object';
+
+export const simProcess = (config: SimConfig, inputTarget: ConstructorType<any> | Function | any) => {
   // default setting
-  if (target != null && target !== undefined && typeof target === 'object') {
-    target = target.constructor;
+  /*
+  // Sim({symbol: TTSymbol, scope: Lifecycle.Transient})(function (){
+  //   console.log('new TT')
+  //   return {a: 'name'}
+  // })
+  // Sim({symbol: TTSymbol, scope: Lifecycle.Transient})(() =>{
+  //   console.log('new TT')
+  //   return {a: 'name'}
+  // })
+  Sim({symbol: TTSymbol, scope: Lifecycle.Transient})({a: 'name'})
+   */
+  const target = typeof inputTarget === 'object' ? function() {return config.scope === Lifecycle.Singleton ? inputTarget: {...inputTarget}} : (ValidUtils.isArrowFunction(inputTarget) ? function() {return (inputTarget as Function)()} : inputTarget);
+
+
+
+
+  let targetType: ConstructorType<any> | Function;
+  if (isNotNullObjetInstance(target)) {
+    targetType = target.constructor;
+  } else {
+    targetType = target;
   }
   config.scope = config?.scope ?? Lifecycle.Singleton;
-  ReflectUtils.defineMetadata(SimMetadataKey, config, target);
-  const adding = (targetKey: ConstructorType<any> | Function, target: ConstructorType<any> | Function = targetKey) => {
-    const items = sims.get(targetKey) ?? new Set<ConstructorType<any> | Function>();
+  ReflectUtils.defineMetadata(SimMetadataKey, config, targetType);
+  const adding = (targetKey: ConstructorType<any> | Function, target: ConstructorType<any> | Function | any = targetKey) => {
+    const items = sims.get(targetKey) ?? new Set<ConstructorType<any> | Function | any>();
     items.add(target);
     sims.set(targetKey, items);
   }
@@ -54,17 +76,16 @@ export const simProcess = (config: SimConfig, target: ConstructorType<any> | Fun
     })
   } else if (config.type) {
     adding(config?.type, target);
+  } else {
+    adding(target)
   }
-  // else {
-  //   adding(target)
-  // }
-  adding(target)
+  // adding(targetType)
   // console.log('----------->', sims)
 }
- const a = Math.random()+Date.now();
+ // const a = Math.random()+Date.now();
 export function Sim(target: ConstructorType<any> | Function): void;
-export function Sim(config: SimConfig): GenericClassDecorator<ConstructorType<any> | Function>;
-export function Sim(configOrTarget: SimConfig | ConstructorType<any> | Function): void | GenericClassDecorator<ConstructorType<any> | Function> {
+export function Sim(config: SimConfig): GenericClassDecorator<ConstructorType<any> | Function | any>;
+export function Sim(configOrTarget: SimConfig | ConstructorType<any> | Function): void | GenericClassDecorator<ConstructorType<any> | Function | any> {
   // console.log('ssssssssssssssssssssssss', configOrTarget, typeof configOrTarget === 'function');
   // console.group('sim')
   // sims.forEach((v,k) => {
@@ -75,7 +96,7 @@ export function Sim(configOrTarget: SimConfig | ConstructorType<any> | Function)
     simProcess({}, configOrTarget);
     // console.log('---!', Reflect.getMetadata('design:paramtypes', configOrTarget))
   } else {
-    return (target: ConstructorType<any> | Function) => {
+    return (target: ConstructorType<any> | Function | any) => {
       simProcess(configOrTarget, target);
     }
   }

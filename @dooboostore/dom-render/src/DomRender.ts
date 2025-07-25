@@ -7,6 +7,7 @@ import { DomRenderFinalProxy } from './types/Types';
 import { RawSet } from './rawsets/RawSet';
 import { DefaultMessenger } from './messenger/DefaultMessenger';
 import { Router } from './routers/Router';
+import { drComponent } from './components';
 
 export type RunConfig<T = any> = Omit<Config<T>, 'router'> & { routerType?: 'path' | 'hash' | ((obj: T, window: Window) => Router) | Router };
 export type CreateComponentParam = { type: ConstructorType<any> | any, tagName?: string, noStrip?:boolean, template?: string, styles?: string[] | string };
@@ -31,25 +32,41 @@ export class DomRender {
     // config.routerType = config.routerType || 'none';
     targetConfig.messenger = DomRenderFinalProxy.final(targetConfig.messenger ?? new DefaultMessenger(targetConfig));
     targetConfig.proxyExcludeTyps = targetConfig.proxyExcludeTyps ?? [];
-    if (typeof Window !== 'undefined') {
+    targetConfig.targetElements ??=[];
+    for (const value of Object.values(drComponent)) {
+      const a = value(config);
+      if (!targetConfig.targetElements.find(it => it.name === a.name)) {
+        targetConfig.targetElements.push(a);
+      }
+      // if (targetConfig.targetElements.indexOf(value) === -1) {
+      // }
+    }
+    // console.log('----------', targetConfig.proxyExcludeTyps)
+    // console.log('----------', targetConfig.targetElements)
+    if (typeof Window !== 'undefined' && targetConfig.proxyExcludeTyps.indexOf(Window) === -1) {
       targetConfig.proxyExcludeTyps.push(Window);
     }
-    if (typeof Map !== 'undefined') {
+    if (typeof Map !== 'undefined' && targetConfig.proxyExcludeTyps.indexOf(Map) === -1) {
       targetConfig.proxyExcludeTyps.push(Map);
     }
-    if (typeof Set !== 'undefined') {
+    if (typeof Set !== 'undefined' && targetConfig.proxyExcludeTyps.indexOf(Set) === -1) {
       targetConfig.proxyExcludeTyps.push(Set);
     }
-    if (typeof Promise !== 'undefined') {
+    if (typeof Promise !== 'undefined' && targetConfig.proxyExcludeTyps.indexOf(Promise) === -1) {
       targetConfig.proxyExcludeTyps.push(Promise);
     }
-    if (typeof ImageBitmap !== 'undefined') {
+    if (typeof ImageBitmap !== 'undefined' && targetConfig.proxyExcludeTyps.indexOf(ImageBitmap) === -1) {
       targetConfig.proxyExcludeTyps.push(ImageBitmap);
     }
-    if (typeof CanvasRenderingContext2D !== 'undefined') {
+    if (typeof CanvasRenderingContext2D !== 'undefined' && targetConfig.proxyExcludeTyps.indexOf(CanvasRenderingContext2D) === -1) {
       targetConfig.proxyExcludeTyps.push(CanvasRenderingContext2D);
     }
-    targetConfig.proxyExcludeTyps.push(RawSet);
+    if (typeof HTMLCanvasElement !== 'undefined' && targetConfig.proxyExcludeTyps.indexOf(HTMLCanvasElement) === -1) {
+      targetConfig.proxyExcludeTyps.push(HTMLCanvasElement);
+    }
+    if (targetConfig.proxyExcludeTyps.indexOf(RawSet) === -1) {
+      targetConfig.proxyExcludeTyps.push(RawSet);
+    }
     const domRender = new DomRenderProxy(rootObject, target, targetConfig);
     const dest = new Proxy(rootObject, domRender);
     targetObject = dest;

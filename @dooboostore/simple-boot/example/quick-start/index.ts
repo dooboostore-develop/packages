@@ -133,7 +133,7 @@ other.set({symbol: s, type:User2}, new User2())
 // other.set(User2, new User2())
 // other.set(User2, new User2())
 // other.set(User2, new User2())
-console.log('------', other)
+// console.log('------', other)
 app.run(other);
 // let appRouter = app.sims(s);
 // appRouter?.say();

@@ -72,7 +72,7 @@ export class DrTargetElement extends OperatorExecuter<void> {
         const rr = RawSet.checkPointCreates(targetFragment, this.source.obj, this.source.config)
         if (targetElement.noStrip) {
           Array.from(targetFragment.childNodes||[]).forEach(child => {
-            documentFragment.firstElementChild.appendChild(child)
+            documentFragment.firstElementChild?.appendChild(child)
           })
         }
         this.elementSource.element.parentNode?.replaceChild(documentFragment, this.elementSource.element);

@@ -25,17 +25,6 @@ npm install @dooboostore/core-web
 yarn add @dooboostore/core-web
 ```
 
-## Peer Dependencies
-
-This package requires `@dooboostore/core` and `rxjs` to be installed as peer dependencies.
-
-```json
-"peerDependencies": {
-  "@dooboostore/core": "workspace:*",
-  "rxjs": "^7.8.2"
-}
-```
-
 ## Modules Overview
 
 ### Animation

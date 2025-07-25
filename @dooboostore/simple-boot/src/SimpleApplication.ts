@@ -60,7 +60,8 @@ export class SimpleApplication {
     if (typeof type === 'symbol') {
       return this.simstanceManager.findFirstSim(type);
     } else if (typeof type === 'function') {
-      return new SimAtomic<T>(type, this.simstanceManager);
+      return this.simstanceManager.findFirstSim({type:type});
+      // return new SimAtomic<T>(type, this.simstanceManager);
     }
   }
   public simAtomics<T>(type: ConstructorType<T> | Function | Symbol) {
@@ -68,6 +69,8 @@ export class SimpleApplication {
       return this.simstanceManager.findSims(type) ?? [];
     } else if (typeof type === 'function') {
       return this.simstanceManager.findSims({type}) ?? [];
+    } else {
+      return [];
     }
   }
 
@@ -84,12 +87,12 @@ export class SimpleApplication {
     return this.simAtomic<T>(type)?.getValue();
   }
   public sims<T>(type: ConstructorType<T> | Function | Symbol) {
-    return this.simAtomics(type)
+    return this.simAtomics(type).map(it => it.getValue())
   }
 
   public addSim(target: ConstructorType<any> | Function): void;
-  public addSim(config: SimConfig, target: ConstructorType<any>): GenericClassDecorator<ConstructorType<any> | Function>;
-  public addSim(configOrTarget: SimConfig | ConstructorType<any> | Function, target?: ConstructorType<any>): void | GenericClassDecorator<ConstructorType<any> | Function> {
+  public addSim(config: SimConfig, target: ConstructorType<any> | Function | any): GenericClassDecorator<ConstructorType<any> | Function>;
+  public addSim(configOrTarget: SimConfig | ConstructorType<any> | Function, target?: ConstructorType<any> | Function | any): void | GenericClassDecorator<ConstructorType<any> | Function> {
     const r: any = Sim(configOrTarget as any);
     if (typeof r === 'function' && target) {
       r(target);

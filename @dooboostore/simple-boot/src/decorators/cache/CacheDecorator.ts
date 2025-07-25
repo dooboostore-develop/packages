@@ -1,5 +1,5 @@
 import 'reflect-metadata'
-import { ReflectUtils } from '../../utils/reflect/ReflectUtils';
+import { ReflectUtils } from '@dooboostore/core/reflect/ReflectUtils';
 import { ConstructorType, Method } from '@dooboostore/core/types';
 import { Storage } from '@dooboostore/core/storage/Storage';
 import { SimstanceManager } from '../../simstance/SimstanceManager';

@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Simple Boot Front ESM Bundle Test</title>
+  <style>
+    body { font-family: sans-serif; padding: 1em; }
+    h1 { color: #333; }
+    header, footer, main { border: #ccc 1px solid; padding: 20px; margin: 10px 0; border-radius: 5px; }
+    button { margin-right: 10px; padding: 5px 10px; }
+  </style>
+  <script type="importmap">
+    {
+      "imports": {
+        "@dooboostore/simple-boot-front": "../../src/dist/dist/bundle.js"
+      }
+    }
+  </script>
+</head>
+<body>
+  <h1>@dooboostore/simple-boot-front ESM Bundle Test</h1>
+  <div id="app"></div>
+
+  <script type="module">
+    import { SimpleBootFront, SimFrontOption, UrlType, Component, Sim, Router } from '@dooboostore/simple-boot-front';
+
+    // --- Define Pages ---
+    class Home {}
+    Component({ template: '<h2>Home Page</h2><p>Welcome to the home page!</p>' })(Home);
+    Sim(Home);
+
+    class User {}
+    Component({ template: '<h2>User Page</h2><p>This is the user page.</p>' })(User);
+    Sim(User);
+
+
+    // --- Define Root Component ---
+    class Index {
+        child;
+        canActivate(url, module) {
+            this.child = module;
+            console.log('------', this.child)
+        }
+    }
+    Component({
+        template: `
+        <header>
+            <nav>
+                <button id="home-btn">Home</button>
+                <button id="user-btn">User</button>
+            </nav>
+        </header>
+        <main>
+            <dr-this dr-this="this.child" dr-option-strip="false"></dr-this>
+        </main>
+        <footer>
+            <p>Footer</p>
+        </footer>
+      `
+    })(Index);
+    Router({
+        route: {
+            '/': Home,
+            '/user': User
+        }
+    })(Index);
+    Sim(Index);
+
+    // --- Application Setup ---
+    const config = new SimFrontOption(window).setUrlType(UrlType.path).setRootRouter(Index);
+    const app = new SimpleBootFront(config);
+    app.run();
+
+    // --- Manual Navigation for Demo ---
+    document.getElementById('home-btn').addEventListener('click', () => app.goRouting('/'));
+    document.getElementById('user-btn').addEventListener('click', () => app.goRouting('/user'));
+
+
+
+  </script>
+</body>
+</html>

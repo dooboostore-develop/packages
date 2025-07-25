@@ -74,7 +74,7 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
     });
   }
 
-  public initRender(target: Node) {
+  public initRender(target: Node, rawSet?: RawSet) {
 
     // if (target instanceof Element) {
     //   target.setAttribute('dr-this', 'this');
@@ -123,7 +123,7 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
         });
       }
     });
-    // console.log('1111111111111', this.getRawSets());
+    console.log('1111111111111', rawSets);
     this.render(this.getRawSets()).then(it => {
       // const render = {target} as Render;
       // const creatorMetaData = {
@@ -140,7 +140,7 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
         // }
       }
       if (isOnInitRender(this._domRender_proxy)) {
-        this._domRender_proxy.onInitRender(initParam, {} as any);
+        this._domRender_proxy.onInitRender(initParam, rawSet ?? {} as any);
       }
     });
 
@@ -186,7 +186,7 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
             // it?.data.onChangeAttrRender(k, null, v);
             const isUsing = EventManager.isUsingThisVar(v, `this.${fullPathStr}`);
             if (isUsing) {
-              const targetAttrObject = RawSet.getAttributeObject((it.point.node as Element), { script: it.dataSet?.render?.renderScript ?? '', obj: Object.assign(this._domRender_proxy, { __render: it.dataSet?.render }) });
+              const targetAttrObject = RawSet.getAttributeObject((it.point.node as Element), { script: it.dataSet?.render?.renderScript ?? '', obj: Object.assign(this._domRender_proxy ?? {}, { __render: it.dataSet?.render }) });
               it.dataSet.render??={};
               it.dataSet.render.attribute = targetAttrObject;
               // const render = it.dataSet?.render;
@@ -411,7 +411,8 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
     // console.log('set!!!!!!!', fullPathInfo, rootDomRenderProxy)
     // console.log('--------rootDom',fullPathInfo, rootDomRenderProxy, rootDomRenderProxy._domRender_proxy)
     DocumentUtils.querySelectorAllByAttributeName(this.config.window.document, EventManager.normalAttrMapAttrName)?.forEach(elementInfo => {
-      const targets = new Map<string,string>(ScriptUtils.evalReturn(elementInfo.value));
+      // @ts-ignore
+      const targets = new Map<string,string>(ScriptUtils.evalReturn<[string, string][]>(elementInfo.value));
       Array.from(targets.entries()).filter(([key, value])=>value.trim()).filter(isDefined).flatMap(([key,valueScript])=> {
         return fullPathInfo.flat().filter(it => valueScript.includes(`this.${it.path}`)).flatMap(it=> ({key, valueScript: valueScript, pathInfo: it}));
       }).forEach(it=> {
@@ -429,7 +430,8 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
 
     // 여기서 링크 같은거 해줘야함
     DocumentUtils.querySelectorAllByAttributeName(this.config.window.document, EventManager.linkTargetMapAttrName)?.forEach(elementInfo => {
-       const targets = new Map<string,string>(ScriptUtils.evalReturn(elementInfo.value));
+      // @ts-ignore
+       const targets = new Map<string,string>(ScriptUtils.evalReturn<[string, string][]>(elementInfo.value));
 
       Array.from(targets.entries()).filter(([key, value])=>value.trim()).filter(isDefined).flatMap(([key,valueScript])=> {
         return fullPathInfo.flat().filter(it => valueScript.includes(`this.${it.path}`)).flatMap(it=> ({key, valueScript: valueScript, pathInfo: it}));

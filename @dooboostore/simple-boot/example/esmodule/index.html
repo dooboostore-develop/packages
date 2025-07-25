@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Simple Boot ESM Bundle Test</title>
+
+    <script type="importmap">
+        {
+          "imports": {
+            "@dooboostore/simple-boot": "../../src/dist/dist/bundle.js"
+          }
+        }
+    </script>
+</head>
+<body>
+  <h1>@dooboostore/simple-boot ESM Bundle Test</h1>
+  <p>Check the browser's developer console for output. The same output is also displayed below:</p>
+  <pre id="output"><code></code></pre>
+
+  <script type="module">
+    // Redirect console.log to display on the page for better visibility
+    const outputEl = document.getElementById('output');
+    const originalLog = console.log;
+    console.log = (...args) => {
+        originalLog.apply(console, args);
+        outputEl.textContent += args.map(a => typeof a === 'object' ? JSON.stringify(a, null, 2) : a).join(' ') + '\n';
+    };
+
+    import { SimpleApplication, Sim, Router } from '@dooboostore/simple-boot';
+
+    console.log('--- Simple Boot Example ---');
+
+    class Greeter {
+      say(name) {
+        const message = `Hello, ${name}!`;
+        console.log(message);
+        return message;
+      }
+    }
+    // Programmatically register Greeter as a Sim
+    Sim(Greeter);
+
+    class AppRouter {}
+    // Programmatically register AppRouter as a Router and a Sim
+    Router({ path: '', route: { '/user': Greeter } })(AppRouter);
+    Sim(AppRouter);
+
+    console.log('Initializing SimpleApplication...');
+    const app = new SimpleApplication({ rootRouter: AppRouter });
+    app.run();
+    console.log('SimpleApplication is running.');
+
+    console.log('\nCalling Greeter from app:');
+    const greeter = app.sim(Greeter);
+    if (greeter) {
+        greeter.say('World from simple-boot!');
+    } else {
+        console.log('Could not get Greeter instance.');
+    }
+  </script>
+</body>
+</html>

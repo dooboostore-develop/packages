@@ -13,7 +13,7 @@ export namespace StringUtils {
 
   export const regexExec = (regex: RegExp, text: string) => {
     let varExec = regex.exec(text)
-    const usingVars = [];
+    const usingVars: any[] = [];
     while (varExec) {
       usingVars.push(varExec)
       varExec = regex.exec(varExec.input)

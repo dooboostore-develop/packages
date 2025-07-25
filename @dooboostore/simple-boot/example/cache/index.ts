@@ -118,6 +118,27 @@ class WOW implements OnSimCreate {
     ];
   }
 
+  @Cache<WOW['asyncGoods']>({
+    key: (s: string) => `goods`,
+    // key: {
+    //   key: (s: string) => `goods`,
+    //   childrenKey(r: Promise<{ seq: number, name: string, age: number }[]>) {
+    //     return r.map(it => {
+    //       return {key: `${it.seq}`, data: it};
+    //     })
+    //   }
+    // },
+  })
+  async asyncGoods(keyword: string): Promise<{ seq: number, name: string, age: number }[]> {
+    console.log('call-->asyncGoods');
+    await Promises.sleep(20000)
+    return [
+      {seq: 1, name: 'ssss1' + keyword, age: 11},
+      {seq: 2, name: 'ssss2' + keyword, age: 12},
+      {seq: 3, name: 'ssss3' + keyword, age: 13},
+    ];
+  }
+
   //
   // @Cache<WOW['deleteGoods']>({
   //   deleteKey: `goods`
@@ -215,14 +236,17 @@ sim.run();
 const wow = sim.sim(WOW)
 const cacheManager = sim.sim(CacheManager);
 
-setTimeout(() => {
-  wow.goods('ww');
+// setTimeout(() => {
+setInterval(() => {
+  // const g = wow.goods('ww');
+  const g = wow.asyncGoods('ww');
+  console.log('call!!goods', g)
 }, 1000)
 // //
 setTimeout(() => {
   console.log('update!!')
   // wow.deleteGoods('a')
-  wow.updateGoods('a')
+  // wow.updateGoods('a')
 }, 5000)
 
 

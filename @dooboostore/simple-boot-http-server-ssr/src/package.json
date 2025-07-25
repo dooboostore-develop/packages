@@ -1,9 +1,17 @@
 {
   "name": "@dooboostore/simple-boot-http-server-ssr",
   "version": "1.0.8",
-  "main": "SimpleBootHttpSSRServer.js",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "license": "MIT",
   "description": "front end SPA frameworks SSR",
+  "files": [
+    "**/*.js",
+    "**/*.d.ts"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
   "keywords": [
     "front",
     "spa",
@@ -13,7 +21,7 @@
     "framwork",
     "node"
   ],
-  "author": "visualkhh <visualkhh@gmail.com> (https://github.com/visualkhh)",
+  "author": "dooboostore <dooboostore@gmail.com> (https://github.com/dooboostore)",
   "contributors": [
     "sewoo <sewooimda@nate.com> (https://github.com/sewoo)",
     "SeoDH <adonis_84@naver.com> (https://github.com/SeoDH)",
@@ -21,38 +29,23 @@
     "Hoil-Gang (https://github.com/khl1154)",
     "hwangsero (https://github.com/hwangsero)"
   ],
-  "homepage": "https://github.com/visualkhh/simple-boot-http-ssr",
+  "homepage": "https://github.com/dooboostore-develop/packages",
   "bugs": {
-    "url": "https://github.com/visualkhh/simple-boot-http-ssr",
-    "email": "visualkhh@gmail.com"
+    "url": "https://github.com/dooboostore-develop/packages",
+    "email": "dooboostore@gmail.com"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/visualkhh/simple-boot-http-ssr"
-  },
-  "jest": {
-    "transform": {
-      "^.+\\.ts$": "ts-jest"
-    },
-    "testRegex": "\\.test\\.ts$",
-    "moduleFileExtensions": [
-      "ts",
-      "tsx",
-      "js",
-      "json"
-    ],
-    "globals": {
-      "ts-jest": {
-        "diagnostics": true
-      }
-    }
+    "url": "https://github.com/dooboostore-develop/packages"
   },
   "scripts": {
-    "build": "rm -rf dist && tsc --outDir dist --declarationDir dist",
-    "dev:serve": "npm run serve --workspace=dev",
-    "dev-onepage:serve": "npm run serve --workspace=dev-onepage",
-    "npm:build": "rm -rf dist && tsc --outDir dist --declarationDir dist && cp package-prod.json dist/package.json && cp README.MD dist",
-    "npm:publish": "npm run npm:build && npm publish ./dist",
+    "build": "rm -rf dist && tsc -p tsconfig.build.json",
+    "clean": "rm -rf  dist",
+    "npm:build": "pnpm run build && cp README.MD dist/ && pnpm pack && TARBALL_NAME=$(ls dooboostore-simple-boot-http-server-ssr-*.tgz | head -n 1) && tar -xzf \"$TARBALL_NAME\" -C dist --strip-components=1 package/package.json && rm \"$TARBALL_NAME\"",
+    "npm:clean": "rm -rf  dist",
+    "npm:publish": "pnpm run npm:build && cd dist && pnpm publish --no-git-checks",
+    "npm:publish:clean": "pnpm run npm:publish && rm -rf dist",
+    "ts:clean": "find . -name '*.js' -o -name '*.map' -o -name '*.d.ts' | xargs rm -f",
     "tsc": "tsc",
     "tsc:watch": "rm -rf ./dist && mkdir dist && cp package.json dist && tsc --watch --sourceMap true",
     "tsc:watch:dev": "rm -rf ./dist && mkdir dist && cp package-dev.json dist && tsc --watch --sourceMap true",
@@ -75,11 +68,11 @@
     "jest": "^26.6.3",
     "supertest": "^6.1.3",
     "ts-jest": "^26.5.4",
-    "@types/node": "^22.13.10",
+    "@types/node": "^20",
     "tslib": "^2.8.1",
-    "typescript": "^4.4.3"
+    "typescript": "^5.9.2"
   },
-  "peerDependencies": {
+  "dependencies": {
     "@dooboostore/core": "workspace:*",
     "@dooboostore/core-node": "workspace:*",
     "@dooboostore/core-web": "workspace:*",
@@ -87,9 +80,7 @@
     "@dooboostore/simple-boot": "workspace:*",
     "@dooboostore/simple-boot-front": "workspace:*",
     "@dooboostore/simple-boot-http-server": "workspace:*",
+    "jsdom": "^26.0.0",
     "reflect-metadata": "^0.2.2"
-  },
-  "dependencies": {
-    "jsdom": "^26.0.0"
   }
 }

@@ -1,7 +1,7 @@
 import 'reflect-metadata'
 import { ConstructorType } from '@dooboostore/core/types';
 import {ReflectMethod} from '../../types/Types';
-import {ReflectUtils} from '../../utils/reflect/ReflectUtils';
+import { ReflectUtils } from '@dooboostore/core/reflect/ReflectUtils';
 import {ObjectUtils} from '@dooboostore/core/object/ObjectUtils';
 
 export enum ExceptionHandlerSituationType {
@@ -23,7 +23,7 @@ export const ExceptionHandler = (config: ExceptionHandlerConfig = {}): ReflectMe
     }
 }
 
-export const getExceptionHandler = (target: any, propertyKey: string): ExceptionHandlerConfig => {
+export const getExceptionHandler = (target: any, propertyKey: string): ExceptionHandlerConfig | undefined => {
     return ReflectUtils.getMetadata(ExceptionHandlerMetadataKey, target, propertyKey);
 }
 

@@ -1,4 +1,4 @@
-import {ReflectUtils} from '../../utils/reflect/ReflectUtils';
+import { ReflectUtils } from '@dooboostore/core/reflect/ReflectUtils';
 import { ConstructorType } from '@dooboostore/core/types';
 import {ReflectMethod} from '../../types/Types';
 

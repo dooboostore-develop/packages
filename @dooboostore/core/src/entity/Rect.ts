@@ -1,7 +1,8 @@
 import { Point2D } from './Point2D';
 import { MathUtil } from '../math/MathUtil';
 import AngleUnitType = MathUtil.AngleUnitType;
-import { isSize, Size } from './Size';
+import { isSizeType, SizeType } from './SizeType';
+import { Point2DType } from './Point2DType';
 
 type ValueLinkControl<T> = { value: T, noLink: boolean | Rect };
 const isValueLinkControl = <T = any>(data: any): data is ValueLinkControl<T> => {
@@ -15,13 +16,13 @@ export class Rect {
   private _height: number
   private linkRects?: Set<Rect>;
 
-  constructor(size: Size);
-  constructor(point: { x: number, y: number }, endPoint: { x: number, y: number });
+  constructor(size: SizeType);
+  constructor(point: Point2DType, endPoint: Point2DType);
   constructor(point: Point2D, endPoint: Point2D);
   constructor(point: Point2D, width?: number, height?: number);
   constructor(x: number, y: number, width?: number, height?: number);
-  constructor(xOrPoint: number | Point2D | { x: number, y: number } | Size, yOrPointOrWidth?: number | Point2D | { x: number, y: number }, widthOrHeight = 0, heightOrUndefined = 0) {
-    if (isSize(xOrPoint)) {
+  constructor(xOrPoint: number | Point2D | { x: number, y: number } | SizeType, yOrPointOrWidth?: number | Point2D | { x: number, y: number }, widthOrHeight = 0, heightOrUndefined = 0) {
+    if (isSizeType(xOrPoint)) {
       this._start = new Point2D(0, 0);
       this._width = xOrPoint.width;
       this._height = xOrPoint.height;
@@ -235,8 +236,8 @@ export class Rect {
 
   addLink(...rect: Rect[]) {
     this.linkRects ??= new Set<Rect>();
-    rect.filter(it => !this.linkRects.has(it)).forEach(it => {
-      this.linkRects.add(it);
+    rect.filter(it => !this.linkRects?.has(it)).forEach(it => {
+      this.linkRects?.add(it);
       it.addLink(this);
     })
   }
@@ -519,6 +520,22 @@ export class Rect {
   getDiffY(y: number) {
     return y - this.y;
   }
+
+  getDiffLeft(x: number) {
+   this.getDiffX(x);
+  }
+
+  getDiffTop(y: number) {
+    this.getDiffY(y);
+  }
+
+  getDiffRight(x: number) {
+      return x - this.end.x;
+    }
+
+    getDiffBottom(y: number) {
+      return y - this.end.y;
+    }
 
   getDiffWidth(width: number) {
     return width - this.width;

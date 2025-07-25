@@ -1,6 +1,6 @@
 import { ConstructorType, GenericClassDecorator } from '@dooboostore/core/types';
 import { ReflectMethod} from '../../types/Types';
-import {ReflectUtils} from '../../utils/reflect/ReflectUtils';
+import { ReflectUtils } from '@dooboostore/core/reflect/ReflectUtils';
 import {RouteFilter} from '../../route/RouteFilter';
 
 export type Filterss = (RouteFilter | ConstructorType<RouteFilter>)[];

@@ -1,5 +1,5 @@
 import 'reflect-metadata'
-import {ReflectUtils} from '../../utils/reflect/ReflectUtils';
+import { ReflectUtils } from '@dooboostore/core/reflect/ReflectUtils';
 import {MetaDataPropertyAtomic} from '../MetaDataAtomic';
 import {ObjectUtils} from '@dooboostore/core/object/ObjectUtils';
 import { ConstructorType } from '@dooboostore/core/types';
@@ -15,18 +15,18 @@ type AroundOption = {before?: (obj: any, propertyKey: string, args: any[]) => an
 export const After = (data: AOPOption) => {
     return ReflectUtils.metadata(AfterMetadataKey, data);
 }
-export const getAfter = (target: any, propertyKey: string): AOPOption => {
+export const getAfter = (target: any, propertyKey: string): AOPOption | undefined => {
     return ReflectUtils.getMetadata(AfterMetadataKey, target, propertyKey);
 }
 
-export const getAfters = (target: any): MetaDataPropertyAtomic<any, AOPOption>[] => {
+export const getAfters = (target: any): MetaDataPropertyAtomic<any, AOPOption | undefined>[] => {
     return ObjectUtils.allProtoTypeName(target)
-        .map(it => new MetaDataPropertyAtomic<any, AOPOption>(target, getAfter(target, it), it))
+        .map(it => new MetaDataPropertyAtomic<any, AOPOption | undefined>(target, getAfter(target, it), it))
         .filter(it => it.metaData !== undefined) || [];
 }
 
-export const getProtoAfters = (target: any, propertyKey: string, type?: ConstructorType<any>): MetaDataPropertyAtomic<any, AOPOption>[] => {
-    return getAfters(target).filter(it => propertyKey === it.metaData.property && type === it.metaData.type?.prototype) || [];
+export const getProtoAfters = (target: any, propertyKey: string, type?: ConstructorType<any>): MetaDataPropertyAtomic<any, AOPOption | undefined>[] => {
+    return getAfters(target).filter(it => propertyKey === it.metaData?.property && type === it.metaData.type?.prototype) || [];
 }
 
 // before
@@ -34,18 +34,18 @@ export const Before = (data: AOPOption) => {
     return ReflectUtils.metadata(BeforeMetadataKey, data);
 }
 
-export const getBefore = (target: any, propertyKey: string): AOPOption => {
+export const getBefore = (target: any, propertyKey: string): AOPOption | undefined => {
     return ReflectUtils.getMetadata(BeforeMetadataKey, target, propertyKey);
 }
 
-export const getBefores = (target: any): MetaDataPropertyAtomic<any, AOPOption>[] => {
+export const getBefores = (target: any): MetaDataPropertyAtomic<any, AOPOption | undefined>[] => {
     return ObjectUtils.allProtoTypeName(target)
-        .map(it => new MetaDataPropertyAtomic<any, AOPOption>(target, getBefore(target, it), it))
+        .map(it => new MetaDataPropertyAtomic<any, AOPOption | undefined>(target, getBefore(target, it), it))
         .filter(it => it.metaData !== undefined) || [];
 }
 
-export const getProtoBefores = (target: any, propertyKey: string, type?: ConstructorType<any>): MetaDataPropertyAtomic<any, AOPOption>[] => {
-    return getBefores(target).filter(it => propertyKey === it.metaData.property && type === it.metaData.type?.prototype) || [];
+export const getProtoBefores = (target: any, propertyKey: string, type?: ConstructorType<any>): MetaDataPropertyAtomic<any, AOPOption|undefined>[] => {
+    return getBefores(target).filter(it => propertyKey === it.metaData?.property && type === it.metaData.type?.prototype) || [];
 }
 
 export class AroundForceReturn {
@@ -61,8 +61,8 @@ export const Around = (config: AroundOption):  ReflectMethod => {
         descriptor.value = function (...args: any[]) {
             // console.log('check method')
 
-            let before = undefined;
-            let r = undefined;
+            let before: any = undefined;
+            let r: any = undefined;
             if (config.before) {
                 try{
                     before = config.before?.(this, propertyKey, args);
@@ -90,6 +90,6 @@ export const Around = (config: AroundOption):  ReflectMethod => {
     }
 }
 
-export const getAround = (target: any, propertyKey: string): AroundOption => {
+export const getAround = (target: any, propertyKey: string): AroundOption | undefined => {
     return ReflectUtils.getMetadata(AroundMetadataKey, target, propertyKey);
 }

@@ -9,7 +9,10 @@
     "clear": "rm -rf node_modules && rm -rf ./package-lock.json && rm -rf pnpm-lock.yaml && pnpm store prune && pnpm -r exec -- rm -rf node_modules"
   },
   "private": true,
-  "workspaces": ["@dooboostore/**", "apps/**"],
+  "workspaces": [
+    "@dooboostore/**",
+    "apps/**"
+  ],
   "pnpm": {
     "shared-workspace-lockfile": true
   },
@@ -19,6 +22,6 @@
   "devDependencies": {
     "prettier": "^3.3.3"
   },
-  "dependencies": {
-  }
+  "dependencies": {},
+  "packageManager": "pnpm@9.1.1+sha256.9551e803dcb7a1839fdf5416153a844060c7bce013218ce823410532504ac10b"
 }

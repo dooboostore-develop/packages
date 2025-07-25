@@ -30,6 +30,11 @@ export namespace ConvertUtils {
     return new Map(JSON.parse(jsonStr));
   };
 
+
+  export const decodeURIString = (data: string) => {
+    return decodeURIComponent(data);
+  }
+
   export const objToStrMap = (obj: any): Map<string, string> => {
     const strMap = new Map();
     for (const k of Object.keys(obj)) {
@@ -109,8 +114,8 @@ export namespace ConvertUtils {
       // new Map().entries()
       // Object.entries({})
       // obj = Object.fromEntries(obj.entries());
-      const formDataToObject = (formData) => {
-        const obj = {};
+      const formDataToObject = (formData: any) => {
+        const obj: any = {};
         // FormData의 모든 키를 순회
         for (const key of formData.keys()) {
           const values = formData.getAll(key); // 동일 키의 모든 값 가져오기
@@ -178,7 +183,7 @@ export namespace ConvertUtils {
   };
 
   export const concatenateToString = (object_o: any, unionString_s = '=', spilString_s = ' ', pairString_s = '') => {
-    const results = [];
+    const results: any[] = [];
     for (const property in object_o) {
       const value = object_o[property];
       if (value) {

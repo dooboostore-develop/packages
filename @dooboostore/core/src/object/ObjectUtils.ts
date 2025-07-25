@@ -88,8 +88,8 @@ export namespace ObjectUtils {
   };
 
   export const prototypeOfDepth = (target: any, dest: ConstructorType<any> | Function | null | undefined): object[] => {
-    let object = target;
-    const r = [];
+    let object: any = target;
+    const r : any[]= [];
     if (dest) {
       do {
         object = Object.getPrototypeOf(object);

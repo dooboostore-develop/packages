@@ -22,7 +22,7 @@ export class RouterManager {
   public routingMap(prefix: string = '', router = this.rootRouter): { [key: string]: string | any } {
     const map = {} as { [key: string]: string | any };
     if (router) {
-      const routerAtomic = new SimAtomic(router, this.simstanceManager);
+      const routerAtomic = new SimAtomic({targetKeyType:router, originalType: router}, this.simstanceManager);
       const routerData = routerAtomic.getConfig<RouterConfig>(RouterMetadataKey);
       if (routerData) {
         const currentPrefix = prefix + routerData.path;
@@ -43,7 +43,7 @@ export class RouterManager {
     if (!this.rootRouter) {
       throw new Error('no root router');
     }
-    const routerAtomic = new SimAtomic(this.rootRouter, this.simstanceManager);
+    const routerAtomic = new SimAtomic({targetKeyType:this.rootRouter, originalType: this.rootRouter}, this.simstanceManager);
     const allMatches = this._collectAllMatchingModules(routerAtomic, intent, []);
 
     // Priority 1: Exact path match with a module
@@ -66,7 +66,7 @@ export class RouterManager {
       throw new Error('no root router');
     }
     // await new Promise((r)=> setTimeout(r, 0)); // <-- 이거 넣어야지 두번불러지는게 없어지는듯? 뭐지 event loop 변경된건가?
-    const routerAtomic = new SimAtomic(this.rootRouter, this.simstanceManager);
+    const routerAtomic = new SimAtomic({targetKeyType: this.rootRouter, originalType: this.rootRouter}, this.simstanceManager);
     const rootRouter = routerAtomic.getValue()!;
     const executeModuleResult = this.getExecuteModule(routerAtomic, intent, [], option);
     if (executeModuleResult) {
@@ -174,7 +174,7 @@ export class RouterManager {
           let bestMatchLength = -1;
 
           for (const child of routerConfig.routers) {
-            const routerAtomic = new SimAtomic(child, this.simstanceManager);
+            const routerAtomic = new SimAtomic({targetKeyType: child, originalType: child}, this.simstanceManager);
             const executeModule = this.getExecuteModule(routerAtomic, intent, currentParentRouters, option)
 
             if (executeModule) {
@@ -239,7 +239,7 @@ export class RouterManager {
         // Collect matches from child routers
         if (routerConfig.routers && routerConfig.routers.length > 0) {
           for (const child of routerConfig.routers) {
-            const routerAtomic = new SimAtomic(child, this.simstanceManager);
+            const routerAtomic = new SimAtomic({targetKeyType:child, originalType: child}, this.simstanceManager);
             matches.push(...this._collectAllMatchingModules(routerAtomic, intent, currentParentRouters));
           }
         }
@@ -298,13 +298,13 @@ export class RouterManager {
     }
   }
 
-  private findRouteProperty(route: Route, propertyName: string, intent: Intent): { child?: ConstructorType<any> | Function, data?: any, propertyKeys?: (string | symbol)[] } {
-    let child: ConstructorType<any> | Function | undefined;
+  private findRouteProperty(route: Route, propertyName: string, intent: Intent): { child?: {targetKeyType? : ConstructorType<any> | Function, originalType: ConstructorType<any> | Function}, data?: any, propertyKeys?: (string | symbol)[] } {
+    let child: {targetKeyType? : ConstructorType<any> | Function, originalType: ConstructorType<any> | Function} | undefined;
     let data: any;
     let propertyKeys: undefined | (string | symbol)[];
     const routeElement = route[propertyName];
     if (typeof routeElement === 'function') {
-      child = routeElement;
+      child = {targetKeyType: routeElement, originalType: routeElement};
     } else if (typeof routeElement === 'symbol') {
       child = this.simstanceManager.findLastSim(routeElement)?.type;
     } else if (typeof routeElement === 'string') {
@@ -320,16 +320,16 @@ export class RouterManager {
         }
         const noAccept = filters.some(it => (typeof it === 'function' ? this.simstanceManager.getOrNewSim({target: it}) : it)?.isAccept(intent) === false);
         if (!noAccept) {
-          child = r.target;
+          child = {targetKeyType: r.target, originalType: r.target};
         }
       } else {
-        child = r;
+        child = {targetKeyType: r, originalType:r};
       }
       data = routeElement?.[1];
     } else if (typeof routeElement === 'object' && 'target' in routeElement && 'propertyKeys' in routeElement) { // RouteTargetMethod
       const noAccept = routeElement.filters?.filter(it => it).some(it => (typeof it === 'function' ? this.simstanceManager.getOrNewSim({target: it}) : it)?.isAccept(intent) === false);
       if (!noAccept) {
-        child = routeElement.target;
+        child = {targetKeyType: routeElement.target, originalType: routeElement.target};
         propertyKeys = routeElement.propertyKeys as (string | symbol)[];
       }
     } else if (typeof routeElement === 'object' && 'filters' in routeElement && 'target' in routeElement) {
@@ -341,7 +341,7 @@ export class RouterManager {
       }
       const noAccept = filters.some(it => (typeof it === 'function' ? this.simstanceManager.getOrNewSim({target: it}) : it)?.isAccept(intent) === false);
       if (!noAccept) {
-        child = routeElement.target;
+        child = {targetKeyType: routeElement.target, originalType:routeElement.target};
       }
     }
     return {

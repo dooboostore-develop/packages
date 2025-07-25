@@ -1,51 +1,25 @@
 {
   "compilerOptions": {
-    "target": "es5",
-    "module": "commonjs",
-    "declaration": true,
-    "sourceMap": true,
+    "target": "ESNext",
+    "lib": ["dom", "dom.iterable", "esnext"],
     "allowJs": true,
+    "skipLibCheck": true,
+    //    "strict": true,
+    //    "forceConsistentCasingInFileNames": true,
     "noEmit": true,
-    //    "outDir": "./dist",
-//    "rootDir": "./src",
-    "strict": true,
-    "moduleResolution": "node",
-    "baseUrl": "src",
-//    "typeRoots": [
-//      "@type",
-//      "node_modules/@types",
-//      "node_modules/handlebars",
-//      "node_modules/reflect-metadata",
-//      "node_modules/rxjs",
-//      "@types"
-//    ],
-//    "types": [
-//      "node",
-//      "reflect-metadata",
-//      "jest"
-//    ],
     "esModuleInterop": true,
+    "module": "esnext",
+    "moduleResolution": "node",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "jsx": "preserve",
+    "incremental": true,
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
-    "forceConsistentCasingInFileNames": true,
-    "removeComments": true,
-    "lib": [
-      "es5",
-      "es2015",
-      "es2019",
-      "scripthost",
-      "es2015.proxy",
-      "es2015.collection"
-    ]
+    "baseUrl": ".",
+    "outDir": "./dist"
   },
-  "exclude": [
-    "example",
-    "examples",
-    "rollup.config.js",
-    "test",
-    "cli",
-    "assets",
-    "**/*.test.ts",
-    "dist"
-  ]
+  "typeRoots": ["./types", "./node_modules/@types"],
+  "include": ["./**/*.ts", "./**/*.tsx"],
+  "exclude": ["node_modules"]
 }

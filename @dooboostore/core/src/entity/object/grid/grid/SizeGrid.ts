@@ -1,5 +1,5 @@
 import {Drawable} from "../../../draw/Drawable";
-import {Draw} from "../../../draw/Draw";
+import { DrawData } from '../../../../entity/draw/DrawData';
 
 export class SizeGrid implements Drawable {
 
@@ -7,7 +7,7 @@ export class SizeGrid implements Drawable {
     constructor(public size = 10) {
     }
 
-    draw(draw: Draw) {
+    draw(draw: DrawData) {
         let splitSize = draw.canvas.width / this.size;
         let wUnit = splitSize;
         let hUnit = splitSize;

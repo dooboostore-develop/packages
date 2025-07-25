@@ -1,6 +1,6 @@
 import { getSim } from '@dooboostore/simple-boot/decorators/SimDecorator';
 import { AroundForceReturn } from '@dooboostore/simple-boot/decorators/aop/AOPDecorator';
-import { ReflectUtils } from '@dooboostore/simple-boot/utils/reflect/ReflectUtils';
+import { ReflectUtils } from '@dooboostore/core/reflect/ReflectUtils';
 
 export const LoadAroundBefore = (obj: any, propertyKey: string, args: any[]) => {
     const simstanceManager = obj._SimpleBoot_simstanceManager;

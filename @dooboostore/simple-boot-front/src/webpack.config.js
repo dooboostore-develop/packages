@@ -1,59 +1,35 @@
 const path = require('path');
-const webpack = require('webpack');
-const HtmlWebpackPlugin = require('html-webpack-plugin');
 
 module.exports = {
-  mode: 'development',
   entry: './index.ts',
-  devtool: 'source-map',
+  mode: 'production',
+  output: {
+    path: path.resolve(__dirname, 'dist', 'dist'),
+    filename: 'bundle.js',
+    library: {
+      type: 'module',
+    },
+  },
+  experiments: {
+    outputModule: true,
+  },
+  resolve: {
+    extensions: ['.ts', '.js'],
+  },
   module: {
     rules: [
       {
-        test: /\.tsx?$/,
+        test: /\.ts$/,
         use: {
           loader: 'ts-loader',
           options: {
-            transpileOnly: true,
             compilerOptions: {
-              experimentalDecorators: true,
-              emitDecoratorMetadata: true
-            }
-          }
+              noEmit: false,
+            },
+          },
         },
-        exclude: /node_modules/
-      }
-    ]
+        exclude: /node_modules\/(?!@dooboostore)/,
+      },
+    ],
   },
-  resolve: {
-    extensions: ['.tsx', '.ts', '.js'],
-    alias: {
-
-    },
-    fallback: {
-      "tslib": require.resolve('tslib')
-    }
-  },
-  output: {
-    filename: 'bundle.js',
-    path: path.resolve(__dirname, 'dist'),
-    clean: true
-  },
-  plugins: [
-    new webpack.WatchIgnorePlugin({
-      paths: [/\.js$/, /\.d\.ts$/]
-    }),
-    new webpack.ProvidePlugin({
-      tslib: 'tslib'
-    }),
-    new HtmlWebpackPlugin({
-      template: './index.html'
-    })
-  ],
-  devServer: {
-    static: {
-      directory: path.join(__dirname, 'dist')
-    },
-    port: 8081,
-    hot: true
-  }
-}; 
+};

@@ -19,6 +19,11 @@ export namespace ConvertUtils {
     return typeof data === 'object' && data !== null && typeof data.type === 'string';
   }
 
+  export const toFile =  async (imageBitmapOrCanvas: HTMLImageElement | ImageBitmap | HTMLCanvasElement | OffscreenCanvas, config: ImageConvertConfig & {filename: string;}): Promise<File> => {
+    const fileName = config.filename;
+    delete config['filename'];
+    return new File([await ConvertUtils.toBlob(imageBitmapOrCanvas, config)], fileName, {type: config.type});
+  }
 
   export const toBlob = async (imageBitmapOrCanvas: File | HTMLImageElement | ImageBitmap | HTMLCanvasElement | OffscreenCanvas, config: ImageConvertConfig): Promise<Blob> => {
     if (imageBitmapOrCanvas instanceof File) {

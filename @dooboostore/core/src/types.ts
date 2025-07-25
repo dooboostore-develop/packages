@@ -80,8 +80,13 @@ export type FilterFalsy<T> = T extends [infer E, ...infer Rest]
   : T extends (infer E)[]
     ? ExtractNotFalsy<E>[]
     : ExtractNotFalsy<T>;
-
 export type FieldType<T, F> = Record<keyof T, F>;
+export type FieldUnionType<T, F> = {
+  [P in keyof T]: T[P] | F;
+};
+
+
+
 export type Dictionary<T = any> = Record<string | number, T>;
 type GetKeys<T> = T extends unknown[]
   ? T extends [] // special case empty tuple => no keys
@@ -137,6 +142,8 @@ export type NullableObject<T> = {
 export type NullableProperty<T, K extends keyof T> = {
   [P in K]: Nullable<T[P]>;
 };
+export type NullOrUndefined<T> = null | undefined;
+export type NotNullOrUndefined<T> = T extends null | undefined ? never : T;
 export type NonNullable<T> = T extends null | undefined ? never : T;
 export type NonNullableObject<T> = {
   [P in keyof T]-?: NonNullable<T[P]>;

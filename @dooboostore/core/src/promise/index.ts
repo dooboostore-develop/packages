@@ -73,6 +73,7 @@ export namespace Promises {
             callback.catch?.(e, {...executeConfig, duration: end - start});
           }
           await sleep(config.loopDelay ?? 0);
+          // @ts-ignore
           callback.delayThen?.({...executeConfig, duration: end - start, isCatch: isCatch, data: t});
           if (!stop)
             return loopExecute();
@@ -83,6 +84,9 @@ export namespace Promises {
         }, config.delay ?? 0);
 
         return {
+          get closed() {
+            return stop;
+          },
           unsubscribe: () => {
             stop = true;
           }
