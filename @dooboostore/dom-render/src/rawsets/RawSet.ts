@@ -91,6 +91,9 @@ export class RawSet {
 
   public static readonly DR_ON_CREATE_ARGUMENTS_OPTIONNAME = 'dr-on-create:arguments';
   public static readonly DR_ON_CREATED_CALLBACK_OPTIONNAME = 'dr-on-create:callback';
+  /**  우선 쓰는곳이 없어서 deprecated를 걸어놨음
+  @deprecated
+  */
   public static readonly DR_ON_INIT_ARGUMENTS_OPTIONNAME = 'dr-on-init:arguments';
   public static readonly DR_ON_CONSTRUCTOR_ARGUMENTS_OPTIONNAME = 'dr-on-constructor:arguments';
 

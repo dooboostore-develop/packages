@@ -16,6 +16,7 @@ import { Choose } from './choose/Choose';
 import { ForOf } from './forof/ForOf';
 import { Appender } from './appender/Appender';
 import { If } from './if/If';
+import { This } from './this/This';
 
 export const SystemComponent  = {
   Details,
@@ -30,6 +31,7 @@ export const SystemComponent  = {
   Dialog,
   ForOf,
   Appender,
-  If
+  If,
+  This
 };
 export default SystemComponent;
