@@ -3,6 +3,9 @@ export * from './Subject';
 export * from './Observable';
 export * from './Subscription';
 
+// Internal utilities
+export * from './internal';
+
 export const debounce = <T>(fn: (data: T) => void, delay: number) => {
   // @ts-ignore
   let timer: NodeJS.Timeout | null = null;

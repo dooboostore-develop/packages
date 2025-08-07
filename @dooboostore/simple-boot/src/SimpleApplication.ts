@@ -91,8 +91,8 @@ export class SimpleApplication {
   }
 
   public addSim(target: ConstructorType<any> | Function): void;
-  public addSim(config: SimConfig, target: ConstructorType<any>): GenericClassDecorator<ConstructorType<any> | Function>;
-  public addSim(configOrTarget: SimConfig | ConstructorType<any> | Function, target?: ConstructorType<any>): void | GenericClassDecorator<ConstructorType<any> | Function> {
+  public addSim(config: SimConfig, target: ConstructorType<any> | Function | any): GenericClassDecorator<ConstructorType<any> | Function>;
+  public addSim(configOrTarget: SimConfig | ConstructorType<any> | Function, target?: ConstructorType<any> | Function | any): void | GenericClassDecorator<ConstructorType<any> | Function> {
     const r: any = Sim(configOrTarget as any);
     if (typeof r === 'function' && target) {
       r(target);

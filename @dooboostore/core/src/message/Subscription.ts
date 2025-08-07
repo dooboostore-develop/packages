@@ -1,1 +1,3 @@
-export type Subscription = { unsubscribe: () => void };
+import { Unsubscribable } from './Unsubscribable';
+
+export interface Subscription extends Unsubscribable { }

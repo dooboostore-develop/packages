@@ -10,15 +10,12 @@ export namespace DocumentUtils {
     return elements;
   }
   export const eventObservable = <K extends keyof WindowEventMap>(document: Document, type: K, options?: boolean | AddEventListenerOptions): Observable<WindowEventMap[K]> => {
-    return {
-      subscribe: (res) => {
-        window.addEventListener(type, res, options);
-        return {
-          unsubscribe: () => {
-            window.removeEventListener(type, res, options);
-          }
-        }
-      }
-    }
+    return new Observable<WindowEventMap[K]>((subscriber) => {
+      const handler = (event: WindowEventMap[K]) => subscriber.next(event);
+      window.addEventListener(type, handler, options);
+      return () => {
+        window.removeEventListener(type, handler, options);
+      };
+    });
   }
 }

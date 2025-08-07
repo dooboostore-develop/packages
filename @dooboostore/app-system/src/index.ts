@@ -1,1 +1,1 @@
-import { ApiService } from './fetch/ApiService';
+export default {}

@@ -61,7 +61,7 @@ class User {
 
 </header>
 <main>
-    <div dr-this="this.child" dr-this:type="outlet" dr-scrip="false"></div>
+    <div dr-this="this.child"  dr-option-scrip="false"></div>
 </main>
 <div class="good">g</div>
 <footer>
