@@ -2,6 +2,7 @@ import 'reflect-metadata'
 import { ConstructorType, GenericClassDecorator } from '@dooboostore/core/types';
 import { ReflectUtils } from '../utils/reflect/ReflectUtils';
 import { SimpleApplication } from '../SimpleApplication';
+import { ValidUtils } from '@dooboostore/core/valid/ValidUtils';
 
 export enum Lifecycle {
   /**
@@ -36,8 +37,24 @@ export const SimMetadataKey = Symbol('Sim');
 
 const isNotNullObjetInstance = (target: any) => target != null && target !== undefined && typeof target === 'object';
 
-export const simProcess = (config: SimConfig, target: ConstructorType<any> | Function | any) => {
+export const simProcess = (config: SimConfig, inputTarget: ConstructorType<any> | Function | any) => {
   // default setting
+  /*
+  // Sim({symbol: TTSymbol, scope: Lifecycle.Transient})(function (){
+  //   console.log('new TT')
+  //   return {a: 'name'}
+  // })
+  // Sim({symbol: TTSymbol, scope: Lifecycle.Transient})(() =>{
+  //   console.log('new TT')
+  //   return {a: 'name'}
+  // })
+  Sim({symbol: TTSymbol, scope: Lifecycle.Transient})({a: 'name'})
+   */
+  const target = typeof inputTarget === 'object' ? function() {return config.scope === Lifecycle.Singleton ? inputTarget: {...inputTarget}} : (ValidUtils.isArrowFunction(inputTarget) ? function() {return (inputTarget as Function)()} : inputTarget);
+
+
+
+
   let targetType: ConstructorType<any> | Function;
   if (isNotNullObjetInstance(target)) {
     targetType = target.constructor;
@@ -67,8 +84,8 @@ export const simProcess = (config: SimConfig, target: ConstructorType<any> | Fun
 }
  // const a = Math.random()+Date.now();
 export function Sim(target: ConstructorType<any> | Function): void;
-export function Sim(config: SimConfig): GenericClassDecorator<ConstructorType<any> | Function>;
-export function Sim(configOrTarget: SimConfig | ConstructorType<any> | Function): void | GenericClassDecorator<ConstructorType<any> | Function> {
+export function Sim(config: SimConfig): GenericClassDecorator<ConstructorType<any> | Function | any>;
+export function Sim(configOrTarget: SimConfig | ConstructorType<any> | Function): void | GenericClassDecorator<ConstructorType<any> | Function | any> {
   // console.log('ssssssssssssssssssssssss', configOrTarget, typeof configOrTarget === 'function');
   // console.group('sim')
   // sims.forEach((v,k) => {
@@ -79,7 +96,7 @@ export function Sim(configOrTarget: SimConfig | ConstructorType<any> | Function)
     simProcess({}, configOrTarget);
     // console.log('---!', Reflect.getMetadata('design:paramtypes', configOrTarget))
   } else {
-    return (target: ConstructorType<any> | Function) => {
+    return (target: ConstructorType<any> | Function | any) => {
       simProcess(configOrTarget, target);
     }
   }
