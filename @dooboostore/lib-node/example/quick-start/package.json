@@ -1,5 +1,5 @@
 {
-  "name": "@dooboostore/lib-core/example/quick-start",
+  "name": "@dooboostore/lib-node/example/quick-start",
   "version": "1.0.0",
   "main": "index.js",
   "license": "MIT",
@@ -43,6 +43,6 @@
     "reflect-metadata": "^0.2.2",
     "@dooboostore/core": "workspace:*",
     "@dooboostore/core-node": "workspace:*",
-    "@dooboostore/lib-core": "workspace:*"
+    "@dooboostore/lib-node": "workspace:*"
   }
 }

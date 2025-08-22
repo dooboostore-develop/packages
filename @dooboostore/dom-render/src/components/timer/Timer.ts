@@ -2,9 +2,7 @@ import { ComponentBase } from '../ComponentBase';
 import { DomRender, RunConfig } from '../../DomRender';
 import { RawSet } from '../../rawsets/RawSet';
 import { OtherData } from '../../lifecycle/OnChangeAttrRender';
-import { OnInitRender } from '../../lifecycle/OnInitRender';
-import { ComponentSet } from '../../components/ComponentSet';
-import { OnDestroyRenderParams } from 'lifecycle/OnDestroyRender';
+import { OnDestroyRenderParams } from '../../lifecycle/OnDestroyRender';
 
 
 export namespace Timer {

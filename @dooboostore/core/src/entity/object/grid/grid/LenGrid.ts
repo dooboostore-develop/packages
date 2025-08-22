@@ -1,9 +1,9 @@
 import {Drawable} from "../../../draw/Drawable";
-import {Draw} from "../../../draw/Draw";
+import { DrawData } from '../../../../entity/draw/DrawData';
 
 export class LenGrid implements Drawable {
 
-    draw(draw: Draw) {
+    draw(draw: DrawData) {
         const splitSize = 10;
         let wUnit = draw.canvas.width / splitSize;
         let hUnit = draw.canvas.height / splitSize;

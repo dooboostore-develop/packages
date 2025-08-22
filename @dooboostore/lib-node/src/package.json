@@ -1,9 +1,7 @@
 {
-  "name": "@dooboostore/core-web",
-  "version": "1.0.1",
-  "license": "MIT",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "name": "@dooboostore/lib-node",
+  "version": "1.0.0",
+  "description": "dooboostore library for node",
   "files": [
     "**/*.js",
     "**/*.d.ts"
@@ -11,6 +9,10 @@
   "publishConfig": {
     "access": "public"
   },
+  "keywords": [
+    "library",
+    "node"
+  ],
   "author": "dooboostore <dooboostore@gmail.com> (https://github.com/dooboostore)",
   "contributors": [
     "sewoo <sewooimda@nate.com> (https://github.com/sewoo)",
@@ -28,21 +30,16 @@
     "type": "git",
     "url": "https://github.com/dooboostore-develop/packages"
   },
-  "keywords": [
-    "web",
-    "util",
-    "node"
-  ],
   "scripts": {
     "build": "rm -rf dist && tsc -p tsconfig.build.json",
     "clean": "rm -rf  dist",
-    "npm:build": "pnpm run build && pnpm pack && TARBALL_NAME=$(ls dooboostore-core-web-*.tgz | head -n 1) && tar -xzf \"$TARBALL_NAME\" -C dist --strip-components=1 package/package.json && rm \"$TARBALL_NAME\"",
+    "npm:build": "pnpm run build && cp README.MD dist/ && pnpm pack && TARBALL_NAME=$(ls dooboostore-lib-node-*.tgz | head -n 1) && tar -xzf \"$TARBALL_NAME\" -C dist --strip-components=1 package/package.json && rm \"$TARBALL_NAME\"",
     "npm:clean": "rm -rf  dist",
     "npm:publish": "pnpm run npm:build && cd dist && pnpm publish --no-git-checks",
     "npm:publish:clean": "pnpm run npm:publish && rm -rf dist",
     "ts:clean": "find . -name '*.js' -o -name '*.map' -o -name '*.d.ts' | xargs rm -f",
-    "typecheck": "tsc --noEmit",
-    "test": "echo test"
+    "test": "echo test",
+    "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
     "tslib": "^2.8.1",
@@ -50,6 +47,9 @@
     "typescript": "^5.8.2"
   },
   "dependencies": {
-    "@dooboostore/core": "workspace:*"
+    "canvas": "^3.1.2",
+    "reflect-metadata": "^0.2.2",
+    "@dooboostore/core": "workspace:*",
+    "@dooboostore/core-node": "workspace:*"
   }
 }

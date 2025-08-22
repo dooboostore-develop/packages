@@ -85,35 +85,64 @@ export namespace AnimationFrameUtils {
   // }
 
   export const dividePerFpsObservable = ({fpsConfig,  divideSize}: { fpsConfig: FpsConfigParamType,  divideSize: number }): Observable<FpsCallBackData &{gapPosition: number, gapSize: number}> => {
-    return {
-      subscribe: (res) => {
-        // 디스플레이마다 다르게 나올 수 있음 모니터 헤르츠
-        let fps = 0;
-        // 1초당 그리고 싶은 횟수 (이걸로 애니메이션을 그릴 때 몇번 그릴지 결정)  성능조절가능
-        // private readonly drawCountPerSecond: number = 60;
-        const getDrawFpsGap = () => {
-          return Math.floor(fps / divideSize);
-        }
-
-        let gapPosition = 0;
-
-        const fpsSubscription  = AnimationFrameUtils.fps(fpsConfig, (fpsConfig) => {
-          fps = fpsConfig.fps;
-            gapPosition++;
-            const gapSize = getDrawFpsGap();
-            if (gapPosition >= gapSize) {
-              // console.log('dddddddddrrrrraaaww' , fpsConfig, divideSize, animationCount, drawFpsGap)
-              res({...fpsConfig, ...{gapPosition, gapSize} });
-              gapPosition = 0;
-            }
-        });
-        return {
-          unsubscribe: () => {
-            fpsSubscription.unsubscribe();
-          }
-        };
+    return new Observable<FpsCallBackData &{gapPosition: number, gapSize: number}>((subscriber) => {
+      const handler = (event: FpsCallBackData &{gapPosition: number, gapSize: number}) => subscriber.next(event);
+      // 디스플레이마다 다르게 나올 수 있음 모니터 헤르츠
+      let fps = 0;
+      // 1초당 그리고 싶은 횟수 (이걸로 애니메이션을 그릴 때 몇번 그릴지 결정)  성능조절가능
+      // private readonly drawCountPerSecond: number = 60;
+      const getDrawFpsGap = () => {
+        return Math.floor(fps / divideSize);
       }
-    }
+
+      let gapPosition = 0;
+
+      const fpsSubscription  = AnimationFrameUtils.fps(fpsConfig, (fpsConfig) => {
+        fps = fpsConfig.fps;
+        gapPosition++;
+        const gapSize = getDrawFpsGap();
+        if (gapPosition >= gapSize) {
+          // console.log('dddddddddrrrrraaaww' , fpsConfig, divideSize, animationCount, drawFpsGap)
+          handler({...fpsConfig, ...{gapPosition, gapSize} });
+          gapPosition = 0;
+        }
+      });
+
+      return () => {
+        fpsSubscription.unsubscribe();
+      };
+    });
+
+    // @ts-ignore
+    // return {
+    //   subscribe: (res) => {
+    //     // 디스플레이마다 다르게 나올 수 있음 모니터 헤르츠
+    //     let fps = 0;
+    //     // 1초당 그리고 싶은 횟수 (이걸로 애니메이션을 그릴 때 몇번 그릴지 결정)  성능조절가능
+    //     // private readonly drawCountPerSecond: number = 60;
+    //     const getDrawFpsGap = () => {
+    //       return Math.floor(fps / divideSize);
+    //     }
+    //
+    //     let gapPosition = 0;
+    //
+    //     const fpsSubscription  = AnimationFrameUtils.fps(fpsConfig, (fpsConfig) => {
+    //       fps = fpsConfig.fps;
+    //         gapPosition++;
+    //         const gapSize = getDrawFpsGap();
+    //         if (gapPosition >= gapSize) {
+    //           // console.log('dddddddddrrrrraaaww' , fpsConfig, divideSize, animationCount, drawFpsGap)
+    //           res({...fpsConfig, ...{gapPosition, gapSize} });
+    //           gapPosition = 0;
+    //         }
+    //     });
+    //     return {
+    //       unsubscribe: () => {
+    //         fpsSubscription.unsubscribe();
+    //       }
+    //     };
+    //   }
+    // }
   }
 
 }
