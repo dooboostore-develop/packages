@@ -1,4 +1,4 @@
-import { DomRender, RunConfig } from '@dooboostore/dom-render/DomRender';
+import { DomRender, DomRenderRunConfig } from '@dooboostore/dom-render/DomRender';
 import { Config } from '@dooboostore/dom-render/configs/Config';
 import { Second } from './second/second';
 import { Detail } from './detail/detail';
@@ -90,7 +90,7 @@ class CustomRouter extends Router<Index> {
 }
 
 
-const config: RunConfig<Index> = {
+const config: DomRenderRunConfig<Index> = {
   window: window,
   scripts: {
     concat: function (data: string, str: string) {

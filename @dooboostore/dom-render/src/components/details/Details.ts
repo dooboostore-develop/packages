@@ -1,5 +1,5 @@
 import { ComponentBase } from '../ComponentBase';
-import { DomRender, RunConfig } from '../../DomRender';
+import { DomRender, DomRenderRunConfig } from '../../DomRender';
 import { RawSet } from '../../rawsets/RawSet';
 import { OtherData } from '../../lifecycle/OnChangeAttrRender';
 import { OnInitRender } from '../../lifecycle/OnInitRender';
@@ -156,7 +156,7 @@ export namespace Details {
 }
 
 export default {
-  detailsSummary: (config?: RunConfig) => {
+  detailsSummary: (config?: DomRenderRunConfig) => {
     return RawSet.createComponentTargetElement({
       name: `${Details.selector}-summary`,
       template: '<summary class="${`${@this@.getAttribute(\'class\')} details-summary-container`}$">#innerHTML#</summary>',
@@ -165,7 +165,7 @@ export default {
       }
     })
   },
-  detailsBody: (config?: RunConfig) => {
+  detailsBody: (config?: DomRenderRunConfig) => {
     return RawSet.createComponentTargetElement({
       name: `${Details.selector}-body`,
       template: '<div class="${`${@this@.getAttribute(\'class\')} details-body-container details-body-${@this@.getAttribute(\'float\')}-container`}$" dr-on-init="@this@.$element = $element;">#innerHTML#</div>',
@@ -174,7 +174,7 @@ export default {
       }
     })
   },
-  detailsForm: (config?: RunConfig) => {
+  detailsForm: (config?: DomRenderRunConfig) => {
     return RawSet.createComponentTargetElement({
       name: `${Details.selector}-form`,
       template: '<form class="${`${@this@.getAttribute(\'class\')} details-body-container details-body-${@this@.getAttribute(\'float\')}-container details-form-container`}$" dr-on-init="@this@.$element = $element;" dr-event-submit="@this@.submit($element,$event);">#innerHTML#</form>',
@@ -183,7 +183,7 @@ export default {
       }
     })
   },
-  details: (config?: RunConfig) => {
+  details: (config?: DomRenderRunConfig) => {
     return RawSet.createComponentTargetElement({
       name: `${Details.selector}`,
       styles: `

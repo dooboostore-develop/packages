@@ -1,7 +1,7 @@
 import { RandomUtils } from '@dooboostore/core/random/RandomUtils';
 import { StringUtils } from '@dooboostore/core/string/StringUtils';
 import { ScriptUtils } from '@dooboostore/core-web/script/ScriptUtils';
-import { EventManager, eventManager } from '../events/EventManager';
+import { EventManager } from '../events/EventManager';
 import { Config } from '../configs/Config';
 import { Range } from '../iterators/Range';
 import { DomUtils } from '@dooboostore/core-web/dom/DomUtils';
@@ -558,12 +558,11 @@ export class RawSet {
   }
 
   public applyEvent(obj: any, fragment = this.dataSet.fragment, config?: Config) {
-    eventManager.applyEvent(obj, eventManager.findAttrElements(fragment, config), config);
+    this.dataSet.config.eventManager.applyEvent(obj, this.dataSet.config.eventManager.findAttrElements(fragment, config), config);
   }
 
   public onRenderedEvent(obj: any, nodes: Node[], config?: Config) {
-
-    eventManager.onRenderedEvent(obj, nodes, config);
+    this.dataSet.config.eventManager.onRenderedEvent(obj, nodes, config);
   }
 
   public getAttribute(element: Element, attr: string) {

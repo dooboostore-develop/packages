@@ -2,7 +2,7 @@ import { SimFrontOption } from './option/SimFrontOption';
 import { ConstructorType, isDefined } from '@dooboostore/core/types';
 import { componentSelectors, getComponent } from './decorators/Component';
 import { scripts } from './decorators/Script';
-import { DomRender, RunConfig } from '@dooboostore/dom-render/DomRender';
+import { DomRender, DomRenderRunConfig } from '@dooboostore/dom-render/DomRender';
 import { SimAtomic } from '@dooboostore/simple-boot/simstance/SimAtomic';
 import { SimpleApplication } from '@dooboostore/simple-boot/SimpleApplication';
 import { Intent } from '@dooboostore/simple-boot/intent/Intent';
@@ -23,6 +23,7 @@ import { PathRouter } from '@dooboostore/dom-render/routers/PathRouter';
 import { RandomUtils } from '@dooboostore/core/random/RandomUtils';
 import { isOnInit } from './lifecycle/OnInit';
 import { EventManager } from '@dooboostore/dom-render/events/EventManager';
+import { Config } from '@dooboostore/dom-render';
 
 export class SimpleBootFront extends SimpleApplication {
   public domRendoerExcludeProxy: ConstructorType<any>[] = [
@@ -37,7 +38,7 @@ export class SimpleBootFront extends SimpleApplication {
   ];
   public domRenderTargetElements: TargetElement[] = [];
   public domRenderTargetAttrs: TargetAttr[] = [];
-  public domRenderConfig: RunConfig;
+  public domRenderConfig: DomRenderRunConfig;
   private domRenderRouter: Router | undefined;
 
   constructor(public option: SimFrontOption) {
@@ -215,7 +216,7 @@ export class SimpleBootFront extends SimpleApplication {
           end: routerAndSettingData.point.end,
           node: target
         },
-          {config: this.domRenderConfig, fragment: {} as any}
+          {config: this.domRenderConfig as Config, fragment: {} as any}
       );
       domRenderProxy.initRender(target, rawSet);
       // console.log('initWriteRootRouter', val);
@@ -238,7 +239,7 @@ export class SimpleBootFront extends SimpleApplication {
 
     const uuid = RandomUtils.uuid();
     const id = `root-router-${uuid}`;
-    const point = RawSet.createStartEndPoint({node: target, id, type: RawSetType.TARGET_ELEMENT}, this.domRenderConfig);
+    const point = RawSet.createStartEndPoint({node: target, id, type: RawSetType.TARGET_ELEMENT}, this.domRenderConfig as Config);
     if (target && routerAtomic.getValue()) {
       // target.innerHTML = '';
       // p.appendChild(startEndPoint.start);

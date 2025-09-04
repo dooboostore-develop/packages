@@ -1,5 +1,5 @@
 import { ComponentBase } from '../ComponentBase';
-import { DomRender, RunConfig } from '../../DomRender';
+import { DomRender, DomRenderRunConfig } from '../../DomRender';
 import { RawSet } from '../../rawsets/RawSet';
 import { OtherData } from '../../lifecycle/OnChangeAttrRender';
 import { OnInitRender } from '../../lifecycle/OnInitRender';
@@ -103,7 +103,7 @@ export namespace Radio {
 
 
 export default {
-  radioChecked: (config?: RunConfig) => {
+  radioChecked: (config?: DomRenderRunConfig) => {
     return RawSet.createComponentTargetElement({
       name: `${Radio.selector}-checked`,
       template: '<div dr-if="!@this@.hidden" dr-option-strip="true" >#innerHTML#</div>',
@@ -112,7 +112,7 @@ export default {
       }
     })
   },
-  radioUnChecked: (config?: RunConfig) => {
+  radioUnChecked: (config?: DomRenderRunConfig) => {
     return RawSet.createComponentTargetElement({
       name: `${Radio.selector}-unchecked`,
       template: '<div dr-if="!@this@.hidden" dr-option-strip="true" >#innerHTML#</div>',
@@ -121,7 +121,7 @@ export default {
       }
     })
   },
-  radio: (config?: RunConfig) => {
+  radio: (config?: DomRenderRunConfig) => {
     return RawSet.createComponentTargetElement({
       name: `${Radio.selector}`,
       template: '<label class="${@this@.getAttribute(\'class\')}$">\n' +

@@ -10,40 +10,42 @@ import { RouterAction } from '@dooboostore/simple-boot/route/RouterAction';
 import { ItemComponent } from './components/item/item.component';
 import { ComponentSet } from '@dooboostore/simple-boot-front/component/ComponentSet';
 import { OnInitRender } from '@dooboostore/dom-render/lifecycle/OnInitRender';
+import { ComponentRouterBase } from '@dooboostore/simple-boot-front';
+import {drComponent} from '@dooboostore/dom-render/components'
 @Sim({
-    using: [ItemComponent]
+  using: [ItemComponent, drComponent]
 })
 @Router({
-    path: '',
-    route: {
-        '/': Home,
-        '/user': User
-    }
+  path: '',
+  route: {
+    '/': Home,
+    '/user': User
+  }
 })
 @Component({
-    template,
-    styles: [style]
+  template,
+  styles: [style]
 })
-export class Index implements RouterAction, OnInitRender {
-    child?: ComponentSet<any>
-    constructor(private router: DomRenderRouter, private home: Home) {
-        console.log('constructor IndexComponent', router)
-    }
-    async go() {
-        this.router.go({path:'/user'})
-    }
+export class Index extends ComponentRouterBase {
+  constructor(private router: DomRenderRouter, private home: Home) {
+    super();
+    console.log('constructor IndexComponent', router)
+  }
 
-    onInitRender(...param) {
-        // this.child = new ComponentSet(this.home);
-        // this.child = new DomRenderComponentSet({name:'sub1'}, '<div><h1>11subthis</h1><div>${@this@.name}$  ${console.log("asas${@this@.name}$")}$ <!-- ${#this#}$--></div></div>')
-        // this.child = new DomRenderComponentSet(this.home, '<div><h1>11subthis</h1><div>${@this@.name}$  ${console.log("asas${@this@.name}$")}$ <!-- ${#this#}$--></div></div>')
-        // console.log('222222', this.navigation, this.home.name)
-        // console.log('33333333333', this.child.obj);
-    }
+  async go() {
+    this.router.go({path: '/user'})
+  }
 
-    async canActivate(url: any, module: any) {
-        this.child = new ComponentSet(module);
-        console.log('route->', url, module, this.child);
-    }
+  async test() {
+    console.log('test')
+  }
+
+  onInitRender(...param) {
+    // this.child = new ComponentSet(this.home);
+    // this.child = new DomRenderComponentSet({name:'sub1'}, '<div><h1>11subthis</h1><div>${@this@.name}$  ${console.log("asas${@this@.name}$")}$ <!-- ${#this#}$--></div></div>')
+    // this.child = new DomRenderComponentSet(this.home, '<div><h1>11subthis</h1><div>${@this@.name}$  ${console.log("asas${@this@.name}$")}$ <!-- ${#this#}$--></div></div>')
+    // console.log('222222', this.navigation, this.home.name)
+    // console.log('33333333333', this.child.obj);
+  }
 }
 

@@ -1,5 +1,5 @@
 import { ComponentBase } from '../ComponentBase';
-import { DomRender, RunConfig } from '../../DomRender';
+import { DomRender, DomRenderRunConfig } from '../../DomRender';
 import { RawSet } from '../../rawsets/RawSet';
 import { OtherData } from '../../lifecycle/OnChangeAttrRender';
 import { OnInitRender } from '../../lifecycle/OnInitRender';
@@ -45,7 +45,7 @@ export namespace Select {
 
 // 아직 사용한적없으니 사용할때 만드세유~
 export default {
-  selectOption: (config?: RunConfig) => {
+  selectOption: (config?: DomRenderRunConfig) => {
     return RawSet.createComponentTargetElement({
       name: `${Select.selector}-option`,
       template: '<option class="${`${@this@.getAttribute(\'class\')} select-option-container`}$">#innerHTML#</option>',
@@ -54,7 +54,7 @@ export default {
       }
     })
   },
-  select: (config?: RunConfig) => {
+  select: (config?: DomRenderRunConfig) => {
     return RawSet.createComponentTargetElement({
       name: `${Select.selector}`,
       template: '<select class="${@this@.getAttribute(\'class\')}$">#innerHTML#</select>',

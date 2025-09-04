@@ -8,14 +8,15 @@ import { RawSet } from './rawsets/RawSet';
 import { DefaultMessenger } from './messenger/DefaultMessenger';
 import { Router } from './routers/Router';
 import { drComponent } from './components';
+import { EventManager } from './events/EventManager';
+import { RandomUtils } from '@dooboostore/core/random/RandomUtils';
 
-export type RunConfig<T = any> = Omit<Config<T>, 'router'> & { routerType?: 'path' | 'hash' | ((obj: T, window: Window) => Router) | Router };
+export type DomRenderRunConfig<T = any> = Omit<Config<T>, 'router' | 'uuid' | 'eventManager' | 'messenger' | 'root' | 'rootElement'> & { routerType?: 'path' | 'hash' | ((obj: T, window: Window) => Router) | Router };
 export type CreateComponentParam = { type: ConstructorType<any> | any, tagName?: string, noStrip?:boolean, template?: string, styles?: string[] | string };
-
+let eventManager: EventManager | null = null;
 export class DomRender {
-  public static run<T extends object>({rootObject, target, config}: { rootObject: T | (() => T), target?: Element | null, config?: RunConfig }): T {
+  public static run<T extends object>({rootObject, target, config}: { rootObject: T | (() => T), target?: Element | null, config?: DomRenderRunConfig }): T {
     rootObject = typeof rootObject === 'function' ? rootObject() : rootObject;
-    const targetConfig = Object.assign({}, config) as Config;
     let targetObject = rootObject;
     if ('_DomRender_isProxy' in rootObject) {
       if (target) {
@@ -24,12 +25,11 @@ export class DomRender {
       targetObject = rootObject;
       return targetObject; // { rootObject: targetObject, target, config: targetConfig };
     }
+    const targetConfig = Object.assign({}, config) as Config;
+    eventManager??=new EventManager(targetConfig.window);
+    (targetConfig.window as any).domRender??={configs: []};
 
-    // const domRenderConfig = Object.assign()
-    // if (config && !config.window) {
-    //   config.window = window;
-    // }
-    // config.routerType = config.routerType || 'none';
+    targetConfig.uuid = RandomUtils.uuid4();
     targetConfig.messenger = DomRenderFinalProxy.final(targetConfig.messenger ?? new DefaultMessenger(targetConfig));
     targetConfig.proxyExcludeTyps = targetConfig.proxyExcludeTyps ?? [];
     targetConfig.targetElements ??=[];
@@ -67,9 +67,13 @@ export class DomRender {
     if (targetConfig.proxyExcludeTyps.indexOf(RawSet) === -1) {
       targetConfig.proxyExcludeTyps.push(RawSet);
     }
+    targetConfig.rootElement = target;
+    targetConfig.eventManager = eventManager;
+    (targetConfig.window as any).domRender.configs.push(targetConfig);
     const domRender = new DomRenderProxy(rootObject, target, targetConfig);
     const dest = new Proxy(rootObject, domRender);
     targetObject = dest;
+    targetConfig.root = targetObject;
 
     // proxy 된 targetObject를 넣어줘야되서 뒤쪽에서 router를 생성해야함
     let targetRouter: Router<any> | undefined;

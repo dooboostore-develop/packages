@@ -1,5 +1,5 @@
 import { ComponentBase } from '../ComponentBase';
-import { DomRender, RunConfig } from '../../DomRender';
+import { DomRender, DomRenderRunConfig } from '../../DomRender';
 import { RawSet } from '../../rawsets/RawSet';
 import { OtherData } from '../../lifecycle/OnChangeAttrRender';
 import { OnCreateRender } from '../../lifecycle/OnCreateRender';
@@ -106,7 +106,7 @@ export namespace Input {
 }
 
 export default {
-  input: (config?: RunConfig) => {
+  input: (config?: DomRenderRunConfig) => {
     return RawSet.createComponentTargetElement({
       name: `${Input.selector}`,
       template: '<Input type="${@this@.getAttribute(\'type\')}$" class="${@this@.getAttribute(\'class\')}$" id="${@this@.getAttribute(\'id\')}$" name="${@this@.getAttribute(\'name\')}$" dr-on-init="@this@.element=$element" >#innerHTML#',

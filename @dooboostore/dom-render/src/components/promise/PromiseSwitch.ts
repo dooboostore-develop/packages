@@ -1,5 +1,5 @@
 import { ComponentBase } from '../ComponentBase';
-import { DomRender, RunConfig } from '../../DomRender';
+import { DomRender, DomRenderRunConfig } from '../../DomRender';
 import { RawSet } from '../../rawsets/RawSet';
 import { OtherData } from '../../lifecycle/OnChangeAttrRender';
 
@@ -160,7 +160,7 @@ export namespace PromiseSwitch {
 
 
 export default {
-  promiseDefault: (config?: RunConfig) => {
+  promiseDefault: (config?: DomRenderRunConfig) => {
     return RawSet.createComponentTargetElement({
       name: `${PromiseSwitch.selector}-default`,
       template: '<div dr-if="!@this@.hidden" dr-option-strip="true">#innerHTML#</div>',
@@ -169,7 +169,7 @@ export default {
       }
     })
   },
-  promisePending: (config?: RunConfig) => {
+  promisePending: (config?: DomRenderRunConfig) => {
     return RawSet.createComponentTargetElement({
       name: `${PromiseSwitch.selector}-pending`,
       template: '<div dr-if="!@this@.hidden" dr-option-strip="true">#innerHTML#</div>',
@@ -178,7 +178,7 @@ export default {
       }
     })
   },
-  promiseFulfilled: (config?: RunConfig) => {
+  promiseFulfilled: (config?: DomRenderRunConfig) => {
     return RawSet.createComponentTargetElement({
       name: `${PromiseSwitch.selector}-fulfilled`,
       template: '<div dr-if="!@this@.hidden" dr-option-strip="true">#innerHTML#</div>',
@@ -187,7 +187,7 @@ export default {
       }
     })
   },
-  promiseRejected: (config?: RunConfig) => {
+  promiseRejected: (config?: DomRenderRunConfig) => {
     return RawSet.createComponentTargetElement({
       name: `${PromiseSwitch.selector}-rejected`,
       template: '<div dr-if="!@this@.hidden" dr-option-strip="true">#innerHTML#</div>',
@@ -196,7 +196,7 @@ export default {
       }
     })
   },
-  promiseSwitch: (config?: RunConfig) => {
+  promiseSwitch: (config?: DomRenderRunConfig) => {
     return RawSet.createComponentTargetElement({
       name: `${PromiseSwitch.selector}`,
       template: '#innerHTML#',

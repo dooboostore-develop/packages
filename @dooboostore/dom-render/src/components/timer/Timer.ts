@@ -1,5 +1,5 @@
 import { ComponentBase } from '../ComponentBase';
-import { DomRender, RunConfig } from '../../DomRender';
+import { DomRender, DomRenderRunConfig } from '../../DomRender';
 import { RawSet } from '../../rawsets/RawSet';
 import { OtherData } from '../../lifecycle/OnChangeAttrRender';
 import { OnDestroyRenderParams } from '../../lifecycle/OnDestroyRender';
@@ -107,7 +107,7 @@ export namespace Timer {
 
 
 export default {
-  choose: (config?: RunConfig) => {
+  choose: (config?: DomRenderRunConfig) => {
     return RawSet.createComponentTargetElement({
       name: `${Timer.selector}`,
       template: '#innerHTML#',

@@ -1,5 +1,5 @@
 import { ComponentBase } from '../ComponentBase';
-import { DomRender, RunConfig } from '../../DomRender';
+import { DomRender, DomRenderRunConfig } from '../../DomRender';
 import { RawSet } from '../../rawsets/RawSet';
 import { OtherData } from '../../lifecycle/OnChangeAttrRender';
 import { OnInitRender } from '../../lifecycle/OnInitRender';
@@ -72,7 +72,7 @@ export namespace Appender {
 
 
 export default {
-  appender: (config?: RunConfig) => {
+  appender: (config?: DomRenderRunConfig) => {
     return RawSet.createComponentTargetElement({
       name: Appender.selector,
       template: '<div dr-appender="@this@.value" dr-option-strip="true">#innerHTML#</div>',

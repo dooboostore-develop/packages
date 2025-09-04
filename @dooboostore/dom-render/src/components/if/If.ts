@@ -1,6 +1,6 @@
 import { ComponentBase } from '../ComponentBase';
 import { OtherData } from '../../lifecycle/OnChangeAttrRender';
-import { DomRender, RunConfig } from '../../DomRender';
+import { DomRender, DomRenderRunConfig } from '../../DomRender';
 import { OnInitRender } from '../../lifecycle/OnInitRender';
 import { RawSet } from '../../rawsets/RawSet';
 
@@ -39,7 +39,7 @@ export namespace If {
 //   tagName: If.selector,
 //   template: '<div dr-if="@this@.sw" dr-option-strip="true">#innerHTML#</div>' });
 export default {
-  if: (config?: RunConfig) => {
+  if: (config?: DomRenderRunConfig) => {
     return RawSet.createComponentTargetElement({
       name: If.selector,
       template: '<div dr-if="@this@.sw" dr-option-strip="true">#innerHTML#</div>',

@@ -1,5 +1,5 @@
 import { ComponentBase } from '../ComponentBase';
-import { DomRender, RunConfig } from '../../DomRender';
+import { DomRender, DomRenderRunConfig } from '../../DomRender';
 import { RawSet } from '../../rawsets/RawSet';
 import { OtherData } from '../../lifecycle/OnChangeAttrRender';
 import { OnInitRender } from '../../lifecycle/OnInitRender';
@@ -82,7 +82,7 @@ export namespace This {
 
 
 export default {
-  this: (config?: RunConfig) => {
+  this: (config?: DomRenderRunConfig) => {
     return RawSet.createComponentTargetElement({
       name: This.selector,
       template: '<div dr-this="@this@.value" dr-option-strip="true" dr-on-create:arguments="@this@.createArguments" dr-on-create:callback="@this@.created($component)">#innerHTML#</div>',

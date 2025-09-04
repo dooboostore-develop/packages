@@ -1,6 +1,6 @@
 import 'reflect-metadata';
 import { RawSet } from './rawsets/RawSet';
-import { EventManager, eventManager } from './events/EventManager';
+import { EventManager } from './events/EventManager';
 import { Config } from './configs/Config';
 import { ScriptUtils } from '@dooboostore/core-web/script/ScriptUtils';
 import { DomRenderFinalProxy, Shield } from './types/Types';
@@ -112,7 +112,7 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
     const rawSets = RawSet.checkPointCreates(target, this._domRender_proxy, this.config);
     // console.log('initRender -------rawSet', rawSets)
     // 중요 초기에 한번 튕겨줘야함.
-    eventManager.applyEvent(this._domRender_proxy, eventManager.findAttrElements(target as Element, this.config), this.config);
+    this.config.eventManager.applyEvent(this._domRender_proxy, this.config.eventManager.findAttrElements(target as Element, this.config), this.config);
     rawSets.forEach(it => {
       const variables = it.getUsingTriggerVariables(this.config);
       if (variables.size <= 0) {
@@ -123,7 +123,6 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
         });
       }
     });
-    console.log('1111111111111', rawSets);
     this.render(this.getRawSets()).then(it => {
       // const render = {target} as Render;
       // const creatorMetaData = {
@@ -317,6 +316,7 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
               rData = await this.render(Array.from(aIterable));
             }
           } else if (iterable) {
+            // console.log('------------',iterable, fullPaths)
             rData = await this.render(Array.from(iterable), fullPathStr);
           }
 
@@ -335,8 +335,8 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
           this._targets.forEach(it => {
             // return;
             if (it.nodeType === Node.DOCUMENT_FRAGMENT_NODE || it.nodeType === Node.ELEMENT_NODE) {
-              const targets = eventManager.findAttrElements((it as DocumentFragment | Element), this.config);
-              eventManager.changeVar(this._domRender_proxy, targets, `this.${fullPathStr}`, this.config);
+              const targets = this.config.eventManager.findAttrElements((it as DocumentFragment | Element), this.config);
+              this.config.eventManager.changeVar(this._domRender_proxy, targets, `this.${fullPathStr}`, this.config);
             }
           });
 
@@ -428,31 +428,31 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
       })
     })
 
-    // 여기서 링크 같은거 해줘야함
-    DocumentUtils.querySelectorAllByAttributeName(this.config.window.document, EventManager.linkTargetMapAttrName)?.forEach(elementInfo => {
-      // @ts-ignore
-       const targets = new Map<string,string>(ScriptUtils.evalReturn<[string, string][]>(elementInfo.value));
-
-      Array.from(targets.entries()).filter(([key, value])=>value.trim()).filter(isDefined).flatMap(([key,valueScript])=> {
-        return fullPathInfo.flat().filter(it => valueScript.includes(`this.${it.path}`)).flatMap(it=> ({key, valueScript: valueScript, pathInfo: it}));
-      }).forEach(info=> {
-        const value1 = ScriptUtils.evalReturn(info.valueScript, info.pathInfo.obj);
-        if (value1 === null) {
-          elementInfo.element.removeAttribute(info.key);
-        } else {
-          elementInfo.element.setAttribute(info.key, value1);
-        }
-      })
-
-      Array.from(targets.entries()).filter(([key, value])=>value.trim()).filter(isDefined).flatMap(([key,valueScript])=> {
-        return fullPathInfo.flat().filter(it => valueScript.includes(`this.${it.path}`)).flatMap(it=> ({key, valueScript: valueScript, pathInfo: it}));
-      }).forEach(info=> {
-       const linkInfo = EventManager.linkAttrs.find(it=>it.name === info.key)
-        if (linkInfo) {
-          elementInfo.element[linkInfo.property] = value
-        }
-      })
-    })
+    // // 여기서 링크 같은거 해줘야함
+    // DocumentUtils.querySelectorAllByAttributeName(this.config.window.document, EventManager.linkTargetMapAttrName)?.forEach(elementInfo => {
+    //   // @ts-ignore
+    //    const targets = new Map<string,string>(ScriptUtils.evalReturn<[string, string][]>(elementInfo.value));
+    //
+    //   Array.from(targets.entries()).filter(([key, value])=>value.trim()).filter(isDefined).flatMap(([key,valueScript])=> {
+    //     return fullPathInfo.flat().filter(it => valueScript.includes(`this.${it.path}`)).flatMap(it=> ({key, valueScript: valueScript, pathInfo: it}));
+    //   }).forEach(info=> {
+    //     const value1 = ScriptUtils.evalReturn(info.valueScript, info.pathInfo.obj);
+    //     if (value1 === null) {
+    //       elementInfo.element.removeAttribute(info.key);
+    //     } else {
+    //       elementInfo.element.setAttribute(info.key, value1);
+    //     }
+    //   })
+    //
+    //   Array.from(targets.entries()).filter(([key, value])=>value.trim()).filter(isDefined).flatMap(([key,valueScript])=> {
+    //     return fullPathInfo.flat().filter(it => valueScript.includes(`this.${it.path}`)).flatMap(it=> ({key, valueScript: valueScript, pathInfo: it}));
+    //   }).forEach(info=> {
+    //    const linkInfo = EventManager.linkAttrs.find(it=>it.name === info.key)
+    //     if (linkInfo) {
+    //       elementInfo.element[linkInfo.property] = value
+    //     }
+    //   })
+    // })
     if (('onBeforeReturnSet' in receiver) && typeof p === 'string' && !(this.config.proxyExcludeOnBeforeReturnSets ?? []).concat(excludeGetSetPropertys).includes(p)) {
       if(isOnBeforeReturnSet(receiver)){
         receiver.onBeforeReturnSet?.(p, value, fullPathInfo.map(it => it.map(it=>it.path).join()));

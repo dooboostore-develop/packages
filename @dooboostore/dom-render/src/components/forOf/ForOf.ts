@@ -1,10 +1,7 @@
 import { ComponentBase } from '../ComponentBase';
-import { DomRender, RunConfig } from '../../DomRender';
+import { DomRender, DomRenderRunConfig } from '../../DomRender';
 import { RawSet } from '../../rawsets/RawSet';
 import { OtherData } from '../../lifecycle/OnChangeAttrRender';
-import { OnInitRender } from '../../lifecycle/OnInitRender';
-import { ComponentSet } from '../../components/ComponentSet';
-import { If } from 'components/if/If';
 
 
 export namespace ForOf {
@@ -32,7 +29,7 @@ export namespace ForOf {
 
 
 export default {
-  forOf: (config?: RunConfig) => {
+  forOf: (config?: DomRenderRunConfig) => {
     return RawSet.createComponentTargetElement({
       name: ForOf.selector,
       template: '<div dr-for-of="@this@.data" dr-option-strip="true">#innerHTML#</div>',

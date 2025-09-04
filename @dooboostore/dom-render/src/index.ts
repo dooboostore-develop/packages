@@ -1,5 +1,5 @@
 // Main class and types
-export { DomRender, type RunConfig, type CreateComponentParam } from './DomRender';
+export { DomRender, type DomRenderRunConfig, type CreateComponentParam } from './DomRender';
 
 // Lifecycle Hooks
 export type { OnChangeAttrRender, OtherData } from './lifecycle/OnChangeAttrRender';

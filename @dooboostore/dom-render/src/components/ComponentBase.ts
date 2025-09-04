@@ -11,7 +11,7 @@ import { ConvertUtils } from '@dooboostore/core/convert/ConvertUtils';
 import { OnDestroyRender, OnDestroyRenderParams } from '../lifecycle/OnDestroyRender';
 import { OnDrThisUnBind } from '../lifecycle/dr-this/OnDrThisUnBind';
 import { OnDrThisBind } from '../lifecycle/dr-this/OnDrThisBind';
-import * as Render from '../rawsets/Render';
+import type { Render } from '../rawsets/Render';
 import { ReflectUtils } from '@dooboostore/core/reflect/ReflectUtils';
 
 
@@ -62,13 +62,13 @@ export abstract class ComponentBase<T = any> implements OnChangeAttrRender, OnCr
   @DomRenderNoProxy
   private _children: any[] = [];
   @DomRenderNoProxy
-  private _render: Render.Render | undefined;
+  private _render: Render | undefined;
   @DomRenderNoProxy
   private _attribute?: T;
   @DomRenderNoProxy
   private _boundEventListeners: { element: Element, eventName: string, listener: (e: Event) => void }[] = [];
 
-  get render(): Render.Render | undefined {
+  get render(): Render | undefined {
     return this._render;
   }
 

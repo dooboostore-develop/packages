@@ -20,6 +20,6 @@
     "outDir": "./dist"
   },
   "typeRoots": ["./types", "./node_modules/@types"],
-  "include": ["./**/*.ts", "./**/*.tsx"],
+  "include": ["./types/index.d.ts","./**/*.ts", "./**/*.tsx"],
   "exclude": ["node_modules"]
 }

@@ -4,11 +4,6 @@ import { AfterCallBack, ElementSource, ExecuteState, OperatorExecuter, ReturnCon
 import { Render } from '../rawsets/Render';
 import { ScriptUtils } from '@dooboostore/core-web/script/ScriptUtils';
 
-declare global {
-  interface Window {
-    HTMLMetaElement: typeof HTMLMetaElement;
-  }
-}
 
 // 여기서 사용자가 등록한 TargetElement가 들어간다.
 export class DrTargetElementIsElement extends OperatorExecuter<string | null> {

@@ -39,9 +39,9 @@
     "url": "https://github.com/dooboostore-develop/packages"
   },
   "scripts": {
-    "build": "rm -rf dist && tsc -p tsconfig.build.json",
+    "tsc:build": "rm -rf dist && tsc -p tsconfig.build.json",
     "clean": "rm -rf  dist",
-    "npm:build": "pnpm run build && cp README.MD dist/ && pnpm pack && TARBALL_NAME=$(ls dooboostore-lib-web-*.tgz | head -n 1) && tar -xzf \"$TARBALL_NAME\" -C dist --strip-components=1 package/package.json && rm \"$TARBALL_NAME\"",
+    "npm:build": "pnpm run tsc:build && cp README.MD dist/ && pnpm pack && TARBALL_NAME=$(ls dooboostore-lib-web-*.tgz | head -n 1) && tar -xzf \"$TARBALL_NAME\" -C dist --strip-components=1 package/package.json && rm \"$TARBALL_NAME\"",
     "npm:clean": "rm -rf  dist",
     "npm:publish": "pnpm run npm:build && cd dist && pnpm publish --no-git-checks",
     "npm:publish:clean": "pnpm run npm:publish && rm -rf dist",

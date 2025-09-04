@@ -1,5 +1,5 @@
 import { ComponentBase } from '../ComponentBase';
-import { DomRender, RunConfig } from '../../DomRender';
+import { DomRender, DomRenderRunConfig } from '../../DomRender';
 import { RawSet } from '../../rawsets/RawSet';
 import { OtherData } from '../../lifecycle/OnChangeAttrRender';
 import { OnInitRender } from '../../lifecycle/OnInitRender';
@@ -100,7 +100,7 @@ export namespace CheckBox {
 
 
 export default {
-  checkBoxChecked: (config?: RunConfig) => {
+  checkBoxChecked: (config?: DomRenderRunConfig) => {
     return RawSet.createComponentTargetElement({
       name: `${CheckBox.selector}-checked`,
       template: '<div dr-if="!@this@.hidden" dr-option-strip="true">#innerHTML#</div>',
@@ -109,7 +109,7 @@ export default {
       }
     })
   },
-  checkBoxUnchecked: (config?: RunConfig) => {
+  checkBoxUnchecked: (config?: DomRenderRunConfig) => {
     return RawSet.createComponentTargetElement({
       name: `${CheckBox.selector}-unchecked`,
       template: '<div dr-if="!@this@.hidden" dr-option-strip="true" >#innerHTML#</div>',
@@ -118,7 +118,7 @@ export default {
       }
     })
   },
-  checkBox: (config?: RunConfig) => {
+  checkBox: (config?: DomRenderRunConfig) => {
     return RawSet.createComponentTargetElement({
       name: `${CheckBox.selector}`,
       template: '<label class="${@this@.getAttribute(\'class\')}$">\n' +

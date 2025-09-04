@@ -1,5 +1,5 @@
 import { ComponentBase } from '../ComponentBase';
-import { DomRender, RunConfig } from '../../DomRender';
+import { DomRender, DomRenderRunConfig } from '../../DomRender';
 import { RawSet } from '../../rawsets/RawSet';
 import { OtherData } from '../../lifecycle/OnChangeAttrRender';
 import { OnInitRender } from '../../lifecycle/OnInitRender';
@@ -108,7 +108,7 @@ export namespace Choose {
 
 
 export default {
-  chooseWhen: (config?: RunConfig) => {
+  chooseWhen: (config?: DomRenderRunConfig) => {
     return RawSet.createComponentTargetElement({
       name: `${Choose.selector}-when`,
       template: '<div dr-if="!@this@.hidden" dr-option-strip="true" >#innerHTML#</div>',
@@ -117,7 +117,7 @@ export default {
       }
     })
   },
-  chooseOtherWise: (config?: RunConfig) => {
+  chooseOtherWise: (config?: DomRenderRunConfig) => {
     return RawSet.createComponentTargetElement({
       name: `${Choose.selector}-other-wise`,
       template: '<div dr-if="!@this@.hidden" dr-option-strip="true" >#innerHTML#</div>',
@@ -126,7 +126,7 @@ export default {
       }
     })
   },
-  choose: (config?: RunConfig) => {
+  choose: (config?: DomRenderRunConfig) => {
     return RawSet.createComponentTargetElement({
       name: `${Choose.selector}`,
       template: '#innerHTML#',

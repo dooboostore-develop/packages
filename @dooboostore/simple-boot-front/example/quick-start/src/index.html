@@ -13,12 +13,15 @@
             <li>
                 <button dr-event-click="@this@.go()">go</button>
             </li>
+            <li>
+                <button dr-event-click="@this@.test()">test</button>
+            </li>
         </ul>
     </nav>
 
 </header>
 <main>
-    <div dr-this="@this@.child" ></div>
+    <dr-this value="${@this@.child}$"></dr-this>
 </main>
 <div class="good">g</div>
 <footer>

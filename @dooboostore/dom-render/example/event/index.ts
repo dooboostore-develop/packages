@@ -1,4 +1,4 @@
-import { DomRender } from '@dooboostore/dom-render/DomRender';
+import { DomRender, DomRenderRunConfig } from '@dooboostore/dom-render/DomRender';
 import { Config } from '@dooboostore/dom-render/configs/Config';
 import { ComponentSet } from '@dooboostore/dom-render/components/ComponentSet';
 import { OnDestroyRender } from '@dooboostore/dom-render/lifecycle/OnDestroyRender';
@@ -36,17 +36,24 @@ export class Profile {
 
 export class User implements OnChangeAttrRender {
   name='user';
+  checked: boolean | undefined = undefined;
   constructor() {
     console.log('User constructor');
+    setInterval(()=>{
+      console.log('!!', this.checked)
+    },1000)
   }
 
   onChangeAttrRender(name: string, val: any): void {
     console.log('User onChangeAttrRender', name, val);
   }
+  changeChecked(element: HTMLInputElement) {
+    console.log('-', this.checked, element.checked)
+  }
 
 }
 export class Sub implements OnDestroyRender, OnCreateRender, OnDrThisBind, OnDrThisUnBind, OnChangeAttrRender {
-  child= new ComponentSet(new User(), {template: '<div>user</div>'})
+  // child= new ComponentSet(new User(), {template: '<div>user</div>'})
 
   children = [
     new ComponentSet(new Profile(), {template: '<div>profile</div>'}),
@@ -116,7 +123,7 @@ export class Index implements OnCreateRender {
   // child = new ComponentSet(new Sub('sub0'), {styles: '', template: '<div><h1>subthis1</h1><div>0subthis <div dr-this="@this@.child"></div></div>' });
   // child = new ComponentSet(new Sub('sub0'), {styles: '', template: '<div><h1>subthis1</h1><div>0subthis <div dr-for-of="@this@.children" zz="#it#">ss</div></div>' });
   // child = new ComponentSet(new Sub('sub0'), {styles: '', template: '<div><h1>subthis1</h1><div>0subthis <div dr-for-of="@this@.children" dr-option-this="#it#">s#bb#s</div></div>' });
-  child = new ComponentSet(new Sub('sub0'), {styles: '', template: '<div><h1>subthis1</h1><div>0subthis</div> <div dr-on-rendered-init="console.log(window.document.body.innerHTML)">zzzz</div></div>' });
+  child = new ComponentSet(new Sub('sub0'), {styles: '', template: '<div><h1>subthis1</h1><div>0subthis</div> <div dr-on-rendered-init="console.log(\'window.document.body.innerHTML\')">zzzz</div></div>' });
   // child = new ComponentSet(new Sub('sub0'), {styles: '', template: '<div><h1>subthis1</h1><div>0subthis</div> <div dr-on-init="alert(11)">zzzz</div></div>' });
   // child = new ComponentSet(new Sub('sub0'), {styles: '', template: '<div><h1>subthis1</h1><div>0subthis <div dr-this="@this@.children[0]" zz="@this@.children[0]">ss</div></div>' });
   // subs = [
@@ -139,7 +146,7 @@ export class Index implements OnCreateRender {
 
 }
 
-const config: Config = {
+const config: DomRenderRunConfig = {
   window,
   scripts: {
     concat: function(data: string, str: string) {
@@ -147,8 +154,8 @@ const config: Config = {
     }
   },
   targetElements: [
-    DomRender.createComponent({ type: User, template: '<div>user</div>' }),
-    DomRender.createComponent({ type: Profile, styles:'div{background-color:blue;}', template: '<div dr-event-click="@this@.hidden = !@this@.hidden">profile: <div dr-if="@this@.hidden">[(@nearThis@)] #innerHTML# </divd></div>' }),
+    DomRender.createComponent({ type: User, template: '<div>user [<input type="checkbox" dr-checked-link="@this@.checked"  dr-event-change="@this@.changeChecked($element)">] </div>' }),
+    DomRender.createComponent({ type: Profile, styles:'div{background-color:cyan;}', template: '<div dr-event-click="@this@.hidden = !@this@.hidden">profile: <div dr-if="@this@.hidden">[(@nearThis@)] #innerHTML# </divd></div>' }),
     DomRender.createComponent({ type: Home, styles: `div{color:red}`, template: '<div dd="@this@">home  <!--@this@--> <div dr-this="@this@.dictionary">  ${@this@.name}$</div></div>' })
   ]
 };
