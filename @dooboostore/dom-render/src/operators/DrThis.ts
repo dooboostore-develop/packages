@@ -4,12 +4,51 @@ import { ComponentSet } from '../components/ComponentSet';
 import { ExecuteState } from './OperatorExecuter';
 import { isOnDrThisUnBind } from '../lifecycle/dr-this/OnDrThisUnBind';
 import { isOnDrThisBind } from '../lifecycle/dr-this/OnDrThisBind';
+import { ScriptUtils } from '@dooboostore/core-web/script/ScriptUtils';
+import { Render } from '../rawsets/Render';
 
 export class DrThis extends OperatorExecuterAttrRequire<string> {
   async executeAttrRequire(attr: any): Promise<ExecuteState> {
-    // console.log('drThis!!!!!!!!!!!!!',this.elementSource.attrs.drThis);
-    if (attr && this.elementSource.attrs.drThis) {
+    // const e = this.elementSource;
+    // console.log('drThis!!!!!!!!!!!!!', this.elementSource.attrs.drDetectIfOption, this.elementSource.attrs.drIfOption);
+    const optionIf = this.elementSource.attrs.drDetectIfOption ?? this.elementSource.attrs.drIfOption;
+    const ok = ScriptUtils.eval(`
+                ${this.render.bindScript}
+                const ok  = ${this.elementSource.attrs.drThis};
+                const option = ${optionIf};
+// console.log('cc')
+                if (option!==null) {
+                   return !!(ok && option); 
+                }
+                // console.log('vv', ${this.elementSource.attrs.drThis}, ${this.elementSource.attrs.drIfOption}, '${this.elementSource.attrs.drIfOption}');
+                return !!ok;
+                 // const t = ${this.elementSource.attrs.drThis};
+                 // return t;
+                // const ifOption = ${this.elementSource.attrs.drIfOption};
+                // if (ifOption !== null){
+                //   return !!(t && ifOption);
+                // }
+                // return !!t;
+                `, Object.assign(this.source.obj,
+      {
+        __render: Object.freeze({
+          drAttr: this.elementSource.attrs,
+          drAttrsOriginName: RawSet.drAttrsOriginName,
+          ...this.render
+        } as Render)
+      }
+    ));
+    // console.log('----zxvxcv-----!!!aa!', ok);
+    // if (!ok) {
+    //   this.elementSource.element.remove();
+    //   return ExecuteState.STOP;
+    // }
+
+    // console.log('----zxvxcv-----!!!!', attr);
+    if (attr && this.elementSource.attrs.drThis && ok) {
       let thisPath = this.elementSource.attrs.drThis;
+      // let optionIf = this.elementSource.attrs.drIfOption;
+      // console.log('drThis!!!!!!!!!!!!!, ', optionIf)
       if (attr instanceof ComponentSet) {
         // console.log('drThis!!!!!!!!!!->', attr)
         // if (this.rawSet.data) {
@@ -30,7 +69,8 @@ export class DrThis extends OperatorExecuterAttrRequire<string> {
           }
         }
         // 중요: componentSet 의 objPath를 보고 판단하는 중요한부분
-        thisPath = `${this.elementSource.attrs.drThis}${attr.config.objPath ? ('.' + attr.config.objPath) : ''}`;
+        thisPath = `${this.elementSource.attrs.drThis}${attr.config.objPath ? ('?.' + attr.config.objPath) : ''}`;
+        // console.log('thisPaththisPaththisPath',thisPath)
         this.setThisPath(thisPath);
         const componentBody = await RawSet.drThisCreate(this.rawSet, this.elementSource.element, thisPath, this.elementSource.attrs.drVarOption ?? '', this.elementSource.attrs.drStripOption, this.source.obj, this.source.config, attr);
         this.returnContainer.fag.append(componentBody)
@@ -57,7 +97,7 @@ export class DrThis extends OperatorExecuterAttrRequire<string> {
 
     // if (this.rawSet.point.start instanceof HTMLMetaElement && this.rawSet.point.end instanceof HTMLMetaElement) {
 
-    if ( this.rawSet.point.start instanceof this.source.config.window.HTMLMetaElement && this.rawSet.point.end instanceof this.source.config.window.HTMLMetaElement) {
+    if (this.rawSet.point.start instanceof this.source.config.window.HTMLMetaElement && this.rawSet.point.end instanceof this.source.config.window.HTMLMetaElement) {
       this.rawSet.point.start.setAttribute('this-path', thisPath)
       this.rawSet.point.end.setAttribute('this-path', thisPath)
     }

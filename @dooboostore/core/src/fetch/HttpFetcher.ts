@@ -121,7 +121,7 @@ export abstract class HttpFetcher<
       // const url: URL |  string = target.url;
       // if (typeof target.url === 'string') {
       // }
-      const searchParams = ConvertUtils.toURLSearchParams(target.searchParams);
+      const searchParams = ConvertUtils.toURLSearchParams(target.searchParams ?? {});
 
       try {
         const url = typeof target.url === 'string' ? new URL(target.url) : target.url;

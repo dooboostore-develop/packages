@@ -78,7 +78,7 @@ export abstract class ComponentBase<T = any> implements OnChangeAttrRender, OnCr
 
   private _queryElements(selector: string, rawSet:RawSet): Element[] {
     const e = this.getElement();
-    console.log('queryElement-->', e);
+    // console.log('queryElement-->', e);
     if (e) {
       return ElementUtils.querySelectorAll(e, selector);
     } else {

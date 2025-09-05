@@ -59,6 +59,7 @@ export class ScriptUtils {
       return Function(`"use strict"; ${script} `).bind(thisTarget)() as T;
     }catch (e) {
       console.error('eval error', e)
+      console.error(script)
       return undefined;
     }
   }
