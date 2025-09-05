@@ -1,7 +1,7 @@
 import { Promises } from '@dooboostore/core/promise';
 
 export namespace ElementUtils {
-
+  export type Attr = {name: string, value: any}
 
   export type LoadImageCallbackType = { onload: (img: HTMLImageElement) => void, onerror: OnErrorEventHandler };
   export type LoadAudioCallbackType = { onload: (img: HTMLAudioElement) => void, onerror: (e: ErrorEvent) => void };
@@ -106,5 +106,49 @@ export namespace ElementUtils {
       }
     }
     return [];
+  }
+
+
+export const selectorElements = (selector: string, element: Element|Document = document): Element[] => {
+    return Array.prototype.slice.call(element.querySelectorAll(selector));
+  }
+
+export const selectorNodes = (selector: string, element: Element|Document = document) => {
+    return element.querySelectorAll(selector);
+  }
+
+export const removeAttribute = (result: Element, attrs: string[]) => {
+    attrs.forEach(it => {
+      result.removeAttribute(it)
+    });
+  }
+
+export const setAttribute = (result: Element, attrs: string[]) => {
+    attrs.forEach(it => {
+      result.setAttribute(it, '')
+    });
+  }
+
+export const setAttributeAttr = (result: Element, attrs: Attr[]) => {
+    attrs.forEach(it => {
+      result.setAttribute(it.name, it.value)
+    });
+  }
+
+export const getAttributeToObject = (input: Element): any => {
+    const attribute = {} as any;
+    input.getAttributeNames().forEach(ait => {
+      attribute[ait] = input.getAttribute(ait);
+    });
+    return attribute;
+  }
+
+export const getStyleToObject = (input: HTMLElement): any => {
+    const style = {} as any;
+    for (let i = 0; i < input.style.length; i++) {
+      const key = input.style[i];
+      style[key] = (input.style as any)[key];
+    }
+    return style;
   }
 }

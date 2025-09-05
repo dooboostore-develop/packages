@@ -174,7 +174,7 @@ export class SimpleBootFront extends SimpleApplication {
         // TODO: 왜 canActivate가 두번 호출되는지 확인 필요!! 그래서 setTimeout으로 처리함 원인 모르겠음 아 씨발
         setTimeout(() => {
           this.routing<SimAtomic, any>(intent).then(it => {
-            console.log('routing------', it)
+            // console.log('routing------', it)
             this.afterSetting();
 
             // console.log('------------!!!!!', targetChildNodes, targetChildNodes.length);
@@ -298,7 +298,7 @@ export class SimpleBootFront extends SimpleApplication {
         const aClasss = activeClasss?.split(',');
         const inActiveClasss = it.getAttribute('router-inactive-class');
         const iClasss = inActiveClasss?.split(',');
-        if (this.domRenderRouter.getPath() === link) {
+        if (this.domRenderRouter.getPathName() === link) {
           if (aClasss && aClasss.length > 0) {
             it.classList.add(...aClasss);
           }

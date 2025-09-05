@@ -410,7 +410,8 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
     // const rootDomRenderProxy = this.findRootDomRenderProxy();
     // console.log('set!!!!!!!', fullPathInfo, rootDomRenderProxy)
     // console.log('--------rootDom',fullPathInfo, rootDomRenderProxy, rootDomRenderProxy._domRender_proxy)
-    DocumentUtils.querySelectorAllByAttributeName(this.config.window.document, EventManager.normalAttrMapAttrName)?.forEach(elementInfo => {
+    const rootElement = this.config.rootElement ?? this.config.window.document;
+    DocumentUtils.querySelectorAllByAttributeName(rootElement, EventManager.normalAttrMapAttrName)?.forEach(elementInfo => {
       // @ts-ignore
       const targets = new Map<string,string>(ScriptUtils.evalReturn<[string, string][]>(elementInfo.value));
       Array.from(targets.entries()).filter(([key, value])=>value.trim()).filter(isDefined).flatMap(([key,valueScript])=> {
@@ -428,31 +429,35 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
       })
     })
 
-    // // 여기서 링크 같은거 해줘야함
-    // DocumentUtils.querySelectorAllByAttributeName(this.config.window.document, EventManager.linkTargetMapAttrName)?.forEach(elementInfo => {
-    //   // @ts-ignore
-    //    const targets = new Map<string,string>(ScriptUtils.evalReturn<[string, string][]>(elementInfo.value));
-    //
-    //   Array.from(targets.entries()).filter(([key, value])=>value.trim()).filter(isDefined).flatMap(([key,valueScript])=> {
-    //     return fullPathInfo.flat().filter(it => valueScript.includes(`this.${it.path}`)).flatMap(it=> ({key, valueScript: valueScript, pathInfo: it}));
-    //   }).forEach(info=> {
-    //     const value1 = ScriptUtils.evalReturn(info.valueScript, info.pathInfo.obj);
-    //     if (value1 === null) {
-    //       elementInfo.element.removeAttribute(info.key);
-    //     } else {
-    //       elementInfo.element.setAttribute(info.key, value1);
-    //     }
-    //   })
-    //
-    //   Array.from(targets.entries()).filter(([key, value])=>value.trim()).filter(isDefined).flatMap(([key,valueScript])=> {
-    //     return fullPathInfo.flat().filter(it => valueScript.includes(`this.${it.path}`)).flatMap(it=> ({key, valueScript: valueScript, pathInfo: it}));
-    //   }).forEach(info=> {
-    //    const linkInfo = EventManager.linkAttrs.find(it=>it.name === info.key)
-    //     if (linkInfo) {
-    //       elementInfo.element[linkInfo.property] = value
-    //     }
-    //   })
-    // })
+    //여기서 링크 같은거 해줘야함  *-link로 변수값이 변경되면 그걸 참고하고있는 다른것들에도 해줘야한다.
+    DocumentUtils.querySelectorAllByAttributeName(rootElement, EventManager.linkTargetMapAttrName)?.forEach(elementInfo => {
+      // @ts-ignore
+       const targets = new Map<string,string>(ScriptUtils.evalReturn<[string, string][]>(elementInfo.value));
+
+      Array.from(targets.entries()).filter(([key, value])=>value.trim()).filter(isDefined).flatMap(([key,valueScript])=> {
+        return fullPathInfo.flat().filter(it => valueScript.includes(`this.${it.path}`)).flatMap(it=> ({key, valueScript: valueScript, pathInfo: it}));
+      }).forEach(info=> {
+        const value1 = ScriptUtils.evalReturn(info.valueScript, info.pathInfo.obj);
+        const applyAttributeName = EventManager.linkAttrs.find(it => it.name === info.key);
+        if (applyAttributeName) {
+          if (value1 === null) {
+            elementInfo.element.removeAttribute(applyAttributeName.property);
+          } else {
+            // console.log('ppppppppppppppppppppppp', applyAttributeName, elementInfo)
+            elementInfo.element.setAttribute(applyAttributeName.property, value1);
+          }
+        }
+      })
+
+      Array.from(targets.entries()).filter(([key, value])=>value.trim()).filter(isDefined).flatMap(([key,valueScript])=> {
+        return fullPathInfo.flat().filter(it => valueScript.includes(`this.${it.path}`)).flatMap(it=> ({key, valueScript: valueScript, pathInfo: it}));
+      }).forEach(info=> {
+       const linkInfo = EventManager.linkAttrs.find(it=>it.name === info.key)
+        if (linkInfo) {
+          elementInfo.element[linkInfo.property] = value
+        }
+      })
+    })
     if (('onBeforeReturnSet' in receiver) && typeof p === 'string' && !(this.config.proxyExcludeOnBeforeReturnSets ?? []).concat(excludeGetSetPropertys).includes(p)) {
       if(isOnBeforeReturnSet(receiver)){
         receiver.onBeforeReturnSet?.(p, value, fullPathInfo.map(it => it.map(it=>it.path).join()));

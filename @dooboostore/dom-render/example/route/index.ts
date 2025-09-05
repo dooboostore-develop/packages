@@ -83,7 +83,7 @@ class CustomRouter extends Router<Index> {
     return LocationUtils.hash(this.config.window) || '/';
   }
 
-  getPath(): string {
+  getPathName(): string {
     return LocationUtils.hashPath(this.config.window) || '/';
   }
 

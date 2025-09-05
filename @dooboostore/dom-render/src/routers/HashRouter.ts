@@ -81,7 +81,11 @@ export class HashRouter extends Router {
     return LocationUtils.hash(this.config.window) || '/';
   }
 
-  getPath(): string {
+  getHref(): string {
+    return this.config.window.location.href;
+  }
+
+  getPathName(): string {
     return LocationUtils.hashPath(this.config.window) || '/';
   }
 

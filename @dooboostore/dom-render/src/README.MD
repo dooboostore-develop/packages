@@ -394,6 +394,40 @@ export class MyComponent extends ComponentBase<{ 'title': string, 'show-icon': s
 ```
 When attributes change, the `converter` function will be executed before the value is assigned to the property. For `showIcon`, the string `"true"` or `"false"` will be converted to a boolean. For `createdAt`, the date string will be converted to a `Date` object.
 
+### Binding to Methods
+
+The `@attribute` decorator can also be applied to methods. When the corresponding HTML attribute changes, the decorated method will be invoked with the new attribute value as its argument. This allows you to execute custom logic directly in response to attribute changes.
+
+**Component (`MyComponent.ts`) - Method Example**
+```typescript
+import { ComponentBase, attribute } from '@dooboostore/dom-render';
+
+export class MyComponent extends ComponentBase<{ 'data-value': string }> {
+    public receivedData: string = '';
+
+    @attribute({ name: 'data-value' })
+    onDataValueChange(newValue: string): void {
+        this.receivedData = `Method received: ${newValue}`;
+        console.log(this.receivedData);
+    }
+}
+```
+
+**Template (`index.html`) - Method Example**
+```html
+<my-component data-value="initial"></my-component>
+
+<p>${@this@.receivedData}$</p>
+
+<script>
+    setTimeout(() => {
+        const comp = document.querySelector('my-component');
+        comp.setAttribute('data-value', 'updated value');
+    }, 1000);
+</script>
+```
+When `data-value` attribute changes, the `onDataValueChange` method will be called with the new value.
+
 </details>
 
 ## Element Query with `@query` decorator
@@ -555,6 +589,49 @@ In this example, when the "Submit" button is clicked, the `onActionClick` method
 ```html
 dr-value: <input type="text" dr-value="@this@.office.name"> <br>
 dr-value-link: <input type="text" dr-value-link="@this@.office.addr.street"> <br>
+```
+</details>
+
+## Element State Attributes
+<details>
+  <summary>dr-checked, dr-selected, dr-readonly, dr-disabled<strong>🔻(click)</strong></summary>
+
+These attributes allow you to bind boolean values directly to the `checked`, `selected`, `readonly`, and `disabled` properties of HTML elements.
+
+*   `dr-checked`: Binds the `checked` attribute of an input (checkbox/radio) to a boolean value.
+*   `dr-selected`: Binds the `selected` attribute of an option to a boolean value.
+*   `dr-readonly`: Binds the `readonly` attribute of an input to a boolean value.
+*   `dr-disabled`: Binds the `disabled` attribute of an input/button/etc. to a boolean value.
+
+### Example
+
+```html
+<!-- Example for dr-checked -->
+<input type="checkbox" dr-checked="@this@.isChecked">
+<p>Checkbox is: ${@this@.isChecked}$</p>
+
+<!-- Example for dr-selected -->
+<select>
+  <option value="apple" dr-selected="@this@.isAppleSelected">Apple</option>
+  <option value="banana" dr-selected="@this@.isBananaSelected">Banana</option>
+</select>
+
+<!-- Example for dr-readonly -->
+<input type="text" dr-readonly="@this@.isReadOnly" value="Some text">
+
+<!-- Example for dr-disabled -->
+<button dr-disabled="@this@.isDisabled">Click Me</button>
+<input type="text" dr-disabled="@this@.isDisabled" value="Disabled input">
+```
+```typescript
+class Data {
+  isChecked = true;
+  isAppleSelected = false;
+  isBananaSelected = true;
+  isReadOnly = false;
+  isDisabled = true;
+}
+// ... DomRender.run(new Data(), ...)
 ```
 </details>
 

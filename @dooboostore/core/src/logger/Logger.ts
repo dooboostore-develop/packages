@@ -68,7 +68,7 @@ export class  Logger {
       typeof arg === "object" ? JSON.stringify(arg) : String(arg)
     ).join(" ");
 
-    const format = this.config.format ?? '';
+    const format = this.config?.format ?? '';
     // 포맷 파싱 및 적용
     let output = format;
     // 날짜 처리: ${date:'형식'}

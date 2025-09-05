@@ -6,7 +6,7 @@ export namespace EventUtils {
       const handler = (event: HTMLElementEventMap[K]) => subscriber.next(event);
       element.addEventListener(type, handler, options);
       return () => {
-        element.removeEventListener(type, handler, options);
+        element.removeEventListener(type, handler as any, options);
       };
     });
   }

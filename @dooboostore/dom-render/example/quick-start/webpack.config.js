@@ -41,5 +41,6 @@ module.exports = {
     compress: true,
     port: 8081,
     hot: true,
+    watchFiles: ['index.ts', 'index.html'],
   },
 }; 

@@ -55,6 +55,9 @@ export class DomRender {
     if (typeof Promise !== 'undefined' && targetConfig.proxyExcludeTyps.indexOf(Promise) === -1) {
       targetConfig.proxyExcludeTyps.push(Promise);
     }
+    if (typeof ResizeObserver !== 'undefined' && targetConfig.proxyExcludeTyps.indexOf(ResizeObserver) === -1) {
+      targetConfig.proxyExcludeTyps.push(ResizeObserver);
+    }
     if (typeof ImageBitmap !== 'undefined' && targetConfig.proxyExcludeTyps.indexOf(ImageBitmap) === -1) {
       targetConfig.proxyExcludeTyps.push(ImageBitmap);
     }

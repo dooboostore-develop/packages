@@ -4,7 +4,7 @@ import { ScriptUtils } from '@dooboostore/core-web/script/ScriptUtils';
 import { EventManager } from '../events/EventManager';
 import { Config } from '../configs/Config';
 import { Range } from '../iterators/Range';
-import { DomUtils } from '@dooboostore/core-web/dom/DomUtils';
+import { ElementUtils } from '@dooboostore/core-web/element/ElementUtils';
 import { ComponentSet } from '../components/ComponentSet';
 import { DrPre } from '../operators/DrPre';
 import { Dr } from '../operators/Dr';
@@ -118,6 +118,8 @@ export class RawSet {
     drStripElement: RawSet.DR_STRIP_NAME,
     drReplaceTargetElementIs: RawSet.DR_REPLACE_TARGET_ELEMENT_IS_NAME,
     drStripOption: RawSet.DR_STRIP_OPTIONNAME,
+    drIfOption: RawSet.DR_IF_OPTIONNAME,
+    drDetectIfOption: RawSet.DR_DETECT_IF_OPTIONNAME,
     drDestroyOption: RawSet.DR_DESTROY_OPTIONNAME,
     drHasKeysOption: RawSet.DR_HAS_KEYS_OPTIONNAME,
     drKeyOption: RawSet.DR_KEY_OPTIONNAME
@@ -250,7 +252,7 @@ export class RawSet {
       // console.log('cNodecNodecNode', cNode);
       let attribute = {};
       if (cNode.nodeType === Node.ELEMENT_NODE) {
-        attribute = DomUtils.getAttributeToObject(cNode as Element);
+        attribute = ElementUtils.getAttributeToObject(cNode as Element);
       }
 
       const __render = Object.freeze({
@@ -264,7 +266,7 @@ export class RawSet {
         scriptUtils: ScriptUtils,
         nearThis: this.findNearThis(obj),
         parentThis: this.findParentThis(obj),
-        bindScript: `
+        bindScript: ` /** render **/
                     const ${EventManager.SCRIPTS_VARNAME} = this.__render.scripts;
                     const ${EventManager.RAWSET_VARNAME} = this.__render.rawSet;
                     const ${EventManager.ELEMENT_VARNAME} = this.__render.element;
@@ -315,7 +317,7 @@ export class RawSet {
       } else if (cNode.nodeType === Node.ELEMENT_NODE) {
         const element = cNode as Element;
         // console.log('target-->', element)
-        const drAttr = {
+        const drAttr:Attrs = {
           dr: this.getAttributeAndDelete(element, RawSet.DR_NAME),
           drIf: this.getAttributeAndDelete(element, RawSet.DR_IF_NAME),
           drFor: this.getAttributeAndDelete(element, RawSet.DR_FOR_NAME),
@@ -331,6 +333,7 @@ export class RawSet {
           drStripElement: this.getAttributeAndDelete(element, RawSet.DR_STRIP_NAME),
           drReplaceTargetElementIs: this.getAttributeAndDelete(element, RawSet.DR_REPLACE_TARGET_ELEMENT_IS_NAME),
           drItOption: this.getAttributeAndDelete(element, RawSet.DR_IT_OPTIONNAME),
+          drIfOption: this.getAttributeAndDelete(element, RawSet.DR_IF_OPTIONNAME),
           drVarOption: this.getAttributeAndDelete(element, RawSet.DR_VAR_OPTIONNAME),
           drNextOption: this.getAttributeAndDelete(element, RawSet.DR_NEXT_OPTIONNAME),
           drAfterOption: this.getAttributeAndDelete(element, RawSet.DR_AFTER_OPTIONNAME),
@@ -338,8 +341,10 @@ export class RawSet {
           drCompleteOption: this.getAttributeAndDelete(element, RawSet.DR_COMPLETE_OPTIONNAME),
           drStripOption: this.getAttributeAndDelete(element, RawSet.DR_STRIP_OPTIONNAME),
           drDestroyOption: this.getAttributeAndDelete(element, RawSet.DR_DESTROY_OPTIONNAME),
-          drKeyOption: this.getAttributeAndDelete(element, RawSet.DR_KEY_OPTIONNAME)
-        } as Attrs;
+          drKeyOption: this.getAttributeAndDelete(element, RawSet.DR_KEY_OPTIONNAME),
+          drDetectIfOption: this.getAttribute(element, RawSet.DR_DETECT_IF_OPTIONNAME),
+          drHasKeysOption: this.getAttribute(element, RawSet.DR_HAS_KEYS_OPTIONNAME),
+        };
         drAttrs.push(drAttr);
         // 아래 순서 중요
         const operators = [
@@ -1539,7 +1544,7 @@ export class RawSet {
     if (!element) {
       return undefined;
     }
-    const attribute = DomUtils.getAttributeToObject(element);
+    const attribute = ElementUtils.getAttributeToObject(element);
     const normalAttribute = attribute[EventManager.normalAttrMapAttrName];
     if (normalAttribute) {
       new Map<string, string>(JSON.parse(normalAttribute)).forEach((v, k) => {

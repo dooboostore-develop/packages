@@ -2,7 +2,7 @@ import { Observable } from '@dooboostore/core/message';
 
 export namespace DocumentUtils {
 
-  export const querySelectorAllByAttributeName = (document: Document, attributeName: string): {element: Element, value: string | null}[] =>{
+  export const querySelectorAllByAttributeName = (document: Document | Element, attributeName: string): {element: Element, value: string | null}[] =>{
     const elements: {element:Element, value: (string | null)}[] = [];
     document.querySelectorAll(`[${attributeName}]`)?.forEach((element) => {
       elements.push({element: element, value: element.getAttribute(attributeName)});

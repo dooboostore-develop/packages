@@ -19,5 +19,17 @@
 <button dr-event-click="alert(1)">
 rr
 </button>
+${@this@.address}$
+<input dr-value-link="@this@.address">
+<button dr-event-click="@this@.address = new Date().toString()">
+changeAddr
+</button>
+
+<input type="datetime-local" class="filter-value" placeholder="YYYY-MM-DD HH:mm:ss" dr-value-link="@this@.dateFilter.to" dr-event-input="@this@.dateFilter.to = $element.value">
+<input type="text" dr-value-link="@this@.dateFilter.to">${@this@.dateFilter.to}$
+<!--<input type="text" dr-value-link="@this@.dateFilter.to">-->
+<button dr-event-click="@this@.clearDateFilter()">
+    clearDateFilter
+</button>
 </body>
 </html>

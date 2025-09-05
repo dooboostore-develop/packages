@@ -1,11 +1,10 @@
-import { Sim } from '@dooboostore/simple-boot/decorators/SimDecorator';
+import { Lifecycle, Sim } from '@dooboostore/simple-boot/decorators/SimDecorator';
 import { Route, Router } from '@dooboostore/simple-boot/decorators/route/Router';
 import { SimpleApplication } from '@dooboostore/simple-boot/SimpleApplication';
 import { SimOption } from '@dooboostore/simple-boot/SimOption';
 import { Intent } from '@dooboostore/simple-boot/intent/Intent';
 import { Inject } from '@dooboostore/simple-boot/decorators/inject/Inject';
 import { RouterAction, RoutingDataSet } from '@dooboostore/simple-boot/route/RouterAction';
-
 
 
 @Sim
@@ -156,28 +155,39 @@ class ApiRouter {
 
 
 
-@Sim
+@Sim({
+  scope: Lifecycle.Transient
+})
 @Router({
   path: '',
   routers: [SubRouter, Sub2Router, Sub3Router, ApiRouter]
 })
 class RootRouter implements RouterAction {
+  constructor() {
+    console.log('RootRouter constructor')
+  }
 
   async canActivate(url: RoutingDataSet, data?: any): Promise<void> {
     console.log('RootRouter CanActivate~~', url, data)
   }
-
+say() {
+    console.log('RootRouter say() 호출됨');
+    return 'RootRouter say';
+  }
 }
 
 (async ()=>{
-  const option  = new SimOption({ rootRouter: RootRouter })
+  const option  = new SimOption({  })
   const app = new SimpleApplication(option);
   app.run();
 
+  const r = app.sim(RootRouter)
+  r.say();
   const routerManager = app.routerManager;
-  const r = await routerManager.routing(new Intent('/user1/office'));
+  // const r = await routerManager.routing(new Intent('/user1/office'));
+  // const ro = await routerManager.routing(new Intent('/user1/office'));
 
-  console.log('router', r.router.getValue(), r.getRouterPaths(), r.path, r.pathData, r.getModuleInstance(), r.intent);
+  // console.log('router', r.router.getValue(), r.getRouterPaths(), r.path, r.pathData, r.getModuleInstance(), r.intent);
 
   // console.log('-->', r.propertyKeys)
   // console.log('-->', r.routerChains)

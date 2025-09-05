@@ -68,7 +68,11 @@ export class PathRouter extends Router {
     return url.pathname + url.search;
   }
 
-  getPath(): string {
+  getHref(): string {
+    return this.config.window.location.href;
+  }
+
+  getPathName(): string {
     return this.config.window.location.pathname;
   }
 

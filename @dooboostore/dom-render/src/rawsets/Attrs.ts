@@ -20,6 +20,8 @@ export type Attrs = {
     drBeforeOption: string | null;
     drCompleteOption: string | null;
     drStripOption: string | null;
+    drIfOption: string | null;
+    drDetectIfOption: string | null;
     drDestroyOption: string | null;
     drHasKeysOption: string | null;
     drKeyOption: string | null;

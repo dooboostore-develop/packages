@@ -1,6 +1,6 @@
 import { Config } from '../configs/Config';
 import { ScriptUtils } from '@dooboostore/core-web/script/ScriptUtils';
-import { DomUtils } from '@dooboostore/core-web/dom/DomUtils';
+import { ElementUtils } from '@dooboostore/core-web/element/ElementUtils';
 import { Range } from '../iterators/Range';
 import { DomRenderFinalProxy } from '../types/Types';
 
@@ -34,6 +34,15 @@ export class EventManager {
   public static readonly eventParam = EventManager.attrPrefix + 'event';
   public static readonly onInitAttrName = EventManager.attrPrefix + 'on-init';
   public static readonly valueAttrName = EventManager.attrPrefix + 'value';
+  public static readonly checkedAttrName = EventManager.attrPrefix + 'checked';
+  public static readonly selectedAttrName = EventManager.attrPrefix + 'selected';
+  public static readonly readonlyAttrName = EventManager.attrPrefix + 'readonly';
+  public static readonly disabledAttrName = EventManager.attrPrefix + 'disabled';
+  public static readonly hiddenAttrName = EventManager.attrPrefix + 'hidden';
+  public static readonly requiredAttrName = EventManager.attrPrefix + 'required';
+  public static readonly openAttrName = EventManager.attrPrefix + 'open';
+
+  // link는 쓰지 않는걸 추천한다 라이프 사이클 꼬인다 다른 프레임워크에서도 양방향은 지양 한다
   public static linkAttrs = [
     {name: EventManager.attrPrefix + 'value-link', property: 'value', event: 'input'},
     {name: EventManager.attrPrefix + 'hidden-link', property: 'value', event: 'input'},
@@ -74,13 +83,20 @@ export class EventManager {
   public static readonly CURRENT_THIS_VARNAME = '$currentThis';
   public static readonly CURRENT_THIS_PATH_VARNAME = '$currentThisPath';
   public static readonly NEAR_THIS_PATH_VARNAME = '$nearThisPath';
-  public static readonly VARNAMES = [EventManager.SCRIPTS_VARNAME, EventManager.FAG_VARNAME, EventManager.RAWSET_VARNAME, EventManager.RANGE_VARNAME, EventManager.ROUTER_VARNAME, EventManager.ELEMENT_VARNAME, EventManager.TARGET_VARNAME, EventManager.EVENT_VARNAME, EventManager.COMPONENT_VARNAME, EventManager.INNERHTML_VARNAME, EventManager.ATTRIBUTE_VARNAME, EventManager.ATTRIBUTE_VARNAME, EventManager.CREATOR_META_DATA_VARNAME, EventManager.PARENT_THIS_PATH_VARNAME, EventManager.PARENT_THIS_VARNAME, EventManager.attrAttrName];
+  public static readonly VARNAMES = [EventManager.SCRIPTS_VARNAME, EventManager.FAG_VARNAME, EventManager.RAWSET_VARNAME, EventManager.RANGE_VARNAME, EventManager.ROUTER_VARNAME, EventManager.ELEMENT_VARNAME, EventManager.TARGET_VARNAME, EventManager.EVENT_VARNAME, EventManager.COMPONENT_VARNAME, EventManager.INNERHTML_VARNAME, EventManager.ATTRIBUTE_VARNAME, EventManager.ATTRIBUTE_VARNAME, EventManager.CREATOR_META_DATA_VARNAME, EventManager.PARENT_THIS_PATH_VARNAME, EventManager.PARENT_THIS_VARNAME];
 
   public static readonly WINDOW_EVENT_POPSTATE = 'popstate';
   public static readonly WINDOW_EVENT_RESIZE = 'resize';
   public static readonly WINDOW_EVENTS = [EventManager.WINDOW_EVENT_POPSTATE, EventManager.WINDOW_EVENT_RESIZE];
   public static readonly attrNames = [
     EventManager.valueAttrName,
+    EventManager.checkedAttrName,
+    EventManager.selectedAttrName,
+    EventManager.readonlyAttrName,
+    EventManager.disabledAttrName,
+    EventManager.hiddenAttrName,
+    EventManager.requiredAttrName,
+    EventManager.openAttrName,
     EventManager.attrAttrName,
     EventManager.normalAttrMapAttrName,
     EventManager.styleAttrName,
@@ -252,7 +268,7 @@ export class EventManager {
         event,
         element,
         target: event.target,
-        attribute: DomUtils.getAttributeToObject(element),
+        attribute: ElementUtils.getAttributeToObject(element),
         router: config?.router,
         range: Range.range,
         scripts: EventManager.setBindProperty(config?.scripts, componentInstance),
@@ -340,7 +356,7 @@ export class EventManager {
           }
         }
 
-        const attributes = DomUtils.getAttributeToObject(element);
+        const attributes = ElementUtils.getAttributeToObject(element);
         const params = {} as any;
         const prefix = attr + ':';
         Object.entries(attributes).filter(([k, v]) => k.startsWith(prefix)).forEach(([k, v]) => {
@@ -380,6 +396,69 @@ export class EventManager {
         }
       }
     });
+    this.procAttr<HTMLInputElement>(childNodes, EventManager.checkedAttrName, (it, attribute) => {
+      const script = attribute;
+      if (script) {
+        const data = ScriptUtils.evalReturn(script, obj);
+        if (it.checked!== data) {
+          it.checked = data;
+        }
+      }
+    });
+    this.procAttr<HTMLOptionElement>(childNodes, EventManager.selectedAttrName, (it, attribute) => {
+      const script = attribute;
+      if (script) {
+        const data = ScriptUtils.evalReturn(script, obj);
+        if (it.selected!== data) {
+          it.selected = data;
+        }
+      }
+    });
+    this.procAttr<HTMLInputElement>(childNodes, EventManager.readonlyAttrName, (it, attribute) => {
+      const script = attribute;
+      if (script) {
+        const data = ScriptUtils.evalReturn(script, obj);
+        if (it.readOnly!== data) {
+          it.readOnly = data;
+        }
+      }
+    });
+    this.procAttr<HTMLInputElement>(childNodes, EventManager.disabledAttrName, (it, attribute) => {
+      const script = attribute;
+      if (script) {
+        const data = ScriptUtils.evalReturn(script, obj);
+        if (it.disabled!== data) {
+          it.disabled = data;
+        }
+      }
+    });
+    this.procAttr<HTMLElement>(childNodes, EventManager.hiddenAttrName, (it, attribute) => {
+      const script = attribute;
+      if (script) {
+        const data = ScriptUtils.evalReturn(script, obj);
+        if (it.hidden!== data) {
+          it.hidden = data;
+        }
+      }
+    });
+    this.procAttr<HTMLInputElement>(childNodes, EventManager.requiredAttrName, (it, attribute) => {
+      const script = attribute;
+      if (script) {
+        const data = ScriptUtils.evalReturn(script, obj);
+        if (it.required!== data) {
+          it.required = data;
+        }
+      }
+    });
+    this.procAttr<HTMLDialogElement>(childNodes, EventManager.openAttrName, (it, attribute) => {
+      const script = attribute;
+      if (script) {
+        const data = ScriptUtils.evalReturn(script, obj);
+        if (it.open!== data) {
+          it.open = data;
+        }
+      }
+    });
 
     this.procAttr(childNodes, EventManager.normalAttrMapAttrName, (it, attribute) => {
       const map = new Map<string, string>(JSON.parse(attribute));
@@ -387,7 +466,7 @@ export class EventManager {
         const data = ScriptUtils.eval(`const $element = this.element;  return ${v} `, Object.assign(obj, {
           __render: Object.freeze({
             element: it,
-            attribute: DomUtils.getAttributeToObject(it)
+            attribute: ElementUtils.getAttributeToObject(it)
           })
         }));
         if (data === null) {
@@ -406,6 +485,8 @@ export class EventManager {
 
     EventManager.linkAttrs.forEach(linkInfo => {
       this.procAttr<HTMLElement>(childNodes, linkInfo.name, (it, varName) => {
+
+        // console.log('ink??????????')
         if (varName) {
           const ownerVariablePathName = it.getAttribute(EventManager.ownerVariablePathAttrName);
           const mapScript = it.getAttribute(`${linkInfo.name}:map`);
@@ -468,7 +549,7 @@ export class EventManager {
         ScriptUtils.eval(`${this.getBindScript(config)}; ${script} `, Object.assign(obj, {
           __render: Object.freeze({
             element: it,
-            attribute: DomUtils.getAttributeToObject(it),
+            attribute: ElementUtils.getAttributeToObject(it),
             ...config?.eventVariables
           })
         }));
@@ -496,7 +577,7 @@ export class EventManager {
         ScriptUtils.eval(`${this.getBindScript(config)}; ${script} `, Object.assign(obj, {
           __render: Object.freeze({
             element: it,
-            attribute: DomUtils.getAttributeToObject(it),
+            attribute: ElementUtils.getAttributeToObject(it),
             ...config?.eventVariables
           })
         }));
@@ -505,6 +586,7 @@ export class EventManager {
   }
 
   public changeVar(obj: any, elements: Set<Element> | Set<ChildNode>, varName?: string, config?: Config) {
+    // console.log('changeVar', obj, elements, varName)
     this.procAttr(elements, EventManager.styleAttrName, (it, attribute) => {
       let script = attribute;
       if (script) {
@@ -514,7 +596,7 @@ export class EventManager {
         const data = ScriptUtils.eval(`const $element = this.__render.element;  ${script} `, Object.assign(obj, {
           __render: Object.freeze({
             element: it,
-            attribute: DomUtils.getAttributeToObject(it)
+            attribute: ElementUtils.getAttributeToObject(it)
           })
         }));
         if (typeof data === 'string') {
@@ -540,7 +622,7 @@ export class EventManager {
         const data = ScriptUtils.eval(`const $element = this.element;  ${script} `, Object.assign(obj, {
           __render: Object.freeze({
             element: it,
-            attribute: DomUtils.getAttributeToObject(it)
+            attribute: ElementUtils.getAttributeToObject(it)
           })
         }));
 
@@ -579,7 +661,7 @@ export class EventManager {
     });
     sets.forEach(it => {
       const attr = it.getAttribute(attrName);
-      const attrs = DomUtils.getAttributeToObject(it);
+      const attrs = ElementUtils.getAttributeToObject(it);
       if (attr) {
         callBack(it as T, attr, attrs);
       }

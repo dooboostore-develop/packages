@@ -55,7 +55,7 @@ export abstract class Router<T = any> {
   }
 
   testRegexp(regexp: string): boolean {
-    const b = RegExp(regexp).test(this.getPath());
+    const b = RegExp(regexp).test(this.getPathName());
     return b;
   }
 
@@ -69,7 +69,7 @@ export abstract class Router<T = any> {
 
   getRouteData(urlExpression?: string): RouteData {
     const newVar = {
-      path: this.getPath(),
+      path: this.getPathName(),
       url: this.getUrl(),
       searchParams: this.getSearchParams()
     } as RouteData;
@@ -110,7 +110,7 @@ export abstract class Router<T = any> {
     return this.config.window.history.state;
   }
 
-  getPathData(urlExpression: string, currentUrl = this.getPath()): any {
+  getPathData(urlExpression: string, currentUrl = this.getPathName()): any {
     return Expression.Path.pathNameData(currentUrl, urlExpression);
   }
 
@@ -137,7 +137,7 @@ export abstract class Router<T = any> {
     if (typeof data === 'string') {
       targetPath = data;
     } else {
-      const tpath = data.path ?? this.getPath();
+      const tpath = data.path ?? this.getPathName();
       const s = data.searchParams ? ConvertUtils.toURLSearchParams(data.searchParams).toString() : '';
       // data.searchParams
       targetPath = `${tpath}${s.length > 0 ? '?' : ''}${s}`;
@@ -168,5 +168,7 @@ export abstract class Router<T = any> {
 
   abstract getUrl(): string;
 
-  abstract getPath(): string;
+  abstract getHref(): string;
+
+  abstract getPathName(): string;
 }

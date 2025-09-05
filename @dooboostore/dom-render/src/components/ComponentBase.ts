@@ -19,13 +19,14 @@ export const ATTRIBUTE_METADATA_KEY = Symbol('attribute');
 export const QUERY_METADATA_KEY = Symbol('query');
 export const EVENT_METADATA_KEY = Symbol('event');
 
-export function attribute(options?: { name?: string, converter?: (value: string | null) => any }): PropertyDecorator {
-    return (target: object, propertyKey: string | symbol) => {
+export function attribute(options?: { name?: string, converter?: (value: string | null) => any }): (target: object, propertyKey: string | symbol, descriptor?: PropertyDescriptor) => void {
+    return (target: object, propertyKey: string | symbol, descriptor?: PropertyDescriptor) => {
         const attributes = ReflectUtils.getMetadata(ATTRIBUTE_METADATA_KEY, target.constructor) || [];
         attributes.push({
             propertyKey: propertyKey,
             name: options?.name || propertyKey,
-            converter: options?.converter
+            converter: options?.converter,
+            isMethod: !!descriptor
         });
         ReflectUtils.defineMetadata(ATTRIBUTE_METADATA_KEY, attributes, target.constructor);
     };
@@ -78,7 +79,7 @@ export abstract class ComponentBase<T = any> implements OnChangeAttrRender, OnCr
 
   private _queryElements(selector: string, rawSet:RawSet): Element[] {
     const e = this.getElement();
-    console.log('queryElement-->', e);
+    // console.log('queryElement-->', e);
     if (e) {
       return ElementUtils.querySelectorAll(e, selector);
     } else {
@@ -220,7 +221,14 @@ export abstract class ComponentBase<T = any> implements OnChangeAttrRender, OnCr
         for (const attrInfo of attributes) {
             if (this.equalsAttributeName(name, attrInfo.name as any)) {
                 const finalValue = attrInfo.converter ? attrInfo.converter(value) : value;
-                (this as any)[attrInfo.propertyKey] = finalValue;
+                if (attrInfo.isMethod) {
+                    const method = (this as any)[attrInfo.propertyKey];
+                    if (typeof method === 'function') {
+                        method.call(this, finalValue);
+                    }
+                } else {
+                    (this as any)[attrInfo.propertyKey] = finalValue;
+                }
             }
         }
     }
