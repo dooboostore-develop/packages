@@ -242,6 +242,7 @@ export class SimpleBootFront extends SimpleApplication {
     const point = RawSet.createStartEndPoint({node: target, id, type: RawSetType.TARGET_ELEMENT}, this.domRenderConfig as Config);
     if (target && routerAtomic.getValue()) {
       // target.innerHTML = '';
+      // console.log('----cleanbody', target.innerHTML)
       // p.appendChild(startEndPoint.start);
       // p.insertAdjacentHTML('beforeend', this.getComponentInnerHtml(this.option.rootRouter, id));
       // p.appendChild(startEndPoint.end);

@@ -198,23 +198,57 @@ const option = new HttpServerOption({
 
 Define global exception handlers in an `Advice` class. This class is managed by `@Sim` and can catch errors thrown from anywhere in the application.
 
+### Preventing `ERR_HTTP_HEADERS_SENT`
+
+A common issue in asynchronous frameworks is the `ERR_HTTP_HEADERS_SENT` error. This occurs when an error is thrown *after* a response has already been sent by another part of the application (like a filter). The global exception handler then tries to send a *second* response, causing a crash.
+
+To prevent this, **always check if a response has already been sent** before sending a new one from your exception handler. The `RequestResponse` object provides the `resIsDone()` method for this purpose.
+
 ```typescript
-import { Sim, ExceptionHandler } from '@dooboostore/simple-boot';
-import { RequestResponse, NotFoundError } from '@dooboostore/simple-boot-http-server';
+import { Sim, ExceptionHandler, Inject, ExceptionHandlerSituationType } from '@dooboostore/simple-boot';
+import { RequestResponse, NotFoundError, HttpError, InternalServerError, Mimes, HttpStatus } from '@dooboostore/simple-boot-http-server';
 
 @Sim
 export class GlobalErrorHandler {
+
     @ExceptionHandler({ type: NotFoundError })
     handleNotFound(rr: RequestResponse, e: NotFoundError) {
+        // Critical check
+        if (rr.resIsDone()) {
+            console.error(`Not found error for URL: ${rr.reqUrl}, but response already sent.`, e);
+            return;
+        }
         rr.resStatusCode(404).resSetHeader('X-Error-Message', 'Resource not found');
         console.error(`Not found error for URL: ${rr.reqUrl}`, e);
+        rr.resEnd(JSON.stringify({ error: 'Resource not found' }));
     }
 
     @ExceptionHandler()
-    handleAll(rr: RequestResponse, e: any) {
-        console.error('An unexpected error occurred:', e);
-        // Avoid sending detailed error in production
-        rr.resStatusCode(500).resWriteJson({ error: 'Internal Server Error' });
+    async catch(@Inject({situationType: ExceptionHandlerSituationType.ERROR_OBJECT}) e: any, rr: RequestResponse) {
+        console.error(`GlobalAdvice.catch ${rr.reqUrl}`, e);
+
+        // Critical check to prevent writing to an already-sent response
+        if (rr.resIsDone()) {
+            return;
+        }
+
+        rr.resStatusCode(HttpStatus.InternalServerError);
+        rr.resSetHeader('Content-Type', Mimes.ApplicationJson);
+
+        let data = '';
+        if (e instanceof HttpError) {
+            rr.resStatusCode(e.status);
+            data = JSON.stringify(e);
+        } else if (e instanceof Error){
+            const error = new InternalServerError();
+            error.data = {message: e.message, stack: e.stack}; // Be careful with stack in production
+            data = JSON.stringify(error);
+        } else {
+            const error = new InternalServerError();
+            error.data = e;
+            data = JSON.stringify(error);
+        }
+        await rr.resEnd(data);
     }
 }
 

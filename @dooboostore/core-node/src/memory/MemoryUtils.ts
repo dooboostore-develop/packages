@@ -14,6 +14,14 @@ export namespace MemoryUtils {
    * external: V8 엔진 외부에서 사용되는 메모리 (C++ 객체 등).
    * arrayBuffers: ArrayBuffer와 SharedArrayBuffer에 사용된 메모리.
    */
+  /*
+  // setInterval(()=>{
+//   const used = MemoryUtils.memoryUsage();
+//   const m = Array.from(Object.entries(used)).map(([key, value]) => `${key}: ${Math.round(value / 1024 / 1024 * 100) / 100} MB`)
+//   console.log(m.join(',\t'))
+// }, 1000)
+
+   */
   export const memoryUsage =() => {
     return process.memoryUsage();
   }

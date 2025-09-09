@@ -568,4 +568,170 @@ describe('ObjectUtils.Path', () => {
       });
     });
   });
+
+  describe('Path.toOptionalChainPath', () => {
+    test('should convert a simple dot-separated path', () => {
+      const path = 'a.b.c';
+      const expected = 'a?.b?.c';
+      assert.strictEqual(ObjectUtils.Path.toOptionalChainPath(path), expected);
+    });
+
+    test('should handle path with numeric array index', () => {
+      const path = 'a.b[0].c';
+      const expected = 'a?.b?.[0]?.c';
+      assert.strictEqual(ObjectUtils.Path.toOptionalChainPath(path), expected);
+    });
+
+    test('should handle path with quoted string key', () => {
+      const path = "a.b['key-1'].c";
+      const expected = "a?.b?.['key-1']?.c";
+      assert.strictEqual(ObjectUtils.Path.toOptionalChainPath(path), expected);
+    });
+
+    test('should handle a single property path', () => {
+      const path = 'a';
+      const expected = 'a';
+      assert.strictEqual(ObjectUtils.Path.toOptionalChainPath(path), expected);
+    });
+
+    test('should handle an empty path', () => {
+      const path = '';
+      const expected = '';
+      assert.strictEqual(ObjectUtils.Path.toOptionalChainPath(path), expected);
+    });
+
+    test('should handle path that already contains optional chaining', () => {
+      const path = 'a?.b.c';
+      const expected = 'a?.b?.c';
+      assert.strictEqual(ObjectUtils.Path.toOptionalChainPath(path), expected);
+    });
+
+    test('should handle path with mixed existing optional chaining', () => {
+      const path = 'a.b?.[0].c';
+      const expected = 'a?.b?.[0]?.c';
+      assert.strictEqual(ObjectUtils.Path.toOptionalChainPath(path), expected);
+    });
+
+    test('should handle complex paths', () => {
+      const path = "a.b[0]['c-d'].e";
+      const expected = "a?.b?.[0]?.['c-d']?.e";
+      assert.strictEqual(ObjectUtils.Path.toOptionalChainPath(path), expected);
+    });
+
+    test('should handle path starting with array index', () => {
+      const path = '[0].a.b';
+      const expected = '[0]?.a?.b';
+      assert.strictEqual(ObjectUtils.Path.toOptionalChainPath(path), expected);
+    });
+
+    test('should not change path with only special characters inside brackets', () => {
+      const path = "['a.b.c']";
+      const expected = "['a.b.c']";
+      assert.strictEqual(ObjectUtils.Path.toOptionalChainPath(path), expected);
+    });
+
+    test('should handle multiple brackets', () => {
+      const path = "a[0][1].b";
+      const expected = "a?.[0]?.[1]?.b";
+      assert.strictEqual(ObjectUtils.Path.toOptionalChainPath(path), expected);
+    });
+
+    test('should handle "this" keyword', () => {
+      const path = "this";
+      const expected = "this";
+      assert.strictEqual(ObjectUtils.Path.toOptionalChainPath(path), expected);
+    });
+
+    test('should handle "window" keyword', () => {
+      const path = "window";
+      const expected = "window";
+      assert.strictEqual(ObjectUtils.Path.toOptionalChainPath(path), expected);
+    });
+
+    test('should handle path that is only an array index', () => {
+      const path = "[2]";
+      const expected = "[2]";
+      assert.strictEqual(ObjectUtils.Path.toOptionalChainPath(path), expected);
+    });
+
+    test('should handle single quoted keys', () => {
+      const path = "a.b['my-var'].c";
+      const expected = "a?.b?.['my-var']?.c";
+      assert.strictEqual(ObjectUtils.Path.toOptionalChainPath(path), expected);
+    });
+
+    test('should handle parentheses in path', () => {
+      const path = "a.(b).c";
+      const expected = "a?.(b)?.c";
+      assert.strictEqual(ObjectUtils.Path.toOptionalChainPath(path), expected);
+    });
+  });
+
+  describe('Path.removeOptionalChainOperator', () => {
+    test('should remove optional chaining from a simple path', () => {
+      const path = 'a?.b?.c';
+      const expected = 'a.b.c';
+      assert.strictEqual(ObjectUtils.Path.removeOptionalChainOperator(path), expected);
+    });
+
+    test('should handle path with array index', () => {
+      const path = 'a?.[0]?.b';
+      const expected = 'a[0].b';
+      assert.strictEqual(ObjectUtils.Path.removeOptionalChainOperator(path), expected);
+    });
+
+    test('should handle path with quoted string key', () => {
+      const path = "a?.['key-1']?.c";
+      const expected = "a['key-1'].c";
+      assert.strictEqual(ObjectUtils.Path.removeOptionalChainOperator(path), expected);
+    });
+
+    test('should not change a path with no optional chaining', () => {
+      const path = 'a.b.c';
+      const expected = 'a.b.c';
+      assert.strictEqual(ObjectUtils.Path.removeOptionalChainOperator(path), expected);
+    });
+
+    test('should handle a single property path', () => {
+      const path = 'a';
+      const expected = 'a';
+      assert.strictEqual(ObjectUtils.Path.removeOptionalChainOperator(path), expected);
+    });
+
+    test('should handle an empty path', () => {
+      const path = '';
+      const expected = '';
+      assert.strictEqual(ObjectUtils.Path.removeOptionalChainOperator(path), expected);
+    });
+
+    test('should handle complex paths', () => {
+      const path = "a?.b?.[0]?.['c-d']?.e";
+      const expected = "a.b[0]['c-d'].e";
+      assert.strictEqual(ObjectUtils.Path.removeOptionalChainOperator(path), expected);
+    });
+
+    test('should handle path starting with array index', () => {
+      const path = '[0]?.a?.b';
+      const expected = '[0].a.b';
+      assert.strictEqual(ObjectUtils.Path.removeOptionalChainOperator(path), expected);
+    });
+
+    test('should handle quoted keys with dots', () => {
+      const path = 'a?.["asdasd.ddd"]["cc.aa"]';
+      const expected = 'a["asdasd.ddd"]["cc.aa"]';
+      assert.strictEqual(ObjectUtils.Path.removeOptionalChainOperator(path), expected);
+    });
+
+    test('should handle single quoted keys', () => {
+      const path = "a?.b?.['my-var']?.c";
+      const expected = "a.b['my-var'].c";
+      assert.strictEqual(ObjectUtils.Path.removeOptionalChainOperator(path), expected);
+    });
+
+    test('should handle parentheses in path', () => {
+      const path = "a?.(b)?.c";
+      const expected = "a.(b).c";
+      assert.strictEqual(ObjectUtils.Path.removeOptionalChainOperator(path), expected);
+    });
+  });
 });

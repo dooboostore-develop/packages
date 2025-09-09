@@ -14,21 +14,17 @@ export class DrThis extends OperatorExecuterAttrRequire<string> {
     const optionIf = this.elementSource.attrs.drDetectIfOption ?? this.elementSource.attrs.drIfOption;
     const ok = ScriptUtils.eval(`
                 ${this.render.bindScript}
-                const ok  = ${this.elementSource.attrs.drThis};
-                const option = ${optionIf};
-// console.log('cc')
-                if (option!==null) {
-                   return !!(ok && option); 
+                try {
+                  const ok  = ${this.elementSource.attrs.drThis};
+                  const option = ${optionIf};
+                  if (option!==null) {
+                     return !!(ok && option); 
+                  }
+                  // console.log('vv', ${this.elementSource.attrs.drThis}, ${this.elementSource.attrs.drIfOption}, '${this.elementSource.attrs.drIfOption}');
+                  return !!ok;
+                } catch(e) {
+                  return false;
                 }
-                // console.log('vv', ${this.elementSource.attrs.drThis}, ${this.elementSource.attrs.drIfOption}, '${this.elementSource.attrs.drIfOption}');
-                return !!ok;
-                 // const t = ${this.elementSource.attrs.drThis};
-                 // return t;
-                // const ifOption = ${this.elementSource.attrs.drIfOption};
-                // if (ifOption !== null){
-                //   return !!(t && ifOption);
-                // }
-                // return !!t;
                 `, Object.assign(this.source.obj,
       {
         __render: Object.freeze({
@@ -69,7 +65,8 @@ export class DrThis extends OperatorExecuterAttrRequire<string> {
           }
         }
         // 중요: componentSet 의 objPath를 보고 판단하는 중요한부분
-        thisPath = `${this.elementSource.attrs.drThis}${attr.config.objPath ? ('?.' + attr.config.objPath) : ''}`;
+        thisPath = `${this.elementSource.attrs.drThis}${attr.config.objPath ? ('.' + attr.config.objPath) : ''}`;
+        // const zthisPath = `${this.elementSource.attrs.drThis}${attr.config.objPath ? ('?.' + attr.config.objPath) : ''}`;
         // console.log('thisPaththisPaththisPath',thisPath)
         this.setThisPath(thisPath);
         const componentBody = await RawSet.drThisCreate(this.rawSet, this.elementSource.element, thisPath, this.elementSource.attrs.drVarOption ?? '', this.elementSource.attrs.drStripOption, this.source.obj, this.source.config, attr);

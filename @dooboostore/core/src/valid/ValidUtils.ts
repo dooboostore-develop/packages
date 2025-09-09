@@ -12,7 +12,11 @@ export namespace ValidUtils {
     return typeof fn.prototype === 'undefined' && !fn.toString().startsWith('class');
   }
 
-  function isConstructorLike(fn: any): boolean {
+  export const isPlainObject = (obj: any): boolean => {
+    return obj !== null && typeof obj === 'object' && obj.constructor === Object;
+  }
+
+  const isConstructorLike = (fn: any): boolean => {
     // 1. 함수여야 하고,
     // 2. prototype 속성을 가져야 함
     return typeof fn === 'function' && typeof fn.prototype !== 'undefined';
@@ -72,6 +76,13 @@ export namespace ValidUtils {
     } else {
       return Object.prototype.toString.call(object_o).trim() === '[object Array]'
     }
+  }
+
+  export const isStringNumber = (value: string | number): boolean => {
+    if (typeof value === 'number') {
+      return !isNaN(value);
+    }
+    return typeof value === 'string' && value.trim() !== '' && !isNaN(Number(value));
   }
 
   export const isNumber = (object_o: any): boolean => {

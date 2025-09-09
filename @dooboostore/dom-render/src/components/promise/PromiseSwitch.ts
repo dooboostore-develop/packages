@@ -72,6 +72,22 @@ export namespace PromiseSwitch {
     }
   }
 
+
+  /*
+      <dr-promise-switch data="${@this@.pickWorldPromise}$">
+        ${@nearThis@.promiseState.status}$
+        <dr-promise-switch-default>
+            <button class="random-world-button" dr-event-click="@this@.pickWorld()">
+                <i class="fa-solid fa-dice"></i>
+            </button>
+        </dr-promise-switch-default>
+        <dr-promise-switch-pending>
+            <button class="random-world-button disabled spin" >
+                <i class="fa-solid fa-dice"></i>
+            </button>
+        </dr-promise-switch-pending>
+    </dr-promise-switch>
+   */
   // @Component({
   //   template: '#innerHTML#',
   //   selector: `${selector}`

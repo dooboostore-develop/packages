@@ -17,6 +17,7 @@ import { DocumentUtils } from '@dooboostore/core-web/document/DocumentUtils';
 import { isDefined } from '@dooboostore/core/types';
 import { isOnBeforeReturnSet } from './lifecycle/OnBeforeReturnSet';
 import { isOnChildRenderedByProperty } from './lifecycle/OnChildRenderedByProperty';
+import { ObjectUtils } from '@dooboostore/core';
 
 const excludeGetSetPropertys = ['onBeforeReturnGet', 'onBeforeReturnSet', '__domrender_components', '__render', '_DomRender_isFinal', '_domRender_ref', '_rawSets', '_domRender_proxy', '_targets', '_DomRender_origin', '_DomRender_ref', '_DomRender_proxy'];
 
@@ -413,11 +414,13 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
     const rootElement = this.config.rootElement ?? this.config.window.document;
     DocumentUtils.querySelectorAllByAttributeName(rootElement, EventManager.normalAttrMapAttrName)?.forEach(elementInfo => {
       // @ts-ignore
+      // const optionalPath = ObjectUtils.Path.toOptionalChainPath(elementInfo.value);
       const targets = new Map<string,string>(ScriptUtils.evalReturn<[string, string][]>(elementInfo.value));
       Array.from(targets.entries()).filter(([key, value])=>value.trim()).filter(isDefined).flatMap(([key,valueScript])=> {
         return fullPathInfo.flat().filter(it => valueScript.includes(`this.${it.path}`)).flatMap(it=> ({key, valueScript: valueScript, pathInfo: it}));
       }).forEach(it=> {
-        const value1 = ScriptUtils.evalReturn(it.valueScript, it.pathInfo.obj);
+        const optionalPath = ObjectUtils.Path.toOptionalChainPath(it.valueScript);
+        const value1 = ScriptUtils.evalReturn(optionalPath, it.pathInfo.obj);
         // console.log('proxy set!Attribut======', it.key, value1)
         if (value1 === null) {
           elementInfo.element.removeAttribute(it.key);

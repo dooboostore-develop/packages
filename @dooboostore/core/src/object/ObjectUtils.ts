@@ -208,6 +208,27 @@ export namespace ObjectUtils {
 
 
   export namespace Path {
+    export const toOptionalChainPath = (path: string): string => {
+      if (!path) {
+        return '';
+      }
+      // Tokenize the path by '.', '[', ']', and '?' to handle property access and existing optional chaining.
+      const tokens = path.match(/[^?.[\]]+|\[[^\]]*\]/g);
+      if (!tokens) {
+        return path; // Return original path if no tokens are found (e.g., path is just '.')
+      }
+      // Join tokens with '?.', effectively creating the optional chain path.
+      return tokens.join('?.');
+    };
+
+    export const removeOptionalChainOperator = (path: string): string => {
+      if (!path) {
+        return '';
+      }
+      // Replace all optional chaining operators with standard ones.
+      return path.replace(/\?\./g, '.').replace(/\.\[/g, '[');
+    };
+
     const parsePath = (path: string): (string | number)[] => {
       const result: (string | number)[] = [];
       const regex = /\.([^.\[]+)|\[(\d+)\]|\[(['"])(.*?)\3\]/g;

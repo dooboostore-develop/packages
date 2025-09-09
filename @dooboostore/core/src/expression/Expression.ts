@@ -2,6 +2,8 @@ import { StringUtils } from '../string/StringUtils';
 
 export namespace Expression {
 
+  // html = html.replace(/\$\{[\s\S]*?\}\$/g, '');
+
   export const bindExpression = (expression: string, bind: { [name: string]: ((arg: any) => any) | any }) => {
    // ${data}  wow  ${wow:parameter}
     // expression에서 ${...} 형태를 모두 찾아서 처리

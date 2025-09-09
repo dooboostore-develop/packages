@@ -39,6 +39,7 @@ import { isOnInitRender } from '../lifecycle/OnInitRender';
 import { isOnCreatedThisChild } from '../lifecycle/OnCreatedThisChild';
 import { isOnDestroyRender, OnDestroyRenderParams } from '../lifecycle/OnDestroyRender';
 import { DrTargetElementIsElement } from '../operators/DrTargetElementIsElement';
+import { ObjectUtils } from '@dooboostore/core';
 
 
 export class RawSet {
@@ -1503,14 +1504,19 @@ export class RawSet {
 
   public findNearThis = (obj: any, rawSet: RawSet = this) => {
     const path = this.findNearThisPath(rawSet);
-    if (path)
-      return ScriptUtils.evalReturn(path, obj);
+    if (path) {
+      const optionalPath = ObjectUtils.Path.toOptionalChainPath(path);
+      // console.log('ppppp-', path, optionalPath)
+      return ScriptUtils.evalReturn(optionalPath, obj);
+    }
   };
 
   public findParentThis = (obj: any, rawSet: RawSet = this) => {
     const path = this.findParentThisPath(rawSet);
-    if (path)
-      return ScriptUtils.evalReturn(path, obj);
+    if (path) {
+      const optionalPath = ObjectUtils.Path.toOptionalChainPath(path);
+      return ScriptUtils.evalReturn(optionalPath, obj);
+    }
   };
 
   public findNearThisPath = (rawSet: RawSet = this): string | undefined => {

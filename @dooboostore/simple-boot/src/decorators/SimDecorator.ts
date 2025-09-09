@@ -50,7 +50,15 @@ export const simProcess = (config: SimConfig, inputTarget: ConstructorType<any> 
   // })
   Sim({symbol: TTSymbol, scope: Lifecycle.Transient})({a: 'name'})
    */
-  const target = typeof inputTarget === 'object' ? function() {return config.scope === Lifecycle.Singleton ? inputTarget: {...inputTarget}} : (ValidUtils.isArrowFunction(inputTarget) ? function() {return (inputTarget as Function)()} : inputTarget);
+  const target = (() => {
+    if (typeof inputTarget === 'object') {
+      return config.scope === Lifecycle.Singleton ? inputTarget : (ValidUtils.isPlainObject(inputTarget) ? { ...inputTarget }: inputTarget);
+    }
+    if (ValidUtils.isArrowFunction(inputTarget)) {
+      return () => (inputTarget as Function)();
+    }
+    return inputTarget;
+  })();
 
 
 
