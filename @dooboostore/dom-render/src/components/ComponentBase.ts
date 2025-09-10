@@ -57,7 +57,7 @@ export function event(options: { query: string, name: string }): MethodDecorator
 }
 
 
-export abstract class ComponentBase<T = any> implements OnChangeAttrRender, OnCreateRenderData, OnCreatedThisChild, OnDrThisBind, OnDrThisUnBind, OnInitRender, OnDestroyRender {
+export class ComponentBase<T = any> implements OnChangeAttrRender, OnCreateRenderData, OnCreatedThisChild, OnDrThisBind, OnDrThisUnBind, OnInitRender, OnDestroyRender {
   @DomRenderNoProxy
   private _rawSet?: RawSet;
   @DomRenderNoProxy
@@ -180,7 +180,7 @@ export abstract class ComponentBase<T = any> implements OnChangeAttrRender, OnCr
     );
   }
 
-  constructor(private config?: { onlyParentType: ConstructorType<any>[] | ConstructorType<any> }) {
+  constructor(private _config?: { onlyParentType: ConstructorType<any>[] | ConstructorType<any> }) {
   }
 
   private setRawSet(rawSet: RawSet) {
@@ -203,10 +203,10 @@ export abstract class ComponentBase<T = any> implements OnChangeAttrRender, OnCr
     if (data.render?.rawSet) {
       this.setRawSet(data.render.rawSet);
     }
-    if (this.config?.onlyParentType) {
-      const isOk = Array.isArray(this.config?.onlyParentType) ? this.config?.onlyParentType : [this.config?.onlyParentType].some(it => data.render?.parentThis instanceof it);
+    if (this._config?.onlyParentType) {
+      const isOk = Array.isArray(this._config?.onlyParentType) ? this._config?.onlyParentType : [this._config?.onlyParentType].some(it => data.render?.parentThis instanceof it);
       if (!isOk) {
-        throw new Error('only my parentThis ' + this.config?.onlyParentType);
+        throw new Error('only my parentThis ' + this._config?.onlyParentType);
       }
     }
   }

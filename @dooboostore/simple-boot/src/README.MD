@@ -13,12 +13,11 @@
 - **Method-level Caching**
 - **Data Validation**
 
-## 🚀 Quick Start
-
+# 🚀 Quick start cli
 ```shell
-npm init -y
-npm install @dooboostore/simple-boot reflect-metadata
-tsc --init --experimentalDecorators --emitDecoratorMetadata
+npm init @dooboostore/simple-boot projectname
+cd projectname
+npm start
 ```
 
 ```typescript
@@ -124,12 +123,13 @@ Classes managed by `@Sim` can hook into lifecycle events.
 - **`OnSimCreate`**: Called immediately after the instance is created.
 - **`@PostConstruct`**: A decorator for a method that should be called after the instance is created. It's an alternative to `OnSimCreate`.
 - **`OnSimCreateCompleted`**: Called after all proxy objects and AOP features have been applied to the instance. The original, proxied `this` is passed as an argument.
+- **`OnRouting`**: Called when the router navigates to a component. It receives routing data as an argument.
 
 ```typescript
-import { OnSimCreate, OnSimCreateCompleted, PostConstruct, Sim } from '@dooboostore/simple-boot';
+import { OnSimCreate, OnSimCreateCompleted, PostConstruct, Sim, OnRouting, RoutingDataSet } from '@dooboostore/simple-boot';
 
 @Sim
-class MyComponent implements OnSimCreate, OnSimCreateCompleted<MyComponent> {
+class MyComponent implements OnSimCreate, OnSimCreateCompleted<MyComponent>, OnRouting {
   constructor() {
     console.log('1. Constructor called');
   }
@@ -146,6 +146,10 @@ class MyComponent implements OnSimCreate, OnSimCreateCompleted<MyComponent> {
   onSimCreateProxyCompleted(proxyThis: MyComponent): void {
     console.log('4. onSimCreateProxyCompleted called');
     // proxyThis is the fully initialized, proxied instance
+  }
+
+  async onRouting(r: RoutingDataSet): Promise<void> {
+    console.log('5. onRouting called', r);
   }
 }
 ```
@@ -462,4 +466,4 @@ if (validationErrors.length > 0) {
 # License
 
 - MIT
-- visualkhh@gmail.com
+- dooboostore@gmail.com

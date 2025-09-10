@@ -17,10 +17,9 @@
 --- 
 # 🚀 Quick start cli
 ```shell
-npm init simple-boot-front projectname
+npm init @dooboostore/simple-boot-front projectname
 cd projectname
 npm start
-# open browser: http://localhost:4500
 ```
 
 # 😃 examples, templates

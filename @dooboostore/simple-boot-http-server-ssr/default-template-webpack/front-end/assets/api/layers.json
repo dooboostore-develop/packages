@@ -1,0 +1,5212 @@
+[
+  {
+    "seq": 1,
+    "name": "비둘기-우측면",
+    "category": "pigeon",
+    "direction": "right",
+    "w": 1,
+    "h": 1,
+    "b": [
+      0.25,
+      0.25,
+      0.75,
+      0.75
+    ],
+    "isDefault": true,
+    "layers": [
+      {
+        "seq": 2,
+        "name": "영역-우측면-몸",
+        "category": "pigeon",
+        "direction": "right",
+        "parentLayerSeq": 1,
+        "type": "group",
+        "color": "#FF0FF0",
+        "parentTransform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "parentTranslate": {
+          "x": 0.5,
+          "y": 0.58
+        },
+        "x": -0.2,
+        "y": -0.25,
+        "w": 0.4,
+        "h": 0.5,
+        "isDefault": true,
+        "animationIterationCount": "infinite",
+        "animation": [
+          {
+            "x": -0.2,
+            "y": -0.25,
+            "parentTransform": [
+              1.01,
+              0,
+              0,
+              1.01,
+              0,
+              0
+            ]
+          }
+        ],
+        "layers": [
+          {
+            "seq": 150,
+            "name": "영역-우측면-그림자",
+            "category": "pigeon",
+            "direction": "right",
+            "parentLayerSeq": 2,
+            "type": "group",
+            "color": "#5098DA",
+            "parentTransform": [
+              1,
+              0,
+              0,
+              1,
+              0,
+              0.8
+            ],
+            "parentTranslate": {
+              "x": 0.5,
+              "y": 0.5
+            },
+            "rotate": 0,
+            "x": -0.8,
+            "y": -0.1,
+            "w": 1.6,
+            "h": 0.2,
+            "isDefault": true,
+            "animationIterationCount": "infinite",
+            "animation": [
+              {
+                "rotate": -0.001
+              },
+              {
+                "rotate": 0.001
+              }
+            ],
+            "layers": [
+              {
+                "seq": 151,
+                "name": "부위-우측면-그림자",
+                "category": "pigeon",
+                "direction": "right",
+                "parentLayerSeq": 150,
+                "type": "slot",
+                "isDefault": true,
+                "layers": []
+              }
+            ]
+          },
+          {
+            "seq": 3,
+            "name": "영역-우측면-꼬리",
+            "category": "pigeon",
+            "direction": "right",
+            "parentLayerSeq": 2,
+            "type": "group",
+            "color": "#448CCF",
+            "parentTransform": [
+              1,
+              0,
+              0,
+              1,
+              -0.4,
+              0.4
+            ],
+            "parentTranslate": {
+              "x": 0.5,
+              "y": 0.5
+            },
+            "rotate": 0.12,
+            "x": -0.12,
+            "y": 0,
+            "w": 0.24,
+            "h": 0.3,
+            "isDefault": true,
+            "animationIterationCount": "infinite",
+            "animation": [
+              {
+                "rotate": 0.1
+              },
+              {
+                "rotate": 0.11
+              }
+            ],
+            "layers": [
+              {
+                "seq": 4,
+                "name": "부위-우측면-꼬리-라인",
+                "category": "pigeon",
+                "direction": "right",
+                "parentLayerSeq": 3,
+                "type": "slot",
+                "isDefault": true,
+                "layers": []
+              },
+              {
+                "seq": 5,
+                "name": "영역-우측면-꼬리-깃",
+                "category": "pigeon",
+                "direction": "right",
+                "parentLayerSeq": 3,
+                "type": "group",
+                "parentTransform": [
+                  1,
+                  0,
+                  0,
+                  1,
+                  0,
+                  0.45
+                ],
+                "parentTranslate": {
+                  "x": 0.5,
+                  "y": 0.5
+                },
+                "rotate": 0.01,
+                "x": -0.4,
+                "y": -0.1,
+                "w": 0.8,
+                "h": 0.2,
+                "isDefault": true,
+                "animationIterationCount": "infinite",
+                "animation": [
+                  {
+                    "rotate": 0.01
+                  },
+                  {
+                    "rotate": -0.01
+                  }
+                ],
+                "layers": [
+                  {
+                    "seq": 6,
+                    "name": "부위-우측면-꼬리-깃",
+                    "category": "pigeon",
+                    "direction": "right",
+                    "parentLayerSeq": 5,
+                    "type": "slot",
+                    "isDefault": true,
+                    "layers": []
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "seq": 7,
+            "name": "영역-우측면-왼쪽_날개",
+            "category": "pigeon",
+            "direction": "right",
+            "parentLayerSeq": 2,
+            "type": "group",
+            "color": "#5098DA",
+            "parentTransform": [
+              1,
+              0,
+              0,
+              1,
+              0.11,
+              0.08
+            ],
+            "parentTranslate": {
+              "x": 0.8,
+              "y": 0.2
+            },
+            "rotate": 0,
+            "x": -0.11,
+            "y": -0.08,
+            "w": 0.4,
+            "h": 0.6,
+            "isDefault": true,
+            "animationIterationCount": "infinite",
+            "animation": [
+              {
+                "rotate": 0.01
+              },
+              {
+                "rotate": -0.01
+              }
+            ],
+            "layers": [
+              {
+                "seq": 8,
+                "name": "부위-우측면-기본_왼쪽_날개",
+                "category": "pigeon",
+                "direction": "right",
+                "parentLayerSeq": 7,
+                "type": "slot",
+                "isDefault": true,
+                "layers": []
+              },
+              {
+                "seq": 9,
+                "name": "영역-우측면-왼쪽_날개-깃",
+                "category": "pigeon",
+                "direction": "right",
+                "parentLayerSeq": 7,
+                "type": "group",
+                "parentTransform": [
+                  1,
+                  0,
+                  0,
+                  1,
+                  -0.1,
+                  0.4
+                ],
+                "parentTranslate": {
+                  "x": 0.5,
+                  "y": 0.5
+                },
+                "rotate": 0.01,
+                "x": -0.4,
+                "y": -0.1,
+                "w": 0.8,
+                "h": 0.2,
+                "isDefault": true,
+                "animationIterationCount": "infinite",
+                "animation": [
+                  {
+                    "rotate": 0.01
+                  },
+                  {
+                    "rotate": -0.01
+                  }
+                ],
+                "layers": [
+                  {
+                    "seq": 10,
+                    "name": "부위-우측면-왼쪽_날개-깃",
+                    "category": "pigeon",
+                    "direction": "right",
+                    "parentLayerSeq": 9,
+                    "type": "slot",
+                    "isDefault": true,
+                    "layers": []
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "seq": 11,
+            "name": "영역-우측면-오른쪽_허벅지",
+            "category": "pigeon",
+            "direction": "right",
+            "parentLayerSeq": 2,
+            "type": "group",
+            "parentTransform": [
+              1,
+              0,
+              0,
+              1,
+              0,
+              0
+            ],
+            "parentTranslate": {
+              "x": 0.35,
+              "y": 0.95
+            },
+            "rotate": 0,
+            "x": -0.075,
+            "y": 0,
+            "w": 0.15,
+            "h": 0.15,
+            "isDefault": true,
+            "animationIterationCount": "infinite",
+            "animation": [
+              {
+                "rotate": 0.01
+              },
+              {
+                "rotate": 0.011
+              }
+            ],
+            "layers": [
+              {
+                "seq": 12,
+                "name": "부위-우측면-오른쪽_허벅지",
+                "category": "pigeon",
+                "direction": "right",
+                "parentLayerSeq": 11,
+                "type": "slot",
+                "isDefault": true,
+                "layers": []
+              },
+              {
+                "seq": 13,
+                "name": "영역-우측면-오른쪽_엉덩이-허벅지-정강이",
+                "category": "pigeon",
+                "direction": "right",
+                "parentLayerSeq": 11,
+                "type": "group",
+                "parentTransform": [
+                  1,
+                  0,
+                  0,
+                  1,
+                  0,
+                  0
+                ],
+                "parentTranslate": {
+                  "x": 0.5,
+                  "y": 0.9
+                },
+                "rotate": 0,
+                "x": -0.5,
+                "y": -0.1,
+                "w": 1,
+                "h": 1,
+                "isDefault": true,
+                "animationIterationCount": "infinite",
+                "animation": [
+                  {
+                    "rotate": 0.02
+                  }
+                ],
+                "layers": [
+                  {
+                    "seq": 14,
+                    "name": "부위-우측면-오른쪽_엉덩이-허벅지-정강이",
+                    "category": "pigeon",
+                    "direction": "right",
+                    "parentLayerSeq": 13,
+                    "type": "slot",
+                    "isDefault": true,
+                    "layers": []
+                  },
+                  {
+                    "seq": 15,
+                    "name": "영역-우측면-오른쪽-하체-엉덩이-허벅지-정강이-발목",
+                    "category": "pigeon",
+                    "direction": "right",
+                    "parentLayerSeq": 13,
+                    "type": "group",
+                    "parentTransform": [
+                      1,
+                      0,
+                      0,
+                      1,
+                      0,
+                      0
+                    ],
+                    "parentTranslate": {
+                      "x": 0.5,
+                      "y": 0.9
+                    },
+                    "rotate": 0.02,
+                    "x": -0.5,
+                    "y": 0,
+                    "w": 1.9,
+                    "h": 0.6,
+                    "isDefault": true,
+                    "animationIterationCount": "infinite",
+                    "animation": [
+                      {
+                        "rotate": 0.03
+                      },
+                      {
+                        "rotate": -0.02
+                      }
+                    ],
+                    "layers": [
+                      {
+                        "seq": 16,
+                        "name": "부위-우측면-오른쪽-하체-엉덩이-허벅지-정강이-발목-발",
+                        "category": "pigeon",
+                        "direction": "right",
+                        "parentLayerSeq": 15,
+                        "type": "slot",
+                        "isDefault": true,
+                        "layers": []
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "seq": 17,
+            "name": "영역-우측면-왼쪽_허벅지",
+            "category": "pigeon",
+            "direction": "right",
+            "parentLayerSeq": 2,
+            "type": "group",
+            "parentTransform": [
+              1,
+              0,
+              0,
+              1,
+              0,
+              0
+            ],
+            "parentTranslate": {
+              "x": 0.7,
+              "y": 0.95
+            },
+            "rotate": 0,
+            "x": -0.075,
+            "y": 0,
+            "w": 0.15,
+            "h": 0.15,
+            "isDefault": true,
+            "animationIterationCount": "infinite",
+            "animation": [
+              {
+                "rotate": 0.01
+              },
+              {
+                "rotate": 0.011
+              }
+            ],
+            "layers": [
+              {
+                "seq": 18,
+                "name": "부위-우측면-왼쪽_허벅지",
+                "category": "pigeon",
+                "direction": "right",
+                "parentLayerSeq": 17,
+                "type": "slot",
+                "isDefault": true,
+                "layers": []
+              },
+              {
+                "seq": 19,
+                "name": "영역-우측면-왼쪽_엉덩이-허벅지-정강이",
+                "category": "pigeon",
+                "direction": "right",
+                "parentLayerSeq": 17,
+                "type": "group",
+                "parentTransform": [
+                  1,
+                  0,
+                  0,
+                  1,
+                  0,
+                  0
+                ],
+                "parentTranslate": {
+                  "x": 0.5,
+                  "y": 0.9
+                },
+                "rotate": 0.02,
+                "x": -0.5,
+                "y": -0.1,
+                "w": 1,
+                "h": 1,
+                "isDefault": true,
+                "animationIterationCount": "infinite",
+                "animation": [
+                  {
+                    "rotate": 0
+                  }
+                ],
+                "layers": [
+                  {
+                    "seq": 20,
+                    "name": "부위-우측면-왼쪽_엉덩이-허벅지-정강이",
+                    "category": "pigeon",
+                    "direction": "right",
+                    "parentLayerSeq": 19,
+                    "type": "slot",
+                    "isDefault": true,
+                    "layers": []
+                  },
+                  {
+                    "seq": 21,
+                    "name": "영역-우측면-왼쪽-하체-엉덩이-허벅지-정강이-발목",
+                    "category": "pigeon",
+                    "direction": "right",
+                    "parentLayerSeq": 19,
+                    "type": "group",
+                    "parentTransform": [
+                      1,
+                      0,
+                      0,
+                      1,
+                      0,
+                      0
+                    ],
+                    "parentTranslate": {
+                      "x": 0.5,
+                      "y": 0.9
+                    },
+                    "rotate": 0.02,
+                    "x": -0.5,
+                    "y": 0,
+                    "w": 1.9,
+                    "h": 0.6,
+                    "isDefault": true,
+                    "animationIterationCount": "infinite",
+                    "animation": [
+                      {
+                        "rotate": -0.02
+                      },
+                      {
+                        "rotate": 0.03
+                      }
+                    ],
+                    "layers": [
+                      {
+                        "seq": 22,
+                        "name": "부위-우측면-왼쪽-하체-엉덩이-허벅지-정강이-발목-발",
+                        "category": "pigeon",
+                        "direction": "right",
+                        "parentLayerSeq": 21,
+                        "type": "slot",
+                        "isDefault": true,
+                        "layers": []
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "seq": 23,
+            "name": "부위-우측면-기본_몸_slot",
+            "category": "pigeon",
+            "direction": "right",
+            "parentLayerSeq": 2,
+            "type": "slot",
+            "isDefault": true,
+            "layers": []
+          },
+          {
+            "seq": 24,
+            "name": "영역-우측면-몸-가슴",
+            "category": "pigeon",
+            "direction": "right",
+            "parentLayerSeq": 2,
+            "type": "group",
+            "color": "#ff0000",
+            "parentTransform": [
+              1,
+              0,
+              0,
+              1,
+              0.3,
+              0
+            ],
+            "parentTranslate": {
+              "x": 0.5,
+              "y": 0.5
+            },
+            "rotate": 0,
+            "x": -0.1,
+            "y": -0.153,
+            "w": 0.2,
+            "h": 0.36,
+            "isDefault": true,
+            "animationIterationCount": "infinite",
+            "animation": [
+              {
+                "rotate": 0.003
+              },
+              {
+                "rotate": -0.005
+              }
+            ],
+            "layers": [
+              {
+                "seq": 25,
+                "name": "부위-우측면-기본_몸-가슴",
+                "category": "pigeon",
+                "direction": "right",
+                "parentLayerSeq": 24,
+                "type": "slot",
+                "isDefault": true,
+                "layers": []
+              }
+            ]
+          },
+          {
+            "seq": 26,
+            "name": "영역-우측면-목",
+            "category": "pigeon",
+            "direction": "right",
+            "parentLayerSeq": 2,
+            "type": "group",
+            "parentTransform": [
+              1,
+              0,
+              0,
+              1,
+              0,
+              0
+            ],
+            "parentTranslate": {
+              "x": 0,
+              "y": -0.05
+            },
+            "rotate": 0,
+            "x": 0,
+            "y": 0,
+            "w": 1,
+            "h": 0.2,
+            "isDefault": true,
+            "animationIterationCount": "infinite",
+            "animation": [
+              {
+                "rotate": 0.001
+              },
+              {
+                "rotate": -0.001
+              }
+            ],
+            "layers": [
+              {
+                "seq": 27,
+                "name": "부위-우측면-기본_목",
+                "category": "pigeon",
+                "direction": "right",
+                "parentLayerSeq": 26,
+                "type": "slot",
+                "isDefault": true,
+                "layers": []
+              },
+              {
+                "seq": 28,
+                "name": "영역-우측면-목-얼굴",
+                "category": "pigeon",
+                "direction": "right",
+                "parentLayerSeq": 26,
+                "type": "group",
+                "parentTransform": [
+                  1,
+                  0,
+                  0,
+                  1,
+                  0.5,
+                  -0.1
+                ],
+                "parentTranslate": {
+                  "x": 0,
+                  "y": 0
+                },
+                "rotate": 0,
+                "x": -0.5,
+                "y": -1.7,
+                "w": 1,
+                "h": 2,
+                "isDefault": true,
+                "animationIterationCount": "infinite",
+                "animation": [
+                  {
+                    "parentTransform": [
+                      1.01,
+                      0,
+                      0,
+                      1.01,
+                      0.5,
+                      -0.1
+                    ],
+                    "rotate": -0.001
+                  }
+                ],
+                "layers": [
+                  {
+                    "seq": 29,
+                    "name": "영역-우측면-목-얼굴-기본_왼쪽눈",
+                    "category": "pigeon",
+                    "direction": "right",
+                    "parentLayerSeq": 28,
+                    "type": "group",
+                    "parentTransform": [
+                      1,
+                      0,
+                      0,
+                      1,
+                      0,
+                      0
+                    ],
+                    "parentTranslate": {
+                      "x": 0.2,
+                      "y": 0.2
+                    },
+                    "x": 0,
+                    "y": 0,
+                    "w": 0.34,
+                    "h": 0.66,
+                    "isDefault": true,
+                    "layers": [
+                      {
+                        "seq": 30,
+                        "name": "부위-우측면-목-얼굴-기본_왼쪽눈_기본_흰자",
+                        "category": "pigeon",
+                        "direction": "right",
+                        "parentLayerSeq": 29,
+                        "type": "slot",
+                        "isDefault": true,
+                        "layers": []
+                      },
+                      {
+                        "seq": 31,
+                        "name": "영역-우측면-목-얼굴-기본_왼쪽눈-기본_검은자",
+                        "category": "pigeon",
+                        "direction": "right",
+                        "parentLayerSeq": 29,
+                        "type": "group",
+                        "parentTransform": [
+                          1,
+                          0,
+                          0,
+                          1,
+                          0,
+                          0
+                        ],
+                        "parentTranslate": {
+                          "x": 0.5,
+                          "y": 0.5
+                        },
+                        "x": -0.2,
+                        "y": -0.2,
+                        "w": 0.4,
+                        "h": 0.4,
+                        "isDefault": true,
+                        "animation": [
+                          {
+                            "parentTransform": [
+                              1,
+                              0,
+                              0,
+                              0.7,
+                              0,
+                              0
+                            ]
+                          }
+                        ],
+                        "layers": [
+                          {
+                            "seq": 32,
+                            "name": "부위-우측면-얼굴-기본_왼쪽눈_기본_검은자",
+                            "category": "pigeon",
+                            "direction": "right",
+                            "parentLayerSeq": 31,
+                            "type": "slot",
+                            "isDefault": true,
+                            "layers": []
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "seq": 33,
+                    "name": "부위-우측면-기본_얼굴",
+                    "category": "pigeon",
+                    "direction": "right",
+                    "parentLayerSeq": 28,
+                    "type": "slot",
+                    "isDefault": true,
+                    "layers": []
+                  },
+                  {
+                    "seq": 34,
+                    "name": "영역-우측면-얼굴-머리",
+                    "category": "pigeon",
+                    "direction": "right",
+                    "parentLayerSeq": 28,
+                    "type": "group",
+                    "parentTransform": [
+                      1,
+                      0,
+                      0,
+                      1,
+                      0.5,
+                      -0.1
+                    ],
+                    "parentTranslate": {
+                      "x": 0,
+                      "y": 0
+                    },
+                    "x": -0.5,
+                    "y": -0.35,
+                    "w": 1,
+                    "h": 0.5,
+                    "isDefault": true,
+                    "layers": [
+                      {
+                        "seq": 35,
+                        "name": "부위-우측면-얼굴-머리_기본깃_셋3",
+                        "category": "pigeon",
+                        "direction": "right",
+                        "parentLayerSeq": 34,
+                        "type": "slot",
+                        "isDefault": true,
+                        "layers": []
+                      }
+                    ]
+                  },
+                  {
+                    "seq": 38,
+                    "name": "영역-우측면-얼굴-기본_오른쪽눈",
+                    "category": "pigeon",
+                    "direction": "right",
+                    "parentLayerSeq": 28,
+                    "type": "group",
+                    "parentTransform": [
+                      1,
+                      0,
+                      0,
+                      1,
+                      0,
+                      0
+                    ],
+                    "parentTranslate": {
+                      "x": 0.2,
+                      "y": 0.2
+                    },
+                    "x": 0,
+                    "y": 0,
+                    "w": 0.34,
+                    "h": 0.66,
+                    "isDefault": true,
+                    "layers": [
+                      {
+                        "seq": 39,
+                        "name": "부위-우측면-얼굴-기본_오른눈_기본_흰자",
+                        "category": "pigeon",
+                        "direction": "right",
+                        "parentLayerSeq": 38,
+                        "type": "slot",
+                        "isDefault": true,
+                        "layers": []
+                      },
+                      {
+                        "seq": 40,
+                        "name": "영역-우측면-얼굴-기본_오른눈-기본_검은자",
+                        "category": "pigeon",
+                        "direction": "right",
+                        "parentLayerSeq": 38,
+                        "type": "group",
+                        "parentTransform": [
+                          1,
+                          0,
+                          0,
+                          1,
+                          0,
+                          0
+                        ],
+                        "parentTranslate": {
+                          "x": 0.5,
+                          "y": 0.5
+                        },
+                        "x": -0.2,
+                        "y": -0.2,
+                        "w": 0.4,
+                        "h": 0.4,
+                        "isDefault": true,
+                        "animation": [
+                          {
+                            "parentTransform": [
+                              1,
+                              0,
+                              0,
+                              0.7,
+                              0,
+                              0
+                            ]
+                          }
+                        ],
+                        "layers": [
+                          {
+                            "seq": 41,
+                            "name": "부위-우측면-얼굴-기본_오른눈_기본_검은자",
+                            "category": "pigeon",
+                            "direction": "right",
+                            "parentLayerSeq": 40,
+                            "type": "slot",
+                            "isDefault": true,
+                            "layers": []
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "seq": 42,
+                    "name": "영역-우측면-얼굴-기본_입",
+                    "category": "pigeon",
+                    "direction": "right",
+                    "parentLayerSeq": 28,
+                    "type": "group",
+                    "parentTransform": [
+                      1,
+                      0,
+                      0,
+                      1,
+                      0,
+                      0.3
+                    ],
+                    "parentTranslate": {
+                      "x": 0.6,
+                      "y": 0.5
+                    },
+                    "rotate": 0.001,
+                    "x": 0,
+                    "y": -0.3,
+                    "w": 0.5,
+                    "h": 0.6,
+                    "isDefault": true,
+                    "animation": [
+                      {
+                        "rotate": 0.003
+                      },
+                      {
+                        "rotate": -0.003
+                      }
+                    ],
+                    "layers": [
+                      {
+                        "seq": 43,
+                        "name": "영역-우측면-얼굴-입-윗부리",
+                        "category": "pigeon",
+                        "direction": "right",
+                        "parentLayerSeq": 42,
+                        "type": "group",
+                        "color": "#ff00f0",
+                        "parentTransform": [
+                          1,
+                          0,
+                          0,
+                          1,
+                          0.1,
+                          0.25
+                        ],
+                        "parentTranslate": {
+                          "x": 0,
+                          "y": 0
+                        },
+                        "x": -0.1,
+                        "y": -0.25,
+                        "w": 1,
+                        "h": 0.5,
+                        "isDefault": true,
+                        "layers": [
+                          {
+                            "seq": 44,
+                            "name": "부위-우측면-얼굴-입-윗부리-기본_윗부리",
+                            "category": "pigeon",
+                            "direction": "right",
+                            "parentLayerSeq": 43,
+                            "type": "slot",
+                            "isDefault": true,
+                            "layers": []
+                          }
+                        ]
+                      },
+                      {
+                        "seq": 45,
+                        "name": "영역-우측면-얼굴-입-아랫부리",
+                        "category": "pigeon",
+                        "direction": "right",
+                        "parentLayerSeq": 42,
+                        "type": "group",
+                        "color": "#ff0000",
+                        "parentTransform": [
+                          1,
+                          0,
+                          0,
+                          1,
+                          0.1,
+                          0.25
+                        ],
+                        "parentTranslate": {
+                          "x": 0,
+                          "y": 0.5
+                        },
+                        "x": -0.1,
+                        "y": -0.25,
+                        "w": 1,
+                        "h": 0.5,
+                        "isDefault": true,
+                        "layers": [
+                          {
+                            "seq": 46,
+                            "name": "부위-우측면-얼굴-입-아래부리-기본_아랫부리",
+                            "category": "pigeon",
+                            "direction": "right",
+                            "parentLayerSeq": 45,
+                            "type": "slot",
+                            "isDefault": true,
+                            "layers": []
+                          }
+                        ]
+                      },
+                      {
+                        "seq": 47,
+                        "name": "영역-우측면-얼굴-입-입안",
+                        "category": "pigeon",
+                        "direction": "right",
+                        "parentLayerSeq": 42,
+                        "type": "group",
+                        "color": "#ffff00",
+                        "parentTransform": [
+                          1,
+                          0,
+                          0,
+                          1,
+                          0.3,
+                          0
+                        ],
+                        "parentTranslate": {
+                          "x": 0,
+                          "y": 0.5
+                        },
+                        "x": -0.1,
+                        "y": -0.05,
+                        "w": 0.8,
+                        "h": 0.1,
+                        "isDefault": true,
+                        "layers": [
+                          {
+                            "seq": 48,
+                            "name": "부위-우측면-얼굴-입-입안-기본_입안",
+                            "category": "pigeon",
+                            "direction": "right",
+                            "parentLayerSeq": 47,
+                            "type": "slot",
+                            "isDefault": true,
+                            "layers": []
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "seq": 49,
+            "name": "영역-우측면-엉덩이",
+            "category": "pigeon",
+            "direction": "right",
+            "parentLayerSeq": 2,
+            "type": "group",
+            "parentTransform": [
+              1,
+              0,
+              0,
+              1,
+              -0.36,
+              0.43
+            ],
+            "parentTranslate": {
+              "x": 0.5,
+              "y": 0.5
+            },
+            "x": -0.13,
+            "y": -0.07,
+            "w": 0.26,
+            "h": 0.14,
+            "isDefault": true,
+            "layers": [
+              {
+                "seq": 50,
+                "name": "영역-우측면-왼쪽_엉덩이",
+                "category": "pigeon",
+                "direction": "right",
+                "parentLayerSeq": 49,
+                "type": "group",
+                "color": "#FF0000",
+                "parentTransform": [
+                  1,
+                  0,
+                  0,
+                  1,
+                  0,
+                  0
+                ],
+                "parentTranslate": {
+                  "x": 0,
+                  "y": 0
+                },
+                "x": 0,
+                "y": 0,
+                "w": 1,
+                "h": 1,
+                "isDefault": true,
+                "layers": [
+                  {
+                    "seq": 51,
+                    "name": "부위-우측면-왼쪽_엉덩이",
+                    "category": "pigeon",
+                    "direction": "right",
+                    "parentLayerSeq": 50,
+                    "type": "slot",
+                    "isDefault": true,
+                    "layers": []
+                  }
+                ]
+              },
+              {
+                "seq": 52,
+                "name": "영역-우측면-오른쪽_엉덩이",
+                "category": "pigeon",
+                "direction": "right",
+                "parentLayerSeq": 49,
+                "type": "group",
+                "color": "#00FF00",
+                "parentTransform": [
+                  1,
+                  0,
+                  0,
+                  1,
+                  0,
+                  0
+                ],
+                "parentTranslate": {
+                  "x": 0,
+                  "y": 0
+                },
+                "x": 0,
+                "y": 0,
+                "w": 1,
+                "h": 1,
+                "isDefault": true,
+                "layers": [
+                  {
+                    "seq": 53,
+                    "name": "부위-우측면-오른쪽_엉덩이",
+                    "category": "pigeon",
+                    "direction": "right",
+                    "parentLayerSeq": 52,
+                    "type": "slot",
+                    "isDefault": true,
+                    "layers": []
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "seq": 54,
+            "name": "영역-우측면-오른쪽_날개",
+            "category": "pigeon",
+            "direction": "right",
+            "parentLayerSeq": 2,
+            "type": "group",
+            "color": "#5098DA",
+            "parentTransform": [
+              1,
+              0,
+              0,
+              1,
+              0.11,
+              0.08
+            ],
+            "parentTranslate": {
+              "x": -0.25,
+              "y": 0.2
+            },
+            "rotate": 0,
+            "x": -0.11,
+            "y": -0.08,
+            "w": 0.5,
+            "h": 0.6,
+            "isDefault": true,
+            "animationIterationCount": "infinite",
+            "animation": [
+              {
+                "rotate": -0.01
+              },
+              {
+                "rotate": 0.01
+              }
+            ],
+            "layers": [
+              {
+                "seq": 55,
+                "name": "부위-우측면-오른쪽_날개",
+                "category": "pigeon",
+                "direction": "right",
+                "parentLayerSeq": 54,
+                "type": "slot",
+                "isDefault": true,
+                "layers": []
+              },
+              {
+                "seq": 56,
+                "name": "영역-우측면-오른쪽_날개-깃",
+                "category": "pigeon",
+                "direction": "right",
+                "parentLayerSeq": 54,
+                "type": "group",
+                "parentTransform": [
+                  1,
+                  0,
+                  0,
+                  1,
+                  -0.1,
+                  0.4
+                ],
+                "parentTranslate": {
+                  "x": 0.5,
+                  "y": 0.5
+                },
+                "rotate": 0.01,
+                "x": -0.4,
+                "y": -0.1,
+                "w": 0.8,
+                "h": 0.2,
+                "isDefault": true,
+                "animationIterationCount": "infinite",
+                "animation": [
+                  {
+                    "rotate": 0.01
+                  },
+                  {
+                    "rotate": -0.01
+                  }
+                ],
+                "layers": [
+                  {
+                    "seq": 57,
+                    "name": "부위-우측면-오른쪽_날개-깃",
+                    "category": "pigeon",
+                    "direction": "right",
+                    "parentLayerSeq": 56,
+                    "type": "slot",
+                    "isDefault": true,
+                    "layers": []
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "seq": 1000,
+    "name": "비둘기-좌측면",
+    "category": "pigeon",
+    "direction": "left",
+    "w": 1,
+    "h": 1,
+    "b": [
+      0.25,
+      0.25,
+      0.75,
+      0.75
+    ],
+    "isDefault": true,
+    "layers": [
+      {
+        "seq": 1001,
+        "name": "영역-좌측면-몸",
+        "category": "pigeon",
+        "direction": "left",
+        "parentLayerSeq": 1000,
+        "type": "group",
+        "color": "#FF0FF0",
+        "parentTransform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "parentTranslate": {
+          "x": 0.5,
+          "y": 0.58
+        },
+        "x": -0.2,
+        "y": -0.25,
+        "w": 0.4,
+        "h": 0.5,
+        "isDefault": true,
+        "animationIterationCount": "infinite",
+        "animation": [
+          {
+            "x": -0.2,
+            "y": -0.25,
+            "parentTransform": [
+              1.01,
+              0,
+              0,
+              1.01,
+              0,
+              0
+            ]
+          }
+        ],
+        "layers": [
+          {
+            "seq": 1200,
+            "name": "영역-좌측면-그림자",
+            "category": "pigeon",
+            "direction": "left",
+            "parentLayerSeq": 1001,
+            "type": "group",
+            "color": "#5098DA",
+            "parentTransform": [
+              1,
+              0,
+              0,
+              1,
+              0,
+              0.8
+            ],
+            "parentTranslate": {
+              "x": 0.5,
+              "y": 0.5
+            },
+            "rotate": 0,
+            "x": -0.8,
+            "y": -0.1,
+            "w": 1.6,
+            "h": 0.2,
+            "isDefault": true,
+            "animationIterationCount": "infinite",
+            "animation": [
+              {
+                "rotate": -0.001
+              },
+              {
+                "rotate": 0.001
+              }
+            ],
+            "layers": [
+              {
+                "seq": 1201,
+                "name": "부위-좌측면-그림자",
+                "category": "pigeon",
+                "direction": "left",
+                "parentLayerSeq": 1200,
+                "type": "slot",
+                "isDefault": true,
+                "layers": []
+              }
+            ]
+          },
+          {
+            "seq": 1002,
+            "name": "영역-좌측면-꼬리",
+            "category": "pigeon",
+            "direction": "left",
+            "parentLayerSeq": 1001,
+            "type": "group",
+            "color": "#448CCF",
+            "parentTransform": [
+              1,
+              0,
+              0,
+              1,
+              0.4,
+              0.4
+            ],
+            "parentTranslate": {
+              "x": 0.5,
+              "y": 0.5
+            },
+            "rotate": -0.12,
+            "x": -0.12,
+            "y": 0,
+            "w": 0.24,
+            "h": 0.3,
+            "isDefault": true,
+            "animationIterationCount": "infinite",
+            "animation": [
+              {
+                "rotate": -0.1
+              },
+              {
+                "rotate": -0.11
+              }
+            ],
+            "layers": [
+              {
+                "seq": 1003,
+                "name": "부위-우측면-꼬리-라인",
+                "category": "pigeon",
+                "direction": "left",
+                "parentLayerSeq": 1002,
+                "type": "slot",
+                "isDefault": true,
+                "layers": []
+              },
+              {
+                "seq": 1004,
+                "name": "영역-좌측면-꼬리-깃",
+                "category": "pigeon",
+                "direction": "left",
+                "parentLayerSeq": 1002,
+                "type": "group",
+                "parentTransform": [
+                  1,
+                  0,
+                  0,
+                  1,
+                  0,
+                  0.45
+                ],
+                "parentTranslate": {
+                  "x": 0.5,
+                  "y": 0.5
+                },
+                "rotate": 0.01,
+                "x": -0.4,
+                "y": -0.1,
+                "w": 0.8,
+                "h": 0.2,
+                "isDefault": true,
+                "animationIterationCount": "infinite",
+                "animation": [
+                  {
+                    "rotate": 0.01
+                  },
+                  {
+                    "rotate": -0.01
+                  }
+                ],
+                "layers": [
+                  {
+                    "seq": 1005,
+                    "name": "부위-우측면-꼬리-깃",
+                    "category": "pigeon",
+                    "direction": "left",
+                    "parentLayerSeq": 1004,
+                    "type": "slot",
+                    "isDefault": true,
+                    "layers": []
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "seq": 1065,
+            "name": "영역-좌측면-오른쪽_날개",
+            "category": "pigeon",
+            "direction": "left",
+            "parentLayerSeq": 1001,
+            "type": "group",
+            "color": "#5098DA",
+            "parentTransform": [
+              1,
+              0,
+              0,
+              1,
+              0.11,
+              0.08
+            ],
+            "parentTranslate": {
+              "x": -0.25,
+              "y": 0.2
+            },
+            "rotate": 0,
+            "x": -0.11,
+            "y": -0.08,
+            "w": 0.5,
+            "h": 0.6,
+            "isDefault": true,
+            "animationIterationCount": "infinite",
+            "animation": [
+              {
+                "rotate": -0.01
+              },
+              {
+                "rotate": 0.01
+              }
+            ],
+            "layers": [
+              {
+                "seq": 1066,
+                "name": "부위-좌측면-오른쪽_날개",
+                "category": "pigeon",
+                "direction": "left",
+                "parentLayerSeq": 1065,
+                "type": "slot",
+                "isDefault": true,
+                "layers": []
+              },
+              {
+                "seq": 1067,
+                "name": "영역-좌측면-오른쪽_날개-깃",
+                "category": "pigeon",
+                "direction": "left",
+                "parentLayerSeq": 1065,
+                "type": "group",
+                "parentTransform": [
+                  1,
+                  0,
+                  0,
+                  1,
+                  0.1,
+                  0.4
+                ],
+                "parentTranslate": {
+                  "x": 0.5,
+                  "y": 0.5
+                },
+                "rotate": 0.01,
+                "x": -0.4,
+                "y": -0.1,
+                "w": 0.8,
+                "h": 0.2,
+                "isDefault": true,
+                "animationIterationCount": "infinite",
+                "animation": [
+                  {
+                    "rotate": 0.01
+                  },
+                  {
+                    "rotate": -0.01
+                  }
+                ],
+                "layers": [
+                  {
+                    "seq": 1068,
+                    "name": "부위-좌측면-오른쪽_날개-깃",
+                    "category": "pigeon",
+                    "direction": "left",
+                    "parentLayerSeq": 1067,
+                    "type": "slot",
+                    "isDefault": true,
+                    "layers": []
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "seq": 1016,
+            "name": "영역-좌측면-왼쪽_허벅지",
+            "category": "pigeon",
+            "direction": "left",
+            "parentLayerSeq": 1001,
+            "type": "group",
+            "parentTransform": [
+              1,
+              0,
+              0,
+              1,
+              0,
+              0
+            ],
+            "parentTranslate": {
+              "x": 0.7,
+              "y": 0.95
+            },
+            "rotate": 0,
+            "x": -0.075,
+            "y": 0,
+            "w": 0.15,
+            "h": 0.15,
+            "isDefault": true,
+            "animationIterationCount": "infinite",
+            "animation": [
+              {
+                "rotate": 0.01
+              },
+              {
+                "rotate": 0.011
+              }
+            ],
+            "layers": [
+              {
+                "seq": 1017,
+                "name": "부위-좌측면-왼쪽_허벅지",
+                "category": "pigeon",
+                "direction": "left",
+                "parentLayerSeq": 1016,
+                "type": "slot",
+                "isDefault": true,
+                "layers": []
+              },
+              {
+                "seq": 1018,
+                "name": "영역-좌측면-왼쪽_엉덩이-허벅지-정강이",
+                "category": "pigeon",
+                "direction": "left",
+                "parentLayerSeq": 1016,
+                "type": "group",
+                "parentTransform": [
+                  1,
+                  0,
+                  0,
+                  1,
+                  0,
+                  0
+                ],
+                "parentTranslate": {
+                  "x": 0.5,
+                  "y": 0.9
+                },
+                "rotate": 0.02,
+                "x": -0.5,
+                "y": -0.1,
+                "w": 1,
+                "h": 1,
+                "isDefault": true,
+                "animationIterationCount": "infinite",
+                "animation": [
+                  {
+                    "rotate": 0
+                  }
+                ],
+                "layers": [
+                  {
+                    "seq": 1019,
+                    "name": "부위-좌측면-왼쪽_엉덩이-허벅지-정강이",
+                    "category": "pigeon",
+                    "direction": "left",
+                    "parentLayerSeq": 1018,
+                    "type": "slot",
+                    "isDefault": true,
+                    "layers": []
+                  },
+                  {
+                    "seq": 1020,
+                    "name": "영역-좌측면-왼쪽-하체-엉덩이-허벅지-정강이-발목",
+                    "category": "pigeon",
+                    "direction": "left",
+                    "parentLayerSeq": 1018,
+                    "type": "group",
+                    "parentTransform": [
+                      1,
+                      0,
+                      0,
+                      1,
+                      0,
+                      0
+                    ],
+                    "parentTranslate": {
+                      "x": 0.5,
+                      "y": 0.9
+                    },
+                    "rotate": 0.02,
+                    "x": -1.4,
+                    "y": 0,
+                    "w": 1.9,
+                    "h": 0.6,
+                    "isDefault": true,
+                    "animationIterationCount": "infinite",
+                    "animation": [
+                      {
+                        "rotate": -0.02
+                      },
+                      {
+                        "rotate": 0.03
+                      }
+                    ],
+                    "layers": [
+                      {
+                        "seq": 1021,
+                        "name": "부위-좌측면-왼쪽-하체-엉덩이-허벅지-정강이-발목-발",
+                        "category": "pigeon",
+                        "direction": "left",
+                        "parentLayerSeq": 1020,
+                        "type": "slot",
+                        "isDefault": true,
+                        "layers": []
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "seq": 1010,
+            "name": "영역-좌측면-오른쪽_허벅지",
+            "category": "pigeon",
+            "direction": "left",
+            "parentLayerSeq": 1001,
+            "type": "group",
+            "color": "#FF0000",
+            "parentTransform": [
+              1,
+              0,
+              0,
+              1,
+              0,
+              0
+            ],
+            "parentTranslate": {
+              "x": 0.35,
+              "y": 0.95
+            },
+            "rotate": 0,
+            "x": -0.075,
+            "y": 0,
+            "w": 0.15,
+            "h": 0.15,
+            "isDefault": true,
+            "animationIterationCount": "infinite",
+            "animation": [
+              {
+                "rotate": 0.011
+              },
+              {
+                "rotate": 0.01
+              }
+            ],
+            "layers": [
+              {
+                "seq": 1011,
+                "name": "부위-좌측면-오른쪽_허벅지",
+                "category": "pigeon",
+                "direction": "left",
+                "parentLayerSeq": 1010,
+                "type": "slot",
+                "isDefault": true,
+                "layers": []
+              },
+              {
+                "seq": 1012,
+                "name": "영역-좌측면-오른쪽_엉덩이-허벅지-정강이",
+                "category": "pigeon",
+                "direction": "left",
+                "parentLayerSeq": 1010,
+                "type": "group",
+                "parentTransform": [
+                  1,
+                  0,
+                  0,
+                  1,
+                  0,
+                  0
+                ],
+                "parentTranslate": {
+                  "x": 0.5,
+                  "y": 0.9
+                },
+                "rotate": 0,
+                "x": -0.5,
+                "y": -0.1,
+                "w": 1,
+                "h": 1,
+                "isDefault": true,
+                "animationIterationCount": "infinite",
+                "animation": [
+                  {
+                    "rotate": 0.02
+                  }
+                ],
+                "layers": [
+                  {
+                    "seq": 1013,
+                    "name": "부위-좌측면-오른쪽_엉덩이-허벅지-정강이",
+                    "category": "pigeon",
+                    "direction": "left",
+                    "parentLayerSeq": 1012,
+                    "type": "slot",
+                    "isDefault": true,
+                    "layers": []
+                  },
+                  {
+                    "seq": 1014,
+                    "name": "영역-좌측면-오른쪽-하체-엉덩이-허벅지-정강이-발목",
+                    "category": "pigeon",
+                    "direction": "left",
+                    "parentLayerSeq": 1012,
+                    "type": "group",
+                    "parentTransform": [
+                      1,
+                      0,
+                      0,
+                      1,
+                      0,
+                      0
+                    ],
+                    "parentTranslate": {
+                      "x": 0.5,
+                      "y": 0.9
+                    },
+                    "rotate": 0.02,
+                    "x": -1.4,
+                    "y": 0,
+                    "w": 1.9,
+                    "h": 0.6,
+                    "isDefault": true,
+                    "animationIterationCount": "infinite",
+                    "animation": [
+                      {
+                        "rotate": 0.03
+                      },
+                      {
+                        "rotate": -0.02
+                      }
+                    ],
+                    "layers": [
+                      {
+                        "seq": 1015,
+                        "name": "부위-좌측면-오른쪽-하체-엉덩이-허벅지-정강이-발목-발",
+                        "category": "pigeon",
+                        "direction": "left",
+                        "parentLayerSeq": 1014,
+                        "type": "slot",
+                        "isDefault": true,
+                        "layers": []
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "seq": 1022,
+            "name": "부위-좌측면-기본_몸",
+            "category": "pigeon",
+            "direction": "left",
+            "parentLayerSeq": 1001,
+            "type": "slot",
+            "isDefault": true,
+            "layers": []
+          },
+          {
+            "seq": 1023,
+            "name": "영역-좌측면-몸-가슴",
+            "category": "pigeon",
+            "direction": "left",
+            "parentLayerSeq": 1001,
+            "type": "group",
+            "color": "#ff0000",
+            "parentTransform": [
+              1,
+              0,
+              0,
+              1,
+              -0.3,
+              0
+            ],
+            "parentTranslate": {
+              "x": 0.5,
+              "y": 0.5
+            },
+            "rotate": 0,
+            "x": -0.1,
+            "y": -0.153,
+            "w": 0.2,
+            "h": 0.36,
+            "isDefault": true,
+            "animationIterationCount": "infinite",
+            "animation": [
+              {
+                "rotate": 0.003
+              },
+              {
+                "rotate": -0.005
+              }
+            ],
+            "layers": [
+              {
+                "seq": 1024,
+                "name": "부위-좌측면-기본_몸-가슴",
+                "category": "pigeon",
+                "direction": "left",
+                "parentLayerSeq": 1023,
+                "type": "slot",
+                "isDefault": true,
+                "layers": []
+              }
+            ]
+          },
+          {
+            "seq": 1025,
+            "name": "영역-좌측면-목",
+            "category": "pigeon",
+            "direction": "left",
+            "parentLayerSeq": 1001,
+            "type": "group",
+            "parentTransform": [
+              1,
+              0,
+              0,
+              1,
+              0,
+              0
+            ],
+            "parentTranslate": {
+              "x": 0,
+              "y": -0.05
+            },
+            "rotate": 0,
+            "x": 0,
+            "y": 0,
+            "w": 1,
+            "h": 0.2,
+            "isDefault": true,
+            "animationIterationCount": "infinite",
+            "animation": [
+              {
+                "rotate": 0.001
+              },
+              {
+                "rotate": -0.001
+              }
+            ],
+            "layers": [
+              {
+                "seq": 1026,
+                "name": "부위-우측면-기본_목",
+                "category": "pigeon",
+                "direction": "left",
+                "parentLayerSeq": 1025,
+                "type": "slot",
+                "isDefault": true,
+                "layers": []
+              },
+              {
+                "seq": 1027,
+                "name": "영역-좌측면-목-얼굴",
+                "category": "pigeon",
+                "direction": "left",
+                "parentLayerSeq": 1025,
+                "type": "group",
+                "parentTransform": [
+                  1,
+                  0,
+                  0,
+                  1,
+                  0.5,
+                  -0.1
+                ],
+                "parentTranslate": {
+                  "x": 0,
+                  "y": 0
+                },
+                "rotate": 0,
+                "x": -0.5,
+                "y": -1.7,
+                "w": 1,
+                "h": 2,
+                "isDefault": true,
+                "animationIterationCount": "infinite",
+                "animation": [
+                  {
+                    "parentTransform": [
+                      1.01,
+                      0,
+                      0,
+                      1.01,
+                      0.5,
+                      -0.1
+                    ],
+                    "rotate": -0.001
+                  }
+                ],
+                "layers": [
+                  {
+                    "seq": 1031,
+                    "name": "영역-좌측면-얼굴-머리",
+                    "category": "pigeon",
+                    "direction": "left",
+                    "parentLayerSeq": 1027,
+                    "type": "group",
+                    "parentTransform": [
+                      1,
+                      0,
+                      0,
+                      1,
+                      0.5,
+                      -0.1
+                    ],
+                    "parentTranslate": {
+                      "x": 0,
+                      "y": 0
+                    },
+                    "x": -0.5,
+                    "y": -0.35,
+                    "w": 1,
+                    "h": 0.5,
+                    "isDefault": true,
+                    "layers": [
+                      {
+                        "seq": 1032,
+                        "name": "부위-좌측면-얼굴-머리_기본깃_셋3",
+                        "category": "pigeon",
+                        "direction": "left",
+                        "parentLayerSeq": 1031,
+                        "type": "slot",
+                        "isDefault": true,
+                        "layers": []
+                      }
+                    ]
+                  },
+                  {
+                    "seq": 1059,
+                    "name": "부위-좌측면-기본_얼굴",
+                    "category": "pigeon",
+                    "direction": "left",
+                    "parentLayerSeq": 1027,
+                    "type": "slot",
+                    "isDefault": true,
+                    "layers": []
+                  },
+                  {
+                    "seq": 1028,
+                    "name": "영역-좌측면-목-얼굴-기본_왼쪽눈",
+                    "category": "pigeon",
+                    "direction": "left",
+                    "parentLayerSeq": 1027,
+                    "type": "group",
+                    "parentTransform": [
+                      1,
+                      0,
+                      0,
+                      1,
+                      0,
+                      0
+                    ],
+                    "parentTranslate": {
+                      "x": 0.5,
+                      "y": 0.2
+                    },
+                    "x": 0,
+                    "y": 0,
+                    "w": 0.34,
+                    "h": 0.66,
+                    "isDefault": true,
+                    "layers": [
+                      {
+                        "seq": 1029,
+                        "name": "부위-좌측면-목-얼굴-기본_왼쪽눈_기본_흰자",
+                        "category": "pigeon",
+                        "direction": "left",
+                        "parentLayerSeq": 1028,
+                        "type": "slot",
+                        "isDefault": true,
+                        "layers": []
+                      },
+                      {
+                        "seq": 1030,
+                        "name": "영역-좌측면-목-얼굴-기본_왼쪽눈-기본_검은자",
+                        "category": "pigeon",
+                        "direction": "left",
+                        "parentLayerSeq": 1028,
+                        "type": "group",
+                        "parentTransform": [
+                          1,
+                          0,
+                          0,
+                          1,
+                          0,
+                          0
+                        ],
+                        "parentTranslate": {
+                          "x": 0.5,
+                          "y": 0.5
+                        },
+                        "x": -0.2,
+                        "y": -0.2,
+                        "w": 0.4,
+                        "h": 0.4,
+                        "isDefault": true,
+                        "animation": [
+                          {
+                            "parentTransform": [
+                              1,
+                              0,
+                              0,
+                              0.7,
+                              0,
+                              0
+                            ]
+                          }
+                        ],
+                        "layers": [
+                          {
+                            "seq": 1050,
+                            "name": "부위-좌측면-얼굴-기본_왼쪽눈_기본_검은자",
+                            "category": "pigeon",
+                            "direction": "left",
+                            "parentLayerSeq": 1030,
+                            "type": "slot",
+                            "isDefault": true,
+                            "layers": []
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "seq": 1035,
+                    "name": "영역-좌측면-얼굴-기본_오른쪽눈",
+                    "category": "pigeon",
+                    "direction": "left",
+                    "parentLayerSeq": 1027,
+                    "type": "group",
+                    "parentTransform": [
+                      1,
+                      0,
+                      0,
+                      1,
+                      0,
+                      0
+                    ],
+                    "parentTranslate": {
+                      "x": 0.5,
+                      "y": 0.2
+                    },
+                    "x": 0,
+                    "y": 0,
+                    "w": 0.34,
+                    "h": 0.66,
+                    "isDefault": true,
+                    "layers": [
+                      {
+                        "seq": 1055,
+                        "name": "부위-좌측면-얼굴-기본_오른눈_기본_흰자",
+                        "category": "pigeon",
+                        "direction": "left",
+                        "parentLayerSeq": 1035,
+                        "type": "slot",
+                        "isDefault": true,
+                        "layers": []
+                      },
+                      {
+                        "seq": 1036,
+                        "name": "영역-좌측면-얼굴-기본_오른눈-기본_검은자",
+                        "category": "pigeon",
+                        "direction": "left",
+                        "parentLayerSeq": 1035,
+                        "type": "group",
+                        "parentTransform": [
+                          1,
+                          0,
+                          0,
+                          1,
+                          0,
+                          0
+                        ],
+                        "parentTranslate": {
+                          "x": 0.5,
+                          "y": 0.5
+                        },
+                        "x": -0.2,
+                        "y": -0.2,
+                        "w": 0.4,
+                        "h": 0.4,
+                        "isDefault": true,
+                        "animation": [
+                          {
+                            "parentTransform": [
+                              1,
+                              0,
+                              0,
+                              0.7,
+                              0,
+                              0
+                            ]
+                          }
+                        ],
+                        "layers": [
+                          {
+                            "seq": 1037,
+                            "name": "부위-좌측면-얼굴-기본_오른눈_기본_검은자",
+                            "category": "pigeon",
+                            "direction": "left",
+                            "parentLayerSeq": 1036,
+                            "type": "slot",
+                            "isDefault": true,
+                            "layers": []
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "seq": 1038,
+                    "name": "영역-좌측면-얼굴-기본_입",
+                    "category": "pigeon",
+                    "direction": "left",
+                    "parentLayerSeq": 1027,
+                    "type": "group",
+                    "parentTransform": [
+                      1,
+                      0,
+                      0,
+                      1,
+                      -0.1,
+                      0.3
+                    ],
+                    "parentTranslate": {
+                      "x": 0,
+                      "y": 0.5
+                    },
+                    "rotate": 0.001,
+                    "x": 0,
+                    "y": -0.3,
+                    "w": 0.5,
+                    "h": 0.6,
+                    "isDefault": true,
+                    "animation": [
+                      {
+                        "rotate": 0.003
+                      },
+                      {
+                        "rotate": -0.003
+                      }
+                    ],
+                    "layers": [
+                      {
+                        "seq": 1039,
+                        "name": "영역-좌측면-얼굴-입-윗부리",
+                        "category": "pigeon",
+                        "direction": "left",
+                        "parentLayerSeq": 1038,
+                        "type": "group",
+                        "color": "#ff00f0",
+                        "parentTransform": [
+                          1,
+                          0,
+                          0,
+                          1,
+                          0.1,
+                          0.25
+                        ],
+                        "parentTranslate": {
+                          "x": 0,
+                          "y": 0
+                        },
+                        "x": -0.1,
+                        "y": -0.25,
+                        "w": 1,
+                        "h": 0.5,
+                        "isDefault": true,
+                        "layers": [
+                          {
+                            "seq": 1040,
+                            "name": "부위-좌측면-얼굴-입-윗부리-기본_윗부리",
+                            "category": "pigeon",
+                            "direction": "left",
+                            "parentLayerSeq": 1039,
+                            "type": "slot",
+                            "isDefault": true,
+                            "layers": []
+                          }
+                        ]
+                      },
+                      {
+                        "seq": 1041,
+                        "name": "영역-좌측면-얼굴-입-아랫부리",
+                        "category": "pigeon",
+                        "direction": "left",
+                        "parentLayerSeq": 1038,
+                        "type": "group",
+                        "color": "#ff0000",
+                        "parentTransform": [
+                          1,
+                          0,
+                          0,
+                          1,
+                          0.1,
+                          0.25
+                        ],
+                        "parentTranslate": {
+                          "x": 0,
+                          "y": 0.5
+                        },
+                        "x": -0.1,
+                        "y": -0.25,
+                        "w": 1,
+                        "h": 0.5,
+                        "isDefault": true,
+                        "layers": [
+                          {
+                            "seq": 1042,
+                            "name": "부위-좌측면-얼굴-입-아래부리-기본_아랫부리",
+                            "category": "pigeon",
+                            "direction": "left",
+                            "parentLayerSeq": 1041,
+                            "type": "slot",
+                            "isDefault": true,
+                            "layers": []
+                          }
+                        ]
+                      },
+                      {
+                        "seq": 1043,
+                        "name": "영역-좌측면-얼굴-입-입안",
+                        "category": "pigeon",
+                        "direction": "left",
+                        "parentLayerSeq": 1038,
+                        "type": "group",
+                        "color": "#ffff00",
+                        "parentTransform": [
+                          1,
+                          0,
+                          0,
+                          1,
+                          0,
+                          0
+                        ],
+                        "parentTranslate": {
+                          "x": 0,
+                          "y": 0.5
+                        },
+                        "x": 0,
+                        "y": -0.05,
+                        "w": 0.8,
+                        "h": 0.1,
+                        "isDefault": true,
+                        "layers": [
+                          {
+                            "seq": 1044,
+                            "name": "부위-좌측면-얼굴-입-입안-기본_입안",
+                            "category": "pigeon",
+                            "direction": "left",
+                            "parentLayerSeq": 1043,
+                            "type": "slot",
+                            "isDefault": true,
+                            "layers": []
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "seq": 1060,
+            "name": "영역-좌측면-엉덩이",
+            "category": "pigeon",
+            "direction": "left",
+            "parentLayerSeq": 1001,
+            "type": "group",
+            "parentTransform": [
+              1,
+              0,
+              0,
+              1,
+              0.36,
+              0.43
+            ],
+            "parentTranslate": {
+              "x": 0.5,
+              "y": 0.5
+            },
+            "x": -0.13,
+            "y": -0.07,
+            "w": 0.26,
+            "h": 0.14,
+            "isDefault": true,
+            "layers": [
+              {
+                "seq": 1061,
+                "name": "영역-좌측면-왼쪽_엉덩이",
+                "category": "pigeon",
+                "direction": "left",
+                "parentLayerSeq": 1060,
+                "type": "group",
+                "color": "#FF0000",
+                "parentTransform": [
+                  1,
+                  0,
+                  0,
+                  1,
+                  0,
+                  0
+                ],
+                "parentTranslate": {
+                  "x": 0,
+                  "y": 0
+                },
+                "x": 0,
+                "y": 0,
+                "w": 1,
+                "h": 1,
+                "isDefault": true,
+                "layers": [
+                  {
+                    "seq": 1062,
+                    "name": "부위-좌측면-왼쪽_엉덩이",
+                    "category": "pigeon",
+                    "direction": "left",
+                    "parentLayerSeq": 1061,
+                    "type": "slot",
+                    "isDefault": true,
+                    "layers": []
+                  }
+                ]
+              },
+              {
+                "seq": 1063,
+                "name": "영역-좌측면-오른쪽_엉덩이",
+                "category": "pigeon",
+                "direction": "left",
+                "parentLayerSeq": 1060,
+                "type": "group",
+                "color": "#00FF00",
+                "parentTransform": [
+                  1,
+                  0,
+                  0,
+                  1,
+                  0,
+                  0
+                ],
+                "parentTranslate": {
+                  "x": 0,
+                  "y": 0
+                },
+                "x": 0,
+                "y": 0,
+                "w": 1,
+                "h": 1,
+                "isDefault": true,
+                "layers": [
+                  {
+                    "seq": 1064,
+                    "name": "부위-좌측면-오른쪽_엉덩이",
+                    "category": "pigeon",
+                    "direction": "left",
+                    "parentLayerSeq": 1063,
+                    "type": "slot",
+                    "isDefault": true,
+                    "layers": []
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "seq": 1006,
+            "name": "영역-좌측면-왼쪽_날개",
+            "category": "pigeon",
+            "direction": "left",
+            "parentLayerSeq": 1001,
+            "type": "group",
+            "color": "#5098DA",
+            "parentTransform": [
+              1,
+              0,
+              0,
+              1,
+              0.11,
+              0.08
+            ],
+            "parentTranslate": {
+              "x": 0.8,
+              "y": 0.2
+            },
+            "rotate": 0,
+            "x": -0.11,
+            "y": -0.08,
+            "w": 0.4,
+            "h": 0.6,
+            "isDefault": true,
+            "animationIterationCount": "infinite",
+            "animation": [
+              {
+                "rotate": 0.01
+              },
+              {
+                "rotate": -0.01
+              }
+            ],
+            "layers": [
+              {
+                "seq": 1007,
+                "name": "부위-좌측면-기본_왼쪽_날개",
+                "category": "pigeon",
+                "direction": "left",
+                "parentLayerSeq": 1006,
+                "type": "slot",
+                "isDefault": true,
+                "layers": []
+              },
+              {
+                "seq": 1008,
+                "name": "영역-좌측면-왼쪽_날개-깃",
+                "category": "pigeon",
+                "direction": "left",
+                "parentLayerSeq": 1006,
+                "type": "group",
+                "parentTransform": [
+                  1,
+                  0,
+                  0,
+                  1,
+                  0.1,
+                  0.4
+                ],
+                "parentTranslate": {
+                  "x": 0.5,
+                  "y": 0.5
+                },
+                "rotate": 0.01,
+                "x": -0.4,
+                "y": -0.1,
+                "w": 0.8,
+                "h": 0.2,
+                "isDefault": true,
+                "animationIterationCount": "infinite",
+                "animation": [
+                  {
+                    "rotate": 0.01
+                  },
+                  {
+                    "rotate": -0.01
+                  }
+                ],
+                "layers": [
+                  {
+                    "seq": 1009,
+                    "name": "부위-좌측면-왼쪽_날개-깃",
+                    "category": "pigeon",
+                    "direction": "left",
+                    "parentLayerSeq": 1008,
+                    "type": "slot",
+                    "isDefault": true,
+                    "layers": []
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "seq": 2000,
+    "name": "비둘기-정면",
+    "category": "pigeon",
+    "direction": "front",
+    "w": 1,
+    "h": 1,
+    "b": [
+      0.25,
+      0.25,
+      0.75,
+      0.75
+    ],
+    "isDefault": true,
+    "layers": [
+      {
+        "seq": 2001,
+        "name": "영역-정면-몸",
+        "category": "pigeon",
+        "direction": "front",
+        "parentLayerSeq": 2000,
+        "type": "group",
+        "color": "#FF0FF0",
+        "parentTransform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "parentTranslate": {
+          "x": 0.5,
+          "y": 0.58
+        },
+        "x": -0.2,
+        "y": -0.25,
+        "w": 0.4,
+        "h": 0.5,
+        "isDefault": true,
+        "animationIterationCount": "infinite",
+        "animation": [
+          {
+            "x": -0.2,
+            "y": -0.25,
+            "parentTransform": [
+              1.01,
+              0,
+              0,
+              1.01,
+              0,
+              0
+            ]
+          }
+        ],
+        "layers": [
+          {
+            "seq": 2200,
+            "name": "영역-정면-그림자",
+            "category": "pigeon",
+            "direction": "front",
+            "parentLayerSeq": 2001,
+            "type": "group",
+            "color": "#5098DA",
+            "parentTransform": [
+              1,
+              0,
+              0,
+              1,
+              0,
+              0.8
+            ],
+            "parentTranslate": {
+              "x": 0.5,
+              "y": 0.5
+            },
+            "rotate": 0,
+            "x": -0.8,
+            "y": -0.1,
+            "w": 1.6,
+            "h": 0.2,
+            "isDefault": true,
+            "animationIterationCount": "infinite",
+            "animation": [
+              {
+                "rotate": -0.001
+              },
+              {
+                "rotate": 0.001
+              }
+            ],
+            "layers": [
+              {
+                "seq": 2201,
+                "name": "부위-정측면-그림자",
+                "category": "pigeon",
+                "direction": "front",
+                "parentLayerSeq": 2200,
+                "type": "slot",
+                "isDefault": true,
+                "layers": []
+              }
+            ]
+          },
+          {
+            "seq": 2002,
+            "name": "영역-정면-꼬리",
+            "category": "pigeon",
+            "direction": "front",
+            "parentLayerSeq": 2001,
+            "type": "group",
+            "color": "#448CCF",
+            "parentTransform": [
+              1,
+              0,
+              0,
+              1,
+              0,
+              0.4
+            ],
+            "parentTranslate": {
+              "x": 0.5,
+              "y": 0.5
+            },
+            "rotate": 0,
+            "x": -0.12,
+            "y": 0,
+            "w": 0.24,
+            "h": 0.3,
+            "isDefault": true,
+            "animationIterationCount": "infinite",
+            "animation": [
+              {
+                "rotate": -0.01
+              },
+              {
+                "rotate": 0.01
+              }
+            ],
+            "layers": [
+              {
+                "seq": 2003,
+                "name": "부위-정면-꼬리-라인",
+                "category": "pigeon",
+                "direction": "front",
+                "parentLayerSeq": 2002,
+                "type": "slot",
+                "isDefault": true,
+                "layers": []
+              },
+              {
+                "seq": 2004,
+                "name": "영역-정면-꼬리-깃",
+                "category": "pigeon",
+                "direction": "front",
+                "parentLayerSeq": 2002,
+                "type": "group",
+                "parentTransform": [
+                  1,
+                  0,
+                  0,
+                  1,
+                  0,
+                  0.45
+                ],
+                "parentTranslate": {
+                  "x": 0.5,
+                  "y": 0.5
+                },
+                "rotate": 0.01,
+                "x": -0.4,
+                "y": -0.1,
+                "w": 0.8,
+                "h": 0.2,
+                "isDefault": true,
+                "animationIterationCount": "infinite",
+                "animation": [
+                  {
+                    "rotate": 0.01
+                  },
+                  {
+                    "rotate": -0.01
+                  }
+                ],
+                "layers": [
+                  {
+                    "seq": 2005,
+                    "name": "부위-정면-꼬리-깃",
+                    "category": "pigeon",
+                    "direction": "front",
+                    "parentLayerSeq": 2004,
+                    "type": "slot",
+                    "isDefault": true,
+                    "layers": []
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "seq": 2016,
+            "name": "영역-정면-왼쪽_허벅지",
+            "category": "pigeon",
+            "direction": "front",
+            "parentLayerSeq": 2001,
+            "type": "group",
+            "parentTransform": [
+              1,
+              0,
+              0,
+              1,
+              0,
+              0
+            ],
+            "parentTranslate": {
+              "x": 0.8,
+              "y": 0.95
+            },
+            "rotate": 0,
+            "x": -0.075,
+            "y": 0,
+            "w": 0.15,
+            "h": 0.15,
+            "isDefault": true,
+            "animationIterationCount": "infinite",
+            "animation": [
+              {
+                "rotate": -0.01
+              },
+              {
+                "rotate": -0.011
+              }
+            ],
+            "layers": [
+              {
+                "seq": 2017,
+                "name": "부위-정면-왼쪽_허벅지",
+                "category": "pigeon",
+                "direction": "front",
+                "parentLayerSeq": 2016,
+                "type": "slot",
+                "isDefault": true,
+                "layers": []
+              },
+              {
+                "seq": 2018,
+                "name": "영역-정면-왼쪽_엉덩이-허벅지-정강이",
+                "category": "pigeon",
+                "direction": "front",
+                "parentLayerSeq": 2016,
+                "type": "group",
+                "parentTransform": [
+                  1,
+                  0,
+                  0,
+                  1,
+                  0,
+                  0
+                ],
+                "parentTranslate": {
+                  "x": 0.5,
+                  "y": 0.9
+                },
+                "rotate": 0,
+                "x": -0.5,
+                "y": -0.1,
+                "w": 1,
+                "h": 1,
+                "isDefault": true,
+                "animationIterationCount": "infinite",
+                "animation": [
+                  {
+                    "rotate": -0.01
+                  }
+                ],
+                "layers": [
+                  {
+                    "seq": 2019,
+                    "name": "부위-정면-왼쪽_엉덩이-허벅지-정강이",
+                    "category": "pigeon",
+                    "direction": "front",
+                    "parentLayerSeq": 2018,
+                    "type": "slot",
+                    "isDefault": true,
+                    "layers": []
+                  },
+                  {
+                    "seq": 2020,
+                    "name": "영역-정면-왼쪽-하체-엉덩이-허벅지-정강이-발목",
+                    "category": "pigeon",
+                    "direction": "front",
+                    "parentLayerSeq": 2018,
+                    "type": "group",
+                    "parentTransform": [
+                      1,
+                      0,
+                      0,
+                      1,
+                      0,
+                      0
+                    ],
+                    "parentTranslate": {
+                      "x": 0.5,
+                      "y": 0.9
+                    },
+                    "rotate": 0.02,
+                    "x": -0.8,
+                    "y": 0,
+                    "w": 1.9,
+                    "h": 0.6,
+                    "isDefault": true,
+                    "animationIterationCount": "infinite",
+                    "animation": [
+                      {
+                        "rotate": -0.02
+                      },
+                      {
+                        "rotate": 0.03
+                      }
+                    ],
+                    "layers": [
+                      {
+                        "seq": 2021,
+                        "name": "부위-정면-왼쪽-하체-엉덩이-허벅지-정강이-발목-발",
+                        "category": "pigeon",
+                        "direction": "front",
+                        "parentLayerSeq": 2020,
+                        "type": "slot",
+                        "isDefault": true,
+                        "layers": []
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "seq": 2010,
+            "name": "영역-정면-오른쪽_허벅지",
+            "category": "pigeon",
+            "direction": "front",
+            "parentLayerSeq": 2001,
+            "type": "group",
+            "color": "#FF0000",
+            "parentTransform": [
+              1,
+              0,
+              0,
+              1,
+              0,
+              0
+            ],
+            "parentTranslate": {
+              "x": 0.22,
+              "y": 0.95
+            },
+            "rotate": 0,
+            "x": -0.075,
+            "y": 0,
+            "w": 0.15,
+            "h": 0.15,
+            "isDefault": true,
+            "animationIterationCount": "infinite",
+            "animation": [
+              {
+                "rotate": 0.011
+              },
+              {
+                "rotate": 0.01
+              }
+            ],
+            "layers": [
+              {
+                "seq": 2011,
+                "name": "부위-정면-오른쪽_허벅지",
+                "category": "pigeon",
+                "direction": "front",
+                "parentLayerSeq": 2010,
+                "type": "slot",
+                "isDefault": true,
+                "layers": []
+              },
+              {
+                "seq": 2012,
+                "name": "영역-정면-오른쪽_엉덩이-허벅지-정강이",
+                "category": "pigeon",
+                "direction": "front",
+                "parentLayerSeq": 2010,
+                "type": "group",
+                "parentTransform": [
+                  1,
+                  0,
+                  0,
+                  1,
+                  0,
+                  0
+                ],
+                "parentTranslate": {
+                  "x": 0.5,
+                  "y": 0.9
+                },
+                "rotate": 0,
+                "x": -0.5,
+                "y": -0.1,
+                "w": 1,
+                "h": 1,
+                "isDefault": true,
+                "animationIterationCount": "infinite",
+                "animation": [
+                  {
+                    "rotate": 0.01
+                  }
+                ],
+                "layers": [
+                  {
+                    "seq": 2013,
+                    "name": "부위-정면-오른쪽_엉덩이-허벅지-정강이",
+                    "category": "pigeon",
+                    "direction": "front",
+                    "parentLayerSeq": 2012,
+                    "type": "slot",
+                    "isDefault": true,
+                    "layers": []
+                  },
+                  {
+                    "seq": 2014,
+                    "name": "영역-정면-오른쪽-하체-엉덩이-허벅지-정강이-발목",
+                    "category": "pigeon",
+                    "direction": "front",
+                    "parentLayerSeq": 2012,
+                    "type": "group",
+                    "parentTransform": [
+                      1,
+                      0,
+                      0,
+                      1,
+                      0,
+                      0
+                    ],
+                    "parentTranslate": {
+                      "x": 0.5,
+                      "y": 0.9
+                    },
+                    "rotate": 0.02,
+                    "x": -1.2,
+                    "y": 0,
+                    "w": 1.9,
+                    "h": 0.6,
+                    "isDefault": true,
+                    "animationIterationCount": "infinite",
+                    "animation": [
+                      {
+                        "rotate": 0.03
+                      },
+                      {
+                        "rotate": -0.02
+                      }
+                    ],
+                    "layers": [
+                      {
+                        "seq": 2015,
+                        "name": "부위-정면-오른쪽-하체-엉덩이-허벅지-정강이-발목-발",
+                        "category": "pigeon",
+                        "direction": "front",
+                        "parentLayerSeq": 2014,
+                        "type": "slot",
+                        "isDefault": true,
+                        "layers": []
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "seq": 2060,
+            "name": "영역-정면-엉덩이",
+            "category": "pigeon",
+            "direction": "front",
+            "parentLayerSeq": 2001,
+            "type": "group",
+            "parentTransform": [
+              1,
+              0,
+              0,
+              1,
+              0,
+              0.43
+            ],
+            "parentTranslate": {
+              "x": 0.5,
+              "y": 0.5
+            },
+            "x": -0.4,
+            "y": -0.07,
+            "w": 0.8,
+            "h": 0.14,
+            "isDefault": true,
+            "layers": [
+              {
+                "seq": 2061,
+                "name": "영역-정면-왼쪽_엉덩이",
+                "category": "pigeon",
+                "direction": "front",
+                "parentLayerSeq": 2060,
+                "type": "group",
+                "color": "#FF0000",
+                "parentTransform": [
+                  1,
+                  0,
+                  0,
+                  1,
+                  0.3,
+                  0
+                ],
+                "parentTranslate": {
+                  "x": 0.5,
+                  "y": 0
+                },
+                "x": -0.2,
+                "y": 0,
+                "w": 0.4,
+                "h": 1,
+                "isDefault": true,
+                "layers": [
+                  {
+                    "seq": 2062,
+                    "name": "부위-정면-왼쪽_엉덩이",
+                    "category": "pigeon",
+                    "direction": "front",
+                    "parentLayerSeq": 2061,
+                    "type": "slot",
+                    "isDefault": true,
+                    "layers": []
+                  }
+                ]
+              },
+              {
+                "seq": 2063,
+                "name": "영역-정면-오른쪽_엉덩이",
+                "category": "pigeon",
+                "direction": "front",
+                "parentLayerSeq": 2060,
+                "type": "group",
+                "color": "#00FF00",
+                "parentTransform": [
+                  1,
+                  0,
+                  0,
+                  1,
+                  -0.3,
+                  0
+                ],
+                "parentTranslate": {
+                  "x": 0.5,
+                  "y": 0
+                },
+                "x": -0.2,
+                "y": 0,
+                "w": 0.4,
+                "h": 1,
+                "isDefault": true,
+                "layers": [
+                  {
+                    "seq": 2064,
+                    "name": "부위-정면-오른쪽_엉덩이",
+                    "category": "pigeon",
+                    "direction": "front",
+                    "parentLayerSeq": 2063,
+                    "type": "slot",
+                    "isDefault": true,
+                    "layers": []
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "seq": 2065,
+            "name": "영역-정면-오른쪽_날개",
+            "category": "pigeon",
+            "direction": "front",
+            "parentLayerSeq": 2001,
+            "type": "group",
+            "color": "#5098DA",
+            "parentTransform": [
+              1,
+              0,
+              0,
+              1,
+              0.11,
+              0.08
+            ],
+            "parentTranslate": {
+              "x": -0.25,
+              "y": 0.2
+            },
+            "rotate": 0,
+            "x": -0.11,
+            "y": -0.08,
+            "w": 0.5,
+            "h": 0.6,
+            "isDefault": true,
+            "animationIterationCount": "infinite",
+            "animation": [
+              {
+                "rotate": -0.01
+              },
+              {
+                "rotate": 0.01
+              }
+            ],
+            "layers": [
+              {
+                "seq": 2066,
+                "name": "부위-정면-오른쪽_날개",
+                "category": "pigeon",
+                "direction": "front",
+                "parentLayerSeq": 2065,
+                "type": "slot",
+                "isDefault": true,
+                "layers": []
+              },
+              {
+                "seq": 2267,
+                "name": "영역-정면-오른쪽_날개-깃",
+                "category": "pigeon",
+                "direction": "front",
+                "parentLayerSeq": 2065,
+                "type": "group",
+                "parentTransform": [
+                  1,
+                  0,
+                  0,
+                  1,
+                  0,
+                  0.4
+                ],
+                "parentTranslate": {
+                  "x": 0.5,
+                  "y": 0.5
+                },
+                "rotate": 0.01,
+                "x": -0.4,
+                "y": -0.1,
+                "w": 0.8,
+                "h": 0.2,
+                "isDefault": true,
+                "animationIterationCount": "infinite",
+                "animation": [
+                  {
+                    "rotate": 0.01
+                  },
+                  {
+                    "rotate": -0.01
+                  }
+                ],
+                "layers": [
+                  {
+                    "seq": 2068,
+                    "name": "부위-정면-오른쪽_날개-깃",
+                    "category": "pigeon",
+                    "direction": "front",
+                    "parentLayerSeq": 2267,
+                    "type": "slot",
+                    "isDefault": true,
+                    "layers": []
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "seq": 2006,
+            "name": "영역-정면-왼쪽_날개",
+            "category": "pigeon",
+            "direction": "front",
+            "parentLayerSeq": 2001,
+            "type": "group",
+            "color": "#5098DA",
+            "parentTransform": [
+              1,
+              0,
+              0,
+              1,
+              0.11,
+              0.08
+            ],
+            "parentTranslate": {
+              "x": 0.8,
+              "y": 0.2
+            },
+            "rotate": 0,
+            "x": -0.11,
+            "y": -0.08,
+            "w": 0.4,
+            "h": 0.6,
+            "isDefault": true,
+            "animationIterationCount": "infinite",
+            "animation": [
+              {
+                "rotate": 0.01
+              },
+              {
+                "rotate": -0.01
+              }
+            ],
+            "layers": [
+              {
+                "seq": 2007,
+                "name": "부위-정면-기본_왼쪽_날개",
+                "category": "pigeon",
+                "direction": "front",
+                "parentLayerSeq": 2006,
+                "type": "slot",
+                "isDefault": true,
+                "layers": []
+              },
+              {
+                "seq": 2008,
+                "name": "영역-정면-왼쪽_날개-깃",
+                "category": "pigeon",
+                "direction": "front",
+                "parentLayerSeq": 2006,
+                "type": "group",
+                "parentTransform": [
+                  1,
+                  0,
+                  0,
+                  1,
+                  0,
+                  0.4
+                ],
+                "parentTranslate": {
+                  "x": 0.5,
+                  "y": 0.5
+                },
+                "rotate": 0.01,
+                "x": -0.4,
+                "y": -0.1,
+                "w": 0.8,
+                "h": 0.2,
+                "isDefault": true,
+                "animationIterationCount": "infinite",
+                "animation": [
+                  {
+                    "rotate": 0.01
+                  },
+                  {
+                    "rotate": -0.01
+                  }
+                ],
+                "layers": [
+                  {
+                    "seq": 2009,
+                    "name": "부위-정면-왼쪽_날개-깃",
+                    "category": "pigeon",
+                    "direction": "front",
+                    "parentLayerSeq": 2008,
+                    "type": "slot",
+                    "isDefault": true,
+                    "layers": []
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "seq": 2022,
+            "name": "부위-정면-기본_몸",
+            "category": "pigeon",
+            "direction": "front",
+            "parentLayerSeq": 2001,
+            "type": "slot",
+            "isDefault": true,
+            "layers": []
+          },
+          {
+            "seq": 2023,
+            "name": "영역-정면-몸-가슴",
+            "category": "pigeon",
+            "direction": "front",
+            "parentLayerSeq": 2001,
+            "type": "group",
+            "color": "#ff0000",
+            "parentTransform": [
+              1,
+              0,
+              0,
+              1,
+              -0.015,
+              0
+            ],
+            "parentTranslate": {
+              "x": 0.5,
+              "y": 0.5
+            },
+            "rotate": 0,
+            "x": -0.15,
+            "y": -0.151,
+            "w": 0.3,
+            "h": 0.32,
+            "isDefault": true,
+            "animationIterationCount": "infinite",
+            "animation": [
+              {
+                "rotate": 0.003
+              },
+              {
+                "rotate": -0.005
+              }
+            ],
+            "layers": [
+              {
+                "seq": 2024,
+                "name": "부위-정면-기본_몸-가슴",
+                "category": "pigeon",
+                "direction": "front",
+                "parentLayerSeq": 2023,
+                "type": "slot",
+                "isDefault": true,
+                "layers": []
+              }
+            ]
+          },
+          {
+            "seq": 2025,
+            "name": "영역-정면-목",
+            "category": "pigeon",
+            "direction": "front",
+            "parentLayerSeq": 2001,
+            "type": "group",
+            "parentTransform": [
+              1,
+              0,
+              0,
+              1,
+              0,
+              0
+            ],
+            "parentTranslate": {
+              "x": 0,
+              "y": -0.05
+            },
+            "rotate": 0,
+            "x": 0,
+            "y": 0,
+            "w": 1,
+            "h": 0.2,
+            "isDefault": true,
+            "animationIterationCount": "infinite",
+            "animation": [
+              {
+                "rotate": 0.001
+              },
+              {
+                "rotate": -0.001
+              }
+            ],
+            "layers": [
+              {
+                "seq": 2026,
+                "name": "부위-정면-기본_목",
+                "category": "pigeon",
+                "direction": "front",
+                "parentLayerSeq": 2025,
+                "type": "slot",
+                "isDefault": true,
+                "layers": []
+              },
+              {
+                "seq": 2027,
+                "name": "영역-정면-목-얼굴",
+                "category": "pigeon",
+                "direction": "front",
+                "parentLayerSeq": 2025,
+                "type": "group",
+                "parentTransform": [
+                  1,
+                  0,
+                  0,
+                  1,
+                  0.5,
+                  -0.1
+                ],
+                "parentTranslate": {
+                  "x": 0,
+                  "y": 0
+                },
+                "rotate": 0,
+                "x": -0.5,
+                "y": -1.7,
+                "w": 1,
+                "h": 2,
+                "isDefault": true,
+                "animationIterationCount": "infinite",
+                "animation": [
+                  {
+                    "parentTransform": [
+                      1.01,
+                      0,
+                      0,
+                      1.01,
+                      0.5,
+                      -0.1
+                    ],
+                    "rotate": -0.001
+                  }
+                ],
+                "layers": [
+                  {
+                    "seq": 2031,
+                    "name": "영역-정면-얼굴-머리",
+                    "category": "pigeon",
+                    "direction": "front",
+                    "parentLayerSeq": 2027,
+                    "type": "group",
+                    "parentTransform": [
+                      1,
+                      0,
+                      0,
+                      1,
+                      0.5,
+                      -0.1
+                    ],
+                    "parentTranslate": {
+                      "x": 0,
+                      "y": 0
+                    },
+                    "x": -0.5,
+                    "y": -0.35,
+                    "w": 1,
+                    "h": 0.5,
+                    "isDefault": true,
+                    "layers": [
+                      {
+                        "seq": 2032,
+                        "name": "부위-정면-얼굴-머리_기본깃_셋3",
+                        "category": "pigeon",
+                        "direction": "front",
+                        "parentLayerSeq": 2031,
+                        "type": "slot",
+                        "isDefault": true,
+                        "layers": []
+                      }
+                    ]
+                  },
+                  {
+                    "seq": 2059,
+                    "name": "부위-정면-기본_얼굴",
+                    "category": "pigeon",
+                    "direction": "front",
+                    "parentLayerSeq": 2027,
+                    "type": "slot",
+                    "isDefault": true,
+                    "layers": []
+                  },
+                  {
+                    "seq": 2028,
+                    "name": "영역-정면-목-얼굴-기본_왼쪽눈",
+                    "category": "pigeon",
+                    "direction": "front",
+                    "parentLayerSeq": 2027,
+                    "type": "group",
+                    "parentTransform": [
+                      1,
+                      0,
+                      0,
+                      1,
+                      0,
+                      0
+                    ],
+                    "parentTranslate": {
+                      "x": 0.1,
+                      "y": 0.2
+                    },
+                    "x": 0,
+                    "y": 0,
+                    "w": 0.34,
+                    "h": 0.66,
+                    "isDefault": true,
+                    "layers": [
+                      {
+                        "seq": 2029,
+                        "name": "부위-정면-목-얼굴-기본_왼쪽눈_기본_흰자",
+                        "category": "pigeon",
+                        "direction": "front",
+                        "parentLayerSeq": 2028,
+                        "type": "slot",
+                        "isDefault": true,
+                        "layers": []
+                      },
+                      {
+                        "seq": 2030,
+                        "name": "영역-정면-목-얼굴-기본_왼쪽눈-기본_검은자",
+                        "category": "pigeon",
+                        "direction": "front",
+                        "parentLayerSeq": 2028,
+                        "type": "group",
+                        "parentTransform": [
+                          1,
+                          0,
+                          0,
+                          1,
+                          0,
+                          0
+                        ],
+                        "parentTranslate": {
+                          "x": 0.5,
+                          "y": 0.5
+                        },
+                        "x": -0.2,
+                        "y": -0.2,
+                        "w": 0.4,
+                        "h": 0.4,
+                        "isDefault": true,
+                        "animation": [
+                          {
+                            "parentTransform": [
+                              1,
+                              0,
+                              0,
+                              0.7,
+                              0,
+                              0
+                            ]
+                          }
+                        ],
+                        "layers": [
+                          {
+                            "seq": 2050,
+                            "name": "부위-정면-얼굴-기본_왼쪽눈_기본_검은자",
+                            "category": "pigeon",
+                            "direction": "front",
+                            "parentLayerSeq": 2030,
+                            "type": "slot",
+                            "isDefault": true,
+                            "layers": []
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "seq": 2035,
+                    "name": "영역-정면-얼굴-기본_오른쪽눈",
+                    "category": "pigeon",
+                    "direction": "front",
+                    "parentLayerSeq": 2027,
+                    "type": "group",
+                    "parentTransform": [
+                      1,
+                      0,
+                      0,
+                      1,
+                      0,
+                      0
+                    ],
+                    "parentTranslate": {
+                      "x": 0.6,
+                      "y": 0.2
+                    },
+                    "x": 0,
+                    "y": 0,
+                    "w": 0.34,
+                    "h": 0.66,
+                    "isDefault": true,
+                    "layers": [
+                      {
+                        "seq": 2055,
+                        "name": "부위-정면-얼굴-기본_오른눈_기본_흰자",
+                        "category": "pigeon",
+                        "direction": "front",
+                        "parentLayerSeq": 2035,
+                        "type": "slot",
+                        "isDefault": true,
+                        "layers": []
+                      },
+                      {
+                        "seq": 2036,
+                        "name": "영역-정면-얼굴-기본_오른눈-기본_검은자",
+                        "category": "pigeon",
+                        "direction": "front",
+                        "parentLayerSeq": 2035,
+                        "type": "group",
+                        "parentTransform": [
+                          1,
+                          0,
+                          0,
+                          1,
+                          0,
+                          0
+                        ],
+                        "parentTranslate": {
+                          "x": 0.5,
+                          "y": 0.5
+                        },
+                        "x": -0.2,
+                        "y": -0.2,
+                        "w": 0.4,
+                        "h": 0.4,
+                        "isDefault": true,
+                        "animation": [
+                          {
+                            "parentTransform": [
+                              1,
+                              0,
+                              0,
+                              0.7,
+                              0,
+                              0
+                            ]
+                          }
+                        ],
+                        "layers": [
+                          {
+                            "seq": 2037,
+                            "name": "부위-정면-얼굴-기본_오른눈_기본_검은자",
+                            "category": "pigeon",
+                            "direction": "front",
+                            "parentLayerSeq": 2036,
+                            "type": "slot",
+                            "isDefault": true,
+                            "layers": []
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "seq": 2038,
+                    "name": "영역-정면-얼굴-기본_입",
+                    "category": "pigeon",
+                    "direction": "front",
+                    "parentLayerSeq": 2027,
+                    "type": "group",
+                    "parentTransform": [
+                      1,
+                      0,
+                      0,
+                      1,
+                      -0.25,
+                      0.3
+                    ],
+                    "parentTranslate": {
+                      "x": 0.5,
+                      "y": 0.7
+                    },
+                    "rotate": 0.001,
+                    "x": 0,
+                    "y": -0.3,
+                    "w": 0.5,
+                    "h": 0.6,
+                    "isDefault": true,
+                    "animation": [
+                      {
+                        "rotate": 0.003
+                      },
+                      {
+                        "rotate": -0.003
+                      }
+                    ],
+                    "layers": [
+                      {
+                        "seq": 2039,
+                        "name": "영역-정면-얼굴-입-윗부리",
+                        "category": "pigeon",
+                        "direction": "front",
+                        "parentLayerSeq": 2038,
+                        "type": "group",
+                        "color": "#ff00f0",
+                        "parentTransform": [
+                          1,
+                          0,
+                          0,
+                          1,
+                          0.1,
+                          0.25
+                        ],
+                        "parentTranslate": {
+                          "x": 0,
+                          "y": 0
+                        },
+                        "x": -0.1,
+                        "y": -0.25,
+                        "w": 1,
+                        "h": 0.5,
+                        "isDefault": true,
+                        "layers": [
+                          {
+                            "seq": 2040,
+                            "name": "부위-정면-얼굴-입-윗부리-기본_윗부리",
+                            "category": "pigeon",
+                            "direction": "front",
+                            "parentLayerSeq": 2039,
+                            "type": "slot",
+                            "isDefault": true,
+                            "layers": []
+                          }
+                        ]
+                      },
+                      {
+                        "seq": 2041,
+                        "name": "영역-정면-얼굴-입-아랫부리",
+                        "category": "pigeon",
+                        "direction": "front",
+                        "parentLayerSeq": 2038,
+                        "type": "group",
+                        "color": "#ff0000",
+                        "parentTransform": [
+                          1,
+                          0,
+                          0,
+                          1,
+                          0.1,
+                          0.25
+                        ],
+                        "parentTranslate": {
+                          "x": 0,
+                          "y": 0.5
+                        },
+                        "x": -0.1,
+                        "y": -0.25,
+                        "w": 1,
+                        "h": 0.5,
+                        "isDefault": true,
+                        "layers": [
+                          {
+                            "seq": 2042,
+                            "name": "부위-정면-얼굴-입-아래부리-기본_아랫부리",
+                            "category": "pigeon",
+                            "direction": "front",
+                            "parentLayerSeq": 2041,
+                            "type": "slot",
+                            "isDefault": true,
+                            "layers": []
+                          }
+                        ]
+                      },
+                      {
+                        "seq": 2043,
+                        "name": "영역-정면-얼굴-입-입안",
+                        "category": "pigeon",
+                        "direction": "front",
+                        "parentLayerSeq": 2038,
+                        "type": "group",
+                        "color": "#ffff00",
+                        "parentTransform": [
+                          1,
+                          0,
+                          0,
+                          1,
+                          0,
+                          0
+                        ],
+                        "parentTranslate": {
+                          "x": 0,
+                          "y": 0.5
+                        },
+                        "x": 0,
+                        "y": -0.05,
+                        "w": 1,
+                        "h": 0.1,
+                        "isDefault": true,
+                        "layers": [
+                          {
+                            "seq": 2044,
+                            "name": "부위-정면-얼굴-입-입안-기본_입안",
+                            "category": "pigeon",
+                            "direction": "front",
+                            "parentLayerSeq": 2043,
+                            "type": "slot",
+                            "isDefault": true,
+                            "layers": []
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "seq": 3000,
+    "name": "비둘기-뒷면",
+    "category": "pigeon",
+    "direction": "back",
+    "w": 1,
+    "h": 1,
+    "b": [
+      0.25,
+      0.25,
+      0.75,
+      0.75
+    ],
+    "isDefault": true,
+    "layers": [
+      {
+        "seq": 3001,
+        "name": "영역-뒷면-몸",
+        "category": "pigeon",
+        "direction": "back",
+        "parentLayerSeq": 3000,
+        "type": "group",
+        "color": "#FF0FF0",
+        "parentTransform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "parentTranslate": {
+          "x": 0.5,
+          "y": 0.58
+        },
+        "x": -0.2,
+        "y": -0.25,
+        "w": 0.4,
+        "h": 0.5,
+        "isDefault": true,
+        "animationIterationCount": "infinite",
+        "animation": [
+          {
+            "x": -0.2,
+            "y": -0.25,
+            "parentTransform": [
+              1.01,
+              0,
+              0,
+              1.01,
+              0,
+              0
+            ]
+          }
+        ],
+        "layers": [
+          {
+            "seq": 3200,
+            "name": "영역-뒷면-그림자",
+            "category": "pigeon",
+            "direction": "back",
+            "parentLayerSeq": 3001,
+            "type": "group",
+            "color": "#5098DA",
+            "parentTransform": [
+              1,
+              0,
+              0,
+              1,
+              0,
+              0.8
+            ],
+            "parentTranslate": {
+              "x": 0.5,
+              "y": 0.5
+            },
+            "rotate": 0,
+            "x": -0.8,
+            "y": -0.1,
+            "w": 1.6,
+            "h": 0.2,
+            "isDefault": true,
+            "animationIterationCount": "infinite",
+            "animation": [
+              {
+                "rotate": -0.01
+              },
+              {
+                "rotate": 0.01
+              }
+            ],
+            "layers": [
+              {
+                "seq": 3201,
+                "name": "부위-뒷면-그림자",
+                "category": "pigeon",
+                "direction": "back",
+                "parentLayerSeq": 3200,
+                "type": "slot",
+                "isDefault": true,
+                "layers": []
+              }
+            ]
+          },
+          {
+            "seq": 3016,
+            "name": "영역-뒷면-왼쪽_허벅지",
+            "category": "pigeon",
+            "direction": "back",
+            "parentLayerSeq": 3001,
+            "type": "group",
+            "parentTransform": [
+              1,
+              0,
+              0,
+              1,
+              0,
+              0
+            ],
+            "parentTranslate": {
+              "x": 0.8,
+              "y": 0.95
+            },
+            "rotate": 0,
+            "x": -0.075,
+            "y": 0,
+            "w": 0.15,
+            "h": 0.15,
+            "isDefault": true,
+            "animationIterationCount": "infinite",
+            "animation": [
+              {
+                "rotate": -0.01
+              },
+              {
+                "rotate": -0.011
+              }
+            ],
+            "layers": [
+              {
+                "seq": 3017,
+                "name": "부위-뒷면-왼쪽_허벅지",
+                "category": "pigeon",
+                "direction": "back",
+                "parentLayerSeq": 3016,
+                "type": "slot",
+                "isDefault": true,
+                "layers": []
+              },
+              {
+                "seq": 3018,
+                "name": "영역-뒷면-왼쪽_엉덩이-허벅지-정강이",
+                "category": "pigeon",
+                "direction": "back",
+                "parentLayerSeq": 3016,
+                "type": "group",
+                "parentTransform": [
+                  1,
+                  0,
+                  0,
+                  1,
+                  0,
+                  0
+                ],
+                "parentTranslate": {
+                  "x": 0.5,
+                  "y": 0.9
+                },
+                "rotate": 0,
+                "x": -0.5,
+                "y": -0.1,
+                "w": 1,
+                "h": 1,
+                "isDefault": true,
+                "animationIterationCount": "infinite",
+                "animation": [
+                  {
+                    "rotate": -0.01
+                  }
+                ],
+                "layers": [
+                  {
+                    "seq": 3019,
+                    "name": "부위-뒷면-왼쪽_엉덩이-허벅지-정강이",
+                    "category": "pigeon",
+                    "direction": "back",
+                    "parentLayerSeq": 3018,
+                    "type": "slot",
+                    "isDefault": true,
+                    "layers": []
+                  },
+                  {
+                    "seq": 3020,
+                    "name": "영역-뒷면-왼쪽-하체-엉덩이-허벅지-정강이-발목",
+                    "category": "pigeon",
+                    "direction": "back",
+                    "parentLayerSeq": 3018,
+                    "type": "group",
+                    "parentTransform": [
+                      1,
+                      0,
+                      0,
+                      1,
+                      0,
+                      0
+                    ],
+                    "parentTranslate": {
+                      "x": 0.5,
+                      "y": 0.9
+                    },
+                    "rotate": 0.02,
+                    "x": -0.8,
+                    "y": 0,
+                    "w": 1.9,
+                    "h": 0.6,
+                    "isDefault": true,
+                    "animationIterationCount": "infinite",
+                    "animation": [
+                      {
+                        "rotate": -0.02
+                      },
+                      {
+                        "rotate": 0.03
+                      }
+                    ],
+                    "layers": [
+                      {
+                        "seq": 3021,
+                        "name": "부위-뒷면-왼쪽-하체-엉덩이-허벅지-정강이-발목-발",
+                        "category": "pigeon",
+                        "direction": "back",
+                        "parentLayerSeq": 3020,
+                        "type": "slot",
+                        "isDefault": true,
+                        "layers": []
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "seq": 3010,
+            "name": "영역-뒷면-오른쪽_허벅지",
+            "category": "pigeon",
+            "direction": "back",
+            "parentLayerSeq": 3001,
+            "type": "group",
+            "color": "#FF0000",
+            "parentTransform": [
+              1,
+              0,
+              0,
+              1,
+              0,
+              0
+            ],
+            "parentTranslate": {
+              "x": 0.22,
+              "y": 0.95
+            },
+            "rotate": 0,
+            "x": -0.075,
+            "y": 0,
+            "w": 0.15,
+            "h": 0.15,
+            "isDefault": true,
+            "animationIterationCount": "infinite",
+            "animation": [
+              {
+                "rotate": 0.011
+              },
+              {
+                "rotate": 0.01
+              }
+            ],
+            "layers": [
+              {
+                "seq": 3011,
+                "name": "부위-뒷면-오른쪽_허벅지",
+                "category": "pigeon",
+                "direction": "back",
+                "parentLayerSeq": 3010,
+                "type": "slot",
+                "isDefault": true,
+                "layers": []
+              },
+              {
+                "seq": 3012,
+                "name": "영역-뒷면-오른쪽_엉덩이-허벅지-정강이",
+                "category": "pigeon",
+                "direction": "back",
+                "parentLayerSeq": 3010,
+                "type": "group",
+                "parentTransform": [
+                  1,
+                  0,
+                  0,
+                  1,
+                  0,
+                  0
+                ],
+                "parentTranslate": {
+                  "x": 0.5,
+                  "y": 0.9
+                },
+                "rotate": 0,
+                "x": -0.5,
+                "y": -0.1,
+                "w": 1,
+                "h": 1,
+                "isDefault": true,
+                "animationIterationCount": "infinite",
+                "animation": [
+                  {
+                    "rotate": 0.01
+                  }
+                ],
+                "layers": [
+                  {
+                    "seq": 3013,
+                    "name": "부위-뒷면-오른쪽_엉덩이-허벅지-정강이",
+                    "category": "pigeon",
+                    "direction": "back",
+                    "parentLayerSeq": 3012,
+                    "type": "slot",
+                    "isDefault": true,
+                    "layers": []
+                  },
+                  {
+                    "seq": 3014,
+                    "name": "영역-뒷면-오른쪽-하체-엉덩이-허벅지-정강이-발목",
+                    "category": "pigeon",
+                    "direction": "back",
+                    "parentLayerSeq": 3012,
+                    "type": "group",
+                    "parentTransform": [
+                      1,
+                      0,
+                      0,
+                      1,
+                      0,
+                      0
+                    ],
+                    "parentTranslate": {
+                      "x": 0.5,
+                      "y": 0.9
+                    },
+                    "rotate": 0.02,
+                    "x": -1.2,
+                    "y": 0,
+                    "w": 1.9,
+                    "h": 0.6,
+                    "isDefault": true,
+                    "animationIterationCount": "infinite",
+                    "animation": [
+                      {
+                        "rotate": 0.03
+                      },
+                      {
+                        "rotate": -0.02
+                      }
+                    ],
+                    "layers": [
+                      {
+                        "seq": 3015,
+                        "name": "부위-뒷면-오른쪽-하체-엉덩이-허벅지-정강이-발목-발",
+                        "category": "pigeon",
+                        "direction": "back",
+                        "parentLayerSeq": 3014,
+                        "type": "slot",
+                        "isDefault": true,
+                        "layers": []
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "seq": 3023,
+            "name": "영역-뒷면-몸-가슴",
+            "category": "pigeon",
+            "direction": "back",
+            "parentLayerSeq": 3001,
+            "type": "group",
+            "color": "#ff0000",
+            "parentTransform": [
+              1,
+              0,
+              0,
+              1,
+              -0.015,
+              0
+            ],
+            "parentTranslate": {
+              "x": 0.5,
+              "y": 0.5
+            },
+            "rotate": 0,
+            "x": -0.15,
+            "y": -0.151,
+            "w": 0.3,
+            "h": 0.32,
+            "isDefault": true,
+            "animationIterationCount": "infinite",
+            "animation": [
+              {
+                "rotate": 0.003
+              },
+              {
+                "rotate": -0.005
+              }
+            ],
+            "layers": [
+              {
+                "seq": 3024,
+                "name": "부위-뒷면-기본_몸-가슴",
+                "category": "pigeon",
+                "direction": "back",
+                "parentLayerSeq": 3023,
+                "type": "slot",
+                "isDefault": true,
+                "layers": []
+              }
+            ]
+          },
+          {
+            "seq": 3022,
+            "name": "부위-뒷면-기본_몸",
+            "category": "pigeon",
+            "direction": "back",
+            "parentLayerSeq": 3001,
+            "type": "slot",
+            "isDefault": true,
+            "layers": []
+          },
+          {
+            "seq": 3025,
+            "name": "영역-뒷면-목",
+            "category": "pigeon",
+            "direction": "back",
+            "parentLayerSeq": 3001,
+            "type": "group",
+            "parentTransform": [
+              1,
+              0,
+              0,
+              1,
+              0,
+              0
+            ],
+            "parentTranslate": {
+              "x": 0,
+              "y": -0.05
+            },
+            "rotate": 0,
+            "x": 0,
+            "y": 0,
+            "w": 1,
+            "h": 0.2,
+            "isDefault": true,
+            "animationIterationCount": "infinite",
+            "animation": [
+              {
+                "rotate": 0.001
+              },
+              {
+                "rotate": -0.001
+              }
+            ],
+            "layers": [
+              {
+                "seq": 3026,
+                "name": "부위-뒷면-기본_목",
+                "category": "pigeon",
+                "direction": "back",
+                "parentLayerSeq": 3025,
+                "type": "slot",
+                "isDefault": true,
+                "layers": []
+              },
+              {
+                "seq": 3027,
+                "name": "영역-뒷면-목-얼굴",
+                "category": "pigeon",
+                "direction": "back",
+                "parentLayerSeq": 3025,
+                "type": "group",
+                "parentTransform": [
+                  1,
+                  0,
+                  0,
+                  1,
+                  0.5,
+                  -0.1
+                ],
+                "parentTranslate": {
+                  "x": 0,
+                  "y": 0
+                },
+                "rotate": 0,
+                "x": -0.5,
+                "y": -1.7,
+                "w": 1,
+                "h": 2,
+                "isDefault": true,
+                "animationIterationCount": "infinite",
+                "animation": [
+                  {
+                    "parentTransform": [
+                      1.01,
+                      0,
+                      0,
+                      1.01,
+                      0.5,
+                      -0.1
+                    ],
+                    "rotate": -0.001
+                  }
+                ],
+                "layers": [
+                  {
+                    "seq": 3031,
+                    "name": "영역-뒷면-얼굴-머리",
+                    "category": "pigeon",
+                    "direction": "back",
+                    "parentLayerSeq": 3027,
+                    "type": "group",
+                    "parentTransform": [
+                      1,
+                      0,
+                      0,
+                      1,
+                      0.5,
+                      -0.1
+                    ],
+                    "parentTranslate": {
+                      "x": 0,
+                      "y": 0
+                    },
+                    "x": -0.5,
+                    "y": -0.35,
+                    "w": 1,
+                    "h": 0.5,
+                    "isDefault": true,
+                    "layers": [
+                      {
+                        "seq": 3034,
+                        "name": "부위-뒷면-얼굴-머리_기본깃_셋",
+                        "category": "pigeon",
+                        "direction": "back",
+                        "parentLayerSeq": 3031,
+                        "type": "slot",
+                        "isDefault": true,
+                        "layers": []
+                      }
+                    ]
+                  },
+                  {
+                    "seq": 3028,
+                    "name": "영역-뒷면-목-얼굴-기본_왼쪽눈",
+                    "category": "pigeon",
+                    "direction": "back",
+                    "parentLayerSeq": 3027,
+                    "type": "group",
+                    "parentTransform": [
+                      1,
+                      0,
+                      0,
+                      1,
+                      0,
+                      0
+                    ],
+                    "parentTranslate": {
+                      "x": 0.1,
+                      "y": 0.2
+                    },
+                    "x": 0,
+                    "y": 0,
+                    "w": 0.34,
+                    "h": 0.66,
+                    "isDefault": true,
+                    "layers": [
+                      {
+                        "seq": 3029,
+                        "name": "부위-뒷면-목-얼굴-기본_왼쪽눈_기본_흰자",
+                        "category": "pigeon",
+                        "direction": "back",
+                        "parentLayerSeq": 3028,
+                        "type": "slot",
+                        "isDefault": true,
+                        "layers": []
+                      },
+                      {
+                        "seq": 3030,
+                        "name": "영역-뒷면-목-얼굴-기본_왼쪽눈-기본_검은자",
+                        "category": "pigeon",
+                        "direction": "back",
+                        "parentLayerSeq": 3028,
+                        "type": "group",
+                        "parentTransform": [
+                          1,
+                          0,
+                          0,
+                          1,
+                          0,
+                          0
+                        ],
+                        "parentTranslate": {
+                          "x": 0.5,
+                          "y": 0.5
+                        },
+                        "x": -0.2,
+                        "y": -0.2,
+                        "w": 0.4,
+                        "h": 0.4,
+                        "isDefault": true,
+                        "animation": [
+                          {
+                            "parentTransform": [
+                              1,
+                              0,
+                              0,
+                              0.7,
+                              0,
+                              0
+                            ]
+                          }
+                        ],
+                        "layers": [
+                          {
+                            "seq": 3050,
+                            "name": "부위-뒷면-얼굴-기본_왼쪽눈_기본_검은자",
+                            "category": "pigeon",
+                            "direction": "back",
+                            "parentLayerSeq": 3030,
+                            "type": "slot",
+                            "isDefault": true,
+                            "layers": []
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "seq": 3035,
+                    "name": "영역-뒷면-얼굴-기본_오른쪽눈",
+                    "category": "pigeon",
+                    "direction": "back",
+                    "parentLayerSeq": 3027,
+                    "type": "group",
+                    "parentTransform": [
+                      1,
+                      0,
+                      0,
+                      1,
+                      0,
+                      0
+                    ],
+                    "parentTranslate": {
+                      "x": 0.6,
+                      "y": 0.2
+                    },
+                    "x": 0,
+                    "y": 0,
+                    "w": 0.34,
+                    "h": 0.66,
+                    "isDefault": true,
+                    "layers": [
+                      {
+                        "seq": 3055,
+                        "name": "부위-뒷면-얼굴-기본_오른눈_기본_흰자",
+                        "category": "pigeon",
+                        "direction": "back",
+                        "parentLayerSeq": 3035,
+                        "type": "slot",
+                        "isDefault": true,
+                        "layers": []
+                      },
+                      {
+                        "seq": 3036,
+                        "name": "영역-뒷면-얼굴-기본_오른눈-기본_검은자",
+                        "category": "pigeon",
+                        "direction": "back",
+                        "parentLayerSeq": 3035,
+                        "type": "group",
+                        "parentTransform": [
+                          1,
+                          0,
+                          0,
+                          1,
+                          0,
+                          0
+                        ],
+                        "parentTranslate": {
+                          "x": 0.5,
+                          "y": 0.5
+                        },
+                        "x": -0.2,
+                        "y": -0.2,
+                        "w": 0.4,
+                        "h": 0.4,
+                        "isDefault": true,
+                        "animation": [
+                          {
+                            "parentTransform": [
+                              1,
+                              0,
+                              0,
+                              0.7,
+                              0,
+                              0
+                            ]
+                          }
+                        ],
+                        "layers": [
+                          {
+                            "seq": 3037,
+                            "name": "부위-뒷면-얼굴-기본_오른눈_기본_검은자",
+                            "category": "pigeon",
+                            "direction": "back",
+                            "parentLayerSeq": 3036,
+                            "type": "slot",
+                            "isDefault": true,
+                            "layers": []
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "seq": 3038,
+                    "name": "영역-뒷면-얼굴-기본_입",
+                    "category": "pigeon",
+                    "direction": "back",
+                    "parentLayerSeq": 3027,
+                    "type": "group",
+                    "parentTransform": [
+                      1,
+                      0,
+                      0,
+                      1,
+                      -0.25,
+                      0.3
+                    ],
+                    "parentTranslate": {
+                      "x": 0.8,
+                      "y": 0.4
+                    },
+                    "rotate": 0.001,
+                    "x": 0,
+                    "y": -0.3,
+                    "w": 0.5,
+                    "h": 0.6,
+                    "isDefault": true,
+                    "animation": [
+                      {
+                        "rotate": 0.003
+                      },
+                      {
+                        "rotate": -0.003
+                      }
+                    ],
+                    "layers": [
+                      {
+                        "seq": 3039,
+                        "name": "영역-뒷면-얼굴-입-윗부리",
+                        "category": "pigeon",
+                        "direction": "back",
+                        "parentLayerSeq": 3038,
+                        "type": "group",
+                        "color": "#ff00f0",
+                        "parentTransform": [
+                          1,
+                          0,
+                          0,
+                          1,
+                          0.1,
+                          0.25
+                        ],
+                        "parentTranslate": {
+                          "x": 0,
+                          "y": 0
+                        },
+                        "x": -0.1,
+                        "y": -0.25,
+                        "w": 1,
+                        "h": 0.5,
+                        "isDefault": true,
+                        "layers": [
+                          {
+                            "seq": 3040,
+                            "name": "부위-뒷면-얼굴-입-윗부리-기본_윗부리",
+                            "category": "pigeon",
+                            "direction": "back",
+                            "parentLayerSeq": 3039,
+                            "type": "slot",
+                            "isDefault": true,
+                            "layers": []
+                          }
+                        ]
+                      },
+                      {
+                        "seq": 3041,
+                        "name": "영역-뒷면-얼굴-입-아랫부리",
+                        "category": "pigeon",
+                        "direction": "back",
+                        "parentLayerSeq": 3038,
+                        "type": "group",
+                        "color": "#ff0000",
+                        "parentTransform": [
+                          1,
+                          0,
+                          0,
+                          1,
+                          0.1,
+                          0.25
+                        ],
+                        "parentTranslate": {
+                          "x": 0,
+                          "y": 0.5
+                        },
+                        "x": -0.1,
+                        "y": -0.25,
+                        "w": 1,
+                        "h": 0.5,
+                        "isDefault": true,
+                        "layers": [
+                          {
+                            "seq": 3042,
+                            "name": "부위-뒷면-얼굴-입-아래부리-기본_아랫부리",
+                            "category": "pigeon",
+                            "direction": "back",
+                            "parentLayerSeq": 3041,
+                            "type": "slot",
+                            "isDefault": true,
+                            "layers": []
+                          }
+                        ]
+                      },
+                      {
+                        "seq": 3043,
+                        "name": "영역-뒷면-얼굴-입-입안",
+                        "category": "pigeon",
+                        "direction": "back",
+                        "parentLayerSeq": 3038,
+                        "type": "group",
+                        "color": "#ffff00",
+                        "parentTransform": [
+                          1,
+                          0,
+                          0,
+                          1,
+                          0,
+                          0
+                        ],
+                        "parentTranslate": {
+                          "x": 0,
+                          "y": 0.5
+                        },
+                        "x": 0,
+                        "y": -0.05,
+                        "w": 1,
+                        "h": 0.1,
+                        "isDefault": true,
+                        "layers": [
+                          {
+                            "seq": 3044,
+                            "name": "부위-뒷면-얼굴-입-입안-기본_입안",
+                            "category": "pigeon",
+                            "direction": "back",
+                            "parentLayerSeq": 3043,
+                            "type": "slot",
+                            "isDefault": true,
+                            "layers": []
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "seq": 3059,
+                    "name": "부위-뒷면-기본_얼굴",
+                    "category": "pigeon",
+                    "direction": "back",
+                    "parentLayerSeq": 3027,
+                    "type": "slot",
+                    "isDefault": true,
+                    "layers": []
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "seq": 3065,
+            "name": "영역-뒷면-오른쪽_날개",
+            "category": "pigeon",
+            "direction": "back",
+            "parentLayerSeq": 3001,
+            "type": "group",
+            "color": "#5098DA",
+            "parentTransform": [
+              1,
+              0,
+              0,
+              1,
+              0.11,
+              0.08
+            ],
+            "parentTranslate": {
+              "x": -0.25,
+              "y": 0.2
+            },
+            "rotate": 0,
+            "x": -0.11,
+            "y": -0.08,
+            "w": 0.5,
+            "h": 0.6,
+            "isDefault": true,
+            "animationIterationCount": "infinite",
+            "animation": [
+              {
+                "rotate": -0.01
+              },
+              {
+                "rotate": 0.01
+              }
+            ],
+            "layers": [
+              {
+                "seq": 3066,
+                "name": "부위-뒷면-오른쪽_날개",
+                "category": "pigeon",
+                "direction": "back",
+                "parentLayerSeq": 3065,
+                "type": "slot",
+                "isDefault": true,
+                "layers": []
+              },
+              {
+                "seq": 3267,
+                "name": "영역-뒷면-오른쪽_날개-깃",
+                "category": "pigeon",
+                "direction": "back",
+                "parentLayerSeq": 3065,
+                "type": "group",
+                "parentTransform": [
+                  1,
+                  0,
+                  0,
+                  1,
+                  0,
+                  0.4
+                ],
+                "parentTranslate": {
+                  "x": 0.5,
+                  "y": 0.5
+                },
+                "rotate": 0.01,
+                "x": -0.4,
+                "y": -0.1,
+                "w": 0.8,
+                "h": 0.2,
+                "isDefault": true,
+                "animationIterationCount": "infinite",
+                "animation": [
+                  {
+                    "rotate": 0.01
+                  },
+                  {
+                    "rotate": -0.01
+                  }
+                ],
+                "layers": [
+                  {
+                    "seq": 3068,
+                    "name": "부위-뒷면-오른쪽_날개-깃",
+                    "category": "pigeon",
+                    "direction": "back",
+                    "parentLayerSeq": 3267,
+                    "type": "slot",
+                    "isDefault": true,
+                    "layers": []
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "seq": 3006,
+            "name": "영역-뒷면-왼쪽_날개",
+            "category": "pigeon",
+            "direction": "back",
+            "parentLayerSeq": 3001,
+            "type": "group",
+            "color": "#5098DA",
+            "parentTransform": [
+              1,
+              0,
+              0,
+              1,
+              0.11,
+              0.08
+            ],
+            "parentTranslate": {
+              "x": 0.8,
+              "y": 0.2
+            },
+            "rotate": 0,
+            "x": -0.11,
+            "y": -0.08,
+            "w": 0.4,
+            "h": 0.6,
+            "isDefault": true,
+            "animationIterationCount": "infinite",
+            "animation": [
+              {
+                "rotate": 0.01
+              },
+              {
+                "rotate": -0.01
+              }
+            ],
+            "layers": [
+              {
+                "seq": 3007,
+                "name": "부위-뒷면-기본_왼쪽_날개",
+                "category": "pigeon",
+                "direction": "back",
+                "parentLayerSeq": 3006,
+                "type": "slot",
+                "isDefault": true,
+                "layers": []
+              },
+              {
+                "seq": 3008,
+                "name": "영역-뒷면-왼쪽_날개-깃",
+                "category": "pigeon",
+                "direction": "back",
+                "parentLayerSeq": 3006,
+                "type": "group",
+                "parentTransform": [
+                  1,
+                  0,
+                  0,
+                  1,
+                  0,
+                  0.4
+                ],
+                "parentTranslate": {
+                  "x": 0.5,
+                  "y": 0.5
+                },
+                "rotate": 0.01,
+                "x": -0.4,
+                "y": -0.1,
+                "w": 0.8,
+                "h": 0.2,
+                "isDefault": true,
+                "animationIterationCount": "infinite",
+                "animation": [
+                  {
+                    "rotate": 0.01
+                  },
+                  {
+                    "rotate": -0.01
+                  }
+                ],
+                "layers": [
+                  {
+                    "seq": 3009,
+                    "name": "부위-뒷면-왼쪽_날개-깃",
+                    "category": "pigeon",
+                    "direction": "back",
+                    "parentLayerSeq": 3008,
+                    "type": "slot",
+                    "isDefault": true,
+                    "layers": []
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "seq": 3060,
+            "name": "영역-뒷면-엉덩이",
+            "category": "pigeon",
+            "direction": "back",
+            "parentLayerSeq": 3001,
+            "type": "group",
+            "parentTransform": [
+              1,
+              0,
+              0,
+              1,
+              0,
+              0.43
+            ],
+            "parentTranslate": {
+              "x": 0.5,
+              "y": 0.5
+            },
+            "x": -0.4,
+            "y": -0.07,
+            "w": 0.8,
+            "h": 0.14,
+            "isDefault": true,
+            "layers": [
+              {
+                "seq": 3061,
+                "name": "영역-뒷면-왼쪽_엉덩이",
+                "category": "pigeon",
+                "direction": "back",
+                "parentLayerSeq": 3060,
+                "type": "group",
+                "color": "#FF0000",
+                "parentTransform": [
+                  1,
+                  0,
+                  0,
+                  1,
+                  0.3,
+                  0
+                ],
+                "parentTranslate": {
+                  "x": 0.5,
+                  "y": 0
+                },
+                "x": -0.2,
+                "y": 0,
+                "w": 0.4,
+                "h": 1,
+                "isDefault": true,
+                "layers": [
+                  {
+                    "seq": 3062,
+                    "name": "부위-뒷면-왼쪽_엉덩이",
+                    "category": "pigeon",
+                    "direction": "back",
+                    "parentLayerSeq": 3061,
+                    "type": "slot",
+                    "isDefault": true,
+                    "layers": []
+                  }
+                ]
+              },
+              {
+                "seq": 3063,
+                "name": "영역-뒷면-오른쪽_엉덩이",
+                "category": "pigeon",
+                "direction": "back",
+                "parentLayerSeq": 3060,
+                "type": "group",
+                "color": "#00FF00",
+                "parentTransform": [
+                  1,
+                  0,
+                  0,
+                  1,
+                  -0.3,
+                  0
+                ],
+                "parentTranslate": {
+                  "x": 0.5,
+                  "y": 0
+                },
+                "x": -0.2,
+                "y": 0,
+                "w": 0.4,
+                "h": 1,
+                "isDefault": true,
+                "layers": [
+                  {
+                    "seq": 3064,
+                    "name": "부위-뒷면-오른쪽_엉덩이",
+                    "category": "pigeon",
+                    "direction": "back",
+                    "parentLayerSeq": 3063,
+                    "type": "slot",
+                    "isDefault": true,
+                    "layers": []
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "seq": 3002,
+            "name": "영역-뒷면-꼬리",
+            "category": "pigeon",
+            "direction": "back",
+            "parentLayerSeq": 3001,
+            "type": "group",
+            "color": "#448CCF",
+            "parentTransform": [
+              1,
+              0,
+              0,
+              1,
+              0,
+              0.4
+            ],
+            "parentTranslate": {
+              "x": 0.5,
+              "y": 0.5
+            },
+            "rotate": 0,
+            "x": -0.12,
+            "y": 0,
+            "w": 0.24,
+            "h": 0.3,
+            "isDefault": true,
+            "animationIterationCount": "infinite",
+            "animation": [
+              {
+                "rotate": -0.01
+              },
+              {
+                "rotate": 0.01
+              }
+            ],
+            "layers": [
+              {
+                "seq": 3003,
+                "name": "부위-뒷면-꼬리-라인",
+                "category": "pigeon",
+                "direction": "back",
+                "parentLayerSeq": 3002,
+                "type": "slot",
+                "isDefault": true,
+                "layers": []
+              },
+              {
+                "seq": 3004,
+                "name": "영역-뒷면-꼬리-깃",
+                "category": "pigeon",
+                "direction": "back",
+                "parentLayerSeq": 3002,
+                "type": "group",
+                "parentTransform": [
+                  1,
+                  0,
+                  0,
+                  1,
+                  0,
+                  0.45
+                ],
+                "parentTranslate": {
+                  "x": 0.5,
+                  "y": 0.5
+                },
+                "rotate": 0.01,
+                "x": -0.4,
+                "y": -0.1,
+                "w": 0.8,
+                "h": 0.2,
+                "isDefault": true,
+                "animationIterationCount": "infinite",
+                "animation": [
+                  {
+                    "rotate": 0.01
+                  },
+                  {
+                    "rotate": -0.01
+                  }
+                ],
+                "layers": [
+                  {
+                    "seq": 3005,
+                    "name": "부위-뒷면-꼬리-깃",
+                    "category": "pigeon",
+                    "direction": "back",
+                    "parentLayerSeq": 3004,
+                    "type": "slot",
+                    "isDefault": true,
+                    "layers": []
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "seq": 99990,
+    "name": "visual",
+    "category": "visual",
+    "direction": "front",
+    "w": 1,
+    "h": 1,
+    "b": [
+      0.25,
+      0.25,
+      0.75,
+      0.75
+    ],
+    "isDefault": true,
+    "layers": [
+      {
+        "seq": 99991,
+        "name": "부위-우측면-기본_몸",
+        "category": "visual",
+        "direction": "front",
+        "parentLayerSeq": 2,
+        "type": "rect",
+        "color": "#72B7EB",
+        "parentTransform": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "parentTranslate": {
+          "x": 0,
+          "y": 0
+        },
+        "x": 0,
+        "y": 0,
+        "w": 1,
+        "h": 1,
+        "animationIterationCount": "infinite",
+        "typeData": {
+          "w": 1,
+          "h": 1,
+          "radii": [
+            0.2,
+            0.2,
+            0.2,
+            0.2
+          ]
+        }
+      }
+    ]
+  }
+
+
+]

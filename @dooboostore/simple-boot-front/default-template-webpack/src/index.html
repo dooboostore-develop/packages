@@ -1,0 +1,29 @@
+<header>
+    <nav>
+        <ul>
+            <li>
+                <button dr-event-click="$router?.go({path:'/'})">home</button>
+            </li>
+            <li>
+                <button dr-event-click="$router?.go({path:'/user'})">user</button>
+            </li>
+            <li>
+                <button dr-event-click="console.log($router)">print</button>
+            </li>
+            <li>
+                <button dr-event-click="@this@.go()">go</button>
+            </li>
+            <li>
+                <button dr-event-click="@this@.test()">test</button>
+            </li>
+        </ul>
+    </nav>
+
+</header>
+<main>
+    <dr-this value="${@this@.child}$"></dr-this>
+</main>
+<div class="good">g</div>
+<footer>
+    footer
+</footer>

@@ -25,7 +25,7 @@ export type FactoryAndParams = {
     min: number;
   }
   using: ConstructorType<any>[];
-  domExcludes: ConstructorType<any>[];
+  domExcludes?: ConstructorType<any>[];
   ssrExcludeFilter?: (rr: RequestResponse) => boolean;
   simpleBootFront?: {
     notFoundError?: boolean;

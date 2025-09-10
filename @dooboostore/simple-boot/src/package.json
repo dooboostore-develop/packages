@@ -1,8 +1,8 @@
 {
   "name": "@dooboostore/simple-boot",
-  "version": "1.0.43",
+  "version": "1.0.44",
   "license": "MIT",
-  "description": "front end SPA frameworks",
+  "description": "A powerful and flexible framework for building robust applications with Dependency Injection, AOP, Routing, Caching, and more.",
   "keywords": [
     "module",
     "framwork",
@@ -54,7 +54,7 @@
   "scripts": {
     "tsc:build": "rm -rf dist && tsc -p tsconfig.build.json",
     "clean": "rm -rf  dist",
-    "npm:build": "pnpm run tsc:build && pnpm run bundle && cp README.MD dist/ && pnpm pack && TARBALL_NAME=$(ls dooboostore-simple-boot-*.tgz | head -n 1) && tar -xzf \"$TARBALL_NAME\" -C dist --strip-components=1 package/package.json && rm \"$TARBALL_NAME\"",
+    "npm:build": "pnpm run clean && pnpm run tsc:build && pnpm run bundle && cp README.MD dist/ && pnpm pack && TARBALL_NAME=$(ls dooboostore-simple-boot-*.tgz | head -n 1) && tar -xzf \"$TARBALL_NAME\" -C dist --strip-components=1 package/package.json && rm \"$TARBALL_NAME\"",
     "npm:clean": "rm -rf  dist",
     "npm:publish": "pnpm run npm:build && cd dist && pnpm publish --no-git-checks",
     "npm:publish:clean": "pnpm run npm:publish && rm -rf dist",

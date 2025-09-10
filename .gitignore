@@ -202,3 +202,9 @@ storybook-static
 /cursor_accounts.txt
 /install.sh
 /@dooboostore/simple-boot/example/quick-start/dist-back/
+/@dooboostore/simple-boot/create/lib/
+/@dooboostore/simple-boot-front/create/lib/
+/@dooboostore/simple-boot-http-server/create/lib/
+/@dooboostore/simple-boot-http-server-ssr/create/lib/
+/@dooboostore/simple-boot-http-server-ssr/default-template-webpack/dist-front-end/
+/@dooboostore/simple-boot-http-server-ssr/default-template-webpack/dist-back-end/

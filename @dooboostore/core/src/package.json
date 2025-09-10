@@ -36,7 +36,7 @@
     "tsc:build": "rm -rf dist && tsc -p tsconfig.build.json",
     "bundle": "webpack --config webpack.config.js",
     "clean": "rm -rf  dist",
-    "npm:build": "pnpm run tsc:build && pnpm run bundle && cp README.MD dist/ && pnpm pack && TARBALL_NAME=$(ls dooboostore-core-*.tgz | head -n 1) && tar -xzf \"$TARBALL_NAME\" -C dist --strip-components=1 package/package.json && rm \"$TARBALL_NAME\"",
+    "npm:build": "pnpm run clean && pnpm run tsc:build && pnpm run bundle && cp README.MD dist/ && pnpm pack && TARBALL_NAME=$(ls dooboostore-core-*.tgz | head -n 1) && tar -xzf \"$TARBALL_NAME\" -C dist --strip-components=1 package/package.json && rm \"$TARBALL_NAME\"",
     "npm:clean": "rm -rf  dist",
     "npm:publish": "pnpm run npm:build && cd dist && pnpm publish --no-git-checks",
     "npm:publish:clean": "pnpm run npm:publish && rm -rf dist",

@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>adfit</title>
+    <style>
+        body, html {
+            margin: 0 !important;
+            padding: 0 !important;
+            box-sizing: border-box !important;
+        }
+        .kakao_ad_area {
+            margin: 0 !important;
+            padding: 0 !important;
+            display: block !important;
+        }
+        .kakao_ad_area * {
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+    </style>
+</head>
+<body>
+<ins class="kakao_ad_area" style="display:none;"
+     data-ad-onfail   = "callKadOnFail"
+     data-ad-onload = "callKadOnLoad"
+     data-ad-unit = "DAN-0qv769S4uoztB4Zh"
+     data-ad-width = "250"
+     data-ad-height = "250"></ins>
+<script type="text/javascript" src="//t1.daumcdn.net/kas/static/ba.min.js" async></script>
+<script>
+    function callKadOnLoad(arg1) {
+        // arg1.dataset.status='load'
+        // console.log('callKadOnLoad', arg1)
+        // document.documentElement.style.setProperty('--kad-height', '50px');
+    }
+    function callKadOnFail(arg1) {
+        // arg1.dataset.status='fail'
+        // console.log('callKadOnFail', arg1)
+        // document.documentElement.style.setProperty('--kad-height', '0px');
+    }
+</script>
+</body>
+</html>

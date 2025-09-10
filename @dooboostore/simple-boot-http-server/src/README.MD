@@ -18,52 +18,10 @@
 
 ## 🚀 Quick Start
 
-```shell
-npm init -y
-npm install @dooboostore/simple-boot @dooboostore/simple-boot-http-server reflect-metadata
-tsc --init --experimentalDecorators --emitDecoratorMetadata
 ```
-
-```typescript
-// index.ts
-import 'reflect-metadata';
-import { SimpleBootHttpServer, HttpServerOption, RequestResponse, GET, Mimes } from '@dooboostore/simple-boot-http-server';
-import { Sim, Router, Route, RouterModule } from '@dooboostore/simple-boot';
-import { ReqHeader } from '@dooboostore/simple-boot-http-server/models/datas/ReqHeader';
-
-@Sim
-@Router({ path: '' })
-export class AppRouter {
-    @Route({ path: '/' })
-    @GET({ res: { contentType: Mimes.ApplicationJson } })
-    index(rr: RequestResponse, header: ReqHeader, routerModule: RouterModule) {
-        console.log('Request from:', header['user-agent']);
-        return { message: 'Welcome to Simple Boot HTTP Server!' };
-    }
-}
-
-const httpServerOption = new HttpServerOption({
-    listen: {
-        port: 3000,
-        listeningListener: (server, httpServer) => {
-            const address = httpServer.address();
-            console.log(`Server is running on http://localhost:${address.port}`);
-        }
-    }
-});
-
-const app = new SimpleBootHttpServer(httpServerOption);
-app.run();
-```
-
-```shell
-# Run the server
-npx ts-node index.ts
-# Server is running on http://localhost:3000
-
-# In another terminal
-curl http://localhost:3000
-# {"message":"Welcome to Simple Boot HTTP Server!"}
+npm init @dooboostore/simple-boot-http-server projectname
+cd projectname
+npm start
 ```
 
 # 😃 Examples

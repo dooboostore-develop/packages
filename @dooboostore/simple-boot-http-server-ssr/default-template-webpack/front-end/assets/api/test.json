@@ -1,0 +1,168 @@
+[
+  {
+    "seq": 1,
+    "name": "CuteAnimatedDog",
+    "w": 1,
+    "h": 1,
+    "layers": [
+      {
+        "seq": 101,
+        "name": "Body",
+        "type": "rect",
+        "translate": { "x": 0.5, "y": 0.6 },
+        "color": "#8E44AD",
+        "typeData": { "w": 0.5, "h": 0.3 },
+        "animationIterationCount": "infinite",
+        "animation": [
+          { "translate": { "x": 0.5, "y": 0.6 } },
+          { "translate": { "x": 0.5, "y": 0.62 } },
+          { "translate": { "x": 0.5, "y": 0.6 } }
+        ]
+      },
+      {
+        "seq": 102,
+        "name": "Head",
+        "type": "rect",
+        "translate": { "x": 0.7, "y": 0.4 },
+        "color": "#9B59B6",
+        "typeData": { "w": 0.3, "h": 0.3 },
+        "animationIterationCount": "infinite",
+        "animation": [
+          { "translate": { "x": 0.7, "y": 0.4 } },
+          { "translate": { "x": 0.7, "y": 0.42 } },
+          { "translate": { "x": 0.7, "y": 0.4 } }
+        ]
+      },
+      {
+        "seq": 103,
+        "name": "Left Ear",
+        "type": "rect",
+        "translate": { "x": 0.6, "y": 0.25 },
+        "color": "#8E44AD",
+        "typeData": { "w": 0.1, "h": 0.2 },
+        "animationIterationCount": "infinite",
+        "animation": [
+          { "translate": { "x": 0.6, "y": 0.25 } },
+          { "translate": { "x": 0.6, "y": 0.24 } },
+          { "translate": { "x": 0.6, "y": 0.25 } }
+        ]
+      },
+      {
+        "seq": 104,
+        "name": "Right Ear",
+        "type": "rect",
+        "translate": { "x": 0.8, "y": 0.25 },
+        "color": "#8E44AD",
+        "typeData": { "w": 0.1, "h": 0.2 },
+        "animationIterationCount": "infinite",
+        "animation": [
+          { "translate": { "x": 0.8, "y": 0.25 } },
+          { "translate": { "x": 0.8, "y": 0.24 } },
+          { "translate": { "x": 0.8, "y": 0.25 } }
+        ]
+      },
+      {
+        "seq": 105,
+        "name": "Tail",
+        "type": "rect",
+        "translate": { "x": 0.25, "y": 0.6 },
+        "color": "#8E44AD",
+        "typeData": { "w": 0.15, "h": 0.05 },
+        "animationIterationCount": "infinite",
+        "animation": [
+          { "rotate": -0.2, "translate": { "x": 0.25, "y": 0.6 } },
+          { "rotate": 0.2, "translate": { "x": 0.25, "y": 0.6 } },
+          { "rotate": -0.2, "translate": { "x": 0.25, "y": 0.6 } }
+        ]
+      },
+      {
+        "seq": 106,
+"name": "Left Eye",
+        "type": "rect",
+        "translate": { "x": 0.65, "y": 0.4 },
+        "color": "#FFFFFF",
+        "typeData": { "w": 0.05, "h": 0.05 }
+      },
+      {
+        "seq": 107,
+        "name": "Right Eye",
+        "type": "rect",
+        "translate": { "x": 0.75, "y": 0.4 },
+        "color": "#FFFFFF",
+        "typeData": { "w": 0.05, "h": 0.05 }
+      },
+      {
+        "seq": 108,
+        "name": "Nose",
+        "type": "rect",
+        "translate": { "x": 0.7, "y": 0.45 },
+        "color": "#000000",
+        "typeData": { "w": 0.03, "h": 0.02 }
+      },
+      {
+        "seq": 109,
+        "name": "Mouth",
+        "type": "rect",
+        "translate": { "x": 0.7, "y": 0.48 },
+        "color": "#C0392B",
+        "typeData": { "w": 0.1, "h": 0.02 }
+      },
+      {
+        "seq": 110,
+        "name": "Left Front Leg",
+        "type": "rect",
+        "translate": { "x": 0.4, "y": 0.8 },
+        "color": "#8E44AD",
+        "typeData": { "w": 0.05, "h": 0.15 },
+        "animationIterationCount": "infinite",
+        "animation": [
+          { "translate": { "x": 0.4, "y": 0.8 } },
+          { "translate": { "x": 0.4, "y": 0.82 } },
+          { "translate": { "x": 0.4, "y": 0.8 } }
+        ]
+      },
+      {
+        "seq": 111,
+        "name": "Right Front Leg",
+        "type": "rect",
+        "translate": { "x": 0.6, "y": 0.8 },
+        "color": "#8E44AD",
+        "typeData": { "w": 0.05, "h": 0.15 },
+        "animationIterationCount": "infinite",
+        "animation": [
+          { "translate": { "x": 0.6, "y": 0.8 } },
+          { "translate": { "x": 0.6, "y": 0.82 } },
+          { "translate": { "x": 0.6, "y": 0.8 } }
+        ]
+      },
+      {
+        "seq": 112,
+        "name": "Left Back Leg",
+        "type": "rect",
+        "translate": { "x": 0.35, "y": 0.75 },
+        "color": "#8E44AD",
+        "typeData": { "w": 0.05, "h": 0.15 },
+        "animationIterationCount": "infinite",
+        "animation": [
+          { "translate": { "x": 0.35, "y": 0.75 } },
+          { "translate": { "x": 0.35, "y": 0.77 } },
+          { "translate": { "x": 0.35, "y": 0.75 } }
+        ]
+      },
+      {
+        "seq": 113,
+        "name": "Right Back Leg",
+        "type": "rect",
+        "translate": { "x": 0.65, "y": 0.75 },
+        "color": "#8E44AD",
+        "typeData": { "w": 0.05, "h": 0.15 },
+        "animationIterationCount": "infinite",
+        "animation": [
+          { "translate": { "x": 0.65, "y": 0.75 } },
+          { "translate": { "x": 0.65, "y": 0.77 } },
+          { "translate": { "x": 0.65, "y": 0.75 } }
+        ]
+      }
+    ]
+  }
+]

@@ -16,6 +16,14 @@ This package seamlessly integrates `@dooboostore/simple-boot-front` and `@dooboo
 - **@dooboostore/simple-boot-front**: The front-end framework for building components and managing UI state.
 - **@dooboostore/simple-boot-http-server**: The underlying HTTP server for handling requests.
 
+## 🚀 Quick Start
+
+```
+npm init @dooboostore/simple-boot-http-server-ssr projectname
+cd projectname
+npm start
+```
+
 ## 🚀 How It Works
 
 The core of this package is the `SSRFilter`. When a request for an HTML page comes in, the filter does the following:
