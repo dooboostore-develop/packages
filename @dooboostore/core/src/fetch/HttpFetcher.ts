@@ -39,7 +39,17 @@ export type AfterProxyFetchParams<T = RequestInfo | URL> = {
 
 export type FetchSet = { target: URL, requestInit?: RequestInit };
 
-export abstract class HttpFetcher<
+export class HttpResponseError<T = any> extends Error {
+  public error?: any;
+  public body?: T;
+  public response?: Response;
+}
+
+export const isHttpResponseError = (data: any): data is HttpResponseError => {
+  return data instanceof HttpResponseError;
+}
+
+export class HttpFetcher<
   CONFIG,
   RESPONSE = Response,
   PIPE extends { responseData?: RESPONSE | undefined } = any
@@ -108,14 +118,56 @@ export abstract class HttpFetcher<
     return config.response;
   }
 
-  abstract beforeFetch(fetch: FetchSet): void;
+  protected afterSuccess<T>(config: FetcherRequest<HttpFetcherTarget, RESPONSE, HttpFetcherConfig<CONFIG, RESPONSE>, T>, pipe: PIPE): void {
+  }
 
-  abstract afterFetch(fetch: FetchSet, response: Response): void;
+  protected afterSuccessTransform<T>(config: FetcherRequest<HttpFetcherTarget, RESPONSE, HttpFetcherConfig<CONFIG, RESPONSE>, T>, pipe: PIPE): void {
+  }
 
-  protected async execute(
-    target: HttpFetcherTarget,
-    config?: HttpFetcherConfig<CONFIG, RESPONSE>
+  protected before<T>(config: FetcherRequest<HttpFetcherTarget, RESPONSE, HttpFetcherConfig<CONFIG, RESPONSE>, T>, pipe: PIPE): void {
+  }
+
+  protected error<T>(config: FetcherRequest<HttpFetcherTarget, RESPONSE, HttpFetcherConfig<CONFIG, RESPONSE>, T>, pipe: PIPE, e: any): void {
+  }
+
+  protected finally<T>(config: FetcherRequest<HttpFetcherTarget, RESPONSE, HttpFetcherConfig<CONFIG, RESPONSE>, T>, pipe: PIPE): void {
+  }
+
+  protected beforeFetch(fetch: FetchSet): void {
+
+  };
+
+  protected afterFetch(fetch: FetchSet, response: Response): void {
+
+  };
+
+  // protected async errorTransform(e: any): Promise<HttpResponseError<any>> {
+  protected async errorTransform(e: any): Promise<HttpResponseError> {
+    const httpResponseError = new HttpResponseError<any>();
+    httpResponseError.error = e;
+    if (e instanceof Response) {
+      httpResponseError.response = e;
+      try {
+        httpResponseError.body = await e.clone().text();
+        httpResponseError.message = e.statusText;
+      } catch (e: any) {
+        httpResponseError.body = e;
+        httpResponseError.message = e.message;
+      }
+    } else {
+      httpResponseError.body = e;
+      httpResponseError.message = e.message;
+    }
+    return httpResponseError;
+  }
+
+
+  protected async execute<T = RESPONSE>(
+    fetcherRequest: FetcherRequest<HttpFetcherTarget, RESPONSE, HttpFetcherConfig<CONFIG, RESPONSE>, T>
   ): Promise<any | RESPONSE> {
+
+    let target = fetcherRequest.target;
+    let config = fetcherRequest.config;
     // target data setting
     if (!(target instanceof URL) && typeof target !== 'string') {
       // const url: URL |  string = target.url;

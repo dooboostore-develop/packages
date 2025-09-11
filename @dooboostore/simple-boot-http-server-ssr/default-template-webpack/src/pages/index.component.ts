@@ -16,16 +16,15 @@ import { TalkService } from '@src/service/TalkService';
   template: template,
   styles: style
 })
-export class IndexComponent extends ComponentBase {
+export class IndexComponent extends ComponentBase<any> {
   private fetchAppender = new Appender<string>();
 
   constructor(
-    private config: SimFrontOption,
+    private simFrontConfig: SimFrontOption,
     private apiService: ApiService,
     @Inject({symbol: TalkService.SYMBOL}) private talkService: TalkService,
   ) {
     super();
-    console.log('------IndexComponent---------')
   }
 
   async apiFetch() {

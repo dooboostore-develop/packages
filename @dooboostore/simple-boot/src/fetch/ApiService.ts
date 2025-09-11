@@ -1,5 +1,5 @@
 import { Sim } from '../decorators/SimDecorator';
-import { AfterProxyFetchParams, BeforeProxyFetchParams, FetcherRequest, FetchSet, HttpFetcherConfig, HttpFetcherTarget, HttpJsonFetcher, RequestInfo } from '@dooboostore/core/fetch';
+import { AfterProxyFetchParams, BeforeProxyFetchParams, FetcherRequest, FetchSet, HttpFetcherConfig, HttpFetcherTarget, HttpJsonFetcher, HttpJsonFetcherConfig, RequestInfo } from '@dooboostore/core/fetch';
 import { Alert } from '../alert/Alert';
 import { AlertService } from '../alert/AlertService';
 import { SimstanceManager } from '../simstance/SimstanceManager';
@@ -243,9 +243,12 @@ export class ApiService extends HttpJsonFetcher<ApiService.ApiServiceConfig, Api
   }
 
   protected async execute(
-    target: HttpFetcherTarget,
-    config?: HttpFetcherConfig<ApiService.ApiServiceConfig>
+    fetcherRequest: FetcherRequest<HttpFetcherTarget, any, HttpJsonFetcherConfig<ApiService.ApiServiceConfig, any>>
+    // target: HttpFetcherTarget,
+    // config?: HttpFetcherConfig<ApiService.ApiServiceConfig>
   ): Promise<any> {
+    const target = fetcherRequest.target;
+    const config = fetcherRequest.config;
     let r: ApiServiceInterceptor.BeforeProxyExecuteParams = {target, config};
     const interceptor = ApiServiceInterceptor.resolveAll(this.simstanceManager) ?? [];
     for (const apiServiceInterceptor of interceptor) {
@@ -253,6 +256,6 @@ export class ApiService extends HttpJsonFetcher<ApiService.ApiServiceConfig, Api
         r = await apiServiceInterceptor.beforeProxyExecute?.(r);
       }
     }
-    return super.execute(r.target, r.config);
+    return super.execute(r);
   }
 }

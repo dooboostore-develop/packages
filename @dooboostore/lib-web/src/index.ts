@@ -1,4 +1,3 @@
 
-export const a = () => {
-  console.log('v')
-}
+export * from './canvas/GpsMarkerCanvas';
+

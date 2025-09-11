@@ -134,63 +134,134 @@ const relative = DateUtils.relativeTime(fiveMinutesAgo);
 console.log(relative); // "5 minutes ago"
 ```
 
-### HttpJsonFetcher
+### HTTP Fetcher
+
+`@dooboostore/core` provides a flexible and extensible HTTP client framework, including `HttpFetcher` for general HTTP requests, `HttpJsonFetcher` for JSON APIs, and `HttpXmlFetcher` for XML APIs. These fetchers are built on top of the standard `fetch` API and offer enhanced error handling, request/response transformation, and method-specific helpers.
+
+#### Interfaces for Examples
 
 ```typescript
-import { HttpJsonFetcher, HttpJsonFetcherConfig, HttpJsonResponseError } from '@dooboostore/core/fetch/HttpJsonFetcher';
-import { FetcherRequest } from '@dooboostore/core/fetch/Fetcher';
-
 interface User {
   id: number;
   name: string;
   email: string;
 }
 
-// Define a custom fetcher extending HttpJsonFetcher
-class UserApiFetcher extends HttpJsonFetcher<any, any> {
-  // Implement abstract methods (can be empty if no specific logic is needed)
-  beforeFetch(fetch: any) {}
-  afterFetch(fetch: any, response: any) {}
-  before(config: any, pipe: any) {}
-  afterSuccess(config: any, pipe: any) {}
-  afterSuccessTransform(config: any, pipe: any) {}
-  finally(config: any, pipe: any) {}
-  error(config: any, pipe: any, e: any) {}
+interface Product {
+  id: number;
+  title: string;
+  description: string;
+  price: number;
+  discountPercentage: number;
+  rating: number;
+  stock: number;
+  brand: string;
+  category: string;
+  thumbnail: string;
+  images: string[];
 }
 
-const userFetcher = new UserApiFetcher();
+interface Todo {
+  id: number;
+  todo: string;
+  completed: boolean;
+  userId: number;
+}
+```
 
-async function getUser(userId: number) {
+#### HttpJsonFetcher Usage
+
+`HttpJsonFetcher` simplifies interactions with RESTful APIs that primarily use JSON. It automatically sets `Content-Type` and `Accept` headers for JSON and handles JSON serialization/deserialization.
+
+```typescript
+import { HttpJsonFetcher, HttpResponseError } from '@dooboostore/core/fetch/HttpJsonFetcher';
+
+const jsonFetcher = new HttpJsonFetcher<any, any>(); // CONFIG and PIPE generics can be 'any' for simple use
+
+async function fetchUserAndProduct() {
   try {
-    const user = await userFetcher.get<User>({
-      target: `https://jsonplaceholder.typicode.com/users/${userId}`,
-      // Optional: Add custom fetch config or error handling
-      config: {
-        fetch: { headers: { 'X-Custom-Header': 'Value' } },
-        hasResponseErrorChecker: (response) => {
-          if (response.status === 404) {
-            return new Error('User not found');
-          }
-          return null;
-        }
-      },
-      errorTransform: async (e) => {
-        if (e instanceof HttpJsonResponseError) {
-          console.error('HTTP JSON Error:', e.message, e.body);
-        } else {
-          console.error('Generic Error:', e);
-        }
-        throw e; // Re-throw to propagate the error
-      }
+    // GET request for JSON data
+    const user: User = await jsonFetcher.get({
+      target: `https://jsonplaceholder.typicode.com/users/1`
     });
     console.log('Fetched User:', user);
-  } catch (error) {
-    console.error('Failed to fetch user:', error);
+
+    // POST request with JSON body
+    const newProduct: Product = await jsonFetcher.postJson({
+      target: `https://dummyjson.com/products/add`,
+      config: {
+        fetch: {
+          body: { title: 'New Awesome Gadget', price: 199.99 },
+        },
+      },
+    });
+    console.log('Created Product:', newProduct);
+
+  } catch (error: any) {
+    if (error instanceof HttpResponseError) {
+      console.error('HTTP Error:', error.message, error.response?.status, error.body);
+    } else {
+      console.error('Generic Error:', error);
+    }
   }
 }
 
-getUser(1);
-getUser(999); // Example of a non-existent user
+fetchUserAndProduct();
+```
+
+#### HttpXmlFetcher Usage
+
+`HttpXmlFetcher` is designed for APIs that communicate using XML. It sets appropriate `Content-Type` and `Accept` headers for XML. Note that XML parsing in Node.js environments typically requires a dedicated library (e.g., `xmldom`, `fast-xml-parser`) as `DOMParser` is a browser API. The `HttpXmlFetcher` will return the raw XML text in Node.js if a browser-like `DOMParser` is not globally available or mocked.
+
+```typescript
+import { HttpXmlFetcher, HttpResponseError } from '@dooboostore/core/fetch/HttpXmlFetcher';
+
+const xmlFetcher = new HttpXmlFetcher<any, any>();
+
+async function fetchXmlData() {
+  try {
+    // GET request for XML data
+    // In Node.js, this will return the raw XML string.
+    // In a browser with DOMParser, it would return an XML Document.
+    const xmlStringOrDoc: string | Document = await xmlFetcher.get({
+      target: `https://www.w3schools.com/xml/note.xml`
+    });
+    console.log('Fetched XML Data:', xmlStringOrDoc);
+
+    // Example of parsing XML string in Node.js (requires a library like xmldom)
+    // import { DOMParser } from 'xmldom'; // Example import for Node.js
+    // if (typeof xmlStringOrDoc === 'string') {
+    //   const parser = new DOMParser();
+    //   const xmlDoc = parser.parseFromString(xmlStringOrDoc, 'application/xml');
+    //   console.log('Parsed XML Document (Node.js):', xmlDoc.getElementsByTagName('to')[0].textContent);
+    // }
+
+    // POST request with XML body
+    const xmlBody = '<order><item id="1">Laptop</item><quantity>1</quantity></order>';
+    // Note: Most public APIs (like dummyjson.com) expect JSON, not XML.
+    // This example uses a placeholder target.
+    const response = await xmlFetcher.postXml({
+      target: `https://dummyjson.com/products/add`, // This endpoint expects JSON
+      config: {
+        fetch: {
+          body: xmlBody,
+        },
+      },
+    });
+    console.log('POST XML Response Status:', response.status);
+    // Depending on the server, response.text() or response.json() might be needed
+    // console.log('POST XML Response Body:', await response.text());
+
+  } catch (error: any) {
+    if (error instanceof HttpResponseError) {
+      console.error('HTTP Error:', error.message, error.response?.status, error.body);
+    } else {
+      console.error('Generic Error:', error);
+    }
+  }
+}
+
+fetchXmlData();
 ```
 
 ### Message Module (Observable, Map, Filter)

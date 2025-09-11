@@ -19,3 +19,5 @@ import './timing-operators.test';
 import './utility-operators.test';
 import './operators-integration.test';
 import './cssParser.test';
+import './HttpFetcher.test';
+import './HttpXmlFetcher.test';

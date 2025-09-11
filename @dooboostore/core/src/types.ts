@@ -234,6 +234,14 @@ export type StringValue<T> = {
 export interface ConstructorType<T> {
   new (...args: any[]): T;
 }
+
+// infer와 조건부 타입으로 흉내내기
+// 가끔 "상위 타입"으로 제약을 두고 싶을 때는 조건부 타입을 씁니다:
+// let fn: Super<HttpResponseError<any>>;
+// fn 은 HttpResponseError<any> 의 상위 타입 파라미터도 받을 수 있음
+// type Super<T> = T extends HttpResponseError<infer U> ? HttpResponseError<any> : never;
+export type Super<T> = (arg: T) => void;
+
 // export type GenericClassDecorator<T> = (target: T) => void;
 // export type MethodParameter = (target: Object, propertyKey: string | symbol, parameterIndex: number) => void;
 // export type ExtractNotFalsy<T> = T extends false ? never : T;

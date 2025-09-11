@@ -1,7 +1,7 @@
-export type FetcherRequest<TARGET, RES, C, T = RES> = {
+export type FetcherRequest<TARGET, RESPONSE, CONFIG, RESPONSE_TRANSFORM = RESPONSE> = {
   target: TARGET;
-  config?: C & { hasErrorChecker?: (data: RES) => any };
-  transform?: (data: RES) => T;
+  config?: CONFIG & { hasErrorChecker?: (data: RESPONSE) => any };
+  transform?: (data: RESPONSE) => RESPONSE_TRANSFORM;
   errorTransform?: (data?: any) => Promise<any>;
   before?: () => void;
   error?: (e?: any) => void;
@@ -35,7 +35,8 @@ export abstract class Fetcher<TARGET, RESPONSE, CONFIG, PIPE extends { responseD
           config?.before?.();
         })
         .then(() => {
-          return this.execute(config.target, config?.config);
+          return this.execute(config);
+          // return this.execute(config.target, config?.config);
         })
         .then(data => {
           const hasError = config.config?.hasErrorChecker?.(data);
@@ -55,6 +56,7 @@ export abstract class Fetcher<TARGET, RESPONSE, CONFIG, PIPE extends { responseD
           if (config?.errorTransform) {
             e = await config.errorTransform(e);
           }
+          e = await this.errorTransform(e);
           reject(e);
         })
         .finally(() => {
@@ -64,5 +66,6 @@ export abstract class Fetcher<TARGET, RESPONSE, CONFIG, PIPE extends { responseD
     });
   }
 
-  protected abstract execute(target: TARGET, config?: CONFIG): Promise<RESPONSE>;
+  protected abstract errorTransform(e: any): Promise<any>;
+  protected abstract execute<T=RESPONSE>(fetcherRequest: FetcherRequest<TARGET, RESPONSE, CONFIG, T>): Promise<RESPONSE>;
 }
