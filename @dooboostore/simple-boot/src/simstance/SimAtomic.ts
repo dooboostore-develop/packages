@@ -5,7 +5,8 @@ import { ReflectUtils } from '@dooboostore/core/reflect/ReflectUtils';
 
 export class SimAtomic<T = object> {
   private value?: T | undefined;
-  constructor(public type:{targetKeyType: ConstructorType<T> | Function, originalType: ConstructorType<T> | Function}, private simstanceManager: SimstanceManager, private config?: {optional?: boolean}) {
+  constructor(public type:{targetKeyType: ConstructorType<T> | Function, originalType: ConstructorType<T> | Function, value?: T}, private simstanceManager: SimstanceManager, private config?: {optional?: boolean}) {
+    this.value = type.value;
   }
 
   getConfig(): SimConfig | undefined;

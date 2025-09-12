@@ -63,7 +63,7 @@ export class RouterModule<R = SimAtomic, M = any> {
     }
 
     getRouterPaths() {
-        return this.routerChains.map(it => getRouter(it instanceof SimAtomic ? it.type : it)?.path);
+        return this.routerChains.map(it => getRouter(it instanceof SimAtomic ? it.type.targetKeyType : it)?.path);
     }
 
     getRouterPathData(pathName: string) {

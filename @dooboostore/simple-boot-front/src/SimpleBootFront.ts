@@ -9,7 +9,7 @@ import { Intent } from '@dooboostore/simple-boot/intent/Intent';
 import { ViewService } from './service/view/ViewService';
 import { SimstanceManager } from '@dooboostore/simple-boot/simstance/SimstanceManager';
 import { IntentManager } from '@dooboostore/simple-boot/intent/IntentManager';
-import { RouterManager } from '@dooboostore/simple-boot/route/RouterManager';
+import { RouterManager, RoutingOption } from '@dooboostore/simple-boot/route/RouterManager';
 import { DomRenderProxy } from '@dooboostore/dom-render/DomRenderProxy';
 import { RawSet } from '@dooboostore/dom-render/rawsets/RawSet';
 import { RawSetType } from '@dooboostore/dom-render/rawsets/RawSetType';
@@ -25,6 +25,10 @@ import { isOnInit } from './lifecycle/OnInit';
 import { EventManager } from '@dooboostore/dom-render/events/EventManager';
 import { Config } from '@dooboostore/dom-render';
 
+export type PopStateType = {type:'initRun', router: any};
+const isInitRunPopStateType = (state: any): state is PopStateType => {
+  return state && state.type === 'initRun' && 'router' in state;
+}
 export class SimpleBootFront extends SimpleApplication {
   public domRendoerExcludeProxy: ConstructorType<any>[] = [
     SimpleApplication,
@@ -169,11 +173,13 @@ export class SimpleBootFront extends SimpleApplication {
     this.option.window.addEventListener('popstate', (event) => {
       if (this.domRenderRouter) {
         // console.log('?????????????????????????????')
+        // console.log('popstate-------!!', event.state, this.domRenderConfig.window.history.state)
         const intent = new Intent(this.domRenderRouter.getUrl() || '/');
         // console.log('intent-----------', intent)
         // TODO: 왜 canActivate가 두번 호출되는지 확인 필요!! 그래서 setTimeout으로 처리함 원인 모르겠음 아 씨발
         setTimeout(() => {
-          this.routing<SimAtomic, any>(intent).then(it => {
+          const option: RoutingOption | undefined = isInitRunPopStateType(event.state)? {router: event.state.router}: undefined;
+          this.routing<SimAtomic, any>(intent, option).then(it => {
             // console.log('routing------', it)
             this.afterSetting();
 
@@ -191,7 +197,7 @@ export class SimpleBootFront extends SimpleApplication {
         }, 0)
       }
     });
-    return simstanceManager;
+    return {simstanceManager,routerAndSettingData};
   }
 
   public initWriteRootRouter(target: Element) {
@@ -206,6 +212,7 @@ export class SimpleBootFront extends SimpleApplication {
 
     if (target && routerAndSettingData.routerAtomic && routerAndSettingData.routerAtomic.getValue()) {
       const val = routerAndSettingData.routerAtomic.getValue() as any;
+      console.log('12222222v2')
       // 여기서 domrender 시작하네??
       const domRenderProxy = val._DomRender_proxy as DomRenderProxy<any>
       const rawSet = new RawSet(
@@ -282,11 +289,13 @@ export class SimpleBootFront extends SimpleApplication {
   // }
 
   public run(otherInstanceSim?: Map<ConstructorType<any>, any>, url?: string) {
-    const simstanceManager = this.initRun(otherInstanceSim);
+    const {simstanceManager, routerAndSettingData} = this.initRun(otherInstanceSim);
     if (url && this.domRenderRouter) {
       this.domRenderRouter.go({path: url});
     }
-    this.option.window.dispatchEvent(new Event('popstate'));
+
+    const state:PopStateType = {type:'initRun', router: routerAndSettingData.routerAtomic.getValue()};
+    this.option.window.dispatchEvent(new PopStateEvent('popstate', {state: state}));
     return simstanceManager;
   }
 

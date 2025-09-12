@@ -10,20 +10,27 @@ import { Sim } from '../decorators/SimDecorator';
 import { Expression } from '@dooboostore/core/expression/Expression';
 import { isRouterAction, RoutingDataSet } from '../route/RouterAction';
 import { isOnRouting } from '../lifecycle/OnRouting';
+import { SimOption } from '../SimOption';
 
-export type RoutingOption = { find?: { router: 'last' | 'first' } };
+export type RoutingOption = { router?: ConstructorType<any> | any, find?: { router: 'last' | 'first' } };
 
 @Sim
 export class RouterManager {
   public activeRouterModule?: RouterModule<SimAtomic, any>;
 
-  constructor(private simstanceManager: SimstanceManager, private rootRouter?: ConstructorType<any> | Function) {
+  constructor(private simstanceManager: SimstanceManager, private simOption: SimOption) {
   }
 
-  public routingMap(prefix: string = '', router = this.rootRouter): { [key: string]: string | any } {
+  public routingMap(prefix: string = '',  option?: RoutingOption): { [key: string]: string | any } {
+    const targetRouter = option?.router ?? this.simOption.rootRouter;
+    if (!targetRouter) {
+      throw new Error('no router');
+    }
     const map = {} as { [key: string]: string | any };
-    if (router) {
-      const routerAtomic = new SimAtomic({targetKeyType:router, originalType: router}, this.simstanceManager);
+    if (targetRouter) {
+      const targetType = (typeof targetRouter === 'object') ? targetRouter.constructor : targetRouter;
+      const targetValue = (typeof targetRouter === 'object') ? targetRouter : undefined;
+      const routerAtomic = new SimAtomic({targetKeyType: targetType, originalType: targetType, value: targetValue}, this.simstanceManager);
       const routerData = routerAtomic.getConfig<RouterConfig>(RouterMetadataKey);
       if (routerData) {
         const currentPrefix = prefix + routerData.path;
@@ -33,18 +40,22 @@ export class RouterManager {
           });
         }
         routerData.routers?.forEach(it => {
-          Object.assign(map, this.routingMap(currentPrefix, it));
+          Object.assign(map, this.routingMap(currentPrefix, {...option, router: it}));
         })
       }
     }
     return map;
   }
 
-  public async routings<R = SimAtomic, M = any>(intent: Intent): Promise<RouterModule<R, M>[]> {
-    if (!this.rootRouter) {
-      throw new Error('no root router');
+  public async routings<R = SimAtomic, M = any>(intent: Intent, option?: RoutingOption): Promise<RouterModule<R, M>[]> {
+    const targetRouter = option?.router ?? this.simOption.rootRouter;
+    if (!targetRouter) {
+      throw new Error('no router');
     }
-    const routerAtomic = new SimAtomic({targetKeyType:this.rootRouter, originalType: this.rootRouter}, this.simstanceManager);
+    const targetType = (typeof targetRouter === 'object') ? targetRouter.constructor : targetRouter;
+    const targetValue = (typeof targetRouter === 'object') ? targetRouter : undefined;
+
+    const routerAtomic = new SimAtomic({targetKeyType: targetType, originalType: targetType, value: targetValue}, this.simstanceManager);
     const allMatches = this._collectAllMatchingModules(routerAtomic, intent, []);
 
     // Priority 1: Exact path match with a module
@@ -63,11 +74,15 @@ export class RouterManager {
   }
 
   public async routing<R = SimAtomic, M = any>(intent: Intent, option?: RoutingOption): Promise<RouterModule<R, M>> {
-    if (!this.rootRouter) {
-      throw new Error('no root router');
+    const targetRouter = option?.router ?? this.simOption.rootRouter;
+    if (!targetRouter) {
+      throw new Error('no router');
     }
     // await new Promise((r)=> setTimeout(r, 0)); // <-- 이거 넣어야지 두번불러지는게 없어지는듯? 뭐지 event loop 변경된건가?
-    const routerAtomic = new SimAtomic({targetKeyType: this.rootRouter, originalType: this.rootRouter}, this.simstanceManager);
+    const targetType = (typeof targetRouter === 'object') ? targetRouter.constructor : targetRouter;
+    const targetValue = (typeof targetRouter === 'object') ? targetRouter : undefined;
+
+    const routerAtomic = new SimAtomic({targetKeyType: targetType, originalType: targetType, value: targetValue}, this.simstanceManager);
     const rootRouter = routerAtomic.getValue()!;
     const executeModuleResult = this.getExecuteModule(routerAtomic, intent, [], option);
     if (executeModuleResult) {
@@ -86,7 +101,7 @@ export class RouterManager {
             }
           }
           if (isOnRouting(value)) {
-              await value.onRouting(routingDataSet);
+            await value.onRouting(routingDataSet);
           }
         }
       }
@@ -177,7 +192,7 @@ export class RouterManager {
         return;
       }
 
-      const routerStrings = parentRouters.slice(1).map(it => it.getConfig<RouterConfig>(RouterMetadataKey)?.path || '');
+      const routerStrings = parentRouters.map(it => it.getConfig<RouterConfig>(RouterMetadataKey)?.path || '');
       const isRoot = this.isRootUrl(routerConfig.path, routerStrings, path)
       // console.log('----------routerConfig.path', routerConfig.path, 'isRoot', isRoot, 'routerStrings', routerStrings, 'path', path);
       if (isRoot) {
@@ -244,7 +259,7 @@ export class RouterManager {
         return matches;
       }
 
-      const routerStrings = parentRouters.slice(1).map(it => it.getConfig<RouterConfig>(RouterMetadataKey)?.path || '');
+      const routerStrings = parentRouters.map(it => it.getConfig<RouterConfig>(RouterMetadataKey)?.path || '');
       const isRoot = this.isRootUrl(routerConfig.path, routerStrings, path)
 
       if (isRoot) {

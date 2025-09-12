@@ -6,18 +6,14 @@ import template from './index.html'
 import style from './index.css'
 import { Home } from './pages/home/home';
 import { RouterAction, RoutingDataSet } from '@dooboostore/simple-boot/route/RouterAction';
-import { ItemComponent } from './components/item/item.component';
-import { ComponentSet } from '@dooboostore/simple-boot-front/component/ComponentSet';
-import { OnInitRender } from '@dooboostore/dom-render/lifecycle/OnInitRender';
 import { ComponentRouterBase } from '@dooboostore/simple-boot-front/component/ComponentRouterBase.ts';
 import { drComponent } from '@dooboostore/dom-render/components'
-import { UserRouterComponent } from './pages/user.router.component.ts';
-import * as url from 'node:url';
 import { User } from './pages/user.ts';
+import { RandomUtils } from '@dooboostore/core';
 
 @Sim({
   // scope: Lifecycle.Transient,
-  using: [ItemComponent, drComponent]
+  using: [drComponent]
 })
 @Router({
   path: '',
@@ -33,6 +29,7 @@ import { User } from './pages/user.ts';
   styles: [style]
 })
 export class Index extends ComponentRouterBase {
+  name=RandomUtils.uuid4();
   sw = true;
   constructor(private router: DomRenderRouter) {
     super();
@@ -49,8 +46,11 @@ export class Index extends ComponentRouterBase {
 
   async canActivate(url: RoutingDataSet, data?: any): Promise<void> {
     console.log('canActivate1')
-    super.canActivate(url, data);
+    await super.canActivate(url, data);
+    setTimeout(() => {
+
     console.log('canActivate2', this.child)
+    }, 10)
   }
 
   toggleSw() {

@@ -3,7 +3,6 @@ import { Route, Router } from '@dooboostore/simple-boot/decorators/route/Router'
 import { SimpleApplication } from '@dooboostore/simple-boot/SimpleApplication';
 import { SimOption } from '@dooboostore/simple-boot/SimOption';
 import { Intent } from '@dooboostore/simple-boot/intent/Intent';
-import { Inject } from '@dooboostore/simple-boot/decorators/inject/Inject';
 import { RouterAction, RoutingDataSet } from '@dooboostore/simple-boot/route/RouterAction';
 
 
@@ -117,6 +116,9 @@ class Sub3Router  implements RouterAction{
 @Sim
 @Router({
   path: '/test',
+  route: {
+    '/office': Office
+  }
 })
 export class TestRouter implements RouterAction{
 
@@ -133,7 +135,9 @@ export class TestRouter implements RouterAction{
   }
 
 }
-  @Sim
+@Sim({
+  // scope: Lifecycle.Transient
+})
 @Router({
   path: '/api',
   route: {
@@ -143,7 +147,7 @@ export class TestRouter implements RouterAction{
 class ApiRouter {
 
   constructor() {
-    console.log('SubRouter');
+    console.log('ApiRouter constructor');
   }
 
   routeSay() {
@@ -177,13 +181,13 @@ say() {
 }
 
 (async ()=>{
-  const option  = new SimOption({  })
+  const option  = new SimOption({ rootRouter: RootRouter })
   const app = new SimpleApplication(option);
   app.run();
 
-  const r = app.sim(RootRouter)
-  r.say();
-  const routerManager = app.routerManager;
+  // const rootRouter = app.sim(RootRouter)
+  // r.say();
+  // const routerManager = app.routerManager;
   // const r = await routerManager.routing(new Intent('/user1/office'));
   // const ro = await routerManager.routing(new Intent('/user1/office'));
 
@@ -198,11 +202,15 @@ say() {
 //   }
 
 
-  // const r = await routerManager.routing(new Intent('/api/test/layers'));
+  // const r = await app.routing(new Intent('/api/test/layers'), {router: rootRouter});
+  // const c = await app.routing(new Intent('/api/test/layers'), {router: rootRouter});
+  const r = await app.routing(new Intent('/api/test/layers'));
+  const c = await app.routing(new Intent('/api/test/layers'));
   // const r = await routerManager.routing(new Intent('/user/office'));
   // const r = await routerManager.routing(new Intent('/user/ssuser/office'));
-  // console.log('router', r.router.getValue(), r.getRouterPaths(), r.getModuleInstance())
-  // console.log('module', r.getModuleInstance());
+  console.log('router==>', r.router.getValue(), r.getRouterPaths(), r.getModuleInstance())
+  console.log('module', r.getModuleInstance());
+  console.log('module', c.getModuleInstance());
   // const rs = await routerManager.routings(new Intent('/user'));
   // console.log('rs',rs.map(it=>({router:it.router.getValue(), module: it.getModuleInstance()})))
 })()

@@ -3,6 +3,7 @@ import { ScriptUtils } from '@dooboostore/core-web/script/ScriptUtils';
 import { RawSet } from '../rawsets/RawSet';
 import { Render } from '../rawsets/Render';
 import { AfterCallBack, ElementSource, ExecuteState, ReturnContainer, Source } from './OperatorExecuter';
+import { ObjectUtils } from '@dooboostore/core';
 
 export class DrIf extends OperatorExecuterAttrRequire<string> {
   constructor(rawSet: RawSet, render: Render, returnContainer: ReturnContainer, elementSource: ElementSource, source: Source, afterCallBack: AfterCallBack) {
@@ -18,10 +19,10 @@ export class DrIf extends OperatorExecuterAttrRequire<string> {
     const keepgoing = ScriptUtils.eval(`
                 ${this.render.bindScript}
                 ${this.elementSource.attrs.drBeforeOption ?? ''}
-                if ($rawSet.data === (${attr})) {
+                if ($rawSet.data === (${ObjectUtils.Path.toOptionalChainPath(attr)})) {
                     return false;
                 }
-                $rawSet.data = ${attr};
+                $rawSet.data = ${ObjectUtils.Path.toOptionalChainPath(attr)};
                 if($rawSet.data) {
                     const n = $element.cloneNode(true);
                     Object.entries(this.__render.drAttr).filter(([k,v]) => k !== 'drIf' && v).forEach(([k, v]) => n.setAttribute(this.__render.drAttrsOriginName[k], v));

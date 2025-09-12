@@ -26,6 +26,9 @@
 <main>
     <button dr-event-click="@this@.toggleSw()">sw toggle ${@this@.sw}$</button>
 <!--    <div dr-this="${@this@?.child}$"></div>-->
+    ${@this@?.name}$
+    ${@this@?.child?.obj?.name}$
+    ${@this@?.child?.name}$
     <dr-this value="${@this@?.child}$" if="${@this@.sw}$"></dr-this>
 </main>
 <div class="good">g</div>

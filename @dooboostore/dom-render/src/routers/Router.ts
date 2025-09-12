@@ -16,6 +16,11 @@ export type RouterConfig<T = any> = { rootObject?: T, window: Window, disableAtt
 
 export type RouteAction = string | { path?: string, searchParams?: ToURLSearchParamsParams };
 
+/*
+    this.option.window.addEventListener('popstate', (event) => { // history.back, forward에만 popstate 발생되고 값이 도출된다
+   console.log('popstate-------!!', event.state, this.domRenderConfig.window.history.state)
+   })
+ */
 export abstract class Router<T = any> {
   private subject = new Subject<RouteData>();
   private _config: RouterConfig<T>;
@@ -98,12 +103,12 @@ export abstract class Router<T = any> {
     this.subject.next(this.getRouteData());
   }
 
-  dispatchPopStateEvent() {
-    this.config.window.dispatchEvent(new Event('popstate'));
+  dispatchPopStateEvent(data?: any) {
+    this.config.window.dispatchEvent(new PopStateEvent('popstate', {state: data}));
   }
 
-  reload() {
-    this.config.window.dispatchEvent(new Event('popstate'));
+  reload(data?: any) {
+    this.config.window.dispatchEvent(new PopStateEvent('popstate', {state: data}));
   }
 
   getData(): any {
@@ -128,7 +133,7 @@ export abstract class Router<T = any> {
       await this.attach();
     }
     if (!config.disabledPopEvent) {
-      this.dispatchPopStateEvent();
+      this.dispatchPopStateEvent(config.data);
     }
   }
 

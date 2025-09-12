@@ -33,7 +33,7 @@ export class SimpleApplication {
     this.simstanceManager.setStoreSet(SimstanceManager, this.simstanceManager);
     // cacheManager는 사용자가 불러다 사용할때 뜨도록. 미리 추가안해준다.
     this.intentManager = this.simstanceManager.proxy(new IntentManager(this.simstanceManager));
-    this.routerManager = this.simstanceManager.proxy(new RouterManager(this.simstanceManager, option.rootRouter));
+    this.routerManager = this.simstanceManager.proxy(new RouterManager(this.simstanceManager, option));
     this.simstanceManager.setStoreSet(IntentManager, this.intentManager);
     this.simstanceManager.setStoreSet(RouterManager, this.routerManager);
     containers.add(this);
