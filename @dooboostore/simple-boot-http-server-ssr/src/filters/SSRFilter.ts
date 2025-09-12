@@ -149,6 +149,7 @@ export class SSRFilter implements Filter {
             html = html.replace('</head>', `<script> window.server_side_data={}; ${data}; </script></head>`);
           }
         }
+        console.log('--------',html)
         await this.writeOkHtmlAndEnd({rr}, html);
       } finally {
         (simpleBootFront.option.window as any).ssrUse = false;

@@ -1,0 +1,175 @@
+[
+  {
+    "seq": 1,
+    "name": "비둘기",
+    "w": 1,
+    "h": 1,
+    "layers": [
+
+      {
+        "seq": 5,
+        "name": "영역-우측보는-꼬리",
+        "parentTranslate": { "x": 0, "y": 0 },
+        "parentTransform": [1,0,0,1,0.5,0.5],
+        "color": "#448CCF",
+        "x": -0.05,
+        "y": 0,
+        "w": 0.15,
+        "h": 0.4,
+        "rotate": 0.12,
+        "typeData": { "w": 1, "h": 1, "radii": [0.2,0.2,0.2,0.2]},
+        "animationIterationCount": "infinite",
+        "animation": [
+          {"rotate":  0.12},
+          {"rotate":  0.10},
+          {"rotate":  0.11},
+          {"rotate":  0.12}
+        ],
+        "layers": [
+          {
+            "seq": 9,
+            "name": "부위-우측보는-꼬리",
+            "type": "rect",
+            "parentTranslate": { "x": 0, "y": 0 },
+            "parentTransform": [1,0,0,1,0,0],
+            "color": "#448CCF",
+            "x": 0,
+            "y": 0,
+            "w": 1,
+            "h": 1,
+            "typeData": { "w": 1, "h": 1, "radii": [0.2,0.2,0.2,0.2]},
+            "animationIterationCount": "infinite",
+            "animation": [],
+            "layers": []
+          }
+        ]
+      },
+      {
+        "seq": 3,
+        "name": "영역-우측보는-왼쪽날개",
+        "parentTranslate": { "x": 0, "y": 0 },
+        "parentTransform": [1,0,0,1,0.7,0.43],
+        "color": "#5098DA",
+        "x": -0.11,
+        "y": -0.08,
+        "w": 0.22,
+        "h": 0.3,
+        "rotate": 0,
+        "typeData": { "w": 1, "h": 1, "radii": [0.2,0.2,0.2,0.2]},
+        "animationIterationCount": "infinite",
+        "animation": [
+          {"rotate":  0},
+          {"rotate":  0.01},
+          {"rotate":  -0.01},
+          {"rotate":  0}
+        ],
+        "layers": [
+          { "seq": 10,
+            "name": "부위-우측보는-기본_왼쪽날개",
+            "type": "rect",
+            "parentTranslate": { "x": 0, "y": 0 },
+            "parentTransform": [1,0,0,1,0,0],
+            "color": "#5098DA",
+            "x": 0,
+            "y": 0,
+            "w": 1,
+            "h": 1,
+            "typeData": { "w": 1, "h": 1, "radii": [0.2,0.2,0.2,0.2]},
+            "animationIterationCount": "infinite",
+            "animation": [],
+            "layers": []}
+        ]
+      },
+      {
+        "seq": 2,
+        "name": "영역-우측보는-몸",
+        "parentTranslate": { "x": 0.5, "y": 0.5 },
+        "parentTransform": [1,0,0,1,0,0],
+        "x": -0.2,
+        "y": -0.25,
+        "w": 0.4,
+        "h": 0.5,
+        "typeData": { "w": 1, "h": 1},
+        "animationIterationCount": "infinite",
+        "animation": [
+          {"x": -0.2, "y":  -0.25, "parentTransform": [1,0,0,1,0,0], "typeData": { "w": 1, "h": 1}},
+          {"x": -0.2, "y":  -0.25, "parentTransform": [1.01,0,0,1.01,0,0], "typeData": { "w": 1, "h": 1}},
+          {"x": -0.2, "y":  -0.25, "parentTransform": [1,0,0,1,0,0], "typeData": { "w": 1, "h": 1}}
+        ],
+        "layers": [
+          {
+            "seq": 2,
+            "name": "부위-우측보는-기본_몸",
+            "type": "rect",
+            "parentTranslate": { "x": 0, "y": 0 },
+            "parentTransform": [1,0,0,1,0,0],
+            "color": "#72B7EBAA",
+            "x": 0,
+            "y": 0,
+            "w": 1,
+            "h": 1,
+            "typeData": { "w": 1, "h": 1, "radii": [0.2,0.2,0.2,0.2]},
+            "animationIterationCount": "infinite",
+            "animation": [],
+            "layers": []
+          }
+        ]
+      },
+      {
+        "seq": 4,
+        "name": "영역-우측보는-오른쪽날개",
+        "parentTranslate": { "x": 0, "y": 0 },
+        "parentTransform": [1,0,0,1,0.3,0.43],
+        "color": "#5098DA",
+        "x": -0.11,
+        "y": -0.08,
+        "w": 0.22,
+        "h": 0.3,
+        "rotate": 0,
+        "typeData": { "w": 1, "h": 1, "radii": [0.2,0.2,0.2,0.2]},
+        "animationIterationCount": "infinite",
+        "animation": [
+          {"rotate":  0},
+          {"rotate":  0.01},
+          {"rotate":  -0.01},
+          {"rotate":  0}
+        ],
+        "layers": [
+          {
+            "seq": 4,
+            "name": "부위-우측보는-오른쪽날개",
+            "type": "rect",
+            "parentTranslate": { "x": 0, "y": 0 },
+            "parentTransform": [1,0,0,1,0,0],
+            "color": "#5098DA",
+            "x": 0,
+            "y": 0,
+            "w": 1,
+            "h": 1,
+            "typeData": { "w": 1, "h": 1, "radii": [0.2,0.2,0.2,0.2]},
+            "animationIterationCount": "infinite",
+            "animation": [],
+            "layers": [
+              {
+                "seq": 12001,
+                "name": "부위-우측보는-오른쪽날개-깃",
+                "type": "rect",
+                "parentTranslate": { "x": 0, "y": 0.8 },
+                "parentTransform": [1,0,0,1,0,0],
+                "color": "#3276BD",
+                "x": 0,
+                "y": 0,
+                "w": 0.8,
+                "h": 0.2,
+                "typeData": { "w": 1, "h": 1, "radii": [0,0.3,0.3,0.3]},
+                "animationIterationCount": "infinite"
+              }
+            ]
+          }
+        ]
+      }
+
+    ]
+  }
+
+]

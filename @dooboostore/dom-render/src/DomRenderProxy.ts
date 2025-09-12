@@ -25,12 +25,22 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
   public _domRender_ref = new Map<object, Set<string>>();
   public _rawSets = new Map<string, Set<RawSet>>();
   public _domRender_proxy?: T;
+  // public _firstTarget: Node;
   public _targets = new Set<Node>();
 
   constructor(public _domRender_origin: T, target: Node | null | undefined, public config: Config) {
     if (target) {
       this._targets.add(target);
+      // this._firstTarget = target;
     }
+
+    // setInterval(() => {
+    //   this._rawSets.forEach(it => {
+    //     Array.from(it).forEach(it => {
+    //       console.log(it, it.isConnected)
+    //     })
+    //   });
+    // }, 1000)
   }
 
   public static unFinal<T = any>(obj: T): T {
@@ -266,7 +276,7 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
         const front = strings.slice(0, strings.length - 1).map(it => isNaN(Number(it)) ? '.' + it : `[${it}]`).join('');
         const lastPropertyName = strings[strings.length - 1];
         const path = 'this' + front;
-        const data = ScriptUtils.evalReturn(path, this._domRender_proxy);
+        const data = ScriptUtils.evalReturn(ObjectUtils.Path.toOptionalChainPath(path), this._domRender_proxy);
         // console.log('root-->', this._rawSets, path, data );
         // console.log('--!!!!', fullPathStr, iterable, data, front, last);
         // 왜여기서 promise를 했을까를 생각해보면......훔.. 변수변경과 화면 뿌려주는걸 동기로하면 성능이 안나오고 비현실적이다.  그래서 promise

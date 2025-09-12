@@ -3,6 +3,7 @@ import fs from 'fs';
 import path from 'path';
 
 import {ReconfigureSettings} from 'jsdom';
+import { UrlUtils } from '@dooboostore/core';
 
 export class JsdomInitializer {
     constructor(private frontDistPath: string, private frontDistIndexFileName: string, private reconfigureSettings?:ReconfigureSettings) {
@@ -31,12 +32,27 @@ export class JsdomInitializer {
         // @ts-ignore
         global.window = jsdom.window as unknown as Window & typeof globalThis;
         // @ts-ignore
-        global.window.requestAnimationFrame = () => {}
+        global.window.requestAnimationFrame = () => {};
+        // const originalPushState = global.window.history.pushState;
+        // global.window.history.pushState = (data: any,title: any,path: string) => {
+        //   console.log('----iida',path)
+        //   path.replace()
+        //
+        //   let s = `${UrlUtils.origin(global.window.location.href)}${path?`${path}`:''}`;
+        //   console.log('----da',s)
+        //   originalPushState.apply(global.window.history, [data, title, s]);
+        // }
+        // const originalReplaceState = global.window.history.replaceState;
+        // global.window.history.replaceState = (data: any,title: any,path: string) => {
+        //   let s = `${UrlUtils.origin(global.window.location.href)}${path?`${path}`:''}`;
+        //   originalReplaceState.apply(global.window.history, [data, title, s]);
+        // }
         const dummyResponse = {ok: false, json: () => Promise.resolve({})}; // as Response;
         global.fetch = (...data: any): Promise<any> => Promise.resolve(dummyResponse);
         // @ts-ignore
         global.history = jsdom.window.history;
         global.Event = jsdom.window.Event;
+        global.PopStateEvent = jsdom.window.Event;
         global.IntersectionObserver = jsdom.window.IntersectionObserver;
         // @ts-ignore
         // global.Error = ErrorBase;

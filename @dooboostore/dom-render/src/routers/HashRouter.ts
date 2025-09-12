@@ -1,4 +1,4 @@
-import { RouteAction, Router, RouterConfig } from './Router';
+import { ChangeStateResult, RouteAction, Router, RouterConfig } from './Router';
 import { LocationUtils } from '@dooboostore/core-web/location/LocationUtils';
 
 
@@ -24,19 +24,19 @@ export class HashRouter extends Router {
     return searchParams;
   }
 
-  push(path: RouteAction, data?: any, title: string = ''): void {
+  push(path: RouteAction, data?: any, title: string = ''): ChangeStateResult {
     if (path === '/') {
-      super.pushState(data, title, '/');
+      return super.pushState(data, title, '/');
     } else {
-      super.pushState(data, title, `#${this.toUrl(path)}`);
+      return super.pushState(data, title, `#${this.toUrl(path)}`);
     }
   }
 
-  replace(path: RouteAction, data?: any, title?: string) {
+  replace(path: RouteAction, data?: any, title?: string):ChangeStateResult {
     if (path === '/') {
-      super.replaceState(data, title, '/');
+      return super.replaceState(data, title, '/');
     } else {
-      super.replaceState(data, title, `#${this.toUrl(path)}`);
+      return super.replaceState(data, title, `#${this.toUrl(path)}`);
     }
   }
 

@@ -13,11 +13,11 @@ export { ComponentRouterBase } from './component/ComponentRouterBase';
 
 // Lifecycle
 export type { onChangedRender } from './lifecycle/OnChangedRender';
-export { isOnDestroy } from './lifecycle/OnDestroy';
-export type { OnDestroy } from './lifecycle/OnDestroy';
+// export { isOnDestroy } from './lifecycle/OnDestroy';
+// export type { OnDestroy } from './lifecycle/OnDestroy';
 export type { OnFinish } from './lifecycle/OnFinish';
-export { isOnInit } from './lifecycle/OnInit';
-export type { OnInit, OnInitParameter } from './lifecycle/OnInit';
+// export { isOnInit } from './lifecycle/OnInit';
+// export type { OnInit, OnInitParameter } from './lifecycle/OnInit';
 export type { OnInitedChild } from './lifecycle/OnInitedChild';
 
 // Services

@@ -1,0 +1,40 @@
+      {
+        "seq": 3,
+        "name": "Layer 3",
+        "img": "https://tr.rbxcdn.com/180DAY-1d2b0f901591d0f23b922d111f149ee0/420/420/Hat/Webp/noFilter",
+        "transform": { "value": [1, 0, 0, 1], "translate": { "x": 0, "y": 0 }, "rotate": 0 },
+        "x": 0.4,
+        "y": 0.4,
+        "w": 0.2,
+        "h": 0.2,
+        "animation": [
+          {
+            "transform": { "value": [1, 0, 0, 1], "translate": { "x": 0, "y": 0 }, "rotate": 0 },
+            "x": 0.4,
+            "y": 0.4,
+            "w": 0.2,
+            "h": 0.2
+          },
+          {
+            "transform": { "value": [1, 1, 0, 1], "translate": { "x": 0, "y": 0 }, "rotate": 0 },
+            "x": 0.4,
+            "y": 0.4,
+            "w": 0.2,
+            "h": 0.2
+          },
+          {
+            "transform": { "value": [1, 0, 1, 1], "translate": { "x": 0, "y": 0 }, "rotate": 0 },
+            "x": 0.4,
+            "y": 0.4,
+            "w": 0.2,
+            "h": 0.2
+          },
+          {
+            "transform": { "value": [1, 0, 0, 1], "translate": { "x": 0, "y": 0 }, "rotate": 0 },
+            "x": 0.4,
+            "y": 0.4,
+            "w": 0.2,
+            "h": 0.2
+          }
+        ]
+      }

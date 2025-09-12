@@ -301,7 +301,7 @@ export class ComponentBase<T = any> implements OnChangeAttrRender, OnCreateRende
     this._cleanupEventListeners();
   }
 
-  onDestroyRender(data: OnDestroyRenderParams): void {
+  onDestroyRender(data?: OnDestroyRenderParams): void {
     this._cleanupEventListeners();
   }
 

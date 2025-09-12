@@ -11,6 +11,9 @@
                 <button dr-event-click="$router?.go({path:'/user'})">user</button>
             </li>
             <li>
+                <button dr-event-click="$router?.go({path:'/productor/iphone'})">/productor/iphone</button>
+            </li>
+            <li>
                 <button dr-event-click="console.log($router)">print</button>
             </li>
             <li>
@@ -27,6 +30,7 @@
     <button dr-event-click="@this@.toggleSw()">sw toggle ${@this@.sw}$</button>
 <!--    <div dr-this="${@this@?.child}$"></div>-->
     ${@this@?.name}$
+    ${@this@?.child}$
     ${@this@?.child?.obj?.name}$
     ${@this@?.child?.name}$
     <dr-this value="${@this@?.child}$" if="${@this@.sw}$"></dr-this>

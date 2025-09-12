@@ -1,0 +1,74 @@
+[
+  {
+    "seq": 1,
+    "name": "Flockease",
+    "w": 1,
+    "h": 1,
+    "b": [0.7, 0, 0.84, 0],
+    "layers": [
+      {
+        "seq": 2,
+        "name": "Layer 1",
+        "img": "https://png.pngtree.com/png-vector/20240917/ourmid/pngtree-floppy-hat-pixel-art-vector-png-image_13853039.png",
+        "transform": [1, 0, 0, 1, 0, 0],
+        "translate": { "x": 0.5, "y": 0.5 },
+        "rotate": 0,
+        "x": -0.25,
+        "y": -0.25,
+        "w": 0.5,
+        "h": 0.5,
+        "animationIterationCount": "infinite",
+        "animationDirection": "reverse",
+        "animation": [
+          {
+            "transform": [1, 0, 0, 1, -0.25, -0.25],
+            "translate": { "x": 0.5, "y": 0.5 },
+            "rotate": 0.25,
+            "x": -0.25,
+            "y": -0.25,
+            "w": 0.5,
+            "h": 0.5
+          }
+        ]
+      }
+
+    ]
+  }
+,
+  {
+    "seq": 2,
+    "name": "Flockease",
+    "w": 1,
+    "h": 1,
+    "b": [0.7, 0, 0.84, 0],
+    "layers": [
+      {
+        "seq": 2,
+        "name": "Layer 1",
+        "img": "https://png.pngtree.com/png-vector/20240917/ourmid/pngtree-floppy-hat-pixel-art-vector-png-image_13853039.png",
+        "transform": [1, 0, 0, 1, 0, 0],
+        "translate": { "x": 0.5, "y": 0.5 },
+        "rotate": 0,
+        "x": -0.25,
+        "y": -0.25,
+        "w": 0.5,
+        "h": 0.5,
+        "animationIterationCount": "infinite",
+        "animationDirection": "reverse",
+        "animation": [
+          {
+            "transform": [1, 0, 0, 1, -0.25, -0.25],
+            "translate": { "x": 0.5, "y": 0.5 },
+            "rotate": 0.25,
+            "x": -0.25,
+            "y": -0.25,
+            "w": 0.5,
+            "h": 0.5
+          }
+        ]
+      }
+
+    ]
+  }
+
+]

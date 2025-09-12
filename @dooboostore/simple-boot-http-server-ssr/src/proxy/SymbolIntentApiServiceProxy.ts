@@ -4,7 +4,7 @@ import { ConvertUtils } from '@dooboostore/core/convert/ConvertUtils';
 import { ApiService } from '@dooboostore/simple-boot/fetch/ApiService';
 
 
-export type Config<T = any> = {  multipartFormData?: boolean,  bypassTransform?: boolean; transformText?: boolean, headers?: HeadersInit, body?: T };
+export type Config<T = any> = { method?:'get' | 'post' | 'petch' | 'delete' | 'head', multipartFormData?: boolean,  bypassTransform?: boolean; transformText?: boolean, headers?: HeadersInit, body?: T };
 
 @Sim
 export class SymbolIntentApiServiceProxy<T extends object> implements ProxyHandler<T> {
@@ -23,7 +23,8 @@ export class SymbolIntentApiServiceProxy<T extends object> implements ProxyHandl
         const p = (userConfig: Config) => {
 
           const headers = {...(userConfig?.headers ?? {}), ...makeIntentHeaderBySymbol(simConfig.symbol as Symbol)};
-          if (userConfig?.multipartFormData) {
+          const method = userConfig?.method ?? 'post';
+          if(method === 'post' && userConfig?.multipartFormData) {
             return apiService.post({
               target: `/${String(prop)}`,
               config: {
@@ -36,7 +37,7 @@ export class SymbolIntentApiServiceProxy<T extends object> implements ProxyHandl
                 }
               }
             });
-          } else {
+          } else if (method === 'post') {
             return apiService.postJson({
               target: `/${String(prop)}`,
               config: {
@@ -49,7 +50,64 @@ export class SymbolIntentApiServiceProxy<T extends object> implements ProxyHandl
                 }
               }
             });
+          }else if (method === 'petch') {
+            return apiService.patchJson({
+              target: `/${String(prop)}`,
+              config: {
+                bypassTransform: userConfig?.bypassTransform,
+                transformText: userConfig?.transformText,
+                fetch: {
+                  credentials: 'include',
+                  headers: headers,
+                  body: userConfig?.body
+                }
+              }
+            });
+          } else {
+            return apiService[method]({
+            // return apiService.head({
+              target: {url: `/${String(prop)}`, searchParams: userConfig?.body},
+              config: {
+                bypassTransform: userConfig?.bypassTransform,
+                transformText: userConfig?.transformText,
+                fetch: {
+                  credentials: 'include',
+                  headers: headers,
+                }
+              }
+            });
           }
+
+
+
+
+          // if (userConfig?.multipartFormData) {
+          //   return apiService.post({
+          //     target: `/${String(prop)}`,
+          //     config: {
+          //       bypassTransform: userConfig?.bypassTransform,
+          //       transformText: userConfig?.transformText,
+          //       fetch: {
+          //         credentials: 'include',
+          //         headers: headers,
+          //         body: ConvertUtils.toFormData(userConfig?.body)
+          //       }
+          //     }
+          //   });
+          // } else {
+          //   return apiService.postJson({
+          //     target: `/${String(prop)}`,
+          //     config: {
+          //       bypassTransform: userConfig?.bypassTransform,
+          //       transformText: userConfig?.transformText,
+          //       fetch: {
+          //         credentials: 'include',
+          //         headers: headers,
+          //         body: userConfig?.body
+          //       }
+          //     }
+          //   });
+          // }
 
         };
         args.push(p);

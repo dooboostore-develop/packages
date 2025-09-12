@@ -1,4 +1,4 @@
-import { RouteAction, Router, RouterConfig } from './Router';
+import { ChangeStateResult, RouteAction, Router, RouterConfig } from './Router';
 import { ConvertUtils } from '@dooboostore/core/convert/ConvertUtils';
 import ToURLSearchParamsParams = ConvertUtils.ToURLSearchParamsParams;
 
@@ -20,13 +20,12 @@ export class PathRouter extends Router {
 
   }
 
-  push(path: RouteAction, data?: any, title: string = ''): void {
-    // console.log('pppppp?')
-    super.pushState(data, title, this.toUrl(path));
+  push(path: RouteAction, data?: any, title: string = ''): ChangeStateResult {
+    return super.pushState(data, title, this.toUrl(path));
   }
 
-  replace(path: RouteAction, data?: any, title: string = ''): void {
-    super.replaceState(data, title, this.toUrl(path));
+  replace(path: RouteAction, data?: any, title: string = ''): ChangeStateResult {
+    return super.replaceState(data, title, this.toUrl(path));
   }
 
   pushDeleteSearchParam(name: string, data?: any, title?: string): void {

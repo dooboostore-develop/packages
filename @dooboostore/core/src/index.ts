@@ -25,5 +25,6 @@ export * from './schedule';
 export * from './storage';
 export * from './string';
 export * from './transaction';
+export * from './url';
 // export * from './types';
 export * from './valid';

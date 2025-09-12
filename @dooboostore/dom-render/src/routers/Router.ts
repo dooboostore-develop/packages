@@ -11,9 +11,17 @@ export type RouteData = {
   searchParams: URLSearchParams;
   pathData?: any;
   router: Router;
+  currentTarget?:PopCurrentState;
 }
-export type RouterConfig<T = any> = { rootObject?: T, window: Window, disableAttach?: boolean };
+export type PopStateCurrentTargetDomrenderRouter = { currentTargetName: 'domRenderRouter' };
+export type PopCurrentState = PopStateCurrentTargetDomrenderRouter;
+export const isPopStateCurrentTargetDomrenderRouter = (obj: any): obj is PopStateCurrentTargetDomrenderRouter =>
+  obj?.currentTargetName === 'domRenderRouter';
 
+export type RouterConfig<T = any> = { rootObject?: T, window: Window, disableAttach?: boolean,
+  // changeStateConvertDate?:(data: any)=>any
+};
+export type ChangeStateResult = {data?: any}
 export type RouteAction = string | { path?: string, searchParams?: ToURLSearchParamsParams };
 
 /*
@@ -38,6 +46,14 @@ export abstract class Router<T = any> {
 
   constructor(config: RouterConfig<any>) {
     this._config = config;
+    this.config.window.addEventListener('popstate', (event: PopStateEvent) => {
+      if(!isPopStateCurrentTargetDomrenderRouter(event.state)) {
+        // console.log('-------');
+        const routeData = this.getRouteData();
+        this.subject.next(routeData);
+
+      }
+    })
   }
 
 
@@ -72,7 +88,7 @@ export abstract class Router<T = any> {
     }
   }
 
-  getRouteData(urlExpression?: string): RouteData {
+  getRouteData(config?: {urlExpression?: string, currentTarget?: PopCurrentState}): RouteData {
     const newVar = {
       path: this.getPathName(),
       url: this.getUrl(),
@@ -83,28 +99,35 @@ export abstract class Router<T = any> {
     if (data) {
       newVar.data = data;
     }
-    if (urlExpression) {
-      const data = this.getPathData(urlExpression);
+    if (config?.urlExpression) {
+      const data = this.getPathData(config.urlExpression);
       if (data) {
         newVar.pathData = data;
       }
     }
     newVar.router = this;
+    newVar.currentTarget = config?.currentTarget;
     return Object.freeze(newVar);
   }
 
-  pushState(data: any, title: string | undefined, path: string) {
+  pushState(data: any, title: string | undefined, path: string):ChangeStateResult {
+    // data = this.config.changeStateConvertDate?this.config.changeStateConvertDate(data): data;
+    // console.log('--->pushState', data);
     this.config.window.history.pushState(data, title??'', path);
-    this.subject.next(this.getRouteData());
+    this.subject.next(this.getRouteData({currentTarget: {currentTargetName: 'domRenderRouter'}}));
+    return {data};
   }
 
-  replaceState(data: any, title: string | undefined, path: string) {
+  replaceState(data: any, title: string | undefined, path: string):ChangeStateResult {
+    // data = this.config.changeStateConvertDate?this.config.changeStateConvertDate(data): data;
+    // console.log('--->replaceState', data);
     this.config.window.history.replaceState(data, title??'', path);
-    this.subject.next(this.getRouteData());
+    this.subject.next(this.getRouteData({currentTarget: {currentTargetName: 'domRenderRouter'}}));
+    return {data};
   }
 
-  dispatchPopStateEvent(data?: any) {
-    this.config.window.dispatchEvent(new PopStateEvent('popstate', {state: data}));
+  private dispatchPopStateEvent(data?: any) {
+    this.config.window.dispatchEvent(new PopStateEvent('popstate', {state: {...data, currentTargetName: 'domRenderRouter'}}));
   }
 
   reload(data?: any) {
@@ -124,6 +147,7 @@ export abstract class Router<T = any> {
       config = {path: config};
     }
 
+    // let data: ChangeStateResult | undefined = undefined;
     if (config?.replace) {
       this.replace(config.path, config.data, config.title);
     } else {
@@ -132,8 +156,9 @@ export abstract class Router<T = any> {
     if (!this.config.disableAttach) {
       await this.attach();
     }
+    // console.log('----------', data, config)
     if (!config.disabledPopEvent) {
-      this.dispatchPopStateEvent(config.data);
+      this.dispatchPopStateEvent(config?.data);
     }
   }
 

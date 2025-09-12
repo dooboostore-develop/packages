@@ -66,6 +66,27 @@ export namespace ElementUtils {
     // }
   }
 
+
+/*
+   17 // originalDiv 자체와 속성만 복사하고, childSpan은 복사하지 않습니다.
+   18 const shallowCopy = originalDiv.cloneNode(false);
+   19 shallowCopy.id = 'shallowCopyDiv'; // ID 변경 (중복 방지)
+   20 console.log('\n--- 얕은 복사본 ---');
+   21 console.log(shallowCopy.outerHTML);
+   22 // 예상 출력: <div id="shallowCopyDiv" data-custom="원본 데이터"></div>
+   23
+   24 // 2. 깊은 복사 (deep: true)
+   25 // originalDiv와 그 자식인 childSpan까지 모두 복사합니다.
+   26 const deepCopy = originalDiv.cloneNode(true);
+   27 deepCopy.id = 'deepCopyDiv'; // ID 변경 (중복 방지)
+   28 console.log('\n--- 깊은 복사본 ---');
+   29 console.log(deepCopy.outerHTML);
+ */
+
+  export const replaceWith = (targetElement: Element, replaceElement: Element) => {
+    targetElement.replaceWith(replaceElement);
+
+  }
   export const nodeList = (documentFragment: DocumentFragment) => {
     return Array.from(documentFragment.childNodes)
   }

@@ -1,0 +1,962 @@
+[
+  {
+    "seq": 1,
+    "name": "비둘기",
+    "w": 1,
+    "h": 1,
+    "layers": [
+      {
+        "seq": 2,
+        "name": "영역-우측면-몸",
+        "type": "group",
+        "parentTranslate": { "x": 0.5, "y": 0.58 },
+        "parentTransform": [1,0,0,1,0,0],
+        "x": -0.2,
+        "y": -0.25,
+        "w": 0.4,
+        "h": 0.5,
+        "color": "#FF0FF0",
+        "animationIterationCount": "infinite",
+        "animation": [
+          {"x": -0.2, "y":  -0.25, "parentTransform": [1.01,0,0,1.01,0,0], "typeData": { "w": 1, "h": 1}}
+        ],
+        "layers": [
+          {
+            "seq": 5,
+            "name": "영역-우측면-꼬리",
+            "type": "group",
+            "parentTranslate": { "x": 0.5, "y": 0.5 },
+            "parentTransform": [1,0,0,1,-0.4,0.4],
+            "color": "#448CCF",
+            "x": -0.12,
+            "y": 0,
+            "w": 0.24,
+            "h": 0.3,
+            "rotate": 0.12,
+            "animationIterationCount": "infinite",
+            "animation": [
+              {"rotate":  0.10},
+              {"rotate":  0.11}
+
+            ],
+            "layers": [
+              {
+                "seq": 9,
+                "name": "부위-우측면-꼬리-라인",
+                "type": "rect",
+                "parentTranslate": { "x": 0, "y": 0 },
+                "parentTransform": [1,0,0,1,0,0],
+                "color": "#448CCF",
+                "x": 0,
+                "y": 0,
+                "w": 1,
+                "h": 1,
+                "typeData": { "w": 1, "h": 1, "radii": [0.2,0.2,0.2,0.2]},
+                "animationIterationCount": "infinite",
+                "animation": [],
+                "layers": []
+              },
+              {
+                "seq": 99,
+                "name": "영역-우측면-꼬리-깃",
+                "type": "group",
+                "parentTranslate": { "x": 0.5, "y": 0.5},
+                "parentTransform": [1,0,0,1,0,0.45],
+                "x": -0.4,
+                "y": -0.1,
+                "w": 0.8,
+                "h": 0.2,
+                "rotate": 0.01,
+                "animationIterationCount": "infinite",
+                "animation": [
+                  {"rotate":  0.01},
+                  {"rotate":  -0.01}
+                ],
+                "layers": [
+                  {
+                    "seq": 900,
+                    "name": "부위-우측면-꼬리-깃",
+                    "type": "rect",
+                    "parentTranslate": { "x": 0, "y": 0},
+                    "parentTransform": [1,0,0,1,0,0],
+                    "x": 0,
+                    "y": 0,
+                    "w": 1,
+                    "h": 1,
+                    "color": "#3276BD",
+                    "typeData": {
+                      "w": 1,
+                      "h": 1,
+                      "radii": [0.4,0.4,0.4,0.4]
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "seq": 3,
+            "name": "영역-우측면-왼쪽_날개",
+            "parentTranslate": { "x": 0.8, "y": 0.2 },
+            "parentTransform": [1,0,0,1,0.11,0.08],
+            "color": "#5098DA",
+            "x": -0.11,
+            "y": -0.08,
+            "w": 0.4,
+            "h": 0.6,
+            "rotate": 0,
+            "animationIterationCount": "infinite",
+            "animation": [
+              {"rotate":  0.01},
+              {"rotate":  -0.01}
+            ],
+            "layers": [
+              {
+                "seq": 10,
+                "name": "부위-우측면-기본_왼쪽_날개",
+                "type": "rect",
+                "parentTranslate": { "x": 0, "y": 0 },
+                "parentTransform": [1,0,0,1,0,0],
+                "color": "#5098DA",
+                "x": 0,
+                "y": 0,
+                "w": 1,
+                "h": 1,
+                "typeData": { "w": 1, "h": 1, "radii": [0.2,0.2,0.2,0.2]},
+                "animationIterationCount": "infinite",
+                "animation": [],
+                "layers": []
+              },
+              {
+                "seq": 441,
+                "name": "영역-우측면-왼쪽_날개-깃",
+                "type": "group",
+                "parentTranslate": { "x": 0.5, "y":0.5},
+                "parentTransform": [1,0,0,1,-0.1,0.4],
+                "x":-0.4,
+                "y":-0.1,
+                "w": 0.8,
+                "h": 0.2,
+                "rotate": 0.01,
+                "animationIterationCount": "infinite",
+                "animation": [
+                  {"rotate":  0.01},
+                  {"rotate":  -0.01}
+                ],
+                "layers":[
+                  {
+                    "seq": 412001,
+                    "name": "부위-우측면-왼쪽_날개-깃",
+                    "type": "rect",
+                    "parentTranslate": { "x": 0, "y": 0 },
+                    "parentTransform": [1,0,0,1,0,0],
+                    "color": "#3276BD",
+                    "x": 0,
+                    "y": 0,
+                    "w": 1,
+                    "h": 1,
+                    "typeData": { "w": 1, "h": 1, "radii": [0,0.3,0.3,0.3]},
+                    "animationIterationCount": "infinite"
+                  }
+
+                ]
+              }
+
+            ]
+          },
+          {
+            "seq": 77,
+            "name": "영역-우측면-오른쪽_허벅지",
+            "type": "group",
+            "parentTranslate": { "x": 0.35, "y": 0.95 },
+            "parentTransform": [1,0,0,1,0, 0],
+            "x": -0.075,
+            "y": 0,
+            "w": 0.15,
+            "h": 0.15,
+            "rotate": 0,
+            "animation": [
+              {"rotate":  0.010},
+              {"rotate":  0.011}
+            ],
+            "layers": [
+              {
+                "seq": 70,
+                "name": "부위-우측면-오른쪽_허벅지",
+                "type": "rect",
+                "color": "#F1803F",
+                "parentTranslate": { "x": 0, "y": 0 },
+                "parentTransform": [1,0,0,1,0.0,0.0],
+                "x": 0,
+                "y": 0,
+                "w": 1,
+                "h": 1,
+                "typeData": {
+                  "w": 1,
+                  "h": 1,
+                  "radii": [0.2,0.2,0.0,0.0]
+                }
+              },
+              {
+                "seq": 78,
+                "name": "영역-우측면-오른쪽_엉덩이-허벅지-정강이",
+                "type": "group",
+                "parentTranslate": { "x": 0.5, "y": 0.9 },
+                "parentTransform" : [1,0,0,1,0.0,0],
+                "x": -0.5,
+                "y": -0.1,
+                "w": 1,
+                "h": 1,
+                "rotate": 0.0,
+                "animation": [
+                  { "rotate": 0.02 }
+                ],
+                "layers": [
+                  {
+                    "seq": 71,
+                    "name": "부위-우측면-오른쪽_엉덩이-허벅지-정강이",
+                    "type": "rect",
+                    "color": "#FFA454",
+                    "parentTranslate": { "x": 0, "y": 0 },
+                    "parentTransform": [1,0,0,1,0.0,0.0],
+                    "x": 0,
+                    "y": 0,
+                    "w": 1,
+                    "h": 1,
+                    "typeData": {
+                      "w": 1,
+                      "h": 1,
+                      "radii": [0.0,0.0,0.2,0.2]
+                    }
+                  },
+                  {
+                    "seq": 81,
+                    "name": "영역-우측면-오른쪽-하체-엉덩이-허벅지-정강이-발목",
+                    "type": "group",
+                    "parentTranslate": { "x": 0.5, "y": 0.9},
+                    "parentTransform": [1,0,0,1,0.0,0],
+                    "x": -0.5,
+                    "y": 0,
+                    "w": 1.9,
+                    "h": 0.6,
+                    "rotate": 0.02,
+                    "animation": [
+                      {"rotate":  0.03},
+                      {"rotate":  -0.02}
+                    ],
+                    "layers": [
+                      {
+                        "seq": 82,
+                        "name": "부위-우측면-오른쪽-하체-엉덩이-허벅지-정강이-발목-발",
+                        "type": "rect",
+                        "color": "#FFA454",
+                        "parentTranslate": { "x": 0, "y": 0 },
+                        "parentTransform": [1,0,0,1,0,0],
+                        "x": 0,
+                        "y": 0,
+                        "w": 1,
+                        "h": 1,
+                        "typeData": {
+                          "w": 1,
+                          "h": 1,
+                          "radii": [0,0.4,0.4,0.4]
+                        }
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "seq": 177,
+            "name": "영역-우측면-왼쪽_허벅지",
+            "type": "group",
+            "parentTranslate": { "x": 0.7, "y": 0.95 },
+            "parentTransform": [1,0,0,1,0, 0],
+            "x": -0.075,
+            "y": 0,
+            "w": 0.15,
+            "h": 0.15,
+            "rotate": 0,
+            "animation": [
+              {"rotate":  0.010},
+              {"rotate":  0.011}
+            ],
+            "layers": [
+              {
+                "seq": 170,
+                "name": "부위-우측면-왼쪽_허벅지",
+                "type": "rect",
+                "color": "#F1803F",
+                "parentTranslate": { "x": 0, "y": 0 },
+                "parentTransform": [1,0,0,1,0.0,0.0],
+                "x": 0,
+                "y": 0,
+                "w": 1,
+                "h": 1,
+                "typeData": {
+                  "w": 1,
+                  "h": 1,
+                  "radii": [0.2,0.2,0.0,0.0]
+                }
+              },
+              {
+                "seq": 178,
+                "name": "영역-우측면-왼쪽_엉덩이-허벅지-정강이",
+                "type": "group",
+                "parentTranslate": { "x": 0.5, "y": 0.9 },
+                "parentTransform" : [1,0,0,1,0.0,0],
+                "x": -0.5,
+                "y": -0.1,
+                "w": 1,
+                "h": 1,
+                "rotate": 0.02,
+                "animation": [
+                  { "rotate": 0.00 }
+                ],
+                "layers": [
+                  {
+                    "seq": 171,
+                    "name": "부위-우측면-왼쪽_엉덩이-허벅지-정강이",
+                    "type": "rect",
+                    "color": "#FFA454",
+                    "parentTranslate": { "x": 0, "y": 0 },
+                    "parentTransform": [1,0,0,1,0.0,0.0],
+                    "x": 0,
+                    "y": 0,
+                    "w": 1,
+                    "h": 1,
+                    "typeData": {
+                      "w": 1,
+                      "h": 1,
+                      "radii": [0.0,0.0,0.2,0.2]
+                    }
+                  },
+                  {
+                    "seq": 181,
+                    "name": "영역-우측면-왼쪽-하체-엉덩이-허벅지-정강이-발목",
+                    "type": "group",
+                    "parentTranslate": { "x": 0.5, "y": 0.9},
+                    "parentTransform": [1,0,0,1,0.0,0],
+                    "x": -0.5,
+                    "y": 0,
+                    "w": 1.9,
+                    "h": 0.6,
+                    "rotate": 0.02,
+                    "animation": [
+                      {"rotate":  -0.02},
+                      {"rotate":  0.03}
+                    ],
+                    "layers": [
+                      {
+                        "seq": 182,
+                        "name": "부위-우측면-왼쪽-하체-엉덩이-허벅지-정강이-발목-발",
+                        "type": "rect",
+                        "color": "#FFA454",
+                        "parentTranslate": { "x": 0, "y": 0 },
+                        "parentTransform": [1,0,0,1,0,0],
+                        "x": 0,
+                        "y": 0,
+                        "w": 1,
+                        "h": 1,
+                        "typeData": {
+                          "w": 1,
+                          "h": 1,
+                          "radii": [0,0.4,0.4,0.4]
+                        }
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "seq": 2,
+            "name": "부위-우측면-기본_몸",
+            "type": "rect",
+            "parentTranslate": { "x": 0, "y": 0 },
+            "parentTransform": [1,0,0,1,0,0],
+            "color": "#72B7EB",
+            "x": 0,
+            "y": 0,
+            "w": 1,
+            "h": 1,
+            "typeData": { "w": 1, "h": 1, "radii": [0.2,0.2,0.2,0.2]},
+            "animationIterationCount": "infinite",
+            "layers": []
+          },
+          {
+            "seq": 66,
+            "name": "영역-우측면-몸-가슴",
+            "type": "group",
+            "color": "#ff0000",
+            "parentTranslate": { "x": 0.5, "y": 0.5},
+            "parentTransform": [1,0,0,1,0.3,-0.0],
+            "x":-0.1,
+            "y":-0.153,
+            "w": 0.2,
+            "h": 0.36,
+            "rotate": 0,
+            "animationIterationCount": "infinite",
+            "animation": [
+              {"rotate":  0.003},
+              {"rotate":  -0.005}
+            ],
+            "layers": [
+              {
+                "seq": 60,
+                "name": "부위-우측면-기본_몸-가슴",
+                "type": "rect",
+                "parentTranslate": { "x": 0, "y": 0 },
+                "parentTransform": [1,0,0,1,0,0],
+                "color": "#60A8DD",
+                "x": 0,
+                "y": 0,
+                "w": 1,
+                "h": 1,
+                "typeData": { "w": 1, "h": 1, "radii": [0,0.2,0.2,0]},
+                "animationIterationCount": "infinite",
+                "animation": [],
+                "layers": []
+              }
+            ]
+          },
+          {
+            "seq": 6,
+            "name": "영역-우측면-목",
+            "parentTranslate": { "x": 0, "y": -0.05 },
+            "parentTransform": [1,0,0,1,0,0],
+            "x": 0,
+            "y": 0,
+            "w": 1,
+            "h": 0.2,
+            "rotate": 0,
+            "animationIterationCount": "infinite",
+            "animation": [
+              {"rotate":  0.001},
+              {"rotate":  -0.001}
+            ],
+            "layers": [
+              {
+                "seq": 10,
+                "name": "부위-우측면-기본_목",
+                "type": "rect",
+                "parentTranslate": { "x": 0, "y": 0 },
+                "parentTransform": [1,0,0,1,0,0],
+                "color": "#60A8DD",
+                "x": 0,
+                "y": 0,
+                "w": 1,
+                "h": 1,
+                "typeData": { "w": 1, "h": 1, "radii": [0.3,0.3,0.3,0.3]},
+                "animationIterationCount": "infinite",
+                "animation": [],
+                "layers": [ ]
+              },
+              {
+                "seq": 7,
+                "name": "영역-우측면-얼굴",
+                "type": "group",
+                "parentTranslate": { "x": 0, "y": 0 },
+                "parentTransform": [1,0,0,1,0.5,-0.1],
+                "x": -0.5,
+                "y": -1.7,
+                "w": 1,
+                "h": 2,
+                "rotate": 0,
+                "animationIterationCount": "infinite",
+                "animation": [
+                  {"parentTransform": [1.01,0,0,1.01,0.5,-0.1], "rotate":  -0.001}
+                ],
+                "layers": [
+                  {
+                    "seq": 10,
+                    "name": "부위-우측면-기본_얼굴",
+                    "type": "rect",
+                    "parentTranslate": { "x": 0, "y": 0 },
+                    "parentTransform": [1,0,0,1,0,0],
+                    "color": "#71B8EB",
+                    "x": 0,
+                    "y": 0,
+                    "w": 1,
+                    "h": 1,
+                    "typeData": { "w": 1, "h": 1, "radii": [0.3,0.3,0.0,0.0]},
+                    "animationIterationCount": "infinite",
+                    "animation": [],
+                    "layers": []
+                  },
+                  {
+                    "seq": 100,
+                    "name": "영역-우측면-얼굴-머리",
+                    "type": "group",
+                    "parentTranslate": { "x": 0, "y": 0 },
+                    "parentTransform": [1,0,0,1,0.5,-0.1],
+                    "x": -0.5,
+                    "y": -0.35,
+                    "w": 1,
+                    "h": 0.5,
+                    "layers": [
+                      {
+                        "seq": 103,
+                        "name": "부위-우측면-얼굴-머리_기본깃_셋3",
+                        "type": "rect",
+                        "parentTranslate": { "x": 0.5, "y": 0.5 },
+                        "parentTransform": [1,0,0,1,0,0.3],
+                        "x": -0.06,
+                        "y": -0.8,
+                        "w": 0.10,
+                        "h": 0.8,
+                        "rotate": -0.22,
+                        "color": "#559EDC",
+                        "typeData": {
+                          "w": 1,
+                          "h": 1,
+                          "radii": [0.5,0.5,0.2,0.2]
+                        },
+                        "animation": [
+                          {"rotate": -0.2, "b": [1,0.2,0.3,0]}
+                        ]
+                      },
+                      {
+                        "seq": 102,
+                        "name": "부위-우측면-얼굴-머리_기본깃_셋2",
+                        "type": "rect",
+                        "parentTranslate": { "x": 0.5, "y": 0.5 },
+                        "parentTransform": [1,0,0,1,0,0.3],
+                        "x": -0.08,
+                        "y": -0.8,
+                        "w": 0.12,
+                        "h": 0.8,
+                        "rotate": -0.1,
+                        "color": "#559EDC",
+                        "typeData": {
+                          "w": 1,
+                          "h": 1,
+                          "radii": [0.5,0.5,0.2,0.2]
+                        },
+                        "animation": [
+                          {"rotate": -0.12}
+                        ]
+                      },
+                      {
+                        "seq": 101,
+                        "name": "부위-우측면-얼굴-머리_기본깃_셋1",
+                        "type": "rect",
+                        "parentTranslate": { "x": 0.5, "y": 0.5 },
+                        "parentTransform": [1,0,0,1,0,0.3],
+                        "x": -0.06,
+                        "y": -0.8,
+                        "w": 0.12,
+                        "h": 1,
+                        "rotate": -0.02,
+                        "color": "#428BCC",
+                        "typeData": {
+                          "w": 1,
+                          "h": 1,
+                          "radii": [0.5,0.5,0.2,0.2]
+                        },
+                        "animation": [
+                          {"rotate": -0.01}
+                        ]
+                      }
+
+                    ]
+                  },
+                  {
+                    "seq": 22,
+                    "name": "영역-우측면-얼굴-기본_우측눈",
+                    "type": "group",
+                    "parentTranslate": { "x": 0.2, "y": 0.2 },
+                    "parentTransform": [1,0,0,1,0,0],
+                    "x": 0,
+                    "y": 0,
+                    "w": 0.34,
+                    "h": 0.66,
+                    "layers": [
+                      {
+                        "seq": 23,
+                        "name": "부위-우측면-얼굴-기본_우측눈_기본_흰자",
+                        "type": "ellipse",
+                        "color": "#FFFFFF",
+                        "parentTranslate": { "x": 0.5, "y": 0.5 },
+                        "x" : 0,
+                        "y": 0,
+                        "w": 1,
+                        "h": 1,
+                        "typeData": {
+                          "radiusX": 0.5,
+                          "radiusY": 0.5,
+                          "startAngle": 0,
+                          "endAngle": 1
+                        }
+                      },
+                      {
+                        "seq": 24,
+                        "name": "영역-우측면-얼굴-기본_우측눈_기본_검은자",
+                        "type": "group",
+                        "parentTranslate": { "x": 0.5, "y": 0.5 },
+                        "parentTransform": [1,0,0,1,0,0],
+                        "x" :-0.2,
+                        "y": -0.2,
+                        "w": 0.4,
+                        "h": 0.4,
+                        "animation": [
+                          {"parentTransform": [1,0,0,0.7,0,0]}
+                        ],
+                        "layers": [
+                          {
+                            "seq": 24,
+                            "name": "부위-우측면-얼굴-기본_우측눈_기본_검은자",
+                            "type": "ellipse",
+                            "color": "#1C2234",
+                            "parentTranslate": { "x": 0.5, "y": 0.5 },
+                            "parentTransform": [1,0,0,1,0,0],
+                            "x" :0,
+                            "y": 0,
+                            "w": 1,
+                            "h": 1,
+                            "typeData": {
+                              "radiusX": 0.5,
+                              "radiusY": 0.5,
+                              "startAngle": 0,
+                              "endAngle": 1
+                            }
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "seq": 622,
+                    "name": "영역-우측면-얼굴-기본_왼쪽_눈",
+                    "type": "group",
+                    "parentTranslate": { "x": 0.2, "y": 0.2 },
+                    "parentTransform": [1,0,0,1,0,0],
+                    "x": 0,
+                    "y": 0,
+                    "w": 0.34,
+                    "h": 0.66,
+                    "layers": [
+                      {
+                        "seq": 623,
+                        "name": "부위-우측면-얼굴-기본_우측눈_기본_흰자",
+                        "type": "ellipse",
+                        "color": "#FFFFFF",
+                        "parentTranslate": { "x": 0.5, "y": 0.5 },
+                        "x" : 0,
+                        "y": 0,
+                        "w": 1,
+                        "h": 1,
+                        "typeData": {
+                          "radiusX": 0.5,
+                          "radiusY": 0.5,
+                          "startAngle": 0,
+                          "endAngle": 1
+                        }
+                      },
+                      {
+                        "seq": 624,
+                        "name": "영역-우측면-얼굴-기본_우측눈_기본_검은자",
+                        "type": "group",
+                        "parentTranslate": { "x": 0.5, "y": 0.5 },
+                        "parentTransform": [1,0,0,1,0,0],
+                        "x" :-0.2,
+                        "y": -0.2,
+                        "w": 0.4,
+                        "h": 0.4,
+                        "animation": [
+                          {"parentTransform": [1,0,0,0.7,0,0]}
+                        ],
+                        "layers": [
+                          {
+                            "seq": 624,
+                            "name": "부위-우측면-얼굴-기본_우측눈_기본_검은자",
+                            "type": "ellipse",
+                            "color": "#1C2234",
+                            "parentTranslate": { "x": 0.5, "y": 0.5 },
+                            "parentTransform": [1,0,0,1,0,0],
+                            "x" :0,
+                            "y": 0,
+                            "w": 1,
+                            "h": 1,
+                            "typeData": {
+                              "radiusX": 0.5,
+                              "radiusY": 0.5,
+                              "startAngle": 0,
+                              "endAngle": 1
+                            }
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "seq": 30,
+                    "name": "영역-우측면-얼굴-기본_입",
+                    "type": "group",
+                    "parentTranslate": { "x": 0.6, "y": 0.5 },
+                    "parentTransform": [1,0,0,1,0,0.3],
+                    "x": 0,
+                    "y": -0.3,
+                    "w": 0.5,
+                    "h": 0.6,
+                    "rotate": 0.001,
+                    "animation": [
+                      {"rotate": 0.003},
+                      {"rotate": -0.003}
+                    ],
+                    "layers": [
+                      {
+                        "seq": 51,
+                        "name": "영역-우측면-얼굴-입-윗부리",
+                        "type": "group",
+                        "parentTranslate": { "x": 0, "y": 0 },
+                        "parentTransform": [1,0,0,1,0.1,0.25],
+                        "color": "#ff00f0",
+                        "x":-0.1,
+                        "y":-0.25,
+                        "w": 1,
+                        "h": 0.5,
+                        "layers": [
+                          {
+                            "seq": 33,
+                            "name": "부위-우측면-얼굴-입-윗부리-기본_윗부리",
+                            "type": "rect",
+                            "parentTranslate": { "x": 0, "y": 0 },
+                            "parentTransform": [1,0,0,1,0,0],
+                            "x": 0,
+                            "y": 0,
+                            "w": 1,
+                            "h": 1,
+                            "color": "#FFA454",
+                            "typeData": {
+                              "w": 1,
+                              "h": 1,
+                              "radii": [0.2,0.2,0.2,0]
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "seq": 52,
+                        "name": "영역-우측면-얼굴-입-아랫부리",
+                        "type": "group",
+                        "parentTranslate": { "x": 0, "y": 0.5 },
+                        "parentTransform": [1,0,0,1,0.1,0.25],
+                        "color": "#ff0000",
+                        "x":-0.1,
+                        "y":-0.25,
+                        "w": 1,
+                        "h": 0.5,
+                        "layers": [
+                          {
+                            "seq": 35,
+                            "name": "부위-우측면-얼굴-입-아래부리-기본_아랫부리",
+                            "type": "rect",
+                            "parentTranslate": { "x": 0, "y": 0 },
+                            "parentTransform": [1,0,0,1,0,0],
+                            "x": 0,
+                            "y": 0,
+                            "w": 1,
+                            "h": 1,
+                            "color": "#F28D4C",
+                            "typeData": {
+                              "w": 1,
+                              "h": 1,
+                              "radii": [0,0.2,0.2,0.2]
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "seq": 53,
+                        "name": "영역-우측면-얼굴-입-입안",
+                        "type": "group",
+                        "parentTranslate": { "x": 0, "y": 0.5 },
+                        "parentTransform": [1,0,0,1,0.3,0],
+                        "color": "#ffff00",
+                        "x":-0.1,
+                        "y":-0.05,
+                        "w": 0.8,
+                        "h": 0.1,
+                        "layers": [
+                          {
+                            "seq": 34,
+                            "name": "부위-우측면-얼굴-입-입안-기본_입안",
+                            "type": "rect",
+                            "parentTranslate": { "x": 0, "y": 0 },
+                            "parentTransform": [1,0,0,1,0,0],
+                            "x": 0,
+                            "y": 0,
+                            "w": 1,
+                            "h": 1,
+                            "color": "#1E2233",
+                            "typeData": {
+                              "w": 1,
+                              "h": 1,
+                              "radii": [0.2,0.2,0.2,0.2]
+                            }
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "seq": 540,
+            "name": "영역-우측면-왼쪽_엉덩이",
+            "type": "group",
+            "parentTranslate": { "x": 0.5, "y": 0.5 },
+            "parentTransform": [1,0,0,1,-0.36,0.43],
+            "x": -0.13,
+            "y": -0.07,
+            "w": 0.26,
+            "h": 0.14,
+            "layers": [
+              {
+                "seq": 541,
+                "name": "영역-우측면-왼쪽_엉덩이",
+                "type": "group",
+                "parentTranslate": { "x": 0, "y": 0 },
+                "parentTransform": [1,0,0,1,0,0],
+                "x": 0,
+                "y": 0,
+                "w": 1,
+                "h": 1,
+                "color": "#FF0000",
+                "layers": [
+                  {
+                    "seq": 515,
+                    "name": "영역-우측면-왼쪽_엉덩이",
+                    "type": "rect",
+                    "parentTranslate": { "x": 0, "y": 0 },
+                    "parentTransform": [1,0,0,1,0,0],
+                    "x": 0,
+                    "y": 0,
+                    "w": 1,
+                    "h": 1,
+                    "color": "#60A8DD",
+                    "typeData": {
+                      "w": 1,
+                      "h": 1,
+                      "radii": [0.2,0.7,0.2,0.7]
+                    }
+                  }
+                ]
+              },
+              {
+                "seq": 542,
+                "name": "영역-우측면-오른쪽_엉덩이",
+                "type": "group",
+                "parentTranslate": { "x": 0, "y": 0 },
+                "parentTransform": [1,0,0,1,0,0],
+                "x": 0,
+                "y": 0,
+                "w": 1,
+                "h": 1,
+                "color": "#00FF00",
+                "layers": [
+                  {
+                    "seq": 516,
+                    "name": "영역-우측면-오른쪽_엉덩이",
+                    "type": "rect",
+                    "parentTranslate": { "x": 0, "y": 0 },
+                    "parentTransform": [1,0,0,1,0,0],
+                    "x": 0,
+                    "y": 0,
+                    "w": 1,
+                    "h": 1,
+                    "color": "#60A8DD",
+                    "typeData": {
+                      "w": 1,
+                      "h": 1,
+                      "radii": [0.2,0.7,0.2,0.7]
+                    }
+                  }
+                ]
+
+              }
+            ]
+          },
+          {
+            "seq": 4,
+            "name": "영역-우측면-오른쪽_날개",
+            "parentTranslate": { "x": -0.25, "y": 0.2 },
+            "parentTransform": [1,0,0,1,0.11,0.08],
+            "color": "#5098DA",
+            "x": -0.11,
+            "y": -0.08,
+            "w": 0.5,
+            "h": 0.6,
+            "rotate": 0,
+            "typeData": { "w": 1, "h": 1, "radii": [0.2,0.2,0.2,0.2]},
+            "animationIterationCount": "infinite",
+            "animation": [
+              {"rotate":  -0.01},
+              {"rotate":  0.01}
+            ],
+            "layers": [
+              {
+                "seq": 4,
+                "name": "부위-우측면-기본_오른쪽_날개",
+                "type": "rect",
+                "parentTranslate": { "x": 0, "y": 0 },
+                "parentTransform": [1,0,0,1,0,0],
+                "color": "#5098DA",
+                "x": 0,
+                "y": 0,
+                "w": 1,
+                "h": 1,
+                "typeData": { "w": 1, "h": 1, "radii": [0.2,0.2,0.2,0.2]},
+                "animationIterationCount": "infinite",
+                "animation": [],
+                "layers": []
+              },
+              {
+                "seq": 41,
+                "name": "영역-우측면-오른쪽_날개-깃",
+                "type": "group",
+                "parentTranslate": { "x": 0.5, "y":0.5},
+                "parentTransform": [1,0,0,1,-0.1,0.4],
+                "x":-0.4,
+                "y":-0.1,
+                "w": 0.8,
+                "h": 0.2,
+                "rotate": 0.01,
+                "animationIterationCount": "infinite",
+                "animation": [
+                  {"rotate":  0.01},
+                  {"rotate":  -0.01}
+                ],
+                "layers":[
+                  {
+                    "seq": 12001,
+                    "name": "부위-우측면-오른쪽_날개-깃",
+                    "type": "rect",
+                    "parentTranslate": { "x": 0, "y": 0 },
+                    "parentTransform": [1,0,0,1,0,0],
+                    "color": "#3276BD",
+                    "x": 0,
+                    "y": 0,
+                    "w": 1,
+                    "h": 1,
+                    "typeData": { "w": 1, "h": 1, "radii": [0,0.3,0.3,0.3]},
+                    "animationIterationCount": "infinite"
+                  }
+
+                ]
+              }
+            ]
+          }
+
+        ]
+      }
+    ]
+  }
+
+]

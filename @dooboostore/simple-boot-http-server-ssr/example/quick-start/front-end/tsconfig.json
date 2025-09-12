@@ -1,0 +1,14 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "outDir": "../dist-front",
+    "baseUrl": ".",
+    "paths": {
+      "@server/*": ["../server/*"],
+      "@front/*": ["../front/*"],
+      "@backend/*": ["../backend/*"],
+      "@src/*": ["../src/*"]
+    }
+  },
+  "exclude": ["node_modules", "dist-front"]
+} 

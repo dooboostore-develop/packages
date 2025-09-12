@@ -5,6 +5,7 @@ import { OtherData } from '../../lifecycle/OnChangeAttrRender';
 import { OnInitRender } from '../../lifecycle/OnInitRender';
 import { ComponentSet } from '../../components/ComponentSet';
 import {drComponent} from '../index'
+import { isOnDestroyRender, OnDestroyRenderParams } from '../../lifecycle/OnDestroyRender';
 export namespace This {
   export const selector = 'dr-this';
   // export type AppenderInterface<D> = {
@@ -18,6 +19,7 @@ export namespace This {
     if: boolean | null;
     createArguments: any[];
     onCreated?: (value: any) => void;
+    onDestroyRender?: () => void;
   }
 
   // @Component({
@@ -39,8 +41,15 @@ export namespace This {
     onInitRender(param: any, rawSet: RawSet) {
       // console.log('--onInitRender onInitRender')
       super.onInitRender(param, rawSet);
+    }
 
-
+    onDestroyRender(data: OnDestroyRenderParams) {
+      super.onDestroyRender(data);
+      // console.log('This onDestoryRender!!!!!')
+      // if (isOnDestroyRender(this.value?.obj)){
+      //   this.value?.obj.onDestroyRender();
+      //   this.getAttribute('onDestroyRender')?.();
+      // }
     }
 
     // push(...data:D[]) {

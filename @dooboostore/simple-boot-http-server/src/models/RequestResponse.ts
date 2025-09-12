@@ -17,6 +17,7 @@ import * as fs from 'fs';
 import * as os from 'os';
 import { RandomUtils } from '@dooboostore/core/random/RandomUtils';
 import { FileUtils } from '@dooboostore/core-node/file/FileUtils';
+import { ConvertUtils as CoreConvertUtils} from '@dooboostore/core/convert/ConvertUtils';
 import { ConvertUtils } from '@dooboostore/core-node/convert/ConvertUtils';
 // https://masteringjs.io/tutorials/node/http-request
 type Config = { sessionManager?: SessionManager, option: HttpServerOption };
@@ -117,9 +118,11 @@ export class RequestResponse {
     return this.reqUrlObj().searchParams;
   }
 
-  get reqUrlSearchParamsObj(): { [p: string]: { [p: string]: any } } {
+  get reqUrlSearchParamsObj(): {[p: string]: string | string[]} {
     const entries = this.reqUrlObj().searchParams;
-    return Object.fromEntries(entries as any)
+    return CoreConvertUtils.toObject(entries);
+    // return obj;
+    // return Object.fromEntries(entries as any)
   }
 
   get reqPathSearchParamUrl(): string {

@@ -10,9 +10,10 @@ import { ComponentRouterBase } from '@dooboostore/simple-boot-front/component/Co
 import { drComponent } from '@dooboostore/dom-render/components'
 import { User } from './pages/user.ts';
 import { RandomUtils } from '@dooboostore/core';
+import { ProductorRouter } from './pages/productor/productor.router';
 
 @Sim({
-  // scope: Lifecycle.Transient,
+  scope: Lifecycle.Transient,
   using: [drComponent]
 })
 @Router({
@@ -22,7 +23,7 @@ import { RandomUtils } from '@dooboostore/core';
     '/home': Home,
     '/user': User
   },
-  // routers: [UserRouterComponent]
+  routers: [ProductorRouter]
 })
 @Component({
   template,
