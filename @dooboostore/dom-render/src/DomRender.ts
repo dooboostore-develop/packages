@@ -14,8 +14,29 @@ import { RandomUtils } from '@dooboostore/core/random/RandomUtils';
 export type DomRenderRunConfig<T = any> = Omit<Config<T>, 'router' | 'uuid' | 'eventManager' | 'messenger' | 'root' | 'rootElement'> & { routerType?: 'path' | 'hash' | ((obj: T, window: Window) => Router) | Router };
 export type CreateComponentParam = { type: ConstructorType<any> | any, tagName?: string, noStrip?:boolean, template?: string, styles?: string[] | string };
 let eventManager: EventManager | null = null;
-export class DomRender {
-  public static run<T extends object>({rootObject, target, config}: { rootObject: T | (() => T), target?: Element | null, config?: DomRenderRunConfig }): T {
+export type DomRenderRunParameter<T extends object> = { rootObject: T | (() => T), target?: Element | null, config?: DomRenderRunConfig };
+
+export class DomRender<T extends object = any>{
+  private config: Config;
+  private target: Element;
+  private rootObject: T;
+
+  constructor(parameter: DomRenderRunParameter<T>, executeConfig?:{autoGo?: string}) {
+   const s=  DomRender.runSet(parameter);
+   this.config = s.config;
+   this.target = s.target;
+   this.rootObject = s.rootObject;
+   if (executeConfig && executeConfig?.autoGo) {
+     this.config.router?.go(executeConfig.autoGo);
+   }
+  }
+  public static run<T extends object>(data: DomRenderRunParameter<T>): T {
+    return DomRender.runSet(data).rootObject;
+  }
+
+  public static runSet<T extends object>({rootObject, target, config}: DomRenderRunParameter<T>): {rootObject: T, target?: Element | null, config: Config} {
+  // public static run<T extends object>({rootObject, target, config}: DomRenderRunParameter<T>): T {
+  //   console.log('runSet')
     rootObject = typeof rootObject === 'function' ? rootObject() : rootObject;
     let targetObject = rootObject;
     if ('_DomRender_isProxy' in rootObject) {
@@ -23,7 +44,8 @@ export class DomRender {
         ((rootObject as any)._DomRender_proxy as DomRenderProxy<T>).initRender(target);
       }
       targetObject = rootObject;
-      return targetObject; // { rootObject: targetObject, target, config: targetConfig };
+      // return targetObject;
+      return { rootObject: targetObject, target, config: (rootObject as any)._domRender_config };
     }
     const targetConfig = Object.assign({}, config) as Config;
     eventManager??=new EventManager(targetConfig.window);
@@ -103,7 +125,8 @@ export class DomRender {
     //   }
     // }
     domRender.run(targetObject);
-    return targetObject; // { rootObject: targetObject, config: targetConfig, target };
+    return { rootObject: targetObject, config: targetConfig, target };
+    // return targetObject;
   }
 
   public static createComponent(param: CreateComponentParam) {

@@ -665,6 +665,12 @@ describe('ObjectUtils.Path', () => {
       const expected = "a?.(b)?.c";
       assert.strictEqual(ObjectUtils.Path.toOptionalChainPath(path), expected);
     });
+
+    test('should not process string containing an arrow function', () => {
+      const path = "() => @thi@.searchWorlds.length=0}";
+      const expected = "() => @thi@.searchWorlds.length=0}";
+      assert.strictEqual(ObjectUtils.Path.toOptionalChainPath(path), expected);
+    });
   });
 
   describe('Path.removeOptionalChainOperator', () => {
@@ -732,6 +738,22 @@ describe('ObjectUtils.Path', () => {
       const path = "a?.(b)?.c";
       const expected = "a.(b).c";
       assert.strictEqual(ObjectUtils.Path.removeOptionalChainOperator(path), expected);
+    });
+  });
+
+  describe('Path.isFunctionScript and Path.isArrowFunctionScript', () => {
+    test('should identify function scripts', () => {
+      assert.strictEqual(ObjectUtils.Path.isFunctionScript('function myFunc() {}'), true);
+      assert.strictEqual(ObjectUtils.Path.isFunctionScript(' function myFunc() {} '), true);
+      assert.strictEqual(ObjectUtils.Path.isFunctionScript('myFunc() {}'), false);
+    });
+
+    test('should identify arrow function scripts', () => {
+      assert.strictEqual(ObjectUtils.Path.isArrowFunctionScript('() => {}'), true);
+      assert.strictEqual(ObjectUtils.Path.isArrowFunctionScript(' (a, b) => a + b '), true);
+      assert.strictEqual(ObjectUtils.Path.isArrowFunctionScript('=> {}'), false);
+      assert.strictEqual(ObjectUtils.Path.isArrowFunctionScript('() => a.b.c'), true);
+      assert.strictEqual(ObjectUtils.Path.isArrowFunctionScript('a.b.c'), false);
     });
   });
 });

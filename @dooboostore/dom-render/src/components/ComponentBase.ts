@@ -57,7 +57,9 @@ export function event(options: { query: string, name: string }): MethodDecorator
 }
 
 
-export class ComponentBase<T = any> implements OnChangeAttrRender, OnCreateRenderData, OnCreatedThisChild, OnDrThisBind, OnDrThisUnBind, OnInitRender, OnDestroyRender {
+export type ComponentBaseConfig = { onlyParentType?: ConstructorType<any>[] | ConstructorType<any> };
+
+export class ComponentBase<T = any, C extends ComponentBaseConfig = ComponentBaseConfig> implements OnChangeAttrRender, OnCreateRenderData, OnCreatedThisChild, OnDrThisBind, OnDrThisUnBind, OnInitRender, OnDestroyRender {
   @DomRenderNoProxy
   private _rawSet?: RawSet;
   @DomRenderNoProxy
@@ -69,6 +71,9 @@ export class ComponentBase<T = any> implements OnChangeAttrRender, OnCreateRende
   @DomRenderNoProxy
   private _boundEventListeners: { element: Element, eventName: string, listener: (e: Event) => void }[] = [];
 
+  get componentConfig(): C {
+    return this._config;
+  }
   get render(): Render | undefined {
     return this._render;
   }
@@ -180,7 +185,7 @@ export class ComponentBase<T = any> implements OnChangeAttrRender, OnCreateRende
     );
   }
 
-  constructor(private _config?: { onlyParentType: ConstructorType<any>[] | ConstructorType<any> }) {
+  constructor(private _config?: C) {
   }
 
   private setRawSet(rawSet: RawSet) {

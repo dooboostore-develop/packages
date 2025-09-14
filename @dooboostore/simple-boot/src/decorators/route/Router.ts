@@ -17,7 +17,7 @@ export interface RouterConfig {
 }
 
 export const RouterMetadataKey = Symbol('Router');
-const routerProcess = (config: RouterConfig, target: ConstructorType<any> | Function) => {
+export const routerProcess = (config: RouterConfig, target: ConstructorType<any> | Function) => {
     getRoutes(target)?.forEach(it => {
         config.route = (config.route ?? {});
         const paths = Array.isArray(it.config.path) ? it.config.path : [it.config.path];

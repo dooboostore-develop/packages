@@ -208,9 +208,20 @@ export namespace ObjectUtils {
 
 
   export namespace Path {
+    export const isFunctionScript = (script: string): boolean => {
+      return script.trim().startsWith('function');
+    }
+
+    export const isArrowFunctionScript = (script: string): boolean => {
+      return /^\s*\([^)]*\)\s*=>/.test(script);
+    }
+
     export const toOptionalChainPath = (path: string): string => {
       if (!path) {
         return '';
+      }
+      if (isFunctionScript(path) || isArrowFunctionScript(path)) {
+        return path;
       }
       // Tokenize the path by '.', '[', ']', and '?' to handle property access and existing optional chaining.
       const tokens = path.match(/[^?.[\]]+|\[[^\]]*\]/g);

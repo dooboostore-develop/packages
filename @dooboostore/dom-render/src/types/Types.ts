@@ -1,3 +1,5 @@
+import { ValidUtils } from '@dooboostore/core';
+
 export class Shield {
     [name: string]: any
 }

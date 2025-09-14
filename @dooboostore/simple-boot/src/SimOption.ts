@@ -3,7 +3,7 @@ import { SimConfigUsing } from './decorators/SimDecorator';
 import { Storage } from '@dooboostore/core/storage/Storage';
 import { CacheStorage } from './decorators/cache/CacheDecorator';
 
-export type ProxyHandlerType = { onProxy: <T>(it: T) => T };
+export type ProxyHandlerType = { onAfterProxy: <T>(it: T) => T };
 export type InitOptionType = {
   rootRouter?: ConstructorType<any>,
   container?: string,

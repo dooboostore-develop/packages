@@ -134,7 +134,7 @@ export class SSRFilter implements Filter {
           });
         });
         let html = simpleBootFront.option.window.document.documentElement.outerHTML;
-        // html = '<!DOCTYPE html>'+html;
+        html = '<!DOCTYPE html>'+html;
         html = html.replace(/\$\{[\s\S]*?\}\$/g, '');
         const serverSideData = (simpleBootFront.option.window as any).server_side_data;
         if (serverSideData) {
@@ -149,7 +149,7 @@ export class SSRFilter implements Filter {
             html = html.replace('</head>', `<script> window.server_side_data={}; ${data}; </script></head>`);
           }
         }
-        console.log('--------',html)
+        // console.log('--------',html)
         await this.writeOkHtmlAndEnd({rr}, html);
       } finally {
         (simpleBootFront.option.window as any).ssrUse = false;

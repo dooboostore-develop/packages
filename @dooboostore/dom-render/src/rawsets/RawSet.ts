@@ -589,7 +589,7 @@ export class RawSet {
     let data = element.getAttribute(RawSet.DR_APPENDER_NAME);
     // if (data && !/\[[0-9]+\]/g.test(data)) {
     if (data && !/\[.+\]/g.test(data)) {
-      const currentIndex = ScriptUtils.evalReturn(`${data}?.length -1`, obj);
+      const currentIndex = ScriptUtils.evalReturn(`${ObjectUtils.Path.toOptionalChainPath(data)}?.length -1`, obj);
       // console.log('------?', currentIndex)
       // if (currentIndex === undefined || isNaN(currentIndex)) {
       //     return undefined;
@@ -694,7 +694,8 @@ export class RawSet {
               let variablePath = RawSet.expressionGroups(value)[0][1];
               // normal Attribute 초반에 셋팅해주기.
               variablePath = variablePath.replace(/#[^#]*#/g, '({})')
-              const cval = ScriptUtils.evalReturn(variablePath, Object.assign(obj));
+              const cval = ScriptUtils.evalReturn(ObjectUtils.Path.toOptionalChainPath(variablePath), Object.assign(obj));
+              // const cval = ScriptUtils.evalReturn(variablePath, Object.assign(obj));
               if (cval === null) {
                 element.removeAttribute(it);
               } else {
@@ -1068,7 +1069,7 @@ export class RawSet {
       const style = RawSet.generateStyleTransform(set.styles ?? [], rawSet.uuid, true);
       targetElement.innerHTML = style + (set.template ?? '');
     } else {
-      targetObj = ScriptUtils.evalReturn(drThis, obj);
+      targetObj = ScriptUtils.evalReturn(ObjectUtils.Path.toOptionalChainPath(drThis), obj);
     }
 
     const componentKey = rawSet.uuid;
@@ -1133,8 +1134,7 @@ export class RawSet {
     const onCreate = element.getAttribute(RawSet.DR_ON_CREATE_ARGUMENTS_OPTIONNAME);
     let createParam: any[] = [];
     if (onCreate) {
-      const script = `${renderScript} return ${onCreate} `;
-      createParam = ScriptUtils.eval<any[]>(script, obj) ?? [];
+      createParam = ScriptUtils.evalReturn<any[]>({bodyScript:renderScript, returnScript:ObjectUtils.Path.toOptionalChainPath(onCreate)}, obj)
       if (!Array.isArray(createParam)) {
         createParam = [createParam];
       }
@@ -1352,7 +1352,7 @@ export class RawSet {
         //
         // // dr-constructor
         if (constructor) {
-          let param = ScriptUtils.evalReturn({bodyScript: renderScript, returnScript: constructor}, Object.assign(obj, {__render: render})) ?? [];
+          let param = ScriptUtils.evalReturn({bodyScript: renderScript, returnScript: ObjectUtils.Path.toOptionalChainPath(constructor)}, Object.assign(obj, {__render: render})) ?? [];
           if (!Array.isArray(param)) {
             param = [param];
           }

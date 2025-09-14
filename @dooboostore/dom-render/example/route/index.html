@@ -5,6 +5,7 @@
     <title>examples</title>
 </head>
 <body id="app">
+${@this@.name}$
 <header>
     <button dr-event-click="$router?.go({path:'/'})">main</button>
     <button dr-event-click="$router?.go({path:'/second', data: {secondata: 555}} )">second</button>
@@ -22,6 +23,7 @@
     <div>
         <div dr-this="@this@.child"></div>
         <button dr-event-click="@this@.changeThis()">change this</button>
+        <button dr-event-click="@this@.changeNewThis()">change new this</button>
     </div>
 </main>
 </body>

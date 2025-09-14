@@ -10,7 +10,7 @@ import { ViewService } from './service/view/ViewService';
 import { SimstanceManager } from '@dooboostore/simple-boot/simstance/SimstanceManager';
 import { IntentManager } from '@dooboostore/simple-boot/intent/IntentManager';
 import { RouterManager, RoutingOption } from '@dooboostore/simple-boot/route/RouterManager';
-import { DomRenderProxy } from '@dooboostore/dom-render/DomRenderProxy';
+import { DomRenderProxy, getDomRenderOriginObject, getDomRenderProxy, isWrapProxyDomRenderProxy } from '@dooboostore/dom-render/DomRenderProxy';
 import { RawSet } from '@dooboostore/dom-render/rawsets/RawSet';
 import { RawSetType } from '@dooboostore/dom-render/rawsets/RawSetType';
 import { Render } from '@dooboostore/dom-render/rawsets/Render';
@@ -29,6 +29,11 @@ import { ElementUtils } from '@dooboostore/core-web/element/ElementUtils';
 import { NodeUtils } from '@dooboostore/core-web/node/NodeUtils';
 import { isOnDrThisUnBind } from '@dooboostore/dom-render/lifecycle/dr-this/OnDrThisUnBind';
 import { isOnDrThisBind } from '@dooboostore/dom-render/lifecycle/dr-this/OnDrThisBind';
+import { DomRenderNoProxy } from '@dooboostore/dom-render/decorators/DomRenderNoProxy';
+import { ComponentSet } from './component/ComponentSet';
+import { ComponentSet as DomRenderComponentSet } from '@dooboostore/dom-render/components/ComponentSet';
+import { DomRenderRootDefaultTemplate, DomRenderRootObject } from './DomRenderRootObject';
+import { routerProcess } from '@dooboostore/simple-boot/decorators/route/Router';
 
 export type PopStateType = { type: 'popstateData', router: any, noSimpleBootFrontRouting?: boolean };
 const isPopStateDataType = (state: any): state is PopStateType => {
@@ -44,18 +49,19 @@ export class SimpleBootFront extends SimpleApplication {
     SimFrontOption,
     ViewService,
     Router as ConstructorType<any>,
-
   ];
   public domRenderTargetElements: TargetElement[] = [];
   public domRenderTargetAttrs: TargetAttr[] = [];
   public domRenderConfig: DomRenderRunConfig;
   private domRenderRouter: Router;
   private routerAndSettingData?: { point: { start: HTMLMetaElement; end: HTMLMetaElement } | { start: Comment; end: Comment }; uuid: string; routerAtomic: SimAtomic<any> };
-  private rootRouterTargetElement?: Element;
-  private rootRouterInstance?: any;
+  // private rootRouterTargetElement?: Element;
+  private rootRouter?: ComponentSet<any>;
+  private domRenderRootObject: DomRenderRootObject
 
   constructor(public option: SimFrontOption) {
     super(option);
+    this.domRenderRootObject = new DomRenderRootObject();
     this.domRendoerExcludeProxy = this.domRendoerExcludeProxy.filter(it => it !== null);
     if (typeof HTMLElement !== 'undefined') {
       this.domRendoerExcludeProxy.push(HTMLElement);
@@ -111,11 +117,13 @@ export class SimpleBootFront extends SimpleApplication {
       proxyExcludeTyps: this.domRendoerExcludeProxy,
       operatorAround: {}
     };
+
+
     (this.option.window as any).__dirname = 'simple-boot-front__dirname';
     (this.option.window as any).__SimpleBootFront = this;
 
     option.proxy = {
-      onProxy: (it: any) => this.createDomRender(it)
+      onAfterProxy: (it: any) => this.createDomRender(it)
     };
   }
 
@@ -129,46 +137,44 @@ export class SimpleBootFront extends SimpleApplication {
   public createDomRender<T extends object>(obj: T): T {
     const component = getComponent(obj);
     if (component && typeof obj === 'object') {
-      // 나중에 헛갈리겠는데??  이거 normalattribute 때문에 DomrenderPRoxy set 쪽에서 ㅡㅡ root를 찾아가야되기때문에 ref를 계속 가져가야함.
-      // console.log('fffffffffffffffffffffffffffff', obj);
-      // root Router 일때
-      if (this.option.rootRouter === obj.constructor) {
-        // console.log('같니?')
-        this.rootRouterTargetElement = this.option.window.document.querySelector(this.option.selector).cloneNode(true) as Element;
-        this.rootRouterTargetElement.innerHTML = '';
-        this.rootRouterTargetElement.setAttribute('hidden', '')
-        this.option.window.document.body.appendChild(this.rootRouterTargetElement);
-        const data = this.writeRootRouter(this.rootRouterTargetElement, obj);
-        // this.rootRouterInstance = obj;
-        const result = DomRender.run({rootObject: obj, config: this.domRenderConfig, target: this.rootRouterTargetElement});
-        return result;
-        // this.targetElement = data.target;
-        // document.body.appendChild(this.targetElement);
-      } else {
-        const result = DomRender.run({rootObject: obj, config: this.domRenderConfig});
-        return result;
-      }
-      // this.domRenderRouter = domRenderResult.config.router;
-      // this.simstanceManager.getOrNewSim({target:Navigation})?.routers.push(this.domRenderRouter);
-      // console.log('createDomRender', this.domRenderRouter)
-      // return domRenderResult.rootObject;
+      //     // 나중에 헛갈리겠는데??  이거 normalattribute 때문에 DomrenderPRoxy set 쪽에서 ㅡㅡ root를 찾아가야되기때문에 ref를 계속 가져가야함.
+      //     // console.log('fffffffffffffffffffffffffffff', obj);
+      //     // root Router 일때
+      //     if (this.option.rootRouter === obj.constructor) {
+      //       // console.log('같니?')
+      //       this.rootRouterTargetElement = this.option.window.document.querySelector(this.option.selector).cloneNode(true) as Element;
+      //       this.rootRouterTargetElement.innerHTML = '';
+      //       this.rootRouterTargetElement.setAttribute('hidden', '')
+      //       this.option.window.document.body.appendChild(this.rootRouterTargetElement);
+      //       const data = this.writeRootRouter(this.rootRouterTargetElement, obj);
+      //       // this.rootRouterInstance = obj;
+      //       const result = DomRender.run({rootObject: obj, config: this.domRenderConfig, target: this.rootRouterTargetElement});
+      //       return result;
+      //       // this.targetElement = data.target;
+      //       // document.body.appendChild(this.targetElement);
+      //     } else {
+      const result = DomRender.run({rootObject: obj, config: this.domRenderConfig});
+      return result;
+      //     }
+      //     // this.domRenderRouter = domRenderResult.config.router;
+      //     // this.simstanceManager.getOrNewSim({target:Navigation})?.routers.push(this.domRenderRouter);
+      //     // console.log('createDomRender', this.domRenderRouter)
+      //     // return domRenderResult.rootObject;
     }
     return obj;
   }
 
+
   private initRun(otherInstanceSim?: Map<ConstructorType<any>, any>) {
     const simstanceManager = super.run(otherInstanceSim);
-    this.initDomRenderScripts();
-    this.initDomRenderTargetElements();
-
-
+    this.initDomRenderConfigSetting();
     // this.navigation.domRenderConfig = this.domRenderConfig;
     // rootRouter first draw
     // const target = this.option.window.document.querySelector(this.option.selector) as HTMLElement;
     // const targetChildNodes = Array.from(target.childNodes)
     // let isClenBody = targetChildNodes.length > 0
 
-    let first = true;
+    // let first = true;
     // console.log('------------', EventManager.attrNames)
 
     // 이미 body가 존재할때 기존거 동작이 되어버림에 따라 지워준다
@@ -193,11 +199,6 @@ export class SimpleBootFront extends SimpleApplication {
     // const targetChildren = target.children();
     // this.routerAndSettingData  = this.initWriteRootRouter(target);
 
-    this.domRenderConfig.eventVariables = {
-      $router: this.domRenderRouter,
-      $application: this
-    }
-
 
     this.option.window.addEventListener('intent', (event) => {
       const cevent = event as CustomEvent
@@ -205,189 +206,93 @@ export class SimpleBootFront extends SimpleApplication {
     });
 
 
+    const targetElement = this.option.window.document.querySelector(this.option.selector).cloneNode(true) as HTMLElement;
+    targetElement.innerHTML = DomRenderRootDefaultTemplate;
+    targetElement.hidden = true;
+    this.option.window.document.body.appendChild(targetElement);
+    // const targetElement = this.option.window.document.querySelector(this.option.selector);
+    // const {rootObject: domRenderRoot, config } = DomRender.runSet({rootObject: this.domRenderRootObject, target: targetElement, config: this.domRenderConfig});
+    this.domRenderRootObject = DomRender.run({rootObject: this.domRenderRootObject, target: targetElement, config: this.domRenderConfig});
+    routerProcess({path:'', routers:[this.option.rootRouter]}, DomRenderRootObject)
+    // console.log('dddddomRenderRootdd', domRenderRoot, config, config.router)
+    setTimeout(() => {
+      targetElement.hidden = false;
+      this.option.window.document.querySelector(this.option.selector).replaceWith(targetElement);
+    }, 0)
+
     this.domRenderRouter.observable.subscribe(it => {
-      // console.log('ooooooooooooo', it);
-      // const popStateDataType = isPopStateDataType(event.state) ? event.state : undefined;
-      // console.log('popStateData@@', popStateDataType)
-      // if (popStateDataType?.noSimpleBootFrontRouting){
-      //   return;
-      // }
-      // if (this.domRenderRouter) {
-      // console.log('popstate-------!!', event.state, this.domRenderConfig.window.history.state)
+      console.log('this.domRenderRouter.observable.subscribe---------------', it)
       const intent = new Intent(this.domRenderRouter.getUrl() || '/');
-      // console.log('intent-----------', intent)
-      // TODO: 왜 canActivate가 두번 호출되는지 확인 필요!! 그래서 setTimeout으로 처리함 원인 모르겠음 아 씨발
-      setTimeout(() => {
-        // console.log('routing before', option)
-        // const option: RoutingOption | undefined = popStateDataType? {router: popStateDataType.router}: undefined;
-        this.routing<SimAtomic, any>(intent).then(it => {
-          // const routerAndSettingDataRouter = this.routerAndSettingData?.routerAtomic?.getValue();
-          // const findFirstRouter = it.firstRouteChainValue;
-          // console.log('routing------',routerAndSettingDataRouter === findFirstRouter, routerAndSettingDataRouter , findFirstRouter)
-          // if ((routerAndSettingDataRouter !== findFirstRouter)){
-          // //   console.log('aaaaaaaaa')
-          // //   this.initWriteRootRouteraa(findFirstRouter,target);
-          //   this.routerAndSettingData  = this.initWriteRootRouter(target);
-          //   isClenBody = true;
-          //   // this.dispatchPopStateEvent(true)
+      //   // TODO: 왜 canActivate가 두번 호출되는지 확인 필요!! 그래서 setTimeout으로 처리함 원인 모르겠음 아 씨발
+      this.routing<SimAtomic, any>(intent, {router: this.domRenderRootObject}).then(it => {
+        // //       this.afterSetting();
+        // console.log('routing!!', it)
+        //
+        let findFirstRouter = it.firstRouteChainValue;
+        //       setTimeout(() => {
+        if (findFirstRouter.constructor === this.option.rootRouter) {
+          const rootRouter = getDomRenderOriginObject(this.rootRouter?.obj);
+          const findRouter = getDomRenderOriginObject(findFirstRouter);
+          // console.log('!!!!!', domRenderRoot, rootRouter, findRouter);
+          // domRenderRoot.name = new Date().toISOString();
+          // domRenderRoot.name = domRenderRoot.rootRouter?.obj?.child;
+          // setTimeout(() => {
+          // if (rootRouter !== findRouter) {
+          this.domRenderRootObject.canActivate(undefined, findRouter);
+          // setTimeout(() => {
+          //   console.log('ccccccccan')
+          //   this.domRenderRootObject.canActivate(undefined, findRouter); // new ComponentSet(rootRouter);
+          // },0)
+          //   console.log('change!', domRenderRoot, domRenderRoot.rootRouter?.obj)
           // }
-          // it.lastRouteChain
-          this.afterSetting();
-
-          let findFirstRouter = it.firstRouteChainValue;
-          setTimeout(() => {
-            if (findFirstRouter.constructor === this.option.rootRouter) {
-              if (((this.rootRouterInstance as any)?._DomRender_origin ?? this.rootRouterInstance) !== ((findFirstRouter as any)._DomRender_origin ??findFirstRouter)) {
-                const target = this.option.window.document.querySelector(this.option.selector) as HTMLElement;
-                if (target && this.rootRouterTargetElement) {
-                  // console.log('rrrrrr', target, this.rootRouterTargetElement)
-                  this.rootRouterTargetElement.removeAttribute('hidden');
-                  ElementUtils.replaceWith(target, this.rootRouterTargetElement);
-                }
-
-                // 중요 특별하게 예외가,...
-                // console.log('ssssssssssssssssssssss', this.rootRouterInstance)
-                if(isOnDrThisUnBind(this.rootRouterInstance)){
-                  this.rootRouterInstance.onDrThisUnBind();
-                }
-                this.rootRouterInstance = findFirstRouter;
-                if (isOnDrThisBind(this.rootRouterInstance)) {
-                  this.rootRouterInstance.onDrThisBind();
-                }
-              }
-            }
-          }, 0);
-          // console.log('------------!!!!!', targetChildNodes, targetChildNodes.length);
-          // if (isClenBody) {
-          //   setTimeout(() => {
-          //       while (target.firstChild && !(target.firstChild as HTMLElement)?.hasAttribute?.('dr-root-router-start-point')) {
-          //         target.removeChild(target.firstChild);
-          //       }
-          //   }, 0);
-          //   isClenBody = false
-          // }
-        });
-      }, 0)
+          // },5)
+        }
+        //       }, 0);
+      });
     })
 
-    // this.option.window.addEventListener('popstate', (event) => {
-    //   const popStateDataType = isPopStateDataType(event.state) ? event.state : undefined;
-    //   console.log('popStateData@@', popStateDataType)
-    //   if (popStateDataType?.noSimpleBootFrontRouting){
-    //     return;
-    //   }
-    //   if (this.domRenderRouter) {
-    //     // console.log('popstate-------!!', event.state, this.domRenderConfig.window.history.state)
-    //     const intent = new Intent(this.domRenderRouter.getUrl() || '/');
-    //     // console.log('intent-----------', intent)
-    //     // TODO: 왜 canActivate가 두번 호출되는지 확인 필요!! 그래서 setTimeout으로 처리함 원인 모르겠음 아 씨발
-    //     setTimeout(() => {
-    //       // console.log('routing before', option)
-    //       const option: RoutingOption | undefined = popStateDataType? {router: popStateDataType.router}: undefined;
-    //       this.routing<SimAtomic, any>(intent, option).then(it => {
-    //         const routerAndSettingDataRouter = this.routerAndSettingData?.routerAtomic?.getValue();
-    //         const findFirstRouter = it.firstRouteChainValue;
-    //         console.log('routing------',routerAndSettingDataRouter === findFirstRouter, routerAndSettingDataRouter , findFirstRouter)
-    //         if ((routerAndSettingDataRouter !== findFirstRouter)){
-    //           console.log('aaaaaaaaa')
-    //           this.routerAndSettingData  = this.initWriteRootRouter(target);
-    //           isClenBody = true;
-    //           this.dispatchPopStateEvent(true)
-    //         }
-    //         // it.lastRouteChain
-    //         this.afterSetting();
-    //
-    //         // console.log('------------!!!!!', targetChildNodes, targetChildNodes.length);
-    //         if (isClenBody) {
-    //           setTimeout(() => {
-    //             while (target.firstChild && (target.firstChild as HTMLElement).id !== (this.routerAndSettingData?.point.start as HTMLElement).id) {
-    //               // console.log('remove??????')
-    //               target.removeChild(target.firstChild);
-    //             }
-    //           }, 0);
-    //           isClenBody = false
-    //         }
-    //       });
-    //     }, 0)
-    //   }
-    // });
+
+
     return simstanceManager;
   }
 
-  // public initWriteRootRouteraa(instance: any,target: Element) {
-  //   DomRender.run({rootObject: instance, config: this.domRenderConfig, target});
+
+  // public writeRootRouter(target: Element, router: any = this.option.rootRouter) {
+  //   // const routerAtomic = new SimAtomic({targetKeyType: this.option.rootRouter!, originalType: this.option.rootRouter!}, this.getSimstanceManager());
+  //   // const target = this.option.window.document.querySelector(this.option.selector);
+  //
+  //   // target.cloneNode()
+  //
+  //   const uuid = RandomUtils.uuid();
+  //   const id = `root-router-${uuid}`;
+  //   const point = RawSet.createStartEndPoint({node: target, id, type: RawSetType.TARGET_ELEMENT}, this.domRenderConfig as Config);
+  //   if (target && router) {
+  //     // target.innerHTML = '';
+  //     // console.log('----cleanbody', target.innerHTML)
+  //     // p.appendChild(startEndPoint.start);
+  //     // p.insertAdjacentHTML('beforeend', this.getComponentInnerHtml(this.option.rootRouter, id));
+  //     // p.appendChild(startEndPoint.end);
+  //     //
+  //     if (point.start instanceof HTMLElement) {
+  //       point.start.setAttribute('dr-root-router-start-point', '');
+  //     }
+  //     if (point.end instanceof HTMLElement) {
+  //       point.end.setAttribute('dr-root-router-end-point', '');
+  //     }
+  //     target.appendChild(point.start);
+  //     target.insertAdjacentHTML('beforeend', this.getComponentInnerHtml(router, id));
+  //     target.appendChild(point.end);
+  //     // target.innerHTML = this.getComponentInnerHtml(this.option.rootRouter, id);
+  //     // target.insertBefore(startEndPoint.start, target.firstChild);
+  //     // target.appendChild(startEndPoint.start);
+  //     // target.appendChild(startEndPoint.end);
+  //   }
+  //   return {point, uuid};
   // }
-  public initWriteRootRouter(target: Element) {
-
-    const routerAndSettingData = this.writeRootRouter(target);
-    // console.log('--start', startEndPoint);
-
-    // while (target.firstChild && target.firstChild !== startEndPoint.start) {
-    //   console.log('remove??????')
-    //   target.removeChild(target.firstChild);
-    // }
-    //         console.log('remove??????end?')
-
-    // if (target && routerAndSettingData.routerAtomic && routerAndSettingData.routerAtomic.getValue()) {
-    //   const val = routerAndSettingData.routerAtomic.getValue() as any;
-    //   // console.log('12222222v2')
-    //   // 여기서 domrender 시작하네??
-    //   const domRenderProxy = val._DomRender_proxy as DomRenderProxy<any>
-    //   const rawSet = new RawSet(
-    //     routerAndSettingData.uuid,
-    //     RawSetType.TARGET_ELEMENT,
-    //     {
-    //       start: routerAndSettingData.point.start,
-    //       end: routerAndSettingData.point.end,
-    //       node: target
-    //     },
-    //       {config: this.domRenderConfig as Config, fragment: {} as any}
-    //   );
-    //   domRenderProxy.initRender(target, rawSet);
-    //   // console.log('initWriteRootRouter', val);
-    //   if (isOnInit(val)) {
-    //     val.onInit();
-    //   }
-    // }
-    return routerAndSettingData;
-  }
-
-  public writeRootRouter(target: Element, router: any = this.option.rootRouter) {
-    // const routerAtomic = new SimAtomic({targetKeyType: this.option.rootRouter!, originalType: this.option.rootRouter!}, this.getSimstanceManager());
-    // const target = this.option.window.document.querySelector(this.option.selector);
-
-    // target.cloneNode()
-
-    const uuid = RandomUtils.uuid();
-    const id = `root-router-${uuid}`;
-    const point = RawSet.createStartEndPoint({node: target, id, type: RawSetType.TARGET_ELEMENT}, this.domRenderConfig as Config);
-    if (target && router) {
-      // target.innerHTML = '';
-      // console.log('----cleanbody', target.innerHTML)
-      // p.appendChild(startEndPoint.start);
-      // p.insertAdjacentHTML('beforeend', this.getComponentInnerHtml(this.option.rootRouter, id));
-      // p.appendChild(startEndPoint.end);
-      //
-      if (point.start instanceof HTMLElement) {
-        point.start.setAttribute('dr-root-router-start-point', '');
-      }
-      if (point.end instanceof HTMLElement) {
-        point.end.setAttribute('dr-root-router-end-point', '');
-      }
-      target.appendChild(point.start);
-      target.insertAdjacentHTML('beforeend', this.getComponentInnerHtml(router, id));
-      target.appendChild(point.end);
-      // target.innerHTML = this.getComponentInnerHtml(this.option.rootRouter, id);
-      // target.insertBefore(startEndPoint.start, target.firstChild);
-      // target.appendChild(startEndPoint.start);
-      // target.appendChild(startEndPoint.end);
-    }
-    return {point, uuid};
-  }
-
+  //
   async goRouting(url: string) {
     await this.domRenderRouter?.go({path: url, disabledPopEvent: false});
-    this.afterSetting();
+    // this.afterSetting();
   }
 
   async getIntent(url: string | Intent) {
@@ -413,52 +318,45 @@ export class SimpleBootFront extends SimpleApplication {
     const currentUrl = UrlUtils.toUrl(this.option.window.location.href);
     const origin = currentUrl.origin;
     const path = `${url ? origin + (url ?? '/') : currentUrl.href}`;
-    // console.log('----origin', origin, '**', url, '**', this.option.window.location.href, '---', path, currentUrl.href)
     this.domRenderRouter.go({path: path});
-    // if (url && this.domRenderRouter) {
-    //   this.domRenderRouter.go({path: url});
-    // }
-
-    // this.dispatchPopStateEvent();
-    // this.option.window.dispatchEvent(new PopStateEvent('popstate', {state: state}));
     return simstanceManager;
   }
 
   private dispatchPopStateEvent(noSimpleBootFrontRouting?: boolean) {
     const state: PopStateType = this.routerAndSettingData ? {type: 'popstateData', noSimpleBootFrontRouting, router: this.routerAndSettingData.routerAtomic.getValue()} : undefined;
-    console.log('dispatchPopState', state)
+    // console.log('dispatchPopState', state)
     this.option.window.dispatchEvent(new PopStateEvent('popstate', {state: state}));
   }
 
 // TODO: 이거 나중에 없에야될것같은데 이제 안쓰는거라..훔.. 남겨둬야하나..훔..
-  private afterSetting() {
-    this.option.window.document.querySelectorAll('[router-link]').forEach(it => {
-      const link = it.getAttribute('router-link');
-      if (link && this.domRenderRouter) {
-        const activeClasss = it.getAttribute('router-active-class');
-        const aClasss = activeClasss?.split(',');
-        const inActiveClasss = it.getAttribute('router-inactive-class');
-        const iClasss = inActiveClasss?.split(',');
-        if (this.domRenderRouter.getPathName() === link) {
-          if (aClasss && aClasss.length > 0) {
-            it.classList.add(...aClasss);
-          }
-          if (iClasss && iClasss.length > 0) {
-            it.classList.remove(...iClasss);
-          }
-        } else {
-          if (aClasss && aClasss.length > 0) {
-            it.classList.remove(...aClasss);
-          }
-          if (iClasss && iClasss.length > 0) {
-            it.classList.add(...iClasss);
-          }
-        }
-      }
-    });
-  }
+//   private afterSetting() {
+//     this.option.window.document.querySelectorAll('[router-link]').forEach(it => {
+//       const link = it.getAttribute('router-link');
+//       if (link && this.domRenderRouter) {
+//         const activeClasss = it.getAttribute('router-active-class');
+//         const aClasss = activeClasss?.split(',');
+//         const inActiveClasss = it.getAttribute('router-inactive-class');
+//         const iClasss = inActiveClasss?.split(',');
+//         if (this.domRenderRouter.getPathName() === link) {
+//           if (aClasss && aClasss.length > 0) {
+//             it.classList.add(...aClasss);
+//           }
+//           if (iClasss && iClasss.length > 0) {
+//             it.classList.remove(...iClasss);
+//           }
+//         } else {
+//           if (aClasss && aClasss.length > 0) {
+//             it.classList.remove(...aClasss);
+//           }
+//           if (iClasss && iClasss.length > 0) {
+//             it.classList.add(...iClasss);
+//           }
+//         }
+//       }
+//     });
+//   }
 
-  public initDomRenderScripts() {
+  public initDomRenderConfigSetting() {
     const simstanceManager = this.simstanceManager;
     scripts.forEach((val, name) => {
       this.domRenderConfig.scripts![name] = function (...args: any) {
@@ -476,10 +374,7 @@ export class SimpleBootFront extends SimpleApplication {
         return scriptRunnable.run(...args);
       }
     })
-    // console.log('---------------------scripts', this.domRenderConfig.scripts);
-  }
 
-  private initDomRenderTargetElements() {
     const selectors = componentSelectors;
     selectors.forEach((val, name) => {
       const component = getComponent(val);
@@ -514,7 +409,16 @@ export class SimpleBootFront extends SimpleApplication {
 
       this.domRenderTargetElements.push(items);
     });
+
+
+    this.domRenderConfig.eventVariables = {
+      $router: this.domRenderRouter,
+      $application: this
+    }
+
+    // console.log('---------------------scripts', this.domRenderConfig.scripts);
   }
+
 
   public getSimstanceManager() {
     return this.simstanceManager;

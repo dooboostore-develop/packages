@@ -5,6 +5,7 @@ import { OnInitRender } from '@dooboostore/dom-render/lifecycle/OnInitRender';
 import { OnDestroyRender } from '@dooboostore/dom-render/lifecycle/OnDestroyRender';
 import { CreatorMetaData } from '@dooboostore/dom-render/rawsets/CreatorMetaData';
 import { Router } from '@dooboostore/dom-render/routers/Router';
+import { ComponentBase } from '@dooboostore/dom-render';
 
 @Sim({
   scope: Lifecycle.Transient,
@@ -12,13 +13,25 @@ import { Router } from '@dooboostore/dom-render/routers/Router';
 @Component({
     template,
 })
-export class User implements OnInitRender, OnDestroyRender {
+export class User extends ComponentBase{
     name = 'User';
     toggle = true;
     constructor(router: Router) {
+      super()
       console.log('constructor , User')
       // console.log('router-->',router);
     }
+
+
+  onDrThisBind() {
+    super.onDrThisBind();
+    console.log('User - onDrThisBind');
+  }
+  onDrThisUnBind() {
+    super.onDrThisUnBind();
+    console.log('User - onDrThisUnBind');
+  }
+
     onInitRender(...param) {
         console.log('User: onInitRender', param);
     }

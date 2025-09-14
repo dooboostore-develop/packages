@@ -11,9 +11,10 @@ import { drComponent } from '@dooboostore/dom-render/components'
 import { User } from './pages/user.ts';
 import { RandomUtils } from '@dooboostore/core';
 import { ProductorRouter } from './pages/productor/productor.router';
+import { ComponentSet } from '@dooboostore/simple-boot-front';
 
 @Sim({
-  scope: Lifecycle.Transient,
+  // scope: Lifecycle.Transient,
   using: [drComponent]
 })
 @Router({
@@ -45,13 +46,25 @@ export class Index extends ComponentRouterBase {
     console.log('test')
   }
 
-  async canActivate(url: RoutingDataSet, data?: any): Promise<void> {
-    console.log('canActivate1')
-    await super.canActivate(url, data);
-    setTimeout(() => {
+  onDrThisBind() {
+    super.onDrThisBind();
+    console.log('Index - onDrThisBind');
+  }
+  onDrThisUnBind() {
+    super.onDrThisUnBind();
+    console.log('Index - onDrThisUnBind');
+  }
 
-    console.log('canActivate2', this.child)
-    }, 10)
+  async canActivate(url: RoutingDataSet, data?: any): Promise<void> {
+    await super.canActivate(url, data);
+    console.log('index canActivate1', data, this);
+    // this.setChild(data);
+    // console.log('index canActivate2', this.child);
+    // this.name = RandomUtils.uuid4()
+    // // await super.canActivate(url, data);
+    setTimeout(() => {
+    console.log('index canActivate3', this, this.child)
+    }, 2)
   }
 
   toggleSw() {

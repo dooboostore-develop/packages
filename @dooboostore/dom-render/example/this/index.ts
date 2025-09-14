@@ -1,4 +1,4 @@
-import { DomRender } from '@dooboostore/dom-render/DomRender';
+import { DomRender, DomRenderRunConfig } from '@dooboostore/dom-render/DomRender';
 import { Config } from '@dooboostore/dom-render/configs/Config';
 import { ComponentSet } from '@dooboostore/dom-render/components/ComponentSet';
 import { OnDestroyRender } from '@dooboostore/dom-render/lifecycle/OnDestroyRender';
@@ -141,7 +141,7 @@ export class Index implements OnCreateRender {
 
 }
 
-const config: Config = {
+const config: DomRenderRunConfig = {
   window,
   scripts: {
     concat: function(data: string, str: string) {

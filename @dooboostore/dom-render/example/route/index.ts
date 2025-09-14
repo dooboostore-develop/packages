@@ -13,16 +13,16 @@ import { ComponentSet } from '@dooboostore/dom-render/components/ComponentSet';
 export class Sub implements OnDestroyRender {
   age = 0;
   display='';
-  private interval?: number;
+  private interval?:  NodeJS.Timeout;
   constructor(private name: string) {
     console.log('Sub constructor', name);
   }
 
   onDrThisBind(): void {
     console.log(this.name, 'onDrThisBind');
-    this.interval = setInterval(() => {
-      this.display = `${this.name} ${this.age++}`;
-    }, 1000)
+    // this.interval = setInterval(() => {
+    //   this.display = `${this.name} ${this.age++}`;
+    // }, 1000)
   }
 
   onDrThisUnBind(): void {
@@ -37,9 +37,10 @@ export class Sub implements OnDestroyRender {
 
 export class Index {
   child: any;
+  name = 'index name';
   value = 'wowvvvvvvvvv';
-  sub1 = new ComponentSet(new Sub('sub1'), '<div><h1>11subthis</h1><div>${@this@.display}$  ${console.log("asas${@this@.name}$")}$ <!-- ${#this#}$--></div></div>');
-  sub2 =  new ComponentSet(new Sub('sub2'), '<div><h1>22subthis</h1><div>${@this@.display}$</div></div>');
+  sub1 = new ComponentSet(new Sub('sub1'), {template: '<div><h1>11subthis</h1><div>${@this@.display}$  ${console.log("asas${@this@.name}$")}$ <!-- ${#this#}$--></div></div>'});
+  sub2 =  new ComponentSet(new Sub('sub2'), {template: '<div><h1>22subthis</h1><div>${@this@.display}$</div></div>'});
   constructor() {
   }
 
@@ -51,43 +52,47 @@ export class Index {
     }
     console.log('-ss', this.child)
   }
+  changeNewThis() {
+    console.log('changeNewThis------', this)
+    this.child = new ComponentSet(new Sub('s222222222ub1'), {template: '<div><h1>11subthis</h1><div>${@this@.display}$  ${console.log("asas${@this@.name}$")}$ <!-- ${#this#}$--></div></div>'})
+  }
 }
-class CustomRouter extends Router<Index> {
-  test(urlExpression: string): boolean {
-    if (this.getPathData(urlExpression)) {
-      return true;
-    } else {
-      return false;
-    }
-  }
 
-
-  getData(): any {
-    return this.config.window.history.state;
-  }
-
-  getSearchParams(): URLSearchParams {
-    return new URLSearchParams(LocationUtils.hashSearch(this.config.window));
-  }
-
-  push(path: string, data?: any, title: string = ''): void {
-    if (path === '/') {
-      super.pushState(data, title, '');
-    } else {
-      path = '#' + path;
-      super.pushState(data, title, path);
-    }
-  }
-
-  getUrl(): string {
-    return LocationUtils.hash(this.config.window) || '/';
-  }
-
-  getPathName(): string {
-    return LocationUtils.hashPath(this.config.window) || '/';
-  }
-
-}
+// class CustomRouter extends Router<Index> {
+//   test(urlExpression: string): boolean {
+//     if (this.getPathData(urlExpression)) {
+//       return true;
+//     } else {
+//       return false;
+//     }
+//   }
+//
+//
+//   getData(): any {
+//     return this.config.window.history.state;
+//   }
+//
+//   getSearchParams(): URLSearchParams {
+//     return new URLSearchParams(LocationUtils.hashSearch(this.config.window));
+//   }
+//
+//   push(path: string, data?: any, title: string = ''): void {
+//     if (path === '/') {
+//       super.pushState(data, title, '');
+//     } else {
+//       path = '#' + path;
+//       super.pushState(data, title, path);
+//     }
+//   }
+//
+//   getUrl(): string {
+//     return LocationUtils.hash(this.config.window) || '/';
+//   }
+//
+//   getPathName(): string {
+//     return LocationUtils.hashPath(this.config.window) || '/';
+//   }
+// }
 
 
 const config: DomRenderRunConfig<Index> = {
@@ -110,6 +115,9 @@ const data = DomRender.run({
   target:  document.querySelector('#app')!,
   config: config
 });
-// setInterval(() => {
+
+
+setTimeout(() => {
+  data.child = new ComponentSet(new Sub('aadds222222222ub1'), {template: '<div><h1>aadds222222222ub1</h1><div>${@this@.display}$  ${console.log("asas${@this@.name}$")}$ <!-- ${#this#}$--></div></div>'})
 //   data.value = Date.now().toString();
-// }, 2000)
+}, 2000)

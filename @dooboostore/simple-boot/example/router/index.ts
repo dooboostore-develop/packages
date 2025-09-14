@@ -156,15 +156,36 @@ class ApiRouter {
   post() {
   }
 }
-
-
-
 @Sim({
-  scope: Lifecycle.Transient
+  // scope: Lifecycle.Transient
 })
 @Router({
+  path: '/',
+  route: {
+    '':Office
+  },
+})
+class RRouter {
+
+  constructor() {
+    console.log('RRouter constructor');
+  }
+
+  routeSay() {
+  }
+
+  post() {
+  }
+}
+
+
+
+// @Sim({
+//   scope: Lifecycle.Transient
+// })
+@Router({
   path: '',
-  routers: [SubRouter, Sub2Router, Sub3Router, ApiRouter]
+  routers: [RRouter, SubRouter, Sub2Router, Sub3Router, ApiRouter]
 })
 class RootRouter implements RouterAction {
   constructor() {
@@ -181,7 +202,8 @@ say() {
 }
 
 (async ()=>{
-  const option  = new SimOption({ rootRouter: RootRouter })
+  const option  = new SimOption({  })
+  // const option  = new SimOption({ rootRouter: RootRouter })
   const app = new SimpleApplication(option);
   app.run();
 
@@ -204,13 +226,15 @@ say() {
 
   // const r = await app.routing(new Intent('/api/test/layers'), {router: rootRouter});
   // const c = await app.routing(new Intent('/api/test/layers'), {router: rootRouter});
-  const r = await app.routing(new Intent('/api/test/layers'));
-  const c = await app.routing(new Intent('/api/test/layers'));
+  const rr = await app.routing(new Intent('/'), {router: new RootRouter()});
+  // const r = await app.routing(new Intent('/api/test/layers'));
+  // const c = await app.routing(new Intent('/api/test/layers'));
   // const r = await routerManager.routing(new Intent('/user/office'));
   // const r = await routerManager.routing(new Intent('/user/ssuser/office'));
-  console.log('router==>', r.router.getValue(), r.getRouterPaths(), r.getModuleInstance())
-  console.log('module', r.getModuleInstance());
-  console.log('module', c.getModuleInstance());
+  console.log('module', rr.getModuleInstance());
+  // console.log('router==>', r.router.getValue(), r.getRouterPaths(), r.getModuleInstance())
+  // console.log('module', r.getModuleInstance());
+  // console.log('module', c.getModuleInstance());
   // const rs = await routerManager.routings(new Intent('/user'));
   // console.log('rs',rs.map(it=>({router:it.router.getValue(), module: it.getModuleInstance()})))
 })()

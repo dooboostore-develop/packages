@@ -390,7 +390,7 @@ export class SimstanceManager implements Runnable<void, Map<ConstructorType<any>
     }
 
     if (this.option.proxy) {
-      target = this.option.proxy.onProxy(target);
+      target = this.option.proxy.onAfterProxy(target);
     }
     return target;
   }

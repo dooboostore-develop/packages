@@ -1,4 +1,4 @@
-import { DomRenderProxy } from '../DomRenderProxy';
+import { DomRenderProxy, getDomRenderProxy } from '../DomRenderProxy';
 import { EventManager } from '../events/EventManager';
 import { ConvertUtils } from '@dooboostore/core/convert/ConvertUtils';
 import { Observable, Store, Subject } from '@dooboostore/core/message';
@@ -68,7 +68,7 @@ export abstract class Router<T = any> {
   }
 
   async attach(): Promise<void> {
-    const proxy = (this.config.rootObject as any)._DomRender_proxy as DomRenderProxy<any>;
+    const proxy = getDomRenderProxy(this.config.rootObject)
     if (proxy) {
       const key = `___${EventManager.ROUTER_VARNAME}`;
       await proxy.render(key);

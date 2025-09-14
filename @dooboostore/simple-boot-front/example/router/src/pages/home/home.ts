@@ -1,23 +1,33 @@
 import { Component } from '@dooboostore/simple-boot-front/decorators/Component';
-import { Sim } from '@dooboostore/simple-boot/decorators/SimDecorator';
+import { Lifecycle, Sim } from '@dooboostore/simple-boot/decorators/SimDecorator';
 import template from './home.html';
 import styles from './home.css';
-import { OnDestroyRender } from '@dooboostore/dom-render/lifecycle/OnDestroyRender.ts';
 import { CreatorMetaData } from '@dooboostore/dom-render/rawsets/CreatorMetaData.ts';
-import { OnInitRender } from '@dooboostore/dom-render/lifecycle/OnInitRender.ts';
+import { ComponentBase } from '@dooboostore/dom-render';
+import { RandomUtils } from '@dooboostore/core/random/RandomUtils';
+
 @Sim({
+  // scope: Lifecycle.Transient,
     using: []
 })
 @Component({
     template,
     styles
 })
-export class Home implements OnInitRender, OnDestroyRender {
-    public name = 'home';
+export class Home extends ComponentBase {
+    public name = 'home'+RandomUtils.uuid4();
     wow='ssssss';
     toggle = false;
 
 
+  onDrThisBind() {
+    super.onDrThisBind();
+    console.log('Home - onDrThisBind', this.name);
+  }
+  onDrThisUnBind() {
+    super.onDrThisUnBind();
+    console.log('Home - onDrThisUnBind', this.name);
+  }
 
 
     onInitRender(...param: any[]): void {
@@ -26,6 +36,7 @@ export class Home implements OnInitRender, OnDestroyRender {
         // setInterval(() => {
         //     this.name = new Date().toString();
         // }, 2000)
+
     }
 
     onDestroyRender(metaData?: CreatorMetaData): void {

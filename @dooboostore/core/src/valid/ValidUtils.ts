@@ -23,7 +23,30 @@ export namespace ValidUtils {
   }
 
 
-
+  export const isFrozen = (obj: any): boolean => {
+    return Object.isFrozen(obj);
+  }
+  export const isSealed= (obj: any): boolean => {
+    return Object.isSealed(obj)
+  }
+  export const isFrozenOrSealed = (obj: any): boolean => {
+    return ValidUtils.isFrozen(obj) || ValidUtils.isSealed(obj);
+  }
+  export const isFrozenAndSealed = (obj: any): boolean => {
+    return ValidUtils.isFrozen(obj) && ValidUtils.isSealed(obj);
+  }
+  export const isNotFrozen = (obj: any): boolean => {
+    return !Object.isFrozen(obj);
+  }
+  export const isNotSealed = (obj: any): boolean => {
+    return !Object.isSealed(obj)
+  }
+  export const isNotFrozenOrSealed = (obj: any): boolean => {
+    return !ValidUtils.isFrozen(obj) && !ValidUtils.isSealed(obj);
+  }
+  export const isNotFrozenAndSealed = (obj: any): boolean => {
+    return !ValidUtils.isFrozen(obj) || !ValidUtils.isSealed(obj);
+  }
 
   export const isNullOrUndefined = (data: unknown): data is (null | undefined) => {
   return data == null || undefined === data;

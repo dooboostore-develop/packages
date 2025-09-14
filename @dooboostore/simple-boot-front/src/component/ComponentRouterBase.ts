@@ -4,10 +4,18 @@ import { Intent } from '@dooboostore/simple-boot/intent/Intent';
 import { RouterModule } from '@dooboostore/simple-boot/route/RouterModule';
 import { RouterManager } from '@dooboostore/simple-boot/route/RouterManager';
 import { isOnDrThisUnBind } from '@dooboostore/dom-render/lifecycle/dr-this/OnDrThisUnBind';
-import { ComponentBase } from '@dooboostore/dom-render/components/ComponentBase';
+import { ComponentBase, ComponentBaseConfig } from '@dooboostore/dom-render/components/ComponentBase';
+import { getDomRenderOriginObject } from '@dooboostore/dom-render/DomRenderProxy';
 
-export abstract class ComponentRouterBase<T = any> extends ComponentBase<T> implements RouterAction { // OnDrThisBind
-  public child? : ComponentSet;
+export type ComponentRouterBaseConfig = ComponentBaseConfig & { sameRouteNoApply?: boolean }
+
+export abstract class ComponentRouterBase<T = any> extends ComponentBase<T, ComponentRouterBaseConfig> implements RouterAction { // OnDrThisBind
+  public child?: ComponentSet;
+
+
+  constructor(_config?: ComponentRouterBaseConfig) {
+    super(_config);
+  }
 
   // get child() {
   //   return this._child;
@@ -23,29 +31,22 @@ export abstract class ComponentRouterBase<T = any> extends ComponentBase<T> impl
   }
 
   onDrThisUnBind(): void {
-    console.log('--ComponentRouterBase--onDrThisUnBind-')
+    // console.log('--ComponentRouterBase--onDrThisUnBind-')
     super.onDrThisUnBind();
     if (this.child && isOnDrThisUnBind(this.child?.obj)) {
       this.child.obj.onDrThisUnBind();
     }
-    this.child = undefined;
+    // 똑같이 자기자신이 dr-this에 들어간다면 canActivate에 우선 셋팅이되고 난뒤 unbind 일어나서 다시 bind될때에는 child 값이 없어지는...그런 라이프사이클 순서? 있어서 child지우지않는다
+    // console.log('un!!!?', this.child);
+    // this.child = undefined;
   }
 
 
   async canActivate(url: RoutingDataSet, data?: any): Promise<void> {
-    // this.onRouting(url);
-    // console.log('%croute WorldRouterComponent canActivate->', 'color:yellow', url, data);
-    // if (data) {
-    //   if (data instanceof WorldComponent && url.routerModule.pathData?.['id']) {
-    //     data.setWorldSeq(url.routerModule.pathData['id'])
-    //   }
-    // }
-    // TODO: 왜이렇게 해야지 drThis 등 한번만 호출되는지 모르겠는데-_- 이런것들이 조금있는듯 task queue로 빠져야되나..
-    // SSR처리할떄 안될것같은데...훔-_-;;  -> 체크해보니깐 또 잘되네-_-뽀록인가
-    //   this.child = new ComponentSet(data);
-    setTimeout(()=>{
-      this.setChild(new ComponentSet(data));
-    }, 0)
+    // console.log('cccccccccccc')
+    if (!(this.componentConfig?.sameRouteNoApply && getDomRenderOriginObject(this.child?.obj) === getDomRenderOriginObject(data))) {
+      this.child = new ComponentSet(data);
+    }
   }
 
   // abstract onRouting(routingDataSet: RoutingDataSet):void;

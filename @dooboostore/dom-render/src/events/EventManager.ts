@@ -3,6 +3,7 @@ import { ScriptUtils } from '@dooboostore/core-web/script/ScriptUtils';
 import { ElementUtils } from '@dooboostore/core-web/element/ElementUtils';
 import { Range } from '../iterators/Range';
 import { DomRenderFinalProxy } from '../types/Types';
+import { getDomRenderConfig } from '../DomRenderProxy';
 
 type HandlerInfo = {
   element: HTMLElement;
@@ -133,7 +134,7 @@ export class EventManager {
             const script = it.getAttribute(targetAttr);
             if (script) {
               const obj = this.findComponentInstance(it as HTMLElement);
-              const config = obj?._DomRender_proxy?.config;
+              const config = getDomRenderConfig(obj);
               ScriptUtils.eval(`${this.bindScript} ${script} `, this.createExecutionContext(event, it as HTMLElement, obj, config));
             }
           });
@@ -263,6 +264,7 @@ export class EventManager {
   }
 
   private createExecutionContext(event: Event, element: HTMLElement, componentInstance: any, config: Config | undefined, extraVars = {}) {
+    // console.log('---------->', config?.eventVariables)
     return Object.assign(componentInstance, {
       __render: Object.freeze({
         event,
@@ -280,7 +282,7 @@ export class EventManager {
 
   private executeHandler(event: Event, handler: HandlerInfo, componentInstance: any) {
     const {element, type, attr} = handler;
-    const config = componentInstance?._DomRender_proxy?.config;
+    const config = getDomRenderConfig(componentInstance);
 
     switch (type) {
       case 'link':

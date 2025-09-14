@@ -1,5 +1,6 @@
 import 'reflect-metadata'
 import { ConstructorType } from '@dooboostore/core/types';
+import { ValidUtils } from '@dooboostore/core/valid/ValidUtils';
 
 // export type ReflectField = (target: Object|{constructor: ConstructorType<any>, [key: string]: Function}, propertyKey: string | symbol) => void;
 export const DomRenderNoProxyKey = 'DomRender:NoProxy'
@@ -15,3 +16,20 @@ export const DomRenderNoProxy = (target: any, propertyKey?: string | symbol) => 
     // target은 프로토타입, propertyKey는 프로퍼티 이름
     Reflect.defineMetadata(DomRenderNoProxyKey, true, target, propertyKey);
 };
+
+export const getDomRenderNoProxy = (target: any, propertyKey?: string | symbol) => {
+  // if (ValidUtils.isNotNullUndefined(target)) {
+    // 클래스 데코레이터
+    if (propertyKey === undefined) {
+      return Reflect.getMetadata(DomRenderNoProxyKey, target);
+    }
+    // 프로퍼티 데코레이터
+    return Reflect.getMetadata(DomRenderNoProxyKey, target, propertyKey);
+  // } else {
+  //   return undefined;
+  // }
+}
+
+export const isDomRenderNoProxy = (target: any, propertyKey?: string | symbol) => {
+  return getDomRenderNoProxy(target, propertyKey) === true;
+}

@@ -8,7 +8,7 @@ import { RawSetType } from './rawsets/RawSetType';
 import { DrThisProperty } from './operators/DrThisProperty';
 import { RawSetOperatorType } from './rawsets/RawSetOperatorType';
 import { ComponentSet } from './components/ComponentSet';
-import { DomRenderNoProxyKey } from './decorators/DomRenderNoProxy';
+import { DomRenderNoProxyKey, isDomRenderNoProxy } from './decorators/DomRenderNoProxy';
 import { isOnCreateRender } from './lifecycle/OnCreateRender';
 import { isOnInitRender } from './lifecycle/OnInitRender';
 import { isOnCreateRenderData } from './lifecycle/OnCreateRenderData';
@@ -17,10 +17,34 @@ import { DocumentUtils } from '@dooboostore/core-web/document/DocumentUtils';
 import { isDefined } from '@dooboostore/core/types';
 import { isOnBeforeReturnSet } from './lifecycle/OnBeforeReturnSet';
 import { isOnChildRenderedByProperty } from './lifecycle/OnChildRenderedByProperty';
-import { ObjectUtils } from '@dooboostore/core';
+import { ObjectUtils } from '@dooboostore/core/object';
+import {ValidUtils} from '@dooboostore/core/valid'
+import { isOnProxyDomRender } from './lifecycle/OnProxyDomRender';
 
 const excludeGetSetPropertys = ['onBeforeReturnGet', 'onBeforeReturnSet', '__domrender_components', '__render', '_DomRender_isFinal', '_domRender_ref', '_rawSets', '_domRender_proxy', '_targets', '_DomRender_origin', '_DomRender_ref', '_DomRender_proxy'];
-
+export const isWrapProxyDomRenderProxy = <T>(obj: T): boolean => {
+  return obj && typeof obj === 'object' && ('_DomRender_isProxy' in obj);
+};
+export const getDomRenderOriginObject = <T>(obj: T):T => {
+  if (isWrapProxyDomRenderProxy(obj)) {
+    return (obj as any)._domRender_origin;
+  }
+  return obj;
+}
+export const getDomRenderConfig = (obj: any): Config | undefined => {
+  if (isWrapProxyDomRenderProxy(obj)) {
+    return obj._domRender_config;
+  }
+  return undefined;
+}
+//@ts-ignore
+export const getDomRenderProxy = <T>(obj: T): DomRenderProxy<T> | undefined => {
+  if (isWrapProxyDomRenderProxy(obj)) {
+  //@ts-ignore
+    return (obj as any)._domRender_proxy as DomRenderProxy<T>;
+  }
+  return undefined;
+}
 export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
   public _domRender_ref = new Map<object, Set<string>>();
   public _rawSets = new Map<string, Set<RawSet>>();
@@ -28,7 +52,7 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
   // public _firstTarget: Node;
   public _targets = new Set<Node>();
 
-  constructor(public _domRender_origin: T, target: Node | null | undefined, public config: Config) {
+  constructor(public _domRender_origin: T, target: Node | null | undefined, public _domRender_config: Config) {
     if (target) {
       this._targets.add(target);
       // this._firstTarget = target;
@@ -57,8 +81,10 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
 
   public run(objProxy: T) {
     this._domRender_proxy = objProxy;
-    (objProxy as any)?.onProxyDomRender?.(this.config);
-    const obj = (objProxy as any)._DomRender_origin;
+    if (isOnProxyDomRender(objProxy)) {
+      objProxy.onProxyDomRender(this._domRender_config);
+    }
+    const obj = getDomRenderOriginObject<any>(objProxy);
     if (obj) {
       Object.keys(obj).forEach(it => {
         // Reflect 메타데이터에서 domRender:NoProxy 여부 확인
@@ -69,12 +95,13 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
           }
         } catch (e) {
         }
-        const target = (obj as any)[it];
+        const target = obj[it];
         if (target !== undefined && target !== null && typeof target === 'object' && !DomRenderProxy.isFinal(target) && !Object.isFrozen(target) && !(obj instanceof Shield)) {
-          const filter = this.config.proxyExcludeTyps?.filter(it => target instanceof it) ?? [];
-          if (filter.length === 0) {
+          const isExcluded = this._domRender_config.proxyExcludeTyps?.some(it => target instanceof it) ?? false;
+          // const filter = this._domRender_config.proxyExcludeTyps?.filter(it => target instanceof it) ?? [];
+          if (!isExcluded) {
             const proxyAfter = this.proxy(objProxy, target, it);
-            (obj as any)[it] = proxyAfter;
+            obj[it] = proxyAfter;
           }
         }
       });
@@ -120,12 +147,12 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
 
     // const innerHTML = (target as any).innerHTML ?? '';
     this._targets.add(target);
-    const rawSets = RawSet.checkPointCreates(target, this._domRender_proxy, this.config);
+    const rawSets = RawSet.checkPointCreates(target, this._domRender_proxy, this._domRender_config);
     // console.log('initRender -------rawSet', rawSets)
     // 중요 초기에 한번 튕겨줘야함.
-    this.config.eventManager.applyEvent(this._domRender_proxy, this.config.eventManager.findAttrElements(target as Element, this.config), this.config);
+    this._domRender_config.eventManager.applyEvent(this._domRender_proxy, this._domRender_config.eventManager.findAttrElements(target as Element, this._domRender_config), this._domRender_config);
     rawSets.forEach(it => {
-      const variables = it.getUsingTriggerVariables(this.config);
+      const variables = it.getUsingTriggerVariables(this._domRender_config);
       if (variables.size <= 0) {
         this.addRawSet('', it);
       } else {
@@ -179,7 +206,7 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
 
     // console.log('----', rawSets);
     for (const it of rawSets as RawSet[]) {
-      it.getUsingTriggerVariables(this.config).forEach(path => {
+      it.getUsingTriggerVariables(this._domRender_config).forEach(path => {
         // console.log('getUsingTriggerVariables->', path);
         this.addRawSet(path, it);
       });
@@ -211,7 +238,7 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
           });
           // ------------------->
         } else {
-          const rawSets = await it.render(this._domRender_proxy, this.config);
+          const rawSets = await it.render(this._domRender_proxy, this._domRender_config);
           // 그외 자식들 render
           if (rawSets && rawSets.length > 0) {
             await this.render(rawSets);
@@ -308,7 +335,7 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
                 startElement.setAttribute(RawSet.DR_HAS_KEYS_OPTIONNAME, keys.filter(it => it !== lastPropertyName).join(','));
               }
               if (!keys.includes(lastPropertyName)) {
-                const raws = DrThisProperty.append(this._domRender_proxy, fullPathStr, lastPropertyName, it, this.config);
+                const raws = DrThisProperty.append(this._domRender_proxy, fullPathStr, lastPropertyName, it, this._domRender_config);
                 if (raws) {
                   rawSets.push(...raws);
                 }
@@ -346,8 +373,8 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
           this._targets.forEach(it => {
             // return;
             if (it.nodeType === Node.DOCUMENT_FRAGMENT_NODE || it.nodeType === Node.ELEMENT_NODE) {
-              const targets = this.config.eventManager.findAttrElements((it as DocumentFragment | Element), this.config);
-              this.config.eventManager.changeVar(this._domRender_proxy, targets, `this.${fullPathStr}`, this.config);
+              const targets = this._domRender_config.eventManager.findAttrElements((it as DocumentFragment | Element), this._domRender_config);
+              this._domRender_config.eventManager.changeVar(this._domRender_proxy, targets, `this.${fullPathStr}`, this._domRender_config);
             }
           });
 
@@ -421,7 +448,7 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
     // const rootDomRenderProxy = this.findRootDomRenderProxy();
     // console.log('set!!!!!!!', fullPathInfo, rootDomRenderProxy)
     // console.log('--------rootDom',fullPathInfo, rootDomRenderProxy, rootDomRenderProxy._domRender_proxy)
-    const rootElement = this.config.rootElement ?? this.config.window.document;
+    const rootElement = this._domRender_config.rootElement ?? this._domRender_config.window.document;
     DocumentUtils.querySelectorAllByAttributeName(rootElement, EventManager.normalAttrMapAttrName)?.forEach(elementInfo => {
       // @ts-ignore
       // const optionalPath = ObjectUtils.Path.toOptionalChainPath(elementInfo.value);
@@ -471,7 +498,7 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
         }
       })
     })
-    if (('onBeforeReturnSet' in receiver) && typeof p === 'string' && !(this.config.proxyExcludeOnBeforeReturnSets ?? []).concat(excludeGetSetPropertys).includes(p)) {
+    if (('onBeforeReturnSet' in receiver) && typeof p === 'string' && !(this._domRender_config.proxyExcludeOnBeforeReturnSets ?? []).concat(excludeGetSetPropertys).includes(p)) {
       if(isOnBeforeReturnSet(receiver)){
         receiver.onBeforeReturnSet?.(p, value, fullPathInfo.map(it => it.map(it=>it.path).join()));
       }
@@ -481,11 +508,13 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
 
   get(target: T, p: string | symbol, receiver: any): any {
     // console.log('get-->', target, p, receiver);
-    if (p === '_DomRender_origin') {
+    if (p === '_DomRender_origin' || p === '_domRender_origin') {
       return this._domRender_origin;
-    } else if (p === '_DomRender_ref') {
+    } else if (p === '_DomRender_ref' || p === '_domRender_ref') {
       return this._domRender_ref;
-    } else if (p === '_DomRender_proxy') {
+    } else if (p === '_DomRender_config' || p ==='_domRender_config') {
+      return this._domRender_config;
+    } else if (p === '_DomRender_proxy' || p ==='_domRender_proxy') {
       return this;
     } else {
       // Date라던지 이런놈들은-_-프록시가 이상하게 동작해서
@@ -507,7 +536,7 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
         it = it._DomRender_origin;
       }
 
-      if (('onBeforeReturnGet' in receiver) && typeof p === 'string' && !(this.config.proxyExcludeOnBeforeReturnGets ?? []).concat(excludeGetSetPropertys).includes(p)) {
+      if (('onBeforeReturnGet' in receiver) && typeof p === 'string' && !(this._domRender_config.proxyExcludeOnBeforeReturnGets ?? []).concat(excludeGetSetPropertys).includes(p)) {
         (receiver as any)?.onBeforeReturnGet?.(p, it, this.root([[{path:p, obj: this._domRender_proxy}]], it, false));
       }
       return it;
@@ -530,22 +559,45 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
 
 
     try {
-      const isNoProxy = Reflect.getMetadata(DomRenderNoProxyKey, obj, p) || Reflect.getMetadata(DomRenderNoProxyKey, Object.getPrototypeOf(obj).constructor);
-      if (isNoProxy) {
+      // const isNoProxy = Reflect.getMetadata(DomRenderNoProxyKey, obj, p) || Reflect.getMetadata(DomRenderNoProxyKey, Object.getPrototypeOf(obj).constructor);
+      const isObject = typeof obj === 'object';
+      const isNoProxy = isObject && isDomRenderNoProxy(obj,p)
+      const isExclude = (this._domRender_config.proxyExcludeTyps?.some(it => obj instanceof it)) ?? false;
+      const isFinal = isObject && DomRenderProxy.isFinal(obj);
+      const isFrozen = Object.isFrozen(obj);
+      const isShield = obj instanceof Shield;
+      if (isNoProxy || isExclude || ValidUtils.isNullOrUndefined(obj) || !isObject || isFinal || isFrozen || isShield) {
         return obj;
       }
     } catch (e) {
     }
 
-    const proxyTarget = (this.config.proxyExcludeTyps?.filter(it => obj instanceof it) ?? []).length <= 0;
+
+/*
+    const proxyTarget = (this._domRender_config.proxyExcludeTyps?.filter(it => obj instanceof it) ?? []).length <= 0;
     if (proxyTarget && obj !== undefined && obj !== null && typeof obj === 'object' && !('_DomRender_isProxy' in obj) && !DomRenderProxy.isFinal(obj) && !Object.isFrozen(obj) && !(obj instanceof Shield)) {
-      const domRender = new DomRenderProxy(obj, undefined, this.config);
+      const domRender = new DomRenderProxy(obj, undefined, this._domRender_config);
       domRender.addRef(parentProxy, p);
       const proxy = new Proxy(obj, domRender);
       domRender.run(proxy);
       return proxy;
     }
     if (proxyTarget && obj !== undefined && obj !== null && typeof obj === 'object' && ('_DomRender_isProxy' in obj) && !DomRenderProxy.isFinal(obj) && !Object.isFrozen(obj) && !(obj instanceof Shield)) {
+      const d = (obj as any)._DomRender_proxy as DomRenderProxy<T>;
+      d.addRef(this._domRender_proxy!, p);
+      return obj;
+    } else {
+      return obj;
+    }
+ */
+    if ( !isWrapProxyDomRenderProxy(obj)) {
+      const domRender = new DomRenderProxy(obj, undefined, this._domRender_config);
+      domRender.addRef(parentProxy, p);
+      const proxy = new Proxy(obj, domRender);
+      domRender.run(proxy);
+      return proxy;
+    }
+    if (isWrapProxyDomRenderProxy(obj)) {
       const d = (obj as any)._DomRender_proxy as DomRenderProxy<T>;
       d.addRef(this._domRender_proxy!, p);
       return obj;
