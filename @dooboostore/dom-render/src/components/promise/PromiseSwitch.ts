@@ -5,7 +5,7 @@ import { OtherData } from '../../lifecycle/OnChangeAttrRender';
 
 
 import { ValidUtils } from '@dooboostore/core/valid/ValidUtils';
-import { Promises } from '@dooboostore/core/promise';
+import { Promises  } from '@dooboostore/core/promise';
 import { OnCreateRenderDataParams } from '../../lifecycle/OnCreateRenderData';
 
 export namespace PromiseSwitch {
@@ -98,6 +98,7 @@ export namespace PromiseSwitch {
     //
     // }
     private promiseState?: Promises.Result.PromiseState<any, unknown>;
+    private status?: Promises.Result.PromiseState<any, unknown>["status"];
 
     onCreatedThisChild(child: any, data: OnCreateRenderDataParams) {
       super.onCreatedThisChild(child, data);
@@ -112,13 +113,16 @@ export namespace PromiseSwitch {
       const full = [...fulfilleds, ...rejecteds, ...pendings, ...defaults]
       // console.log('----!!!!!!-------', this.promiseState, full)
       if (this.promiseState === undefined) {
+        this.status = undefined;
         full.filter(it => !it.hidden).forEach(it => it.hidden = true)
         defaults.filter(it => it.hidden).forEach(it => it.hidden = false);
         pendings.filter(it => it.getAttribute('defaultView') && it.hidden).forEach(it => it.hidden = false);
       } else if (this.promiseState.status === 'pending') {
+        this.status = 'pending';
         full.filter(it => !it.hidden).forEach(it => it.hidden = true)
         pendings.filter(it => it.hidden).forEach(it => it.hidden = false);
       } else if (this.promiseState.status === 'fulfilled') {
+        this.status = 'fulfilled';
         const value = this.promiseState.value;
         // console.log('-----------fulfilled promises', value);
         full.filter(it => !it.hidden).forEach(it => it.hidden = true)
@@ -127,6 +131,7 @@ export namespace PromiseSwitch {
         })
         fulfilleds.filter(it => it.hidden).forEach(it => it.hidden = false);
       } else if (this.promiseState.status === 'rejected') {
+        this.status = 'rejected';
         const value = this.promiseState.reason;
         full.filter(it => !it.hidden).forEach(it => it.hidden = true)
         rejecteds.forEach(it => {
@@ -134,6 +139,7 @@ export namespace PromiseSwitch {
         })
         rejecteds.filter(it => it.hidden).forEach(it => it.hidden = false);
       }
+      return this.status;
       // console.log('----!!!!!!-end------', this.promiseState, full.map(it=>it.hidden))
     }
 
@@ -143,6 +149,7 @@ export namespace PromiseSwitch {
       if (this.equalsAttributeName(name, 'data') && value) {
         // this.childStateChange();
         this.promiseState = undefined;
+        this.status = undefined;
         this.promiseState = Promises.Result.wrap(typeof value === 'function' ? value() : value as Promise<any>);
         this.getAttribute('change')?.({status: 'pending'});
         this.childStateChange();

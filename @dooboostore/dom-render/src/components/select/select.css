@@ -1,0 +1,62 @@
+.dr-select-container {
+  /*position: relative;*/
+
+}
+.dr-select-options-container {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 10;
+}
+.dr-select-container.is-open .dr-select-options-container {
+  display: block;
+}
+summary::-webkit-details-marker {
+    display: none;
+}
+/* Floating styles for dr-select-body */
+.dr-select-body-container {
+    position: absolute;
+}
+
+.dr-select-body-bottom-left-container {
+    position: absolute;
+    left: 0;
+    top: 100%;
+}
+
+.dr-select-body-bottom-right-container {
+    position: absolute;
+    right: 0;
+    top: 100%;
+}
+
+.dr-select-body-top-left-container {
+    position: absolute;
+    left: 0;
+    bottom: 100%;
+}
+
+.dr-select-body-top-right-container {
+    position: absolute;
+    right: 0;
+    bottom: 100%;
+}
+
+/* Reset default details/summary styles */
+.dr-select-container details {
+  display: block; /* Ensure it behaves like a block element */
+}
+
+.dr-select-container summary {
+  display: block; /* Ensure it behaves like a block element */
+  list-style: none; /* Remove default marker */
+  cursor: pointer; /* Indicate it's clickable */
+}
+
+.dr-select-container summary::-webkit-details-marker,
+.dr-select-container summary::marker {
+  display: none; /* Hide marker for Webkit and standard */
+}

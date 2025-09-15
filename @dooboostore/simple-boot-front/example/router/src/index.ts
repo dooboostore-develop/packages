@@ -75,7 +75,7 @@ export class Index extends ComponentRouterBase {
    // }
   }
 
-  onInitRender(...param) {
+  onDomRenderInitRender(...param) {
     // this.child = new ComponentSet(this.home);
     // this.child = new DomRenderComponentSet({name:'sub1'}, '<div><h1>11subthis</h1><div>${@this@.name}$  ${console.log("asas${@this@.name}$")}$ <!-- ${#this#}$--></div></div>')
     // this.child = new DomRenderComponentSet(this.home, '<div><h1>11subthis</h1><div>${@this@.name}$  ${console.log("asas${@this@.name}$")}$ <!-- ${#this#}$--></div></div>')

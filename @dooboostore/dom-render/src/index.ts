@@ -6,7 +6,7 @@ export type { OnChangeAttrRender, OtherData } from './lifecycle/OnChangeAttrRend
 export type { OnCreateRenderData, OnCreateRenderDataParams } from './lifecycle/OnCreateRenderData';
 export type { OnDestroyRender, OnDestroyRenderParams } from './lifecycle/OnDestroyRender';
 export { type OnCreateRender } from './lifecycle/OnCreateRender';
-export { type OnInitRender } from './lifecycle/OnInitRender';
+export { type OnInitRender } from 'lifecycle/OnInitRender';
 export { type OnCreatedThisChild } from './lifecycle/OnCreatedThisChild';
 export { type OnProxyDomRender } from './lifecycle/OnProxyDomRender';
 export { type OnDrThisBind } from './lifecycle/dr-this/OnDrThisBind';
@@ -59,5 +59,5 @@ export { MultipleValidator } from './validators/MultipleValidator';
 
 // Other
 export { Shield } from './types/Types';
-export { type Config } from './configs/Config';
+export { type DomRenderConfig } from 'configs/DomRenderConfig';
 export { Range } from './iterators/Range';

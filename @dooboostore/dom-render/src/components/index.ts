@@ -9,6 +9,7 @@ import Select from './select/Select';
 import Timer from './timer/Timer';
 import Details from './details/Details';
 import Input from './input/Input';
+import Route from './router/Route';
 
 export const drComponent = {
   ...If,
@@ -22,4 +23,5 @@ export const drComponent = {
   ...Timer,
   ...Details,
   ...Input,
+  ...Route,
 }

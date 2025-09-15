@@ -1,7 +1,7 @@
 # SIMPLE-BOOT-HTTP-SERVER
 
 ### A lightweight and powerful HTTP web server framework for Node.js.
-![typescript](https://img.shields.io/badge/-typescript-black?logo=typescript) [![typescript](https://img.shields.io/badge/-npm-black?logo=npm)](https://www.npmjs.com/package/simple-boot-http-server) [![license](https://img.shields.io/badge/license-MIT-green)](LICENSE.md)
+![typescript](https://img.shields.io/badge/-typescript-black?logo=typescript) [![typescript](https://img.shields.io/badge/-npm-black?logo=npm)](https://www.npmjs.com/package/@dooboostore/simple-boot-http-server) [![license](https://img.shields.io/badge/license-MIT-green)](LICENSE.md)
 
 - **Declarative Routing**: Use decorators (`@Router`, `@Route`) to map URLs to classes and methods.
 - **HTTP Method Mapping**: Decorators for all standard HTTP methods (`@GET`, `@POST`, `@PUT`, `@DELETE`, etc.).

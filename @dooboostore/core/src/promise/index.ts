@@ -173,10 +173,11 @@ export namespace Promises {
     export type PendingType = { status: 'pending' };
     export type Type<T, E = unknown> = FulfilledType<T> | RejectType<E> | PendingType;
 
-    type FulfilledState<T> = FulfilledType<T> & { isFulfilled: true; isRejected: false; isPending: false };
-    type RejectState<E = unknown> = RejectType<E> & { isFulfilled: false; isRejected: true; isPending: false };
-    type PendingState = PendingType & { isFulfilled: false; isRejected: false; isPending: true };
-    type UndefinedResultState = { status?: undefined; isFulfilled: false; isRejected: false; isPending: false };
+    export type FulfilledState<T> = FulfilledType<T> & { isFulfilled: true; isRejected: false; isPending: false };
+    export type RejectState<E = unknown> = RejectType<E> & { isFulfilled: false; isRejected: true; isPending: false };
+    export type PendingState = PendingType & { isFulfilled: false; isRejected: false; isPending: true };
+    export type UndefinedResultState = { status?: undefined; isFulfilled: false; isRejected: false; isPending: false };
+
     export type State<T, E = unknown> = FulfilledState<T> | RejectState<E> | PendingState;
     export type StateFactory<T, E = unknown> = State<T, E> & { factory: () => StateFactory<T, E> };
     export type PromiseState<T, E = unknown> = State<T, E> & Promise<T>;

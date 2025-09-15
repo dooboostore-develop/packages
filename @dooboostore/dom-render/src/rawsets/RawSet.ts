@@ -2,7 +2,7 @@ import { RandomUtils } from '@dooboostore/core/random/RandomUtils';
 import { StringUtils } from '@dooboostore/core/string/StringUtils';
 import { ScriptUtils } from '@dooboostore/core-web/script/ScriptUtils';
 import { EventManager } from '../events/EventManager';
-import { Config } from '../configs/Config';
+import type { DomRenderConfig } from '../configs/DomRenderConfig';
 import { Range } from '../iterators/Range';
 import { ElementUtils } from '@dooboostore/core-web/element/ElementUtils';
 import { ComponentSet } from '../components/ComponentSet';
@@ -162,7 +162,7 @@ export class RawSet {
       childrenRawSets?: RawSet[]
     },
     public dataSet: {
-      config: Config;
+      config: DomRenderConfig;
       fragment: DocumentFragment,
       render?: Render;
     },
@@ -178,7 +178,7 @@ export class RawSet {
   }
 
   // 중요
-  getUsingTriggerVariables(config?: Config): Set<string> {
+  getUsingTriggerVariables(config?: DomRenderConfig): Set<string> {
     const usingTriggerVariables = new Set<string>();
     // console.log('------data', this.dataSet)
     this.dataSet.fragment.childNodes.forEach((cNode, key) => {
@@ -204,6 +204,7 @@ export class RawSet {
             targetScripts.push(`(${v})`);
           });
         }
+        // console.log('targetScriptstargetScripts', targetScripts)
         script = targetScripts.join(';');
         // script = targetScripts.map(it=>`try{${it}}catch(e){}`).join(';');
 
@@ -218,11 +219,14 @@ export class RawSet {
       }
       if (script) {
 
-        script = script.replace(/#[^#]*#/g, '({})')
+        // console.log('------1-',script)
+        script = script.replace(/#[^#]*#/g, '({})');
+        // console.log('------2-',script)
         // script = script.replace('}$','}');
         // script = script.replace('@this@','this');
         // console.log('----------->', script)
-        
+
+        // TODO: 훔.. 꼭필요한가..?  트리거될때 스크립트변수 까지 감지해야될까?
         EventManager.VARNAMES.forEach(it => {
           // script = script.replace(RegExp(it.replace('$', '\\$'), 'g'), `this?.___${it}`);
           // script = script.replace(RegExp(it.replace('$', '\\$'), 'g'), `this.___${it}`);
@@ -232,6 +236,7 @@ export class RawSet {
         // console.log('--------1--', script);
         // script = script.replaceAll('#{','${').replaceAll('}#', '}')
         // console.log('--------2--', script);
+        // TODO: 훔.. 꼭필요한가..?  트리거될때 스크립트변수 까지 감지해야될까?
         Array.from(ScriptUtils.getVariablePaths(script)).filter(it => !it.startsWith(`___${EventManager.SCRIPTS_VARNAME}`)).forEach(it => usingTriggerVariables.add(it));
       }
     });
@@ -240,7 +245,7 @@ export class RawSet {
   }
 
   // 중요 render 처리 부분
-  public async render(obj: any, config: Config): Promise<RawSet[]> {
+  public async render(obj: any, config: DomRenderConfig): Promise<RawSet[]> {
     // console.log('render!!!!!!!!!!!!!!')
     const genNode = config.window.document.importNode(this.dataSet.fragment, true);
     const raws: RawSet[] = [];
@@ -392,6 +397,8 @@ export class RawSet {
     this.applyEvent(obj, genNode, config);
     this.replaceBody(genNode); // 중요 여기서 마지막에 연션된 값을 그려준다.
     // console.log('rawSEt!!!!!!!', obj,childrenNodes,config)
+    // console.log('rawSEt!!!!!!!', obj, this.findNearThis(obj),childrenNodes,config)
+    // console.log('rawSEt!!!!!!!', obj, drAttrs)
     this.onRenderedEvent(obj, childrenNodes, config);
 
     drAttrs.forEach(it => {
@@ -563,11 +570,11 @@ export class RawSet {
     return styleBody;
   }
 
-  public applyEvent(obj: any, fragment = this.dataSet.fragment, config?: Config) {
+  public applyEvent(obj: any, fragment = this.dataSet.fragment, config?: DomRenderConfig) {
     this.dataSet.config.eventManager.applyEvent(obj, this.dataSet.config.eventManager.findAttrElements(fragment, config), config);
   }
 
-  public onRenderedEvent(obj: any, nodes: Node[], config?: Config) {
+  public onRenderedEvent(obj: any, nodes: Node[], config?: DomRenderConfig) {
     this.dataSet.config.eventManager.onRenderedEvent(obj, nodes, config);
   }
 
@@ -617,7 +624,7 @@ export class RawSet {
   }
 
   // 중요 important
-  public static checkPointCreates(element: Node, obj: any, config: Config): RawSet[] {
+  public static checkPointCreates(element: Node, obj: any, config: DomRenderConfig): RawSet[] {
     // console.log('!@@@@@@@@@@@@@@@@', obj);
     // const NodeFilter = (config.window as any).NodeFilter;
     // const thisVariableName = (element as any).__domrender_this_variable_name;
@@ -691,17 +698,23 @@ export class RawSet {
             if (value && linkNames.includes(it)) {
               linkVariables.set(it, value);
             } else if (value && RawSet.isExpression(value)) { // 표현식있을떄
-              let variablePath = RawSet.expressionGroups(value)[0][1];
+              let variablePath: string = RawSet.expressionGroups(value)[0][1];
+              // console.log('0-----',variablePath, node);
               // normal Attribute 초반에 셋팅해주기.
-              variablePath = variablePath.replace(/#[^#]*#/g, '({})')
-              const cval = ScriptUtils.evalReturn(ObjectUtils.Path.toOptionalChainPath(variablePath), Object.assign(obj));
+              // TODO: 이거 하긴했는데 사이드 이팩트?
+              const originVariable = variablePath
+              variablePath = variablePath.replace(/#[^#]*#/g, '({})');
+              // console.log('1-----',variablePath, node);
+              const optionalChainPath = ObjectUtils.Path.toOptionalChainPath(variablePath);
+              // console.log('2-----',optionalChainPath);
+              const cval = ScriptUtils.evalReturn(optionalChainPath, Object.assign(obj));
               // const cval = ScriptUtils.evalReturn(variablePath, Object.assign(obj));
               if (cval === null) {
                 element.removeAttribute(it);
               } else {
                 element.setAttribute(it, cval);
               }
-              normalAttrs.set(it, variablePath);
+              normalAttrs.set(it, originVariable);
               // console.log('normalAttribute', it, variablePath);
             }
             // console.log(element.getAttribute(it), attrExpresion);
@@ -779,7 +792,8 @@ export class RawSet {
         template.content.append(config.window.document.createTextNode(text.substring(lasterIndex, text.length)));
         currentNode?.parentNode?.replaceChild(template.content, currentNode); // <-- 여기서 text를 fragment로 replace했기때문에 추적 변경이 가능하다.
       } else if (currentNode.nodeType === Node.ELEMENT_NODE) {
-        const uuid = `${RandomUtils.alphabet(40)}___${obj?.constructor?.name}`;
+        // const uuid = `${RandomUtils.alphabet(40)}___${obj?.constructor?.name}`;
+        const uuid = `${RandomUtils.alphabet(40)}`;
         const element = currentNode as Element;
         const fragment = config.window.document.createDocumentFragment();
         const elementType: RawSetType = RawSetType.TARGET_ELEMENT;
@@ -815,7 +829,7 @@ export class RawSet {
     return pars;
   }
 
-  public static createStartEndPoint(data: { node?: Node, id: string, type: RawSetType }, config: Config) {
+  public static createStartEndPoint(data: { node?: Node, id: string, type: RawSetType }, config: DomRenderConfig) {
     if (data.type === RawSetType.TARGET_ELEMENT && data.node) {
       const element = data.node as Element;
       const start: HTMLMetaElement = config.window.document.createElement('meta');
@@ -956,7 +970,7 @@ export class RawSet {
     return thisRandom;
   }
 
-  public static drThisBindEncoding(element: Element, variable: RegExp, config: { config: Config, otherReplaceVariablePath?: string  }) {
+  public static drThisBindEncoding(element: Element, variable: RegExp, config: { config: DomRenderConfig, otherReplaceVariablePath?: string  }) {
     element.querySelectorAll(`[${RawSet.DR_THIS_NAME}]`).forEach(eIt => {
       let message = eIt.innerHTML;
       // StringUtils.regexExec(/([^(dr\-)])?this(?=.?)/g, message).reverse().forEach(it => {
@@ -989,7 +1003,7 @@ export class RawSet {
     return thisRandom;
   }
 
-  public static drThisBindDecoding(element: Element, config: { asIs: string, toBe: string, config: Config }) {
+  public static drThisBindDecoding(element: Element, config: { asIs: string, toBe: string, config: DomRenderConfig }) {
     const targetElements = config.config.targetElements ?? [];
     const targetElementNames = targetElements.map(it => it.name.replaceAll('.', '\\.').replaceAll(':', '\\:')).join(',');
     element.querySelectorAll(targetElementNames).forEach(it => {
@@ -1009,7 +1023,7 @@ export class RawSet {
     });
   }
 
-  public static drFormOtherMoveAttr(element: Element, as: string, to: string, config: Config) {
+  public static drFormOtherMoveAttr(element: Element, as: string, to: string, config: DomRenderConfig) {
     element.querySelectorAll(`[${RawSet.DR_FORM_NAME}]`).forEach(subElement => {
       const nodeIterator = config.window.document.createNodeIterator(subElement, NodeFilter.SHOW_ELEMENT, {
         acceptNode(node) {
@@ -1058,7 +1072,7 @@ export class RawSet {
     return vars;
   }
 
-  public static async drThisCreate(rawSet: RawSet, element: Element, drThis: string, drVarOption: string, drStripOption: boolean | string | null, obj: any, config: Config, set?: ComponentSet): Promise<DocumentFragment> {
+  public static async drThisCreate(rawSet: RawSet, element: Element, drThis: string, drVarOption: string, drStripOption: boolean | string | null, obj: any, config: DomRenderConfig, set?: ComponentSet): Promise<DocumentFragment> {
     // console.log('ttttttttttttttttttttt',element.innerHTML, drThis, set, obj);
     const fag = config.window.document.createDocumentFragment();
     const targetElement = element.cloneNode(true) as Element;
@@ -1304,7 +1318,7 @@ export class RawSet {
       styles,
       template,
       noStrip,
-      async callBack(element: Element, obj: any, rawSet: RawSet, attrs: Attrs, config: Config): Promise<DocumentFragment> {
+      async callBack(element: Element, obj: any, rawSet: RawSet, attrs: Attrs, config: DomRenderConfig): Promise<DocumentFragment> {
         const templateStyle = await RawSet.fetchTemplateStyle({template: this.template, styles: this.styles});
         this.template = templateStyle.template;
         this.styles = templateStyle.styles;
@@ -1486,7 +1500,7 @@ export class RawSet {
     return StringUtils.regexExec(reg, data ?? '');
   }
 
-  public static destroy(obj: any | undefined, parameter: OnDestroyRenderParams, config: Config, destroyOptions: (DestroyOptionType | string)[] = []): void {
+  public static destroy(obj: any | undefined, parameter: OnDestroyRenderParams, config: DomRenderConfig, destroyOptions: (DestroyOptionType | string)[] = []): void {
     // console.log('destroy destroydestroydestroydestroy', obj, parameter, config, destroyOptions);
     if (!destroyOptions.some(it => it === DestroyOptionType.NO_DESTROY)) {
       if (!destroyOptions.some(it => it === DestroyOptionType.NO_MESSENGER_DESTROY)) {

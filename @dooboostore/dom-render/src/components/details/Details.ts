@@ -5,7 +5,7 @@ import { OtherData } from '../../lifecycle/OnChangeAttrRender';
 import { OnInitRender } from '../../lifecycle/OnInitRender';
 import { OnCreateRenderDataParams } from '../../lifecycle/OnCreateRenderData';
 import { OnCreateRender } from '../../lifecycle/OnCreateRender';
-import { Subscription } from '@dooboostore/core/message';
+import { type Subscription } from '@dooboostore/core/message';
 import { ValidUtils } from '@dooboostore/core-web/valid/ValidUtils';
 import { EventUtils } from '@dooboostore/core-web/event/EventUtils';
 

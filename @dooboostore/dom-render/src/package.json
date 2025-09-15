@@ -1,6 +1,6 @@
 {
   "name": "@dooboostore/dom-render",
-  "version": "1.0.102",
+  "version": "1.0.103",
   "license": "MIT",
   "description": "html view template engine",
   "keywords": [

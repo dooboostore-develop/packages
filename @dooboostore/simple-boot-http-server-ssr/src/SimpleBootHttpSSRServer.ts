@@ -13,4 +13,9 @@ export class SimpleBootHttpSSRServer extends SimpleBootHttpServer {
     otherInstanceSim?.forEach((value, key) => oi.set(key, value));
     return super.run(oi);
   }
+
+  // TODO: 나중에 뭐라도..
+  stop(){
+
+  }
 }

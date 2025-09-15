@@ -23,6 +23,7 @@ export type FactoryAndParams = {
   poolOption: {
     max: number;
     min: number;
+    clearIntervalTime?: number;
   }
   using: ConstructorType<any>[];
   domExcludes?: ConstructorType<any>[];
@@ -37,6 +38,8 @@ export class SSRFilter implements Filter {
   private simpleBootFrontQueue = new AsyncBlockingQueue<SimpleBootFront>();
   private indexHTML: string;
   private welcomUrl = 'http://localhost'
+  private poolGeneration = 0;
+  private intervalId?: NodeJS.Timeout;
 
   constructor(public config: FactoryAndParams, public otherInstanceSim?: Map<ConstructorType<any>, any>) {
     config.frontDistIndexFileName = config.frontDistIndexFileName || 'index.html';
@@ -47,7 +50,24 @@ export class SSRFilter implements Filter {
     for (let i = 0; i < this.config.poolOption.min; i++) {
       await this.pushQueue()
     }
+
+    if (this.config.poolOption.clearIntervalTime && this.config.poolOption.clearIntervalTime > 0) {
+      this.intervalId = setInterval(() => {
+        this.poolGeneration++;
+      }, this.config.poolOption.clearIntervalTime);
+    }
     // console.log('SimpleBootHttpSSRFactory init success ', + this.simpleBootFrontPool.length)
+  }
+
+  async onDestroy() {
+    if (this.intervalId) {
+      clearInterval(this.intervalId);
+    }
+    // this.simpleBootFrontQueue.clear();
+    this.simpleBootFrontPool.forEach(front => {
+        (front as any).jsdom?.window.close();
+    });
+    this.simpleBootFrontPool = [];
   }
 
 
@@ -74,6 +94,7 @@ export class SSRFilter implements Filter {
     const simpleBootFront = await this.config.factory.create(option, this.config.using, this.config.domExcludes);
     simpleBootFront.run(this.otherInstanceSim);
     (simpleBootFront as any).jsdom = jsdom;
+    (simpleBootFront as any).generation = this.poolGeneration;
     return simpleBootFront;
   }
 
@@ -158,7 +179,21 @@ export class SSRFilter implements Filter {
         // simpleBootFront.ninitWriteRootRouter();
         // ((simpleBootFront as any).jsdom as JSDOM.JSDOM)?.reconfigure({url: '/' });
         // simpleBootFront.option.window.location.href = 'about:blank';
-        this.simpleBootFrontQueue.enqueue(simpleBootFront);
+        // console.log('ddddddddd', (simpleBootFront as any).generation, this.poolGeneration)
+        if ((simpleBootFront as any).generation < this.poolGeneration) {
+          // Stale instance, destroy it
+          const jsdom = (simpleBootFront as any).jsdom as JSDOM.JSDOM | undefined;
+          jsdom?.window.close();
+          const index = this.simpleBootFrontPool.indexOf(simpleBootFront);
+          if (index > -1) {
+            this.simpleBootFrontPool.splice(index, 1);
+          }
+          // Create a new one to maintain pool size
+          this.pushQueue();
+        } else {
+          // Current instance, return to queue
+          this.simpleBootFrontQueue.enqueue(simpleBootFront);
+        }
         // simpleBootFront.option.window.document.body.innerHTML = this.rootJSDOM.window.document.body.innerHTML;
         // simpleBootFront.writeRootRouter()
         // await simpleBootFront.goRouting('/');

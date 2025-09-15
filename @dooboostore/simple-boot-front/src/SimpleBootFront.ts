@@ -9,10 +9,9 @@ import { Intent } from '@dooboostore/simple-boot/intent/Intent';
 import { ViewService } from './service/view/ViewService';
 import { SimstanceManager } from '@dooboostore/simple-boot/simstance/SimstanceManager';
 import { IntentManager } from '@dooboostore/simple-boot/intent/IntentManager';
-import { RouterManager, RoutingOption } from '@dooboostore/simple-boot/route/RouterManager';
-import { DomRenderProxy, getDomRenderOriginObject, getDomRenderProxy, isWrapProxyDomRenderProxy } from '@dooboostore/dom-render/DomRenderProxy';
+import { RouterManager } from '@dooboostore/simple-boot/route/RouterManager';
+import { getDomRenderOriginObject } from '@dooboostore/dom-render/DomRenderProxy';
 import { RawSet } from '@dooboostore/dom-render/rawsets/RawSet';
-import { RawSetType } from '@dooboostore/dom-render/rawsets/RawSetType';
 import { Render } from '@dooboostore/dom-render/rawsets/Render';
 import { TargetAttr } from '@dooboostore/dom-render/configs/TargetAttr';
 import { TargetElement } from '@dooboostore/dom-render/configs/TargetElement';
@@ -20,18 +19,9 @@ import { ScriptRunnable } from './script/ScriptRunnable';
 import { Router } from '@dooboostore/dom-render/routers/Router';
 import { HashRouter } from '@dooboostore/dom-render/routers/HashRouter';
 import { PathRouter } from '@dooboostore/dom-render/routers/PathRouter';
-import { RandomUtils } from '@dooboostore/core/random/RandomUtils';
 // import { isOnInit } from './lifecycle/OnInit';
-import { EventManager } from '@dooboostore/dom-render/events/EventManager';
-import { Config } from '@dooboostore/dom-render';
-import { UrlUtils } from '@dooboostore/core';
-import { ElementUtils } from '@dooboostore/core-web/element/ElementUtils';
-import { NodeUtils } from '@dooboostore/core-web/node/NodeUtils';
-import { isOnDrThisUnBind } from '@dooboostore/dom-render/lifecycle/dr-this/OnDrThisUnBind';
-import { isOnDrThisBind } from '@dooboostore/dom-render/lifecycle/dr-this/OnDrThisBind';
-import { DomRenderNoProxy } from '@dooboostore/dom-render/decorators/DomRenderNoProxy';
+import { DomRenderConfig } from '@dooboostore/dom-render/configs/DomRenderConfig';
 import { ComponentSet } from './component/ComponentSet';
-import { ComponentSet as DomRenderComponentSet } from '@dooboostore/dom-render/components/ComponentSet';
 import { DomRenderRootDefaultTemplate, DomRenderRootObject } from './DomRenderRootObject';
 import { routerProcess } from '@dooboostore/simple-boot/decorators/route/Router';
 
@@ -212,7 +202,9 @@ export class SimpleBootFront extends SimpleApplication {
     this.option.window.document.body.appendChild(targetElement);
     // const targetElement = this.option.window.document.querySelector(this.option.selector);
     // const {rootObject: domRenderRoot, config } = DomRender.runSet({rootObject: this.domRenderRootObject, target: targetElement, config: this.domRenderConfig});
-    this.domRenderRootObject = DomRender.run({rootObject: this.domRenderRootObject, target: targetElement, config: this.domRenderConfig});
+    const domRender = new DomRender({rootObject: this.domRenderRootObject, target: targetElement, config: this.domRenderConfig});
+    this.simstanceManager.setStoreSet(DomRender, domRender);
+    this.domRenderRootObject = domRender.rootObject;
     routerProcess({path:'', routers:[this.option.rootRouter]}, DomRenderRootObject)
     // console.log('dddddomRenderRootdd', domRenderRoot, config, config.router)
     setTimeout(() => {
@@ -221,7 +213,7 @@ export class SimpleBootFront extends SimpleApplication {
     }, 0)
 
     this.domRenderRouter.observable.subscribe(it => {
-      console.log('this.domRenderRouter.observable.subscribe---------------', it)
+      // console.log('this.domRenderRouter.observable.subscribe---------------', it)
       const intent = new Intent(this.domRenderRouter.getUrl() || '/');
       //   // TODO: 왜 canActivate가 두번 호출되는지 확인 필요!! 그래서 setTimeout으로 처리함 원인 모르겠음 아 씨발
       this.routing<SimAtomic, any>(intent, {router: this.domRenderRootObject}).then(it => {
@@ -315,10 +307,10 @@ export class SimpleBootFront extends SimpleApplication {
 
   public run(otherInstanceSim?: Map<ConstructorType<any>, any>, url?: string) {
     const simstanceManager = this.initRun(otherInstanceSim);
-    const currentUrl = UrlUtils.toUrl(this.option.window.location.href);
-    const origin = currentUrl.origin;
-    const path = `${url ? origin + (url ?? '/') : currentUrl.href}`;
-    this.domRenderRouter.go({path: path});
+    // const currentUrl = UrlUtils.toUrl(this.option.window.location.href);
+    // const origin = currentUrl.origin;
+    // const path = `${url ? origin + (url ?? '/') : currentUrl.href}`;
+    // this.domRenderRouter.go({path: path});
     return simstanceManager;
   }
 

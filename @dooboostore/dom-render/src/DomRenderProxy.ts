@@ -1,7 +1,7 @@
 import 'reflect-metadata';
 import { RawSet } from './rawsets/RawSet';
 import { EventManager } from './events/EventManager';
-import { Config } from './configs/Config';
+import { DomRenderConfig } from 'configs/DomRenderConfig';
 import { ScriptUtils } from '@dooboostore/core-web/script/ScriptUtils';
 import { DomRenderFinalProxy, Shield } from './types/Types';
 import { RawSetType } from './rawsets/RawSetType';
@@ -31,7 +31,7 @@ export const getDomRenderOriginObject = <T>(obj: T):T => {
   }
   return obj;
 }
-export const getDomRenderConfig = (obj: any): Config | undefined => {
+export const getDomRenderConfig = (obj: any): DomRenderConfig | undefined => {
   if (isWrapProxyDomRenderProxy(obj)) {
     return obj._domRender_config;
   }
@@ -52,7 +52,7 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
   // public _firstTarget: Node;
   public _targets = new Set<Node>();
 
-  constructor(public _domRender_origin: T, target: Node | null | undefined, public _domRender_config: Config) {
+  constructor(public _domRender_origin: T, target: Node | null | undefined, public _domRender_config: DomRenderConfig) {
     if (target) {
       this._targets.add(target);
       // this._firstTarget = target;
@@ -177,7 +177,7 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
         // }
       }
       if (isOnInitRender(this._domRender_proxy)) {
-        this._domRender_proxy.onInitRender(initParam, rawSet ?? {} as any);
+        this._domRender_proxy.onInitRender(initParam, rawSet ?? {dataSet: {config: this._domRender_config}} as any);
       }
     });
 

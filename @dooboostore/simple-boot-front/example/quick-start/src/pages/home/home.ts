@@ -5,7 +5,7 @@ import style from './home.css';
 import {ConcatScript} from '../../scripts/concat.script';
 import { OnDestroyRender } from '@dooboostore/dom-render/lifecycle/OnDestroyRender.ts';
 import { CreatorMetaData } from '@dooboostore/dom-render/rawsets/CreatorMetaData.ts';
-import { OnInitRender } from '@dooboostore/dom-render/lifecycle/OnInitRender.ts';
+import { OnDomRenderInitRender } from 'packages/@dooboostore/dom-render/src/lifecycle/OnDomRenderInitRender.ts';
 @Sim({
     using: [ConcatScript]
 })
@@ -13,7 +13,7 @@ import { OnInitRender } from '@dooboostore/dom-render/lifecycle/OnInitRender.ts'
     template,
     // styles: [style]
 })
-export class Home implements OnInitRender, OnDestroyRender {
+export class Home implements OnDomRenderInitRender, OnDestroyRender {
     public name = 'home';
     wow='ssssss';
     toggle = false;

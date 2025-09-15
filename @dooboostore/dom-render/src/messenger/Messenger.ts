@@ -1,6 +1,6 @@
 import { ConstructorType } from '@dooboostore/core/types';
 import {DomRenderFinalProxy} from '../types/Types';
-import {Config} from '../configs/Config';
+import {DomRenderConfig} from 'configs/DomRenderConfig';
 
 enum CallBackType {
     FILTER,
@@ -144,7 +144,7 @@ export abstract class Messenger {
     private channels = new Set<Channel>();
     static readonly EVENT_PUBLISH_KEY = 'domRenderMessenger_publish';
     static readonly EVENT_SUBSCRIBE_KEY = 'domRenderMessenger_subscribe';
-    constructor(private config: Config) {
+    constructor(private config: DomRenderConfig) {
         this.config.window.addEventListener(Messenger.EVENT_PUBLISH_KEY, (e: Event) => {
             const detail = ((e as CustomEvent).detail as MessengerEventDetail);
             // console.log('--->', detail)

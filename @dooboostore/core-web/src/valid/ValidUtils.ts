@@ -39,4 +39,14 @@ export namespace ValidUtils {
   export const isAndroidWebview = (): boolean => {
     return ValidUtils.isBrowser() && (window as any)['System'] != null;
   };
+
+  export const isMobile = (win?: Window): boolean => {
+    const targetWindow = win ?? (isBrowser() ? window : undefined);
+    if (!targetWindow) {
+      return false;
+    }
+    return /Mobi/i.test(targetWindow.navigator.userAgent);
+  };
+
+
 }

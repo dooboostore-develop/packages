@@ -1,12 +1,35 @@
-import { Config } from 'configs/Config';
-
-declare global {
-  interface Window {
-    HTMLMetaElement: typeof HTMLMetaElement;
-    domRender?: { configs: Config[] }
-  }
-
-  // interface Document {
-  //   domRenderSyntheticSuccess?: boolean;
-  // }
+import { DomRenderConfig } from 'configs/DomRenderConfig';
+declare module '*.html' {
+  const content: string
+  export default content
 }
+declare module '*.css' {
+  const content: string
+  export default content
+}
+declare module '*.min' {
+  const content: any
+  export default content
+}
+declare module '*.txt' {
+  const content: any
+  export default content
+}
+declare module '*.js' {
+  const content: any
+  export default content
+}
+declare module '*.json' {
+  const content: any
+  export default content
+}
+// declare global {
+//   interface Window {
+//     HTMLMetaElement: typeof HTMLMetaElement;
+//     // domRender?: { configs: DomRenderConfig[] }
+//   }
+//
+//   // interface Document {
+//   //   domRenderSyntheticSuccess?: boolean;
+//   // }
+// }

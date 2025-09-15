@@ -13,13 +13,17 @@ import { OnDrThisUnBind } from '../lifecycle/dr-this/OnDrThisUnBind';
 import { OnDrThisBind } from '../lifecycle/dr-this/OnDrThisBind';
 import type { Render } from '../rawsets/Render';
 import { ReflectUtils } from '@dooboostore/core/reflect/ReflectUtils';
+import { DomRenderConfig } from 'configs/DomRenderConfig';
+import { Subject } from '@dooboostore/core/message/Subject';
+import { debounceTime } from '@dooboostore/core/message/operators/debounceTime';
+import { Subscription } from '@dooboostore/core/message/Subscription';
 
 
 export const ATTRIBUTE_METADATA_KEY = Symbol('attribute');
 export const QUERY_METADATA_KEY = Symbol('query');
 export const EVENT_METADATA_KEY = Symbol('event');
 
-export function attribute(options?: { name?: string, converter?: (value: string | null) => any }): (target: object, propertyKey: string | symbol, descriptor?: PropertyDescriptor) => void {
+export function attribute(options?: { name?: string, converter?: (value: any | string | null) => any }): (target: object, propertyKey: string | symbol, descriptor?: PropertyDescriptor) => void {
     return (target: object, propertyKey: string | symbol, descriptor?: PropertyDescriptor) => {
         const attributes = ReflectUtils.getMetadata(ATTRIBUTE_METADATA_KEY, target.constructor) || [];
         attributes.push({
@@ -57,13 +61,15 @@ export function event(options: { query: string, name: string }): MethodDecorator
 }
 
 
-export type ComponentBaseConfig = { onlyParentType?: ConstructorType<any>[] | ConstructorType<any> };
+export type ComponentBaseConfig = { onlyParentType?: ConstructorType<any>[] | ConstructorType<any>, createChildrenDebounce?: number };
+
+export type ChildrenSet = { instance: any, data: OnCreateRenderDataParams };
 
 export class ComponentBase<T = any, C extends ComponentBaseConfig = ComponentBaseConfig> implements OnChangeAttrRender, OnCreateRenderData, OnCreatedThisChild, OnDrThisBind, OnDrThisUnBind, OnInitRender, OnDestroyRender {
   @DomRenderNoProxy
   private _rawSet?: RawSet;
   @DomRenderNoProxy
-  private _children: any[] = [];
+  private _children: ChildrenSet[] = [];
   @DomRenderNoProxy
   private _render: Render | undefined;
   @DomRenderNoProxy
@@ -71,7 +77,14 @@ export class ComponentBase<T = any, C extends ComponentBaseConfig = ComponentBas
   @DomRenderNoProxy
   private _boundEventListeners: { element: Element, eventName: string, listener: (e: Event) => void }[] = [];
 
-  get componentConfig(): C {
+  @DomRenderNoProxy
+  private childrenSetSubject = new Subject<ChildrenSet[]>();
+  @DomRenderNoProxy
+  private createChildrenDebounceSubscription?: Subscription | undefined;
+
+  constructor(private _config?: C) {
+  }
+  get componentConfig(): C | undefined {
     return this._config;
   }
   get render(): Render | undefined {
@@ -80,6 +93,10 @@ export class ComponentBase<T = any, C extends ComponentBaseConfig = ComponentBas
 
   get rawSet(): RawSet | undefined {
     return this._rawSet;
+  }
+
+  get domRenderConfig(): DomRenderConfig | undefined {
+    return this.rawSet?.dataSet.config;
   }
 
   private _queryElements(selector: string, rawSet:RawSet): Element[] {
@@ -160,8 +177,12 @@ export class ComponentBase<T = any, C extends ComponentBaseConfig = ComponentBas
     return this._rawSet?.uuid;
   }
 
-  get children(): any[] {
+  get childrenSet() {
     return this._children;
+  }
+
+  get children(): any[] {
+    return this._children.map(it=>it.instance);
   }
 
   getElement<T extends Element>(): T | undefined {
@@ -169,7 +190,7 @@ export class ComponentBase<T = any, C extends ComponentBaseConfig = ComponentBas
   }
 
   getFirstChild<T>(type: ConstructorType<T>): T | undefined {
-    return this._children.find(it => it instanceof type);
+    return this._children.find(it => it instanceof type)?.instance;
   }
 
   getParentThis<P>():P {
@@ -180,13 +201,12 @@ export class ComponentBase<T = any, C extends ComponentBaseConfig = ComponentBas
   getChildren<C extends ConstructorType<any>[]>(types: C): InstanceType<C[number]>[];
   getChildren(typeOrTypes: ConstructorType<any> | ConstructorType<any>[]): any[] {
     const targets = Array.isArray(typeOrTypes) ? typeOrTypes : [typeOrTypes];
-    return this._children.filter(child =>
-      targets.some(targetConstructor => child instanceof targetConstructor)
-    );
+    return this._children.filter(childSet =>
+      targets.some(targetConstructor => childSet.instance instanceof targetConstructor)
+    )?.map(it=>it.instance);
   }
 
-  constructor(private _config?: C) {
-  }
+
 
   private setRawSet(rawSet: RawSet) {
     this._rawSet = rawSet;
@@ -199,8 +219,18 @@ export class ComponentBase<T = any, C extends ComponentBaseConfig = ComponentBas
     this._attribute = attribute;
   }
 
+  // TODO: rawSet isConnected로 체크해서 들어가있는것만 처리되도록 또는 이미들어가있는것도 뺴야될것같은데.. 적용하긴했음..지켜봐야될듯.
   onCreatedThisChild(child: any, data: OnCreateRenderDataParams) {
-    this._children.push(child);
+    // console.log('------------------------',child, data, data.render?.rawSet?.isConnected)
+    const n = [...this._children];
+    n.push({instance:child, data});
+    this._children = n.filter(it=>it.data.render?.rawSet?.isConnected)
+    this.childrenSetSubject.next(this._children);
+    // this._children.push({instance:child, data: data});
+  }
+
+  onCreatedThisChildDebounce(childrenSet: ChildrenSet[]) {
+
   }
 
   onCreateRenderData(data: OnCreateRenderDataParams): void {
@@ -244,6 +274,9 @@ export class ComponentBase<T = any, C extends ComponentBaseConfig = ComponentBas
     // console.dir(rawSet, {depth: 33})
     // console.table(rawSet);
     // console.log('--------', rawSet.point)
+    this.createChildrenDebounceSubscription = this.childrenSetSubject.pipe(debounceTime(this.componentConfig?.createChildrenDebounce??0)).subscribe(it => {
+      this.onCreatedThisChildDebounce(it);
+    });
     if (rawSet) {
       this.setRawSet(rawSet);
 
@@ -308,6 +341,7 @@ export class ComponentBase<T = any, C extends ComponentBaseConfig = ComponentBas
 
   onDestroyRender(data?: OnDestroyRenderParams): void {
     this._cleanupEventListeners();
+    this.createChildrenDebounceSubscription?.unsubscribe();
   }
 
 }

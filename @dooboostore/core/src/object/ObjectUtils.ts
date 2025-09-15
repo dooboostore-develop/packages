@@ -220,9 +220,31 @@ export namespace ObjectUtils {
       if (!path) {
         return '';
       }
+      // Add this check for object literals
+      if (path.trim().startsWith('{') && path.trim().endsWith('}')) {
+        return path;
+      }
       if (isFunctionScript(path) || isArrowFunctionScript(path)) {
         return path;
       }
+      
+      // Check for ternary operator pattern (? :)
+      if (path.includes(' ? ') && path.includes(' : ')) {
+        // Handle ternary operator - only convert property access parts, not the ternary operator itself
+        const parts = path.split(/(\s+\?\s+|\s+:\s+)/);
+        const result = parts.map((part, index) => {
+          // Only process the first part (before ?) for optional chaining
+          if (index === 0) {
+            const tokens = part.match(/[^?.[\]]+|\[[^\]]*\]/g);
+            if (tokens && tokens.length > 1) {
+              return tokens.join('?.');
+            }
+          }
+          return part;
+        });
+        return result.join('');
+      }
+      
       // Tokenize the path by '.', '[', ']', and '?' to handle property access and existing optional chaining.
       const tokens = path.match(/[^?.[\]]+|\[[^\]]*\]/g);
       if (!tokens) {

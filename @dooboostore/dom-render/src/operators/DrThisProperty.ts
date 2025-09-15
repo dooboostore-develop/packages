@@ -3,7 +3,7 @@ import {ScriptUtils} from '@dooboostore/core-web/script/ScriptUtils';
 import {RawSet} from '../rawsets/RawSet';
 import {Render} from '../rawsets/Render';
 import {AfterCallBack, ElementSource, ExecuteState, ReturnContainer, Source} from './OperatorExecuter';
-import {Config} from '../configs/Config';
+import {DomRenderConfig} from 'configs/DomRenderConfig';
 
 export class DrThisProperty extends OperatorExecuterAttrRequire<string> {
     constructor(rawSet: RawSet, render: Render, returnContainer: ReturnContainer, elementSource: ElementSource, source: Source, afterCallBack: AfterCallBack) {
@@ -66,7 +66,7 @@ export class DrThisProperty extends OperatorExecuterAttrRequire<string> {
     }
 
 
-    public static append(obj: any, fullPath: string, key: string, rawSet: RawSet, config: Config) {
+    public static append(obj: any, fullPath: string, key: string, rawSet: RawSet, config: DomRenderConfig) {
         const genNode = config.window.document.importNode(rawSet.dataSet.fragment, true);
         // console.log('---> append', rawSet, genNode);
         const rawSets: RawSet[] = [];

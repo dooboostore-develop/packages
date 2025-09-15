@@ -9,7 +9,7 @@ import { User } from './pages/user';
 import { RouterAction } from '@dooboostore/simple-boot/route/RouterAction';
 import { ItemComponent } from './components/item/item.component';
 import { ComponentSet } from '@dooboostore/simple-boot-front/component/ComponentSet';
-import { OnInitRender } from '@dooboostore/dom-render/lifecycle/OnInitRender';
+import { OnDomRenderInitRender } from 'packages/@dooboostore/dom-render/src/lifecycle/OnDomRenderInitRender.ts';
 import SystemComponent from '@dooboostore/app-system/component';
 import { Appender } from '@dooboostore/dom-render/operators/Appender';
 @Sim({
@@ -26,7 +26,7 @@ import { Appender } from '@dooboostore/dom-render/operators/Appender';
     template,
     styles: [style]
 })
-export class Index implements RouterAction, OnInitRender {
+export class Index implements RouterAction, OnDomRenderInitRender {
     child?: ComponentSet<any>
     testData = true;
     appender = new Appender();

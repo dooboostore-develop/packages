@@ -1,5 +1,8 @@
 export * from './Store';
 export * from './Subject';
+export * from './BehaviorSubject';
+export * from './ReplaySubject';
+export * from './ReplayForwardSubject';
 export * from './Observable';
 export * from './Subscription';
 

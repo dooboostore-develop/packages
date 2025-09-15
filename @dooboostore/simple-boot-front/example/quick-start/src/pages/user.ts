@@ -2,7 +2,7 @@ import { Component } from '@dooboostore/simple-boot-front/decorators/Component';
 import { Sim } from '@dooboostore/simple-boot/decorators/SimDecorator';
 import {ProfileComponent} from '../components/profile/profile.component';
 import template from './user.html';
-import { OnInitRender } from '@dooboostore/dom-render/lifecycle/OnInitRender';
+import { OnDomRenderInitRender } from 'packages/@dooboostore/dom-render/src/lifecycle/OnDomRenderInitRender.ts';
 import { OnDestroyRender } from '@dooboostore/dom-render/lifecycle/OnDestroyRender';
 import { CreatorMetaData } from '@dooboostore/dom-render/rawsets/CreatorMetaData';
 import { Router } from '@dooboostore/dom-render/routers/Router';
@@ -12,7 +12,7 @@ import { Router } from '@dooboostore/dom-render/routers/Router';
 @Component({
     template,
 })
-export class User implements OnInitRender, OnDestroyRender {
+export class User implements OnDomRenderInitRender, OnDestroyRender {
     name = 'User';
     toggle = true;
     constructor(router: Router) {

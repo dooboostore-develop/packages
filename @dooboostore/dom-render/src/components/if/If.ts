@@ -3,6 +3,7 @@ import { OtherData } from '../../lifecycle/OnChangeAttrRender';
 import { DomRender, DomRenderRunConfig } from '../../DomRender';
 import { OnInitRender } from '../../lifecycle/OnInitRender';
 import { RawSet } from '../../rawsets/RawSet';
+import { DomRenderConfig } from '../../configs/DomRenderConfig';
 
 export namespace If {
   export const selector = 'dr-if';
@@ -39,11 +40,22 @@ export namespace If {
 //   tagName: If.selector,
 //   template: '<div dr-if="@this@.sw" dr-option-strip="true">#innerHTML#</div>' });
 export default {
-  if: (config?: DomRenderRunConfig) => {
+  if: (config?: DomRenderConfig) => {
+
+
+    // if (!customElements.get(If.selector)) {
+    //   customElements.define(If.selector, class extends HTMLElement {
+    //     constructor() {
+    //       super();
+    //       this.hidden = true;
+    //     }
+    //   });
+    // }
+
     return RawSet.createComponentTargetElement({
       name: If.selector,
       template: '<div dr-if="@this@.sw" dr-option-strip="true">#innerHTML#</div>',
-      objFactory: (e,o,r2, counstructorParam) => {
+      objFactory: (e, o, r2, counstructorParam) => {
         return DomRender.run({rootObject: new If.If(...counstructorParam), config: config});
       }
     })

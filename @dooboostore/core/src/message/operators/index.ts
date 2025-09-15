@@ -5,6 +5,7 @@ export * from './distinctUntilChanged';
 export * from './filter';
 export * from './from';
 export * from './map';
+export * from './skip';
 export * from './tap';
 
 // New operators

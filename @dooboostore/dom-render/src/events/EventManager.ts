@@ -1,4 +1,4 @@
-import { Config } from '../configs/Config';
+import { DomRenderConfig } from 'configs/DomRenderConfig';
 import { ScriptUtils } from '@dooboostore/core-web/script/ScriptUtils';
 import { ElementUtils } from '@dooboostore/core-web/element/ElementUtils';
 import { Range } from '../iterators/Range';
@@ -263,7 +263,7 @@ export class EventManager {
     return this.window;
   }
 
-  private createExecutionContext(event: Event, element: HTMLElement, componentInstance: any, config: Config | undefined, extraVars = {}) {
+  private createExecutionContext(event: Event, element: HTMLElement, componentInstance: any, config: DomRenderConfig | undefined, extraVars = {}) {
     // console.log('---------->', config?.eventVariables)
     return Object.assign(componentInstance, {
       __render: Object.freeze({
@@ -371,7 +371,7 @@ export class EventManager {
     }
   }
 
-  public findAttrElements(fragment: DocumentFragment | Element, config?: Config): Set<Element> {
+  public findAttrElements(fragment: DocumentFragment | Element, config?: DomRenderConfig): Set<Element> {
     const elements = new Set<Element>();
     const addAttributes = config?.applyEvents?.map(it => it.attrName) ?? [];
     addAttributes.concat([...EventManager.attrNames]).forEach(attrName => {
@@ -382,7 +382,7 @@ export class EventManager {
     return elements;
   }
 
-  public applyEvent(obj: any, childNodes: Set<ChildNode> | Set<Element>, config?: Config) {
+  public applyEvent(obj: any, childNodes: Set<ChildNode> | Set<Element>, config?: DomRenderConfig) {
     childNodes.forEach(node => {
       if (node.nodeType === 1) {
         (node as any).obj = obj;
@@ -566,7 +566,7 @@ export class EventManager {
     });
   }
 
-  public onRenderedEvent(obj: any, childNodes: Set<ChildNode> | Set<Element> | Node[], config?: Config) {
+  public onRenderedEvent(obj: any, childNodes: Set<ChildNode> | Set<Element> | Node[], config?: DomRenderConfig) {
     this.procAttr<HTMLInputElement>(childNodes, EventManager.onRenderedInitAttrName, (it, attribute) => {
       if (!it.isConnected) {
         return;
@@ -587,7 +587,7 @@ export class EventManager {
     });
   }
 
-  public changeVar(obj: any, elements: Set<Element> | Set<ChildNode>, varName?: string, config?: Config) {
+  public changeVar(obj: any, elements: Set<Element> | Set<ChildNode>, varName?: string, config?: DomRenderConfig) {
     // console.log('changeVar', obj, elements, varName)
     this.procAttr(elements, EventManager.styleAttrName, (it, attribute) => {
       let script = attribute;
@@ -691,6 +691,7 @@ export class EventManager {
       if (varName.startsWith('this.')) {
         varName = varName.replace(/this\./, '');
       }
+      // TODO: 훔.. 꼭필요한가..?  트리거될때 스크립트변수 까지 감지해야될까?
       EventManager.VARNAMES.forEach(it => {
         // raws = raws!.replace(RegExp(it.replace('$', '\\$'), 'g'), `this?.___${it}`);
         raws = raws!.replace(RegExp(it.replace('$', '\\$'), 'g'), `this.___${it}`);
@@ -713,7 +714,7 @@ export class EventManager {
     }
   }
 
-  getBindScript(config?: Config) {
+  getBindScript(config?: DomRenderConfig) {
     if (config?.eventVariables) {
       const bindScript = Object.entries(config.eventVariables).filter(([key, value]) => !this.bindScript.includes(`const ${key}`)).map(([key, value]) => {
         return `const ${key} = this.__render.${key};`;

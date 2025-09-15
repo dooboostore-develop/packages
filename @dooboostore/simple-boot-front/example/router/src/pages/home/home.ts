@@ -30,7 +30,7 @@ export class Home extends ComponentBase {
   }
 
 
-    onInitRender(...param: any[]): void {
+    onDomRenderInitRender(...param: any[]): void {
         // console.log('home onInitRender', param)
         // this.name = 'onInitRenderxxxxxxxxxx';
         // setInterval(() => {

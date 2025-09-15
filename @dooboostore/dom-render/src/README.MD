@@ -1,6 +1,6 @@
 DOM-RENDER  
 ===   
-[![typescript](https://img.shields.io/badge/-npm-black?logo=npm)](https://www.npmjs.com/package/dom-render) [![license](https://img.shields.io/badge/license-MIT-green)](LICENSE.md)
+[![typescript](https://img.shields.io/badge/-npm-black?logo=npm)](https://www.npmjs.com/package/@dooboostore/dom-render) [![license](https://img.shields.io/badge/license-MIT-green)](LICENSE.md)
 * view template engine
 * Dom control and reorder and render
 * all internal variables are managed by proxy. (DomRenderProxy)
@@ -111,7 +111,7 @@ export class IndexComponent implements OnInitRender, OnDestroyRender, OnInit, On
 ```
 ```css
 .#uuid# {
-color:${@this@.color}$;
+color:${@this@.color}$ ;
 }
 ```
 ```css
@@ -664,7 +664,7 @@ class Data {
   <summary>dr-style<strong>🔻(click)</strong></summary>
 
 ```html
-<div dr-style="{'background-image': 'url(\''+@this@.my?.image+'\')'}" >aa</div>
+<div dr-style="{'background-image': 'url(\' '+@this@.my?.image+'\')'}" >aa</div>
 <div dr-style="{fontSize: @this@.age + 'px'}"> style </div>
 <div dr-style="{'font-size': '20px'}"> style</div>
 <div dr-style="'font-size: ' + @this@.age +'px; margin: ' + @this@.age + 'px'"> style </div>
@@ -759,7 +759,6 @@ DomRender.run(data, document.querySelector('#app')!);
 ```
 <!-- 💥 submit call --> 
 <!-- console: {name: 'name data', age: 'age data'}  -->
-```
 </details>
 
 <details>
@@ -797,7 +796,6 @@ class FormDataWithValidator {
 
 const data = new FormDataWithValidator();
 DomRender.run(data, document.querySelector('#app')!);
-```
 ```
 validator
 - Validator (abstract)
@@ -839,87 +837,327 @@ validator
 
 ## Route
 <details>
-  <summary>Route<strong>🔻(click)</strong></summary>
+  <summary><strong>Route (click)</strong></summary>
 
-- [examples](./examples/router)
+Declarative routing is supported using the `dr-route-match` and `dr-route-regexp` components. This allows you to conditionally render parts of your UI based on the current URL path.
 
-* config routerType: 'hash' | 'path' | 'none'  (default: 'none')
+- [Example](./examples/route)
+
+### 1. Configuration
+
+To enable routing, you must set the `routerType` in your `DomRender` configuration.
+
+- `routerType`: Can be `'hash'`, `'path'`, or `'none'` (default).
+
 ```typescript
-// Config
-const config: Config = {
-  window
+// In your main setup file (e.g., index.ts)
+import { DomRender, DomRenderRunConfig } from '@dooboostore/dom-render';
+
+// ... your root object class (e.g., Index)
+
+const config: DomRenderRunConfig<Index> = {
+  window: window,
+  routerType: 'path' // or 'hash'
 };
-config.targetElements = [
-  DomRender.createComponent({type: Main, tagName: 'page-main', template: MainTemplate}),
-  DomRender.createComponent({type: Second, tagName: 'page-second', template: SecondTemplate}),
-  DomRender.createComponent({type: Detail, tagName: 'page-detail', template: DetailTemplate})
-]
-config.routerType = 'hash'; // 'hash' | 'path' | 'none';
-const data = DomRender.run(new Data(), document.querySelector('#app')!, config);
+
+const domRender = new DomRender({
+  rootObject: new Index(),
+  target:  document.querySelector('#app')!,
+  config: config
+}, {autoGo: '/'}); // autoGo navigates to the initial path
+```
+
+### 2. Template Usage
+
+Use the `<dr-route-match>` and `<dr-route-regexp>` components in your HTML template to define which content appears for which route.
+
+- **`<dr-route-match>`**: Renders its content when the path matches the `value` attribute. It supports simple paths and path parameters (e.g., `/{id}`).
+- **`<dr-route-regexp>`**: Renders its content when the path matches the regular expression in the `value` attribute.
+
+```html
+<!-- index.html -->
+<header>
+    <!-- Navigation buttons -->
+    <button dr-event-click="$router?.go({path:'/'})">Main</button>
+    <button dr-event-click="$router?.go({path:'/second'})">Second</button>
+    <button dr-event-click="$router?.go({path:'/detail/42'})">Detail 42</button>
+</header>
+
+<main>
+    <!-- Content for the root path -->
+    <dr-route-match value="/">
+        <h1>Main Page</h1>
+    </dr-route-match>
+
+    <!-- Content for the /second path -->
+    <dr-route-match value="/second">
+        <h1>Second Page</h1>
+    </dr-route-match>
+
+    <!-- Content for a path with a numeric parameter -->
+    <dr-route-match value="/detail/{id:[0-9]+}">
+        <h1>Detail Page</h1>
+        <p>The router's pathData will contain the matched 'id'.</p>
+    </dr-route-match>
+
+    <!-- Content using a regular expression -->
+    <dr-route-regexp value="/second/[0-9]?$">
+        <p>This content appears for paths like /second/1, /second/2, etc.</p>
+    </dr-route-regexp>
+</main>
+```
+
+The `$router` object is automatically available in your templates for navigation (`$router.go(...)`) and testing (`$router.test(...)`).
+
+</details>
+
+## Accessing the Root Object Proxy
+
+After initializing `DomRender`, you can get a proxied reference to your `rootObject`. Any changes made to this proxy will be automatically detected and reflected in the DOM. This is useful for updating state from outside your component's methods, such as in `setTimeout` or in response to external events.
+
+```typescript
+import { DomRender } from '@dooboostore/dom-render';
+
+class App {
+  message = 'Hello, World!';
+}
+
+// 1. Initialize DomRender
+const domRender = new DomRender({
+  rootObject: new App(),
+  target: document.querySelector('#app')!
+});
+
+// 2. Get the proxy to the rootObject
+const data = domRender.rootObject;
+
+// 3. Now you can modify the state from anywhere
+setTimeout(() => {
+  // This change will automatically update the UI
+  data.message = 'Hello, DomRender!';
+}, 2000);
+```
+
+```html
+<!-- index.html -->
+<div id="app">
+  ${@this@.message}$
+</div>
+```
+
+## Core Components
+This section describes the built-in components provided by `dom-render`.
+
+<details>
+  <summary><strong>ComponentBase & Decorators (<code>@attribute</code>, <code>@query</code>, <code>@event</code>)</strong>🔻(click)</summary>
+
+`ComponentBase` is the foundation for creating custom components that can interact with the `dom-render` lifecycle and attributes. When you extend `ComponentBase`, you gain access to powerful decorators for linking your class to the template.
+
+- **`@attribute`**: Binds a class property to an HTML attribute. It can automatically convert values and even bind to methods.
+- **`@query`**: Injects DOM elements from your component's template into class properties or method arguments.
+- **`@event`**: Binds a class method to a DOM event on an element within the template, handling listener cleanup automatically.
+
+*For detailed examples of these decorators, please see their dedicated sections above in the documentation.*
+
+</details>
+
+<details>
+  <summary><strong>ComponentSet</strong>🔻(click)</summary>
+
+`ComponentSet` is a wrapper class that pairs a component instance with its own template and styles. It's the primary mechanism for dynamically rendering and swapping components within a `dr-this` block.
+
+### Usage
+```typescript
+import { ComponentSet } from '@dooboostore/dom-render';
+
+// Define two simple components
+class ComponentA { message = 'This is Component A'; }
+class ComponentB { message = 'Now you see Component B'; }
+
+class App {
+    // Create ComponentSet instances for each component
+    componentA = new ComponentSet(new ComponentA(), { template: '<h1>${@this@.message}$</h1>' });
+    componentB = new ComponentSet(new ComponentB(), { template: '<h2>${@this@.message}$</h2>' });
+
+    // This property will hold the currently active component
+    activeComponent: ComponentSet;
+
+    constructor() {
+        this.activeComponent = this.componentA;
+    }
+
+    showA() { this.activeComponent = this.componentA; }
+    showB() { this.activeComponent = this.componentB; }
+}
+```
+
+```html
+<!-- This div will dynamically render the component held by 'activeComponent' -->
+<div dr-this="@this@.activeComponent"></div>
+
+<button dr-event-click="@this@.showA()">Show Component A</button>
+<button dr-event-click="@this@.showB()">Show Component B</button>
+```
+</details>
+
+<details>
+  <summary><strong><code>dr-this</code></strong>🔻(click)</summary>
+
+The `dr-this` component is the target for rendering a `ComponentSet`. It dynamically renders the component instance and template defined in the `ComponentSet` object it's bound to.
+
+See the `ComponentSet` example above for a practical demonstration.
+
+</details>
+
+<details>
+  <summary><strong><code>dr-choose</code> / <code>dr-choose-when</code> / <code>dr-choose-other-wise</code></strong>🔻(click)</summary>
+
+Provides a "switch-case" control flow for rendering blocks of HTML. It evaluates a data object and renders the first `dr-choose-when` block whose `test` condition returns true. If no `when` blocks match, the `dr-choose-other-wise` block is rendered.
+
+### Usage
+```typescript
+class App {
+    status: 'loading' | 'success' | 'error' = 'loading';
+}
 ```
 ```html
-<header>
-  <h1>examples header</h1>
-  <h2>${@this@.name}$</h2>
-  <div>
-    <div><button dr-event-click="$router.go('/')">main</button></div>
-    <div>
-      <button dr-event-click="$router.go('/second', {secondata: 555})">second</button>
-      <button dr-event-click="$router.go('/second/5')">second/1</button>
-      <button dr-event-click="$router.go('/second/wow')">second/2</button>
-    </div>
-    <div><button dr-event-click="$router.go('/detail/25?name=zzz')">detail</button></div>
-  </div>
-</header>
-<hr>
-<main>
-  <page-main dr-if="$router.test('/')"></page-main>
-  <page-second dr-if="$router.test('/second')">1</page-second>
-  <page-second dr-if="$router.testRegexp('/second/[0-9]?$')">2</page-second>
-  <page-second dr-if="$router.testRegexp('/second/wow$')">wow</page-second>
-  <page-detail url='/detail/{id:[0-9]+}' dr-if="$router.test($attribute.url)" dr-on-create:callback="$component.routerData($router.getRouteData($attribute.url))" ></page-detail>
-  <div>
-    <button dr-event-click="@this@.plusCount()">${@this@.count}$ count  pluse++</button>
-  </div>
-</main>
-<hr>
-<footer>footer</footer>
+<dr-choose data="${@this@.status}$">
+    <dr-choose-when test="(status) => status === 'loading'">
+        <p>Loading...</p>
+    </dr-choose-when>
+    <dr-choose-when test="(status) => status === 'success'">
+        <p>Data loaded successfully!</p>
+    </dr-choose-when>
+    <dr-choose-other-wise>
+        <p>An unknown error occurred.</p>
+    </dr-choose-other-wise>
+</dr-choose>
 ```
-```typescript
-export class Second implements OnCreateRender {
-    name = 'Second'
+</details>
 
-    onCreateRender(data: CreatorMetaData): void {
-        console.log('----->', data.router)
+<details>
+  <summary><strong><code>dr-promise-switch</code></strong>🔻(click)</summary>
+
+Declaratively handles the different states of a JavaScript `Promise`. It provides child components to render content for `pending`, `fulfilled`, and `rejected` states.
+
+### Child Components
+- `<dr-promise-switch-pending>`: Shown while the promise is in flight.
+- `<dr-promise-switch-fulfilled>`: Shown when the promise resolves successfully. The resolved data is available inside via `#component#.data`.
+- `<dr-promise-switch-rejected>`: Shown when the promise is rejected. The error is available inside via `#component#.data`.
+- `<dr-promise-switch-default>`: Shown before the promise is triggered.
+
+### Usage
+```typescript
+class App {
+    userPromise = null;
+
+    fetchUser() {
+        this.userPromise = fetch('/api/user').then(res => res.json());
     }
 }
 ```
+```html
+<button dr-event-click="@this@.fetchUser()">Fetch User</button>
+
+<dr-promise-switch data="${@this@.userPromise}$">
+    <dr-promise-switch-pending>
+        <p>Fetching user data...</p>
+    </dr-promise-switch-pending>
+    <dr-promise-switch-fulfilled>
+        <p>Welcome, ${#component#.data.name}$!</p>
+    </dr-promise-switch-fulfilled>
+    <dr-promise-switch-rejected>
+        <p>Failed to fetch user: ${#component#.data.message}$</p>
+    </dr-promise-switch-rejected>
+</dr-promise-switch>
+```
+</details>
+
+<details>
+  <summary><strong><code>dr-checkbox</code></strong>🔻(click)</summary>
+
+A wrapper for creating a custom, stylable checkbox. It uses child components to define the appearance for checked and unchecked states.
+
+### Child Components
+- `<dr-checkbox-checked>`: Content to show when the box is checked.
+- `<dr-checkbox-unchecked>`: Content to show when the box is unchecked.
+
+### Usage
 ```typescript
-import {RouteData} from 'dom-render/routers/Router';
-import {OnCreateRender} from 'dom-render/lifecycle/OnCreateRender';
-
-export class Detail implements OnCreateRender {
-  name = 'Detail';
-
-  onCreateRender(data: CreatorMetaData) {
-    console.log('routeData->', data);
-  }
-
-  routerData(routeData: RouteData) {
-    console.log('--------', routeData);
-  }
+class App {
+    agreed = false;
 }
 ```
+```html
+<dr-checkbox name="terms" checked="${@this@.agreed}$" change="${(checked) => @this@.agreed = checked}$">
+    <dr-checkbox-checked>
+        <!-- Using FontAwesome icons as an example -->
+        <i class="fas fa-check-square"></i> I agree to the terms.
+    </dr-checkbox-checked>
+    <dr-checkbox-unchecked>
+        <i class="far fa-square"></i> I agree to the terms.
+    </dr-checkbox-unchecked>
+</dr-checkbox>
 
+<p>Agreed: ${@this@.agreed}$</p>
+```
+</details>
+
+<details>
+  <summary><strong><code>dr-details</code></strong>🔻(click)</summary>
+
+An enhanced version of the native `<details>` element. It provides child components for the summary and body, and includes extra functionality like closing when the user clicks outside of it.
+
+### Child Components
+- `<dr-details-summary>`: The clickable header of the details element.
+- `<dr-details-body>`: The collapsible content.
+- `<dr-details-form>`: A special body that is a form, with features like automatic reset on toggle.
+
+### Usage
+```html
+<dr-details>
+    <dr-details-summary>
+        <h3>More Information</h3>
+    </dr-details-summary>
+    <dr-details-body>
+        <p>Here is the hidden content that appears on click.</p>
+    </dr-details-body>
+</dr-details>
+```
+</details>
+
+<details>
+  <summary><strong><code>dr-input</code></strong>🔻(click)</summary>
+
+A custom input component that enhances a standard `<input>` with powerful features like debouncing and distinct value change detection. This is useful for performance-intensive tasks like live search.
+
+### Attributes
+- `debounceTime`: (Optional) The time in milliseconds to wait after the user stops typing before firing the `input` event.
+- `distinct`: (Optional) If set to `true`, the `input` event will only fire if the new value is different from the previous one.
+- `input`: A callback function that receives the debounced/distinct value.
+
+### Usage
 ```typescript
-// RouteData type
-type RouteData = {
-  path: string;
-  url: string;
-  data?: any;
-  searchParams: URLSearchParams;
-  pathData?: any;
+class App {
+    searchQuery = '';
+    
+    handleSearch(query: string) {
+        console.log('Searching for:', query);
+        this.searchQuery = query;
+    }
 }
+```
+```html
+<label>Search:</label>
+<dr-input
+    type="text"
+    class="search-input"
+    debounceTime="300"
+    distinct="true"
+    input="${(value) => @this@.handleSearch(value)}$"
+></dr-input>
+
+<p>Current query: ${@this@.searchQuery}$</p>
 ```
 </details>
 
@@ -985,7 +1223,7 @@ const rangeArray = new Range(100,55, 10).toArray();
 const appender = new Appender<number>([1, 2]);
 appender.push(3, 4)
 for (const data of appender) {
-    console.log('----appender item--->', data);
+    console.log('----appender item---', data);
 }
 ```
 </details>
@@ -999,10 +1237,10 @@ for (const data of appender) {
 {
     name: 'dom-render'
     onBeforeReturnSet: (name: string, value: any, fullpath: string[]) => {
-        console.log('set name-->', name, value, fullpath);
+        console.log('set name--', name, value, fullpath);
     }
     onBeforeReturnGet: (name: string, value: any, fullpath: string[]) => {
-        console.log('get name-->', name, value, fullpath);
+        console.log('get name--', name, value, fullpath);
     }
 }
 ```

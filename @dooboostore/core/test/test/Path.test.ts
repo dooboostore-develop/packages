@@ -671,6 +671,18 @@ describe('ObjectUtils.Path', () => {
       const expected = "() => @thi@.searchWorlds.length=0}";
       assert.strictEqual(ObjectUtils.Path.toOptionalChainPath(path), expected);
     });
+
+    test('should not process string containing an object literal', () => {
+      const path = "{ 'dr-select-container': true, 'is-open': this.__domrender_components?.NWrbCjhSxpdaHtfBBscrfbEdJrVULxzNDhlUpB.isOpen, [this.__domrender_components.NWrbCjhSxpdaHtfBBscrfbEdJrVULxzNDhlUpB.classAttr]:this.__domrender_components.NWrbCjhSxpdaHtfBBscrfbEdJrVULxzNDhlUpB.classAttr }";
+      const expected = path; // Expect it to be unchanged
+      assert.strictEqual(ObjectUtils.Path.toOptionalChainPath(path), expected);
+    });
+
+    test('should not modify ternary operator expressions', () => { // Renamed test for clarity
+      const path = "this.selected ? 'selected' : null";
+      const expected = "this?.selected ? 'selected' : null"; // Should remain unchanged
+      assert.strictEqual(ObjectUtils.Path.toOptionalChainPath(path), expected);
+    });
   });
 
   describe('Path.removeOptionalChainOperator', () => {

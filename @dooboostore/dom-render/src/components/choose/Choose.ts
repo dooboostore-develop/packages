@@ -23,42 +23,20 @@ export namespace Choose {
     data?: D;
   }
 
-
-  // @Component({
-  //   template: '<div dr-if="!@this@.hidden" dr-strip="true" >#innerHTML#</div>',
-  //   selector: `${selector}.When`
-  // })
   export class When<D> extends ChildBase<D> {
     constructor() {
       super({onlyParentType: Choose<D>});
     }
   }
 
-  // @Component({
-  //   template: '<div dr-if="!@this@.hidden" dr-strip="true" >#innerHTML#</div>',
-  //   selector: `${selector}.OtherWise`
-  // })
   export class OtherWise<D> extends ChildBase<D> {
     constructor() {
       super({onlyParentType: Choose<D>});
     }
   }
 
-  // @Component({
-  //   template: '#innerHTML#',
-  //   selector: `${selector}`
-  // })
   export class Choose<D> extends ComponentBase<Attribute<D>> {
 
-    // constructor() {
-    //   super();
-    //   console.log('!!!!!!!PromiseSwitch!!!!!constructor')
-    // }
-
-    // onCreateRenderData(data: OnCreateRenderDataParams) {
-    //   super.onCreateRenderData(data);
-    //   console.log('---------', this.children)
-    // }
     private choose?: When<D> | OtherWise<D>;
 
     onCreatedThisChild(child: any, data: OnCreateRenderDataParams) {
@@ -68,10 +46,6 @@ export namespace Choose {
 
     onChangeAttrRender(name: string, value: any, other: OtherData) {
       super.onChangeAttrRender(name, value, other);
-      // console.log('-----------changer Choose', name, value);
-      // this.getChildren(Pending).forEach(it => {
-      //   console.log('------------asdasd', it, it.attribute?.defaultView)
-      // })
       if (this.equalsAttributeName(name, 'data')) {
         this.choose = undefined;
         const children = this.getChildren([When, OtherWise]).sort((a, b) => (a instanceof OtherWise ? 1 : 0) - (b instanceof OtherWise ? 1 : 0));
@@ -102,7 +76,6 @@ export namespace Choose {
         }
       }
     }
-
   }
 }
 
@@ -112,7 +85,7 @@ export default {
     return RawSet.createComponentTargetElement({
       name: `${Choose.selector}-when`,
       template: '<div dr-if="!@this@.hidden" dr-option-strip="true" >#innerHTML#</div>',
-      objFactory: (e,o,r2, counstructorParam) => {
+      objFactory: (e, o, r2, counstructorParam) => {
         return DomRender.run({rootObject: new Choose.When(), config: config});
       }
     })
@@ -121,7 +94,7 @@ export default {
     return RawSet.createComponentTargetElement({
       name: `${Choose.selector}-other-wise`,
       template: '<div dr-if="!@this@.hidden" dr-option-strip="true" >#innerHTML#</div>',
-      objFactory: (e,o,r2, counstructorParam) => {
+      objFactory: (e, o, r2, counstructorParam) => {
         return DomRender.run({rootObject: new Choose.OtherWise(), config: config});
       }
     })
@@ -130,7 +103,7 @@ export default {
     return RawSet.createComponentTargetElement({
       name: `${Choose.selector}`,
       template: '#innerHTML#',
-      objFactory: (e,o,r2, counstructorParam) => {
+      objFactory: (e, o, r2, counstructorParam) => {
         return DomRender.run({rootObject: new Choose.Choose(...counstructorParam), config: config});
       }
     })

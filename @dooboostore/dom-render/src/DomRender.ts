@@ -1,5 +1,5 @@
 import { DomRenderProxy } from './DomRenderProxy';
-import { Config } from './configs/Config';
+import { DomRenderConfig } from 'configs/DomRenderConfig';
 import { PathRouter } from './routers/PathRouter';
 import { HashRouter } from './routers/HashRouter';
 import { ConstructorType } from '@dooboostore/core/types';
@@ -11,32 +11,46 @@ import { drComponent } from './components';
 import { EventManager } from './events/EventManager';
 import { RandomUtils } from '@dooboostore/core/random/RandomUtils';
 
-export type DomRenderRunConfig<T = any> = Omit<Config<T>, 'router' | 'uuid' | 'eventManager' | 'messenger' | 'root' | 'rootElement'> & { routerType?: 'path' | 'hash' | ((obj: T, window: Window) => Router) | Router };
-export type CreateComponentParam = { type: ConstructorType<any> | any, tagName?: string, noStrip?:boolean, template?: string, styles?: string[] | string };
+export type DomRenderRunConfig<T = any> = Omit<DomRenderConfig<T>, 'router' | 'uuid' | 'eventManager' | 'messenger' | 'root' | 'rootElement'> & { routerType?: 'path' | 'hash' | ((obj: T, window: Window) => Router) | Router };
+export type CreateComponentParam = { type: ConstructorType<any> | any, tagName?: string, noStrip?: boolean, template?: string, styles?: string[] | string };
 let eventManager: EventManager | null = null;
-export type DomRenderRunParameter<T extends object> = { rootObject: T | (() => T), target?: Element | null, config?: DomRenderRunConfig };
+export type DomRenderRunParameter<T extends object> = { rootObject: T | (() => T), target?: Element | null, config?: DomRenderRunConfig | DomRenderConfig };
 
-export class DomRender<T extends object = any>{
-  private config: Config;
-  private target: Element;
-  private rootObject: T;
+export class DomRender<T extends object = any> {
+  private _config: DomRenderConfig;
+  private _target: Element;
+  private _rootObject: T;
 
-  constructor(parameter: DomRenderRunParameter<T>, executeConfig?:{autoGo?: string}) {
-   const s=  DomRender.runSet(parameter);
-   this.config = s.config;
-   this.target = s.target;
-   this.rootObject = s.rootObject;
-   if (executeConfig && executeConfig?.autoGo) {
-     this.config.router?.go(executeConfig.autoGo);
-   }
+  constructor(parameter: DomRenderRunParameter<T>, executeConfig?: { autoGo?: string }) {
+    const s = DomRender.runSet(parameter);
+    this._config = s.config;
+    this._target = s.target;
+    this._rootObject = s.rootObject;
+    if (executeConfig && executeConfig?.autoGo) {
+      this._config.router?.go(executeConfig.autoGo);
+    }
   }
+
+  public get rootObject(): T {
+    return this._rootObject;
+  }
+
+  public get config(): DomRenderConfig {
+    return this._config;
+  }
+
+  public get target(): Element {
+    return this._target;
+  }
+
+
   public static run<T extends object>(data: DomRenderRunParameter<T>): T {
     return DomRender.runSet(data).rootObject;
   }
 
-  public static runSet<T extends object>({rootObject, target, config}: DomRenderRunParameter<T>): {rootObject: T, target?: Element | null, config: Config} {
-  // public static run<T extends object>({rootObject, target, config}: DomRenderRunParameter<T>): T {
-  //   console.log('runSet')
+  public static runSet<T extends object>({rootObject, target, config}: DomRenderRunParameter<T>): { rootObject: T, target?: Element | null, config: DomRenderConfig } {
+    // public static run<T extends object>({rootObject, target, config}: DomRenderRunParameter<T>): T {
+    //   console.log('runSet')
     rootObject = typeof rootObject === 'function' ? rootObject() : rootObject;
     let targetObject = rootObject;
     if ('_DomRender_isProxy' in rootObject) {
@@ -45,74 +59,77 @@ export class DomRender<T extends object = any>{
       }
       targetObject = rootObject;
       // return targetObject;
-      return { rootObject: targetObject, target, config: (rootObject as any)._domRender_config };
+      return {rootObject: targetObject, target, config: (rootObject as any)._domRender_config};
     }
-    const targetConfig = Object.assign({}, config) as Config;
-    eventManager??=new EventManager(targetConfig.window);
-    (targetConfig.window as any).domRender??={configs: []};
+    const targetConfig = Object.assign({}, config) as DomRenderConfig;
+    eventManager ??= new EventManager(targetConfig.window);
 
     targetConfig.uuid = RandomUtils.uuid4();
     targetConfig.messenger = DomRenderFinalProxy.final(targetConfig.messenger ?? new DefaultMessenger(targetConfig));
     targetConfig.proxyExcludeTyps = targetConfig.proxyExcludeTyps ?? [];
-    targetConfig.targetElements ??=[];
-    for (const value of Object.values(drComponent)) {
-      const a = value(config);
-      if (!targetConfig.targetElements.find(it => it.name === a.name)) {
-        targetConfig.targetElements.push(a);
-      }
-      // if (targetConfig.targetElements.indexOf(value) === -1) {
-      // }
-    }
-    // console.log('----------', targetConfig.proxyExcludeTyps)
-    // console.log('----------', targetConfig.targetElements)
-    if (typeof Window !== 'undefined' && targetConfig.proxyExcludeTyps.indexOf(Window) === -1) {
+    targetConfig.targetElements ??= [];
+
+
+    if (typeof Window !== 'undefined' && !targetConfig.proxyExcludeTyps.some(it => it === Window)) {
       targetConfig.proxyExcludeTyps.push(Window);
     }
-    if (typeof Map !== 'undefined' && targetConfig.proxyExcludeTyps.indexOf(Map) === -1) {
+    if (typeof Map !== 'undefined' && !targetConfig.proxyExcludeTyps.some(it => it === Map)) {
       targetConfig.proxyExcludeTyps.push(Map);
     }
-    if (typeof Set !== 'undefined' && targetConfig.proxyExcludeTyps.indexOf(Set) === -1) {
+    if (typeof Set !== 'undefined' && !targetConfig.proxyExcludeTyps.some(it => it === Set)) {
       targetConfig.proxyExcludeTyps.push(Set);
     }
-    if (typeof Promise !== 'undefined' && targetConfig.proxyExcludeTyps.indexOf(Promise) === -1) {
+    if (typeof Promise !== 'undefined' && !targetConfig.proxyExcludeTyps.some(it => it === Promise)) {
       targetConfig.proxyExcludeTyps.push(Promise);
     }
-    if (typeof ResizeObserver !== 'undefined' && targetConfig.proxyExcludeTyps.indexOf(ResizeObserver) === -1) {
+    if (typeof ResizeObserver !== 'undefined' && !targetConfig.proxyExcludeTyps.some(it => it === ResizeObserver)) {
       targetConfig.proxyExcludeTyps.push(ResizeObserver);
     }
-    if (typeof ImageBitmap !== 'undefined' && targetConfig.proxyExcludeTyps.indexOf(ImageBitmap) === -1) {
+    if (typeof ImageBitmap !== 'undefined' && !targetConfig.proxyExcludeTyps.some(it => it === ImageBitmap)) {
       targetConfig.proxyExcludeTyps.push(ImageBitmap);
     }
-    if (typeof CanvasRenderingContext2D !== 'undefined' && targetConfig.proxyExcludeTyps.indexOf(CanvasRenderingContext2D) === -1) {
+    if (typeof CanvasRenderingContext2D !== 'undefined' && !targetConfig.proxyExcludeTyps.some(it => it === CanvasRenderingContext2D)) {
       targetConfig.proxyExcludeTyps.push(CanvasRenderingContext2D);
     }
-    if (typeof HTMLCanvasElement !== 'undefined' && targetConfig.proxyExcludeTyps.indexOf(HTMLCanvasElement) === -1) {
+    if (typeof HTMLCanvasElement !== 'undefined' && !targetConfig.proxyExcludeTyps.some(it => it === HTMLCanvasElement)) {
       targetConfig.proxyExcludeTyps.push(HTMLCanvasElement);
     }
-    if (targetConfig.proxyExcludeTyps.indexOf(RawSet) === -1) {
+    if (!targetConfig.proxyExcludeTyps.some(it => it === RawSet)) {
       targetConfig.proxyExcludeTyps.push(RawSet);
+    }
+    if (!targetConfig.proxyExcludeTyps.some(it => it === DomRender)) {
+      targetConfig.proxyExcludeTyps.push(DomRender);
     }
     targetConfig.rootElement = target;
     targetConfig.eventManager = eventManager;
-    (targetConfig.window as any).domRender.configs.push(targetConfig);
+    // (targetConfig.window as any).domRender ??= {configs: []};
+    // (targetConfig.window as any).domRender.configs.push(targetConfig);
     const domRender = new DomRenderProxy(rootObject, target, targetConfig);
     const dest = new Proxy(rootObject, domRender);
     targetObject = dest;
     targetConfig.root = targetObject;
 
     // proxy 된 targetObject를 넣어줘야되서 뒤쪽에서 router를 생성해야함
-    let targetRouter: Router<any> | undefined;
-    if (config?.routerType === 'hash') {
-      targetRouter = new HashRouter({rootObject: targetObject, window: targetConfig.window});
-    } else if (config?.routerType === 'path') {
-      targetRouter = new PathRouter({rootObject: targetObject, window: targetConfig.window});
-    } else if (typeof config?.routerType === 'function') {
-      targetRouter = config.routerType(targetObject, targetConfig.window);
-    } else if (typeof config?.routerType === 'object') {
-      targetRouter = config.routerType;
+    if (!targetConfig.router) {
+      let targetRouter: Router<any> | undefined;
+      if ('routerType' in config && config?.routerType === 'hash') {
+        targetRouter = new HashRouter({rootObject: targetObject, window: targetConfig.window});
+      } else if ('routerType' in config && config?.routerType === 'path') {
+        targetRouter = new PathRouter({rootObject: targetObject, window: targetConfig.window});
+      } else if ('routerType' in config && typeof config?.routerType === 'function') {
+        targetRouter = config.routerType(targetObject, targetConfig.window);
+      } else if ('routerType' in config && typeof config?.routerType === 'object') {
+        targetRouter = config.routerType;
+      }
+      targetConfig.router = targetRouter;
     }
-    targetConfig.router = targetRouter;
 
+    for (const value of Object.values(drComponent)) {
+      const a = value(targetConfig);
+      if (!targetConfig.targetElements.some(it => it.name === a.name)) {
+        targetConfig.targetElements.push(a);
+      }
+    }
     // console.log('cccccccccccccccccc', targetRouter)
     // targetRouter.go({path: targetRouter.getUrl()})
     // if (!config.router) {
@@ -125,7 +142,7 @@ export class DomRender<T extends object = any>{
     //   }
     // }
     domRender.run(targetObject);
-    return { rootObject: targetObject, config: targetConfig, target };
+    return {rootObject: targetObject, config: targetConfig, target};
     // return targetObject;
   }
 

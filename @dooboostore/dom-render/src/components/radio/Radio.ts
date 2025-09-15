@@ -23,14 +23,8 @@ export namespace Radio {
 
   class RadioBase extends ComponentBase<Attribute> {
     public hidden = true;
-
   }
 
-  // @Component({
-  //   template: '<div dr-if="!@this@.hidden" dr-option-strip="true">#innerHTML#</div>',
-  //   styles: '',
-  //   selector: `${selector}.Checked`
-  // })
   export class Checked extends RadioBase {
     public name = 'Checked';
 
@@ -39,11 +33,6 @@ export namespace Radio {
     }
   }
 
-  // @Component({
-  //   template: '<div dr-if="!@this@.hidden" dr-option-strip="true">#innerHTML#</div>',
-  //   styles: '',
-  //   selector: `${selector}.UnChecked`
-  // })
   export class UnChecked extends RadioBase {
     public name = 'unChecked';
 
@@ -52,11 +41,6 @@ export namespace Radio {
     }
   }
 
-  // @Component({
-  //   template: template,
-  //   styles: style,
-  //   selector: `${selector}`
-  // })
   export class Radio extends ComponentBase<LabelAttribute> {
     private checked = false;
     private inputElement?: HTMLInputElement;

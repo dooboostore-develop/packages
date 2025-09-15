@@ -8,7 +8,7 @@ import { Attrs } from '../rawsets/Attrs';
 import { OperatorAround } from '../operators/OperatorExecuter';
 import { EventManager } from '../events/EventManager';
 
-export type Config<T = any> = {
+export type DomRenderConfig<T = any> = {
   window: Window;
   targetElements?: TargetElement[];
   targetAttrs?: TargetAttr[];

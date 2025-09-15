@@ -9,7 +9,7 @@ import { User } from './pages/user';
 import { RouterAction } from '@dooboostore/simple-boot/route/RouterAction';
 import { ItemComponent } from './components/item/item.component';
 import { ComponentSet } from '@dooboostore/simple-boot-front/component/ComponentSet';
-import { OnInitRender } from '@dooboostore/dom-render/lifecycle/OnInitRender';
+import { OnDomRenderInitRender } from 'packages/@dooboostore/dom-render/src/lifecycle/OnDomRenderInitRender.ts';
 import { ComponentRouterBase } from '@dooboostore/simple-boot-front';
 import {drComponent} from '@dooboostore/dom-render/components'
 @Sim({

@@ -1,7 +1,7 @@
 import { DomRenderProxy, getDomRenderProxy } from '../DomRenderProxy';
 import { EventManager } from '../events/EventManager';
 import { ConvertUtils } from '@dooboostore/core/convert/ConvertUtils';
-import { Observable, Store, Subject } from '@dooboostore/core/message';
+import { BehaviorSubject, Observable } from '@dooboostore/core/message';
 import ToURLSearchParamsParams = ConvertUtils.ToURLSearchParamsParams;
 import { Expression } from '@dooboostore/core/expression/Expression';
 export type RouteData = {
@@ -30,12 +30,13 @@ export type RouteAction = string | { path?: string, searchParams?: ToURLSearchPa
    })
  */
 export abstract class Router<T = any> {
-  private subject = new Subject<RouteData>();
+  private behaviorSubject: BehaviorSubject<RouteData>;
   private _config: RouterConfig<T>;
 
   get observable(): Observable<RouteData> {
-    return this.subject.asObservable();
+    return this.behaviorSubject.asObservable();
   }
+
   get searchParamObject() {
     return ConvertUtils.toObject(this.getSearchParams());
   }
@@ -46,17 +47,15 @@ export abstract class Router<T = any> {
 
   constructor(config: RouterConfig<any>) {
     this._config = config;
+    this.behaviorSubject = new BehaviorSubject<RouteData>(this.getRouteData());
     this.config.window.addEventListener('popstate', (event: PopStateEvent) => {
       if(!isPopStateCurrentTargetDomrenderRouter(event.state)) {
         // console.log('-------');
         const routeData = this.getRouteData();
-        this.subject.next(routeData);
-
+        this.behaviorSubject.next(routeData);
       }
     })
   }
-
-
 
   public getSearchFirstParamsObject<T = any>(defaultValue?: T) {
     const a = ConvertUtils.toObject<T>(this.getSearchParams(), {firstValue: true});
@@ -68,11 +67,11 @@ export abstract class Router<T = any> {
   }
 
   async attach(): Promise<void> {
-    const proxy = getDomRenderProxy(this.config.rootObject)
-    if (proxy) {
-      const key = `___${EventManager.ROUTER_VARNAME}`;
-      await proxy.render(key);
-    }
+    // const proxy = getDomRenderProxy(this.config.rootObject)
+    // if (proxy) {
+    //   const key = `___${EventManager.ROUTER_VARNAME}`;
+    //   await proxy.render(key);
+    // }
   }
 
   testRegexp(regexp: string): boolean {
@@ -114,7 +113,7 @@ export abstract class Router<T = any> {
     // data = this.config.changeStateConvertDate?this.config.changeStateConvertDate(data): data;
     // console.log('--->pushState', data);
     this.config.window.history.pushState(data, title??'', path);
-    this.subject.next(this.getRouteData({currentTarget: {currentTargetName: 'domRenderRouter'}}));
+    this.behaviorSubject.next(this.getRouteData({currentTarget: {currentTargetName: 'domRenderRouter'}}));
     return {data};
   }
 
@@ -122,7 +121,7 @@ export abstract class Router<T = any> {
     // data = this.config.changeStateConvertDate?this.config.changeStateConvertDate(data): data;
     // console.log('--->replaceState', data);
     this.config.window.history.replaceState(data, title??'', path);
-    this.subject.next(this.getRouteData({currentTarget: {currentTargetName: 'domRenderRouter'}}));
+    this.behaviorSubject.next(this.getRouteData({currentTarget: {currentTargetName: 'domRenderRouter'}}));
     return {data};
   }
 

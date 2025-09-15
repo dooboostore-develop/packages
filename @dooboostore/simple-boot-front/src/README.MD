@@ -1,5 +1,5 @@
 ![Single Page Application Framworks](assets/banner.png)  
-![typescript](https://img.shields.io/badge/-typescript-black?logo=typescript) [![npm](https://img.shields.io/badge/-npm-black?logo=npm)](https://www.npmjs.com/package/simple-boot-front) [![license](https://img.shields.io/badge/license-MIT-green)](LICENSE.md) [![Chat](https://img.shields.io/badge/discord-20%20online-brightgreen?logo=discord)](https://discord.gg/PW56dpns) [![Github](https://img.shields.io/badge/-github-black?logo=github)](https://github.com/visualkhh/simple-boot-front)
+![typescript](https://img.shields.io/badge/-typescript-black?logo=typescript) [![npm](https://img.shields.io/badge/-npm-black?logo=npm)](https://www.npmjs.com/package/@dooboostore/simple-boot-front) [![license](https://img.shields.io/badge/license-MIT-green)](LICENSE.md) [![Chat](https://img.shields.io/badge/discord-20%20online-brightgreen?logo=discord)](https://discord.gg/PW56dpns) [![Github](https://img.shields.io/badge/-github-black?logo=github)](https://github.com/dooboostore-develop/packages)
 
 **Our primary goals are**
 * Single Page Application Framworks for Web

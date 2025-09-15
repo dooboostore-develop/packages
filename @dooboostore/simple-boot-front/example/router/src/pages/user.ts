@@ -1,7 +1,7 @@
 import { Component } from '@dooboostore/simple-boot-front/decorators/Component';
 import { Lifecycle, Sim } from '@dooboostore/simple-boot/decorators/SimDecorator';
 import template from './user.html';
-import { OnInitRender } from '@dooboostore/dom-render/lifecycle/OnInitRender';
+import { OnDomRenderInitRender } from 'packages/@dooboostore/dom-render/src/lifecycle/OnDomRenderInitRender.ts';
 import { OnDestroyRender } from '@dooboostore/dom-render/lifecycle/OnDestroyRender';
 import { CreatorMetaData } from '@dooboostore/dom-render/rawsets/CreatorMetaData';
 import { Router } from '@dooboostore/dom-render/routers/Router';
@@ -32,7 +32,7 @@ export class User extends ComponentBase{
     console.log('User - onDrThisUnBind');
   }
 
-    onInitRender(...param) {
+    onDomRenderInitRender(...param) {
         console.log('User: onInitRender', param);
     }
     onDestroyRender(metaData?: CreatorMetaData) {

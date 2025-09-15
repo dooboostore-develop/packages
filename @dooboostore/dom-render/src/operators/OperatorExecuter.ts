@@ -4,7 +4,7 @@ import { ComponentSet } from '../components/ComponentSet';
 import { RawSet } from '../rawsets/RawSet';
 import { Render } from '../rawsets/Render';
 import { Attrs } from '../rawsets/Attrs';
-import { Config } from '../configs/Config';
+import { DomRenderConfig } from 'configs/DomRenderConfig';
 import { ScriptUtils } from '@dooboostore/core-web/script/ScriptUtils';
 import { ObjectUtils } from '@dooboostore/core';
 
@@ -29,7 +29,7 @@ export type ReturnContainer = { raws: RawSet[], fag: DocumentFragment };
 
 export type ElementSource = { element: Element, attrs: Attrs, attr?: string | null, attrName?: string | undefined };
 
-export type Source = { config: Config, operatorAround?: OperatorAround, obj: any };
+export type Source = { config: DomRenderConfig, operatorAround?: OperatorAround, obj: any };
 
 export abstract class OperatorExecuter<T = any> {
   constructor(public rawSet: RawSet,
