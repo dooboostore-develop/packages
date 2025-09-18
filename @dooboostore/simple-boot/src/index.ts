@@ -32,7 +32,6 @@ export type { OnSimCreateCompleted } from './lifecycle/OnSimCreateCompleted';
 export { RouterManager } from './route/RouterManager';
 export type { RoutingOption } from './route/RouterManager';
 export { RouterModule } from './route/RouterModule';
-export { isRouterAction } from './route/RouterAction';
 export type { RouteFilter } from './route/RouteFilter';
 export type { RouterAction, RoutingDataSet } from './route/RouterAction';
 

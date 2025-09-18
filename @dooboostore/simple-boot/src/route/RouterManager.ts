@@ -8,8 +8,7 @@ import { getOnRoute, onRoutes } from '../decorators/route/OnRoute';
 import { RouteFilter } from './RouteFilter';
 import { Sim } from '../decorators/SimDecorator';
 import { Expression } from '@dooboostore/core/expression/Expression';
-import { isRouterAction, RoutingDataSet } from '../route/RouterAction';
-import { isOnRouting } from '../lifecycle/OnRouting';
+import { RouterAction } from '../route/RouterAction';
 import { SimOption } from '../SimOption';
 
 export type RoutingOption = { router?: ConstructorType<any> | any, find?: { router: 'last' | 'first' } };
@@ -89,18 +88,18 @@ export class RouterManager {
       const [executeModule, routerChains] = executeModuleResult;
       executeModule.routerChains = routerChains;
       this.activeRouterModule = executeModule;
-      const routingDataSet: RoutingDataSet = {intent, routerModule: executeModule, routerManager: this};
+      const routingDataSet: RouterAction.RoutingDataSet = {intent, routerModule: executeModule, routerManager: this};
       if (routerChains.length > 0) {
         for (let i = 0; i < routerChains.length; i++) {
           const current = routerChains[i];
           const next = routerChains[i + 1];
           const value = current.getValue()! as any;
-          if (isRouterAction(value)) {
+          if (RouterAction.isCanActivate(value)) {
             if (next) {
               await value.canActivate(routingDataSet, next.getValue());
             }
           }
-          if (isOnRouting(value)) {
+          if (RouterAction.isOnRouting(value)) {
             await value.onRouting(routingDataSet);
           }
         }
@@ -112,18 +111,18 @@ export class RouterManager {
       if (!executeModule?.module) {
         const routerChain = executeModule.routerChains[executeModule.routerChains.length - 1];
         const value = routerChain?.getValue() as any;
-        if (isRouterAction(value)) {
+        if (RouterAction.isCanActivate(value)) {
           await value.canActivate(routingDataSet, moduleInstance);
         }
-        if (isOnRouting(value)) {
+        if (RouterAction.isOnRouting(value)) {
           await value.onRouting(routingDataSet);
         }
       } else { // find page
         const value = executeModule.router?.getValue()! as any;
-        if (isRouterAction(value)) {
+        if (RouterAction.isCanActivate(value)) {
           await value.canActivate(routingDataSet, moduleInstance);
         }
-        if (isOnRouting(value)) {
+        if (RouterAction.isOnRouting(value)) {
           await value.onRouting(routingDataSet);
         }
       }
@@ -162,10 +161,10 @@ export class RouterManager {
           const next = routers[i + 1];
           const value = current.getValue()! as any;
           // console.log('routerAction!!!!!!!!!3')
-          if (isRouterAction(value)) {
+          if (RouterAction.isCanActivate(value)) {
             await value.canActivate(routingDataSet, next?.getValue() ?? null);
           }
-          if (isOnRouting(value)) {
+          if (RouterAction.isOnRouting(value)) {
             await value.onRouting(routingDataSet);
           }
         }

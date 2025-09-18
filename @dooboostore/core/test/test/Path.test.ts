@@ -355,10 +355,10 @@ describe('ObjectUtils.Path', () => {
     });
 
     test('should filter paths by string values only', () => {
-      const obj = { 
-        name: 'Alice', 
-        age: 30, 
-        city: 'Seoul', 
+      const obj = {
+        name: 'Alice',
+        age: 30,
+        city: 'Seoul',
         active: true,
         data: { title: 'Manager', count: 5 }
       };
@@ -368,10 +368,10 @@ describe('ObjectUtils.Path', () => {
     });
 
     test('should filter paths by numeric values only', () => {
-      const obj = { 
-        name: 'Alice', 
-        age: 30, 
-        city: 'Seoul', 
+      const obj = {
+        name: 'Alice',
+        age: 30,
+        city: 'Seoul',
         score: 95.5,
         data: { title: 'Manager', count: 5 }
       };
@@ -398,7 +398,7 @@ describe('ObjectUtils.Path', () => {
         settings: { id: 3, theme: 'dark', timeout: 30 }
       };
       // Filter for numeric values in paths containing 'id'
-      const paths = ObjectUtils.Path.availablePath(obj, (path, value) => 
+      const paths = ObjectUtils.Path.availablePath(obj, (path, value) =>
         path.includes('id') && typeof value === 'number'
       );
       const expected = ['user.id', 'product.id', 'settings.id'];
@@ -432,7 +432,7 @@ describe('ObjectUtils.Path', () => {
         config: { version: 1.0, name: 'MyApp' }
       };
       // Filter for paths containing 'name' with string values
-      const paths = ObjectUtils.Path.availablePath(obj, (path, value) => 
+      const paths = ObjectUtils.Path.availablePath(obj, (path, value) =>
         path.includes('name') && typeof value === 'string'
       );
       const expected = ['users[0].name', 'users[1].name', 'config.name'];
@@ -683,6 +683,12 @@ describe('ObjectUtils.Path', () => {
       const expected = "this?.selected ? 'selected' : null"; // Should remain unchanged
       assert.strictEqual(ObjectUtils.Path.toOptionalChainPath(path), expected);
     });
+
+    test('toOptionalChainOperator', () => {
+      const path = 'this.__domrender_components.JBthGucywhFGkkucxinSARMQXxfOdiTpTscIgVJe.value.obj.getPackagesByCategory(this.__domrender_components.JBthGucywhFGkkucxinSARMQXxfOdiTpTscIgVJe.value.obj.categories[0])';
+      const expected = 'this?.__domrender_components?.JBthGucywhFGkkucxinSARMQXxfOdiTpTscIgVJe?.value?.obj?.getPackagesByCategory?.(this?.__domrender_components?.JBthGucywhFGkkucxinSARMQXxfOdiTpTscIgVJe?.value?.obj?.categories?.[0])';
+      assert.strictEqual(ObjectUtils.Path.toOptionalChainPath(path), expected);
+    })
   });
 
   describe('Path.removeOptionalChainOperator', () => {

@@ -1,9 +1,8 @@
-import { DomRenderProxy, getDomRenderProxy } from '../DomRenderProxy';
-import { EventManager } from '../events/EventManager';
 import { ConvertUtils } from '@dooboostore/core/convert/ConvertUtils';
 import { BehaviorSubject, Observable } from '@dooboostore/core/message';
-import ToURLSearchParamsParams = ConvertUtils.ToURLSearchParamsParams;
 import { Expression } from '@dooboostore/core/expression/Expression';
+import ToURLSearchParamsParams = ConvertUtils.ToURLSearchParamsParams;
+
 export type RouteData = {
   path: string;
   url: string;
@@ -141,7 +140,7 @@ export abstract class Router<T = any> {
     return Expression.Path.pathNameData(currentUrl, urlExpression);
   }
 
-  async go(config: { path: RouteAction, data?: any, replace?: boolean, title?: string, disabledPopEvent?: boolean } | string): Promise<void> {
+  async go(config: { path: RouteAction, data?: any, replace?: boolean, title?: string, disabledPopEvent?: boolean, scrollToTop?: boolean } | string): Promise<void> {
     if (typeof config === 'string') {
       config = {path: config};
     }
@@ -155,6 +154,12 @@ export abstract class Router<T = any> {
     if (!this.config.disableAttach) {
       await this.attach();
     }
+    
+    // 스크롤 제어 (기본값: true - 맨 위로 스크롤)
+    if (config.scrollToTop !== false) {
+      this._config.window.scrollTo(0, 0);
+    }
+    
     // console.log('----------', data, config)
     if (!config.disabledPopEvent) {
       this.dispatchPopStateEvent(config?.data);

@@ -1,5 +1,5 @@
 import { ComponentSet } from './ComponentSet';
-import { RouterAction, RoutingDataSet } from '@dooboostore/simple-boot/route/RouterAction';
+import { RouterAction } from '@dooboostore/simple-boot/route/RouterAction';
 import { Intent } from '@dooboostore/simple-boot/intent/Intent';
 import { RouterModule } from '@dooboostore/simple-boot/route/RouterModule';
 import { RouterManager } from '@dooboostore/simple-boot/route/RouterManager';
@@ -9,7 +9,7 @@ import { getDomRenderOriginObject } from '@dooboostore/dom-render/DomRenderProxy
 
 export type ComponentRouterBaseConfig = ComponentBaseConfig & { sameRouteNoApply?: boolean }
 
-export abstract class ComponentRouterBase<T = any> extends ComponentBase<T, ComponentRouterBaseConfig> implements RouterAction { // OnDrThisBind
+export abstract class ComponentRouterBase<T = any> extends ComponentBase<T, ComponentRouterBaseConfig> implements RouterAction.CanActivate, RouterAction.OnRouting { // OnDrThisBind
   public child?: ComponentSet;
 
 
@@ -42,10 +42,16 @@ export abstract class ComponentRouterBase<T = any> extends ComponentBase<T, Comp
   }
 
 
-  async canActivate(url: RoutingDataSet, data?: any): Promise<void> {
+  async canActivate(url: RouterAction.RoutingDataSet, data?: any): Promise<void> {
     // console.log('cccccccccccc')
     if (!(this.componentConfig?.sameRouteNoApply && getDomRenderOriginObject(this.child?.obj) === getDomRenderOriginObject(data))) {
       this.child = new ComponentSet(data);
+    }
+  }
+
+  async onRouting(r: RouterAction.RoutingDataSet): Promise<void> {
+    if (RouterAction.isOnRouting(this.child?.obj)){
+      await this.child.obj.onRouting(r);
     }
   }
 

@@ -1,68 +1,67 @@
+
+import { ObjectUtils } from '@dooboostore/core/object/ObjectUtils';
+
 export class ScriptUtils {
-  public static getVariablePaths(script: string): Set<string> {
-    const usingVars = new Set<string>();
 
-    class GetDetectProxy implements ProxyHandler<any> {
-      public usingVars = usingVars;
-
-      constructor(public prefix?: string) {}
-
-      set(target: any, p: string | symbol, value: any, receiver: any): boolean {
-        return true;
-      }
-
-      get(target: any, p: string | symbol, receiver: any): any {
-        let items;
-        if (typeof p === 'string' && isNaN(Number(p))) {
-          items = this.prefix ? this.prefix + '.' + p : p;
-          this.usingVars.add(items);
-        } else if (typeof p === 'string' && !isNaN(Number(p))) {
-          items = this.prefix ? this.prefix + '[' + p + ']' : p;
-          this.usingVars.add(items);
-        }
-        return new Proxy(() => {}, new GetDetectProxy(items));
-      }
-    }
-
-    const destUser = new Proxy(() => {}, new GetDetectProxy());
-
-    try {
-      // 동적으로 함수 생성 후 bind
-      // const boundFunc = new Function("return this.value").bind(obj);
-      // console.log(boundFunc()); // 42
-
-      // eslint-disable-next-line no-new-func,no-unused-expressions
-      Function(`"use strict"; ${script}; `).bind(destUser)();
-    } catch (e) {
-      console.error(e);
-    }
-    return usingVars;
+  /**
+   * @deprecated Use ObjectUtils.Script.evalReturn instead
+   */
+  public static evalReturn<T = any>(script: string | { bodyScript: string, returnScript: string }, thisTarget: any = {}): T {
+    return ObjectUtils.Script.evalReturn(script, thisTarget);
   }
 
-  public static evalReturn<T = any>(script: string | {bodyScript: string, returnScript: string}, thisTarget: any = {}): T {
-    // if (!script.startsWith('this.')) {
-    //     script = 'this.' + script;
-    // }
-    let bodyScript = '';
-    let returnScript = '';
-    if (typeof script === 'object') {
-      bodyScript = script.bodyScript;
-      returnScript = script.returnScript;
-    } else {
-      returnScript = script;
-    }
-    return this.eval(`${bodyScript}; return ${returnScript} `, thisTarget) as T;
-  }
-
+  /**
+   * @deprecated Use ObjectUtils.Script.eval instead
+   */
   public static eval<T = any>(script: string, thisTarget: any = {}): T | undefined {
-    try {
-      return Function(`"use strict"; ${script} `).bind(thisTarget)() as T;
-    }catch (e) {
-      console.error('eval error', e)
-      console.error(script)
-      return undefined;
-    }
+    return ObjectUtils.Script.eval(script, thisTarget);
   }
+
+  /**
+   * @deprecated Use ObjectUtils.Script.eval instead
+   */
+  // public static getVariablePaths(script: string): Set<string> {
+  //   const usingVars = new Set<string>();
+  //
+  //   class GetDetectProxy implements ProxyHandler<any> {
+  //     public usingVars = usingVars;
+  //
+  //     constructor(public prefix?: string) {}
+  //
+  //     set(target: any, p: string | symbol, value: any, receiver: any): boolean {
+  //       return true;
+  //     }
+  //
+  //     get(target: any, p: string | symbol, receiver: any): any {
+  //       let items;
+  //       if (typeof p === 'string' && isNaN(Number(p))) {
+  //         items = this.prefix ? this.prefix + '.' + p : p;
+  //         this.usingVars.add(items);
+  //       } else if (typeof p === 'string' && !isNaN(Number(p))) {
+  //         items = this.prefix ? this.prefix + '[' + p + ']' : p;
+  //         this.usingVars.add(items);
+  //       }
+  //       return new Proxy(() => {}, new GetDetectProxy(items));
+  //     }
+  //   }
+  //
+  //   const destUser = new Proxy(() => {}, new GetDetectProxy());
+  //
+  //   try {
+  //     // 동적으로 함수 생성 후 bind
+  //     // const boundFunc = new Function("return this.value").bind(obj);
+  //     // console.log(boundFunc()); // 42
+  //
+  //     // eslint-disable-next-line no-new-func,no-unused-expressions
+  //     Function(`"use strict"; ${script}; `).bind(destUser)();
+  //   } catch (e) {
+  //     console.error(e);
+  //   }
+  //   console.log('-------usingV', usingVars)
+  //   return usingVars;
+  // }
+
+
 
   public static loadElement(
     document: Document,

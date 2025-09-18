@@ -245,6 +245,54 @@ export namespace ObjectUtils {
         return result.join('');
       }
       
+      // Handle function calls by processing the entire path with regex replacement
+      if (path.includes('(')) {
+        // Replace function calls with a placeholder, process the path, then restore function calls
+        const functionCallMatches: Array<{original: string, processed: string, placeholder: string}> = [];
+        let tempPath = path;
+        let counter = 0;
+        
+        // Find and process function calls with their arguments
+        const functionCallRegex = /(\w+)\(([^()]*(?:\([^()]*\)[^()]*)*)\)/g;
+        let match;
+        
+        while ((match = functionCallRegex.exec(path)) !== null) {
+          const fullMatch = match[0];
+          const funcName = match[1];
+          const funcArgs = match[2];
+          const placeholder = `__FUNC_CALL_${counter}__`;
+          
+          // Process function arguments recursively
+          const processedArgs = funcArgs ? toOptionalChainPath(funcArgs) : '';
+          const processedFuncCall = `${funcName}?.(${processedArgs})`;
+          
+          functionCallMatches.push({
+            original: fullMatch,
+            processed: processedFuncCall,
+            placeholder: placeholder
+          });
+          
+          tempPath = tempPath.replace(fullMatch, placeholder);
+          counter++;
+        }
+        
+        // Process the path without function calls
+        const tokens = tempPath.match(/[^?.[\]]+|\[[^\]]*\]/g);
+        let processedPath = '';
+        if (tokens && tokens.length > 1) {
+          processedPath = tokens.join('?.');
+        } else {
+          processedPath = tempPath;
+        }
+        
+        // Restore function calls
+        for (const funcMatch of functionCallMatches) {
+          processedPath = processedPath.replace(funcMatch.placeholder, funcMatch.processed);
+        }
+        
+        return processedPath;
+      }
+      
       // Tokenize the path by '.', '[', ']', and '?' to handle property access and existing optional chaining.
       const tokens = path.match(/[^?.[\]]+|\[[^\]]*\]/g);
       if (!tokens) {
@@ -478,6 +526,122 @@ export namespace ObjectUtils {
       traverse(obj, '', new Set());
       return paths;
     };
+
+    /**
+     * 스크립트에서 사용되는 변수 경로들을 감지합니다.
+     * 프록시를 사용하여 스크립트 실행 중 접근되는 모든 속성 경로를 추적합니다.
+     * 
+     * @param script 분석할 JavaScript 스크립트 문자열
+     * @param options 감지 옵션
+     * @param options.excludeThis true일 경우 'this' 키워드를 결과에서 제외
+     * @returns 스크립트에서 사용된 변수 경로들의 Set
+     */
+    export const detectPathFromScript = (script: string, options?: { excludeThis?: boolean }): Set<string> => {
+      const usingVars = new Set<string>();
+
+      class GetDetectProxy implements ProxyHandler<any> {
+        public usingVars = usingVars;
+
+        constructor(public prefix?: string) {}
+
+        set(target: any, p: string | symbol, value: any, receiver: any): boolean {
+          return true;
+        }
+
+        get(target: any, p: string | symbol, receiver: any): any {
+          // Symbol 속성들은 무시 (toString, valueOf 등)
+          if (typeof p === 'symbol') {
+            return this.createSafeProxy(this.prefix);
+          }
+
+          let items: string | undefined;
+          const propStr = String(p);
+          
+          // 숫자 인덱스 처리
+          if (!isNaN(Number(propStr))) {
+            items = this.prefix ? `${this.prefix}[${propStr}]` : propStr;
+          } 
+          // 일반 속성 처리
+          else {
+            items = this.prefix ? `${this.prefix}.${propStr}` : propStr;
+          }
+          
+          // 유효한 변수 경로만 추가
+          if (items) {
+            this.usingVars.add(items);
+          }
+          
+          return this.createSafeProxy(items);
+        }
+
+        apply(target: any, thisArg: any, argArray?: any): any {
+          // 함수 호출 시에도 안전한 프록시 반환 (체이닝 가능)
+          return this.createSafeProxy(this.prefix);
+        }
+
+
+
+        private createSafeProxy(prefix?: string): any {
+          const dummyFunction = () => {};
+          const handler = new GetDetectProxy(prefix);
+          
+          return new Proxy(dummyFunction, {
+            get: (target, prop, receiver) => {
+              if (prop === Symbol.toPrimitive) {
+                return () => '';
+              }
+              if (prop === 'valueOf') {
+                return () => handler.createSafeProxy(prefix);
+              }
+              if (prop === 'toString') {
+                return () => '';
+              }
+              return handler.get(target, prop, receiver);
+            },
+            set: handler.set.bind(handler),
+            apply: handler.apply.bind(handler)
+          });
+        }
+      }
+
+      // 전역 변수들을 안전하게 처리하기 위한 컨텍스트 생성
+      const globalContext = {
+        window: new Proxy(() => {}, new GetDetectProxy('window')),
+        document: new Proxy(() => {}, new GetDetectProxy('document')),
+        console: new Proxy(() => {}, new GetDetectProxy('console')),
+        // this는 destUser 자체가 됨
+      };
+
+      const destUser = new Proxy(() => {}, new GetDetectProxy('this'));
+
+      try {
+        // 전역 컨텍스트와 함께 실행
+        const func = new Function('window', 'document', 'console', `"use strict"; ${script}; `);
+        func.call(destUser, globalContext.window, globalContext.document, globalContext.console);
+      } catch (e) {
+        console.error('detectPathFromScript error:', e);
+      }
+
+      // excludeThis 옵션이 true면 'this'로 시작하는 경로에서 'this' 제거
+      if (options?.excludeThis) {
+        const filteredVars = new Set<string>();
+        usingVars.forEach(path => {
+          if (path === 'this') {
+            // 'this' 자체는 제외
+            return;
+          } else if (path.startsWith('this.')) {
+            // 'this.'로 시작하는 경우 'this.' 부분 제거
+            filteredVars.add(path.substring(5));
+          } else {
+            // 그 외는 그대로 추가
+            filteredVars.add(path);
+          }
+        });
+        return filteredVars;
+      }
+      
+      return usingVars;
+    };
   }
 
   export const toDeleteKey = (obj: any, keys: (null | string)[]) => {
@@ -489,6 +653,45 @@ export namespace ObjectUtils {
     keys.filter(it => isDefined(it)).forEach(it => {
       delete obj[it];
     })
+  }
+
+  export namespace Script {
+    /**
+     * JavaScript 스크립트를 실행하고 결과를 반환합니다.
+     * 
+     * @param script 실행할 스크립트 문자열 또는 {bodyScript, returnScript} 객체
+     * @param thisTarget 스크립트 실행 시 this로 바인딩될 객체
+     * @returns 스크립트 실행 결과
+     */
+    export const evalReturn = <T = any>(script: string | { bodyScript: string, returnScript: string }, thisTarget: any = {}): T => {
+      let bodyScript = '';
+      let returnScript = '';
+      if (typeof script === 'object') {
+        bodyScript = script.bodyScript;
+        returnScript = script.returnScript;
+      } else {
+        returnScript = script;
+      }
+      return eval(`${bodyScript}; return ${returnScript} `, thisTarget) as T;
+    };
+
+    /**
+     * JavaScript 스크립트를 안전하게 실행합니다.
+     * 
+     * @param script 실행할 스크립트 문자열
+     * @param thisTarget 스크립트 실행 시 this로 바인딩될 객체
+     * @returns 스크립트 실행 결과 또는 undefined (에러 시)
+     */
+    // @ts-ignore
+    export const eval = <T = any>(script: string, thisTarget: any = {}): T | undefined => {
+      try {
+        return Function(`"use strict"; ${script} `).bind(thisTarget)() as T;
+      } catch (e) {
+        console.error('eval error', e);
+        console.error(script);
+        return undefined;
+      }
+    };
   }
 
 }

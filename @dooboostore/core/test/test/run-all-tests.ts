@@ -21,3 +21,4 @@ import './operators-integration.test';
 import './cssParser.test';
 import './HttpFetcher.test';
 import './HttpXmlFetcher.test';
+import './fetcher.test';

@@ -237,7 +237,7 @@ export class RawSet {
         // script = script.replaceAll('#{','${').replaceAll('}#', '}')
         // console.log('--------2--', script);
         // TODO: 훔.. 꼭필요한가..?  트리거될때 스크립트변수 까지 감지해야될까?
-        Array.from(ScriptUtils.getVariablePaths(script)).filter(it => !it.startsWith(`___${EventManager.SCRIPTS_VARNAME}`)).forEach(it => usingTriggerVariables.add(it));
+        Array.from(ObjectUtils.Path.detectPathFromScript(script,{excludeThis: true})).filter(it => !it.startsWith(`___${EventManager.SCRIPTS_VARNAME}`)).forEach(it => usingTriggerVariables.add(it));
       }
     });
     // console.log('usingTriggerVariable----------->', usingTriggerVariables)

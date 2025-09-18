@@ -4,6 +4,7 @@ import { ElementUtils } from '@dooboostore/core-web/element/ElementUtils';
 import { Range } from '../iterators/Range';
 import { DomRenderFinalProxy } from '../types/Types';
 import { getDomRenderConfig } from '../DomRenderProxy';
+import { ObjectUtils } from '@dooboostore/core/object/ObjectUtils';
 
 type HandlerInfo = {
   element: HTMLElement;
@@ -696,7 +697,7 @@ export class EventManager {
         // raws = raws!.replace(RegExp(it.replace('$', '\\$'), 'g'), `this?.___${it}`);
         raws = raws!.replace(RegExp(it.replace('$', '\\$'), 'g'), `this.___${it}`);
       });
-      const variablePaths = ScriptUtils.getVariablePaths(raws ?? '');
+      const variablePaths = ObjectUtils.Path.detectPathFromScript(raws ?? '', {excludeThis: true});
       return variablePaths.has(varName);
     }
     return false;
