@@ -1072,9 +1072,12 @@ export class RawSet {
     return vars;
   }
 
-  public static async drThisCreate(rawSet: RawSet, element: Element, drThis: string, drVarOption: string, drStripOption: boolean | string | null, obj: any, config: DomRenderConfig, set?: ComponentSet): Promise<DocumentFragment> {
+  public static async drThisCreate(rawSet: RawSet, element: Element, drThis: string, drVarOption: string, drStripOption: boolean | string | null, obj: any, config: DomRenderConfig, set?: ComponentSet): Promise<DocumentFragment|undefined> {
     // console.log('ttttttttttttttttttttt',element.innerHTML, drThis, set, obj);
-    const fag = config.window.document.createDocumentFragment();
+    const fag = config.window.document?.createDocumentFragment();
+    if(!fag) {
+      return ;
+    }
     const targetElement = element.cloneNode(true) as Element;
     let targetObj = obj;
     if (set) {
@@ -1318,7 +1321,7 @@ export class RawSet {
       styles,
       template,
       noStrip,
-      async callBack(element: Element, obj: any, rawSet: RawSet, attrs: Attrs, config: DomRenderConfig): Promise<DocumentFragment> {
+      async callBack(element: Element, obj: any, rawSet: RawSet, attrs: Attrs, config: DomRenderConfig): Promise<DocumentFragment | undefined> {
         const templateStyle = await RawSet.fetchTemplateStyle({template: this.template, styles: this.styles});
         this.template = templateStyle.template;
         this.styles = templateStyle.styles;
@@ -1473,7 +1476,7 @@ export class RawSet {
         // let data = await RawSet.drThisCreate(rawSet, element, `this.__domrender_components.${componentKey}`, '', false, obj, config);
 
         // 넘어온 innerHTML에 this가 있는걸 다시 복호화해서 제대로 작동하도록한다. 부모에서의 this면 부모껄로 작동되게
-        if (innerHTMLThisRandom) {
+        if (data && innerHTMLThisRandom) {
           const template = config.window.document.createElement('template') as HTMLTemplateElement;
           template.content.append(data);
           template.innerHTML = template.innerHTML.replace(RegExp(innerHTMLThisRandom, 'g'), 'this.');

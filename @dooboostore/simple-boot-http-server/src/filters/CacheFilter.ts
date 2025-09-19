@@ -78,7 +78,7 @@ export class CacheFilter implements Filter {
 
     const cache = this.cacheConfig.caches[sessionData.key];
     if (cache) {
-      const existes = this.config.config.cacheDir ? FileUtils.existesSync(cache.path) : this.storage.has(cache.path);
+      const existes = this.config.config.cacheDir ? FileUtils.existsSync(cache.path) : this.storage.has(cache.path);
       const diffTime = Date.now() - cache.createTime;
       if (!existes || diffTime > cache.lifeTime) {
         delete this.cacheConfig[sessionData.key];
@@ -106,7 +106,7 @@ export class CacheFilter implements Filter {
   }
 
   private deleteChunk(path: string) {
-    if (this.config.config.cacheDir && FileUtils.existesSync(path)) {
+    if (this.config.config.cacheDir && FileUtils.existsSync(path)) {
       FileUtils.deleteFileSync(path);
     } else if (this.storage.has(path)) {
       this.storage.delete(path);

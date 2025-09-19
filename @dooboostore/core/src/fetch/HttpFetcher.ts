@@ -49,14 +49,19 @@ export const isHttpResponseError = (data: any): data is HttpResponseError => {
   return data instanceof HttpResponseError;
 }
 
+export type HttpFetcherRequest<RESPONSE = Response, CONFIG = any, T = RESPONSE> = FetcherRequest<
+  HttpFetcherTarget,
+  RESPONSE,
+  HttpFetcherConfig<CONFIG, RESPONSE>,
+  T
+>;
+
 export class HttpFetcher<
-  CONFIG,
+  CONFIG = any,
   RESPONSE = Response,
   PIPE extends { responseData?: RESPONSE | undefined } = any
 > extends Fetcher<HttpFetcherTarget, RESPONSE, HttpFetcherConfig<CONFIG, RESPONSE>, PIPE> {
-  get<T = RESPONSE>(
-    config: FetcherRequest<HttpFetcherTarget, RESPONSE, HttpFetcherConfig<CONFIG, RESPONSE>, T>
-  ): Promise<T> {
+  get<T = RESPONSE>(config: HttpFetcherRequest<RESPONSE, CONFIG, T>): Promise<T> {
     config.config ??= {};
     config.config.fetch = config.config?.fetch ?? {};
     config.config.fetch.method = 'GET';
@@ -64,7 +69,7 @@ export class HttpFetcher<
   }
 
   post<T = RESPONSE>(
-    config: FetcherRequest<HttpFetcherTarget, RESPONSE, HttpFetcherConfig<CONFIG, RESPONSE>, T>
+    config: HttpFetcherRequest<RESPONSE, CONFIG, T>
   ): Promise<T> {
     config.config ??= {};
     config.config.fetch = config.config?.fetch ?? {};
@@ -73,7 +78,7 @@ export class HttpFetcher<
   }
 
   patch<T = RESPONSE>(
-    config: FetcherRequest<HttpFetcherTarget, RESPONSE, HttpFetcherConfig<CONFIG, RESPONSE>, T>
+    config: HttpFetcherRequest<RESPONSE, CONFIG, T>
   ): Promise<T> {
     config.config ??= {};
     config.config.fetch = config.config?.fetch ?? {};
@@ -82,7 +87,7 @@ export class HttpFetcher<
   }
 
   put<T = RESPONSE>(
-    config: FetcherRequest<HttpFetcherTarget, RESPONSE, HttpFetcherConfig<CONFIG, RESPONSE>, T>
+    config: HttpFetcherRequest<RESPONSE, CONFIG, T>
   ): Promise<T> {
     config.config ??= {};
     config.config.fetch = config.config?.fetch ?? {};
@@ -91,7 +96,7 @@ export class HttpFetcher<
   }
 
   head<T = RESPONSE>(
-    config: FetcherRequest<HttpFetcherTarget, RESPONSE, HttpFetcherConfig<CONFIG, RESPONSE>, T>
+    config: HttpFetcherRequest<RESPONSE, CONFIG, T>
   ): Promise<T> {
     config.config ??= {};
     config.config.fetch = config.config?.fetch ?? {};
@@ -100,7 +105,7 @@ export class HttpFetcher<
   }
 
   delete<T = RESPONSE>(
-    config: FetcherRequest<HttpFetcherTarget, RESPONSE, HttpFetcherConfig<CONFIG, RESPONSE>, T>
+    config: HttpFetcherRequest<RESPONSE, CONFIG, T>
   ): Promise<T> {
     config.config ??= {};
     config.config.fetch = config.config?.fetch ?? {};
@@ -118,28 +123,35 @@ export class HttpFetcher<
     return config.response;
   }
 
-  protected afterSuccess<T>(config: FetcherRequest<HttpFetcherTarget, RESPONSE, HttpFetcherConfig<CONFIG, RESPONSE>, T>, pipe: PIPE): void {
-  }
+  protected afterSuccess<T>(
+    config: HttpFetcherRequest<RESPONSE, CONFIG, T>,
+    pipe: PIPE
+  ): void {}
 
-  protected afterSuccessTransform<T>(config: FetcherRequest<HttpFetcherTarget, RESPONSE, HttpFetcherConfig<CONFIG, RESPONSE>, T>, pipe: PIPE): void {
-  }
+  protected afterSuccessTransform<T>(
+    config: HttpFetcherRequest<RESPONSE, CONFIG, T>,
+    pipe: PIPE
+  ): void {}
 
-  protected before<T>(config: FetcherRequest<HttpFetcherTarget, RESPONSE, HttpFetcherConfig<CONFIG, RESPONSE>, T>, pipe: PIPE): void {
-  }
+  protected before<T>(
+    config: HttpFetcherRequest<RESPONSE, CONFIG, T>,
+    pipe: PIPE
+  ): void {}
 
-  protected error<T>(config: FetcherRequest<HttpFetcherTarget, RESPONSE, HttpFetcherConfig<CONFIG, RESPONSE>, T>, pipe: PIPE, e: any): void {
-  }
+  protected error<T>(
+    config: HttpFetcherRequest<RESPONSE, CONFIG, T>,
+    pipe: PIPE,
+    e: any
+  ): void {}
 
-  protected finally<T>(config: FetcherRequest<HttpFetcherTarget, RESPONSE, HttpFetcherConfig<CONFIG, RESPONSE>, T>, pipe: PIPE): void {
-  }
+  protected finally<T>(
+    config: HttpFetcherRequest<RESPONSE, CONFIG, T>,
+    pipe: PIPE
+  ): void {}
 
-  protected beforeFetch(fetch: FetchSet): void {
+  protected beforeFetch(fetch: FetchSet): void {}
 
-  };
-
-  protected afterFetch(fetch: FetchSet, response: Response): void {
-
-  };
+  protected afterFetch(fetch: FetchSet, response: Response): void {}
 
   // protected async errorTransform(e: any): Promise<HttpResponseError<any>> {
   protected async errorTransform(e: any): Promise<HttpResponseError> {
@@ -161,11 +173,9 @@ export class HttpFetcher<
     return httpResponseError;
   }
 
-
   protected async execute<T = RESPONSE>(
-    fetcherRequest: FetcherRequest<HttpFetcherTarget, RESPONSE, HttpFetcherConfig<CONFIG, RESPONSE>, T>
+    fetcherRequest: HttpFetcherRequest<RESPONSE, CONFIG, T>
   ): Promise<any | RESPONSE> {
-
     let target = fetcherRequest.target;
     let config = fetcherRequest.config;
     // target data setting
@@ -192,7 +202,7 @@ export class HttpFetcher<
     }
 
     // before proxy fetch
-    const beforeProxyData = {requestInfo: target, init: config?.fetch} as BeforeProxyFetchParams<URL>;
+    const beforeProxyData = { requestInfo: target, init: config?.fetch } as BeforeProxyFetchParams<URL>;
     let beforeData = config?.beforeProxyFetch
       ? await config?.beforeProxyFetch(config as any)
       : beforeProxyData.requestInfo;
@@ -224,14 +234,18 @@ export class HttpFetcher<
       config.fetch.signal = abortController.signal;
     }
 
-    this.beforeFetch({target, requestInit: config?.fetch});
+    this.beforeFetch({ target, requestInit: config?.fetch });
     return fetch(target, config?.fetch)
       .then(async it => {
         // console.log('httpFetch!!!', Array.from(it.headers))
-        this.afterFetch({target: target as URL, requestInit: config?.fetch}, it);
+        this.afterFetch({ target: target as URL, requestInit: config?.fetch }, it);
         // after proxy fetch
         // @ts-ignore
-        const afterProxyData: AfterProxyFetchParams<any> = {fetch: {target: target as URL, requestInit: config.fetch}, config: beforeData, response: it};
+        const afterProxyData: AfterProxyFetchParams<any> = {
+          fetch: { target: target as URL, requestInit: config.fetch },
+          config: beforeData,
+          response: it
+        };
         it = config?.afterProxyFetch ? await config.afterProxyFetch(afterProxyData) : it;
         // @ts-ignore
         it = config?.skipGlobalAfterProxyFetch ? it : await this.afterProxyFetch(afterProxyData);

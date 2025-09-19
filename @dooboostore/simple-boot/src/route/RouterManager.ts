@@ -33,6 +33,10 @@ export class RouterManager {
       const routerData = routerAtomic.getConfig<RouterConfig>(RouterMetadataKey);
       if (routerData) {
         const currentPrefix = prefix + routerData.path;
+        // Add the current router's path if it has a default route
+        if (routerData.route && routerData.route['']) {
+          map[currentPrefix] = routerData.route[''];
+        }
         if (routerData.route) {
           Object.entries(routerData.route).forEach(([key, value]) => {
             map[currentPrefix + key] = value;
@@ -94,12 +98,10 @@ export class RouterManager {
           const current = routerChains[i];
           const next = routerChains[i + 1];
           const value = current.getValue()! as any;
-          if (RouterAction.isCanActivate(value)) {
-            if (next) {
+          if (RouterAction.isCanActivate(value) && next) {
               await value.canActivate(routingDataSet, next.getValue());
-            }
           }
-          if (RouterAction.isOnRouting(value)) {
+          if (RouterAction.isOnRouting(value) && next) {
             await value.onRouting(routingDataSet);
           }
         }

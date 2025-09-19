@@ -92,7 +92,7 @@ export namespace FileUtils {
     return Array.isArray(path) ? node_path.join(...path) : path;
   }
 
-  export const existesSync = (path: PathParamType, config?: {  existes?: (path: string) => void, noExistes?: (path: string) => void }) => {
+  export const existsSync = (path: PathParamType, config?: {  existes?: (path: string) => void, noExistes?: (path: string) => void }) => {
     const p = FileUtils.path(path);
     if (node_fs.existsSync(p)) {
       config?.existes?.(p);
@@ -104,7 +104,7 @@ export namespace FileUtils {
   }
 
   export const mkdirSync = (path: PathParamType, config?: MakeDirectoryOptions) => {
-    FileUtils.existesSync(
+    FileUtils.existsSync(
       path,
       {
       noExistes: (path) => {
@@ -116,7 +116,7 @@ export namespace FileUtils {
 
   export const mkdir = async (path: PathParamType, config?: MakeDirectoryOptions): Promise<string> => {
     return new Promise((resolve, reject) => {
-      FileUtils.existesSync(
+      FileUtils.existsSync(
         path,
         {
         noExistes: (path) => {
@@ -155,25 +155,29 @@ export namespace FileUtils {
 
   export const deleteSync = (path: PathParamType, config?: {options?: RmOptions}) => {
     const p = FileUtils.path(path);
-    if (FileUtils.existesSync(p)) {
+    if (FileUtils.existsSync(p)) {
       config?.options ? node_fs.rmSync(p, config?.options) :  node_fs.rmSync(p);
     }
   }
 
   export const deleteDirSync = (path: PathParamType, config?: {options?: RmDirOptions}) => {
     const p = FileUtils.path(path);
-    if (FileUtils.existesSync(p)) {
+    if (FileUtils.existsSync(p)) {
       config?.options ? node_fs.rmdirSync(p, config?.options) : node_fs.rmdirSync(p);
     }
   }
   export const deleteFileSync = (path: PathParamType) => {
     const p = FileUtils.path(path);
-    if (FileUtils.existesSync(p)) {
+    if (FileUtils.existsSync(p)) {
       node_fs.unlinkSync(p);
     }
   }
 
 
-
+  export const copySync = (source: PathParamType, destination: PathParamType, options?: Parameters<typeof node_fs.cpSync>[2]) => {
+    const srcPath = FileUtils.path(source);
+    const destPath = FileUtils.path(destination);
+    node_fs.cpSync(srcPath, destPath, options);
+  }
 
 }

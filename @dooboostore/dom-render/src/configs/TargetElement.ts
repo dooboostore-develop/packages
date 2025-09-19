@@ -9,7 +9,7 @@ export type TargetElement = {
     noStrip?:boolean;
     template?: string;
     styles?: string | (string[]);
-    callBack: (target: Element, obj: any, rawSet: RawSet, attrs: Attrs, config: DomRenderConfig) => Promise<DocumentFragment>;
+    callBack: (target: Element, obj: any, rawSet: RawSet, attrs: Attrs, config: DomRenderConfig) => Promise<DocumentFragment | undefined>;
     complete?: (target: Element, obj: any, rawSet: RawSet) => void;
     __render?: Render;
     __creatorMetaData?: CreatorMetaData;

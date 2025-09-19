@@ -28,11 +28,9 @@ export namespace Route {
       this.inputDomRenderConfig = domRenderConfig;
     }
 
-
     onInitRender(param: any, rawSet: RawSet) {
       super.onInitRender(param, rawSet);
       this.routerSubscription = this.inputDomRenderConfig?.router?.observable.subscribe(it => {
-        console.log('----------')
         if (this.value && this.inputDomRenderConfig) {
           this.sw = this.check(this.inputDomRenderConfig);
         } else {
@@ -60,46 +58,22 @@ export namespace Route {
 
   export class Match<D> extends CheckerBase<D> {
     check(config?: DomRenderConfig): boolean {
-      return config?.router.test(this.value);
+      return !!config?.router?.test(this.value);
     }
   }
 
   export class Regexp<D> extends CheckerBase<D> {
     check(config?: DomRenderConfig): boolean {
-      return config?.router.testRegexp(this.value);
+      return !!config?.router?.testRegexp(this.value);
     }
   }
-
-
-  // export class Route<D> extends ComponentBase implements OnInitRender {
-  //   constructor(config: DomRenderConfig) {
-  //     super({onlyParentType: [Match]});
-  //   }
-  // }
 }
 
-// const iif = DomRender.createComponent({
-//   type: If.If,
-//   tagName: If.selector,
-//   template: '<div dr-if="@this@.sw" dr-option-strip="true">#innerHTML#</div>' });
 export default {
   match: (config?: DomRenderConfig) => {
-
-
-    // if (!customElements.get(`${Route.selector}-match`)) {
-    //   console.log('hghhhhhhhhhh')
-    //   customElements.define(`${Route.selector}-match`, class extends HTMLElement {
-    //     constructor() {
-    //       super();
-    //       this.hidden = true;
-    //     }
-    //   });
-    // }
-
     return RawSet.createComponentTargetElement({
       name: `${Route.selector}-match`,
       template: '<div dr-if="@this@.sw" dr-option-strip="true">#innerHTML#</div>',
-      // template: '<div>${@this@.value}$ #innerHTML#</div><button dr-event-click="@this@.value=new Date().toISOString()">aa</button>',
       objFactory: (e, o, r2, counstructorParam) => {
         return DomRender.run({rootObject: new Route.Match(config), config: config});
       }
@@ -114,13 +88,4 @@ export default {
       }
     })
   },
-  // route: (config?: Config) => {
-  //   return RawSet.createComponentTargetElement({
-  //     name: Route.selector,
-  //     template: '#innerHTML#',
-  //     objFactory: (e,o,r2, counstructorParam) => {
-  //       return DomRender.run({rootObject: new Route.Route(config), config: config});
-  //     }
-  //   })
-  // },
 }

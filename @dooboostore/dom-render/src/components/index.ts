@@ -5,11 +5,13 @@ import PromiseSwitch from './promise/PromiseSwitch';
 import Choose from './choose/Choose';
 import CheckBox from './checkbox/CheckBox';
 import Radio from './radio/Radio';
+import RouterOutlet from './router/RouterOutlet';
 import Select from './select/Select';
 import Timer from './timer/Timer';
 import Details from './details/Details';
 import Input from './input/Input';
 import Route from './router/Route';
+import A from './a/A';
 
 export const drComponent = {
   ...If,
@@ -24,4 +26,6 @@ export const drComponent = {
   ...Details,
   ...Input,
   ...Route,
+  ...RouterOutlet,
+  ...A,
 }

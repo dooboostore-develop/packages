@@ -4,9 +4,8 @@
     "outDir": "../dist-front",
     "baseUrl": ".",
     "paths": {
-      "@server/*": ["../server/*"],
-      "@front/*": ["../front/*"],
-      "@backend/*": ["../backend/*"],
+      "@front-end/*": ["../front-end/*"],
+      "@back-end/*": ["../backend-end/*"],
       "@src/*": ["../src/*"]
     }
   },

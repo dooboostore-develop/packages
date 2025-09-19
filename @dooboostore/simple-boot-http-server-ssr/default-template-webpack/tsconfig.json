@@ -19,8 +19,8 @@
     "baseUrl": ".",
     "paths": {
       "@src/*": ["src/*"],
-      "@backend/*": ["backend/*"],
-      "@front/*": ["front/*"]
+      "@back-end/*": ["back-end/*"],
+      "@front-end/*": ["front-end/*"]
     }
   },
   "typeRoots": ["./types", "./node_modules/@types"],

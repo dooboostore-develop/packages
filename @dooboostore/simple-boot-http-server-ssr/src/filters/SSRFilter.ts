@@ -14,6 +14,7 @@ import { RandomUtils } from '@dooboostore/core/random/RandomUtils';
 import * as JSDOM from 'jsdom';
 import { Expression } from '@dooboostore/core/expression/Expression';
 import { NotFoundError } from '@dooboostore/simple-boot-http-server/errors/NotFoundError';
+import { DomRenderProxy } from '@dooboostore/dom-render/DomRenderProxy';
 
 export type FactoryAndParams = {
   frontDistPath: string;
@@ -90,7 +91,7 @@ export class SSRFilter implements Filter {
     // const jsdom = await this.makeJsdom();
     const window = jsdom.window as unknown as Window & typeof globalThis;
     (window as any).ssrUse = false;
-    const option = this.config.factorySimFrontOption(window);
+    const option = this.config.factorySimFrontOption(DomRenderProxy.final(window));
     const simpleBootFront = await this.config.factory.create(option, this.config.using, this.config.domExcludes);
     simpleBootFront.run(this.otherInstanceSim);
     (simpleBootFront as any).jsdom = jsdom;

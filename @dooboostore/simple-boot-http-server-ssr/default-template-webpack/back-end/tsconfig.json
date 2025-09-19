@@ -5,7 +5,6 @@
     "baseUrl": ".",
     "strict": true,
     "paths": {
-      "@server/*": ["../server/*"],
       "@back-end/*": ["./*"],
       "@front-end/*": ["../front-end/*"],
       "@src/*": ["../src/*"]

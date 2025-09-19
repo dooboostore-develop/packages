@@ -13,7 +13,7 @@ import { OnDrThisUnBind } from '../lifecycle/dr-this/OnDrThisUnBind';
 import { OnDrThisBind } from '../lifecycle/dr-this/OnDrThisBind';
 import type { Render } from '../rawsets/Render';
 import { ReflectUtils } from '@dooboostore/core/reflect/ReflectUtils';
-import { DomRenderConfig } from 'configs/DomRenderConfig';
+import { DomRenderConfig } from '../configs/DomRenderConfig';
 import { Subject } from '@dooboostore/core/message/Subject';
 import { debounceTime } from '@dooboostore/core/message/operators/debounceTime';
 import { Subscription } from '@dooboostore/core/message/Subscription';
@@ -23,39 +23,103 @@ export const ATTRIBUTE_METADATA_KEY = Symbol('attribute');
 export const QUERY_METADATA_KEY = Symbol('query');
 export const EVENT_METADATA_KEY = Symbol('event');
 
-export function attribute(options?: { name?: string, converter?: (value: any | string | null) => any }): (target: object, propertyKey: string | symbol, descriptor?: PropertyDescriptor) => void {
+export interface AttributeMetadata {
+    propertyKey: string | symbol;
+    name: string;
+    converter?: (value: any | string | null) => any;
+    isMethod: boolean;
+}
+
+export interface QueryMetadata {
+    selector: string;
+    propertyKey: string | symbol;
+    isMethod: boolean;
+    convert?: (e: Element) => any;
+    onDestroy?: (componentInstance: any, element: Element) => void;
+    refreshTime?: number; // milliseconds
+}
+
+export interface EventMetadata {
+    query: string;
+    eventName: string;
+    methodName: string | symbol;
+    onDestroy?: (componentInstance: any, element: Element) => void;
+    refreshTime?: number; // milliseconds
+}
+
+export function attribute(nameOrOptions?: string | { name?: string, converter?: (value: any | string | null) => any }): (target: object, propertyKey: string | symbol, descriptor?: PropertyDescriptor) => void {
     return (target: object, propertyKey: string | symbol, descriptor?: PropertyDescriptor) => {
-        const attributes = ReflectUtils.getMetadata(ATTRIBUTE_METADATA_KEY, target.constructor) || [];
-        attributes.push({
+        const attributes = ReflectUtils.getMetadata<AttributeMetadata[]>(ATTRIBUTE_METADATA_KEY, target.constructor) || [];
+        
+        let name: string;
+        let converter: ((value: any | string | null) => any) | undefined;
+        
+        if (typeof nameOrOptions === 'string') {
+            name = nameOrOptions;
+        } else if (nameOrOptions) {
+            name = nameOrOptions.name || String(propertyKey);
+            converter = nameOrOptions.converter;
+        } else {
+            name = String(propertyKey);
+        }
+        
+        const attributeMetadata: AttributeMetadata = {
             propertyKey: propertyKey,
-            name: options?.name || propertyKey,
-            converter: options?.converter,
+            name: name,
+            converter: converter,
             isMethod: !!descriptor
-        });
+        };
+        
+        attributes.push(attributeMetadata);
         ReflectUtils.defineMetadata(ATTRIBUTE_METADATA_KEY, attributes, target.constructor);
     };
 }
 
-export function query(selector: string): (target: object, propertyKey: string | symbol, descriptor?: PropertyDescriptor) => void {
+export function query(selectorOrOptions: string | { selector: string, convert?: (e: Element) => any, onDestroy?: (componentInstance: any, element: Element) => void, refreshIntervalTime?: number }): (target: object, propertyKey: string | symbol, descriptor?: PropertyDescriptor) => void {
     return (target: object, propertyKey: string | symbol, descriptor?: PropertyDescriptor) => {
-        const queries = ReflectUtils.getMetadata<any[]>(QUERY_METADATA_KEY, target.constructor) || [];
-        queries.push({
+        const queries = ReflectUtils.getMetadata<QueryMetadata[]>(QUERY_METADATA_KEY, target.constructor) || [];
+        
+        let selector: string;
+        let convert: ((e: Element) => any) | undefined;
+        let onDestroy: ((componentInstance: any, element: Element) => void) | undefined;
+        let refreshTime: number | undefined;
+        
+        if (typeof selectorOrOptions === 'string') {
+            selector = selectorOrOptions;
+        } else {
+            selector = selectorOrOptions.selector;
+            convert = selectorOrOptions.convert;
+            onDestroy = selectorOrOptions.onDestroy;
+            refreshTime = selectorOrOptions.refreshIntervalTime;
+        }
+        
+        const queryMetadata: QueryMetadata = {
             selector: selector,
             propertyKey: propertyKey,
-            isMethod: !!descriptor
-        });
+            isMethod: !!descriptor,
+            convert: convert,
+            onDestroy: onDestroy,
+            refreshTime: refreshTime
+        };
+        
+        queries.push(queryMetadata);
         ReflectUtils.defineMetadata(QUERY_METADATA_KEY, queries, target.constructor);
     };
 }
 
-export function event(options: { query: string, name: string }): MethodDecorator {
+export function event(options: { query: string, name: string, onDestroy?: (componentInstance: any, element: Element) => void, refreshTime?: number }): MethodDecorator {
     return (target: object, propertyKey: string | symbol, descriptor: PropertyDescriptor) => {
-        const events = ReflectUtils.getMetadata(EVENT_METADATA_KEY, target.constructor) || [];
-        events.push({
+        const events = ReflectUtils.getMetadata<EventMetadata[]>(EVENT_METADATA_KEY, target.constructor) || [];
+        
+        const eventMetadata: EventMetadata = {
             query: options.query,
             eventName: options.name,
-            methodName: propertyKey
-        });
+            methodName: propertyKey,
+            onDestroy: options.onDestroy,
+            refreshTime: options.refreshTime
+        };
+        
+        events.push(eventMetadata);
         ReflectUtils.defineMetadata(EVENT_METADATA_KEY, events, target.constructor);
     };
 }
@@ -76,6 +140,12 @@ export class ComponentBase<T = any, C extends ComponentBaseConfig = ComponentBas
   private _attribute?: T;
   @DomRenderNoProxy
   private _boundEventListeners: { element: Element, eventName: string, listener: (e: Event) => void }[] = [];
+  @DomRenderNoProxy
+  private _queryBindings: { element: Element, metadata: QueryMetadata }[] = [];
+  @DomRenderNoProxy
+  private _eventBindings: { element: Element, metadata: EventMetadata, listener: (e: Event) => void }[] = [];
+  @DomRenderNoProxy
+  private _refreshTimers: Map<QueryMetadata | EventMetadata, NodeJS.Timeout> = new Map();
 
   @DomRenderNoProxy
   private childrenSetSubject = new Subject<ChildrenSet[]>();
@@ -128,6 +198,303 @@ export class ComponentBase<T = any, C extends ComponentBaseConfig = ComponentBas
       element.removeEventListener(eventName, listener);
     }
     this._boundEventListeners = [];
+  }
+
+  private _cleanupQueryBindings() {
+    for (const { element, metadata } of this._queryBindings) {
+      if (metadata.onDestroy) {
+        metadata.onDestroy(this, element);
+      }
+      this._clearRefreshTimer(metadata);
+    }
+    this._queryBindings = [];
+  }
+
+  private _cleanupEventBindings() {
+    for (const { element, metadata, listener } of this._eventBindings) {
+      element.removeEventListener(metadata.eventName, listener);
+      if (metadata.onDestroy) {
+        metadata.onDestroy(this, element);
+      }
+      this._clearRefreshTimer(metadata);
+    }
+    this._eventBindings = [];
+  }
+
+  private _applyQueryBinding(queryInfo: QueryMetadata, elements: Element[], newElementsOnly: Element[] = elements) {
+    const { propertyKey, isMethod, convert } = queryInfo;
+    
+    // Track bindings for cleanup
+    elements.forEach(element => {
+      this._queryBindings.push({ element, metadata: queryInfo });
+    });
+    
+    // Apply convert function if provided
+    const processedElements = convert ? elements.map(convert) : elements;
+    const processedNewElements = convert ? newElementsOnly.map(convert) : newElementsOnly;
+    
+    if (isMethod) {
+      const method = (this as any)[propertyKey];
+      if (typeof method === 'function') {
+          const paramTypes = ReflectUtils.getParameterTypes(this, propertyKey);
+          if (paramTypes && paramTypes.length > 0 && paramTypes[0] === Array) {
+              // For array methods, pass only new elements
+              method.call(this, processedNewElements, processedElements);
+          } else {
+              // For single element methods, pass first new element
+              if (processedNewElements.length > 0) {
+                  method.call(this, processedNewElements[0]);
+              }
+          }
+      }
+    } else {
+      // For properties, always set all elements (not just new ones)
+      const propertyType = ReflectUtils.getType(this, propertyKey);
+      if (propertyType === Array) {
+        (this as any)[propertyKey] = processedElements;
+      } else {
+        (this as any)[propertyKey] = processedElements[0] || null;
+      }
+    }
+  }
+
+  private _setupQueryDecorators(rawSet: RawSet) {
+    if (!rawSet) return;
+
+    const queries = ReflectUtils.getMetadata<QueryMetadata[]>(QUERY_METADATA_KEY, this.constructor);
+    // console.group('_setupQueryDecorators')
+    // console.log('queries', queries);
+    if (queries && Array.isArray(queries)) {
+      for (const queryInfo of queries) {
+        const elements = this._queryElements(queryInfo.selector, rawSet);
+        // console.log('------elements', elements);
+        this._applyQueryBinding(queryInfo, elements);
+        
+        // Setup refresh timer if specified
+        this._setupRefreshTimer(queryInfo);
+      }
+    }
+    // console.groupEnd();
+  }
+
+  private _updateQueryBinding(queryInfo: QueryMetadata, rawSet: RawSet, forceUpdate = false) {
+    const newElements = this._queryElements(queryInfo.selector, rawSet);
+    
+    // Get current bindings for this query
+    const currentBindings = this._queryBindings.filter(binding => binding.metadata === queryInfo);
+    const currentElements = currentBindings.map(binding => binding.element);
+    
+    // Check if elements have changed
+    const elementsChanged = forceUpdate || !this._arraysEqual(currentElements, newElements);
+    
+    if (elementsChanged) {
+      let addedElements: Element[] = [];
+      
+      if (forceUpdate) {
+        // Force update: cleanup all old bindings, treat all as new
+        currentBindings.forEach(({ element, metadata }) => {
+          if (metadata.onDestroy) {
+            metadata.onDestroy(this, element);
+          }
+        });
+        addedElements = newElements;
+      } else {
+        // Smart update: only cleanup removed elements, find added elements
+        const removedElements = currentElements.filter(element => !newElements.includes(element));
+        addedElements = newElements.filter(element => !currentElements.includes(element));
+        
+        removedElements.forEach(element => {
+          if (queryInfo.onDestroy) {
+            queryInfo.onDestroy(this, element);
+          }
+        });
+      }
+      
+      // Remove old bindings
+      this._queryBindings = this._queryBindings.filter(binding => binding.metadata !== queryInfo);
+      
+      // Apply new bindings, but pass only added elements to methods
+      this._applyQueryBinding(queryInfo, newElements, addedElements);
+    }
+  }
+
+  private _updateQueryDecorators(rawSet: RawSet) {
+    if (!rawSet) return;
+
+    const queries = ReflectUtils.getMetadata<QueryMetadata[]>(QUERY_METADATA_KEY, this.constructor);
+    if (queries && Array.isArray(queries)) {
+      for (const queryInfo of queries) {
+        this._updateQueryBinding(queryInfo, rawSet);
+      }
+    }
+  }
+
+  private _arraysEqual(arr1: Element[], arr2: Element[]): boolean {
+    if (arr1.length !== arr2.length) return false;
+    return arr1.every((element, index) => element === arr2[index]);
+  }
+
+  private _setupRefreshTimer(metadata: QueryMetadata | EventMetadata) {
+    if (!metadata.refreshTime || !this._rawSet) return;
+
+    const timer = setInterval(() => {
+      if (!this._rawSet) return;
+
+      if ('selector' in metadata) {
+        // QueryMetadata
+        this._updateQueryBinding(metadata as QueryMetadata, this._rawSet);
+      } else {
+        // EventMetadata
+        this._updateEventBinding(metadata as EventMetadata, this._rawSet);
+      }
+    }, metadata.refreshTime);
+
+    this._refreshTimers.set(metadata, timer);
+  }
+
+  private _clearRefreshTimer(metadata: QueryMetadata | EventMetadata) {
+    const timer = this._refreshTimers.get(metadata);
+    if (timer) {
+      clearInterval(timer);
+      this._refreshTimers.delete(metadata);
+    }
+  }
+
+  private _clearAllRefreshTimers() {
+    for (const timer of this._refreshTimers.values()) {
+      clearInterval(timer);
+    }
+    this._refreshTimers.clear();
+  }
+
+  /**
+   * Manually refresh all query and event decorators
+   * Useful when DOM elements are dynamically added/removed and you want to update bindings
+   */
+  refreshDecorators(): void {
+    if (this._rawSet) {
+      this._updateQueryDecorators(this._rawSet);
+      this._updateEventDecorators(this._rawSet);
+    }
+  }
+
+  /**
+   * Manually refresh specific query decorators by property key
+   * @param propertyKeys - Array of property keys to refresh, or single property key
+   */
+  refreshQueryDecorators(propertyKeys: (string | symbol) | (string | symbol)[]): void {
+    if (!this._rawSet) return;
+
+    const keys = Array.isArray(propertyKeys) ? propertyKeys : [propertyKeys];
+    const queries = ReflectUtils.getMetadata<QueryMetadata[]>(QUERY_METADATA_KEY, this.constructor);
+    
+    if (queries && Array.isArray(queries)) {
+      for (const queryInfo of queries) {
+        if (keys.includes(queryInfo.propertyKey)) {
+          this._updateQueryBinding(queryInfo, this._rawSet, true); // Force update
+        }
+      }
+    }
+  }
+
+  /**
+   * Manually refresh specific event decorators by method name
+   * @param methodNames - Array of method names to refresh, or single method name
+   */
+  refreshEventDecorators(methodNames: (string | symbol) | (string | symbol)[]): void {
+    if (!this._rawSet) return;
+
+    const names = Array.isArray(methodNames) ? methodNames : [methodNames];
+    const events = ReflectUtils.getMetadata<EventMetadata[]>(EVENT_METADATA_KEY, this.constructor);
+    
+    if (events && Array.isArray(events)) {
+      for (const eventInfo of events) {
+        if (names.includes(eventInfo.methodName)) {
+          this._updateEventBinding(eventInfo, this._rawSet, true); // Force update
+        }
+      }
+    }
+  }
+
+  private _applyEventBinding(eventInfo: EventMetadata, elements: Element[]) {
+    elements.forEach(element => {
+      const listener = (this as any)[eventInfo.methodName].bind(this);
+      // console.log('bind?????', element);
+      element.addEventListener(eventInfo.eventName, listener);
+      
+      // Track bindings for cleanup
+      this._eventBindings.push({ element, metadata: eventInfo, listener });
+      this._boundEventListeners.push({ element, eventName: eventInfo.eventName, listener });
+    });
+  }
+
+  private _setupEventDecorators(rawSet: RawSet) {
+    if (!rawSet) return;
+
+    const events = ReflectUtils.getMetadata<EventMetadata[]>(EVENT_METADATA_KEY, this.constructor);
+    if (events && Array.isArray(events)) {
+      for (const eventInfo of events) {
+        const elements = this._queryElements(eventInfo.query, rawSet);
+        this._applyEventBinding(eventInfo, elements);
+        
+        // Setup refresh timer if specified
+        this._setupRefreshTimer(eventInfo);
+      }
+    }
+  }
+
+  private _updateEventBinding(eventInfo: EventMetadata, rawSet: RawSet, forceUpdate = false) {
+    const newElements = this._queryElements(eventInfo.query, rawSet);
+    
+    // Get current bindings for this event
+    const currentBindings = this._eventBindings.filter(binding => binding.metadata === eventInfo);
+    const currentElements = currentBindings.map(binding => binding.element);
+    
+    // Check if elements have changed
+    const elementsChanged = forceUpdate || !this._arraysEqual(currentElements, newElements);
+    
+    if (elementsChanged) {
+      if (forceUpdate) {
+        // Force update: cleanup all old bindings
+        currentBindings.forEach(({ element, metadata, listener }) => {
+          element.removeEventListener(metadata.eventName, listener);
+          if (metadata.onDestroy) {
+            metadata.onDestroy(this, element);
+          }
+        });
+      } else {
+        // Smart update: only cleanup removed elements
+        const removedElements = currentElements.filter(element => !newElements.includes(element));
+        const removedBindings = currentBindings.filter(binding => removedElements.includes(binding.element));
+        
+        removedBindings.forEach(({ element, metadata, listener }) => {
+          element.removeEventListener(metadata.eventName, listener);
+          if (metadata.onDestroy) {
+            metadata.onDestroy(this, element);
+          }
+        });
+      }
+      
+      // Remove old bindings from tracking arrays
+      this._eventBindings = this._eventBindings.filter(binding => binding.metadata !== eventInfo);
+      this._boundEventListeners = this._boundEventListeners.filter(binding => 
+        !currentBindings.some(cb => cb.element === binding.element && cb.metadata.eventName === binding.eventName)
+      );
+      
+      // Apply new bindings
+      this._applyEventBinding(eventInfo, newElements);
+    }
+  }
+
+  private _updateEventDecorators(rawSet: RawSet) {
+    if (!rawSet) return;
+
+    const events = ReflectUtils.getMetadata<EventMetadata[]>(EVENT_METADATA_KEY, this.constructor);
+    if (events && Array.isArray(events)) {
+      for (const eventInfo of events) {
+        this._updateEventBinding(eventInfo, rawSet);
+      }
+    }
   }
 
   getAttribute<K extends keyof T>(name: K, attribute = this._attribute): T[K] | null {
@@ -226,7 +593,13 @@ export class ComponentBase<T = any, C extends ComponentBaseConfig = ComponentBas
     n.push({instance:child, data});
     this._children = n.filter(it=>it.data.render?.rawSet?.isConnected)
     this.childrenSetSubject.next(this._children);
-    // this._children.push({instance:child, data: data});
+    
+    // Update decorators when children change (DOM might have changed)
+    // Only update if elements actually changed
+    if (this._rawSet) {
+      this._updateQueryDecorators(this._rawSet);
+      this._updateEventDecorators(this._rawSet);
+    }
   }
 
   onCreatedThisChildDebounce(childrenSet: ChildrenSet[]) {
@@ -251,7 +624,7 @@ export class ComponentBase<T = any, C extends ComponentBaseConfig = ComponentBas
       this.setRawSet(other.rawSet);
     }
 
-    const attributes = ReflectUtils.getMetadata<any[]>(ATTRIBUTE_METADATA_KEY, this.constructor);
+    const attributes = ReflectUtils.getMetadata<AttributeMetadata[]>(ATTRIBUTE_METADATA_KEY, this.constructor);
     if (attributes && Array.isArray(attributes)) {
         for (const attrInfo of attributes) {
             if (this.equalsAttributeName(name, attrInfo.name as any)) {
@@ -270,10 +643,6 @@ export class ComponentBase<T = any, C extends ComponentBaseConfig = ComponentBas
   }
 
   onInitRender(param: any, rawSet: RawSet) {
-    // console.log('onInitRender!!',param, rawSet);
-    // console.dir(rawSet, {depth: 33})
-    // console.table(rawSet);
-    // console.log('--------', rawSet.point)
     this.createChildrenDebounceSubscription = this.childrenSetSubject.pipe(debounceTime(this.componentConfig?.createChildrenDebounce??0)).subscribe(it => {
       this.onCreatedThisChildDebounce(it);
     });
@@ -285,49 +654,9 @@ export class ComponentBase<T = any, C extends ComponentBaseConfig = ComponentBas
         (e as any).component = this;
       }
 
-      // Handle @query decorators
-      const queries = ReflectUtils.getMetadata<any[]>(QUERY_METADATA_KEY, this.constructor);
-      // console.log('queries', queries)
-      if (queries && Array.isArray(queries)) {
-        for (const queryInfo of queries) {
-          const { selector, propertyKey, isMethod } = queryInfo;
-          const elements = this._queryElements(selector, rawSet);
-          // console.log('-------element', elements);
-          if (isMethod) {
-            const method = (this as any)[propertyKey];
-            if (typeof method === 'function') {
-                const paramTypes = ReflectUtils.getParameterTypes(this, propertyKey);
-                if (paramTypes && paramTypes.length > 0 && paramTypes[0] === Array) {
-                    method.call(this, elements);
-                } else {
-                    if (elements.length > 0) {
-                        method.call(this, elements[0]);
-                    }
-                }
-            }
-          } else {
-            const propertyType = ReflectUtils.getType(this, propertyKey);
-            if (propertyType === Array) {
-              (this as any)[propertyKey] = elements;
-            } else {
-              (this as any)[propertyKey] = elements[0] || null;
-            }
-          }
-        }
-      }
-
-      // Handle @event decorators
-      const events = ReflectUtils.getMetadata<any[]>(EVENT_METADATA_KEY, this.constructor);
-      if (events && Array.isArray(events)) {
-        for (const eventInfo of events) {
-          const elements = this._queryElements(eventInfo.query, rawSet);
-          elements.forEach(element => {
-            const listener = (this as any)[eventInfo.methodName].bind(this);
-            element.addEventListener(eventInfo.eventName, listener);
-            this._boundEventListeners.push({ element, eventName: eventInfo.eventName, listener });
-          });
-        }
-      }
+      // Setup decorators
+      this._setupQueryDecorators(rawSet);
+      this._setupEventDecorators(rawSet);
     }
   }
 
@@ -336,11 +665,18 @@ export class ComponentBase<T = any, C extends ComponentBaseConfig = ComponentBas
   }
 
   onDrThisUnBind() {
-    this._cleanupEventListeners();
+    this.onDestroy();
   }
 
   onDestroyRender(data?: OnDestroyRenderParams): void {
+    this.onDestroy();
+  }
+
+  onDestroy() {
     this._cleanupEventListeners();
+    this._cleanupQueryBindings();
+    this._cleanupEventBindings();
+    this._clearAllRefreshTimers();
     this.createChildrenDebounceSubscription?.unsubscribe();
   }
 

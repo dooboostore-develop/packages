@@ -23,6 +23,26 @@ import optionTemplate from './select-option.html';
 import stateComponentTemplate from './state-component.html';
 import { WindowUtils } from '@dooboostore/core-web/window/WindowUtils';
 
+/** 사용법
+ <dr-select class="card-select-container" changeSelected="${(data) => @this@.changeSelected(data)}$">  <!-- multiple attribute optional-->
+ <dr-select-summary class="card-select-summary-container">
+ <dr-select-summary-placeholder>
+ <div class="card-select-summary-placeholder-container">카드사별 사용처 안내 페이지 선택</div>
+ </dr-select-summary-placeholder>
+ <dr-select-summary-selected>
+ <div dr-if="@this@.selectedCard" class="card-select-summary-selected-container">
+ <img dr-attr="{src:@this@.selectedCard?.iconImg}"> ${@this@.selectedCard?.name}$
+ </div>
+ </dr-select-summary-selected>
+ </dr-select-summary>
+
+ <dr-select-body float="bottom-left" class="card-select-body-container">
+ <dr-select-option dr-for-of="@this@.cards" value="${#it#.name}$" selected="${#nearForOfIndex# === 0}$" class="card-select-body-option-container">
+ <img dr-attr="{src:#it#.iconImg}"> ${#it#.name}$
+ </dr-select-option>
+ </dr-select-body>
+ </dr-select>
+ */
 
 export namespace Select {
   export const selector = 'dr-select';
@@ -342,7 +362,7 @@ export namespace Select {
 
     constructor(config?: DomRenderConfig) {
       super();
-      console.log('----Select constructor')
+      // console.log('----Select constructor')
     }
 
     get optionComponents(): Option[] {
@@ -358,8 +378,8 @@ export namespace Select {
     }
 
     onInitRender(param: any, rawSet: RawSet) {
-      console.log('select onInitRender')
       super.onInitRender(param, rawSet);
+      // console.log('select onInitRender', this.multiple)
 
       if (ValidUtils.isBrowser() && this.rawSet?.dataSet.config.window) {
         const detailsElement = this.element;
@@ -418,7 +438,7 @@ export namespace Select {
     }
 
     onInitDetailsElement(detailsElement: HTMLDetailsElement) {
-      console.log('detailsElement oninit', detailsElement);
+      // console.log('detailsElement oninit', detailsElement);
       this.element = detailsElement;
     }
 

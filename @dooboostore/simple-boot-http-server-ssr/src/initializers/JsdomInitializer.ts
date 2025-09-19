@@ -33,6 +33,7 @@ export class JsdomInitializer {
         global.window = jsdom.window as unknown as Window & typeof globalThis;
         // @ts-ignore
         global.window.requestAnimationFrame = () => {};
+        global.window.scrollTo = () => {};
         // const originalPushState = global.window.history.pushState;
         // global.window.history.pushState = (data: any,title: any,path: string) => {
         //   console.log('----iida',path)
@@ -52,6 +53,7 @@ export class JsdomInitializer {
         // @ts-ignore
         global.history = jsdom.window.history;
         global.Event = jsdom.window.Event;
+        // @ts-ignore
         global.PopStateEvent = jsdom.window.Event;
         global.IntersectionObserver = jsdom.window.IntersectionObserver;
         // @ts-ignore

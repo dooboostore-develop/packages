@@ -70,12 +70,17 @@ export class DrThis extends OperatorExecuterAttrRequire<string> {
         // console.log('thisPaththisPaththisPath',thisPath)
         this.setThisPath(thisPath);
         const componentBody = await RawSet.drThisCreate(this.rawSet, this.elementSource.element, thisPath, this.elementSource.attrs.drVarOption ?? '', this.elementSource.attrs.drStripOption, this.source.obj, this.source.config, attr);
-        this.returnContainer.fag.append(componentBody)
-        this.afterCallBack.onThisComponentSetCallBacks.push(attr);
+        if (componentBody) {
+          this.returnContainer.fag.append(componentBody)
+          this.afterCallBack.onThisComponentSetCallBacks.push(attr);
+        }
 
       } else {
         this.setThisPath(thisPath);
-        this.returnContainer.fag.append(await RawSet.drThisCreate(this.rawSet, this.elementSource.element, this.elementSource.attrs.drThis, this.elementSource.attrs.drVarOption ?? '', this.elementSource.attrs.drStripOption, this.source.obj, this.source.config))
+        const fragment = await RawSet.drThisCreate(this.rawSet, this.elementSource.element, this.elementSource.attrs.drThis, this.elementSource.attrs.drVarOption ?? '', this.elementSource.attrs.drStripOption, this.source.obj, this.source.config);
+        if (fragment) {
+          this.returnContainer.fag.append(fragment)
+        }
       }
 
 

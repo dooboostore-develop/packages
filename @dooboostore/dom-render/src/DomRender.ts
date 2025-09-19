@@ -18,7 +18,7 @@ export type DomRenderRunParameter<T extends object> = { rootObject: T | (() => T
 
 export class DomRender<T extends object = any> {
   private _config: DomRenderConfig;
-  private _target: Element;
+  private _target: Element | null | undefined;
   private _rootObject: T;
 
   constructor(parameter: DomRenderRunParameter<T>, executeConfig?: { autoGo?: string }) {
@@ -39,10 +39,9 @@ export class DomRender<T extends object = any> {
     return this._config;
   }
 
-  public get target(): Element {
+  public get target(): Element | null |undefined {
     return this._target;
   }
-
 
   public static run<T extends object>(data: DomRenderRunParameter<T>): T {
     return DomRender.runSet(data).rootObject;
@@ -125,7 +124,7 @@ export class DomRender<T extends object = any> {
     }
 
     for (const value of Object.values(drComponent)) {
-      const a = value(targetConfig);
+      const a = value(targetConfig, DomRender);
       if (!targetConfig.targetElements.some(it => it.name === a.name)) {
         targetConfig.targetElements.push(a);
       }

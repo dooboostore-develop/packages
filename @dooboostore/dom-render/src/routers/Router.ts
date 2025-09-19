@@ -73,13 +73,17 @@ export abstract class Router<T = any> {
     // }
   }
 
-  testRegexp(regexp: string): boolean {
-    const b = RegExp(regexp).test(this.getPathName());
-    return b;
+  testRegexp(regexp?: string): boolean {
+    if (regexp) {
+      const b = RegExp(regexp).test(this.getPathName());
+      return b;
+    }else {
+      return false;
+    }
   }
 
-  test(urlExpression: string): boolean {
-    if (this.getPathData(urlExpression)) {
+  test(urlExpression?: string): boolean {
+    if (urlExpression && this.getPathData(urlExpression)) {
       return true;
     } else {
       return false;
@@ -140,9 +144,9 @@ export abstract class Router<T = any> {
     return Expression.Path.pathNameData(currentUrl, urlExpression);
   }
 
-  async go(config: { path: RouteAction, data?: any, replace?: boolean, title?: string, disabledPopEvent?: boolean, scrollToTop?: boolean } | string): Promise<void> {
+  async go(config:  string | { path: RouteAction, data?: any, replace?: boolean, title?: string, disabledPopEvent?: boolean, scrollToTop?: boolean } | string): Promise<void> {
     if (typeof config === 'string') {
-      config = {path: config};
+      config = { path: config };
     }
 
     // let data: ChangeStateResult | undefined = undefined;
@@ -157,7 +161,9 @@ export abstract class Router<T = any> {
     
     // 스크롤 제어 (기본값: true - 맨 위로 스크롤)
     if (config.scrollToTop !== false) {
-      this._config.window.scrollTo(0, 0);
+      try {
+      this._config.window?.scrollTo?.(0, 0);
+      }catch (e){}
     }
     
     // console.log('----------', data, config)
