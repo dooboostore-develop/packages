@@ -3,39 +3,47 @@ import { Route, Router } from '@dooboostore/simple-boot/decorators/route/Router'
 import { SimpleApplication } from '@dooboostore/simple-boot/SimpleApplication';
 import { SimOption } from '@dooboostore/simple-boot/SimOption';
 import { Intent } from '@dooboostore/simple-boot/intent/Intent';
-import { RouterAction, RoutingDataSet } from '@dooboostore/simple-boot/route/RouterAction';
-
+import { RouterAction } from '@dooboostore/simple-boot/route/RouterAction';
+import { OnRoute } from '@dooboostore/simple-boot';
 
 @Sim
 @Router({
-  path: '/ssuser',
+  path: '/ssuser'
 })
-class SubSubRouter implements RouterAction{
-
+class SubSubRouter implements RouterAction.CanActivate {
   constructor() {
     console.log('SubRouter');
   }
 
-  @Route({path: '/office'})
+  @Route({ path: '/office' })
   routeSay() {
     return 'hello';
   }
 
-  @Route({path: '/officess'})
-  post() {
-  }
+  @Route({ path: '/officess' })
+  post() {}
 
-  async canActivate(url: RoutingDataSet, data?: any): Promise<void> {
-    console.log('SubSubRouter CanActivate~~', url, data)
+  async canActivate(url: RouterAction.RoutingDataSet, data?: any): Promise<void> {
+    console.log('SubSubRouter CanActivate~~', url, data);
   }
-
 }
 
-@Sim
+@Sim({
+  scope: Lifecycle.Transient
+})
 class Office {
+  constructor() {
+    console.log('Office Constructor');
+  }
+  say() {
+    console.log('say office');
+  }
 
+  @OnRoute
+  onRout(i: Intent) {
+    console.log('oOffice oooooOnRouteooooooooo', i);
+  }
 }
-
 
 @Sim
 @Router({
@@ -45,21 +53,17 @@ class Office {
   },
   routers: [SubSubRouter]
 })
-class SubRouter implements RouterAction {
-
+class SubRouter implements RouterAction.CanActivate {
   constructor() {
     console.log('SubRouter');
   }
 
-  routeSay() {
-  }
+  routeSay() {}
 
-  post() {
+  post() {}
+  async canActivate(url: RouterAction.RoutingDataSet, data?: any): Promise<void> {
+    console.log('SubRouter CanActivate~~', url, data);
   }
-  async canActivate(url: RoutingDataSet, data?: any): Promise<void> {
-    console.log('SubRouter CanActivate~~', url, data)
-  }
-
 }
 
 @Sim
@@ -69,21 +73,17 @@ class SubRouter implements RouterAction {
     '/office2': Office
   }
 })
-class Sub2Router  implements RouterAction{
-
+class Sub2Router implements RouterAction.CanActivate {
   constructor() {
     console.log('SubRouter');
   }
 
-  routeSay() {
-  }
+  routeSay() {}
 
-  post() {
+  post() {}
+  async canActivate(url: RouterAction.RoutingDataSet, data?: any): Promise<void> {
+    console.log('Sub2Router CanActivate~~', url, data);
   }
-  async canActivate(url: RoutingDataSet, data?: any): Promise<void> {
-    console.log('Sub2Router CanActivate~~', url, data)
-  }
-
 }
 
 @Sim
@@ -93,25 +93,18 @@ class Sub2Router  implements RouterAction{
     '/{world}': Office
   }
 })
-class Sub3Router  implements RouterAction{
-
+class Sub3Router implements RouterAction.CanActivate {
   constructor() {
     console.log('SubRouter');
   }
 
-  routeSay() {
-  }
+  routeSay() {}
 
-  post() {
+  post() {}
+  async canActivate(url: RouterAction.RoutingDataSet, data?: any): Promise<void> {
+    console.log('Sub3Router CanActivate~~', url, data);
   }
-  async canActivate(url: RoutingDataSet, data?: any): Promise<void> {
-    console.log('Sub3Router CanActivate~~', url, data)
-  }
-
 }
-
-
-
 
 @Sim
 @Router({
@@ -120,41 +113,34 @@ class Sub3Router  implements RouterAction{
     '/office': Office
   }
 })
-export class TestRouter implements RouterAction{
+export class TestRouter implements RouterAction.CanActivate {
+  constructor() {}
 
-  constructor() {
-  }
-
-  @Route({path: '/layers'})
+  @Route({ path: '/layers' })
   // @GET({ res: { header: { [HttpHeaders.ContentType]: Mimes.ApplicationJson } } })
   layers(): any {
-    return [1,2,3];
+    return [1, 2, 3];
   }
-  async canActivate(url: RoutingDataSet, data?: any): Promise<void> {
-    console.log('TestRouter CanActivate~~', url, data)
+  async canActivate(url: RouterAction.RoutingDataSet, data?: any): Promise<void> {
+    console.log('TestRouter CanActivate~~', url, data);
   }
-
 }
 @Sim({
   // scope: Lifecycle.Transient
 })
 @Router({
   path: '/api',
-  route: {
-  },
+  route: {},
   routers: [TestRouter]
 })
 class ApiRouter {
-
   constructor() {
     console.log('ApiRouter constructor');
   }
 
-  routeSay() {
-  }
+  routeSay() {}
 
-  post() {
-  }
+  post() {}
 }
 @Sim({
   // scope: Lifecycle.Transient
@@ -162,48 +148,54 @@ class ApiRouter {
 @Router({
   path: '/',
   route: {
-    '':Office
-  },
+    '': Office,
+    good: Office
+  }
 })
-class RRouter {
-
+class RRouter implements RouterAction.CanActivate {
   constructor() {
     console.log('RRouter constructor');
   }
 
-  routeSay() {
+  routeSay() {}
+
+  post() {}
+
+  async canActivate(url: RouterAction.RoutingDataSet, data?: any): Promise<void> {
+    console.log('cccccccccccccccan?', data);
   }
 
-  post() {
+  @OnRoute
+  onRout(i: Intent) {
+    console.log('ooooooooooooooo', i);
   }
 }
-
-
 
 // @Sim({
 //   scope: Lifecycle.Transient
 // })
+@Sim
 @Router({
   path: '',
   routers: [RRouter, SubRouter, Sub2Router, Sub3Router, ApiRouter]
 })
-class RootRouter implements RouterAction {
+class RootRouter implements RouterAction.CanActivate {
   constructor() {
-    console.log('RootRouter constructor')
+    console.log('RootRouter constructor');
   }
 
-  async canActivate(url: RoutingDataSet, data?: any): Promise<void> {
-    console.log('RootRouter CanActivate~~', url, data)
+  async canActivate(url: RouterAction.RoutingDataSet, data?: any): Promise<void> {
+    console.log('RootRouter CanActivate~~', url, data);
   }
-say() {
+  say() {
     console.log('RootRouter say() 호출됨');
     return 'RootRouter say';
   }
 }
 
-(async ()=>{
-  const option  = new SimOption({  })
-  // const option  = new SimOption({ rootRouter: RootRouter })
+(async () => {
+  // const option  = new SimOption({  })
+  const option = new SimOption({ rootRouter: RootRouter });
   const app = new SimpleApplication(option);
   app.run();
 
@@ -217,24 +209,28 @@ say() {
 
   // console.log('-->', r.propertyKeys)
   // console.log('-->', r.routerChains)
-// SubSubRouter의 routeSay 메서드 반환 값 확인
-//   if (r.propertyKeys && r.propertyKeys.includes('routeSay')) {
-//     const returnValue = await r.executeModuleProperty('routeSay');
-//     console.log('Returned value from routeSay:', returnValue); // 'hello'가 출력될
-//   }
+  // SubSubRouter의 routeSay 메서드 반환 값 확인
+  //   if (r.propertyKeys && r.propertyKeys.includes('routeSay')) {
+  //     const returnValue = await r.executeModuleProperty('routeSay');
+  //     console.log('Returned value from routeSay:', returnValue); // 'hello'가 출력될
+  //   }
 
-
+  // const r = await app.routing({path:''});
+  const r = await app.routing(new Intent('/good'));
+  // const r = await app.routing(new Intent('/'));
+  // const z = r.getModuleInstance<Office>();
+  // z?.say();
   // const r = await app.routing(new Intent('/api/test/layers'), {router: rootRouter});
   // const c = await app.routing(new Intent('/api/test/layers'), {router: rootRouter});
-  const rr = await app.routing(new Intent('/'), {router: new RootRouter()});
+  // const rr = await app.routing(new Intent('/'), {router: new RootRouter()});
   // const r = await app.routing(new Intent('/api/test/layers'));
   // const c = await app.routing(new Intent('/api/test/layers'));
   // const r = await routerManager.routing(new Intent('/user/office'));
   // const r = await routerManager.routing(new Intent('/user/ssuser/office'));
-  console.log('module', rr.getModuleInstance());
+  // console.log('module', rr.getModuleInstance());
   // console.log('router==>', r.router.getValue(), r.getRouterPaths(), r.getModuleInstance())
   // console.log('module', r.getModuleInstance());
   // console.log('module', c.getModuleInstance());
   // const rs = await routerManager.routings(new Intent('/user'));
   // console.log('rs',rs.map(it=>({router:it.router.getValue(), module: it.getModuleInstance()})))
-})()
+})();

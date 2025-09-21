@@ -629,7 +629,7 @@ export class RawSet {
     // const NodeFilter = (config.window as any).NodeFilter;
     // const thisVariableName = (element as any).__domrender_this_variable_name;
     // console.log('thisVariableName---', thisVariableName);
-    const nodeIterator = config.window.document.createNodeIterator(element, NodeFilter.SHOW_ALL, {
+    const nodeIterator = config.window.document?.createNodeIterator(element, NodeFilter.SHOW_ALL, {
       acceptNode(node) {
         // console.log('nodeType', node.nodeType, (node as any).tagName, (node as any).data);
         if (node.nodeType === Node.TEXT_NODE) {
@@ -741,10 +741,11 @@ export class RawSet {
     const pars: RawSet[] = [];
     let currentNode: Node | null;
     // eslint-disable-next-line no-cond-assign
-    while (currentNode = nodeIterator.nextNode()) {
+    while (currentNode = nodeIterator?.nextNode()) {
       if (currentNode.nodeType === Node.TEXT_NODE) {
         const text = (currentNode as Text).textContent ?? '';
-        const template = config.window.document.createElement('template');
+        const template = config.window.document?.createElement('template');
+        if (!template) break;
         // const a = StringUtils.regexExec(/\$\{.*?\}/g, text);
         // const a = StringUtils.regexExec(/[$#]\{.*?\}/g, text);
         // const a = StringUtils.betweenRegexpStr('[$#]\\{', '\\}', text); // <--TODO: 나중에..
@@ -1025,7 +1026,7 @@ export class RawSet {
 
   public static drFormOtherMoveAttr(element: Element, as: string, to: string, config: DomRenderConfig) {
     element.querySelectorAll(`[${RawSet.DR_FORM_NAME}]`).forEach(subElement => {
-      const nodeIterator = config.window.document.createNodeIterator(subElement, NodeFilter.SHOW_ELEMENT, {
+      const nodeIterator = config.window.document?.createNodeIterator(subElement, NodeFilter.SHOW_ELEMENT, {
         acceptNode(node) {
           if (node.nodeType === Node.ELEMENT_NODE) {
             const element = node as Element;
@@ -1038,7 +1039,7 @@ export class RawSet {
 
       let node;
       // eslint-disable-next-line no-cond-assign
-      while (node = nodeIterator.nextNode()) {
+      while (node = nodeIterator?.nextNode()) {
         const element = node as Element;
         element.setAttribute(to, element.getAttribute(as) ?? '');
         element.removeAttribute(as);

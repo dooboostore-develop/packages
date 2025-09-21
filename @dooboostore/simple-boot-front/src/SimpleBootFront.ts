@@ -231,6 +231,7 @@ export class SimpleBootFront extends SimpleApplication {
           // setTimeout(() => {
           // if (rootRouter !== findRouter) {
           this.domRenderRootObject.canActivate(undefined, findRouter);
+          this.domRenderRootObject.onRouting({intent, routerModule:it, routerManager: this.routerManager});
           // setTimeout(() => {
           //   console.log('ccccccccan')
           //   this.domRenderRootObject.canActivate(undefined, findRouter); // new ComponentSet(rootRouter);

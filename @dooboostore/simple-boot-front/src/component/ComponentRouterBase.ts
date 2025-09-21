@@ -1,21 +1,16 @@
-import {ComponentRouterBase as DomRenderComponentRouterBase} from '@dooboostore/dom-render/components/ComponentRouterBase'
+import { ComponentRouterBase as DomRenderComponentRouterBase } from '@dooboostore/dom-render/components/ComponentRouterBase';
 import { ComponentSet } from './ComponentSet';
 import { RouterAction } from '@dooboostore/simple-boot/route/RouterAction';
-import { Intent } from '@dooboostore/simple-boot/intent/Intent';
-import { RouterModule } from '@dooboostore/simple-boot/route/RouterModule';
-import { RouterManager } from '@dooboostore/simple-boot/route/RouterManager';
-import { isOnDrThisUnBind } from '@dooboostore/dom-render/lifecycle/dr-this/OnDrThisUnBind';
-import { ChildrenSet, ComponentBase, ComponentBaseConfig } from '@dooboostore/dom-render/components/ComponentBase';
+import { ChildrenSet, ComponentBaseConfig } from '@dooboostore/dom-render/components/ComponentBase';
 import { getDomRenderOriginObject } from '@dooboostore/dom-render/DomRenderProxy';
 import { RouterOutlet } from '@dooboostore/dom-render/components/router/RouterOutlet';
 
 export type ComponentRouterBaseConfig = ComponentBaseConfig & { sameRouteNoApply?: boolean };
 
 export abstract class ComponentRouterBase<T = any>
-  extends DomRenderComponentRouterBase<T >
+  extends DomRenderComponentRouterBase<T>
   implements RouterAction.CanActivate, RouterAction.OnRouting
 {
-
   constructor(_config?: ComponentRouterBaseConfig) {
     super(_config);
   }
@@ -47,7 +42,7 @@ export abstract class ComponentRouterBase<T = any>
     // }
   }
   async canActivate(url: RouterAction.RoutingDataSet, data?: any): Promise<void> {
-    // console.log('cccccccccccc')
+    // console.log('cccccccccccc', data, typeof data);
     if (
       !(
         this.componentConfig?.sameRouteNoApply &&

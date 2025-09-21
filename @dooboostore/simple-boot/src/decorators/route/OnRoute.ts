@@ -6,6 +6,9 @@ type OnRouteOption = { isActivateMe?: boolean }
 
 export const onRoutes = new Map<ConstructorType<any>, (string | symbol)[]>();
 
+export const removeOnRoute = (c: ConstructorType<any>) => {
+    onRoutes.delete(c);
+}
 export const OnRouteMetadataKey = Symbol('OnRoute');
 
 const onRouteProcess = (config: OnRouteOption, target: any, propertyKey: string | symbol, description: PropertyDescriptor) => {

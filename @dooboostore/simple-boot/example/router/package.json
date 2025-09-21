@@ -6,6 +6,7 @@
   "scripts": {
     "watch": "webpack --watch --mode development",
     "build": "webpack --mode production",
+    "build:run": "npm run build && node dist/index.js",
     "ts-node": "ts-node index.ts",
     "ts-node:watch": "ts-node-dev --respawn index.ts",
     "start": "ts-node index.ts",

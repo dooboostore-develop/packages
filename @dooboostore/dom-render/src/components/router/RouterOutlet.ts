@@ -6,7 +6,6 @@ import { OnInitRender } from '../../lifecycle/OnInitRender';
 import { ComponentSet } from '../../components/ComponentSet';
 import { OnDestroyRenderParams } from '../../lifecycle/OnDestroyRender';
 import { ComponentRouterBase } from '../../components/ComponentRouterBase';
-// import { ComponentRouterBase } from '../../components/-front/src';
 export namespace RouterOutlet {
   export const selector = 'dr-router-outlet';
   export type Attribute = {

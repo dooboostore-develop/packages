@@ -404,7 +404,7 @@ class UserService {
         return { id, name: 'User ' + id };
     }
 
-    @Cache({ deleteKey: (id: string) => `user:${id}` })
+    @Cache({ deleteKey: (id: string) => `user:${id}` }) // Clears cache with the matching key
     updateUser(id: string, data: any) {
         console.log(`Updating user ${id}, cache will be cleared.`);
         // ... update logic
@@ -462,6 +462,62 @@ if (validationErrors.length > 0) {
 ```
 
 </details>
+
+## Global Routing Event Listener: `@onRoute`
+
+The `@onRoute` decorator provides a powerful way for any `@Sim`-managed class to react to the successful completion of a routing event, without being part of the router hierarchy itself. This is useful for tasks that need to happen globally after a page navigation.
+
+Think of it as a global "listener" or "subscriber" for routing changes.
+
+### Use Cases
+- Updating the active state of a top navigation menu.
+- Logging page views for analytics.
+- Updating the browser tab's title (`document.title`).
+
+### How to Use
+You can decorate a method within any `@Sim` class with `@onRoute`. After a route is successfully resolved, the `RouterManager` will find and execute this method.
+
+The decorated method can also receive the `Intent` and `RouterModule` objects via dependency injection, giving you full context about the completed routing event.
+
+**Example:** A `MenuComponent` that updates itself after navigation.
+
+```typescript
+import { Sim } from '@dooboostore/simple-boot/decorators/SimDecorator';
+import { OnRoute, removeOnRoute } from '@dooboostore/simple-boot/decorators/route/OnRoute';
+import { Intent } from '@dooboostore/simple-boot/intent/Intent';
+
+// Assuming a lifecycle interface like OnDestroy exists
+export interface OnDestroy {
+    destroy(): void;
+}
+
+@Sim
+export class MenuComponent implements OnDestroy {
+
+    constructor() {
+        // component initialization
+    }
+
+    @OnRoute()
+    public afterRouting(intent: Intent) {
+        console.log(`Routing finished! New path is: ${intent.pathname}`);
+        // Add logic here to highlight the menu item
+        // that corresponds to the new path.
+    }
+
+    // This method must be called when the component is destroyed.
+    public destroy() {
+        removeOnRoute(MenuComponent);
+    }
+}
+```
+
+### Important: Lifecycle and Memory Management
+
+`@onRoute` registers a listener in a global map. To prevent memory leaks, it is **crucial** to unregister this listener when the component or class is destroyed.
+
+You must call the `removeOnRoute` function in the appropriate lifecycle hook for your component (e.g., a `destroy` or `unmount` method).
+
 
 # License
 

@@ -93,6 +93,11 @@ export class RouterManager {
       executeModule.routerChains = routerChains;
       this.activeRouterModule = executeModule;
       const routingDataSet: RouterAction.RoutingDataSet = {intent, routerModule: executeModule, routerManager: this};
+
+      // --- 라우팅 경로(Chain)에 있는 모든 라우터의 라이프사이클 훅 호출 ---
+      // 최종 목적지에 도달하기까지 거쳐온 모든 중간 라우터들(예: RootRouter -> UserRouter)을 순회하며
+      // 각 라우터의 canActivate와 onRouting을 호출합니다.
+      // 이를 통해 각 단계에서 라우팅을 검사하거나 공통 작업을 수행할 수 있습니다.
       if (routerChains.length > 0) {
         for (let i = 0; i < routerChains.length; i++) {
           const current = routerChains[i];
@@ -108,8 +113,11 @@ export class RouterManager {
       }
       this.activeRouterModule = executeModule;
 
-      // not found page TODO: notFound 됐을때 처음 router있을시 canActivate 호출
       const moduleInstance = executeModule.getModuleInstance();
+
+      // --- Case 1: 부분 일치 (라우터는 찾았지만, 특정 모듈은 찾지 못한 경우) ---
+      // URL이 라우터의 경로와는 일치하지만, 그 안의 특정 `route` 항목과는 일치하지 않을 때 발생합니다.
+      // 이 경우, 일치한 마지막 라우터의 라이프사이클 훅을 호출합니다.
       if (!executeModule?.module) {
         const routerChain = executeModule.routerChains[executeModule.routerChains.length - 1];
         const value = routerChain?.getValue() as any;
@@ -119,7 +127,11 @@ export class RouterManager {
         if (RouterAction.isOnRouting(value)) {
           await value.onRouting(routingDataSet);
         }
-      } else { // find page
+      } 
+      // --- Case 2: 완전 일치 (라우터와 특정 모듈을 모두 찾은 경우) ---
+      // 표준 성공 케이스입니다.
+      // 모듈을 포함하는 라우터와 모듈 인스턴스 자체의 라이프사이클 훅을 호출합니다.
+      else { // find page
         const value = executeModule.router?.getValue()! as any;
         if (RouterAction.isCanActivate(value)) {
           await value.canActivate(routingDataSet, moduleInstance);
@@ -127,52 +139,97 @@ export class RouterManager {
         if (RouterAction.isOnRouting(value)) {
           await value.onRouting(routingDataSet);
         }
+
+        if (moduleInstance && RouterAction.isOnRouting(moduleInstance)) {
+          await moduleInstance.onRouting(routingDataSet);
+        }
       }
 
-      // 라우팅 완료된 후 호출 되어야 할 decoration TODO: 리펙토링 필요
-      const otherStorage = new Map<ConstructorType<any>, any>();
-      otherStorage.set(Intent, intent);
-      otherStorage.set(RouterModule, executeModule);
-      for (const [key, value] of Array.from(onRoutes)) {
-        try {
-          const sim = this.simstanceManager.findLastSim({type: key});
-          for (const v of value) {
-            const onRouteConfig = getOnRoute(key, v);
-            let r;
-            if (!onRouteConfig?.isActivateMe) {
-              r = sim?.getValue()[v]?.(...this.simstanceManager.getParameterSim({target: sim?.getValue(), targetKey: v, otherStorage}));
-            } else if (this.activeRouterModule?.routerChains?.some((it: SimAtomic) => (it.getValue() as any)?.hasActivate?.(sim?.getValue()))) {
-              r = sim?.getValue()[v]?.(...this.simstanceManager.getParameterSim({target: sim?.getValue(), targetKey: v, otherStorage}));
-            }
-            if (r instanceof Promise) {
-              await r
-            }
-          }
-        } catch (error) {
-          // skip catch
-        }
-      }
+      // 라우팅 완료 후, @onRoute 데코레이터가 붙은 모든 전역 핸들러를 실행합니다.
+      await this._executeOnRouteHandlers(intent, executeModule);
       return this.activeRouterModule as RouterModule<any, any>;
     } else {
-      const routers: SimAtomic[] = [];
-      const routerModule = new RouterModule(this.simstanceManager, rootRouter, undefined, routers);
-      const routingDataSet = {intent, routerModule: routerModule, routerManager: this};
-      if (routers.length && routers.length > 0) {
-        for (let i = 0; i < routers.length; i++) {
-          const current = routers[i];
-          const next = routers[i + 1];
-          const value = current.getValue()! as any;
-          // console.log('routerAction!!!!!!!!!3')
-          if (RouterAction.isCanActivate(value)) {
-            await value.canActivate(routingDataSet, next?.getValue() ?? null);
+      return await this._handleNotFoundRouting(rootRouter, intent);
+    }
+  }
+
+  /**
+   * URL과 일치하는 라우트를 찾지 못했을 경우를 처리합니다.
+   * "Not Found" 상태를 나타내는 비어있는 RouterModule 객체를 생성하여 반환합니다.
+   * 이 과정에서 rootRouter의 라이프사이클을 호출하여 공통 레이아웃등을 처리할 수 있습니다.
+   * @param rootRouter 앱의 최상위 라우터 인스턴스
+   * @param intent 확인에 실패한 원본 Intent 객체
+   * @private
+   */
+  private async _handleNotFoundRouting(rootRouter: any, intent: Intent): Promise<RouterModule<any, any>> {
+    /*
+     * 이전 원본 로직 (참고용)
+     * const routers: SimAtomic[] = []; 로 인해 if문이 항상 false가 되어 실제로는 동작하지 않았음.
+     *
+     * const routers: SimAtomic[] = [];
+     * const routerModule = new RouterModule(this.simstanceManager, rootRouter, undefined, routers);
+     * const routingDataSet = {intent, routerModule: routerModule, routerManager: this};
+     * if (routers.length && routers.length > 0) {
+     *   for (let i = 0; i < routers.length; i++) {
+     *     const current = routers[i];
+     *     const next = routers[i + 1];
+     *     const value = current.getValue()! as any;
+     *     // console.log('routerAction!!!!!!!!!3')
+     *     if (RouterAction.isCanActivate(value)) {
+     *       await value.canActivate(routingDataSet, next?.getValue() ?? null);
+     *     }
+     *     if (RouterAction.isOnRouting(value)) {
+     *       await value.onRouting(routingDataSet);
+     *     }
+     *   }
+     * }
+     * this.activeRouterModule = routerModule;
+     * return this.activeRouterModule as RouterModule<any, any>;
+    */
+    const routerModule = new RouterModule(this.simstanceManager, rootRouter, undefined, []);
+    const routingDataSet: RouterAction.RoutingDataSet = {intent, routerModule: routerModule, routerManager: this};
+
+    const value = rootRouter;
+    if (RouterAction.isCanActivate(value)) {
+      await value.canActivate(routingDataSet, null);
+    }
+    if (RouterAction.isOnRouting(value)) {
+      await value.onRouting(routingDataSet);
+    }
+
+    this.activeRouterModule = routerModule;
+    return this.activeRouterModule;
+  }
+
+  /**
+   * 라우팅이 완료된 후, @onRoute 데코레이터로 등록된 모든 전역 핸들러를 실행합니다.
+   * 이 메서드는 라우팅 흐름에 직접 관여하지 않는 다른 모듈들이 라우팅 변경에 반응할 수 있도록 합니다.
+   * @param intent 라우팅에 사용된 원본 Intent 객체
+   * @param executeModule 최종적으로 확인된 RouterModule 객체
+   * @private
+   */
+  private async _executeOnRouteHandlers(intent: Intent, executeModule: RouterModule<any, any>) {
+    const otherStorage = new Map<ConstructorType<any>, any>();
+    otherStorage.set(Intent, intent);
+    otherStorage.set(RouterModule, executeModule);
+    for (const [key, value] of Array.from(onRoutes)) {
+      try {
+        const sim = this.simstanceManager.findLastSim({type: key});
+        for (const v of value) {
+          const onRouteConfig = getOnRoute(key, v);
+          let r;
+          if (!onRouteConfig?.isActivateMe) {
+            r = sim?.getValue()[v]?.(...this.simstanceManager.getParameterSim({target: sim?.getValue(), targetKey: v, otherStorage}));
+          } else if (this.activeRouterModule?.routerChains?.some((it: SimAtomic) => (it.getValue() as any)?.hasActivate?.(sim?.getValue()))) {
+            r = sim?.getValue()[v]?.(...this.simstanceManager.getParameterSim({target: sim?.getValue(), targetKey: v, otherStorage}));
           }
-          if (RouterAction.isOnRouting(value)) {
-            await value.onRouting(routingDataSet);
+          if (r instanceof Promise) {
+            await r
           }
         }
+      } catch (error) {
+        // skip catch
       }
-      this.activeRouterModule = routerModule;
-      return this.activeRouterModule as RouterModule<any, any>;
     }
   }
 
@@ -232,10 +289,13 @@ export class RouterManager {
       }
     }
   }
-
+  // path: 지금 내 라우터의 path,  parentRoots: 부모router path들,  url: 사용자가 원하는 full intent url
   private isRootUrl(path: string | undefined, parentRoots: string[], url: string): boolean {
-    const searchString = parentRoots.join('') + (path || '');
-    const searchs = searchString.split('/')
+    const searchString = parentRoots.join('') + (path || '');//현재까지 경로 내포함
+    if (searchString === '/') {
+      return true;
+    }
+    const searchs = searchString.split('/');
     const urls = url.split('/')
     const trimmedUrls = urls.slice(0, searchs.length).join('/');
     // console.log('!!searchString', searchString, 'url', trimmedUrls);

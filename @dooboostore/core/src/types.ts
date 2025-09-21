@@ -225,6 +225,30 @@ export type FlatJoinSlashKeyExcludeStartWithUnderBar<T> = {
       `${P}`]: unknown;
 };
 
+
+// https://amit08255.medium.com/the-most-mind-blowing-thing-ive-learned-in-typescript-930926ce848a
+export type ParseRoute<T extends string> = T extends `/${infer Segment}/${infer Rest}`
+  ? Segment extends `:${infer Param}`
+    ? { [K in Param]: string } & ParseRoute<`/${Rest}`>
+    : ParseRoute<`/${Rest}`>
+  : T extends `/:${infer Param}`
+    ? { [K in Param]: string }
+    : {}
+// type UserRoute = ParseRoute<'/users/:id/posts/:postId'>
+// type UserRoute = { id: string; postId: string }
+// const user:UserRoute = { id: '1', postId: '2' };
+
+
+export type ParsePath<T extends string> = T extends `/${infer Segment}/${infer Rest}`
+  ? [Segment, ...ParsePath<`/${Rest}`>]
+  : T extends `/${infer Segment}`
+    ? [Segment]
+    : []
+// type ApiRoute = ParsePath<"/api/users/123"> // ["api", "users", "123"]
+// type InvalidRoute = ParsePath<"missing-slash"> // []
+
+
+
 export type StringValue<T> = {
   [K in keyof T]: T[K] extends object ? StringValue<T[K]> : string;
 };
