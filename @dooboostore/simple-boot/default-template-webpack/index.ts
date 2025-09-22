@@ -1,12 +1,9 @@
 import { SimpleApplication } from '@dooboostore/simple-boot/SimpleApplication';
 import { Route, Router } from '@dooboostore/simple-boot/decorators/route/Router';
-import { Lifecycle, PostConstruct, Sim } from '@dooboostore/simple-boot/decorators/SimDecorator';
+import { Sim } from '@dooboostore/simple-boot/decorators/SimDecorator';
 import { Inject } from '@dooboostore/simple-boot/decorators/inject/Inject';
 import { SimOption } from '@dooboostore/simple-boot/SimOption';
-import { ConstructorType } from '@dooboostore/core/types';
 import { Intent } from '@dooboostore/simple-boot/intent/Intent';
-import { OnRoute } from '@dooboostore/simple-boot/decorators/route/OnRoute';
-import { RouterModule } from '@dooboostore/simple-boot/route/RouterModule';
 import { RouteFilter } from '@dooboostore/simple-boot/route/RouteFilter';
 import { RouterAction, RoutingDataSet } from '@dooboostore/simple-boot/route/RouterAction';
 import { Injection } from '@dooboostore/simple-boot/decorators/inject/Injection';
@@ -77,7 +74,7 @@ import { GlobalAdvice } from './GlobalAdvice';
 
 @Sim
 class SS {
-  name = 'csss'
+  name = 'csss';
 
   sayName() {
     console.log(`My office Name is ${this.name}`);
@@ -86,18 +83,12 @@ class SS {
   say() {
     console.log('SS say');
   }
-
-  @OnRoute({isActivateMe: true})
-  onRoute(routeModule: RouterModule) {
-    console.log('onRoute22');
-    this.name = routeModule.queryParams.name;
-  }
 }
 @Sim
 @Router({
   path: '/{rname:[a-z]+}',
   // path: '/aa',
-  route: {'/ffw': SS},
+  route: { '/ffw': SS }
   // filters: [new RFilter()],
   // route: {'/office': Office}
 })
@@ -109,20 +100,17 @@ class SSRouter implements RouterAction {
   }
 
   say() {
-    console.log('---users----------say---------')
+    console.log('---users----------say---------');
   }
+
   hasActivate(checkObj: any): boolean {
     return this.child === checkObj;
   }
 }
 
-
-
-
-
 @Sim
 class Office {
-  name = 'oldName'
+  name = 'oldName';
 
   sayName() {
     console.log(`My office Name is ${this.name}`);
@@ -131,16 +119,10 @@ class Office {
   say() {
     console.log('Office say');
   }
-
-  @OnRoute({isActivateMe: true})
-  onRoute(routeModule: RouterModule) {
-    console.log('onRoute22');
-    this.name = routeModule.queryParams.name;
-  }
 }
 @Sim
 class Office2 {
-  name = 'oldName'
+  name = 'oldName';
 
   sayName() {
     console.log(`My office Name is ${this.name}`);
@@ -149,12 +131,6 @@ class Office2 {
   say() {
     console.log('Office2 say');
   }
-
-  @OnRoute({isActivateMe: true})
-  onRoute(routeModule: RouterModule) {
-    console.log('onRoute22');
-    this.name = routeModule.queryParams.name;
-  }
 }
 
 @Sim
@@ -162,10 +138,10 @@ class Office2 {
   path: '/users',
   // filters: [new RFilter()],
   route: {
-    '/office': Office,
+    '/office': Office
     // '/{name:[a-z]+}': Office2
   },
-  routers: [SSRouter],
+  routers: [SSRouter]
 })
 class UsersRouter implements RouterAction {
   child: any;
@@ -175,7 +151,7 @@ class UsersRouter implements RouterAction {
   }
 
   say() {
-    console.log('---users----------say---------')
+    console.log('---users----------say---------');
   }
   hasActivate(checkObj: any): boolean {
     return this.child === checkObj;
@@ -193,7 +169,7 @@ export class AFilter implements RouteFilter {
   isAccept(indent: Intent): boolean {
     console.log('aaaa', indent);
 
-    throw new Error('zzzzzzzzzzzz22zz')
+    throw new Error('zzzzzzzzzzzz22zz');
     return true;
   }
 }
@@ -201,7 +177,7 @@ export class AFilter implements RouteFilter {
 @Sim
 export class RFilter implements RouteFilter {
   isAccept(indent: Intent): boolean {
-    console.log('rrrr', indent)
+    console.log('rrrr', indent);
     return true;
   }
 }
@@ -210,9 +186,9 @@ export class RFilter implements RouteFilter {
 @Router({
   path: '',
   // route: {'/welcome': {filters: [new AFilter(), RFilter], target: Welcome}},
-  route: {'/welcome': Welcome},
+  route: { '/welcome': Welcome },
   // route: {'/welcome': {filters: [new AFilter(), RFilter], target: Welcome}},
-  routers: [UsersRouter],
+  routers: [UsersRouter]
   // filters: [new AFilter(), RFilter, {
   //     isAccept(intent: Intent): boolean {
   //         console.log('-fff')
@@ -221,10 +197,11 @@ export class RFilter implements RouteFilter {
   // }]
 })
 class AppRouter implements RouterAction {
-  name = 'appRouter-name'
+  name = 'appRouter-name';
 
   @Injection
-  @Route({path: ['/sub-route', '/ss', '/zz'],
+  @Route({
+    path: ['/sub-route', '/ss', '/zz']
     // filters: [new AFilter(), RFilter, {
     //     isAccept(intent: Intent): boolean {
     //         console.log('-fff')
@@ -232,7 +209,7 @@ class AppRouter implements RouterAction {
     //     }
     // }]
   })
-  test(@Inject({disabled: true}) props: string, simOption: SimOption) {
+  test(@Inject({ disabled: true }) props: string, simOption: SimOption) {
     console.log('test--', props, simOption, this.name);
   }
 
@@ -270,9 +247,9 @@ app.run();
   // const routerModule = await app.routing('/users/office');
   // const routerModule = await app.routing('/users');
   // const routerModule = await app.routing('/users/czcz');
-  const routerModule = await app.routing({path:'/users/aa/ffw'});
+  const routerModule = await app.routing({ path: '/users/aa/ffw' });
   // console.log('---routerModule-->', routerModule, routerModule.getRouterPath(), routerModule.module);
-  console.log('---routerModule-->', '---',routerModule.getRouterPath(), routerModule.pathData);
+  console.log('---routerModule-->', '---', routerModule.getRouterPath(), routerModule.pathData);
   routerModule.getModuleInstance<UsersRouter>()?.say();
   // const routerModule = await app.routing('/users/office');
   // console.log('---routerModule-->', routerModule, routerModule.module);

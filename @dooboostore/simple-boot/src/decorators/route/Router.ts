@@ -64,6 +64,7 @@ export const getRouter = (target: ConstructorType<any> | Function | any): Router
 type RouteConfig = { path: string | string[], filters?: Filters }
 export type SaveRouteConfig = { propertyKey: string | symbol; method: Function; config: RouteConfig; }
 export const RouteMetadataKey = Symbol('RouteMetadataKey');
+
 export const Route = (config: RouteConfig): ReflectMethod => {
     return (target: any, propertyKey: string | symbol, descriptor: PropertyDescriptor) => {
         const saveRouteConfigs = (ReflectUtils.getMetadata(RouteMetadataKey, target.constructor) ?? []) as SaveRouteConfig[];

@@ -17,3 +17,4 @@ export * from './startWith';
 export * from './concat';
 export * from './merge';
 export * from './fromEvent';
+export * from './toPromise';

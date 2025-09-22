@@ -4,16 +4,20 @@ import { SimpleApplication } from '@dooboostore/simple-boot/SimpleApplication';
 import { SimOption } from '@dooboostore/simple-boot/SimOption';
 import { Intent } from '@dooboostore/simple-boot/intent/Intent';
 import { RouterAction } from '@dooboostore/simple-boot/route/RouterAction';
-import { OnRoute } from '@dooboostore/simple-boot';
+import { RouterManager } from '@dooboostore/simple-boot/route/RouterManager';
+import { RoutingDataSet } from '@dooboostore/simple-boot/route/RouterManager';
+import { Subscription } from '@dooboostore/core/message/Subscription';
+import { OnSimCreate } from '@dooboostore/simple-boot';
 
 @Sim
 @Router({
   path: '/ssuser'
 })
 class SubSubRouter implements RouterAction.CanActivate {
-  constructor() {
+  constructor(private routerManager: RouterManager) {
     console.log('SubRouter');
   }
+
 
   @Route({ path: '/office' })
   routeSay() {
@@ -23,7 +27,7 @@ class SubSubRouter implements RouterAction.CanActivate {
   @Route({ path: '/officess' })
   post() {}
 
-  async canActivate(url: RouterAction.RoutingDataSet, data?: any): Promise<void> {
+  async canActivate(url: RoutingDataSet, data?: any): Promise<void> {
     console.log('SubSubRouter CanActivate~~', url, data);
   }
 }
@@ -39,7 +43,6 @@ class Office {
     console.log('say office');
   }
 
-  @OnRoute
   onRout(i: Intent) {
     console.log('oOffice oooooOnRouteooooooooo', i);
   }
@@ -61,7 +64,7 @@ class SubRouter implements RouterAction.CanActivate {
   routeSay() {}
 
   post() {}
-  async canActivate(url: RouterAction.RoutingDataSet, data?: any): Promise<void> {
+  async canActivate(url: RoutingDataSet, data?: any): Promise<void> {
     console.log('SubRouter CanActivate~~', url, data);
   }
 }
@@ -81,7 +84,7 @@ class Sub2Router implements RouterAction.CanActivate {
   routeSay() {}
 
   post() {}
-  async canActivate(url: RouterAction.RoutingDataSet, data?: any): Promise<void> {
+  async canActivate(url: RoutingDataSet, data?: any): Promise<void> {
     console.log('Sub2Router CanActivate~~', url, data);
   }
 }
@@ -101,7 +104,7 @@ class Sub3Router implements RouterAction.CanActivate {
   routeSay() {}
 
   post() {}
-  async canActivate(url: RouterAction.RoutingDataSet, data?: any): Promise<void> {
+  async canActivate(url: RoutingDataSet, data?: any): Promise<void> {
     console.log('Sub3Router CanActivate~~', url, data);
   }
 }
@@ -121,7 +124,7 @@ export class TestRouter implements RouterAction.CanActivate {
   layers(): any {
     return [1, 2, 3];
   }
-  async canActivate(url: RouterAction.RoutingDataSet, data?: any): Promise<void> {
+  async canActivate(url: RoutingDataSet, data?: any): Promise<void> {
     console.log('TestRouter CanActivate~~', url, data);
   }
 }
@@ -152,20 +155,28 @@ class ApiRouter {
     good: Office
   }
 })
-class RRouter implements RouterAction.CanActivate {
-  constructor() {
+class RRouter implements RouterAction.CanActivate, OnSimCreate {
+  private routingSubscription: Subscription;
+  constructor(private routerManager: RouterManager) {
     console.log('RRouter constructor');
+
+  }
+
+  onSimCreate() {
+    console.log('subscription RRouter');
+    this.routingSubscription = this.routerManager.observable.subscribe(it => {
+      console.log('vvvvvvvvv', it);
+    })
   }
 
   routeSay() {}
 
   post() {}
 
-  async canActivate(url: RouterAction.RoutingDataSet, data?: any): Promise<void> {
+  async canActivate(url: RoutingDataSet, data?: any): Promise<void> {
     console.log('cccccccccccccccan?', data);
   }
 
-  @OnRoute
   onRout(i: Intent) {
     console.log('ooooooooooooooo', i);
   }
@@ -184,7 +195,7 @@ class RootRouter implements RouterAction.CanActivate {
     console.log('RootRouter constructor');
   }
 
-  async canActivate(url: RouterAction.RoutingDataSet, data?: any): Promise<void> {
+  async canActivate(url: RoutingDataSet, data?: any): Promise<void> {
     console.log('RootRouter CanActivate~~', url, data);
   }
   say() {
@@ -217,6 +228,8 @@ class RootRouter implements RouterAction.CanActivate {
 
   // const r = await app.routing({path:''});
   const r = await app.routing(new Intent('/good'));
+  r.getModuleInstance<Office>()?.say()
+  console.log('-------');
   // const r = await app.routing(new Intent('/'));
   // const z = r.getModuleInstance<Office>();
   // z?.say();

@@ -8,7 +8,7 @@ export enum PublishType {
 /* uri struct
     scheme uri example: mymodule://asd/asd/b?a=545&aa=33&wow=wow
     global uri example: ://asd/asd/b?a=545&aa=33&wow=wow
-    route uri example: /asd/asd/b?a=545&aa=33&wow=wow
+    route uri example: Router(/users/aa/ffw)://asd/asd/b?a=545&aa=33&wow=wow
     Symbol.for uri example: Symbol.for(zzz)://asd/asd/b?a=545&aa=33&wow=wow
     <스킴>://<사용자이름>:<비밀번호>@<호스트>:<포트>/<경로>?<질의>#<프레그먼트>
 */
@@ -40,7 +40,11 @@ export class Intent<T = any, E = any> {
 
   get scheme() {
     if (typeof this.uri === 'string') {
-      return this.uri.split('://')[0];
+      const parts = this.uri.split('://');
+      if (parts.length > 1) {
+        return parts[0];
+      }
+      return undefined;
     } else {
       return undefined;
     }
@@ -87,30 +91,11 @@ export class Intent<T = any, E = any> {
 
   getPathnameData(urlExpression: string) {
     return Expression.Path.pathNameData(this.pathname, urlExpression);
-    // const urls = this.pathname.split('/');
-    // const urlExpressions = urlExpression.split('/');
-    // if (urls.length !== urlExpressions.length) {
-    //   return;
-    // }
-    // const data: { [name: string]: string } = {}
-    // for (let i = 0; i < urlExpressions.length; i++) {
-    //   const it = urlExpressions[i];
-    //   const urlit = urls[i];
-    //   // ex) {serialNo:[0-9]+} or {no}  ..
-    //   const execResult = /^\{(.+)\}$/g.exec(it);
-    //   if (!execResult) {
-    //     if (it !== urlit) {
-    //       return;
-    //     }
-    //     continue;
-    //   }
-    //   // regex check
-    //   const [name, regex] = execResult[1].split(':'); // group1
-    //   if (regex && !new RegExp(regex).test(urlit)) {
-    //     return;
-    //   }
-    //   data[name] = urlit;
-    // }
-    // return data;
+  }
+
+  
+
+  get isSymbolScheme(): boolean {
+    return this.symbols !== undefined;
   }
 }

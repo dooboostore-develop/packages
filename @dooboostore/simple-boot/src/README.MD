@@ -463,60 +463,50 @@ if (validationErrors.length > 0) {
 
 </details>
 
-## Global Routing Event Listener: `@onRoute`
+## Global Routing Event Listener: `RouterManager.observable`
 
-The `@onRoute` decorator provides a powerful way for any `@Sim`-managed class to react to the successful completion of a routing event, without being part of the router hierarchy itself. This is useful for tasks that need to happen globally after a page navigation.
-
-Think of it as a global "listener" or "subscriber" for routing changes.
-
-### Use Cases
-- Updating the active state of a top navigation menu.
-- Logging page views for analytics.
-- Updating the browser tab's title (`document.title`).
+Instead of using the `@OnRoute` decorator, you can directly subscribe to the `RouterManager.observable` to react to routing events. This provides a more explicit and flexible way to handle routing changes.
 
 ### How to Use
-You can decorate a method within any `@Sim` class with `@onRoute`. After a route is successfully resolved, the `RouterManager` will find and execute this method.
 
-The decorated method can also receive the `Intent` and `RouterModule` objects via dependency injection, giving you full context about the completed routing event.
+Inject `RouterManager` into your `@Sim`-managed class and subscribe to its `observable` property. It's recommended to manage the subscription lifecycle, for example, by subscribing in `onSimCreate` and unsubscribing in a cleanup method if your class has a specific lifecycle for destruction.
 
-**Example:** A `MenuComponent` that updates itself after navigation.
+**Example:** A class that listens to all routing events.
 
 ```typescript
 import { Sim } from '@dooboostore/simple-boot/decorators/SimDecorator';
-import { OnRoute, removeOnRoute } from '@dooboostore/simple-boot/decorators/route/OnRoute';
-import { Intent } from '@dooboostore/simple-boot/intent/Intent';
-
-// Assuming a lifecycle interface like OnDestroy exists
-export interface OnDestroy {
-    destroy(): void;
-}
+import { OnSimCreate } from '@dooboostore/simple-boot';
+import { RouterManager, RoutingDataSet } from '@dooboostore/simple-boot/route/RouterManager';
+import { Subscription } from '@dooboostore/core/message/Subscription';
 
 @Sim
-export class MenuComponent implements OnDestroy {
+class MyRoutingListener implements OnSimCreate {
+  private routingSubscription: Subscription;
 
-    constructor() {
-        // component initialization
-    }
+  constructor(private routerManager: RouterManager) {
+    console.log('MyRoutingListener constructor');
+  }
 
-    @OnRoute()
-    public afterRouting(intent: Intent) {
-        console.log(`Routing finished! New path is: ${intent.pathname}`);
-        // Add logic here to highlight the menu item
-        // that corresponds to the new path.
-    }
+  onSimCreate() {
+    this.routingSubscription = this.routerManager.observable.subscribe((data: RoutingDataSet) => {
+      console.log('Routing event received:', data);
+      // Add your logic here to react to routing changes
+      // e.g., update UI, log analytics, etc.
+    });
+  }
 
-    // This method must be called when the component is destroyed.
-    public destroy() {
-        removeOnRoute(MenuComponent);
-    }
+  // If your class has a destroy/cleanup lifecycle, you should unsubscribe:
+  // onDestroy() { // Assuming anDestroy interface
+  //   if (this.routingSubscription) {
+  //     this.routingSubscription.unsubscribe();
+  //   }
+  // }
 }
 ```
 
-### Important: Lifecycle and Memory Management
+### Important: Subscription Management
 
-`@onRoute` registers a listener in a global map. To prevent memory leaks, it is **crucial** to unregister this listener when the component or class is destroyed.
-
-You must call the `removeOnRoute` function in the appropriate lifecycle hook for your component (e.g., a `destroy` or `unmount` method).
+When subscribing to `RouterManager.observable`, it is crucial to manage the lifecycle of your subscription. If your `@Sim` instance is transient or has a defined destruction lifecycle, ensure you `unsubscribe()` from the `routingSubscription` to prevent memory leaks.
 
 
 # License

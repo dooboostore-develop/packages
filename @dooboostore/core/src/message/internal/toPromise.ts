@@ -3,8 +3,8 @@ import { EmptyError } from './lastValueFrom'; // Reusing EmptyError from lastVal
 
 /**
  * Converts an observable to a promise by subscribing to the observable,
- * and returning a promise that will resolve with the first value emitted
- * by the observable. The subscription is then immediately unsubscribed.
+ * and returning a promise that will resolve with the last value emitted
+ * by the observable when it completes.
  *
  * If the observable stream completes before any values were emitted, the
  * returned promise will reject with {@link EmptyError}.
@@ -13,22 +13,24 @@ import { EmptyError } from './lastValueFrom'; // Reusing EmptyError from lastVal
  * with that error.
  *
  * @param source The observable to convert to a promise.
- * @return A promise that resolves with the first value from the observable,
+ * @return A promise that resolves with the last value from the observable,
  * or rejects with an error or EmptyError.
  */
-export function firstValueFrom<T>(source: Observable<T>): Promise<T> {
+export function toPromise<T>(source: Observable<T>): Promise<T> {
   return new Promise<T>((resolve, reject) => {
     let _hasValue = false;
+    let _value: T;
 
-    const subscription = source.subscribe({
+    source.subscribe({
       next: (value) => {
+        _value = value;
         _hasValue = true;
-        resolve(value);
-        subscription.unsubscribe(); // Unsubscribe immediately after first value
       },
       error: reject,
       complete: () => {
-        if (!_hasValue) {
+        if (_hasValue) {
+          resolve(_value);
+        } else {
           reject(new EmptyError());
         }
       },

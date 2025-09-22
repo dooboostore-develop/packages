@@ -1,7 +1,7 @@
 import 'reflect-metadata'
 import { SimstanceManager } from './simstance/SimstanceManager';
 import { SimOption } from './SimOption';
-import { IntentManager } from './intent/IntentManager';
+import { IntentManager, isRouterPublishType, RouterPublishType } from './intent/IntentManager';
 import { RouterManager, RoutingOption } from './route/RouterManager';
 import { Intent } from './intent/Intent';
 import { ConstructorType, GenericClassDecorator } from '@dooboostore/core/types';
@@ -32,8 +32,8 @@ export class SimpleApplication {
     // this.simstanceManager.setStoreSet(SimpleApplication, this);
     this.simstanceManager.setStoreSet(SimstanceManager, this.simstanceManager);
     // cacheManager는 사용자가 불러다 사용할때 뜨도록. 미리 추가안해준다.
-    this.intentManager = this.simstanceManager.proxy(new IntentManager(this.simstanceManager));
     this.routerManager = this.simstanceManager.proxy(new RouterManager(this.simstanceManager, option));
+    this.intentManager = this.simstanceManager.proxy(new IntentManager(this.simstanceManager, this.routerManager,option));
     this.simstanceManager.setStoreSet(IntentManager, this.intentManager);
     this.simstanceManager.setStoreSet(RouterManager, this.routerManager);
     containers.add(this);
@@ -100,21 +100,28 @@ export class SimpleApplication {
   }
 
 
-  public publishIntent(i: string, data?: any): any[];
-  public publishIntent(i: Intent): any[];
-  public publishIntent(i: Intent | string, data?: any): any[] {
+  public publishIntent(i: string, data?: any): Promise<any[]>;
+  public publishIntent(i: RouterPublishType): Promise<any[]>;
+  public publishIntent(i: Intent): Promise<any[]>;
+  public publishIntent(i: Intent | string | RouterPublishType, data?: any): Promise<any[]> {
     if (i instanceof Intent) {
       return this.intentManager.publish(i);
+    } else if (isRouterPublishType(i)) {
+      return this.intentManager.publish(i, data);
     } else {
       return this.intentManager.publish(i, data);
     }
   }
 
+  public routing<R = SimAtomic, M = any>(i: string, option?: RoutingOption): Promise<RouterModule<R, M>>;
   public routing<R = SimAtomic, M = any>(i: { path: string, data?: any }, option?: RoutingOption): Promise<RouterModule<R, M>>;
   public routing<R = SimAtomic, M = any>(i: Intent, option?: RoutingOption): Promise<RouterModule<R, M>>;
-  public routing<R = SimAtomic, M = any>(i: { path: string, data?: any } | Intent, option?: RoutingOption): Promise<RouterModule<R, M>> {
+  public routing<R = SimAtomic, M = any>(i: { path: string, data?: any } | string | Intent, option?: RoutingOption): Promise<RouterModule<R, M>> {
     if (i instanceof Intent) {
       return this.routerManager.routing<R, M>(i, option);
+    } else if (typeof i === 'string') {
+      const intent = new Intent(i);
+      return this.routerManager.routing<R, M>(intent, option);
     } else {
       const intent = new Intent(i.path, i.data);
       return this.routerManager.routing<R, M>(intent, option);

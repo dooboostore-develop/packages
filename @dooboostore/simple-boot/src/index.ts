@@ -10,7 +10,6 @@ export { Inject, getInject, SituationTypeContainer, SituationTypeContainers } fr
 export type { InjectConfig, SaveInjectConfig, SituationType } from './decorators/inject/Inject';
 export { Router, Route, getRouter, getRoute, getRoutes } from './decorators/route/Router';
 export type { RouterConfig, RoteAndFilter, RouteTargetMethod, RouteProperty, Route as RouteType, Filterss, Filters, SaveRouteConfig } from './decorators/route/Router';
-export { OnRoute, getOnRoute, onRoutes } from './decorators/route/OnRoute';
 export { Before, After, Around, AroundForceReturn, getAfter, getAfters, getAround, getBefore, getBefores, getProtoAfters, getProtoBefores } from './decorators/aop/AOPDecorator';
 export { Cache, DefaultCacheStorage } from './decorators/cache/CacheDecorator';
 export type { CacheStorage, ConfigDataSet } from './decorators/cache/CacheDecorator';
@@ -33,7 +32,7 @@ export { RouterManager } from './route/RouterManager';
 export type { RoutingOption } from './route/RouterManager';
 export { RouterModule } from './route/RouterModule';
 export type { RouteFilter } from './route/RouteFilter';
-export type { RouterAction, RoutingDataSet } from './route/RouterAction';
+export type { RouterAction  } from './route/RouterAction';
 
 // Intent
 export { Intent, PublishType } from './intent/Intent';

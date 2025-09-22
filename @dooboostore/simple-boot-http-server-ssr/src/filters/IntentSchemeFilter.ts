@@ -34,7 +34,7 @@ export class IntentSchemeFilter implements Filter {
                 } else if (contentType.includes(Mimes.MultipartFormData)) {
                     intent.data = [await rr.reqBodyMultipartFormDataObject(), rr];
                 }
-                const rdatas = this.intentManager.publish(intent);
+                const rdatas = await this.intentManager.publish(intent);
                 const rdata = rdatas[0];
                 const wdata = rdata instanceof Promise ? await rdata : rdata;
                 rr.resStatusCode(HttpStatus.Ok);
@@ -42,9 +42,10 @@ export class IntentSchemeFilter implements Filter {
                 await rr.resEnd(wdata ? JSON.stringify(wdata) : undefined);
             } else {
                 intent.data = rr.reqUrlSearchParamTuples.length > 0 ? [rr.reqUrlSearchParamsObj, rr] : [rr];
-                const rdatas = this.intentManager.publish(intent);
+                const rdatas = await this.intentManager.publish(intent);
                 const rdata = rdatas[0];
                 const wdata = rdata instanceof Promise ? await rdata : rdata;
+                // const wdata =undefined;
                 rr.resStatusCode(HttpStatus.Ok);
                 rr.resSetHeader(HttpHeaders.ContentType, [Mimes.ApplicationJson])
                 await rr.resEnd(wdata ? JSON.stringify(wdata) : undefined);

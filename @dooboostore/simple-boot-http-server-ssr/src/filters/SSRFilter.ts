@@ -15,6 +15,8 @@ import * as JSDOM from 'jsdom';
 import { Expression } from '@dooboostore/core/expression/Expression';
 import { NotFoundError } from '@dooboostore/simple-boot-http-server/errors/NotFoundError';
 import { DomRenderProxy } from '@dooboostore/dom-render/DomRenderProxy';
+import { delay, filter, first } from '@dooboostore/core/message/operators';
+import { firstValueFrom } from '@dooboostore/core';
 
 export type FactoryAndParams = {
   frontDistPath: string;
@@ -141,37 +143,24 @@ export class SSRFilter implements Filter {
         }
 
         // runRouting!!
-        simpleBootFront.goRouting(url.toString());
-        // console.log('------intent', intent)
+        const targetUrl = url.toString();
+        // console.log('rrrrr');
+        // simpleBootFront.routingSubjectObservable.subscribe(it => {
+        //   if (it.state === 'end' && it.routerModule.intent.uri === targetUrl) {
+        //     console.log('vvvvvvvvvvvv', it.state, it.routerModule.intent.uri);
+        //   }
+        // });
+        await simpleBootFront.goRouting(targetUrl);
         await new Promise((r) => setTimeout(r, 0)); // <--중요: 이거 넣어야지 두번불러지는게 없어지는듯? 뭐지 event loop 변경된건가?
-        // const e = Expression.Path.pathNameData(rr.reqUrlPathName, intent.getRouterPath())
-        // console.log('------intent', rr.reqUrl, rr.reqUrlPathName, intent.module, intent.getRouterPath(), e)
-        // simpleBootFront.option.window.document.documentElemenh
-        // "dr-"로 시작하는 모든 attribute를 가진 element에서 해당 attribute를 제거
-        simpleBootFront.option.window.document.querySelectorAll('*').forEach(el => {
-          Array.from(el.attributes).forEach(attr => {
-            if (/^dr-/.test(attr.name) || /^domstyle/.test(attr.name) || /this-path/.test(attr.name)) {
-              el.removeAttribute(attr.name);
-            }
-          });
-        });
-        let html = simpleBootFront.option.window.document.documentElement.outerHTML;
-        html = '<!DOCTYPE html>'+html;
-        html = html.replace(/\$\{[\s\S]*?\}\$/g, '');
-        const serverSideData = (simpleBootFront.option.window as any).server_side_data;
-        if (serverSideData) {
-          const data = Object.entries(serverSideData).map(([k, v]) => {
-            if (typeof v === 'string') {
-              return `window.server_side_data.${k} = ${v}`;
-            } else {
-              return `window.server_side_data.${k} = ${JSON.stringify(v)}`;
-            }
-          }).join(';');
-          if (data) {
-            html = html.replace('</head>', `<script> window.server_side_data={}; ${data}; </script></head>`);
-          }
-        }
-        // console.log('--------',html)
+        // TODO: 옵션으로 이거 키고 끄고할수있게 해야될까..?
+        const data = await firstValueFrom(simpleBootFront.routingSubjectObservable.pipe(
+          filter(it => it.state === 'end' && typeof  it.routerModule.intent.uri === 'string' && targetUrl.endsWith(it.routerModule.intent.uri)),
+          // delay(1000),
+          first()
+        ))
+        // console.log('rrrrrssss');
+        // console.log('rrrrrssss122');
+        const html = this.makeHTML(simpleBootFront)
         await this.writeOkHtmlAndEnd({rr}, html);
       } finally {
         (simpleBootFront.option.window as any).ssrUse = false;
@@ -280,6 +269,36 @@ export class SSRFilter implements Filter {
     }
   }
 
+  // const e = Expression.Path.pathNameData(rr.reqUrlPathName, intent.getRouterPath())
+  // console.log('------intent', rr.reqUrl, rr.reqUrlPathName, intent.module, intent.getRouterPath(), e)
+  // simpleBootFront.option.window.document.documentElemenh
+  // "dr-"로 시작하는 모든 attribute를 가진 element에서 해당 attribute를 제거
+  makeHTML (simpleBootFront: SimpleBootFront)  {
+    simpleBootFront.option.window.document.querySelectorAll('*').forEach(el => {
+      Array.from(el.attributes).forEach(attr => {
+        if (/^dr-/.test(attr.name) || /^domstyle/.test(attr.name) || /this-path/.test(attr.name)) {
+          el.removeAttribute(attr.name);
+        }
+      });
+    });
+    let html = simpleBootFront.option.window.document.documentElement.outerHTML;
+    html = '<!DOCTYPE html>'+html;
+    html = html.replace(/\$\{[\s\S]*?\}\$/g, '');
+    const serverSideData = (simpleBootFront.option.window as any).server_side_data;
+    if (serverSideData) {
+      const data = Object.entries(serverSideData).map(([k, v]) => {
+        if (typeof v === 'string') {
+          return `window.server_side_data.${k} = ${v}`;
+        } else {
+          return `window.server_side_data.${k} = ${JSON.stringify(v)}`;
+        }
+      }).join(';');
+      if (data) {
+        html = html.replace('</head>', `<script> window.server_side_data={}; ${data}; </script></head>`);
+      }
+    }
+    return html;
+  }
   async writeOkHtmlAndEnd({rr, status = HttpStatus.Ok}: { rr: RequestResponse, status?: HttpStatus }, html: string) {
     // rr.res.writeHead(status, {[HttpHeaders.ContentType]: Mimes.TextHtml});
     rr.resStatusCode(status);

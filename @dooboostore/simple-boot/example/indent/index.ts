@@ -5,12 +5,13 @@ import { Inject } from '@dooboostore/simple-boot/decorators/inject/Inject';
 import { SimOption } from '@dooboostore/simple-boot/SimOption';
 import { ConstructorType } from '@dooboostore/core/types';
 import { Intent } from '@dooboostore/simple-boot/intent/Intent';
-import { OnRoute } from '@dooboostore/simple-boot/decorators/route/OnRoute';
 import { RouterModule } from '@dooboostore/simple-boot/route/RouterModule';
 import { RouteFilter } from '@dooboostore/simple-boot/route/RouteFilter';
 import { RouterAction } from '@dooboostore/simple-boot/route/RouterAction';
 import { Injection } from '@dooboostore/simple-boot/decorators/inject/Injection';
 import { GlobalAdvice } from './GlobalAdvice';
+import { RoutingDataSet } from '@dooboostore/simple-boot/route/RouterManager';
+import { IntentManager, OnSimCreate } from '@dooboostore/simple-boot';
 //
 // @Sim
 // class User {
@@ -75,9 +76,21 @@ import { GlobalAdvice } from './GlobalAdvice';
 //
 // })();
 
-@Sim
-class SS {
+@Sim({
+  scheme:'SS'
+})
+class SS implements OnSimCreate{
   name = 'csss'
+
+  constructor(private intentManager: IntentManager) {
+    console.log('SS constructor');
+  }
+
+  onSimCreate(): void {
+    this.intentManager.observable.subscribe(it => {
+      console.log('intent subscribe', it);
+    })
+  }
 
   sayName() {
     console.log(`My office Name is ${this.name}`);
@@ -87,7 +100,10 @@ class SS {
     console.log('SS say');
   }
 
-  @OnRoute({isActivateMe: true})
+  in(i: Intent) {
+    console.log('SS intent', i);
+  }
+
   onRoute(routeModule: RouterModule) {
     console.log('onRoute22');
     this.name = routeModule.queryParams.name;
@@ -101,11 +117,11 @@ class SS {
   // filters: [new RFilter()],
   // route: {'/office': Office}
 })
-class SSRouter implements RouterAction {
+class SSRouter implements RouterAction.CanActivate {
   child: any;
 
-  async canActivate(url: Intent, module: any) {
-    this.child = module;
+  async canActivate(url: RoutingDataSet, data?: any) {
+    this.child = data;
   }
 
   say() {
@@ -132,7 +148,6 @@ class Office {
     console.log('Office say');
   }
 
-  @OnRoute({isActivateMe: true})
   onRoute(routeModule: RouterModule) {
     console.log('onRoute22');
     this.name = routeModule.queryParams.name;
@@ -150,7 +165,6 @@ class Office2 {
     console.log('Office2 say');
   }
 
-  @OnRoute({isActivateMe: true})
   onRoute(routeModule: RouterModule) {
     console.log('onRoute22');
     this.name = routeModule.queryParams.name;
@@ -167,11 +181,11 @@ class Office2 {
   },
   routers: [SSRouter],
 })
-class UsersRouter implements RouterAction {
+class UsersRouter implements RouterAction.CanActivate {
   child: any;
 
-  async canActivate(url: Intent, module: any) {
-    this.child = module;
+  async canActivate(url: RoutingDataSet, data?: any) {
+    this.child = data;
   }
 
   say() {
@@ -220,7 +234,7 @@ export class RFilter implements RouteFilter {
   //     }
   // }]
 })
-class AppRouter implements RouterAction {
+class AppRouter implements RouterAction.CanActivate {
   name = 'appRouter-name'
 
   @Injection
@@ -236,7 +250,7 @@ class AppRouter implements RouterAction {
     console.log('test--', props, simOption, this.name);
   }
 
-  async canActivate(url: Intent, module: any) {
+  async canActivate() {
     // console.log('activate route: ', url, module);
   }
 }
@@ -270,10 +284,11 @@ app.run();
   // const routerModule = await app.routing('/users/office');
   // const routerModule = await app.routing('/users');
   // const routerModule = await app.routing('/users/czcz');
-  const routerModule = await app.routing('/users/aa/ffw');
+ app.publishIntent("Router(/users/aa/ffw)://in", 'zzz')
+  // const routerModule = await app.routing('/users/aa/ffw');
+  // routerModule.getModuleInstance<UsersRouter>()?.say();
   // console.log('---routerModule-->', routerModule, routerModule.getRouterPath(), routerModule.module);
-  console.log('---routerModule-->', '---',routerModule.getRouterPath(), routerModule.pathData);
-  routerModule.getModuleInstance<UsersRouter>()?.say();
+  // console.log('---routerModule-->', '---',routerModule.getRouterPath(), routerModule.pathData);
   // const routerModule = await app.routing('/users/office');
   // console.log('---routerModule-->', routerModule, routerModule.module);
   // routerModule.getModuleInstance<Office>()?.say();

@@ -4,20 +4,29 @@ import { RouterModule } from './RouterModule';
 import { Route, RouterConfig, RouterMetadataKey } from '../decorators/route/Router';
 import { SimAtomic } from '../simstance/SimAtomic';
 import { SimstanceManager } from '../simstance/SimstanceManager';
-import { getOnRoute, onRoutes } from '../decorators/route/OnRoute';
 import { RouteFilter } from './RouteFilter';
 import { Sim } from '../decorators/SimDecorator';
 import { Expression } from '@dooboostore/core/expression/Expression';
 import { RouterAction } from '../route/RouterAction';
 import { SimOption } from '../SimOption';
+import { Subject } from '@dooboostore/core/message/Subject';
 
 export type RoutingOption = { router?: ConstructorType<any> | any, find?: { router: 'last' | 'first' } };
+export type RoutingDataSet = {
+  intent: Intent, routerModule: RouterModule, routerManager: RouterManager
+}
 
 @Sim
 export class RouterManager {
   public activeRouterModule?: RouterModule<SimAtomic, any>;
-
+  private subject = new Subject<RoutingDataSet>()
   constructor(private simstanceManager: SimstanceManager, private simOption: SimOption) {
+  }
+
+  // @SimNoProxy
+  get observable() {
+    // this.subject.asObservable
+    return this.subject.asObservable();
   }
 
   public routingMap(prefix: string = '',  option?: RoutingOption): { [key: string]: string | any } {
@@ -50,6 +59,9 @@ export class RouterManager {
     return map;
   }
 
+  /** 일반적인 lifecycle 타지않는 그냥 find.. 의미가없을듯.
+   * @deprecated
+   */
   public async routings<R = SimAtomic, M = any>(intent: Intent, option?: RoutingOption): Promise<RouterModule<R, M>[]> {
     const targetRouter = option?.router ?? this.simOption.rootRouter;
     if (!targetRouter) {
@@ -64,20 +76,28 @@ export class RouterManager {
     // Priority 1: Exact path match with a module
     const exactModuleMatches = allMatches.filter(rm => rm.path === intent.pathname && rm.module);
     if (exactModuleMatches.length > 0) {
+      exactModuleMatches.forEach(it => this.subject.next(({intent, routerManager: this, routerModule: it})))
       return exactModuleMatches as RouterModule<R, M>[];
     }
 
     // Priority 2: Exact path match without a module (if no module matches found)
     const exactPathMatches = allMatches.filter(rm => rm.path === intent.pathname);
     if (exactPathMatches.length > 0) {
+      exactPathMatches.forEach(it => this.subject.next(({intent, routerManager: this, routerModule: it})))
       return exactPathMatches as RouterModule<R, M>[];
     }
 
     return [] as RouterModule<R, M>[];
   }
 
-  public async routing<R = SimAtomic, M = any>(intent: Intent, option?: RoutingOption): Promise<RouterModule<R, M>> {
+  public async routing<R = SimAtomic, M = any>(intent: string, option?: RoutingOption): Promise<RouterModule<R, M>> ;
+  public async routing<R = SimAtomic, M = any>(intent: Intent, option?: RoutingOption): Promise<RouterModule<R, M>> ;
+  public async routing<R = SimAtomic, M = any>(intent: Intent | string, option?: RoutingOption): Promise<RouterModule<R, M>> {
+    if (typeof intent === 'string') {
+      intent = new Intent(intent);
+    }
     const targetRouter = option?.router ?? this.simOption.rootRouter;
+
     if (!targetRouter) {
       throw new Error('no router');
     }
@@ -92,7 +112,7 @@ export class RouterManager {
       const [executeModule, routerChains] = executeModuleResult;
       executeModule.routerChains = routerChains;
       this.activeRouterModule = executeModule;
-      const routingDataSet: RouterAction.RoutingDataSet = {intent, routerModule: executeModule, routerManager: this};
+      const routingDataSet: RoutingDataSet = {intent, routerModule: executeModule, routerManager: this};
 
       // --- 라우팅 경로(Chain)에 있는 모든 라우터의 라이프사이클 훅 호출 ---
       // 최종 목적지에 도달하기까지 거쳐온 모든 중간 라우터들(예: RootRouter -> UserRouter)을 순회하며
@@ -145,11 +165,13 @@ export class RouterManager {
         }
       }
 
-      // 라우팅 완료 후, @onRoute 데코레이터가 붙은 모든 전역 핸들러를 실행합니다.
-      await this._executeOnRouteHandlers(intent, executeModule);
-      return this.activeRouterModule as RouterModule<any, any>;
+      const find = this.activeRouterModule as RouterModule<any, any>;
+      this.subject.next({intent: intent, routerModule: find, routerManager: this});
+      return find;
     } else {
-      return await this._handleNotFoundRouting(rootRouter, intent);
+      const empty = await this._handleNotFoundRouting(rootRouter, intent);
+      this.subject.next({intent: intent, routerModule: empty, routerManager: this});
+      return empty;
     }
   }
 
@@ -187,7 +209,7 @@ export class RouterManager {
      * return this.activeRouterModule as RouterModule<any, any>;
     */
     const routerModule = new RouterModule(this.simstanceManager, rootRouter, undefined, []);
-    const routingDataSet: RouterAction.RoutingDataSet = {intent, routerModule: routerModule, routerManager: this};
+    const routingDataSet: RoutingDataSet = {intent, routerModule: routerModule, routerManager: this};
 
     const value = rootRouter;
     if (RouterAction.isCanActivate(value)) {
@@ -201,37 +223,6 @@ export class RouterManager {
     return this.activeRouterModule;
   }
 
-  /**
-   * 라우팅이 완료된 후, @onRoute 데코레이터로 등록된 모든 전역 핸들러를 실행합니다.
-   * 이 메서드는 라우팅 흐름에 직접 관여하지 않는 다른 모듈들이 라우팅 변경에 반응할 수 있도록 합니다.
-   * @param intent 라우팅에 사용된 원본 Intent 객체
-   * @param executeModule 최종적으로 확인된 RouterModule 객체
-   * @private
-   */
-  private async _executeOnRouteHandlers(intent: Intent, executeModule: RouterModule<any, any>) {
-    const otherStorage = new Map<ConstructorType<any>, any>();
-    otherStorage.set(Intent, intent);
-    otherStorage.set(RouterModule, executeModule);
-    for (const [key, value] of Array.from(onRoutes)) {
-      try {
-        const sim = this.simstanceManager.findLastSim({type: key});
-        for (const v of value) {
-          const onRouteConfig = getOnRoute(key, v);
-          let r;
-          if (!onRouteConfig?.isActivateMe) {
-            r = sim?.getValue()[v]?.(...this.simstanceManager.getParameterSim({target: sim?.getValue(), targetKey: v, otherStorage}));
-          } else if (this.activeRouterModule?.routerChains?.some((it: SimAtomic) => (it.getValue() as any)?.hasActivate?.(sim?.getValue()))) {
-            r = sim?.getValue()[v]?.(...this.simstanceManager.getParameterSim({target: sim?.getValue(), targetKey: v, otherStorage}));
-          }
-          if (r instanceof Promise) {
-            await r
-          }
-        }
-      } catch (error) {
-        // skip catch
-      }
-    }
-  }
 
   private getExecuteModule(router: SimAtomic, intent: Intent, parentRouters: SimAtomic[], option?: RoutingOption): [RouterModule, SimAtomic[]] | undefined {
     const path = intent.pathname;
