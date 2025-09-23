@@ -5,40 +5,29 @@ const NodemonPlugin = require('nodemon-webpack-plugin');
 module.exports = {
   target: 'node',
   mode: process.env.NODE_ENV === 'production' ? 'production' : 'development',
-  devtool: 'eval-source-map',
-  entry: path.resolve(__dirname, 'index.ts'),
+  devtool: 'source-map',
+  entry: path.resolve(__dirname, 'src/index.ts'), // Modified entry
   output: {
-    path: path.resolve(__dirname, 'dist'),
+    path: path.resolve(__dirname, 'dist'), // Modified output path
     filename: 'index.js',
     clean: true
   },
-  // devServer: {
-  //   hot: false,
-  //   client: false,
-  //   compress: false,
-  //   host: 'localhost',
-  //   port: 3001,
-  //   static: false,
-  //   devMiddleware: {
-  //     writeToDisk: true
-  //   }
-  // },
   plugins: [
     new NodemonPlugin({
-      script: path.resolve(__dirname, 'dist/index.js'),
-      watch: path.resolve(__dirname, 'dist'),
+      script: path.resolve(__dirname, 'dist/index.js'), // Modified script path
+      watch: path.resolve(__dirname, 'dist'), // Modified watch path
       nodeArgs: ['--inspect']
     })
   ],
   module: {
     rules: [
       {
-        test: /\.worker\.ts$/, // Worker 파일専용 규칙
+        test: /\.worker\.ts$/,
         use: [
           {
             loader: 'worker-loader',
             options: {
-              filename: '[name].worker.js' // 출력 파일 이름
+              filename: '[name].worker.js'
             }
           },
           {
@@ -80,25 +69,32 @@ module.exports = {
   },
   resolve: {
     extensions: ['.ts', '.js', '.html', '.css'],
-    plugins: [new TsconfigPathsPlugin()],
-    alias: {
-      // '@backend': path.resolve(__dirname),
-      // '@src': path.resolve(__dirname, '../src'),
-      // '@front': path.resolve(__dirname,'../front'),
+    plugins: [new TsconfigPathsPlugin({
+      configFile: path.resolve(__dirname, './tsconfig.json')
+    })],
+    alias: { // Added aliases
+      '@dooboostore/simple-boot-http-server': path.resolve(__dirname, '../../src'),
+      '@dooboostore/simple-boot': path.resolve(__dirname, '../../../simple-boot/src'),
+      '@dooboostore/core': path.resolve(__dirname, '../../../core/src'),
+      '@dooboostore/core-node': path.resolve(__dirname, '../../../core-node/src')
     },
     modules: [
       'node_modules',
-      // path.resolve(__dirname, '..'),
-      // path.resolve(__dirname, '../..'),
-      // path.resolve(__dirname, '../../..')
+      path.resolve(__dirname, '..'),
+      path.resolve(__dirname, '../..'),
+      path.resolve(__dirname, '../../..')
     ]
   },
   externals: {
     'canvas': 'commonjs canvas',
     'utf-8-validate': 'commonjs utf-8-validate',
-    'bufferutil': 'commonjs bufferutil'
+    'bufferutil': 'commonjs bufferutil',
+    'jsdom': 'commonjs jsdom'
   },
   optimization: {
     minimize: false
+  },
+  node: {
+    __dirname: true
   }
-}; 
+};

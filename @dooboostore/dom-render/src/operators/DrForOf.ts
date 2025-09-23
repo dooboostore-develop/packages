@@ -18,7 +18,7 @@ export class DrForOf extends OperatorExecuterAttrRequire<string> {
     const newTemp = this.source.config.window.document.createElement('temp');
     // console.log('----!', this.elementSource.attrs)
     // ScriptUtils.evalReturn()
-    ScriptUtils.eval(`
+    ScriptUtils.evaluate(`
                     ${this.render.bindScript}
                     ${this.elementSource.attrs.drBeforeOption ?? ''}
                     var i = -1; 
@@ -48,7 +48,7 @@ export class DrForOf extends OperatorExecuterAttrRequire<string> {
                             n.getAttributeNames().forEach(it => n.setAttribute(it, n.getAttribute(it).replace(/\\#it\\#/g, destIt).replace(/\\#nearForOfIt\\#/g, destIt).replace(/\\#it\\#/g, destIt).replace(/\\#nearForOfIndex\\#/g, i)))
                             const drOptionAttr = n.getAttribute('${RawSet.DR_DETECT_ATTR_OPTIONNAME}');
                             if (drOptionAttr) {
-                              const drOptionAttrResult = $scriptUtils.evalReturn(drOptionAttr, this);
+                              const drOptionAttrResult = $scriptUtils.evaluateReturn(drOptionAttr, this);
                               Array.from(Object.entries(drOptionAttrResult??{})).forEach(([k,v])=>{
                                 if (v === null) {
                                   n.removeAttribute(k);
@@ -60,7 +60,7 @@ export class DrForOf extends OperatorExecuterAttrRequire<string> {
                             
                             const drOptionFilter = n.getAttribute('${RawSet.DR_DETECT_FILTER_OPTIONNAME}');
                             if (drOptionFilter) {
-                              const drOptionFilterResult = $scriptUtils.evalReturn(drOptionFilter, this);
+                              const drOptionFilterResult = $scriptUtils.evaluateReturn(drOptionFilter, this);
                               // console.log('---drforof----', drOptionFilter, drOptionFilterResult)
                               if (!drOptionFilterResult) {
                                 continue;

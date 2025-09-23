@@ -3,7 +3,7 @@ import {ScriptUtils} from '@dooboostore/core-web/script/ScriptUtils';
 import {RawSet} from '../rawsets/RawSet';
 import {Render} from '../rawsets/Render';
 import {AfterCallBack, ElementSource, ExecuteState, ReturnContainer, Source} from './OperatorExecuter';
-import {DomRenderConfig} from 'configs/DomRenderConfig';
+import {DomRenderConfig} from '../configs/DomRenderConfig';
 
 export class DrThisProperty extends OperatorExecuterAttrRequire<string> {
     constructor(rawSet: RawSet, render: Render, returnContainer: ReturnContainer, elementSource: ElementSource, source: Source, afterCallBack: AfterCallBack) {
@@ -15,7 +15,7 @@ export class DrThisProperty extends OperatorExecuterAttrRequire<string> {
         const itRandom = RawSet.drItOtherEncoding(this.elementSource.element, 'DrThisProperty');
         const vars = RawSet.drVarEncoding(this.elementSource.element, this.elementSource.attrs.drVarOption ?? '');
         const newTemp = this.source.config.window.document.createElement('temp');
-        const dictioanry = ScriptUtils.evalReturn(attr, this.source.obj)
+        const dictioanry = ScriptUtils.evaluateReturn(attr, this.source.obj)
         const dictionaryKey = this.elementSource.attrs.drKeyOption ?? '';
         // console.log('--->', attr, dictionaryKey)
         // if (!(dictioanry instanceof Dictionary)) {
@@ -23,7 +23,7 @@ export class DrThisProperty extends OperatorExecuterAttrRequire<string> {
         // }
         // await new Promise(resolve => setTimeout(resolve, 1000));
         // console.log('!!!!!!!!!!!!!!', this.rawSet);
-        ScriptUtils.eval(`
+        ScriptUtils.evaluate(`
                     ${this.render.bindScript}
                     ${this.elementSource.attrs.drBeforeOption ?? ''}
                     var i = 0; 

@@ -1,7 +1,7 @@
 import 'reflect-metadata';
 import { RawSet } from './rawsets/RawSet';
 import { EventManager } from './events/EventManager';
-import { DomRenderConfig } from 'configs/DomRenderConfig';
+import { DomRenderConfig } from './configs/DomRenderConfig';
 import { ScriptUtils } from '@dooboostore/core-web/script/ScriptUtils';
 import { DomRenderFinalProxy, Shield } from './types/Types';
 import { RawSetType } from './rawsets/RawSetType';
@@ -17,8 +17,8 @@ import { DocumentUtils } from '@dooboostore/core-web/document/DocumentUtils';
 import { isDefined } from '@dooboostore/core/types';
 import { isOnBeforeReturnSet } from './lifecycle/OnBeforeReturnSet';
 import { isOnChildRenderedByProperty } from './lifecycle/OnChildRenderedByProperty';
-import { ObjectUtils } from '@dooboostore/core/object';
-import {ValidUtils} from '@dooboostore/core/valid'
+import { ObjectUtils } from '@dooboostore/core/object/ObjectUtils';
+import {ValidUtils} from '@dooboostore/core/valid/ValidUtils'
 import { isOnProxyDomRender } from './lifecycle/OnProxyDomRender';
 
 const excludeGetSetPropertys = ['onBeforeReturnGet', 'onBeforeReturnSet', '__domrender_components', '__render', '_DomRender_isFinal', '_domRender_ref', '_rawSets', '_domRender_proxy', '_targets', '_DomRender_origin', '_DomRender_ref', '_DomRender_proxy'];
@@ -131,7 +131,7 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
     const onCreate = (target as any).getAttribute?.(RawSet.DR_ON_CREATE_ARGUMENTS_OPTIONNAME);
     let createParam: any[] = [];
     if (onCreate) {
-      createParam = ScriptUtils.evalReturn(onCreate, this._domRender_proxy);
+      createParam = ScriptUtils.evaluateReturn(onCreate, this._domRender_proxy);
       if (!Array.isArray(createParam)) {
         createParam = [createParam];
       }
@@ -171,7 +171,7 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
       const onInit = (target as any).getAttribute?.(RawSet.DR_ON_INIT_ARGUMENTS_OPTIONNAME);
       let initParam: any;
       if (onCreate) {
-        initParam = ScriptUtils.evalReturn(onCreate, this._domRender_proxy);
+        initParam = ScriptUtils.evaluateReturn(onCreate, this._domRender_proxy);
         // if (!Array.isArray(initParam)) {
         //   initParam = [initParam];
         // }
@@ -303,7 +303,7 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
         const front = strings.slice(0, strings.length - 1).map(it => isNaN(Number(it)) ? '.' + it : `[${it}]`).join('');
         const lastPropertyName = strings[strings.length - 1];
         const path = 'this' + front;
-        const data = ScriptUtils.evalReturn(ObjectUtils.Path.toOptionalChainPath(path), this._domRender_proxy);
+        const data = ScriptUtils.evaluateReturn(ObjectUtils.Path.toOptionalChainPath(path), this._domRender_proxy);
         // console.log('root-->', this._rawSets, path, data );
         // console.log('--!!!!', fullPathStr, iterable, data, front, last);
         // 왜여기서 promise를 했을까를 생각해보면......훔.. 변수변경과 화면 뿌려주는걸 동기로하면 성능이 안나오고 비현실적이다.  그래서 promise
@@ -380,7 +380,7 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
 
           //랜더대상된게있으면
           if(rData?.length > 0 && isOnChildRenderedByProperty(data)) {
-            const propertyValue = ScriptUtils.evalReturn(`this.${lastPropertyName}`, data)
+            const propertyValue = ScriptUtils.evaluateReturn(`this.${lastPropertyName}`, data)
             data.onChildRenderedByProperty(lastPropertyName, propertyValue);
             // data
           }
@@ -452,12 +452,12 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
     DocumentUtils.querySelectorAllByAttributeName(rootElement, EventManager.normalAttrMapAttrName)?.forEach(elementInfo => {
       // @ts-ignore
       // const optionalPath = ObjectUtils.Path.toOptionalChainPath(elementInfo.value);
-      const targets = new Map<string,string>(ScriptUtils.evalReturn<[string, string][]>(elementInfo.value));
+      const targets = new Map<string,string>(ScriptUtils.evaluateReturn<[string, string][]>(elementInfo.value));
       Array.from(targets.entries()).filter(([key, value])=>value.trim()).filter(isDefined).flatMap(([key,valueScript])=> {
         return fullPathInfo.flat().filter(it => valueScript.includes(`this.${it.path}`)).flatMap(it=> ({key, valueScript: valueScript, pathInfo: it}));
       }).forEach(it=> {
         const optionalPath = ObjectUtils.Path.toOptionalChainPath(it.valueScript);
-        const value1 = ScriptUtils.evalReturn(optionalPath, it.pathInfo.obj);
+        const value1 = ScriptUtils.evaluateReturn(optionalPath, it.pathInfo.obj);
         // console.log('proxy set!Attribut======', it.key, value1)
         if (value1 === null) {
           elementInfo.element.removeAttribute(it.key);
@@ -472,12 +472,12 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
     //여기서 링크 같은거 해줘야함  *-link로 변수값이 변경되면 그걸 참고하고있는 다른것들에도 해줘야한다.
     DocumentUtils.querySelectorAllByAttributeName(rootElement, EventManager.linkTargetMapAttrName)?.forEach(elementInfo => {
       // @ts-ignore
-       const targets = new Map<string,string>(ScriptUtils.evalReturn<[string, string][]>(elementInfo.value));
+       const targets = new Map<string,string>(ScriptUtils.evaluateReturn<[string, string][]>(elementInfo.value));
 
       Array.from(targets.entries()).filter(([key, value])=>value.trim()).filter(isDefined).flatMap(([key,valueScript])=> {
         return fullPathInfo.flat().filter(it => valueScript.includes(`this.${it.path}`)).flatMap(it=> ({key, valueScript: valueScript, pathInfo: it}));
       }).forEach(info=> {
-        const value1 = ScriptUtils.evalReturn(info.valueScript, info.pathInfo.obj);
+        const value1 = ScriptUtils.evaluateReturn(info.valueScript, info.pathInfo.obj);
         const applyAttributeName = EventManager.linkAttrs.find(it => it.name === info.key);
         if (applyAttributeName) {
           if (value1 === null) {

@@ -34,7 +34,7 @@ export class DrTargetElementIsElement extends OperatorExecuter<string | null> {
           this.rawSet.detect = {
             action: () => {
               const script = `var $component = this.__render.component; var $element = this.__render.element; var $innerHTML = this.__render.innerHTML; var $attribute = this.__render.attribute;  ${detectAction} `;
-              ScriptUtils.eval(script, Object.assign(this.source.obj, {
+              ScriptUtils.evaluate(script, Object.assign(this.source.obj, {
                 __render: this.rawSet.dataSet.render
               }))
             }

@@ -5,8 +5,8 @@ import SecondTemplate from './second/second.html';
 import DetailTemplate from './detail/detail.html';
 import { OnDestroyRender } from '@dooboostore/dom-render/lifecycle/OnDestroyRender';
 import { ComponentSet } from '@dooboostore/dom-render/components/ComponentSet';
-import { OnInitRender } from '@dooboostore/dom-render/dist/lifecycle/OnInitRender';
-import { RawSet } from '@dooboostore/dom-render/dist/rawsets/RawSet';
+import { OnInitRender } from '@dooboostore/dom-render/lifecycle/OnInitRender';
+import { RawSet } from '@dooboostore/dom-render/rawsets/RawSet';
 
 
 export class Sub implements OnDestroyRender {

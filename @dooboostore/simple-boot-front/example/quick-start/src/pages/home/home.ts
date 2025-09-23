@@ -3,9 +3,9 @@ import { Sim } from '@dooboostore/simple-boot/decorators/SimDecorator';
 import template from './home.html';
 import style from './home.css';
 import {ConcatScript} from '../../scripts/concat.script';
-import { OnDestroyRender } from '@dooboostore/dom-render/lifecycle/OnDestroyRender.ts';
-import { CreatorMetaData } from '@dooboostore/dom-render/rawsets/CreatorMetaData.ts';
-import { OnDomRenderInitRender } from 'packages/@dooboostore/dom-render/src/lifecycle/OnDomRenderInitRender.ts';
+import { OnDestroyRender } from '@dooboostore/dom-render/lifecycle/OnDestroyRender';
+import { CreatorMetaData } from '@dooboostore/dom-render/rawsets/CreatorMetaData';
+// import { OnDomRenderInitRender } from '@dooboostore/dom-render/lifecycle/OnDomRenderInitRender';
 @Sim({
     using: [ConcatScript]
 })
@@ -13,7 +13,7 @@ import { OnDomRenderInitRender } from 'packages/@dooboostore/dom-render/src/life
     template,
     // styles: [style]
 })
-export class Home implements OnDomRenderInitRender, OnDestroyRender {
+export class Home implements OnDestroyRender {
     public name = 'home';
     wow='ssssss';
     toggle = false;

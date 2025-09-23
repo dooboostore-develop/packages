@@ -4,6 +4,19 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "all:build:esm": "concurrently \"pnpm run --filter @dooboostore/core build:esm\"  \"pnpm run --filter @dooboostore/core-node build:esm\" \"pnpm run --filter @dooboostore/core-web build:esm\"  \"pnpm run --filter @dooboostore/dom-render build:esm\"  \"pnpm run --filter @dooboostore/lib-node build:esm\"  \"pnpm run --filter @dooboostore/lib-web build:esm\"  \"pnpm run --filter @dooboostore/simple-boot build:esm\"  \"pnpm run --filter @dooboostore/simple-boot-front build:esm\"  \"pnpm run --filter @dooboostore/simple-boot-http-server build:esm\"  \"pnpm run --filter @dooboostore/simple-boot-http-server-ssr build:esm\" ",
+    "all:build:cjs": "concurrently \"pnpm run --filter @dooboostore/core build:cjs\"  \"pnpm run --filter @dooboostore/core-node build:cjs\"  \"pnpm run --filter @dooboostore/core-web build:cjs\"  \"pnpm run --filter @dooboostore/dom-render build:cjs\"  \"pnpm run --filter @dooboostore/lib-node build:cjs\" \"pnpm run --filter @dooboostore/lib-web build:cjs\"  \"pnpm run --filter @dooboostore/simple-boot build:cjs\"  \"pnpm run --filter @dooboostore/simple-boot-front build:cjs\"  \"pnpm run --filter @dooboostore/simple-boot-http-server build:cjs\"  \"pnpm run --filter @dooboostore/simple-boot-http-server-ssr build:cjs\"",
+    "all:watch:esm": "concurrently \"pnpm run --filter @dooboostore/core watch:esm\"  \"pnpm run --filter @dooboostore/core-node watch:esm\" \"pnpm run --filter @dooboostore/core-web watch:esm\"  \"pnpm run --filter @dooboostore/dom-render watch:esm\"  \"pnpm run --filter @dooboostore/lib-node watch:esm\"  \"pnpm run --filter @dooboostore/lib-web watch:esm\"  \"pnpm run --filter @dooboostore/simple-boot watch:esm\"  \"pnpm run --filter @dooboostore/simple-boot-front watch:esm\"  \"pnpm run --filter @dooboostore/simple-boot-http-server watch:esm\"  \"pnpm run --filter @dooboostore/simple-boot-http-server-ssr watch:esm\" ",
+    "all:watch:cjs": "concurrently \"pnpm run --filter @dooboostore/core watch:cjs\"  \"pnpm run --filter @dooboostore/core-node watch:cjs\"  \"pnpm run --filter @dooboostore/core-web watch:cjs\"  \"pnpm run --filter @dooboostore/dom-render watch:cjs\"  \"pnpm run --filter @dooboostore/lib-node watch:cjs\" \"pnpm run --filter @dooboostore/lib-web watch:cjs\"  \"pnpm run --filter @dooboostore/simple-boot watch:cjs\"  \"pnpm run --filter @dooboostore/simple-boot-front watch:cjs\"  \"pnpm run --filter @dooboostore/simple-boot-http-server watch:cjs\"  \"pnpm run --filter @dooboostore/simple-boot-http-server-ssr watch:cjs\"",
+    "all:build:cjs:esm": "concurrently \"pnpm run all:build:esm\" \"pnpm run all:build:cjs\"",
+    "all:watch:cjs:esm": "concurrently \"pnpm run all:watch:esm\" \"pnpm run all:watch:cjs\"",
+
+    "all:build:step:esm": "pnpm run --filter @dooboostore/core build:esm && pnpm run --filter @dooboostore/core-node build:esm && pnpm run --filter @dooboostore/core-web build:esm&&pnpm run --filter @dooboostore/dom-render build:esm&&pnpm run --filter @dooboostore/lib-node build:esm&&pnpm run --filter @dooboostore/lib-web build:esm&&pnpm run --filter @dooboostore/simple-boot build:esm&&pnpm run --filter @dooboostore/simple-boot-front build:esm&&pnpm run --filter @dooboostore/simple-boot-http-server build:esm&&pnpm run --filter @dooboostore/simple-boot-http-server-ssr build:esm",
+    "all:build:step:cjs": "pnpm run --filter @dooboostore/core build:cjs && pnpm run --filter @dooboostore/core-node build:cjs && pnpm run --filter @dooboostore/core-web build:cjs&&pnpm run --filter @dooboostore/dom-render build:cjs&&pnpm run --filter @dooboostore/lib-node build:cjs&&pnpm run --filter @dooboostore/lib-web build:cjs&&pnpm run --filter @dooboostore/simple-boot build:cjs&&pnpm run --filter @dooboostore/simple-boot-front build:cjs&&pnpm run --filter @dooboostore/simple-boot-http-server build:cjs&&pnpm run --filter @dooboostore/simple-boot-http-server-ssr build:cjs",
+
+    "all:clean": "concurrently \"pnpm run --filter @dooboostore/core clean\"  \"pnpm run --filter @dooboostore/core-node clean\"  \"pnpm run --filter @dooboostore/core-web clean\"  \"pnpm run --filter @dooboostore/dom-render clean\"  \"pnpm run --filter @dooboostore/lib-node clean\" \"pnpm run --filter @dooboostore/lib-web clean\"  \"pnpm run --filter @dooboostore/simple-boot clean\"  \"pnpm run --filter @dooboostore/simple-boot-front clean\"  \"pnpm run --filter @dooboostore/simple-boot-http-server clean\"  \"pnpm run --filter @dooboostore/simple-boot-http-server-ssr clean\"",
+    "all:build:step:cjs:esm": "concurrently \"pnpm run all:build:step:esm\" \"pnpm run all:build:step:cjs\"",
+
     "prettier:check": "pnpm prettier --config .prettierrc.json --check './apps/**/*.{ts,tsx,js,jsx}' './packages/**/*.{ts,tsx,js,jsx}' ",
     "prettier:write": "pnpm prettier --config .prettierrc.json --write './apps/**/*.{ts,tsx,js,jsx}' './packages/**/*.{ts,tsx,js,jsx}' ",
     "clear": "rm -rf node_modules && rm -rf ./package-lock.json && rm -rf pnpm-lock.yaml && pnpm store prune && pnpm -r exec -- rm -rf node_modules"
@@ -20,7 +33,8 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "prettier": "^3.3.3"
+    "prettier": "^3.3.3",
+    "concurrently": "^9.2.1"
   },
   "dependencies": {},
   "packageManager": "pnpm@9.1.1+sha256.9551e803dcb7a1839fdf5416153a844060c7bce013218ce823410532504ac10b"

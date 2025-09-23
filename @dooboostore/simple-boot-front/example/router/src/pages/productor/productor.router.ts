@@ -4,7 +4,7 @@ import { Router as DomRenderRouter } from '@dooboostore/dom-render/routers/Route
 import { Component } from '@dooboostore/simple-boot-front/decorators/Component';
 import { ComponentRouterBase } from '@dooboostore/simple-boot-front';
 import { Lifecycle} from '@dooboostore/simple-boot/decorators/SimDecorator';
-import { IphoneRoute } from './iphone.route.ts';
+import { IphoneRoute } from './iphone.route';
 @Sim({
   scope: Lifecycle.Transient,
 })

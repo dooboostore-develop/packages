@@ -1,39 +1,15 @@
 {
   "compilerOptions": {
-    "allowJs": true,
-    "target": "ESNext",
-    "strict": true,
-    "moduleResolution": "node",                  /* Specify module resolution strategy: 'node' (Node.js) or 'classic' (TypeScript pre-1.6). */
+    "target": "es2021",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "lib": ["es2021", "dom"],
+    "noEmit": true,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
     "esModuleInterop": true,
-    "experimentalDecorators": true,              /* Enables experimental support for ES7 decorators. */
-    "emitDecoratorMetadata": true,               /* Enables experimental support for emitting type metadata for decorators. */
     "skipLibCheck": true,
-    "sourceMap": true,
-    "strictNullChecks": true,
     "forceConsistentCasingInFileNames": true,
-    "resolveJsonModule": true,
-    "baseUrl": ".",
-    "outDir": "./dist",
-    "lib": [
-      "dom",
-      "dom.iterable",
-      "esnext",
-      "es5",
-      "es2015",
-      "es2019",
-      "scripthost",
-      "es2015.proxy",
-      "es2015.collection"
-    ]
-  },
-  "exclude": [
-    "rollup.config.js",
-    "test",
-    "cli",
-    "assets",
-    "test-cli",
-    "**/*.test.ts",
-    "templates",
-    "dist"
-  ]
+    "strict": false
+  }
 }

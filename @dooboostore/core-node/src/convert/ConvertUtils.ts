@@ -1,5 +1,3 @@
-import { ValidUtils } from '@dooboostore/core/valid/ValidUtils';
-
 export namespace ConvertUtils {
 
   export function toString (data: string): string;
@@ -20,7 +18,7 @@ export namespace ConvertUtils {
     if (config?.encoding === 'base64') {
       // const base64Content = base64Data.replace(/^data:.*,/, ''); 이걸로해도됨
       // base64Data가 data:image/png;base64,AAAAA... 이런 형태
-      data = data.split(';base64,').pop();
+      data = data.split(';base64,').pop() || '';
       // if (ValidUtils.isBase64(data)) {
         return Buffer.from(data, 'base64');
       // } else {

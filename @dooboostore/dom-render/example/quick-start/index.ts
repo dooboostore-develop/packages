@@ -1,5 +1,5 @@
 import {DomRender} from '@dooboostore/dom-render/DomRender';
-import { DomRenderConfig } from 'packages/@dooboostore/dom-render/src/configs/DomRenderConfig';
+import { DomRenderConfig } from '@dooboostore/dom-render/configs/DomRenderConfig';
 
 class Data {
     name = 'my name is dom-render';

@@ -4,7 +4,7 @@ import { ComponentSet } from '../components/ComponentSet';
 import { RawSet } from '../rawsets/RawSet';
 import { Render } from '../rawsets/Render';
 import { Attrs } from '../rawsets/Attrs';
-import { DomRenderConfig } from 'configs/DomRenderConfig';
+import { DomRenderConfig } from '../configs/DomRenderConfig';
 import { ScriptUtils } from '@dooboostore/core-web/script/ScriptUtils';
 import { ObjectUtils } from '@dooboostore/core';
 
@@ -51,7 +51,7 @@ export abstract class OperatorExecuter<T = any> {
     let r = attrValue;
     if (r && this.startingExecute) {
       const optionalPath = ObjectUtils.Path.toOptionalChainPath(attrValue);
-      r = ScriptUtils.eval(` ${this.render.bindScript}; return ${optionalPath}`, Object.assign(this.source.obj, {__render: this.render}));
+      r = ScriptUtils.evaluate(` ${this.render.bindScript}; return ${optionalPath}`, Object.assign(this.source.obj, {__render: this.render}));
     }
     if (this.source.operatorAround?.before) {
       r = this.source.operatorAround?.before(r, this);

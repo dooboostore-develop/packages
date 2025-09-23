@@ -1,5 +1,3 @@
-import { ValidUtils } from '@dooboostore/core';
-
 export class Shield {
     [name: string]: any
 }
@@ -31,3 +29,4 @@ export class DomRenderFinalProxy<T extends object> implements ProxyHandler<T> {
         return p === '_DomRender_isFinal' || p in target;
     }
 }
+

@@ -1,13 +1,12 @@
 import {Sim} from '@dooboostore/simple-boot/decorators/SimDecorator';
 import {Component} from '@dooboostore/simple-boot-front/decorators/Component';
 import template from './profile.html'
-import { OnDomRenderInitRender } from 'packages/@dooboostore/dom-render/src/lifecycle/OnDomRenderInitRender.ts';
 @Sim
 @Component({
     selector: 'profile',
     template
 })
-export class ProfileComponent implements OnDomRenderInitRender {
+export class ProfileComponent  {
     name = '';
     age = 0;
 

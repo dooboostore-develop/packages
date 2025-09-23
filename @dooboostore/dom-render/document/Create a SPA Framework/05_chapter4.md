@@ -27,29 +27,29 @@
 ```javascript
 // DrIf.ts의 개념적 로직
 class DrIf extends OperatorExecuterAttrRequire<string> {
-  async executeAttrRequire(attr: string): Promise<ExecuteState> {
-    // 1. 표현식 평가
-    const condition = ScriptUtils.evalReturn(attr, this.source.obj);
+    async executeAttrRequire(attr: string): Promise<ExecuteState> {
+        // 1. 표현식 평가
+        const condition = ScriptUtils.evaluateReturn(attr, this.source.obj);
 
-    // 3. 이전 상태와 비교하여 변경이 없으면 중단
-    if (this.rawSet.data === condition) {
-      return ExecuteState.STOP;
+        // 3. 이전 상태와 비교하여 변경이 없으면 중단
+        if (this.rawSet.data === condition) {
+            return ExecuteState.STOP;
+        }
+        this.rawSet.data = condition; // 현재 상태 저장
+
+        // 2. DOM 조작
+        if (condition) {
+            // 엘리먼트 복사 및 삽입
+            const newElement = this.elementSource.element.cloneNode(true);
+            // ... newElement에서 dr-if 속성 제거 ...
+            this.returnContainer.fag.append(newElement);
+        } else {
+            // 자식 노드 없음 (결과적으로 아무것도 렌더링하지 않음)
+        }
+
+        // ... 부모 노드에 최종 DocumentFragment를 연결하고, 재귀적 RawSet 생성 ...
+        return ExecuteState.EXECUTE;
     }
-    this.rawSet.data = condition; // 현재 상태 저장
-
-    // 2. DOM 조작
-    if (condition) {
-      // 엘리먼트 복사 및 삽입
-      const newElement = this.elementSource.element.cloneNode(true);
-      // ... newElement에서 dr-if 속성 제거 ...
-      this.returnContainer.fag.append(newElement);
-    } else {
-      // 자식 노드 없음 (결과적으로 아무것도 렌더링하지 않음)
-    }
-
-    // ... 부모 노드에 최종 DocumentFragment를 연결하고, 재귀적 RawSet 생성 ...
-    return ExecuteState.EXECUTE;
-  }
 }
 ```
 
@@ -69,30 +69,30 @@ class DrIf extends OperatorExecuterAttrRequire<string> {
 ```javascript
 // DrForOf.ts의 개념적 로직
 class DrForOf extends OperatorExecuterAttrRequire<string> {
-  async executeAttrRequire(attr: string): Promise<ExecuteState> {
-    // 1. 배열 데이터 평가
-    const collection = ScriptUtils.evalReturn(attr, this.source.obj);
+    async executeAttrRequire(attr: string): Promise<ExecuteState> {
+        // 1. 배열 데이터 평가
+        const collection = ScriptUtils.evaluateReturn(attr, this.source.obj);
 
-    if (collection) {
-      let index = -1;
-      for (const item of collection) {
-        index++;
-        // 2a. 엘리먼트 복제
-        const newElement = this.elementSource.element.cloneNode(true);
-        
-        // 2b. 스코프 변수 치환
-        // 'destIt'은 '#it#'에 해당하는 실제 데이터 경로 (예: 'this.users[0]')
-        const destIt = `${attr}[${index}]`; 
-        newElement.innerHTML = newElement.innerHTML.replace(/#it#/g, destIt).replace(/#nearForOfIndex#/g, index);
-        // ... 다른 속성들도 치환 ...
+        if (collection) {
+            let index = -1;
+            for (const item of collection) {
+                index++;
+                // 2a. 엘리먼트 복제
+                const newElement = this.elementSource.element.cloneNode(true);
 
-        // 2c. 최종 결과물에 추가
-        this.returnContainer.fag.append(newElement);
-      }
+                // 2b. 스코프 변수 치환
+                // 'destIt'은 '#it#'에 해당하는 실제 데이터 경로 (예: 'this.users[0]')
+                const destIt = `${attr}[${index}]`;
+                newElement.innerHTML = newElement.innerHTML.replace(/#it#/g, destIt).replace(/#nearForOfIndex#/g, index);
+                // ... 다른 속성들도 치환 ...
+
+                // 2c. 최종 결과물에 추가
+                this.returnContainer.fag.append(newElement);
+            }
+        }
+        // ... DOM 교체 및 재귀적 RawSet 생성 ...
+        return ExecuteState.EXECUTE;
     }
-    // ... DOM 교체 및 재귀적 RawSet 생성 ...
-    return ExecuteState.EXECUTE;
-  }
 }
 ```
 

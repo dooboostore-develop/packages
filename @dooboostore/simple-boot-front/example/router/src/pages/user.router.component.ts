@@ -2,7 +2,7 @@ import { Component, ComponentRouterBase, Sim } from '@dooboostore/simple-boot-fr
 import { Router as DomRenderRouter } from '@dooboostore/dom-render';
 import { Router } from '@dooboostore/simple-boot/decorators/route/Router';
 import { Lifecycle } from '@dooboostore/simple-boot/decorators/SimDecorator';
-import { User } from './user.ts';
+import { User } from './user';
 
 
 @Sim({

@@ -1,4 +1,4 @@
-import { ConstructorType } from '@dooboostore/core/types.js';
+import { ConstructorType } from '@dooboostore/core/types';
 import { ReflectUtils } from '@dooboostore/core/reflect/ReflectUtils';
 import { ScriptRunnable } from '../script/ScriptRunnable';
 

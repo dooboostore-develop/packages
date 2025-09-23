@@ -7,3 +7,4 @@ const config = new SimFrontOption(window).setRootRouter(Index).setUrlType(UrlTyp
 // const config = new SimFrontOption(window).setUrlType(UrlType.path);
 const simpleApplication = new SimpleBootFront(config);
 simpleApplication.run();
+console.log('sssddddssssss');

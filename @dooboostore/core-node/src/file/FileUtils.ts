@@ -1,8 +1,9 @@
 import * as node_os from 'node:os';
-import { RandomUtils } from '@dooboostore/core/random/RandomUtils';
+
 import * as node_fs from 'node:fs';
 import { MakeDirectoryOptions, RmDirOptions, RmOptions, WriteFileOptions } from 'fs';
 import * as node_path from 'node:path';
+import { RandomUtils } from '@dooboostore/core/random/RandomUtils';
 
 export namespace FileUtils {
   export type PathParamType = string | string[];
@@ -19,7 +20,7 @@ export namespace FileUtils {
       this.updateStats();
     }
 
-    get originalName(): string {
+    get originalName(): string | undefined {
       return this._data.originalName;
     }
 
@@ -35,7 +36,7 @@ export namespace FileUtils {
       return this._data.path;
     }
 
-    get extension(): string {
+    get extension(): string | undefined {
       const ext = this._data.path.substring(this._data.path.lastIndexOf('.') + 1);
       return ext.length > 0 ? ext : undefined;
     }

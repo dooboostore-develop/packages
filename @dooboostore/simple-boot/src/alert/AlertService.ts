@@ -2,7 +2,7 @@ import { AlertFactoryConfig } from './AlertFactoryConfig';
 import { Alert } from './Alert';
 import { Inject } from '../decorators/inject/Inject';
 import { AlertFactory } from './AlertFactory';
-import { Store } from '@dooboostore/core/message';
+import { Store } from '@dooboostore/core/message/Store';
 import { AlertAction } from './AlertAction';
 import { AlertType } from './AlertType';
 import { PostConstruct, Sim } from '../decorators/SimDecorator';

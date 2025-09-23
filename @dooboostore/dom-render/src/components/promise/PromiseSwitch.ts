@@ -5,7 +5,7 @@ import { OtherData } from '../../lifecycle/OnChangeAttrRender';
 
 
 import { ValidUtils } from '@dooboostore/core/valid/ValidUtils';
-import { Promises  } from '@dooboostore/core/promise';
+import { Promises  } from '@dooboostore/core/promise/Promises';
 import { OnCreateRenderDataParams } from '../../lifecycle/OnCreateRenderData';
 
 export namespace PromiseSwitch {

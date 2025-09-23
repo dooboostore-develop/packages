@@ -1,0 +1,9 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "module": "esnext",
+    "outDir": "dist/umd-bundle",
+    "target": "es2020"
+  }
+}

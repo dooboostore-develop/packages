@@ -45,7 +45,7 @@ export namespace Radio {
     private checked = false;
     private inputElement?: HTMLInputElement;
 
-    change(checked: boolean = this.checked) {
+    change(checked?: boolean) { checked = checked ?? this.checked;
       this.checked = checked;
       this.setChildrenHidden(checked);
       console.log('radio checked!!!!!!!', checked, this.checked, this.inputElement?.checked)

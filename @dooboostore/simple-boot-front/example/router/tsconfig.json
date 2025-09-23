@@ -1,9 +1,8 @@
 {
   "compilerOptions": {
-    "target": "es2019",
+    "target": "es2021",
     "module": "esnext",
-    "moduleResolution": "node",
-    "lib": ["es2019", "dom"],
+    "lib": ["es2021", "dom", "dom.iterable"],
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
     "esModuleInterop": true,
@@ -13,8 +12,9 @@
     "allowJs": true,
     "resolveJsonModule": true,
     "importHelpers": true,
-    "allowImportingTsExtensions": true,
-    "noEmit": true
+    
+    
+    "moduleResolution": "bundler"
   },
   "include": ["**/*.ts", "**/*.tsx"],
   "exclude": ["node_modules"]

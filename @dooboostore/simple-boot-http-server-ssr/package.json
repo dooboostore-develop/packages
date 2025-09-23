@@ -1,0 +1,99 @@
+{
+  "name": "@dooboostore/simple-boot-http-server-ssr",
+  "version": "1.0.10",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/cjs/index.js",
+  "module": "./dist/esm/index.js",
+  "types": "./dist/esm/index.d.ts",
+  "description": "front end SPA frameworks SSR",
+  "files": [
+    "dist"
+  ],
+  "keywords": [
+    "front",
+    "spa",
+    "SPA",
+    "module",
+    "front-end",
+    "framwork",
+    "node"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/esm/index.d.ts",
+      "import": "./dist/esm/index.js",
+      "require": "./dist/cjs/index.js"
+    },
+    "./*": {
+      "types": "./dist/esm/*.d.ts",
+      "import": "./dist/esm/*.js",
+      "require": "./dist/cjs/*.js"
+    }
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "author": "dooboostore <dooboostore@gmail.com> (https://github.com/dooboostore)",
+  "contributors": [
+    "sewoo <sewooimda@nate.com> (https://github.com/sewoo)",
+    "SeoDH <adonis_84@naver.com> (https://github.com/SeoDH)",
+    "tkyung (https://github.com/tkyungDev)",
+    "Hoil-Gang (https://github.com/khl1154)",
+    "hwangsero (https://github.com/hwangsero)"
+  ],
+  "homepage": "https://github.com/dooboostore-develop/packages",
+  "bugs": {
+    "url": "https://github.com/dooboostore-develop/packages",
+    "email": "dooboostore@gmail.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/dooboostore-develop/packages"
+  },
+  "dependencies": {
+    "@dooboostore/core": "workspace:*",
+    "reflect-metadata": "^0.2.2",
+    "jsdom": "^26.0.0",
+    "@dooboostore/core-node": "workspace:*",
+    "@dooboostore/core-web": "workspace:*",
+    "@dooboostore/dom-render": "workspace:*",
+    "@dooboostore/simple-boot": "workspace:*",
+    "@dooboostore/simple-boot-front": "workspace:*",
+    "@dooboostore/simple-boot-http-server": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/jsdom": "^21.1.7",
+    "@babel/core": "^7.24.0",
+    "@babel/plugin-proposal-class-properties": "^7.18.6",
+    "@babel/plugin-proposal-decorators": "^7.24.0",
+    "@babel/plugin-transform-private-property-in-object": "^7.25.9",
+    "@babel/preset-env": "^7.24.0",
+    "@babel/preset-typescript": "^7.24.0",
+    "@types/jest": "^26.0.22",
+    "raw-loader": "^4.0.2",
+    "@typescript-eslint/eslint-plugin": "^4.16.1",
+    "@typescript-eslint/parser": "^4.16.1",
+    "esbuild": "^0.23.0",
+    "tslib": "^2.8.1",
+    "@types/node": "^20",
+    "typescript": "^5.9.2",
+    "@types/node-gzip": "^1.1.0"
+  },
+  "scripts": {
+    "clean": "rm -rf dist",
+    "build:esm": "node build.mjs esm && tsc -p tsconfig.esm.json --emitDeclarationOnly",
+    "watch:esm": "pnpm run build:esm && node build.mjs esm --watch",
+    "build:cjs": "node build.mjs cjs && tsc -p tsconfig.cjs.json --emitDeclarationOnly && cp package.cjs.json dist/cjs/package.json",
+    "watch:cjs": "pnpm run build:cjs && node build.mjs cjs --watch",
+    "build": "pnpm run clean && node build.mjs all && tsc -p tsconfig.esm.json --emitDeclarationOnly && tsc -p tsconfig.cjs.json --emitDeclarationOnly && cp package.cjs.json dist/cjs/package.json",
+    "build:umd-bundle": "node build.mjs umd-bundle",
+    "watch:umd-bundle": "pnpm run build:umd-bundle && node build.mjs umd-bundle --watch",
+    "build:esm-bundle": "node build.mjs esm-bundle",
+    "watch:esm-bundle": "pnpm run build:esm-bundle && node build.mjs esm-bundle --watch",
+    "prepublishOnly": "pnpm run build",
+    "publish:npm": "pnpm run build && cp package.json package.json.back && pnpm pack && TARBALL_NAME=$(ls dooboostore-simple-boot-http-server-ssr-*.tgz | head -n 1) && tar -xzf \"$TARBALL_NAME\" -C . --strip-components=1 package/package.json && rm \"$TARBALL_NAME\" && (pnpm publish --no-git-checks || true) && cp package.json.back package.json && rm -rf package.json.back  ",
+    "typecheck": "tsc --noEmit",
+    "test": "echo test"
+  }
+}

@@ -1,5 +1,6 @@
-import { ConstructorType, isDefined } from '../types';
 import { ValidUtils } from '../valid/ValidUtils';
+import type { ConstructorType } from '../types';
+import { isDefined } from '../types';
 
 export namespace ObjectUtils {
 
@@ -663,7 +664,7 @@ export namespace ObjectUtils {
      * @param thisTarget 스크립트 실행 시 this로 바인딩될 객체
      * @returns 스크립트 실행 결과
      */
-    export const evalReturn = <T = any>(script: string | { bodyScript: string, returnScript: string }, thisTarget: any = {}): T => {
+    export const evaluateReturn = <T = any>(script: string | { bodyScript: string, returnScript: string }, thisTarget: any = {}): T => {
       let bodyScript = '';
       let returnScript = '';
       if (typeof script === 'object') {
@@ -672,7 +673,7 @@ export namespace ObjectUtils {
       } else {
         returnScript = script;
       }
-      return eval(`${bodyScript}; return ${returnScript} `, thisTarget) as T;
+      return evaluate(`${bodyScript}; return ${returnScript} `, thisTarget) as T;
     };
 
     /**
@@ -683,7 +684,7 @@ export namespace ObjectUtils {
      * @returns 스크립트 실행 결과 또는 undefined (에러 시)
      */
     // @ts-ignore
-    export const eval = <T = any>(script: string, thisTarget: any = {}): T | undefined => {
+    export const evaluate = <T = any>(script: string, thisTarget: any = {}): T | undefined => {
       try {
         return Function(`"use strict"; ${script} `).bind(thisTarget)() as T;
       } catch (e) {

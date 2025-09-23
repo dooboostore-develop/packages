@@ -1,17 +1,16 @@
-import { Lifecycle, Sim } from '@dooboostore/simple-boot/decorators/SimDecorator';
+import { Sim } from '@dooboostore/simple-boot/decorators/SimDecorator';
 import { Router } from '@dooboostore/simple-boot/decorators/route/Router';
 import { Router as DomRenderRouter } from '@dooboostore/dom-render/routers/Router';
 import { Component } from '@dooboostore/simple-boot-front/decorators/Component';
-import template from './index.html'
-import style from './index.css'
+import template from './index.html';
+import style from './index.css';
 import { Home } from './pages/home/home';
-import { RouterAction, RoutingDataSet } from '@dooboostore/simple-boot/route/RouterAction';
-import { ComponentRouterBase } from '@dooboostore/simple-boot-front/component/ComponentRouterBase.ts';
-import { drComponent } from '@dooboostore/dom-render/components'
-import { User } from './pages/user.ts';
+import { ComponentRouterBase } from '@dooboostore/simple-boot-front/component/ComponentRouterBase';
+import { drComponent } from '@dooboostore/dom-render/components/index';
+import { User } from './pages/user';
 import { RandomUtils } from '@dooboostore/core';
 import { ProductorRouter } from './pages/productor/productor.router';
-import { ComponentSet } from '@dooboostore/simple-boot-front';
+import { RoutingDataSet } from '@dooboostore/simple-boot/route/RouterManager';
 
 @Sim({
   // scope: Lifecycle.Transient,
@@ -31,19 +30,19 @@ import { ComponentSet } from '@dooboostore/simple-boot-front';
   styles: [style]
 })
 export class Index extends ComponentRouterBase {
-  name=RandomUtils.uuid4();
+  name = RandomUtils.uuid4();
   sw = true;
   constructor(private router: DomRenderRouter) {
     super();
-    console.log('constructor IndexComponent', router)
+    console.log('constructor IndexComponent', router);
   }
 
   async go() {
-    this.router.go({path: '/user'})
+    this.router.go({ path: '/user' });
   }
 
   async test() {
-    console.log('test')
+    console.log('test');
   }
 
   onDrThisBind() {
@@ -63,16 +62,16 @@ export class Index extends ComponentRouterBase {
     // this.name = RandomUtils.uuid4()
     // // await super.canActivate(url, data);
     setTimeout(() => {
-    console.log('index canActivate3', this, this.child)
-    }, 2)
+      console.log('index canActivate3', this, this.child);
+    }, 2);
   }
 
   toggleSw() {
-   this.sw=!this.sw;
+    this.sw = !this.sw;
 
-   // if (!this.sw) {
-   //   this.setChild(undefined);
-   // }
+    // if (!this.sw) {
+    //   this.setChild(undefined);
+    // }
   }
 
   onDomRenderInitRender(...param) {

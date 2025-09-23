@@ -13,14 +13,14 @@ module.exports = {
         use: {
           loader: 'ts-loader',
           options: {
-            transpileOnly: true,
+            transpileOnly: false,
             compilerOptions: {
               experimentalDecorators: true,
               emitDecoratorMetadata: true
             }
           }
         },
-        exclude: /node_modules/
+        exclude: /node_modules\/(?!@dooboostore)/
       },
       {
         test: /\.html$/,
@@ -42,9 +42,19 @@ module.exports = {
   },
   resolve: {
     extensions: ['.tsx', '.ts', '.js'],
-    alias: {
-
-    },
+    // alias: {
+    //   // --- Monorepo Workspace Alias ---
+    //   // This project is part of a monorepo. When a file inside this package (e.g., an example)
+    //   // imports from its own package name ('@dooboostore/simple-boot-front'), webpack's default
+    //   // resolution can lead to issues by mixing source files (.ts) with pre-built files (.js from dist)
+    //   // from the package's entry point.
+    //   // These aliases force webpack to always resolve workspace packages to their source code ('src')
+    //   // directory, ensuring a consistent dependency graph built entirely from source.
+    //   '@dooboostore/simple-boot-front': path.resolve(__dirname, '../../src'),
+    //   '@dooboostore/simple-boot': path.resolve(__dirname, '../../../simple-boot/src'),
+    //   '@dooboostore/dom-render': path.resolve(__dirname, '../../../dom-render/src'),
+    //   '@dooboostore/core': path.resolve(__dirname, '../../../core/src')
+    // },
     fallback: {
       "tslib": require.resolve('tslib')
     }

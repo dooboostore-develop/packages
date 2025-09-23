@@ -1,0 +1,9 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "module": "ESNext",
+    "outDir": "dist/esm",
+    "target": "es2020"
+  }
+}

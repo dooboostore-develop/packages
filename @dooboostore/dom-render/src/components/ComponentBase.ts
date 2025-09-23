@@ -16,7 +16,7 @@ import { ReflectUtils } from '@dooboostore/core/reflect/ReflectUtils';
 import { DomRenderConfig } from '../configs/DomRenderConfig';
 import { Subject } from '@dooboostore/core/message/Subject';
 import { debounceTime } from '@dooboostore/core/message/operators/debounceTime';
-import { Subscription } from '@dooboostore/core/message/Subscription';
+import type { Subscription } from '@dooboostore/core/message/Subscription';
 
 
 export const ATTRIBUTE_METADATA_KEY = Symbol('attribute');
@@ -361,7 +361,7 @@ export class ComponentBase<T = any, C extends ComponentBaseConfig = ComponentBas
   }
 
   private _clearAllRefreshTimers() {
-    for (const timer of this._refreshTimers.values()) {
+    for (const timer of Array.from(this._refreshTimers.values())) {
       clearInterval(timer);
     }
     this._refreshTimers.clear();

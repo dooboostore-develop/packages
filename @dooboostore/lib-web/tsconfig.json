@@ -1,0 +1,22 @@
+{
+  "compilerOptions": {
+    "rootDir": "src",
+    "sourceMap": true,
+    "declaration": true,
+    "declarationMap": true,
+    "stripInternal": true,
+    "noEmit": false,
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "moduleResolution": "bundler",
+    "baseUrl": ".",
+    "paths": {
+//      "@dooboostore/core/*": ["../core/*"]
+    }
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["node_modules", "**/*.spec.ts", "**/*.test.ts", "example", "test", "dist"]
+}

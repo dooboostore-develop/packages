@@ -1,4 +1,11 @@
-import { HttpFetcher, HttpFetcherConfig, HttpFetcherTarget, HttpResponseError, RequestInitType } from './HttpFetcher';
+import {
+  HttpFetcher,
+  HttpFetcherConfig,
+  HttpFetcherRequest,
+  HttpFetcherTarget,
+  HttpResponseError,
+  RequestInitType
+} from './HttpFetcher';
 import { FetcherRequest } from './Fetcher';
 
 export type HttpJsonFetcherConfig<CONFIG, RESPONSE> = HttpFetcherConfig<CONFIG> & {
@@ -17,10 +24,17 @@ export type HttpAnyBodyFetcherConfig<C, R> = Omit<HttpJsonFetcherConfig<C, R>, '
 // export const isHttpJsonResponseError = (data: any): data is HttpJsonResponseError => {
 //   return data instanceof HttpJsonResponseError;
 // }
+// export type HttpJsonFetcherRequest<RESPONSE = Response, CONFIG = any, T = RESPONSE> = HttpFetcherRequest<HttpFetcherTarget, RESPONSE, HttpJsonFetcherConfig<CONFIG, RESPONSE>>;
+export type HttpJsonFetcherRequest<RESPONSE = any, CONFIG = any, T = RESPONSE> = FetcherRequest<
+  HttpFetcherTarget,
+  RESPONSE,
+  HttpJsonFetcherConfig<CONFIG, RESPONSE>,
+  T
+>;
 
 export class HttpJsonFetcher<CONFIG, PIPE extends { responseData?: any }> extends HttpFetcher<CONFIG, any, PIPE> {
   private updateJsonFetchConfigAndData<RESPONSE, T = RESPONSE>(
-    config: FetcherRequest<HttpFetcherTarget, RESPONSE, HttpJsonFetcherConfig<CONFIG, RESPONSE>, T>
+    config: HttpJsonFetcherRequest<RESPONSE, CONFIG, T>
   ) {
     const headers = {
       'Content-Type': 'application/json',
@@ -36,39 +50,39 @@ export class HttpJsonFetcher<CONFIG, PIPE extends { responseData?: any }> extend
     return config;
   }
 
-  get<RESPONSE, T = RESPONSE>(config: FetcherRequest<HttpFetcherTarget, RESPONSE, HttpJsonFetcherConfig<CONFIG, RESPONSE>, T>): Promise<T> {
+  get<RESPONSE, T = RESPONSE>(config: HttpJsonFetcherRequest<RESPONSE, CONFIG, T>): Promise<T> {
     return super.get(config);
   }
 
-  delete<RESPONSE, T = RESPONSE>(config: FetcherRequest<HttpFetcherTarget, RESPONSE, HttpJsonFetcherConfig<CONFIG, RESPONSE>, T>): Promise<T> {
+  delete<RESPONSE, T = RESPONSE>(config: HttpJsonFetcherRequest<RESPONSE, CONFIG, T>): Promise<T> {
     return super.delete(config);
   }
 
-  post<RESPONSE, T = RESPONSE>(config: FetcherRequest<HttpFetcherTarget, RESPONSE, HttpJsonFetcherConfig<CONFIG, RESPONSE>, T>): Promise<T> {
+  post<RESPONSE, T = RESPONSE>(config: HttpJsonFetcherRequest<RESPONSE, CONFIG, T>): Promise<T> {
     return super.post(config);
   }
 
-  patch<RESPONSE, T = RESPONSE>(config: FetcherRequest<HttpFetcherTarget, RESPONSE, HttpJsonFetcherConfig<CONFIG, RESPONSE>, T>): Promise<T> {
+  patch<RESPONSE, T = RESPONSE>(config: HttpJsonFetcherRequest<RESPONSE, CONFIG, T>): Promise<T> {
     return super.patch(config);
   }
 
-  put<RESPONSE, T = RESPONSE>(config: FetcherRequest<HttpFetcherTarget, RESPONSE, HttpJsonFetcherConfig<CONFIG, RESPONSE>, T>): Promise<T> {
+  put<RESPONSE, T = RESPONSE>(config: HttpJsonFetcherRequest<RESPONSE, CONFIG, T>): Promise<T> {
     return super.put(config);
   }
 
-  head<RESPONSE, T = RESPONSE>(config: FetcherRequest<HttpFetcherTarget, RESPONSE, HttpJsonFetcherConfig<CONFIG, RESPONSE>, T>): Promise<T> {
+  head<RESPONSE, T = RESPONSE>(config: HttpJsonFetcherRequest<RESPONSE, CONFIG, T>): Promise<T> {
     return super.head(config);
   }
 
-  postJson<RESPONSE, T = RESPONSE>(config: FetcherRequest<HttpFetcherTarget, RESPONSE, HttpAnyBodyFetcherConfig<CONFIG, RESPONSE>, T>): Promise<T> {
+  postJson<RESPONSE, T = RESPONSE>(config: HttpJsonFetcherRequest<RESPONSE, CONFIG, T>): Promise<T> {
     return super.post(this.updateJsonFetchConfigAndData(config));
   }
 
-  patchJson<RESPONSE, T = RESPONSE>(config: FetcherRequest<HttpFetcherTarget, RESPONSE, HttpAnyBodyFetcherConfig<CONFIG, RESPONSE>, T>): Promise<T> {
+  patchJson<RESPONSE, T = RESPONSE>(config: HttpJsonFetcherRequest<RESPONSE, CONFIG, T>): Promise<T> {
     return super.patch(this.updateJsonFetchConfigAndData(config));
   }
 
-  putJson<RESPONSE, T = RESPONSE>(config: FetcherRequest<HttpFetcherTarget, RESPONSE, HttpAnyBodyFetcherConfig<CONFIG, RESPONSE>, T>): Promise<T> {
+  putJson<RESPONSE, T = RESPONSE>(config: HttpJsonFetcherRequest<RESPONSE, CONFIG, T>): Promise<T> {
     return super.put(this.updateJsonFetchConfigAndData(config));
   }
 

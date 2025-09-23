@@ -4,9 +4,9 @@
   "main": "index.js",
   "license": "MIT",
   "scripts": {
-    "dev": "webpack serve --mode development",
-    "build": "webpack --mode production",
-    "preview": "webpack serve --mode production"
+    "dev": "node build.mjs --watch",
+    "build": "pnpm --filter @dooboostore/core build && pnpm --filter @dooboostore/core-web build && pnpm --filter @dooboostore/core-node build && pnpm --filter @dooboostore/dom-render build && node build.mjs",
+    "preview": "node build.mjs && pnpm exec http-server dist"
   },
   "devDependencies": {
     "@babel/core": "^7.24.0",
@@ -28,7 +28,10 @@
     "typescript": "^5.9.2",
     "webpack": "^5.98.0",
     "webpack-cli": "^5.1.4",
-    "webpack-dev-server": "^5.2.0"
+    "webpack-dev-server": "^5.2.0",
+    "esbuild": "^0.23.0",
+    "nodemon": "^3.0.1",
+    "http-server": "^14.1.1"
   },
   "peerDependencies": {
     "reflect-metadata": "^0.2.2",

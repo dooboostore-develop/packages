@@ -1,13 +1,18 @@
-import { Observable, Subscription } from '@dooboostore/core/message';
-import { InferPromise } from '@dooboostore/core/types';
-import { Promises } from '@dooboostore/core/promise';
+import { Observable } from '@dooboostore/core/message/Observable';
+import { Subscription } from '@dooboostore/core/message/Subscription';
+import { AutoCloseSubscription } from '@dooboostore/core/message/AutoCloseSubscription';
 
 export namespace AnimationFrameUtils {
-  export type FpsConfigParamType = { window: Window, second?: number };
+  export type FpsConfigParamType = { window: Window; second?: number };
 
-  export type FpsCallBackData = { fpsConfigParam: FpsConfigParamType, fps: number, startTimestamp: number, timestamp: number };
+  export type FpsCallBackData = {
+    fpsConfigParam: FpsConfigParamType;
+    fps: number;
+    startTimestamp: number;
+    timestamp: number;
+  };
 
-// fps
+  // fps
   export function fps(params: FpsConfigParamType, callback: (value: FpsCallBackData) => void): Subscription {
     let startTimestamp: number | null = null;
     let stop = false;
@@ -15,7 +20,7 @@ export namespace AnimationFrameUtils {
     const animate = (currentTimestamp: number) => {
       if (startTimestamp !== null) {
         const delta = currentTimestamp - startTimestamp;
-        const fps = ((params?.second??1) * 1000) / delta; // 밀리초를 초당 프레임으로 변환
+        const fps = ((params?.second ?? 1) * 1000) / delta; // 밀리초를 초당 프레임으로 변환
         callback({ fpsConfigParam: params, fps, startTimestamp: startTimestamp, timestamp: currentTimestamp });
       }
       startTimestamp = currentTimestamp;
@@ -27,11 +32,8 @@ export namespace AnimationFrameUtils {
 
     window.requestAnimationFrame(animate);
 
-    return {
-      unsubscribe: () => {
-        stop = true;
-      }
-    };
+
+    return new AutoCloseSubscription(()=>stop=true);
   }
   // export function fps(params: FpsConfigParamType): Promise<number>;
   // export function fps(params: FpsConfigParamType, callback?: (value: number) => void): Promise<number> | void {
@@ -84,26 +86,32 @@ export namespace AnimationFrameUtils {
   //   }
   // }
 
-  export const dividePerFpsObservable = ({fpsConfig,  divideSize}: { fpsConfig: FpsConfigParamType,  divideSize: number }): Observable<FpsCallBackData &{gapPosition: number, gapSize: number}> => {
-    return new Observable<FpsCallBackData &{gapPosition: number, gapSize: number}>((subscriber) => {
-      const handler = (event: FpsCallBackData &{gapPosition: number, gapSize: number}) => subscriber.next(event);
+  export const dividePerFpsObservable = ({
+    fpsConfig,
+    divideSize
+  }: {
+    fpsConfig: FpsConfigParamType;
+    divideSize: number;
+  }): Observable<FpsCallBackData & { gapPosition: number; gapSize: number }> => {
+    return new Observable<FpsCallBackData & { gapPosition: number; gapSize: number }>(subscriber => {
+      const handler = (event: FpsCallBackData & { gapPosition: number; gapSize: number }) => subscriber.next(event);
       // 디스플레이마다 다르게 나올 수 있음 모니터 헤르츠
       let fps = 0;
       // 1초당 그리고 싶은 횟수 (이걸로 애니메이션을 그릴 때 몇번 그릴지 결정)  성능조절가능
       // private readonly drawCountPerSecond: number = 60;
       const getDrawFpsGap = () => {
         return Math.floor(fps / divideSize);
-      }
+      };
 
       let gapPosition = 0;
 
-      const fpsSubscription  = AnimationFrameUtils.fps(fpsConfig, (fpsConfig) => {
+      const fpsSubscription = AnimationFrameUtils.fps(fpsConfig, fpsConfig => {
         fps = fpsConfig.fps;
         gapPosition++;
         const gapSize = getDrawFpsGap();
         if (gapPosition >= gapSize) {
           // console.log('dddddddddrrrrraaaww' , fpsConfig, divideSize, animationCount, drawFpsGap)
-          handler({...fpsConfig, ...{gapPosition, gapSize} });
+          handler({ ...fpsConfig, ...{ gapPosition, gapSize } });
           gapPosition = 0;
         }
       });
@@ -143,6 +151,5 @@ export namespace AnimationFrameUtils {
     //     };
     //   }
     // }
-  }
-
+  };
 }

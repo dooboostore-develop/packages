@@ -20,37 +20,37 @@ To achieve this, we integrate the `Proxy` handler and `activeEffect` concept fro
 let activeRawSet = null; // Currently rendering RawSet
 
 class DomRenderProxy {
-  // ... Proxy handler ...
-  get(target, property) {
-    // 2. get trap: if activeRawSet exists, record dependency
-    if (activeRawSet) {
-      track(target, property, activeRawSet);
+    // ... Proxy handler ...
+    get(target, property) {
+        // 2. get trap: if activeRawSet exists, record dependency
+        if (activeRawSet) {
+            track(target, property, activeRawSet);
+        }
+        return target[property];
     }
-    return target[property];
-  }
 
-  set(target, property, value) {
-    target[property] = value;
-    // 3. set trap: find all dependent RawSets and re-render
-    const dependentRawSets = findDependentRawSets(target, property);
-    dependentRawSets.forEach(rawSet => rawSet.render());
-    return true;
-  }
+    set(target, property, value) {
+        target[property] = value;
+        // 3. set trap: find all dependent RawSets and re-render
+        const dependentRawSets = findDependentRawSets(target, property);
+        dependentRawSets.forEach(rawSet => rawSet.render());
+        return true;
+    }
 }
 
 class RawSet {
-  render(obj, config) {
-    // 1. Just before rendering, set itself as activeRawSet
-    activeRawSet = this;
+    render(obj, config) {
+        // 1. Just before rendering, set itself as activeRawSet
+        activeRawSet = this;
 
-    // ... Template expression evaluation and DOM creation logic ...
-    // Accessing properties of obj during this process will trigger the Proxy's get trap
-    const value = ScriptUtils.evalReturn(this.expression, obj);
-    // ...
+        // ... Template expression evaluation and DOM creation logic ...
+        // Accessing properties of obj during this process will trigger the Proxy's get trap
+        const value = ScriptUtils.evaluateReturn(this.expression, obj);
+        // ...
 
-    // After rendering is complete, reset activeRawSet
-    activeRawSet = null;
-  }
+        // After rendering is complete, reset activeRawSet
+        activeRawSet = null;
+    }
 }
 ```
 

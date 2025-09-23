@@ -3,13 +3,12 @@
   "version": "1.0.0",
   "main": "index.js",
   "license": "MIT",
+  "type": "module",
   "scripts": {
-    "dev": "webpack --config webpack.config.js --watch",
+    "dev": "webpack --config webpack.config.cjs --watch",
+    "start": "webpack --config webpack.config.cjs && node dist/index.js",
     "build": "webpack --mode production",
-    "ts-node": "ts-node index.ts",
-    "ts-node:watch": "ts-node-dev --respawn index.ts",
-    "start": "ts-node index.ts",
-    "start:watch": "ts-node-dev --respawn index.ts"
+    "start:watch": "ts-node-dev --respawn src/index.ts"
   },
   "devDependencies": {
     "@babel/core": "^7.24.0",
@@ -36,10 +35,11 @@
     "webpack-cli": "^5.1.4",
     "webpack-dev-server": "^5.2.0"
   },
-  "peerDependencies": {
+  "dependencies": {
     "reflect-metadata": "^0.2.2",
-    "@dooboostore/core": "workspace:*",
-    "@dooboostore/core-node": "workspace:*",
-    "@dooboostore/simple-boot": "workspace:*"
+    "@dooboostore/core": "workspace:*"
+  },
+  "peerDependencies": {
+
   }
 }

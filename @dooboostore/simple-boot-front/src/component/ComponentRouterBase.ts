@@ -4,6 +4,7 @@ import { RouterAction } from '@dooboostore/simple-boot/route/RouterAction';
 import { ChildrenSet, ComponentBaseConfig } from '@dooboostore/dom-render/components/ComponentBase';
 import { getDomRenderOriginObject } from '@dooboostore/dom-render/DomRenderProxy';
 import { RouterOutlet } from '@dooboostore/dom-render/components/router/RouterOutlet';
+import { RoutingDataSet } from '@dooboostore/simple-boot/route/RouterManager';
 
 export type ComponentRouterBaseConfig = ComponentBaseConfig & { sameRouteNoApply?: boolean };
 
@@ -41,7 +42,7 @@ export abstract class ComponentRouterBase<T = any>
     //   routerOutlet.forEach(it => it.setValue(this.child));
     // }
   }
-  async canActivate(url: RouterAction.RoutingDataSet, data?: any): Promise<void> {
+  async canActivate(url: RoutingDataSet, data?: any): Promise<void> {
     // console.log('cccccccccccc', data, typeof data);
     if (
       !(
@@ -57,7 +58,7 @@ export abstract class ComponentRouterBase<T = any>
     }
   }
 
-  async onRouting(r: RouterAction.RoutingDataSet): Promise<void> {
+  async onRouting(r: RoutingDataSet): Promise<void> {
     // if (RouterAction.isOnRouting(this.child?.obj)){
     //   await this.child.obj.onRouting(r);
     // }

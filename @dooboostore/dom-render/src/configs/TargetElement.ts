@@ -1,5 +1,5 @@
 import {RawSet} from '../rawsets/RawSet';
-import {DomRenderConfig} from 'configs/DomRenderConfig';
+import {DomRenderConfig} from '../configs/DomRenderConfig';
 import {Attrs} from '../rawsets/Attrs';
 import {CreatorMetaData} from '../rawsets/CreatorMetaData';
 import {Render} from '../rawsets/Render';

@@ -12,6 +12,7 @@ export type HttpFetcherTarget =
   | { url: URL | string; searchParams?: { [key: string]: any } | URLSearchParams | [string, unknown][] };
 export type HttpFetcherConfig<CONFIG, RESPONSE = Response> = {
   fetch?: RequestInitType;
+  fetcher?: typeof fetch;
   config?: CONFIG;
   allowedResponseNotOk?: boolean;
   beforeProxyFetch?: <T extends RequestInfo | URL>(
@@ -54,7 +55,7 @@ export type HttpFetcherRequest<RESPONSE = Response, CONFIG = any, T = RESPONSE> 
   RESPONSE,
   HttpFetcherConfig<CONFIG, RESPONSE>,
   T
->;
+>
 
 export class HttpFetcher<
   CONFIG = any,
@@ -235,7 +236,7 @@ export class HttpFetcher<
     }
 
     this.beforeFetch({ target, requestInit: config?.fetch });
-    return fetch(target, config?.fetch)
+    return (config.fetcher??fetch)(target, config?.fetch)
       .then(async it => {
         // console.log('httpFetch!!!', Array.from(it.headers))
         this.afterFetch({ target: target as URL, requestInit: config?.fetch }, it);

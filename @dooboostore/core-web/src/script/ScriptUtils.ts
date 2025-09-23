@@ -6,15 +6,15 @@ export class ScriptUtils {
   /**
    * @deprecated Use ObjectUtils.Script.evalReturn instead
    */
-  public static evalReturn<T = any>(script: string | { bodyScript: string, returnScript: string }, thisTarget: any = {}): T {
-    return ObjectUtils.Script.evalReturn(script, thisTarget);
+  public static evaluateReturn<T = any>(script: string | { bodyScript: string, returnScript: string }, thisTarget: any = {}): T {
+    return ObjectUtils.Script.evaluateReturn(script, thisTarget);
   }
 
   /**
    * @deprecated Use ObjectUtils.Script.eval instead
    */
-  public static eval<T = any>(script: string, thisTarget: any = {}): T | undefined {
-    return ObjectUtils.Script.eval(script, thisTarget);
+  public static evaluate<T = any>(script: string, thisTarget: any = {}): T | undefined {
+    return ObjectUtils.Script.evaluate(script, thisTarget); // Changed from eval to runScript
   }
 
   /**

@@ -12,7 +12,7 @@ export class DrThis extends OperatorExecuterAttrRequire<string> {
     // const e = this.elementSource;
     // console.log('drThis!!!!!!!!!!!!!', this.elementSource.attrs.drDetectIfOption, this.elementSource.attrs.drIfOption);
     const optionIf = this.elementSource.attrs.drDetectIfOption ?? this.elementSource.attrs.drIfOption;
-    const ok = ScriptUtils.eval(`
+    const ok = ScriptUtils.evaluate(`
                 ${this.render.bindScript}
                 try {
                   const ok  = ${this.elementSource.attrs.drThis};

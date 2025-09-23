@@ -15,7 +15,7 @@ export class DrFor extends OperatorExecuterAttrRequire<string> {
         const vars = RawSet.drVarEncoding(this.elementSource.element, this.elementSource.attrs.drVarOption ?? '');
         const newTemp = this.source.config.window.document.createElement('temp');
         // console.log('-----asdad',attr , this.elementSource.attrs.drItOption);
-        ScriptUtils.eval(`
+        ScriptUtils.evaluate(`
                     ${this.render.bindScript}
                     ${this.elementSource.attrs.drBeforeOption ?? ''}
                     for(${attr}) {

@@ -1,0 +1,148 @@
+import * as esbuild from 'esbuild';
+import * as path from 'path';
+import * as fs from 'fs';
+
+const __dirname = path.dirname(new URL(import.meta.url).pathname);
+
+// Function to find all .ts files in a directory
+function findTsFiles(dir) {
+  let filelist = [];
+  try {
+    const files = fs.readdirSync(dir);
+    files.forEach(file => {
+      const filepath = path.join(dir, file);
+      try {
+        if (fs.statSync(filepath).isDirectory()) {
+          if (file !== 'node_modules') {
+            filelist = filelist.concat(findTsFiles(filepath));
+          }
+        } else if (filepath.endsWith('.ts')) {
+          filelist.push(filepath);
+        }
+      } catch (e) {
+        // ignore stat errors
+      }
+    });
+  } catch (e) {
+    // ignore readdir errors
+  }
+  return filelist;
+}
+
+const srcDir = path.resolve(__dirname, 'src');
+const tsFiles = findTsFiles(srcDir);
+
+const entryPoints = tsFiles.reduce((acc, file) => {
+  const entryName = path.relative(srcDir, file).replace(/\.ts$/, '');
+  acc[entryName] = file;
+  return acc;
+}, {});
+
+async function performBuild(options, watch) {
+  if (watch) {
+    const context = await esbuild.context(options);
+    await context.watch();
+    console.log('Watching for changes...');
+  } else {
+    await esbuild.build(options);
+  }
+}
+
+async function buildTarget(target, watch = false) {
+  const baseOptions = {
+    sourcemap: true,
+    target: 'es2020',
+    platform: 'node', // core-node is a Node.js package
+  };
+
+  // Define externals separately
+  const externals = [
+    '@dooboostore/core', // Mark the workspace dependency as external
+    'fs', // Node.js built-in module
+    'path', // Node.js built-in module
+    'os', // Node.js built-in module
+    'node:os', // Node.js built-in module
+    'node:fs', // Node.js built-in module
+    'node:path', // Node.js built-in module
+    'node:process', // Node.js built-in module
+  ];
+
+  // Options that are specific to bundling
+  const bundleSpecificOptions = {
+    bundle: true,
+    external: externals,
+  };
+
+  switch (target) {
+    case 'esm':
+      console.log('Starting ESM build...');
+      await performBuild({
+        ...baseOptions,
+        entryPoints: entryPoints,
+        outdir: path.resolve(__dirname, 'dist', 'esm'),
+        format: 'esm',
+        tsconfig: 'tsconfig.esm.json',
+        // No bundle: true, so no external option here
+      }, watch);
+      console.log('ESM build complete.');
+      break;
+    case 'cjs':
+      console.log('Starting CJS build...');
+      await performBuild({
+        ...baseOptions,
+        entryPoints: entryPoints,
+        outdir: path.resolve(__dirname, 'dist', 'cjs'),
+        format: 'cjs',
+        tsconfig: 'tsconfig.cjs.json',
+        // No bundle: true, so no external option here
+      }, watch);
+      console.log('CJS build complete.');
+      break;
+    case 'umd-bundle':
+      console.log('Starting UMD bundle build...');
+      await performBuild({
+        ...baseOptions,
+        ...bundleSpecificOptions, // Apply bundle: true and external
+        entryPoints: [path.resolve(srcDir, 'index.ts')],
+        outfile: path.resolve(__dirname, 'dist', 'umd-bundle', 'dooboostore-core-node.umd.js'),
+        format: 'iife',
+        globalName: 'dooboostoreCoreNode',
+        tsconfig: 'tsconfig.umd.json',
+      }, watch);
+      console.log('UMD bundle build complete.');
+      break;
+    case 'esm-bundle':
+      console.log('Starting ESM bundle build...');
+      await performBuild({
+        ...baseOptions,
+        ...bundleSpecificOptions, // Apply bundle: true and external
+        entryPoints: [path.resolve(srcDir, 'index.ts')],
+        outfile: path.resolve(__dirname, 'dist', 'esm-bundle', 'dooboostore-core-node.esm.js'),
+        format: 'esm',
+        tsconfig: 'tsconfig.esm.json',
+      }, watch);
+      console.log('ESM bundle build complete.');
+      break;
+    case 'all':
+      if (!watch) {
+        fs.rmSync(path.resolve(__dirname, 'dist'), { recursive: true, force: true });
+      }
+      await buildTarget('esm', watch);
+      await buildTarget('cjs', watch);
+      await buildTarget('umd-bundle', watch);
+      await buildTarget('esm-bundle', watch);
+      break;
+    default:
+      console.error('Invalid build target specified.');
+      process.exit(1);
+  }
+}
+
+const args = process.argv.slice(2);
+const target = args[0] || 'all';
+const watch = args.includes('--watch');
+
+buildTarget(target, watch).catch((error) => {
+  console.error('Build process failed:', error);
+  process.exit(1);
+});

@@ -1,10 +1,15 @@
 import { ScriptUtils } from '@dooboostore/core-web/script/ScriptUtils';
 import { RawSet } from '../rawsets/RawSet';
 import { CreatorMetaData } from '../rawsets/CreatorMetaData';
-import { AfterCallBack, ElementSource, ExecuteState, OperatorExecuter, ReturnContainer, Source } from './OperatorExecuter';
+import {
+  AfterCallBack,
+  ElementSource,
+  ExecuteState,
+  OperatorExecuter,
+  ReturnContainer,
+  Source
+} from './OperatorExecuter';
 import { Render } from '../rawsets/Render';
-import { Promises } from '@dooboostore/core/promise';
-import { ElementUtils } from '@dooboostore/core-web/element/ElementUtils';
 
 declare global {
   interface Window {
@@ -14,20 +19,38 @@ declare global {
 
 // 여기서 사용자가 등록한 TargetElement가 들어간다.
 export class DrTargetElement extends OperatorExecuter<void> {
-  constructor(rawSet: RawSet, render: Render, returnContainer: ReturnContainer, elementSource: ElementSource, source: Source, afterCallBack: AfterCallBack) {
+  constructor(
+    rawSet: RawSet,
+    render: Render,
+    returnContainer: ReturnContainer,
+    elementSource: ElementSource,
+    source: Source,
+    afterCallBack: AfterCallBack
+  ) {
     source.operatorAround = undefined;
     super(rawSet, render, returnContainer, elementSource, source, afterCallBack, false);
   }
 
   async execute(): Promise<ExecuteState> {
-    const targetElement = this.source.config?.targetElements?.find(it => it.name.toLowerCase() === this.elementSource.element.tagName.toLowerCase());
+    const targetElement = this.source.config?.targetElements?.find(
+      it => it.name.toLowerCase() === this.elementSource.element.tagName.toLowerCase()
+    );
     if (targetElement) {
-      if (this.rawSet.point.start instanceof this.source.config.window.HTMLMetaElement && this.rawSet.point.end instanceof this.source.config.window.HTMLMetaElement) {
-        this.rawSet.point.start.setAttribute('this-path', `this.__domrender_components.${this.rawSet.uuid}`)
-        this.rawSet.point.end.setAttribute('this-path', `this.__domrender_components.${this.rawSet.uuid}`)
+      if (
+        this.rawSet.point.start instanceof this.source.config.window.HTMLMetaElement &&
+        this.rawSet.point.end instanceof this.source.config.window.HTMLMetaElement
+      ) {
+        this.rawSet.point.start.setAttribute('this-path', `this.__domrender_components.${this.rawSet.uuid}`);
+        this.rawSet.point.end.setAttribute('this-path', `this.__domrender_components.${this.rawSet.uuid}`);
       }
 
-      const documentFragment = await targetElement.callBack(this.elementSource.element, this.source.obj, this.rawSet, this.elementSource.attrs, this.source.config);
+      const documentFragment = await targetElement.callBack(
+        this.elementSource.element,
+        this.source.obj,
+        this.rawSet,
+        this.elementSource.attrs,
+        this.source.config
+      );
       if (documentFragment) {
         const detectAction = this.elementSource.element.getAttribute(RawSet.DR_DETECT_NAME);
         // const dictionaryKey = this.elementSource.element.getAttribute(RawSet.DR_DICTIONARY_OPTIONKEYNAME);
@@ -47,9 +70,12 @@ export class DrTargetElement extends OperatorExecuter<void> {
           this.rawSet.detect = {
             action: () => {
               const script = `var $component = this.__render.component; var $element = this.__render.element; var $innerHTML = this.__render.innerHTML; var $attribute = this.__render.attribute;  ${detectAction} `;
-              ScriptUtils.eval(script, Object.assign(this.source.obj, {
-                __render: this.rawSet.dataSet.render
-              }))
+              ScriptUtils.evaluate(
+                script,
+                Object.assign(this.source.obj, {
+                  __render: this.rawSet.dataSet.render
+                })
+              );
             }
           };
         }
@@ -60,7 +86,7 @@ export class DrTargetElement extends OperatorExecuter<void> {
         let targetFragment = documentFragment;
         if (targetElement.noStrip) {
           // documentFragment.firstElementChild.classList.add(`${this.rawSet.uuid}___DrTargetElement`)
-          const fragment = this.source.config.window.document.createDocumentFragment()
+          const fragment = this.source.config.window.document.createDocumentFragment();
           Array.from(documentFragment.firstElementChild?.childNodes || []).forEach(child => {
             // fragment.appendChild(child.cloneNode(true));
             fragment.appendChild(child);
@@ -69,11 +95,11 @@ export class DrTargetElement extends OperatorExecuter<void> {
           targetFragment = fragment;
         }
         // console.log('----------2', ElementUtils.toInnerHTML(targetFragment, {document: this.source.config.window.document}));
-        const rr = RawSet.checkPointCreates(targetFragment, this.source.obj, this.source.config)
+        const rr = RawSet.checkPointCreates(targetFragment, this.source.obj, this.source.config);
         if (targetElement.noStrip) {
-          Array.from(targetFragment.childNodes||[]).forEach(child => {
-            documentFragment.firstElementChild?.appendChild(child)
-          })
+          Array.from(targetFragment.childNodes || []).forEach(child => {
+            documentFragment.firstElementChild?.appendChild(child);
+          });
         }
         this.elementSource.element.parentNode?.replaceChild(documentFragment, this.elementSource.element);
         this.returnContainer.raws.push(...rr);

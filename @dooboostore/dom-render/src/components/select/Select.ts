@@ -5,22 +5,11 @@ import { OnCreateRenderData, OnCreateRenderDataParams } from '../../lifecycle/On
 import { OnInitRender } from '../../lifecycle/OnInitRender';
 import { OnDestroyRender } from '../../lifecycle/OnDestroyRender';
 import { EventUtils } from '@dooboostore/core-web/event/EventUtils';
-import { type Subscription } from '@dooboostore/core/message';
+import { type Subscription } from '@dooboostore/core/message/Subscription';
 import { ValidUtils } from '@dooboostore/core-web/valid/ValidUtils';
 import { DomRenderNoProxy } from '../../decorators/DomRenderNoProxy';
 import { OnCreateRender } from '../../lifecycle/OnCreateRender';
 import { DomRenderConfig } from '../../configs/DomRenderConfig';
-
-// @ts-ignore
-import template from './select.html';
-// @ts-ignore
-import styles from './select.css';
-// @ts-ignore
-import summaryTemplate from './select-summary.html';
-// @ts-ignore
-import optionTemplate from './select-option.html';
-// @ts-ignore
-import stateComponentTemplate from './state-component.html';
 import { WindowUtils } from '@dooboostore/core-web/window/WindowUtils';
 
 /** 사용법
@@ -460,27 +449,107 @@ export namespace Select {
 }
 
 const stateComponentFactory = (name: string, type: any) => {
-  return (config?: DomRenderRunConfig) => RawSet.createComponentTargetElement({
-    name,
-    template: stateComponentTemplate,
-    objFactory: (e, o, r2, constructorParam) => DomRender.run({rootObject: new type(), config})
-  });
+  return (config?: DomRenderRunConfig) =>
+    RawSet.createComponentTargetElement({
+      name,
+      template: '<div dr-if="!@this@.hidden" dr-option-strip="true">#innerHTML#</div>\n',
+      objFactory: (e, o, r2, constructorParam) => DomRender.run({ rootObject: new type(), config })
+    });
 };
 
 export default {
   select: (config?: DomRenderConfig) => {
     return RawSet.createComponentTargetElement({
       name: Select.selector,
-      styles,
-      template,
-      objFactory: (e, o, r2, constructorParam) => DomRender.run({rootObject: new Select.Select(config), config})
+      styles:
+        '.dr-select-container {\n' +
+        '  /*position: relative;*/\n' +
+        '\n' +
+        '}\n' +
+        '.dr-select-options-container {\n' +
+        '  display: none;\n' +
+        '  position: absolute;\n' +
+        '  top: 100%;\n' +
+        '  left: 0;\n' +
+        '  right: 0;\n' +
+        '  z-index: 10;\n' +
+        '}\n' +
+        '.dr-select-container.is-open .dr-select-options-container {\n' +
+        '  display: block;\n' +
+        '}\n' +
+        'summary::-webkit-details-marker {\n' +
+        '    display: none;\n' +
+        '}\n' +
+        '/* Floating styles for dr-select-body */\n' +
+        '.dr-select-body-container {\n' +
+        '    position: absolute;\n' +
+        '}\n' +
+        '\n' +
+        '.dr-select-body-bottom-left-container {\n' +
+        '    position: absolute;\n' +
+        '    left: 0;\n' +
+        '    top: 100%;\n' +
+        '}\n' +
+        '\n' +
+        '.dr-select-body-bottom-right-container {\n' +
+        '    position: absolute;\n' +
+        '    right: 0;\n' +
+        '    top: 100%;\n' +
+        '}\n' +
+        '\n' +
+        '.dr-select-body-top-left-container {\n' +
+        '    position: absolute;\n' +
+        '    left: 0;\n' +
+        '    bottom: 100%;\n' +
+        '}\n' +
+        '\n' +
+        '.dr-select-body-top-right-container {\n' +
+        '    position: absolute;\n' +
+        '    right: 0;\n' +
+        '    bottom: 100%;\n' +
+        '}\n' +
+        '\n' +
+        '/* Reset default details/summary styles */\n' +
+        '.dr-select-container details {\n' +
+        '  display: block; /* Ensure it behaves like a block element */\n' +
+        '}\n' +
+        '\n' +
+        '.dr-select-container summary {\n' +
+        '  display: block; /* Ensure it behaves like a block element */\n' +
+        '  list-style: none; /* Remove default marker */\n' +
+        "  cursor: pointer; /* Indicate it's clickable */\n" +
+        '}\n' +
+        '\n' +
+        '.dr-select-container summary::-webkit-details-marker,\n' +
+        '.dr-select-container summary::marker {\n' +
+        '  display: none; /* Hide marker for Webkit and standard */\n' +
+        '}',
+      template:
+        '<details dr-class="{\n' +
+        "        'dr-select-container': true,\n" +
+        "        'is-open': @this@.isOpen,\n" +
+        '        [@this@.classAttr]: @this@.classAttr\n' +
+        '     }" dr-on-init="@this@.onInitDetailsElement($element)" dr-option-complete="@this@.test()"  dr-event-toggle="@this@.toggle($element, $event)">\n' +
+        '\n' +
+        '    #innerHTML#\n' +
+        '</details>\n' +
+        '<select hidden="hidden" name="${@this@.name}$" disabled="${@this@.disabled ? \'disabled\' : null}$"  style="width: 1500px; height:500px"  multiple>\n' +
+        '    <option dr-for-of="@this@.options" value="${#it#.value}$" selected="${#it#.selected ? \'selected\' : null}$">#it# ${#it#.value}$</option>\n' +
+        '</select',
+      objFactory: (e, o, r2, constructorParam) => DomRender.run({ rootObject: new Select.Select(config), config })
     });
   },
   selectSummary: (config?: DomRenderRunConfig) => {
     return RawSet.createComponentTargetElement({
       name: `${Select.selector}-summary`,
-      template: summaryTemplate,
-      objFactory: (e, o, r2, constructorParam) => DomRender.run({rootObject: new Select.Summary(), config})
+      template:
+        '<summary dr-class="{[@this@.classAttr]: @this@.classAttr}"\n' +
+        '         dr-on-init="@this@.onInitSummaryElement($element, $event)"\n' +
+        '         dr-event-click="@this@.onSummaryClick($element, $event)"\n' +
+        '>\n' +
+        '#innerHTML#\n' +
+        '</summary>',
+      objFactory: (e, o, r2, constructorParam) => DomRender.run({ rootObject: new Select.Summary(), config })
     });
   },
   selectSummaryPlaceholder: stateComponentFactory(`${Select.selector}-summary-placeholder`, Select.SummaryPlaceholder),
@@ -500,8 +569,9 @@ export default {
   selectOption: (config?: DomRenderRunConfig) => {
     return RawSet.createComponentTargetElement({
       name: `${Select.selector}-option`,
-      template: optionTemplate,
-      objFactory: (e, o, r2, constructorParam) => DomRender.run({rootObject: new Select.Option(), config})
+      template:
+        '<a dr-class="{[@this@.classAttr]: @this@.classAttr}" dr-event-click="@this@.toggleSelected($event)">#innerHTML#</a>\n',
+      objFactory: (e, o, r2, constructorParam) => DomRender.run({ rootObject: new Select.Option(), config })
     });
   },
   selectOptionSelected: stateComponentFactory(`${Select.selector}-option-selected`, Select.OptionSelected),

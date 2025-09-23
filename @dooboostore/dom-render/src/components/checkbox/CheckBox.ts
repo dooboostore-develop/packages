@@ -58,7 +58,7 @@ export namespace CheckBox {
     private checked = false;
     private inputElement?: HTMLInputElement;
 
-    change(option: ChangeOption, checked: boolean = this.checked) {
+    change(option: ChangeOption, checked?: boolean) { checked = checked ?? this.checked;
       this.checked = checked;
       this.setChildrenHidden(checked);
       this.getAttribute('change')?.(checked, option);

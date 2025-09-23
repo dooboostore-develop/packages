@@ -27,29 +27,29 @@ Each directive, such as `dr-if` and `dr-for-of`, has its own unique logic. To ma
 ```javascript
 // Conceptual logic of DrIf.ts
 class DrIf extends OperatorExecuterAttrRequire<string> {
-  async executeAttrRequire(attr: string): Promise<ExecuteState> {
-    // 1. Evaluate expression
-    const condition = ScriptUtils.evalReturn(attr, this.source.obj);
+    async executeAttrRequire(attr: string): Promise<ExecuteState> {
+        // 1. Evaluate expression
+        const condition = ScriptUtils.evaluateReturn(attr, this.source.obj);
 
-    // 3. Compare with previous state; if no change, stop
-    if (this.rawSet.data === condition) {
-      return ExecuteState.STOP;
+        // 3. Compare with previous state; if no change, stop
+        if (this.rawSet.data === condition) {
+            return ExecuteState.STOP;
+        }
+        this.rawSet.data = condition; // Store current state
+
+        // 2. DOM manipulation
+        if (condition) {
+            // Clone and insert element
+            const newElement = this.elementSource.element.cloneNode(true);
+            // ... remove dr-if attribute from newElement ...
+            this.returnContainer.fag.append(newElement);
+        } else {
+            // No child nodes (consequently, nothing is rendered)
+        }
+
+        // ... connect final DocumentFragment to parent node, and recursively create RawSet ...
+        return ExecuteState.EXECUTE;
     }
-    this.rawSet.data = condition; // Store current state
-
-    // 2. DOM manipulation
-    if (condition) {
-      // Clone and insert element
-      const newElement = this.elementSource.element.cloneNode(true);
-      // ... remove dr-if attribute from newElement ...
-      this.returnContainer.fag.append(newElement);
-    } else {
-      // No child nodes (consequently, nothing is rendered)
-    }
-
-    // ... connect final DocumentFragment to parent node, and recursively create RawSet ...
-    return ExecuteState.EXECUTE;
-  }
 }
 ```
 
@@ -69,30 +69,30 @@ class DrIf extends OperatorExecuterAttrRequire<string> {
 ```javascript
 // Conceptual logic of DrForOf.ts
 class DrForOf extends OperatorExecuterAttrRequire<string> {
-  async executeAttrRequire(attr: string): Promise<ExecuteState> {
-    // 1. Evaluate array data
-    const collection = ScriptUtils.evalReturn(attr, this.source.obj);
+    async executeAttrRequire(attr: string): Promise<ExecuteState> {
+        // 1. Evaluate array data
+        const collection = ScriptUtils.evaluateReturn(attr, this.source.obj);
 
-    if (collection) {
-      let index = -1;
-      for (const item of collection) {
-        index++;
-        // 2a. Clone element
-        const newElement = this.elementSource.element.cloneNode(true);
+        if (collection) {
+            let index = -1;
+            for (const item of collection) {
+                index++;
+                // 2a. Clone element
+                const newElement = this.elementSource.element.cloneNode(true);
 
-        // 2b. Substitute scope variables
-        // 'destIt' is the actual data path corresponding to '#it#' (e.g., 'this.users[0]')
-        const destIt = `${attr}[${index}]`;
-        newElement.innerHTML = newElement.innerHTML.replace(/#it#/g, destIt).replace(/#nearForOfIndex#/g, index);
-        // ... substitute other attributes ...
+                // 2b. Substitute scope variables
+                // 'destIt' is the actual data path corresponding to '#it#' (e.g., 'this.users[0]')
+                const destIt = `${attr}[${index}]`;
+                newElement.innerHTML = newElement.innerHTML.replace(/#it#/g, destIt).replace(/#nearForOfIndex#/g, index);
+                // ... substitute other attributes ...
 
-        // 2c. Add to final result
-        this.returnContainer.fag.append(newElement);
-      }
+                // 2c. Add to final result
+                this.returnContainer.fag.append(newElement);
+            }
+        }
+        // ... DOM replacement and recursive RawSet creation ...
+        return ExecuteState.EXECUTE;
     }
-    // ... DOM replacement and recursive RawSet creation ...
-    return ExecuteState.EXECUTE;
-  }
 }
 ```
 

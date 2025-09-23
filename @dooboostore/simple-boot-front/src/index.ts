@@ -35,7 +35,3 @@ export { RouterNotFount } from './throwable/RouterNotFount';
 
 // Scripts
 export { ScriptRunnable } from './script/ScriptRunnable';
-
-// re-export from simple-boot
-export { Sim } from '@dooboostore/simple-boot/decorators/SimDecorator';
-import { Router } from '@dooboostore/simple-boot/decorators/route/Router';

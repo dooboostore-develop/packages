@@ -306,12 +306,12 @@ export class RawSet {
         // console.log('--->', RawSet.exporesionGrouops(textContent), textContent,runText, runText[0][1])
         let newNode: Node;
         if (textContent?.startsWith('#')) {
-          const r = ScriptUtils.eval(`${__render.bindScript} return ${runText}`, Object.assign(obj, {__render}));
+          const r = ScriptUtils.evaluate(`${__render.bindScript} return ${runText}`, Object.assign(obj, {__render}));
           const template = config.window.document.createElement('template') as HTMLTemplateElement;
           template.innerHTML = r;
           newNode = template.content;
         } else {
-          const r = ScriptUtils.eval(`${__render.bindScript}  return ${runText}`, Object.assign(obj, {__render}));
+          const r = ScriptUtils.evaluate(`${__render.bindScript}  return ${runText}`, Object.assign(obj, {__render}));
           newNode = config.window.document.createTextNode(r);
         }
         cNode.parentNode?.replaceChild(newNode, cNode);
@@ -409,7 +409,7 @@ export class RawSet {
           fag: genNode,
           scripts: EventManager.setBindProperty(config?.scripts, obj)
         } as Render);
-        ScriptUtils.eval(`
+        ScriptUtils.evaluate(`
                 const ${EventManager.FAG_VARNAME} = this.__render.fag;
                 const ${EventManager.SCRIPTS_VARNAME} = this.__render.scripts;
                 const ${EventManager.RAWSET_VARNAME} = this.__render.rawSet;
@@ -596,7 +596,7 @@ export class RawSet {
     let data = element.getAttribute(RawSet.DR_APPENDER_NAME);
     // if (data && !/\[[0-9]+\]/g.test(data)) {
     if (data && !/\[.+\]/g.test(data)) {
-      const currentIndex = ScriptUtils.evalReturn(`${ObjectUtils.Path.toOptionalChainPath(data)}?.length -1`, obj);
+      const currentIndex = ScriptUtils.evaluateReturn(`${ObjectUtils.Path.toOptionalChainPath(data)}?.length -1`, obj);
       // console.log('------?', currentIndex)
       // if (currentIndex === undefined || isNaN(currentIndex)) {
       //     return undefined;
@@ -707,7 +707,7 @@ export class RawSet {
               // console.log('1-----',variablePath, node);
               const optionalChainPath = ObjectUtils.Path.toOptionalChainPath(variablePath);
               // console.log('2-----',optionalChainPath);
-              const cval = ScriptUtils.evalReturn(optionalChainPath, Object.assign(obj));
+              const cval = ScriptUtils.evaluateReturn(optionalChainPath, Object.assign(obj));
               // const cval = ScriptUtils.evalReturn(variablePath, Object.assign(obj));
               if (cval === null) {
                 element.removeAttribute(it);
@@ -1087,7 +1087,7 @@ export class RawSet {
       const style = RawSet.generateStyleTransform(set.styles ?? [], rawSet.uuid, true);
       targetElement.innerHTML = style + (set.template ?? '');
     } else {
-      targetObj = ScriptUtils.evalReturn(ObjectUtils.Path.toOptionalChainPath(drThis), obj);
+      targetObj = ScriptUtils.evaluateReturn(ObjectUtils.Path.toOptionalChainPath(drThis), obj);
     }
 
     const componentKey = rawSet.uuid;
@@ -1138,7 +1138,7 @@ export class RawSet {
 
     // dr-on-create data onCreateRender
     const onCreateDataScript = `return {rootParent: this, render: this.__render}`;
-    const onCreateDataParam = ScriptUtils.eval<OnCreateRenderDataParams>(onCreateDataScript, Object.assign(obj, {__render: render}));
+    const onCreateDataParam = ScriptUtils.evaluate<OnCreateRenderDataParams>(onCreateDataScript, Object.assign(obj, {__render: render}));
     if (isOnCreateRenderData(targetObj)) {
       targetObj?.onCreateRenderData(onCreateDataParam as OnCreateRenderDataParams);
     }
@@ -1152,7 +1152,7 @@ export class RawSet {
     const onCreate = element.getAttribute(RawSet.DR_ON_CREATE_ARGUMENTS_OPTIONNAME);
     let createParam: any[] = [];
     if (onCreate) {
-      createParam = ScriptUtils.evalReturn<any[]>({bodyScript:renderScript, returnScript:ObjectUtils.Path.toOptionalChainPath(onCreate)}, obj)
+      createParam = ScriptUtils.evaluateReturn<any[]>({bodyScript:renderScript, returnScript:ObjectUtils.Path.toOptionalChainPath(onCreate)}, obj)
       if (!Array.isArray(createParam)) {
         createParam = [createParam];
       }
@@ -1187,7 +1187,7 @@ export class RawSet {
     // console.log('--------drThisCreate!!!', oninit)
     if (oninit) {
       const script = `${renderScript}  ${oninit} `;
-      ScriptUtils.eval(script, Object.assign(obj, {__render: render}));
+      ScriptUtils.evaluate(script, Object.assign(obj, {__render: render}));
     }
 
     targetElement.querySelectorAll(EventManager.attrNames.map(it => `[${it}]`).join(',')).forEach(it => {
@@ -1370,7 +1370,7 @@ export class RawSet {
         //
         // // dr-constructor
         if (constructor) {
-          let param = ScriptUtils.evalReturn({bodyScript: renderScript, returnScript: ObjectUtils.Path.toOptionalChainPath(constructor)}, Object.assign(obj, {__render: render})) ?? [];
+          let param = ScriptUtils.evaluateReturn({bodyScript: renderScript, returnScript: ObjectUtils.Path.toOptionalChainPath(constructor)}, Object.assign(obj, {__render: render})) ?? [];
           if (!Array.isArray(param)) {
             param = [param];
           }
@@ -1525,7 +1525,7 @@ export class RawSet {
     if (path) {
       const optionalPath = ObjectUtils.Path.toOptionalChainPath(path);
       // console.log('ppppp-', path, optionalPath)
-      return ScriptUtils.evalReturn(optionalPath, obj);
+      return ScriptUtils.evaluateReturn(optionalPath, obj);
     }
   };
 
@@ -1533,7 +1533,7 @@ export class RawSet {
     const path = this.findParentThisPath(rawSet);
     if (path) {
       const optionalPath = ObjectUtils.Path.toOptionalChainPath(path);
-      return ScriptUtils.evalReturn(optionalPath, obj);
+      return ScriptUtils.evaluateReturn(optionalPath, obj);
     }
   };
 
@@ -1572,7 +1572,7 @@ export class RawSet {
     const normalAttribute = attribute[EventManager.normalAttrMapAttrName];
     if (normalAttribute) {
       new Map<string, string>(JSON.parse(normalAttribute)).forEach((v, k) => {
-        const cval = ScriptUtils.evalReturn({bodyScript: config.script, returnScript: v}, Object.assign(config.obj, config.renderData ? {__render:config.renderData} : undefined));
+        const cval = ScriptUtils.evaluateReturn({bodyScript: config.script, returnScript: v}, Object.assign(config.obj, config.renderData ? {__render:config.renderData} : undefined));
         attribute[k] = cval;
       });
     }

@@ -201,6 +201,13 @@ storybook-static
 /apps/flockease/dist-front/
 /cursor_accounts.txt
 /install.sh
+/@dooboostore/core/package.json.back
+/@dooboostore/core-node/package.json.back
+/@dooboostore/core-web/package.json.back
+/@dooboostore/simple-boot/package.json.back
+/@dooboostore/simple-boot-front/package.json.back
+/@dooboostore/simple-boot-http-server/package.json.back
+/@dooboostore/simple-boot-http-server-ssr/package.json.back
 /@dooboostore/simple-boot/example/quick-start/dist-back/
 /@dooboostore/simple-boot/create/lib/
 /@dooboostore/simple-boot-front/create/lib/

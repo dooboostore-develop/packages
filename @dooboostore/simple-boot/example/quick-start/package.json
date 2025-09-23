@@ -5,7 +5,7 @@
   "license": "MIT",
   "scripts": {
     "front:dev": "webpack serve --mode development --config front.webpack.config.js",
-    "dev": "webpack --config webpack.config.js --watch",
+    "dev": "webpack --config webpack.config.cjs --watch",
     "build": "webpack --mode production",
     "ts-node": "ts-node index.ts",
     "ts-node:watch": "ts-node-dev --respawn index.ts",

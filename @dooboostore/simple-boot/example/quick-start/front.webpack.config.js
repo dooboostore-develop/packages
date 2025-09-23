@@ -4,7 +4,7 @@ const HtmlWebpackPlugin = require('html-webpack-plugin');
 
 module.exports = {
   mode: 'development',
-  entry: './index.ts',
+  entry: './src/index.ts',
   devtool: 'source-map',
   module: {
     rules: [

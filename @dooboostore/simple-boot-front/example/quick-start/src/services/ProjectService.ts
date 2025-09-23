@@ -1,5 +1,5 @@
 import {Sim} from '@dooboostore/simple-boot/decorators/SimDecorator';
-import { SimstanceManager } from '@dooboostore/simple-boot/simstance/SimstanceManager.ts';
+import { SimstanceManager } from '@dooboostore/simple-boot/simstance/SimstanceManager';
 
 @Sim
 export class ProjectService {

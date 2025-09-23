@@ -12,11 +12,11 @@ import { SimpleBootFront } from '@dooboostore/simple-boot-front/SimpleBootFront'
 import { AsyncBlockingQueue } from '@dooboostore/core/queues/AsyncBlockingQueue';
 import { RandomUtils } from '@dooboostore/core/random/RandomUtils';
 import * as JSDOM from 'jsdom';
-import { Expression } from '@dooboostore/core/expression/Expression';
 import { NotFoundError } from '@dooboostore/simple-boot-http-server/errors/NotFoundError';
 import { DomRenderProxy } from '@dooboostore/dom-render/DomRenderProxy';
-import { delay, filter, first } from '@dooboostore/core/message/operators';
-import { firstValueFrom } from '@dooboostore/core';
+import { filter } from '@dooboostore/core/message/operators/filter';
+import { first } from '@dooboostore/core/message/operators/first';
+import { firstValueFrom } from '@dooboostore/core/message/internal/firstValueFrom';
 
 export type FactoryAndParams = {
   frontDistPath: string;
@@ -27,31 +27,34 @@ export type FactoryAndParams = {
     max: number;
     min: number;
     clearIntervalTime?: number;
-  }
+  };
   using: ConstructorType<any>[];
   domExcludes?: ConstructorType<any>[];
   ssrExcludeFilter?: (rr: RequestResponse) => boolean;
   simpleBootFront?: {
     notFoundError?: boolean;
-  }
-}
+  };
+};
 
 export class SSRFilter implements Filter {
   private simpleBootFrontPool: SimpleBootFront[] = [];
   private simpleBootFrontQueue = new AsyncBlockingQueue<SimpleBootFront>();
   private indexHTML: string;
-  private welcomUrl = 'http://localhost'
+  private welcomUrl = 'http://localhost';
   private poolGeneration = 0;
   private intervalId?: NodeJS.Timeout;
 
-  constructor(public config: FactoryAndParams, public otherInstanceSim?: Map<ConstructorType<any>, any>) {
+  constructor(
+    public config: FactoryAndParams,
+    public otherInstanceSim?: Map<ConstructorType<any>, any>
+  ) {
     config.frontDistIndexFileName = config.frontDistIndexFileName || 'index.html';
     this.indexHTML = JsdomInitializer.loadFile(this.config.frontDistPath, config.frontDistIndexFileName);
   }
 
   async onInit(app: SimpleBootHttpServer) {
     for (let i = 0; i < this.config.poolOption.min; i++) {
-      await this.pushQueue()
+      await this.pushQueue();
     }
 
     if (this.config.poolOption.clearIntervalTime && this.config.poolOption.clearIntervalTime > 0) {
@@ -68,11 +71,10 @@ export class SSRFilter implements Filter {
     }
     // this.simpleBootFrontQueue.clear();
     this.simpleBootFrontPool.forEach(front => {
-        (front as any).jsdom?.window.close();
+      (front as any).jsdom?.window.close();
     });
     this.simpleBootFrontPool = [];
   }
-
 
   // workerTs(workerOptions: WorkerOptions) {
   //     workerOptions.eval = true;
@@ -84,7 +86,11 @@ export class SSRFilter implements Filter {
   // }
 
   async makeJsdom() {
-    const jsdom = await new JsdomInitializer(this.config.frontDistPath, this.config.frontDistIndexFileName || 'index.html', {url: this.welcomUrl}).run();
+    const jsdom = await new JsdomInitializer(
+      this.config.frontDistPath,
+      this.config.frontDistIndexFileName || 'index.html',
+      { url: this.welcomUrl }
+    ).run();
     return jsdom;
   }
 
@@ -117,11 +123,11 @@ export class SSRFilter implements Filter {
     }
   }
 
-  async proceedBefore({rr, app}: { rr: RequestResponse, app: SimpleBootHttpServer, carrier: Map<string, any> }) {
+  async proceedBefore({ rr, app }: { rr: RequestResponse; app: SimpleBootHttpServer; carrier: Map<string, any> }) {
     if (this.config.ssrExcludeFilter?.(rr)) {
       return false;
     }
-    if ((rr.reqHasAcceptHeader(Mimes.TextHtml) || rr.reqHasAcceptHeader(Mimes.All))) {
+    if (rr.reqHasAcceptHeader(Mimes.TextHtml) || rr.reqHasAcceptHeader(Mimes.All)) {
       if (this.simpleBootFrontQueue.isEmpty()) {
         await this.pushQueue();
       }
@@ -131,14 +137,13 @@ export class SSRFilter implements Filter {
         (simpleBootFront.option.window as any).ssrUse = true;
         delete (simpleBootFront.option.window as any).server_side_data;
 
-
-        const url = rr.reqUrlObj({host: 'localhost'});
+        const url = rr.reqUrlObj({ host: 'localhost' });
         if (this.config.simpleBootFront?.notFoundError) {
           // intent router check first
           const intent = await simpleBootFront.getIntent(url.pathname);
           // route를 못찾은상태에서 router path까지 안맞으면 404 처리한다.  route랑 router랑 다르니깐 헛갈리지말도록
-          if (intent.module === undefined && (!intent.getRouterPathData(rr.reqUrlPathName))) {
-            throw new NotFoundError({message: `Not Found: ${rr.reqUrlPathName}`});
+          if (intent.module === undefined && !intent.getRouterPathData(rr.reqUrlPathName)) {
+            throw new NotFoundError({ message: `Not Found: ${rr.reqUrlPathName}` });
           }
         }
 
@@ -151,17 +156,24 @@ export class SSRFilter implements Filter {
         //   }
         // });
         await simpleBootFront.goRouting(targetUrl);
-        await new Promise((r) => setTimeout(r, 0)); // <--중요: 이거 넣어야지 두번불러지는게 없어지는듯? 뭐지 event loop 변경된건가?
+        await new Promise(r => setTimeout(r, 0)); // <--중요: 이거 넣어야지 두번불러지는게 없어지는듯? 뭐지 event loop 변경된건가?
         // TODO: 옵션으로 이거 키고 끄고할수있게 해야될까..?
-        const data = await firstValueFrom(simpleBootFront.routingSubjectObservable.pipe(
-          filter(it => it.state === 'end' && typeof  it.routerModule.intent.uri === 'string' && targetUrl.endsWith(it.routerModule.intent.uri)),
-          // delay(1000),
-          first()
-        ))
+        const data = await firstValueFrom(
+          simpleBootFront.routingSubjectObservable.pipe(
+            filter(
+              (it: any) =>
+                it.state === 'end' &&
+                typeof it.routerModule.intent.uri === 'string' &&
+                targetUrl.endsWith(it.routerModule.intent.uri)
+            ),
+            // delay(1000),
+            first()
+          )
+        );
         // console.log('rrrrrssss');
         // console.log('rrrrrssss122');
-        const html = this.makeHTML(simpleBootFront)
-        await this.writeOkHtmlAndEnd({rr}, html);
+        const html = this.makeHTML(simpleBootFront);
+        await this.writeOkHtmlAndEnd({ rr }, html);
       } finally {
         (simpleBootFront.option.window as any).ssrUse = false;
         delete (simpleBootFront.option.window as any).server_side_data;
@@ -215,7 +227,6 @@ export class SSRFilter implements Filter {
         //         parentPort.close(); // 워커스레드 종료라고 메인스레드에 알려줘야 exit이벤트 발생
         //     })
         // }
-
 
         //worker thrad
         // const workerPath = path.join(__dirname, 'SSRWorker.js');
@@ -273,8 +284,9 @@ export class SSRFilter implements Filter {
   // console.log('------intent', rr.reqUrl, rr.reqUrlPathName, intent.module, intent.getRouterPath(), e)
   // simpleBootFront.option.window.document.documentElemenh
   // "dr-"로 시작하는 모든 attribute를 가진 element에서 해당 attribute를 제거
-  makeHTML (simpleBootFront: SimpleBootFront)  {
-    simpleBootFront.option.window.document.querySelectorAll('*').forEach(el => {
+
+  makeHTML(simpleBootFront: SimpleBootFront) {
+    (simpleBootFront.option.window as any).document.querySelectorAll('*').forEach((el:HTMLElement )=> {
       Array.from(el.attributes).forEach(attr => {
         if (/^dr-/.test(attr.name) || /^domstyle/.test(attr.name) || /this-path/.test(attr.name)) {
           el.removeAttribute(attr.name);
@@ -282,33 +294,34 @@ export class SSRFilter implements Filter {
       });
     });
     let html = simpleBootFront.option.window.document.documentElement.outerHTML;
-    html = '<!DOCTYPE html>'+html;
+    html = '<!DOCTYPE html>' + html;
     html = html.replace(/\$\{[\s\S]*?\}\$/g, '');
     const serverSideData = (simpleBootFront.option.window as any).server_side_data;
     if (serverSideData) {
-      const data = Object.entries(serverSideData).map(([k, v]) => {
-        if (typeof v === 'string') {
-          return `window.server_side_data.${k} = ${v}`;
-        } else {
-          return `window.server_side_data.${k} = ${JSON.stringify(v)}`;
-        }
-      }).join(';');
+      const data = Object.entries(serverSideData)
+        .map(([k, v]) => {
+          if (typeof v === 'string') {
+            return `window.server_side_data.${k} = ${v}`;
+          } else {
+            return `window.server_side_data.${k} = ${JSON.stringify(v)}`;
+          }
+        })
+        .join(';');
       if (data) {
         html = html.replace('</head>', `<script> window.server_side_data={}; ${data}; </script></head>`);
       }
     }
     return html;
   }
-  async writeOkHtmlAndEnd({rr, status = HttpStatus.Ok}: { rr: RequestResponse, status?: HttpStatus }, html: string) {
+  async writeOkHtmlAndEnd({ rr, status = HttpStatus.Ok }: { rr: RequestResponse; status?: HttpStatus }, html: string) {
     // rr.res.writeHead(status, {[HttpHeaders.ContentType]: Mimes.TextHtml});
     rr.resStatusCode(status);
     rr.resSetHeader(HttpHeaders.ContentType, Mimes.TextHtml);
     await rr.resEnd(html);
   }
 
-  async proceedAfter({rr, app}: { rr: RequestResponse, app: SimpleBootHttpServer, carrier: Map<string, any> }) {
+  async proceedAfter({ rr, app }: { rr: RequestResponse; app: SimpleBootHttpServer; carrier: Map<string, any> }) {
     // console.log('done--------', sw)
     return true;
   }
-
 }

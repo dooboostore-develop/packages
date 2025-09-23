@@ -16,7 +16,8 @@ module.exports = {
             transpileOnly: true,
             compilerOptions: {
               experimentalDecorators: true,
-              emitDecoratorMetadata: true
+              emitDecoratorMetadata: true,
+              module: "esnext"
             }
           }
         },
@@ -42,9 +43,12 @@ module.exports = {
   },
   resolve: {
     extensions: ['.tsx', '.ts', '.js'],
-    alias: {
-
-    },
+    // alias: {
+    //   '@dooboostore/simple-boot-front': path.resolve(__dirname, '../../src'),
+    //   '@dooboostore/simple-boot': path.resolve(__dirname, '../../../simple-boot/src'),
+    //   '@dooboostore/dom-render': path.resolve(__dirname, '../../../dom-render/src'),
+    //   '@dooboostore/core': path.resolve(__dirname, '../../../core/src')
+    // },
     fallback: {
       "tslib": require.resolve('tslib')
     }
@@ -73,4 +77,4 @@ module.exports = {
     port: 8081,
     hot: true
   }
-}; 
+};

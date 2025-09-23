@@ -2,7 +2,7 @@ import { Component } from '@dooboostore/simple-boot-front/decorators/Component';
 import { Lifecycle, Sim } from '@dooboostore/simple-boot/decorators/SimDecorator';
 import template from './home.html';
 import styles from './home.css';
-import { CreatorMetaData } from '@dooboostore/dom-render/rawsets/CreatorMetaData.ts';
+import { CreatorMetaData } from '@dooboostore/dom-render/rawsets/CreatorMetaData';
 import { ComponentBase } from '@dooboostore/dom-render';
 import { RandomUtils } from '@dooboostore/core/random/RandomUtils';
 

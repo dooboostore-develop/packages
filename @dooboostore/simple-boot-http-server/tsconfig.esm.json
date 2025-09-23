@@ -1,0 +1,17 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "module": "ESNext",
+    "outDir": "dist/esm",
+    "target": "es2020",
+//    "baseUrl": "../",
+//    "paths": {
+//      "@dooboostore/simple-boot/*": ["simple-boot/src/*"],
+//      "@dooboostore/core/*": ["core/src/*"],
+//      "@dooboostore/core-node/*": ["core-node/src/*"],
+//      "@dooboostore/core-web/*": ["core-web/src/*"],
+//      "@dooboostore/dom-render/*": ["dom-render/src/*"]
+//    }
+  }
+}

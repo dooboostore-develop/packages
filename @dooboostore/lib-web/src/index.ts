@@ -1,3 +1,1 @@
-
-export * from './canvas/GpsMarkerCanvas';
-
+export * from './canvas';

@@ -11,7 +11,7 @@ export class DrInnerText extends OperatorExecuterAttrRequire<string> {
 
     async executeAttrRequire(attr: string): Promise<ExecuteState> {
         const newTemp = this.source.config.window.document.createElement('temp');
-        ScriptUtils.eval(` 
+        ScriptUtils.evaluate(` 
                         ${this.render.bindScript}
                         const n = $element.cloneNode(true);  
                         ${this.elementSource.attrs.drBeforeOption ?? ''}

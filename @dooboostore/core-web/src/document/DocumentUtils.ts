@@ -1,4 +1,4 @@
-import { Observable } from '@dooboostore/core/message';
+import { Observable } from '@dooboostore/core/message/Observable';
 
 export namespace DocumentUtils {
 

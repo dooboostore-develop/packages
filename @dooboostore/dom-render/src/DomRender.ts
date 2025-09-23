@@ -1,5 +1,5 @@
 import { DomRenderProxy } from './DomRenderProxy';
-import { DomRenderConfig } from 'configs/DomRenderConfig';
+import { DomRenderConfig } from './configs/DomRenderConfig';
 import { PathRouter } from './routers/PathRouter';
 import { HashRouter } from './routers/HashRouter';
 import { ConstructorType } from '@dooboostore/core/types';

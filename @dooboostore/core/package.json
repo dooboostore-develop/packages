@@ -1,0 +1,73 @@
+{
+  "name": "@dooboostore/core",
+  "version": "1.0.17",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/cjs/index.js",
+  "module": "./dist/esm/index.js",
+  "types": "./dist/esm/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "exports": {
+      ".": {
+        "types": "./dist/esm/index.d.ts",
+        "import": "./dist/esm/index.js",
+        "require": "./dist/cjs/index.js"
+      },
+      "./*": {
+        "types": "./dist/esm/*.d.ts",
+        "import": "./dist/esm/*.js",
+        "require": "./dist/cjs/*.js"
+      }
+    },
+  "author": "dooboostore <dooboostore@gmail.com> (https://github.com/dooboostore)",
+  "contributors": [
+    "sewoo <sewooimda@nate.com> (https://github.com/sewoo)",
+    "SeoDH <adonis_84@naver.com> (https://github.com/SeoDH)",
+    "tkyung (https://github.com/tkyungDev)",
+    "Hoil-Gang (https://github.com/khl1154)",
+    "hwangsero (https://github.com/hwangsero)"
+  ],
+  "homepage": "https://github.com/dooboostore-develop/packages",
+  "bugs": {
+    "url": "https://github.com/dooboostore-develop/packages",
+    "email": "dooboostore@gmail.com"
+  },
+  "keywords": [
+    "util",
+    "node"
+  ],
+  "scripts": {
+    "clean": "rm -rf dist",
+    "build:esm": "node build.mjs esm && pnpm exec tsc -p tsconfig.esm.json --emitDeclarationOnly",
+    "watch:esm": "pnpm run build:esm && node build.mjs esm --watch",
+    "build:cjs": "node build.mjs cjs && pnpm exec tsc -p tsconfig.cjs.json --emitDeclarationOnly && cp package.cjs.json dist/cjs/package.json",
+    "watch:cjs": "pnpm run build:cjs && node build.mjs cjs --watch",
+    "build": "node build.mjs all && pnpm exec tsc -p tsconfig.esm.json --emitDeclarationOnly && pnpm exec tsc -p tsconfig.cjs.json --emitDeclarationOnly && cp package.cjs.json dist/cjs/package.json",
+    "build:umd-bundle": "node build.mjs umd-bundle",
+    "watch:umd-bundle": "pnpm run build:umd-bundle && node build.mjs umd-bundle --watch",
+    "build:esm-bundle": "node build.mjs esm-bundle",
+    "watch:esm-bundle": "pnpm run build:esm-bundle && node build.mjs esm-bundle --watch",
+    "prepublishOnly": "pnpm run build",
+    "npm:publish": "pnpm run build && cd dist && pnpm publish --no-git-checks",
+    "ts:clean": "find . -name '*.js' -o -name '*.map' -o -name '*.d.ts' | xargs rm -f",
+    "typecheck": "pnpm exec tsc --noEmit",
+    "test": "echo test"
+  },
+  "dependencies": {
+    "reflect-metadata": "^0.2.2"
+  },
+  "devDependencies": {
+    "tslib": "^2.8.1",
+    "@types/node": "^20",
+    "typescript": "^5.9.2",
+    "webpack": "^5.93.0",
+    "webpack-cli": "^5.1.4",
+    "ts-loader": "^9.5.1",
+    "esbuild": "^0.23.0"
+  }
+}

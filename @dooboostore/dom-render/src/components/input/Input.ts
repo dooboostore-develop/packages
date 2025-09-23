@@ -4,7 +4,7 @@ import { RawSet } from '../../rawsets/RawSet';
 import { OtherData } from '../../lifecycle/OnChangeAttrRender';
 import { OnCreateRender } from '../../lifecycle/OnCreateRender';
 import { OnDestroyRender, OnDestroyRenderParams } from '../../lifecycle/OnDestroyRender';
-import { Subscription } from '@dooboostore/core/message';
+import { Subscription } from '@dooboostore/core/message/Subscription';
 import { ValidUtils } from '@dooboostore/core/valid/ValidUtils';
 import { map } from '@dooboostore/core/message/operators/map';
 import { EventUtils } from '@dooboostore/core-web/event/EventUtils';
@@ -56,7 +56,14 @@ export namespace Input {
           // let result$ = EventUtils.htmlElementEventObservable(inputElement,'input');
 
           let result$ = EventUtils.htmlElementEventObservable(inputElement, 'input').pipe(
-            map(event => (event.target as HTMLInputElement).value.trim())
+            map((event: Event) => {
+              const target = event.target;
+              if (target instanceof HTMLInputElement) {
+                return target.value.trim();
+              }
+              console.warn('Input event target is not an HTMLInputElement:', target);
+              return '';
+            })
           );
 
           if (ValidUtils.isNotNullUndefined(debounceTimeValue) && debounceTimeValue > 0) {

@@ -1,6 +1,6 @@
 import { ConstructorType } from '@dooboostore/core/types';
 import {DomRenderFinalProxy} from '../types/Types';
-import {DomRenderConfig} from 'configs/DomRenderConfig';
+import {DomRenderConfig} from '../configs/DomRenderConfig';
 
 enum CallBackType {
     FILTER,

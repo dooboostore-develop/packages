@@ -1,4 +1,4 @@
-import {DomRenderConfig} from 'configs/DomRenderConfig';
+import {DomRenderConfig} from '../configs/DomRenderConfig';
 
 export interface OnProxyDomRender {
     onProxyDomRender(config: DomRenderConfig): void;

@@ -15,7 +15,7 @@ export class DrRepeat extends OperatorExecuterAttrRequire<string> {
         const itRandom = RawSet.drItOtherEncoding(this.elementSource.element);
         const vars = RawSet.drVarEncoding(this.elementSource.element, this.elementSource.attrs.drVarOption ?? '');
         const newTemp = this.source.config.window.document.createElement('temp');
-        ScriptUtils.eval(`
+        ScriptUtils.evaluate(`
                     ${this.render.bindScript}
                     ${this.elementSource.attrs.drBeforeOption ?? ''}
                     var i = 0; 

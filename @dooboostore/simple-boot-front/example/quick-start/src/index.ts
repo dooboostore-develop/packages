@@ -2,16 +2,14 @@ import { Sim } from '@dooboostore/simple-boot/decorators/SimDecorator';
 import { Router } from '@dooboostore/simple-boot/decorators/route/Router';
 import { Router as DomRenderRouter } from '@dooboostore/dom-render/routers/Router';
 import { Component } from '@dooboostore/simple-boot-front/decorators/Component';
-import template from './index.html'
-import style from './index.css'
+import template from './index.html';
+import style from './index.css';
 import { Home } from './pages/home/home';
 import { User } from './pages/user';
-import { RouterAction } from '@dooboostore/simple-boot/route/RouterAction';
 import { ItemComponent } from './components/item/item.component';
-import { ComponentSet } from '@dooboostore/simple-boot-front/component/ComponentSet';
-import { OnDomRenderInitRender } from 'packages/@dooboostore/dom-render/src/lifecycle/OnDomRenderInitRender.ts';
 import { ComponentRouterBase } from '@dooboostore/simple-boot-front';
-import {drComponent} from '@dooboostore/dom-render/components'
+import { drComponent } from '@dooboostore/dom-render/components/index';
+
 @Sim({
   using: [ItemComponent, drComponent]
 })
@@ -27,17 +25,20 @@ import {drComponent} from '@dooboostore/dom-render/components'
   styles: [style]
 })
 export class Index extends ComponentRouterBase {
-  constructor(private router: DomRenderRouter, private home: Home) {
+  constructor(
+    private router: DomRenderRouter,
+    private home: Home
+  ) {
     super();
-    console.log('constructor IndexComponent', router)
+    console.log('constructor IndexComponent', router);
   }
 
   async go() {
-    this.router.go({path: '/user'})
+    this.router.go({ path: '/user' });
   }
 
   async test() {
-    console.log('test')
+    console.log('test');
   }
 
   onInitRender(...param) {

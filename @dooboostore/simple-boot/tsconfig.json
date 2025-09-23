@@ -1,0 +1,19 @@
+{
+  "compilerOptions": {
+    "rootDir": "src",
+    "composite": true,
+    "sourceMap": true,
+    "declaration": true,
+    "declarationMap": true,
+    "stripInternal": true,
+    "noEmit": false,
+    "lib": ["esnext", "dom"],
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "moduleResolution": "bundler"
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["node_modules", "**/*.spec.ts", "**/*.test.ts", "example", "test", "dist"]
+}

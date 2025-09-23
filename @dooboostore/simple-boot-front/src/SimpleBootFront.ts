@@ -19,12 +19,10 @@ import { ScriptRunnable } from './script/ScriptRunnable';
 import { Router } from '@dooboostore/dom-render/routers/Router';
 import { HashRouter } from '@dooboostore/dom-render/routers/HashRouter';
 import { PathRouter } from '@dooboostore/dom-render/routers/PathRouter';
-// import { isOnInit } from './lifecycle/OnInit';
-import { DomRenderConfig } from '@dooboostore/dom-render/configs/DomRenderConfig';
 import { ComponentSet } from './component/ComponentSet';
 import { DomRenderRootDefaultTemplate, DomRenderRootObject } from './DomRenderRootObject';
 import { routerProcess } from '@dooboostore/simple-boot/decorators/route/Router';
-import { BehaviorSubject, Subject } from '@dooboostore/core';
+import { BehaviorSubject } from '@dooboostore/core/message/BehaviorSubject';
 import { RouterModule } from '@dooboostore/simple-boot';
 
 export type PopStateType = { type: 'popstateData'; router: any; noSimpleBootFrontRouting?: boolean };

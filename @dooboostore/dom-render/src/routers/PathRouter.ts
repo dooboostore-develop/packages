@@ -1,6 +1,4 @@
 import { ChangeStateResult, RouteAction, Router, RouterConfig } from './Router';
-import { ConvertUtils } from '@dooboostore/core/convert/ConvertUtils';
-import ToURLSearchParamsParams = ConvertUtils.ToURLSearchParamsParams;
 
 export class PathRouter extends Router {
   constructor(config: RouterConfig) {

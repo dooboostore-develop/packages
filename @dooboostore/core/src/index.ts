@@ -1,3 +1,5 @@
+import 'reflect-metadata';
+
 export * from './advice';
 export * from './array';
 export * from './code';

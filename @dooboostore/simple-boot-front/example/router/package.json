@@ -8,11 +8,16 @@
     "build": "webpack --mode production",
     "ts-node": "ts-node index.ts",
     "ts-node:watch": "ts-node-dev --respawn index.ts",
-    "start": "rollup -c && sbf serve --path ./dist --port 4500",
-    "start:watch": "npm run bundle:watch & npm run serve:watch",
-    "serve": "sbf serve --path ./dist --port 4500",
-    "serve:watch": "sbf serve --path ./dist --port 4500 --watch",
-    "serve:proxy": "sbf serve --path ./dist --port 4500 --proxy http://localhost:8080"
+    "start:watch": "npm run bundle:watch & npm run serve:watch"
+  },
+  "dependencies": {
+    "reflect-metadata": "^0.2.2",
+    "@dooboostore/core": "workspace:*",
+    "@dooboostore/core-node": "workspace:*",
+    "@dooboostore/core-web": "workspace:*",
+    "@dooboostore/dom-render": "workspace:*",
+    "@dooboostore/simple-boot": "workspace:*",
+    "@dooboostore/simple-boot-front": "workspace:*"
   },
   "devDependencies": {
     "@babel/core": "^7.24.0",
@@ -36,14 +41,5 @@
     "webpack": "^5.98.0",
     "webpack-cli": "^5.1.4",
     "webpack-dev-server": "^5.2.0"
-  },
-  "peerDependencies": {
-    "@dooboostore/core": "workspace:*",
-    "@dooboostore/core-node": "workspace:*",
-    "@dooboostore/core-web": "workspace:*",
-    "@dooboostore/dom-render": "workspace:*",
-    "@dooboostore/simple-boot": "workspace:*",
-    "@dooboostore/simple-boot-front": "workspace:*",
-    "reflect-metadata": "^0.2.2"
   }
 }

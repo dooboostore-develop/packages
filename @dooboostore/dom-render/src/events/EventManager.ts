@@ -1,4 +1,4 @@
-import { DomRenderConfig } from 'configs/DomRenderConfig';
+import { DomRenderConfig } from '../configs/DomRenderConfig';
 import { ScriptUtils } from '@dooboostore/core-web/script/ScriptUtils';
 import { ElementUtils } from '@dooboostore/core-web/element/ElementUtils';
 import { Range } from '../iterators/Range';
@@ -136,7 +136,7 @@ export class EventManager {
             if (script) {
               const obj = this.findComponentInstance(it as HTMLElement);
               const config = getDomRenderConfig(obj);
-              ScriptUtils.eval(`${this.bindScript} ${script} `, this.createExecutionContext(event, it as HTMLElement, obj, config));
+              ScriptUtils.evaluate(`${this.bindScript} ${script} `, this.createExecutionContext(event, it as HTMLElement, obj, config));
             }
           });
         });
@@ -300,7 +300,7 @@ export class EventManager {
         const ownerVariablePath = element.getAttribute(EventManager.ownerVariablePathAttrName);
         let bindObj = componentInstance;
         if (ownerVariablePath) {
-          bindObj = ScriptUtils.evalReturn(ownerVariablePath, componentInstance);
+          bindObj = ScriptUtils.evaluateReturn(ownerVariablePath, componentInstance);
         }
 
         const mapScript = element.getAttribute(`${attr}:map`);
@@ -308,7 +308,7 @@ export class EventManager {
 
         if (mapScript) {
           const context = this.createExecutionContext(event, element, bindObj, config, {value});
-          value = ScriptUtils.eval(`return ${mapScript}`, context);
+          value = ScriptUtils.evaluate(`return ${mapScript}`, context);
         }
 
         if (typeof this.getValue(componentInstance, varName, bindObj) === 'function') {
@@ -338,7 +338,7 @@ export class EventManager {
         // }
 
         if (filter) {
-          ScriptUtils.eval(`${this.getBindScript(config)} ${script}`, context);
+          ScriptUtils.evaluate(`${this.getBindScript(config)} ${script}`, context);
         }
 
         // 개발자가 사용중에 문제가 발생될(디버깅) 버그를 유발할수있는 기능 흐름제어가 안될수있어 기능을 제거한다.
@@ -367,7 +367,7 @@ export class EventManager {
         });
 
         const paramContext = this.createExecutionContext(event, element, componentInstance, config, {params});
-        ScriptUtils.eval(`${this.getBindScript(config)} ${paramScript}`, paramContext);
+        ScriptUtils.evaluate(`${this.getBindScript(config)} ${paramScript}`, paramContext);
         break;
     }
   }
@@ -393,7 +393,7 @@ export class EventManager {
     this.procAttr<HTMLInputElement>(childNodes, EventManager.valueAttrName, (it, attribute) => {
       const script = attribute;
       if (script) {
-        const data = ScriptUtils.evalReturn(script, obj);
+        const data = ScriptUtils.evaluateReturn(script, obj);
         if (it.value !== data) {
           it.value = data;
         }
@@ -402,7 +402,7 @@ export class EventManager {
     this.procAttr<HTMLInputElement>(childNodes, EventManager.checkedAttrName, (it, attribute) => {
       const script = attribute;
       if (script) {
-        const data = ScriptUtils.evalReturn(script, obj);
+        const data = ScriptUtils.evaluateReturn(script, obj);
         if (it.checked!== data) {
           it.checked = data;
         }
@@ -411,7 +411,7 @@ export class EventManager {
     this.procAttr<HTMLOptionElement>(childNodes, EventManager.selectedAttrName, (it, attribute) => {
       const script = attribute;
       if (script) {
-        const data = ScriptUtils.evalReturn(script, obj);
+        const data = ScriptUtils.evaluateReturn(script, obj);
         if (it.selected!== data) {
           it.selected = data;
         }
@@ -420,7 +420,7 @@ export class EventManager {
     this.procAttr<HTMLInputElement>(childNodes, EventManager.readonlyAttrName, (it, attribute) => {
       const script = attribute;
       if (script) {
-        const data = ScriptUtils.evalReturn(script, obj);
+        const data = ScriptUtils.evaluateReturn(script, obj);
         if (it.readOnly!== data) {
           it.readOnly = data;
         }
@@ -429,7 +429,7 @@ export class EventManager {
     this.procAttr<HTMLInputElement>(childNodes, EventManager.disabledAttrName, (it, attribute) => {
       const script = attribute;
       if (script) {
-        const data = ScriptUtils.evalReturn(script, obj);
+        const data = ScriptUtils.evaluateReturn(script, obj);
         if (it.disabled!== data) {
           it.disabled = data;
         }
@@ -438,7 +438,7 @@ export class EventManager {
     this.procAttr<HTMLElement>(childNodes, EventManager.hiddenAttrName, (it, attribute) => {
       const script = attribute;
       if (script) {
-        const data = ScriptUtils.evalReturn(script, obj);
+        const data = ScriptUtils.evaluateReturn(script, obj);
         if (it.hidden!== data) {
           it.hidden = data;
         }
@@ -447,7 +447,7 @@ export class EventManager {
     this.procAttr<HTMLInputElement>(childNodes, EventManager.requiredAttrName, (it, attribute) => {
       const script = attribute;
       if (script) {
-        const data = ScriptUtils.evalReturn(script, obj);
+        const data = ScriptUtils.evaluateReturn(script, obj);
         if (it.required!== data) {
           it.required = data;
         }
@@ -456,7 +456,7 @@ export class EventManager {
     this.procAttr<HTMLDialogElement>(childNodes, EventManager.openAttrName, (it, attribute) => {
       const script = attribute;
       if (script) {
-        const data = ScriptUtils.evalReturn(script, obj);
+        const data = ScriptUtils.evaluateReturn(script, obj);
         if (it.open!== data) {
           it.open = data;
         }
@@ -466,7 +466,7 @@ export class EventManager {
     this.procAttr(childNodes, EventManager.normalAttrMapAttrName, (it, attribute) => {
       const map = new Map<string, string>(JSON.parse(attribute));
       map.forEach((v, k) => {
-        const data = ScriptUtils.eval(`const $element = this.element;  return ${v} `, Object.assign(obj, {
+        const data = ScriptUtils.evaluate(`const $element = this.element;  return ${v} `, Object.assign(obj, {
           __render: Object.freeze({
             element: it,
             attribute: ElementUtils.getAttributeToObject(it)
@@ -495,19 +495,19 @@ export class EventManager {
           const mapScript = it.getAttribute(`${linkInfo.name}:map`);
           let bindObj = obj;
           if (ownerVariablePathName) {
-            bindObj = ScriptUtils.evalReturn(ownerVariablePathName, obj);
+            bindObj = ScriptUtils.evaluateReturn(ownerVariablePathName, obj);
           }
           const getValue = this.getValue(obj, varName, bindObj);
           if (typeof getValue === 'function' && getValue) {
             let setValue = (it as any)[linkInfo.property];
             if (mapScript) {
-              setValue = ScriptUtils.eval(`${this.getBindScript(config)} return ${mapScript}`, Object.assign(bindObj, {__render: Object.freeze({element: it, target: bindObj, range: Range.range, value: setValue, scripts: EventManager.setBindProperty(config?.scripts, obj), ...config?.eventVariables})}));
+              setValue = ScriptUtils.evaluate(`${this.getBindScript(config)} return ${mapScript}`, Object.assign(bindObj, {__render: Object.freeze({element: it, target: bindObj, range: Range.range, value: setValue, scripts: EventManager.setBindProperty(config?.scripts, obj), ...config?.eventVariables})}));
             }
             getValue(setValue);
           } else if (getValue) {
             let setValue = getValue;
             if (mapScript) {
-              setValue = ScriptUtils.eval(`${this.getBindScript(config)} return ${mapScript}`, Object.assign(bindObj, {__render: Object.freeze({element: it, target: bindObj, range: Range.range, value: setValue, scripts: EventManager.setBindProperty(config?.scripts, obj), ...config?.eventVariables})}));
+              setValue = ScriptUtils.evaluate(`${this.getBindScript(config)} return ${mapScript}`, Object.assign(bindObj, {__render: Object.freeze({element: it, target: bindObj, range: Range.range, value: setValue, scripts: EventManager.setBindProperty(config?.scripts, obj), ...config?.eventVariables})}));
             }
             if (setValue === null) {
               it.removeAttribute(linkInfo.property);
@@ -532,10 +532,10 @@ export class EventManager {
           const filterScript = element.getAttribute(`${attr}:filter`);
           let filter = true;
           if (filterScript) {
-            filter = ScriptUtils.eval<boolean>(`${this.getBindScript(config)} return ${filterScript}`, context) ?? false;
+            filter = ScriptUtils.evaluate<boolean>(`${this.getBindScript(config)} return ${filterScript}`, context) ?? false;
           }
           if (filter) {
-            ScriptUtils.eval(`${this.getBindScript(config)} ${script}`, context);
+            ScriptUtils.evaluate(`${this.getBindScript(config)} ${script}`, context);
           }
         };
         element.addEventListener(eventName, handler);
@@ -549,7 +549,7 @@ export class EventManager {
         script = 'return ' + script;
       }
       if (script) {
-        ScriptUtils.eval(`${this.getBindScript(config)}; ${script} `, Object.assign(obj, {
+        ScriptUtils.evaluate(`${this.getBindScript(config)}; ${script} `, Object.assign(obj, {
           __render: Object.freeze({
             element: it,
             attribute: ElementUtils.getAttributeToObject(it),
@@ -577,7 +577,7 @@ export class EventManager {
         script = 'return ' + script;
       }
       if (script) {
-        ScriptUtils.eval(`${this.getBindScript(config)}; ${script} `, Object.assign(obj, {
+        ScriptUtils.evaluate(`${this.getBindScript(config)}; ${script} `, Object.assign(obj, {
           __render: Object.freeze({
             element: it,
             attribute: ElementUtils.getAttributeToObject(it),
@@ -596,7 +596,7 @@ export class EventManager {
         script = 'return ' + script;
       }
       if (EventManager.isUsingThisVar(script, varName) || varName === undefined) {
-        const data = ScriptUtils.eval(`const $element = this.__render.element;  ${script} `, Object.assign(obj, {
+        const data = ScriptUtils.evaluate(`const $element = this.__render.element;  ${script} `, Object.assign(obj, {
           __render: Object.freeze({
             element: it,
             attribute: ElementUtils.getAttributeToObject(it)
@@ -622,7 +622,7 @@ export class EventManager {
         script = 'return ' + script;
       }
       if (EventManager.isUsingThisVar(script, varName) || varName === undefined) {
-        const data = ScriptUtils.eval(`const $element = this.element;  ${script} `, Object.assign(obj, {
+        const data = ScriptUtils.evaluate(`const $element = this.element;  ${script} `, Object.assign(obj, {
           __render: Object.freeze({
             element: it,
             attribute: ElementUtils.getAttributeToObject(it)
@@ -672,7 +672,7 @@ export class EventManager {
   }
 
   public getValue<T = any>(obj: any, name: string, bindObj?: any): T {
-    let r = ScriptUtils.evalReturn(name, obj);
+    let r = ScriptUtils.evaluateReturn(name, obj);
     if (typeof r === 'function') {
       r = r.bind(bindObj ?? obj);
     }
@@ -681,7 +681,7 @@ export class EventManager {
 
   public setValue(obj: any, name: string, value?: any) {
     name = name.replaceAll('this.', 'this.this.');
-    ScriptUtils.eval(`${name} = this.value;`, {
+    ScriptUtils.evaluate(`${name} = this.value;`, {
       this: obj,
       value: value
     });

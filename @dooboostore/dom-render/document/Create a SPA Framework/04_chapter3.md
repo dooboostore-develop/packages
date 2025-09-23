@@ -20,37 +20,37 @@
 let activeRawSet = null; // 현재 렌더링 중인 RawSet
 
 class DomRenderProxy {
-  // ... Proxy 핸들러 ...
-  get(target, property) {
-    // 2. get 트랩: activeRawSet이 있다면 의존성 기록
-    if (activeRawSet) {
-      track(target, property, activeRawSet);
+    // ... Proxy 핸들러 ...
+    get(target, property) {
+        // 2. get 트랩: activeRawSet이 있다면 의존성 기록
+        if (activeRawSet) {
+            track(target, property, activeRawSet);
+        }
+        return target[property];
     }
-    return target[property];
-  }
 
-  set(target, property, value) {
-    target[property] = value;
-    // 3. set 트랩: 의존하는 모든 RawSet을 찾아 재렌더링
-    const dependentRawSets = findDependentRawSets(target, property);
-    dependentRawSets.forEach(rawSet => rawSet.render());
-    return true;
-  }
+    set(target, property, value) {
+        target[property] = value;
+        // 3. set 트랩: 의존하는 모든 RawSet을 찾아 재렌더링
+        const dependentRawSets = findDependentRawSets(target, property);
+        dependentRawSets.forEach(rawSet => rawSet.render());
+        return true;
+    }
 }
 
 class RawSet {
-  render(obj, config) {
-    // 1. 렌더링 직전, 자신을 activeRawSet으로 설정
-    activeRawSet = this;
-    
-    // ... 템플릿 표현식 평가 및 DOM 생성 로직 ...
-    // 이 과정에서 obj의 속성에 접근하면 Proxy의 get 트랩이 호출됨
-    const value = ScriptUtils.evalReturn(this.expression, obj);
-    // ...
+    render(obj, config) {
+        // 1. 렌더링 직전, 자신을 activeRawSet으로 설정
+        activeRawSet = this;
 
-    // 렌더링 완료 후, activeRawSet을 초기화
-    activeRawSet = null;
-  }
+        // ... 템플릿 표현식 평가 및 DOM 생성 로직 ...
+        // 이 과정에서 obj의 속성에 접근하면 Proxy의 get 트랩이 호출됨
+        const value = ScriptUtils.evaluateReturn(this.expression, obj);
+        // ...
+
+        // 렌더링 완료 후, activeRawSet을 초기화
+        activeRawSet = null;
+    }
 }
 ```
 
