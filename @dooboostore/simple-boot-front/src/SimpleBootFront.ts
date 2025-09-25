@@ -24,6 +24,7 @@ import { DomRenderRootDefaultTemplate, DomRenderRootObject } from './DomRenderRo
 import { routerProcess } from '@dooboostore/simple-boot/decorators/route/Router';
 import { BehaviorSubject } from '@dooboostore/core/message/BehaviorSubject';
 import { RouterModule } from '@dooboostore/simple-boot';
+import { Observable } from '@dooboostore/core/message/Observable';
 
 export type PopStateType = { type: 'popstateData'; router: any; noSimpleBootFrontRouting?: boolean };
 const isPopStateDataType = (state: any): state is PopStateType => {
@@ -130,7 +131,8 @@ export class SimpleBootFront extends SimpleApplication {
   }
 
   get routingSubjectObservable() {
-    return this.routingSubject.asObservable();
+    const observable: Observable<RoutingSubjectDataType> = this.routingSubject.asObservable();
+    return observable;
   }
   public getComponentInnerHtml(targetObj: any, id: string) {
     const component = getComponent(targetObj);

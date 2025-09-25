@@ -1,3 +1,4 @@
+import 'reflect-metadata'
 export * from './SimpleBootHttpServer';
 export * from './codes';
 export * from './decorators';

@@ -1,3 +1,4 @@
+import 'reflect-metadata'
 export * from './SimpleBootHttpSSRFactory';
 export * from './SimpleBootHttpSSRServer';
 export * from './codes';

@@ -29,6 +29,38 @@ function findTsFiles(dir) {
   }
   return filelist;
 }
+// Function to add .js extension to relative imports/exports in generated JS files
+function addJsExtensionToImports(dir) {
+    const files = fs.readdirSync(dir);
+    files.forEach(file => {
+        const filepath = path.join(dir, file);
+        if (fs.statSync(filepath).isDirectory()) {
+            addJsExtensionToImports(filepath); // Recurse into subdirectories
+        } else if (filepath.endsWith('.js')) {
+            let content = fs.readFileSync(filepath, 'utf8');
+            // Regex to find import/export statements with relative paths
+            // and without a file extension (or with .ts extension)
+            const regex = /(import|export)([\s\S]*?from\s+['"])((\.?\.?\/|\/)[^'"]+)(['"];)/g;
+            content = content.replace(regex, (match, p1, p2, p3, p4, p5) => {
+                // Check if the path already has an extension
+                if (!p3.endsWith('.js') && !p3.endsWith('.json') && !p3.endsWith('.mjs') && !p3.endsWith('.cjs')) {
+                    // Construct the full absolute path to the potential module
+                    const absoluteImportPath = path.resolve(path.dirname(filepath), p3);
+
+                    // Check if it's a directory
+                    if (fs.existsSync(absoluteImportPath) && fs.statSync(absoluteImportPath).isDirectory()) {
+                        return p1 + p2 + p3 + '/index.js' + p5;
+                    } else {
+                        return p1 + p2 + p3 + '.js' + p5;
+                    }
+                }
+                return match;
+            })
+            fs.writeFileSync(filepath, content, 'utf8');
+        }
+    });
+}
+
 
 const srcDir = path.resolve(__dirname, 'src');
 const tsFiles = findTsFiles(srcDir);
@@ -51,22 +83,36 @@ async function performBuild(options, watch) {
 
 async function buildTarget(target, watch = false) {
   const baseOptions = {
-    bundle: true, // Always bundle for web
+    bundle: false, // Everything included for browser
     sourcemap: true,
-    target: 'es2020', // Target modern browsers
-    platform: 'browser', // Build for browser environment
-    // No external dependencies like 'canvas' for web
+    target: 'es2020',
+    platform: 'browser',
   };
-
+    // Define a plugin to run after each build
+    const addJsExtensionPlugin = {
+        name: 'add-js-extension',
+        setup(build) {
+            build.onEnd(result => {
+                if (result.errors.length === 0 && build.initialOptions.format === 'esm' && build.initialOptions.outdir) {
+                    console.log('Adding .js extensions to ESM imports after build...');
+                    addJsExtensionToImports(build.initialOptions.outdir);
+                }
+            });
+        },
+    };
   switch (target) {
     case 'esm':
       console.log('Starting ESM build...');
       await performBuild({
         ...baseOptions,
+      bundle:false,
         entryPoints: entryPoints,
         outdir: path.resolve(__dirname, 'dist', 'esm'),
         format: 'esm',
         tsconfig: 'tsconfig.esm.json',
+        resolveExtensions: ['.ts', '.tsx', '.js', '.jsx', '.json'],
+        mainFields: ['module', 'main'],
+        plugins: [addJsExtensionPlugin],
       }, watch);
       console.log('ESM build complete.');
       break;
@@ -74,6 +120,7 @@ async function buildTarget(target, watch = false) {
       console.log('Starting CJS build...');
       await performBuild({
         ...baseOptions,
+      bundle:false,
         entryPoints: entryPoints,
         outdir: path.resolve(__dirname, 'dist', 'cjs'),
         format: 'cjs',

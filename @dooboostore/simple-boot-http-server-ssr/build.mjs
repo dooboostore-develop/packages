@@ -31,6 +31,39 @@ function findTsFiles(dir) {
   }
   return filelist;
 }
+// Function to add .js extension to relative imports/exports in generated JS files
+function addJsExtensionToImports(dir) {
+    const files = fs.readdirSync(dir);
+    files.forEach(file => {
+        const filepath = path.join(dir, file);
+        if (fs.statSync(filepath).isDirectory()) {
+            addJsExtensionToImports(filepath); // Recurse into subdirectories
+        } else if (filepath.endsWith('.js')) {
+            let content = fs.readFileSync(filepath, 'utf8');
+            // Regex to find import/export statements with relative paths
+            // and without a file extension (or with .ts extension)
+            const regex = /(import|export)([\s\S]*?from\s+['"])((\.?\.?\/|\/)[^'"]+)(['"];)/g;
+            content = content.replace(regex, (match, p1, p2, p3, p4, p5) => {
+                // Check if the path already has an extension
+                if (!p3.endsWith('.js') && !p3.endsWith('.json') && !p3.endsWith('.mjs') && !p3.endsWith('.cjs')) {
+                    // Construct the full absolute path to the potential module
+                    const absoluteImportPath = path.resolve(path.dirname(filepath), p3);
+
+                    // Check if it's a directory
+                    if (fs.existsSync(absoluteImportPath) && fs.statSync(absoluteImportPath).isDirectory()) {
+                        return p1 + p2 + p3 + '/index.js' + p5;
+                    } else {
+                        return p1 + p2 + p3 + '.js' + p5;
+                    }
+                }
+                return match;
+            })
+            fs.writeFileSync(filepath, content, 'utf8');
+        }
+    });
+}
+
+
 
 const srcDir = path.resolve(__dirname, 'src');
 const tsFiles = findTsFiles(srcDir);
@@ -53,42 +86,71 @@ async function performBuild(options, watch) {
 
 async function buildTarget(target, watch = false) {
   const baseOptions = {
-    bundle: true,
+    bundle: false,
     sourcemap: true,
     target: 'node20', // Target modern Node.js
     platform: 'node', // Build for Node.js environment
-    external: [
-      'reflect-metadata',
-      '@dooboostore/core',
-      '@dooboostore/core-node',
-      '@dooboostore/core-web',
-      '@dooboostore/dom-render',
-      '@dooboostore/simple-boot',
-      '@dooboostore/simple-boot-front',
-      '@dooboostore/simple-boot-http-server',
-      'jsdom', // Add jsdom to externals
-      'bufferutil', // Add bufferutil to externals
-      'utf-8-validate', // Add utf-8-validate to externals
-      'canvas', // Add canvas to externals
-      'http', // Node.js built-in
-      'https', // Node.js built-in
-      'url', // Node.js built-in
-      'fs', // Node.js built-in
-      'os', // Node.js built-in
-      'path', // Node.js built-in
-      'buffer', // Node.js built-in
-    ], // Externalize dependencies
+    // external: [
+    //   'reflect-metadata',
+    //   '@dooboostore/core',
+    //   '@dooboostore/core-node',
+    //   '@dooboostore/core-web',
+    //   '@dooboostore/dom-render',
+    //   '@dooboostore/simple-boot',
+    //   '@dooboostore/simple-boot-front',
+    //   '@dooboostore/simple-boot-http-server',
+    //   'jsdom', // Add jsdom to externals
+    //   'bufferutil', // Add bufferutil to externals
+    //   'utf-8-validate', // Add utf-8-validate to externals
+    //   'canvas', // Add canvas to externals
+    //   'http', // Node.js built-in
+    //   'https', // Node.js built-in
+    //   'url', // Node.js built-in
+    //   'fs', // Node.js built-in
+    //   'os', // Node.js built-in
+    //   'path', // Node.js built-in
+    //   'buffer', // Node.js built-in
+    // ], // Externalize dependencies
   };
 
+  const externals = [
+        'jsdom', // Add jsdom to externals
+        'bufferutil', // Add bufferutil to externals
+        'utf-8-validate', // Add utf-8-validate to externals
+        'canvas', // Add canvas to externals
+        'http', // Node.js built-in
+        'https', // Node.js built-in
+        'url', // Node.js built-in
+        'fs', // Node.js built-in
+        'os', // Node.js built-in
+        'path', // Node.js built-in
+        'buffer', // Node.js built-in
+  ]
+    // Define a plugin to run after each build
+    const addJsExtensionPlugin = {
+        name: 'add-js-extension',
+        setup(build) {
+            build.onEnd(result => {
+                if (result.errors.length === 0 && build.initialOptions.format === 'esm' && build.initialOptions.outdir) {
+                    console.log('Adding .js extensions to ESM imports after build...');
+                    addJsExtensionToImports(build.initialOptions.outdir);
+                }
+            });
+        },
+    };
   switch (target) {
     case 'esm':
       console.log('Starting ESM build...');
       await performBuild({
         ...baseOptions,
+          bundle:false,
         entryPoints: entryPoints,
         outdir: path.resolve(__dirname, 'dist', 'esm'),
         format: 'esm',
         tsconfig: 'tsconfig.esm.json',
+        resolveExtensions: ['.ts', '.tsx', '.js', '.jsx', '.json'],
+        mainFields: ['module', 'main'],
+          plugins: [addJsExtensionPlugin], // Add the plugin here
       }, watch);
       console.log('ESM build complete.');
       break;
@@ -96,6 +158,7 @@ async function buildTarget(target, watch = false) {
       console.log('Starting CJS build...');
       await performBuild({
         ...baseOptions,
+          bundle:false,
         entryPoints: entryPoints,
         outdir: path.resolve(__dirname, 'dist', 'cjs'),
         format: 'cjs',
@@ -107,11 +170,13 @@ async function buildTarget(target, watch = false) {
       console.log('Starting UMD bundle build...');
       await performBuild({
         ...baseOptions,
+          bundle:true,
         entryPoints: [path.resolve(srcDir, 'index.ts')],
         outfile: path.resolve(__dirname, 'dist', 'umd-bundle', 'dooboostore-simple-boot-http-server-ssr.umd.js'),
         format: 'iife',
         globalName: 'dooboostoreSimpleBootHttpServerSsr',
         tsconfig: 'tsconfig.umd.json',
+          external: externals
       }, watch);
       console.log('UMD bundle build complete.');
       break;
@@ -119,10 +184,12 @@ async function buildTarget(target, watch = false) {
       console.log('Starting ESM bundle build...');
       await performBuild({
         ...baseOptions,
+          bundle:true,
         entryPoints: [path.resolve(srcDir, 'index.ts')],
         outfile: path.resolve(__dirname, 'dist', 'esm-bundle', 'dooboostore-simple-boot-http-server-ssr.esm.js'),
         format: 'esm',
         tsconfig: 'tsconfig.esm.json',
+          external: externals
       }, watch);
       console.log('ESM bundle build complete.');
       break;

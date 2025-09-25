@@ -1,5 +1,5 @@
 import { SimpleBootHttpServer } from '@dooboostore/simple-boot-http-server/SimpleBootHttpServer';
-import { SimstanceManager } from '@dooboostore/simple-boot/simstance/SimstanceManager';
+// import { SimstanceManager } from '@dooboostore/simple-boot/simstance/SimstanceManager';
 import { HttpSSRServerOption } from './option/HttpSSRServerOption';
 import { ConstructorType } from '@dooboostore/core/types';
 
@@ -8,7 +8,7 @@ export class SimpleBootHttpSSRServer extends SimpleBootHttpServer {
     super(option)
   }
 
-  run(otherInstanceSim?: Map<ConstructorType<any>, any>): SimstanceManager {
+  run(otherInstanceSim?: Map<ConstructorType<any>, any>) {
     const oi = new Map<ConstructorType<any>, any>()
     otherInstanceSim?.forEach((value, key) => oi.set(key, value));
     return super.run(oi);

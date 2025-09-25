@@ -1,6 +1,3 @@
-import { MathUtil } from '../math/MathUtil';
-import { ConvertUtils } from '../convert/ConvertUtils';
-
 export namespace ArrayUtils {
   export type PickChanceType<T> = { data: T, chance: number };
   // export const uniqueBy = <T>(array: T[], predicate: (a: T, b: T) => boolean): T[] => {

@@ -2,11 +2,12 @@ import { getSim, Sim } from '@dooboostore/simple-boot/decorators/SimDecorator';
 import { makeIntentHeaderBySymbol } from '../codes/HttpHeaders';
 import { ConvertUtils } from '@dooboostore/core/convert/ConvertUtils';
 import { ApiService } from '@dooboostore/simple-boot/fetch/ApiService';
+import { Inject } from '@dooboostore/simple-boot/decorators/inject/Inject';
 
 
 export type Config<T = any> = { method?:'get' | 'post' | 'petch' | 'delete' | 'head', multipartFormData?: boolean,  bypassTransform?: boolean; transformText?: boolean, headers?: HeadersInit, body?: T };
-
-@Sim
+const _ = ApiService;
+// @Sim
 export class SymbolIntentApiServiceProxy<T extends object> implements ProxyHandler<T> {
 
 

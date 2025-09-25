@@ -51,16 +51,18 @@
     "type": "git",
     "url": "https://github.com/dooboostore-develop/packages"
   },
-  "dependencies": {
-    "@dooboostore/core": "workspace:*",
+  "peerDependencies": {
     "reflect-metadata": "^0.2.2",
-    "jsdom": "^26.0.0",
+    "@dooboostore/core": "workspace:*",
     "@dooboostore/core-node": "workspace:*",
     "@dooboostore/core-web": "workspace:*",
     "@dooboostore/dom-render": "workspace:*",
     "@dooboostore/simple-boot": "workspace:*",
     "@dooboostore/simple-boot-front": "workspace:*",
     "@dooboostore/simple-boot-http-server": "workspace:*"
+  },
+  "dependencies": {
+    "jsdom": "^26.0.0"
   },
   "devDependencies": {
     "@types/jsdom": "^21.1.7",

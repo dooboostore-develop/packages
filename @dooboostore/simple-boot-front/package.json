@@ -51,7 +51,7 @@
     "type": "git",
     "url": "https://github.com/dooboostore-develop/packages"
   },
-  "dependencies": {
+  "peerDependencies": {
     "reflect-metadata": "^0.2.2",
     "@dooboostore/core": "workspace:*",
     "@dooboostore/core-node": "workspace:*",

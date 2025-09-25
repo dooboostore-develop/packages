@@ -90,7 +90,7 @@ export const simProcess = (config: SimConfig, inputTarget: ConstructorType<any> 
   // adding(targetType)
   // console.log('----------->', sims)
 }
- // const a = Math.random()+Date.now();
+// const a = Math.random()+Date.now();
 export function Sim(target: ConstructorType<any> | Function): void;
 export function Sim(config: SimConfig): GenericClassDecorator<ConstructorType<any> | Function | any>;
 export function Sim(configOrTarget: SimConfig | ConstructorType<any> | Function): void | GenericClassDecorator<ConstructorType<any> | Function | any> {

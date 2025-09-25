@@ -158,8 +158,19 @@ export class SSRFilter implements Filter {
         await simpleBootFront.goRouting(targetUrl);
         await new Promise(r => setTimeout(r, 0)); // <--중요: 이거 넣어야지 두번불러지는게 없어지는듯? 뭐지 event loop 변경된건가?
         // TODO: 옵션으로 이거 키고 끄고할수있게 해야될까..?
+        // simpleBootFront.routingSubjectObservable.pipe(
+        //     filter((it) =>
+        //         it.state === 'end' &&
+        //         typeof it.routerModule.intent.uri === 'string' &&
+        //         targetUrl.endsWith(it.routerModule.intent.uri)
+        //     ),
+        //     // delay(1000),
+        //     first()
+        // );
         const data = await firstValueFrom(
+          // @ts-ignore
           simpleBootFront.routingSubjectObservable.pipe(
+          // @ts-ignore
             filter(
               (it: any) =>
                 it.state === 'end' &&

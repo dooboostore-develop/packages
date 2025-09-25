@@ -39,7 +39,7 @@ import { isOnInitRender } from '../lifecycle/OnInitRender';
 import { isOnCreatedThisChild } from '../lifecycle/OnCreatedThisChild';
 import { isOnDestroyRender, OnDestroyRenderParams } from '../lifecycle/OnDestroyRender';
 import { DrTargetElementIsElement } from '../operators/DrTargetElementIsElement';
-import { ObjectUtils } from '@dooboostore/core';
+import { ObjectUtils } from '@dooboostore/core/object/ObjectUtils';
 
 
 export class RawSet {

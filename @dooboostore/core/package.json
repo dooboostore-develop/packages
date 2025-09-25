@@ -58,7 +58,7 @@
     "typecheck": "pnpm exec tsc --noEmit",
     "test": "echo test"
   },
-  "dependencies": {
+  "peerDependencies": {
     "reflect-metadata": "^0.2.2"
   },
   "devDependencies": {

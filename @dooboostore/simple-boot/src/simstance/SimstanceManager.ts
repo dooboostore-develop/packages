@@ -19,6 +19,7 @@ import { isOnSimCreate } from '../lifecycle/OnSimCreate';
 import { isOnSimCreateProxyCompleted } from '../lifecycle/OnSimCreateCompleted';
 import { SimpleApplication } from '../SimpleApplication';
 import { isSimNoProxy } from '../decorators/SimNoProxy';
+import { RandomUtils } from '@dooboostore/core';
 
 export type FirstCheckMaker = (
   obj: { target: Object; targetKey?: string | symbol },
@@ -30,6 +31,7 @@ export type Carrier = { newInstances: any[]; depth: number };
 export class SimstanceManager implements Runnable<void, Map<ConstructorType<any> | Function, any>> {
   private _storage = new Map<ConstructorType<any> | Function, Map<ConstructorType<any> | Function, undefined | any>>();
   private simProxyHandler: SimProxyHandler;
+  private name='simstanceManager-'+RandomUtils.uuid4()
   // private otherInstanceSim?: Map<ConstructorType<any> | Function, any>;
 
   constructor(
@@ -41,6 +43,7 @@ export class SimstanceManager implements Runnable<void, Map<ConstructorType<any>
     this.setStoreSet((option as any).constructor, option);
     this.setStoreSet(SimOption, option);
     this.simProxyHandler = new SimProxyHandler(this.simpleApplication, this, option);
+    console.log('simstanceManager constructor', this.name)
   }
 
   get storage() {
@@ -257,6 +260,7 @@ export class SimstanceManager implements Runnable<void, Map<ConstructorType<any>
       // console.groupEnd();
       return newSim;
     }
+    console.log('simstanceManager', this._storage, this.name)
     const simNoSuch = new SimNoSuch(
       'SimNoSuch: no simple instance(resolve) ' + 'name:' + targetKey?.prototype?.constructor?.name + ',' + targetKey
     );
@@ -522,6 +526,7 @@ export class SimstanceManager implements Runnable<void, Map<ConstructorType<any>
     // const types = Array.from(this.otherInstanceSim?.entries()).map(it => ({type: it[0], value: it[1], action: this.setStoreSet.bind(this)}));
     // types.push(...Array.from(sims.entries()).map(it => ({type: it[0], value: it[1], action: this.registerStore.bind(this)})));
     const myContainers = ConvertUtils.flatArray(this.option.container).filter(isDefined);
+    // console.log('simstanceManager run!!', Array.from(sims.entries()));
     // Array.from(sims.entries()).map(it => ({type: it[0], value: it[1], action: this.registerStore.bind(this)}))
     Array.from(sims.entries()).forEach(([type, value]) => {
       const targetContainers = ConvertUtils.flatArray(getSim(type)?.container).filter(isDefined);

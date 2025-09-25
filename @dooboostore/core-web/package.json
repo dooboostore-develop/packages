@@ -46,7 +46,7 @@
     "util",
     "node"
   ],
-  "dependencies": {
+  "peerDependencies": {
     "reflect-metadata": "^0.2.2",
     "@dooboostore/core": "workspace:*"
   },

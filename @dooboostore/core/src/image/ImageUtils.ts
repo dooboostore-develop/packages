@@ -1,4 +1,4 @@
-import { Promises } from '../promise';
+import { Promises } from '../promise/Promises';
 
 export type LoadImageBitMapCallbackType = { onload: (img: ImageBitmap) => void, onerror: (e: any) => void };
 
