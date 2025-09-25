@@ -1,6 +1,6 @@
 {
   "name": "@dooboostore/dom-render",
-  "version": "1.0.106",
+  "version": "1.0.107",
   "license": "MIT",
   "type": "module",
   "main": "./dist/cjs/index.js",
@@ -80,6 +80,7 @@
     "tslib": "^2.8.1",
     "@types/node": "^20",
     "typescript": "^5.9.2",
+    "esbuild-plugin-tsc": "^0.5.0",
     "esbuild": "^0.23.0"
   },
   "scripts": {

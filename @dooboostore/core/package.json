@@ -1,6 +1,6 @@
 {
   "name": "@dooboostore/core",
-  "version": "1.0.17",
+  "version": "1.0.18",
   "license": "MIT",
   "type": "module",
   "main": "./dist/cjs/index.js",
@@ -62,6 +62,7 @@
     "reflect-metadata": "^0.2.2"
   },
   "devDependencies": {
+    "esbuild-plugin-tsc": "^0.5.0",
     "tslib": "^2.8.1",
     "@types/node": "^20",
     "typescript": "^5.9.2",

@@ -1,4 +1,3 @@
-import 'reflect-metadata';
 import { ConstructorType } from '@dooboostore/core/types';
 import { ReflectMethod } from '@dooboostore/simple-boot/types/Types';
 import { ReflectUtils } from '@dooboostore/core/reflect/ReflectUtils';

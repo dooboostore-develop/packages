@@ -13,6 +13,7 @@ export const isRouterPublishType = (it: any): it is RouterPublishType =>
   typeof it === 'object' &&
   typeof it.router === 'string' &&
   typeof it.rootRouter === 'function';
+
 @Sim
 export class IntentManager {
   private subject = new Subject<Intent>();

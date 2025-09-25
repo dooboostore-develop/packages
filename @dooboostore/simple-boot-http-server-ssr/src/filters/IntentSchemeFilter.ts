@@ -11,6 +11,8 @@ import { Mimes } from '../codes/Mimes';
 @Sim
 export class IntentSchemeFilter implements Filter {
     constructor(private intentManager: IntentManager) {
+      // (IntentManager as any).
+      // console.log('intent constructor', this.intentManager);
     }
 
     async onInit(app: SimpleBootHttpServer) {

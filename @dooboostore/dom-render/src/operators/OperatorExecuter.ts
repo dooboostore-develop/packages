@@ -6,7 +6,7 @@ import { Render } from '../rawsets/Render';
 import { Attrs } from '../rawsets/Attrs';
 import { DomRenderConfig } from '../configs/DomRenderConfig';
 import { ScriptUtils } from '@dooboostore/core-web/script/ScriptUtils';
-import { ObjectUtils } from '@dooboostore/core';
+import { ObjectUtils } from '@dooboostore/core/object/ObjectUtils';
 
 export interface OperatorAround {
   beforeAttr?: (value: string | null | undefined, opratorExecutor: OperatorExecuter) => string | null | undefined,

@@ -1,5 +1,5 @@
 {
-  "name": "dooboostore-develop",
+  "name": "dooboostore-develop-package",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
@@ -13,6 +13,7 @@
 
     "all:build:step:esm": "pnpm run --filter @dooboostore/core build:esm && pnpm run --filter @dooboostore/core-node build:esm && pnpm run --filter @dooboostore/core-web build:esm&&pnpm run --filter @dooboostore/dom-render build:esm&&pnpm run --filter @dooboostore/lib-node build:esm&&pnpm run --filter @dooboostore/lib-web build:esm&&pnpm run --filter @dooboostore/simple-boot build:esm&&pnpm run --filter @dooboostore/simple-boot-front build:esm&&pnpm run --filter @dooboostore/simple-boot-http-server build:esm&&pnpm run --filter @dooboostore/simple-boot-http-server-ssr build:esm",
     "all:build:step:cjs": "pnpm run --filter @dooboostore/core build:cjs && pnpm run --filter @dooboostore/core-node build:cjs && pnpm run --filter @dooboostore/core-web build:cjs&&pnpm run --filter @dooboostore/dom-render build:cjs&&pnpm run --filter @dooboostore/lib-node build:cjs&&pnpm run --filter @dooboostore/lib-web build:cjs&&pnpm run --filter @dooboostore/simple-boot build:cjs&&pnpm run --filter @dooboostore/simple-boot-front build:cjs&&pnpm run --filter @dooboostore/simple-boot-http-server build:cjs&&pnpm run --filter @dooboostore/simple-boot-http-server-ssr build:cjs",
+    "all:build:step": "pnpm run --filter @dooboostore/core build && pnpm run --filter @dooboostore/core-node build && pnpm run --filter @dooboostore/core-web build&&pnpm run --filter @dooboostore/dom-render build&&pnpm run --filter @dooboostore/lib-node build&&pnpm run --filter @dooboostore/lib-web build&&pnpm run --filter @dooboostore/simple-boot build&&pnpm run --filter @dooboostore/simple-boot-front build&&pnpm run --filter @dooboostore/simple-boot-http-server build&&pnpm run --filter @dooboostore/simple-boot-http-server-ssr build",
 
     "all:clean": "concurrently \"pnpm run --filter @dooboostore/core clean\"  \"pnpm run --filter @dooboostore/core-node clean\"  \"pnpm run --filter @dooboostore/core-web clean\"  \"pnpm run --filter @dooboostore/dom-render clean\"  \"pnpm run --filter @dooboostore/lib-node clean\" \"pnpm run --filter @dooboostore/lib-web clean\"  \"pnpm run --filter @dooboostore/simple-boot clean\"  \"pnpm run --filter @dooboostore/simple-boot-front clean\"  \"pnpm run --filter @dooboostore/simple-boot-http-server clean\"  \"pnpm run --filter @dooboostore/simple-boot-http-server-ssr clean\"",
     "all:build:step:cjs:esm": "concurrently \"pnpm run all:build:step:esm\" \"pnpm run all:build:step:cjs\"",

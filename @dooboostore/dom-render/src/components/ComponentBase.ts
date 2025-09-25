@@ -1,4 +1,3 @@
-import 'reflect-metadata';
 import { ElementUtils } from '@dooboostore/core-web/element/ElementUtils';
 import { OnChangeAttrRender, OtherData } from '../lifecycle/OnChangeAttrRender';
 import { OnCreateRenderData, OnCreateRenderDataParams } from '../lifecycle/OnCreateRenderData';

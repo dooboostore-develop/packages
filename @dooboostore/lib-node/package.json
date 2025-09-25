@@ -1,6 +1,6 @@
 {
   "name": "@dooboostore/lib-node",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "dooboostore library for node",
   "license": "MIT",
   "type": "module",
@@ -57,6 +57,7 @@
   "devDependencies": {
     "@types/node": "^20",
     "typescript": "^5.9.2",
+    "esbuild-plugin-tsc": "^0.5.0",
     "esbuild": "^0.23.0"
   },
   "scripts": {

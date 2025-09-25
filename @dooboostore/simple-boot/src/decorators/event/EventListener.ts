@@ -1,4 +1,3 @@
-import 'reflect-metadata'
 import { ReflectUtils } from '@dooboostore/core/reflect/ReflectUtils';
 
 export interface EventListenerOption {

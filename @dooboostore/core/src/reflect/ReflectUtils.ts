@@ -1,4 +1,3 @@
-import 'reflect-metadata'
 import { ConstructorType } from '../types';
 export namespace  ReflectUtils {
     export const getParameterTypes = (target: any, propertyKey?: string | symbol): ConstructorType<any>[] => {

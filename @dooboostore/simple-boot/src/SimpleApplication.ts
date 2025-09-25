@@ -1,4 +1,3 @@
-import 'reflect-metadata'
 import { SimstanceManager } from './simstance/SimstanceManager';
 import { SimOption } from './SimOption';
 import { IntentManager, isRouterPublishType, RouterPublishType } from './intent/IntentManager';

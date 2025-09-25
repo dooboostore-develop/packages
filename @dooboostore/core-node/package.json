@@ -1,6 +1,6 @@
 {
   "name": "@dooboostore/core-node",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "license": "MIT",
   "type": "module",
   "main": "./dist/cjs/index.js",
@@ -50,6 +50,7 @@
     "@dooboostore/core": "workspace:*"
   },
   "devDependencies": {
+    "esbuild-plugin-tsc": "^0.5.0",
     "webpack": "^5.93.0",
     "webpack-cli": "^5.1.4",
     "ts-loader": "^9.5.1",

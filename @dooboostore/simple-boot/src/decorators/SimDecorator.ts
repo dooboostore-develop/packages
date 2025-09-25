@@ -1,4 +1,3 @@
-import 'reflect-metadata'
 import { ConstructorType, GenericClassDecorator } from '@dooboostore/core/types';
 import { ReflectUtils } from '@dooboostore/core/reflect/ReflectUtils';
 import { SimpleApplication } from '../SimpleApplication';

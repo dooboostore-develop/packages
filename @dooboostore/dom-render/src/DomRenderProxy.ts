@@ -1,4 +1,3 @@
-import 'reflect-metadata';
 import { RawSet } from './rawsets/RawSet';
 import { EventManager } from './events/EventManager';
 import { DomRenderConfig } from './configs/DomRenderConfig';

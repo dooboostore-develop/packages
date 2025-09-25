@@ -294,4 +294,14 @@ declare type PropertyDecorator = (target: Object, propertyKey: string | symbol) 
 declare type MethodDecorator = <T>(target: Object, propertyKey: string | symbol, descriptor: TypedPropertyDescriptor<T>) => TypedPropertyDescriptor<T> | void;
 declare type ParameterDecorator = (target: Object, propertyKey: string | symbol, parameterIndex: number) => void;
  */
+
+declare global {
+  namespace Reflect {
+    function metadata(metadataKey: any, target: Object, propertyKey?: string | symbol): any;
+    function getMetadata(metadataKey: any, target: Object, propertyKey?: string | symbol): any;
+    function defineMetadata(metadataKey: any, value: any, target: Object, propertyKey?: string | symbol): void;
+    function getOwnMetadata(metadataKey: any, target: Object, propertyKey?: string | symbol): any;
+    function getMetadataKeys(target: Object): any[];
+  }
+}
 export {};

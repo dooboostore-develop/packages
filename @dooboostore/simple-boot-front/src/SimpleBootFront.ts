@@ -23,7 +23,7 @@ import { ComponentSet } from './component/ComponentSet';
 import { DomRenderRootDefaultTemplate, DomRenderRootObject } from './DomRenderRootObject';
 import { routerProcess } from '@dooboostore/simple-boot/decorators/route/Router';
 import { BehaviorSubject } from '@dooboostore/core/message/BehaviorSubject';
-import { RouterModule } from '@dooboostore/simple-boot';
+import { RouterModule } from '@dooboostore/simple-boot/route/RouterModule';
 import { Observable } from '@dooboostore/core/message/Observable';
 
 export type PopStateType = { type: 'popstateData'; router: any; noSimpleBootFrontRouting?: boolean };
@@ -143,6 +143,7 @@ export class SimpleBootFront extends SimpleApplication {
 
   public createDomRender<T extends object>(obj: T): T {
     const component = getComponent(obj);
+    // console.log('onProxy!!!', obj, component);
     if (component && typeof obj === 'object') {
       //     // 나중에 헛갈리겠는데??  이거 normalattribute 때문에 DomrenderPRoxy set 쪽에서 ㅡㅡ root를 찾아가야되기때문에 ref를 계속 가져가야함.
       //     // console.log('fffffffffffffffffffffffffffff', obj);
@@ -161,6 +162,7 @@ export class SimpleBootFront extends SimpleApplication {
       //       // document.body.appendChild(this.targetElement);
       //     } else {
       const result = DomRender.run({ rootObject: obj, config: this.domRenderConfig });
+      // console.log('proxy end', result);
       return result;
       //     }
       //     // this.domRenderRouter = domRenderResult.config.router;

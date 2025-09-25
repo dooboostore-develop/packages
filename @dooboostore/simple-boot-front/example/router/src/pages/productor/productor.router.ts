@@ -20,7 +20,7 @@ import { IphoneRoute } from './iphone.route';
 export class ProductorRouter extends ComponentRouterBase {
   constructor(private router: DomRenderRouter) {
     super();
-    console.log('constructor ProductorRouter', router)
+    // console.log('constructor ProductorRouter', router)
   }
 
   async go() {

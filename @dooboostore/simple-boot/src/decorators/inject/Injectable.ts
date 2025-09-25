@@ -1,7 +1,6 @@
 /**
  * @deprecated
  */
-// import 'reflect-metadata'
 // import {ConstructorType, GenericClassDecorator} from '../../types/Types'
 // import {ReflectUtils} from '../../utils/reflect/ReflectUtils';
 //

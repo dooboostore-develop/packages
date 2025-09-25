@@ -1,4 +1,3 @@
-import 'reflect-metadata';
 import { ConstructorType, isDefined } from '@dooboostore/core/types';
 import { SimNoSuch } from '../throwable/SimNoSuch';
 import { getPostConstructs, getSim, Lifecycle, SimConfig, simProcess, sims } from '../decorators/SimDecorator';
@@ -19,7 +18,7 @@ import { isOnSimCreate } from '../lifecycle/OnSimCreate';
 import { isOnSimCreateProxyCompleted } from '../lifecycle/OnSimCreateCompleted';
 import { SimpleApplication } from '../SimpleApplication';
 import { isSimNoProxy } from '../decorators/SimNoProxy';
-import { RandomUtils } from '@dooboostore/core';
+import { RandomUtils } from '@dooboostore/core/random/RandomUtils';
 
 export type FirstCheckMaker = (
   obj: { target: Object; targetKey?: string | symbol },
@@ -479,7 +478,7 @@ export class SimstanceManager implements Runnable<void, Map<ConstructorType<any>
   public proxy<T = any>(target: T): T {
     try {
       const noProxy = isSimNoProxy(target);
-      if (!noProxy && target !== null && getSim(target) && typeof target === 'object' && !('isProxy' in target)) {
+      if (!noProxy && target !== null && getSim(target) && typeof target === 'object' && !('_SimpleBoot_isProxy' in target)) {
         for (const key in target) {
           if (!isSimNoProxy(target, key)) {
             target[key] = this.proxy(target[key]);
@@ -491,6 +490,7 @@ export class SimstanceManager implements Runnable<void, Map<ConstructorType<any>
         protoTypeName
           .filter(it => typeof (target as any)[it] === 'function')
           .filter(it => !isSimNoProxy(target, it))
+          .filter(it => !('_SimpleBoot_isProxy' in target[it]))
           .forEach(it => {
             (target as any)[it] = new Proxy((target as any)[it], this.simProxyHandler!);
           });

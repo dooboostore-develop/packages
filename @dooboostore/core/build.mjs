@@ -1,9 +1,8 @@
 import * as esbuild from 'esbuild';
 import * as path from 'path';
 import * as fs from 'fs';
-
+import esbuildPluginTsc from 'esbuild-plugin-tsc';
 const __dirname = path.dirname(new URL(import.meta.url).pathname);
-
 // Function to find all .ts files in a directory, similar to the Webpack config
 function findTsFiles(dir) {
   let filelist = [];
@@ -117,10 +116,10 @@ async function buildTarget(target, watch = false) {
         entryPoints: entryPoints,
         outdir: esmOutDir,
         format: 'esm',
-        tsconfig: 'tsconfig.esm.json',
         resolveExtensions: ['.ts', '.tsx', '.js', '.jsx', '.json'],
         mainFields: ['module', 'main'],
-        plugins: [addJsExtensionPlugin], // Add the plugin here
+        plugins: [esbuildPluginTsc({tsconfigPath:'tsconfig.esm.json'}), addJsExtensionPlugin],
+        // tsconfig: 'tsconfig.esm.json',
       }, watch);
       console.log('ESM build complete.');
       break;
@@ -132,7 +131,8 @@ async function buildTarget(target, watch = false) {
         entryPoints: entryPoints,
         outdir: path.resolve(__dirname, 'dist', 'cjs'),
         format: 'cjs',
-        tsconfig: 'tsconfig.cjs.json',
+        plugins: [esbuildPluginTsc({tsconfigPath:'tsconfig.cjs.json'})],
+        // tsconfig: 'tsconfig.cjs.json',
       }, watch);
       console.log('CJS build complete.');
       break;
@@ -141,11 +141,12 @@ async function buildTarget(target, watch = false) {
       await performBuild({
         ...baseOptions,
           bundle: true,
-        entryPoints: [path.resolve(srcDir, 'index.ts')],
+        entryPoints: [path.resolve(srcDir, 'bundle-entry.ts')],
         outfile: path.resolve(__dirname, 'dist', 'umd-bundle', 'dooboostore-core.umd.js'),
         format: 'iife',
         globalName: 'dooboostoreCore',
-        tsconfig: 'tsconfig.umd.json',
+        plugins: [esbuildPluginTsc({tsconfigPath:'tsconfig.umd.json'})],
+        // tsconfig: 'tsconfig.umd.json',
       }, watch);
       console.log('UMD bundle build complete.');
       break;
@@ -154,10 +155,11 @@ async function buildTarget(target, watch = false) {
       await performBuild({
         ...baseOptions,
           bundle: true,
-        entryPoints: [path.resolve(srcDir, 'index.ts')],
+        entryPoints: [path.resolve(srcDir, 'bundle-entry.ts')],
         outfile: path.resolve(__dirname, 'dist', 'esm-bundle', 'dooboostore-core.esm.js'),
         format: 'esm',
-        tsconfig: 'tsconfig.esm.json',
+        plugins: [esbuildPluginTsc({tsconfigPath:'tsconfig.esm.json'})],
+        // tsconfig: 'tsconfig.esm.json',
       }, watch);
       console.log('ESM bundle build complete.');
       break;

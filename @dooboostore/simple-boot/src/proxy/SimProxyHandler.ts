@@ -25,6 +25,8 @@ export class SimProxyHandler implements ProxyHandler<any> {
         }
     }
 
+
+
     public set(obj: any, prop: string, value: any, receiver: any): boolean {
         value = this.simstanceManager?.proxy(value)
         obj[prop] = value
@@ -133,7 +135,7 @@ export class SimProxyHandler implements ProxyHandler<any> {
     }
 
     has(target: any, key: PropertyKey): boolean {
-        if (key === 'isProxy') {
+        if (key === '_SimpleBoot_isProxy') {
             return true
         }
         return key in target
