@@ -27,6 +27,9 @@ importers:
       esbuild:
         specifier: ^0.23.0
         version: 0.23.1
+      esbuild-plugin-tsc:
+        specifier: ^0.5.0
+        version: 0.5.0(typescript@5.9.2)
       ts-loader:
         specifier: ^9.5.1
         version: 9.5.4(typescript@5.9.2)(webpack@5.101.3(esbuild@0.23.1)(webpack-cli@5.1.4))
@@ -58,6 +61,9 @@ importers:
       esbuild:
         specifier: ^0.23.0
         version: 0.23.1
+      esbuild-plugin-tsc:
+        specifier: ^0.5.0
+        version: 0.5.0(typescript@5.9.2)
       ts-loader:
         specifier: ^9.5.1
         version: 9.5.4(typescript@5.9.2)(webpack@5.101.3(esbuild@0.23.1)(webpack-cli@5.1.4))
@@ -73,8 +79,6 @@ importers:
       webpack-cli:
         specifier: ^5.1.4
         version: 5.1.4(webpack@5.101.3)
-
-  '@dooboostore/core-node/dist/cjs': {}
 
   '@dooboostore/core-node/example/quick-start':
     dependencies:
@@ -255,6 +259,9 @@ importers:
       esbuild:
         specifier: ^0.23.0
         version: 0.23.1
+      esbuild-plugin-tsc:
+        specifier: ^0.5.0
+        version: 0.5.0(typescript@5.9.2)
       tslib:
         specifier: ^2.8.1
         version: 2.8.1
@@ -418,8 +425,6 @@ importers:
       webpack-dev-server:
         specifier: ^5.2.0
         version: 5.2.2(webpack-cli@5.1.4)(webpack@5.101.3)
-
-  '@dooboostore/core/dist/cjs': {}
 
   '@dooboostore/core/example/quick-start':
     dependencies:
@@ -724,6 +729,9 @@ importers:
       esbuild:
         specifier: ^0.23.0
         version: 0.23.1
+      esbuild-plugin-tsc:
+        specifier: ^0.5.0
+        version: 0.5.0(typescript@5.9.2)
       html-webpack-plugin:
         specifier: ^5.6.3
         version: 5.6.4(webpack@5.101.3(esbuild@0.23.1)(webpack-cli@5.1.4))
@@ -742,6 +750,167 @@ importers:
       webpack:
         specifier: ^5.93.0
         version: 5.101.3(esbuild@0.23.1)(webpack-cli@5.1.4)
+      webpack-cli:
+        specifier: ^5.1.4
+        version: 5.1.4(webpack-dev-server@5.2.2)(webpack@5.101.3)
+      webpack-dev-server:
+        specifier: ^5.2.0
+        version: 5.2.2(webpack-cli@5.1.4)(webpack@5.101.3)
+
+  '@dooboostore/dom-render/create':
+    dependencies:
+      '@oclif/command':
+        specifier: ^1
+        version: 1.8.36(@oclif/config@1.18.17)(supports-color@8.1.1)
+      '@oclif/config':
+        specifier: ^1
+        version: 1.18.17
+      '@oclif/errors':
+        specifier: ^1
+        version: 1.3.6
+      '@oclif/plugin-help':
+        specifier: ^2
+        version: 2.2.3(@oclif/config@1.18.17)
+      chalk:
+        specifier: ^2.4.2
+        version: 2.4.2
+      cli-ux:
+        specifier: ^5.2.1
+        version: 5.6.7(@oclif/config@1.18.17)
+      degit:
+        specifier: ^2.1.3
+        version: 2.8.4
+      inquirer:
+        specifier: ^6.3.1
+        version: 6.5.2
+      p-event:
+        specifier: ^4.1.0
+        version: 4.2.0
+      tslib:
+        specifier: ^1
+        version: 1.14.1
+    devDependencies:
+      '@oclif/test':
+        specifier: ^1
+        version: 1.2.9
+      '@oclif/tslint':
+        specifier: ^3
+        version: 3.1.1(tslint@5.20.1(typescript@4.9.5))(typescript@4.9.5)
+      '@types/chai':
+        specifier: ^4
+        version: 4.3.20
+      '@types/inquirer':
+        specifier: ^6.0.1
+        version: 6.5.0
+      '@types/node':
+        specifier: ^10
+        version: 10.17.60
+      '@typescript-eslint/eslint-plugin':
+        specifier: ^4.16.1
+        version: 4.33.0(@typescript-eslint/parser@4.33.0(eslint@7.32.0)(typescript@4.9.5))(eslint@7.32.0)(typescript@4.9.5)
+      '@typescript-eslint/parser':
+        specifier: ^4.16.1
+        version: 4.33.0(eslint@7.32.0)(typescript@4.9.5)
+      chai:
+        specifier: ^4
+        version: 4.5.0
+      eslint:
+        specifier: ^7.21.0
+        version: 7.32.0
+      eslint-config-standard:
+        specifier: ^16.0.2
+        version: 16.0.3(eslint-plugin-import@2.32.0(@typescript-eslint/parser@4.33.0(eslint@7.32.0)(typescript@4.9.5))(eslint@7.32.0))(eslint-plugin-node@11.1.0(eslint@7.32.0))(eslint-plugin-promise@4.3.1)(eslint@7.32.0)
+      eslint-plugin-import:
+        specifier: ^2.22.1
+        version: 2.32.0(@typescript-eslint/parser@4.33.0(eslint@7.32.0)(typescript@4.9.5))(eslint@7.32.0)
+      eslint-plugin-node:
+        specifier: ^11.1.0
+        version: 11.1.0(eslint@7.32.0)
+      eslint-plugin-promise:
+        specifier: ^4.3.1
+        version: 4.3.1
+      nyc:
+        specifier: ^15.1.0
+        version: 15.1.0
+      ts-node:
+        specifier: ^8
+        version: 8.10.2(typescript@4.9.5)
+      typescript:
+        specifier: ^4.2.3
+        version: 4.9.5
+
+  '@dooboostore/dom-render/default-template-webpack':
+    dependencies:
+      '@dooboostore/core':
+        specifier: workspace:*
+        version: link:../../core
+      '@dooboostore/core-node':
+        specifier: workspace:*
+        version: link:../../core-node
+      '@dooboostore/core-web':
+        specifier: workspace:*
+        version: link:../../core-web
+      '@dooboostore/dom-render':
+        specifier: workspace:*
+        version: link:..
+      reflect-metadata:
+        specifier: ^0.2.2
+        version: 0.2.2
+    devDependencies:
+      '@babel/core':
+        specifier: ^7.24.0
+        version: 7.28.4
+      '@babel/plugin-proposal-class-properties':
+        specifier: ^7.18.6
+        version: 7.18.6(@babel/core@7.28.4)
+      '@babel/plugin-proposal-decorators':
+        specifier: ^7.24.0
+        version: 7.28.0(@babel/core@7.28.4)
+      '@babel/plugin-transform-private-property-in-object':
+        specifier: ^7.25.9
+        version: 7.27.1(@babel/core@7.28.4)
+      '@babel/preset-env':
+        specifier: ^7.24.0
+        version: 7.28.3(@babel/core@7.28.4)
+      '@babel/preset-typescript':
+        specifier: ^7.24.0
+        version: 7.27.1(@babel/core@7.28.4)
+      '@types/jest':
+        specifier: ^26.0.22
+        version: 26.0.24
+      '@typescript-eslint/eslint-plugin':
+        specifier: ^4.16.1
+        version: 4.33.0(@typescript-eslint/parser@4.33.0(eslint@7.32.0)(typescript@5.9.2))(eslint@7.32.0)(typescript@5.9.2)
+      '@typescript-eslint/parser':
+        specifier: ^4.16.1
+        version: 4.33.0(eslint@7.32.0)(typescript@5.9.2)
+      html-webpack-plugin:
+        specifier: ^5.6.3
+        version: 5.6.4(webpack@5.101.3(webpack-cli@5.1.4))
+      simple-boot-front-cli:
+        specifier: ^1.0.10
+        version: 1.0.10
+      supertest:
+        specifier: ^6.1.3
+        version: 6.3.4
+      ts-loader:
+        specifier: ^9.5.2
+        version: 9.5.4(typescript@5.9.2)(webpack@5.101.3(webpack-cli@5.1.4))
+      ts-node:
+        specifier: ^10.0.0
+        version: 10.9.2(@types/node@24.5.2)(typescript@5.9.2)
+      ts-node-dev:
+        specifier: ^2.0.0
+        version: 2.0.0(@types/node@24.5.2)(node-notifier@8.0.2)(typescript@5.9.2)
+      tslib:
+        specifier: ^2.8.1
+        version: 2.8.1
+      typescript:
+        specifier: ^5.9.2
+        version: 5.9.2
+      webpack:
+        specifier: ^5.98.0
+        version: 5.101.3(webpack-cli@5.1.4)
       webpack-cli:
         specifier: ^5.1.4
         version: 5.1.4(webpack-dev-server@5.2.2)(webpack@5.101.3)
@@ -1255,6 +1424,9 @@ importers:
       esbuild:
         specifier: ^0.23.0
         version: 0.23.1
+      esbuild-plugin-tsc:
+        specifier: ^0.5.0
+        version: 0.5.0(typescript@5.9.2)
       typescript:
         specifier: ^5.9.2
         version: 5.9.2
@@ -1309,6 +1481,9 @@ importers:
       esbuild:
         specifier: ^0.23.0
         version: 0.23.1
+      esbuild-plugin-tsc:
+        specifier: ^0.5.0
+        version: 0.5.0(typescript@5.9.2)
       html-webpack-plugin:
         specifier: ^5.6.3
         version: 5.6.4(webpack@5.101.3(esbuild@0.23.1)(webpack-cli@5.1.4))
@@ -1609,6 +1784,9 @@ importers:
       esbuild:
         specifier: ^0.23.0
         version: 0.23.1
+      esbuild-plugin-tsc:
+        specifier: ^0.5.0
+        version: 0.5.0(typescript@5.9.2)
       html-webpack-plugin:
         specifier: ^5.6.3
         version: 5.6.4(webpack@5.101.3(esbuild@0.23.1)(webpack-cli@5.1.4))
@@ -1688,6 +1866,9 @@ importers:
       esbuild:
         specifier: ^0.23.0
         version: 0.23.1
+      esbuild-plugin-tsc:
+        specifier: ^0.5.0
+        version: 0.5.0(typescript@5.9.2)
       html-webpack-plugin:
         specifier: ^5.6.3
         version: 5.6.4(webpack@5.101.3(esbuild@0.23.1)(webpack-cli@5.1.4))
@@ -1796,6 +1977,28 @@ importers:
         version: 4.9.5
 
   '@dooboostore/simple-boot-front/default-template-webpack':
+    dependencies:
+      '@dooboostore/core':
+        specifier: workspace:*
+        version: link:../../core
+      '@dooboostore/core-node':
+        specifier: workspace:*
+        version: link:../../core-node
+      '@dooboostore/core-web':
+        specifier: workspace:*
+        version: link:../../core-web
+      '@dooboostore/dom-render':
+        specifier: workspace:*
+        version: link:../../dom-render
+      '@dooboostore/simple-boot':
+        specifier: workspace:*
+        version: link:../../simple-boot
+      '@dooboostore/simple-boot-front':
+        specifier: workspace:*
+        version: link:..
+      reflect-metadata:
+        specifier: ^0.2.2
+        version: 0.2.2
     devDependencies:
       '@babel/core':
         specifier: ^7.24.0
@@ -1815,24 +2018,6 @@ importers:
       '@babel/preset-typescript':
         specifier: ^7.24.0
         version: 7.27.1(@babel/core@7.28.4)
-      '@dooboostore/core':
-        specifier: latest
-        version: 1.0.14
-      '@dooboostore/core-node':
-        specifier: latest
-        version: 1.0.2
-      '@dooboostore/core-web':
-        specifier: latest
-        version: 1.0.2
-      '@dooboostore/dom-render':
-        specifier: latest
-        version: 1.0.103
-      '@dooboostore/simple-boot':
-        specifier: latest
-        version: 1.0.44
-      '@dooboostore/simple-boot-front':
-        specifier: latest
-        version: 1.0.122
       '@types/jest':
         specifier: ^26.0.22
         version: 26.0.24
@@ -1854,9 +2039,6 @@ importers:
       nodemon-webpack-plugin:
         specifier: ^4.8.2
         version: 4.8.2(webpack@5.101.3(webpack-cli@5.1.4))
-      reflect-metadata:
-        specifier: ^0.2.2
-        version: 0.2.2
       simple-boot-front-cli:
         specifier: ^1.0.10
         version: 1.0.10
@@ -2120,15 +2302,21 @@ importers:
       '@typescript-eslint/parser':
         specifier: ^4.16.1
         version: 4.33.0(eslint@7.32.0)(typescript@5.9.2)
+      esbuild:
+        specifier: ^0.23.0
+        version: 0.23.1
+      esbuild-plugin-tsc:
+        specifier: ^0.5.0
+        version: 0.5.0(typescript@5.9.2)
       html-webpack-plugin:
         specifier: ^5.6.3
-        version: 5.6.4(webpack@5.101.3(webpack-cli@5.1.4))
+        version: 5.6.4(webpack@5.101.3(esbuild@0.23.1)(webpack-cli@5.1.4))
       raw-loader:
         specifier: ^4.0.2
-        version: 4.0.2(webpack@5.101.3(webpack-cli@5.1.4))
+        version: 4.0.2(webpack@5.101.3(esbuild@0.23.1)(webpack-cli@5.1.4))
       ts-loader:
         specifier: ^9.5.1
-        version: 9.5.4(typescript@5.9.2)(webpack@5.101.3(webpack-cli@5.1.4))
+        version: 9.5.4(typescript@5.9.2)(webpack@5.101.3(esbuild@0.23.1)(webpack-cli@5.1.4))
       tslib:
         specifier: ^2.8.1
         version: 2.8.1
@@ -2137,7 +2325,7 @@ importers:
         version: 5.9.2
       webpack:
         specifier: ^5.93.0
-        version: 5.101.3(webpack-cli@5.1.4)
+        version: 5.101.3(esbuild@0.23.1)(webpack-cli@5.1.4)
       webpack-cli:
         specifier: ^5.1.4
         version: 5.1.4(webpack-dev-server@5.2.2)(webpack@5.101.3)
@@ -2196,6 +2384,9 @@ importers:
       '@types/jest':
         specifier: ^26.0.22
         version: 26.0.24
+      '@types/jsdom':
+        specifier: ^21.1.7
+        version: 21.1.7
       '@types/node':
         specifier: ^20
         version: 20.19.17
@@ -2208,30 +2399,21 @@ importers:
       '@typescript-eslint/parser':
         specifier: ^4.16.1
         version: 4.33.0(eslint@7.32.0)(typescript@5.9.2)
-      html-webpack-plugin:
-        specifier: ^5.6.3
-        version: 5.6.4(webpack@5.101.3(webpack-cli@5.1.4))
+      esbuild:
+        specifier: ^0.23.0
+        version: 0.23.1
+      esbuild-plugin-tsc:
+        specifier: ^0.5.0
+        version: 0.5.0(typescript@5.9.2)
       raw-loader:
         specifier: ^4.0.2
-        version: 4.0.2(webpack@5.101.3(webpack-cli@5.1.4))
-      ts-loader:
-        specifier: ^9.5.1
-        version: 9.5.4(typescript@5.9.2)(webpack@5.101.3(webpack-cli@5.1.4))
+        version: 4.0.2(webpack@5.101.3(esbuild@0.23.1))
       tslib:
         specifier: ^2.8.1
         version: 2.8.1
       typescript:
         specifier: ^5.9.2
         version: 5.9.2
-      webpack:
-        specifier: ^5.93.0
-        version: 5.101.3(webpack-cli@5.1.4)
-      webpack-cli:
-        specifier: ^5.1.4
-        version: 5.1.4(webpack-dev-server@5.2.2)(webpack@5.101.3)
-      webpack-dev-server:
-        specifier: ^5.2.0
-        version: 5.2.2(webpack-cli@5.1.4)(webpack@5.101.3)
 
   '@dooboostore/simple-boot-http-server-ssr/create':
     dependencies:
@@ -2318,35 +2500,35 @@ importers:
   '@dooboostore/simple-boot-http-server-ssr/default-template-webpack':
     dependencies:
       '@dooboostore/core':
-        specifier: latest
-        version: 1.0.14
+        specifier: workspace:*
+        version: link:../../core
       '@dooboostore/core-node':
-        specifier: latest
-        version: 1.0.2
+        specifier: workspace:*
+        version: link:../../core-node
       '@dooboostore/core-web':
-        specifier: latest
-        version: 1.0.2
+        specifier: workspace:*
+        version: link:../../core-web
       '@dooboostore/dom-render':
-        specifier: latest
-        version: 1.0.103
+        specifier: workspace:*
+        version: link:../../dom-render
       '@dooboostore/lib-node':
-        specifier: latest
-        version: 1.0.0
+        specifier: workspace:*
+        version: link:../../lib-node
       '@dooboostore/lib-web':
-        specifier: latest
-        version: 1.0.0
+        specifier: workspace:*
+        version: link:../../lib-web
       '@dooboostore/simple-boot':
-        specifier: latest
-        version: 1.0.44
+        specifier: workspace:*
+        version: link:../../simple-boot
       '@dooboostore/simple-boot-front':
-        specifier: latest
-        version: 1.0.122
+        specifier: workspace:*
+        version: link:../../simple-boot-front
       '@dooboostore/simple-boot-http-server':
-        specifier: latest
-        version: 1.0.16
+        specifier: workspace:*
+        version: link:../../simple-boot-http-server
       '@dooboostore/simple-boot-http-server-ssr':
-        specifier: latest
-        version: 1.0.9(canvas@3.2.0)
+        specifier: workspace:*
+        version: link:..
       '@google/genai':
         specifier: ^1.5.1
         version: 1.20.0
@@ -2716,17 +2898,17 @@ importers:
   '@dooboostore/simple-boot-http-server/default-template-webpack':
     dependencies:
       '@dooboostore/core':
-        specifier: latest
-        version: 1.0.14
+        specifier: workspace:*
+        version: link:../../core
       '@dooboostore/core-node':
-        specifier: latest
-        version: 1.0.2
+        specifier: workspace:*
+        version: link:../../core-node
       '@dooboostore/simple-boot':
-        specifier: latest
-        version: 1.0.44
+        specifier: workspace:*
+        version: link:../../simple-boot
       '@dooboostore/simple-boot-http-server':
-        specifier: latest
-        version: 1.0.16
+        specifier: workspace:*
+        version: link:..
       fast-json-patch:
         specifier: ^3.1.0
         version: 3.1.1
@@ -2776,24 +2958,15 @@ importers:
       browserify-zlib:
         specifier: ^0.2.0
         version: 0.2.0
-      copy-webpack-plugin:
-        specifier: ^13.0.1
-        version: 13.0.1(webpack@5.101.3(webpack-cli@5.1.4))
-      html-loader:
-        specifier: ^5.1.0
-        version: 5.1.0(webpack@5.101.3(webpack-cli@5.1.4))
-      html-webpack-plugin:
-        specifier: ^5.6.3
-        version: 5.6.4(webpack@5.101.3(webpack-cli@5.1.4))
+      esbuild:
+        specifier: ^0.23.0
+        version: 0.23.1
       http-server:
         specifier: ^14.1.1
         version: 14.1.1
       https-browserify:
         specifier: ^1.0.0
         version: 1.0.0
-      nodemon-webpack-plugin:
-        specifier: ^4.8.2
-        version: 4.8.2(webpack@5.101.3(webpack-cli@5.1.4))
       path-browserify:
         specifier: ^1.0.1
         version: 1.0.1
@@ -2809,9 +2982,6 @@ importers:
       supertest:
         specifier: ^6.1.3
         version: 6.3.4
-      ts-loader:
-        specifier: ^9.5.2
-        version: 9.5.4(typescript@5.9.2)(webpack@5.101.3(webpack-cli@5.1.4))
       ts-node:
         specifier: ^10.0.0
         version: 10.9.2(@types/node@24.5.2)(typescript@5.9.2)
@@ -2821,9 +2991,6 @@ importers:
       tsconfig-paths:
         specifier: ^3.12.0
         version: 3.15.0
-      tsconfig-paths-webpack-plugin:
-        specifier: ^4.2.0
-        version: 4.2.0
       tslib:
         specifier: ^2.8.1
         version: 2.8.1
@@ -2836,15 +3003,6 @@ importers:
       util:
         specifier: ^0.12.5
         version: 0.12.5
-      webpack:
-        specifier: ^5.98.0
-        version: 5.101.3(webpack-cli@5.1.4)
-      webpack-cli:
-        specifier: ^5.1.4
-        version: 5.1.4(webpack-dev-server@5.2.2)(webpack@5.101.3)
-      webpack-dev-server:
-        specifier: ^5.2.0
-        version: 5.2.2(webpack-cli@5.1.4)(webpack@5.101.3)
 
   '@dooboostore/simple-boot-http-server/dist/cjs': {}
 
@@ -3065,6 +3223,19 @@ importers:
         version: 4.9.5
 
   '@dooboostore/simple-boot/default-template-webpack':
+    dependencies:
+      '@dooboostore/core':
+        specifier: workspace:*
+        version: link:../../core
+      '@dooboostore/core-node':
+        specifier: workspace:*
+        version: link:../../core-node
+      '@dooboostore/simple-boot':
+        specifier: workspace:*
+        version: link:..
+      reflect-metadata:
+        specifier: ^0.2.2
+        version: 0.2.2
     devDependencies:
       '@babel/core':
         specifier: ^7.24.0
@@ -3084,15 +3255,6 @@ importers:
       '@babel/preset-typescript':
         specifier: ^7.24.0
         version: 7.27.1(@babel/core@7.28.4)
-      '@dooboostore/core':
-        specifier: latest
-        version: 1.0.14
-      '@dooboostore/core-node':
-        specifier: latest
-        version: 1.0.2
-      '@dooboostore/simple-boot':
-        specifier: latest
-        version: 1.0.44
       '@types/jest':
         specifier: ^26.0.22
         version: 26.0.24
@@ -3111,9 +3273,6 @@ importers:
       nodemon-webpack-plugin:
         specifier: ^4.8.2
         version: 4.8.2(webpack@5.101.3(webpack-cli@5.1.4))
-      reflect-metadata:
-        specifier: ^0.2.2
-        version: 0.2.2
       supertest:
         specifier: ^6.1.3
         version: 6.3.4
@@ -4136,60 +4295,6 @@ packages:
     resolution: {integrity: sha512-dBVuXR082gk3jsFp7Rd/JI4kytwGHecnCoTtXFb7DB6CNHp4rg5k1bhg0nWdLGLnOV71lmDzGQaLMy8iPLY0pw==}
     engines: {node: '>=10.0.0'}
 
-  '@dooboostore/core-node@1.0.1':
-    resolution: {integrity: sha512-5ZubG8APVx7oX6RT2O/pyXijQ6CnkF0sDbTp6HEpVxXFBdm8dzN8QYeTYaR28XE2zYd4qk3YODUjMobYGSjaQA==}
-
-  '@dooboostore/core-node@1.0.2':
-    resolution: {integrity: sha512-gN5k5VNLfpN39q4P8UgyFMQXnkPrmmOQ0dDYRWni3kntjdSXCJM6QDN60W0oNh/Dp4spIjiR+Wmh9T/yhfkbzw==}
-
-  '@dooboostore/core-web@1.0.1':
-    resolution: {integrity: sha512-8M2QNFkjHM26rbPq1mjefm8aMDAN1CRYaF5R3i3hiyrbPcEfCc7Gw3rnMG+Bo1l10cAyLHfCXsjzyayb+7ou2Q==}
-
-  '@dooboostore/core-web@1.0.2':
-    resolution: {integrity: sha512-tHVusreYMsrwA5JgwBhXR0ABER+943dLeO/daWXSHNx6/TPb2fpH2PtPMozLh67x/lpsDMFl+evMXGBK6btETA==}
-
-  '@dooboostore/core@1.0.14':
-    resolution: {integrity: sha512-FrjZLp37AzI2wyWzq4/Kol/ocWGNBAcUSbP2DsBuEW+yByKlcz0NWrXFVQBWK5zuw/J0GW5zxrY/Ld20pvxKJw==}
-
-  '@dooboostore/core@1.0.5':
-    resolution: {integrity: sha512-VEgi+p037KF9As2qDvFmEOFfEG4v8wHRp7FEcA6jSNixTO2Ojjvqev433HUP1rAVbd5hUnzlqgySnksVZgh/xg==}
-
-  '@dooboostore/core@1.0.7':
-    resolution: {integrity: sha512-wBDtICIRCR0WEUvEBr99Zwwk5R2Ddj5bE6nMlVtr8gnz8tXzHHHEttpzdTMyShgWvJJEpAZ801lgWHfErAOtMw==}
-
-  '@dooboostore/core@1.0.8':
-    resolution: {integrity: sha512-yBGgVkRzNM9X4JO3XkyKMIYDlqJ4LH+vFSRlw/tS4EduG0QIiPD4HH3N6XTfmiGmxEmBR1oqEG8WOILL2qPGwA==}
-
-  '@dooboostore/core@1.0.9':
-    resolution: {integrity: sha512-ODhbFrRMTlKDuTxyvLBirgrVsVxK/iqwuUJ1eTqTFmS2t8YSn2iJ8yqcn6s5l147DSa+AaB0CTTK6CP7XtqvOA==}
-
-  '@dooboostore/dom-render@1.0.102':
-    resolution: {integrity: sha512-CfMVHiP0TDbtzDxMMuQxWUCTxyNwuJXRHivQL2LPO5K2N6hzLNBntOPWlghZuuzWXtbHB/M1GTT5/MJuddSpGg==}
-
-  '@dooboostore/dom-render@1.0.103':
-    resolution: {integrity: sha512-n2+0UqeSitBizhJ9dUzxMI14fFuZfTv1mjvxKZsDyPHaFBNBW8ZhRK5Bp4KV93huthXQMepCppUq9T7CJLO++g==}
-
-  '@dooboostore/lib-node@1.0.0':
-    resolution: {integrity: sha512-DqoEaJFB4g9pUniTir96/utKiKnMfA8o7Ma8SLDzfJ76gQSB+6n5/iW+ZHZYvrnEYr66D/tcMkKYCIY/uRxJ6g==}
-
-  '@dooboostore/lib-web@1.0.0':
-    resolution: {integrity: sha512-8D/VMVfLxgstzzrnXGAszbNJMasEl5ruVMZa9RHldfKFyxjTHDqYU2oCN/oi76aoVqU8thxRAGaFdwBNgglTBA==}
-
-  '@dooboostore/simple-boot-front@1.0.121':
-    resolution: {integrity: sha512-uFy9Z5X0wP4OvT8zHtH0Wo3NmMjzUrv7JnTQhI9vEGhFnk9ywxYn+HF6aFEIPBBqAP+xIusNzZ6T4V715ae/BA==}
-
-  '@dooboostore/simple-boot-front@1.0.122':
-    resolution: {integrity: sha512-bC493H2+N/UplEnmcwAkN1hr+x9J0DLNihzBz9ZWUjA1msWOpSWLCBMhdABFOibbVdk6sGqaNy0MJUb2+zB5qA==}
-
-  '@dooboostore/simple-boot-http-server-ssr@1.0.9':
-    resolution: {integrity: sha512-ZcyiFl7XxlLjegTsBwLBjdLUzwWoDO3yX4PJVxxhLC1xZyVr7I9xZV15ya4TBIiO28cpHaAnXSXOlra1DPit8A==}
-
-  '@dooboostore/simple-boot-http-server@1.0.16':
-    resolution: {integrity: sha512-Ktu7ezdt6I01ijQzW65rcXecch4G5yPwOHRDNKE94iPrweeRanzNXp7VLALALN/3Y+SbKWKo7Y5OpYmsI29FQQ==}
-
-  '@dooboostore/simple-boot@1.0.44':
-    resolution: {integrity: sha512-0SqT7KaoSRH+tW4HjR4CLVdphOcOflO2q4hNg3dx3AtEm0kat6b2mlXmDbgl11T4vLWoru1QFkulPXAYKuUuZg==}
-
   '@esbuild/aix-ppc64@0.23.1':
     resolution: {integrity: sha512-6VhYk1diRqrhBAqpJEdjASR/+WVRtfjpqKuNw11cLiaWpAT/Uu+nokB+UJnevzy/P9C/ty6AOe0dwueMrGh/iQ==}
     engines: {node: '>=18'}
@@ -4581,6 +4686,9 @@ packages:
   '@types/jest@26.0.24':
     resolution: {integrity: sha512-E/X5Vib8BWqZNRlDxj9vYXhsDwPYbPINqKF9BsnSoon4RQ0D9moEuLD8txgyypFLH7J4+Lho9Nr/c8H0Fi+17w==}
 
+  '@types/jsdom@21.1.7':
+    resolution: {integrity: sha512-yOriVnggzrnQ3a9OKOCxaVuSug3w3/SbOj5i7VwXWZEyUNl3bLF9V3MfxGbZKuwqJOQyRfqXyROBB1CoZLFWzA==}
+
   '@types/json-schema@7.0.15':
     resolution: {integrity: sha512-5+fP8P8MFNC+AyZCDxrB2pkZFPGzqQWUzpSeuuVLvm8VMcorNYavBqoFcxK8bQz4Qsbn4oUEEem4wDLfcysGHA==}
 
@@ -4650,6 +4758,9 @@ packages:
 
   '@types/through@0.0.33':
     resolution: {integrity: sha512-HsJ+z3QuETzP3cswwtzt2vEIiHBk/dCcHGhbmG5X3ecnwFD/lPrMpliGXxSCg03L9AhrdwA4Oz/qfspkDW+xGQ==}
+
+  '@types/tough-cookie@4.0.5':
+    resolution: {integrity: sha512-/Ad8+nIOV7Rl++6f1BdKxFSMgmoqEoYbHRpPcx3JEfv8VRsQe9Z4mCXeJBzxs7mbHY/XOZZuXlRNfhpVPbs6ZA==}
 
   '@types/ws@8.18.1':
     resolution: {integrity: sha512-ThVF6DCVhA8kUGy+aazFQ4kXQ7E1Ty7A3ypFOe0IcJV8O/M511G99AW24irKrW56Wt44yG9+ij8FaqoBGkuBXg==}
@@ -5540,6 +5651,11 @@ packages:
 
   es6-error@4.1.1:
     resolution: {integrity: sha512-Um/+FxMr9CISWh0bi5Zv0iOD+4cFh5qLeks1qhAopKVAJw3drgKbKySikp7wGhDL0HPeaja0P5ULZrxLkniUVg==}
+
+  esbuild-plugin-tsc@0.5.0:
+    resolution: {integrity: sha512-t9j90NnMhAGWzS0SKX3zNa/XeWcUanqKaFe36CSmXiB2nYFdaSzKY9pBZTvGV7NGImxE1BktOOlVpQyYnUTVGg==}
+    peerDependencies:
+      typescript: ^4.0.0 || ^5.0.0
 
   esbuild@0.23.1:
     resolution: {integrity: sha512-VVNz/9Sa0bs5SELtn3f7qhJCDPCF5oMEl5cO9/SSinpE9hbPVvxbd572HH5AKiP7WD8INO53GgfDDhRjkylHEg==}
@@ -7373,6 +7489,10 @@ packages:
     resolution: {integrity: sha512-3xurFv5tEgii33Zi8Jtp55wEIILR9eh34FAW00PZf+JnSsTmV/ioewSgQl97JHvgjoRGwPShsWm+IdrxB35d0w==}
     engines: {node: '>=8'}
 
+  strip-comments@2.0.1:
+    resolution: {integrity: sha512-ZprKx+bBLXv067WTCALv8SSz5l2+XhpYCsVtSqlMnkAXMWDq+/ekVbl1ghqP9rUHTzv6sm/DwCOiYutU/yp1fw==}
+    engines: {node: '>=10'}
+
   strip-json-comments@2.0.1:
     resolution: {integrity: sha512-4gB8na07fecVVkOI6Rs4e7T6NOTki5EmL7TUduTs6bu3EdnSycntVJ4re8kgZA+wx9IueI2Y11bfbgwtzuE0KQ==}
     engines: {node: '>=0.10.0'}
@@ -8763,122 +8883,6 @@ snapshots:
 
   '@discoveryjs/json-ext@0.5.7': {}
 
-  '@dooboostore/core-node@1.0.1':
-    dependencies:
-      '@dooboostore/core': 1.0.5
-
-  '@dooboostore/core-node@1.0.2':
-    dependencies:
-      '@dooboostore/core': 1.0.14
-      reflect-metadata: 0.2.2
-
-  '@dooboostore/core-web@1.0.1':
-    dependencies:
-      '@dooboostore/core': 1.0.7
-
-  '@dooboostore/core-web@1.0.2':
-    dependencies:
-      '@dooboostore/core': 1.0.14
-      reflect-metadata: 0.2.2
-
-  '@dooboostore/core@1.0.14':
-    dependencies:
-      reflect-metadata: 0.2.2
-
-  '@dooboostore/core@1.0.5': {}
-
-  '@dooboostore/core@1.0.7': {}
-
-  '@dooboostore/core@1.0.8':
-    dependencies:
-      reflect-metadata: 0.2.2
-
-  '@dooboostore/core@1.0.9':
-    dependencies:
-      reflect-metadata: 0.2.2
-
-  '@dooboostore/dom-render@1.0.102':
-    dependencies:
-      '@dooboostore/core': 1.0.8
-      '@dooboostore/core-node': 1.0.1
-      '@dooboostore/core-web': 1.0.1
-      reflect-metadata: 0.2.2
-
-  '@dooboostore/dom-render@1.0.103':
-    dependencies:
-      '@dooboostore/core': 1.0.9
-      '@dooboostore/core-node': 1.0.1
-      '@dooboostore/core-web': 1.0.1
-      reflect-metadata: 0.2.2
-
-  '@dooboostore/lib-node@1.0.0':
-    dependencies:
-      '@dooboostore/core': 1.0.7
-      '@dooboostore/core-node': 1.0.1
-      canvas: 3.2.0
-      reflect-metadata: 0.2.2
-
-  '@dooboostore/lib-web@1.0.0':
-    dependencies:
-      '@dooboostore/core': 1.0.7
-      '@dooboostore/core-node': 1.0.1
-      '@dooboostore/core-web': 1.0.1
-      reflect-metadata: 0.2.2
-
-  '@dooboostore/simple-boot-front@1.0.121':
-    dependencies:
-      '@dooboostore/core': 1.0.8
-      '@dooboostore/core-node': 1.0.1
-      '@dooboostore/core-web': 1.0.1
-      '@dooboostore/dom-render': 1.0.102
-      '@dooboostore/simple-boot': 1.0.44
-      reflect-metadata: 0.2.2
-
-  '@dooboostore/simple-boot-front@1.0.122':
-    dependencies:
-      '@dooboostore/core': 1.0.9
-      '@dooboostore/core-node': 1.0.1
-      '@dooboostore/core-web': 1.0.1
-      '@dooboostore/dom-render': 1.0.102
-      '@dooboostore/simple-boot': 1.0.44
-      reflect-metadata: 0.2.2
-
-  '@dooboostore/simple-boot-http-server-ssr@1.0.9(canvas@3.2.0)':
-    dependencies:
-      '@dooboostore/core': 1.0.8
-      '@dooboostore/core-node': 1.0.1
-      '@dooboostore/core-web': 1.0.1
-      '@dooboostore/dom-render': 1.0.102
-      '@dooboostore/simple-boot': 1.0.44
-      '@dooboostore/simple-boot-front': 1.0.121
-      '@dooboostore/simple-boot-http-server': 1.0.16
-      jsdom: 26.1.0(canvas@3.2.0)
-      reflect-metadata: 0.2.2
-    transitivePeerDependencies:
-      - bufferutil
-      - canvas
-      - supports-color
-      - utf-8-validate
-
-  '@dooboostore/simple-boot-http-server@1.0.16':
-    dependencies:
-      '@dooboostore/core': 1.0.8
-      '@dooboostore/core-node': 1.0.1
-      '@dooboostore/core-web': 1.0.1
-      '@dooboostore/dom-render': 1.0.102
-      '@dooboostore/simple-boot': 1.0.44
-      '@types/node-gzip': 1.1.3
-      fast-json-patch: 3.1.1
-      mime-types: 2.1.35
-      node-gzip: 1.1.2
-      reflect-metadata: 0.2.2
-
-  '@dooboostore/simple-boot@1.0.44':
-    dependencies:
-      '@dooboostore/core': 1.0.8
-      '@dooboostore/core-node': 1.0.1
-      reflect-metadata: 0.2.2
-
   '@esbuild/aix-ppc64@0.23.1':
     optional: true
 
@@ -9282,6 +9286,12 @@ snapshots:
       jest-diff: 26.6.2
       pretty-format: 26.6.2
 
+  '@types/jsdom@21.1.7':
+    dependencies:
+      '@types/node': 24.5.2
+      '@types/tough-cookie': 4.0.5
+      parse5: 7.3.0
+
   '@types/json-schema@7.0.15': {}
 
   '@types/json5@0.0.29': {}
@@ -9352,6 +9362,8 @@ snapshots:
   '@types/through@0.0.33':
     dependencies:
       '@types/node': 24.5.2
+
+  '@types/tough-cookie@4.0.5': {}
 
   '@types/ws@8.18.1':
     dependencies:
@@ -10457,6 +10469,11 @@ snapshots:
       is-symbol: 1.1.1
 
   es6-error@4.1.1: {}
+
+  esbuild-plugin-tsc@0.5.0(typescript@5.9.2):
+    dependencies:
+      strip-comments: 2.0.1
+      typescript: 5.9.2
 
   esbuild@0.23.1:
     optionalDependencies:
@@ -12070,6 +12087,12 @@ snapshots:
       schema-utils: 3.3.0
       webpack: 5.101.3(esbuild@0.23.1)(webpack-cli@5.1.4)
 
+  raw-loader@4.0.2(webpack@5.101.3(esbuild@0.23.1)):
+    dependencies:
+      loader-utils: 2.0.4
+      schema-utils: 3.3.0
+      webpack: 5.101.3(esbuild@0.23.1)
+
   raw-loader@4.0.2(webpack@5.101.3(webpack-cli@5.1.4)):
     dependencies:
       loader-utils: 2.0.4
@@ -12576,6 +12599,8 @@ snapshots:
 
   strip-bom@4.0.0: {}
 
+  strip-comments@2.0.1: {}
+
   strip-json-comments@2.0.1: {}
 
   strip-json-comments@3.1.1: {}
@@ -12656,6 +12681,17 @@ snapshots:
       serialize-javascript: 6.0.2
       terser: 5.44.0
       webpack: 5.101.3(esbuild@0.23.1)(webpack-cli@5.1.4)
+    optionalDependencies:
+      esbuild: 0.23.1
+
+  terser-webpack-plugin@5.3.14(esbuild@0.23.1)(webpack@5.101.3(esbuild@0.23.1)):
+    dependencies:
+      '@jridgewell/trace-mapping': 0.3.31
+      jest-worker: 27.5.1
+      schema-utils: 4.3.2
+      serialize-javascript: 6.0.2
+      terser: 5.44.0
+      webpack: 5.101.3(esbuild@0.23.1)
     optionalDependencies:
       esbuild: 0.23.1
 
@@ -13187,6 +13223,38 @@ snapshots:
       wildcard: 2.0.1
 
   webpack-sources@3.3.3: {}
+
+  webpack@5.101.3(esbuild@0.23.1):
+    dependencies:
+      '@types/eslint-scope': 3.7.7
+      '@types/estree': 1.0.8
+      '@types/json-schema': 7.0.15
+      '@webassemblyjs/ast': 1.14.1
+      '@webassemblyjs/wasm-edit': 1.14.1
+      '@webassemblyjs/wasm-parser': 1.14.1
+      acorn: 8.15.0
+      acorn-import-phases: 1.0.4(acorn@8.15.0)
+      browserslist: 4.26.2
+      chrome-trace-event: 1.0.4
+      enhanced-resolve: 5.18.3
+      es-module-lexer: 1.7.0
+      eslint-scope: 5.1.1
+      events: 3.3.0
+      glob-to-regexp: 0.4.1
+      graceful-fs: 4.2.11
+      json-parse-even-better-errors: 2.3.1
+      loader-runner: 4.3.0
+      mime-types: 2.1.35
+      neo-async: 2.6.2
+      schema-utils: 4.3.2
+      tapable: 2.2.3
+      terser-webpack-plugin: 5.3.14(esbuild@0.23.1)(webpack@5.101.3(esbuild@0.23.1))
+      watchpack: 2.4.4
+      webpack-sources: 3.3.3
+    transitivePeerDependencies:
+      - '@swc/core'
+      - esbuild
+      - uglify-js
 
   webpack@5.101.3(esbuild@0.23.1)(webpack-cli@5.1.4):
     dependencies:

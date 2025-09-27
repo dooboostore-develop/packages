@@ -1,6 +1,6 @@
 {
   "name": "@dooboostore/core",
-  "version": "1.0.19",
+  "version": "1.0.21",
   "license": "MIT",
   "type": "module",
   "main": "./dist/cjs/index.js",
@@ -16,6 +16,7 @@
   "files": [
     "dist",
     "src",
+    "types.d.ts",
     "LICENSE.md",
     "tsconfig.json"
   ],
@@ -53,17 +54,17 @@
   ],
   "scripts": {
     "clean": "rm -rf dist",
-    "build:esm": "node build.mjs esm && pnpm exec tsc -p tsconfig.esm.json --emitDeclarationOnly",
+    "build:esm": "node build.mjs esm",
     "watch:esm": "pnpm run build:esm && node build.mjs esm --watch",
-    "build:cjs": "node build.mjs cjs && pnpm exec tsc -p tsconfig.cjs.json --emitDeclarationOnly && cp package.cjs.json dist/cjs/package.json",
+    "build:cjs": "node build.mjs cjs && cp package.cjs.json dist/cjs/package.json",
     "watch:cjs": "pnpm run build:cjs && node build.mjs cjs --watch",
-    "build": "pnpm run clean && node build.mjs all && pnpm exec tsc -p tsconfig.esm.json --emitDeclarationOnly && pnpm exec tsc -p tsconfig.cjs.json --emitDeclarationOnly && cp package.cjs.json dist/cjs/package.json",
+    "build": "pnpm run clean && node build.mjs all",
     "build:umd-bundle": "node build.mjs umd-bundle",
     "watch:umd-bundle": "pnpm run build:umd-bundle && node build.mjs umd-bundle --watch",
     "build:esm-bundle": "node build.mjs esm-bundle",
     "watch:esm-bundle": "pnpm run build:esm-bundle && node build.mjs esm-bundle --watch",
     "prepublishOnly": "pnpm run build",
-    "npm:publish": "pnpm run build && cd dist && pnpm publish --no-git-checks",
+    "publish:npm": "pnpm run build && cd dist && pnpm publish --no-git-checks",
     "ts:clean": "find . -name '*.js' -o -name '*.map' -o -name '*.d.ts' | xargs rm -f",
     "typecheck": "pnpm exec tsc --noEmit",
     "test": "echo test"

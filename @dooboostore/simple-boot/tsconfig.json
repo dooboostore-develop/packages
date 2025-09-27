@@ -1,12 +1,11 @@
 {
   "compilerOptions": {
     "rootDir": "src",
-    "composite": true,
+    "declarationDir": "dist/types",
     "sourceMap": true,
     "declaration": true,
     "declarationMap": true,
     "stripInternal": true,
-    "noEmit": false,
     "target": "es2020",
     "lib": ["esnext", "dom"],
     "experimentalDecorators": true,
@@ -16,5 +15,5 @@
     "moduleResolution": "node"
   },
   "include": ["src/**/*.ts"],
-  "exclude": ["node_modules", "**/*.spec.ts", "**/*.test.ts", "example", "test", "dist"]
+  "exclude": ["node_modules", "**/*.spec.ts", "**/*.test.ts", "example", "test"]
 }

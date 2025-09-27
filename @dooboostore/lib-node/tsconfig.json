@@ -1,11 +1,11 @@
 {
   "compilerOptions": {
     "rootDir": "src",
+    "declarationDir": "dist/types",
     "sourceMap": true,
     "declaration": true,
     "declarationMap": true,
     "stripInternal": true,
-    "noEmit": true,
     "target": "es2020",
     "lib": ["dom", "dom.iterable", "esnext"],
     "experimentalDecorators": true,
@@ -19,5 +19,5 @@
     }
   },
   "include": ["src/**/*.ts"],
-  "exclude": ["node_modules", "**/*.spec.ts", "**/*.test.ts", "example", "test", "dist"]
+  "exclude": ["node_modules", "**/*.spec.ts", "**/*.test.ts", "example", "test"]
 }

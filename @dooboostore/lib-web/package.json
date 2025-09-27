@@ -1,6 +1,6 @@
 {
   "name": "@dooboostore/lib-web",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "license": "MIT",
   "type": "module",
   "main": "./dist/cjs/index.js",
@@ -17,6 +17,7 @@
   "files": [
     "dist",
     "src",
+    "types.d.ts",
     "LICENSE.md",
     "tsconfig.json"
   ],
@@ -33,17 +34,17 @@
     "node"
   ],
   "exports": {
-    ".": {
-      "types": "./dist/types/index.d.ts",
-      "import": "./dist/esm/index.js",
-      "require": "./dist/cjs/index.js"
+      ".": {
+        "types": "./dist/types/index.d.ts",
+        "import": "./dist/esm/index.js",
+        "require": "./dist/cjs/index.js"
+      },
+      "./*": {
+        "types": "./dist/types/*.d.ts",
+        "import": "./dist/esm/*.js",
+        "require": "./dist/cjs/*.js"
+      }
     },
-    "./*": {
-      "types": "./dist/types/*.d.ts",
-      "import": "./dist/esm/*.js",
-      "require": "./dist/cjs/*.js"
-    }
-  },
   "author": "dooboostore <dooboostore@gmail.com> (https://github.com/dooboostore)",
   "contributors": [
     "sewoo <sewooimda@nate.com> (https://github.com/sewoo)",
@@ -61,22 +62,7 @@
     "type": "git",
     "url": "https://github.com/dooboostore-develop/packages"
   },
-  "scripts": {
-    "clean": "rm -rf dist",
-    "build:esm": "node build.mjs esm && pnpm exec tsc -p tsconfig.esm.json --emitDeclarationOnly",
-    "watch:esm": "pnpm run build:esm && node build.mjs esm --watch",
-    "build:cjs": "node build.mjs cjs && pnpm exec tsc -p tsconfig.cjs.json --emitDeclarationOnly && cp package.cjs.json dist/cjs/package.json",
-    "watch:cjs": "pnpm run build:cjs && node build.mjs cjs --watch",
-    "build": "pnpm run clean && node build.mjs all && pnpm exec tsc -p tsconfig.esm.json --emitDeclarationOnly && pnpm exec tsc -p tsconfig.cjs.json --emitDeclarationOnly && cp package.cjs.json dist/cjs/package.json",
-    "build:umd-bundle": "node build.mjs umd-bundle",
-    "watch:umd-bundle": "pnpm run build:umd-bundle && node build.mjs umd-bundle --watch",
-    "build:esm-bundle": "node build.mjs esm-bundle",
-    "watch:esm-bundle": "pnpm run build:esm-bundle && node build.mjs esm-bundle --watch",
-    "prepublishOnly": "pnpm run build",
-    "publish:npm": "pnpm run build && cp package.json package.json.back && pnpm pack && TARBALL_NAME=$(ls dooboostore-lib-web-*.tgz | head -n 1) && tar -xzf \"$TARBALL_NAME\" -C . --strip-components=1 package/package.json && rm \"$TARBALL_NAME\" && (pnpm publish --no-git-checks || true) && cp package.json.back package.json && rm -rf package.json.back  ",
-    "typecheck": "tsc --noEmit",
-    "test": "echo test"
-  },
+
   "peerDependencies": {
     "reflect-metadata": "^0.2.2",
     "@dooboostore/core": "workspace:*",
@@ -104,5 +90,22 @@
     "typescript": "^5.9.2",
     "esbuild-plugin-tsc": "^0.5.0",
     "esbuild": "^0.23.0"
+  },
+  "scripts": {
+    "clean": "rm -rf dist",
+    "build:esm": "node build.mjs esm",
+    "watch:esm": "pnpm run build:esm && node build.mjs esm --watch",
+    "build:cjs": "node build.mjs cjs && cp package.cjs.json dist/cjs/package.json",
+    "watch:cjs": "pnpm run build:cjs && node build.mjs cjs --watch",
+    "build": "pnpm run clean && node build.mjs all",
+    "build:umd-bundle": "node build.mjs umd-bundle",
+    "watch:umd-bundle": "pnpm run build:umd-bundle && node build.mjs umd-bundle --watch",
+    "build:esm-bundle": "node build.mjs esm-bundle",
+    "watch:esm-bundle": "pnpm run build:esm-bundle && node build.mjs esm-bundle --watch",
+    "prepublishOnly": "pnpm run build",
+    "publish:npm": "pnpm run build && cp package.json package.json.back && pnpm pack && TARBALL_NAME=$(ls dooboostore-lib-web-*.tgz | head -n 1) && tar -xzf \"$TARBALL_NAME\" -C . --strip-components=1 package/package.json && rm \"$TARBALL_NAME\" && (pnpm publish --no-git-checks || true) && cp package.json.back package.json && rm -rf package.json.back  ",
+    "ts:clean": "find . -name '*.js' -o -name '*.map' -o -name '*.d.ts' | xargs rm -f",
+    "typecheck": "tsc --noEmit",
+    "test": "echo test"
   }
 }

@@ -215,3 +215,13 @@ storybook-static
 /@dooboostore/simple-boot-http-server-ssr/create/lib/
 /@dooboostore/simple-boot-http-server-ssr/default-template-webpack/dist-front-end/
 /@dooboostore/simple-boot-http-server-ssr/default-template-webpack/dist-back-end/
+/@dooboostore/core/types.d.ts
+/@dooboostore/core-web/types.d.ts
+/@dooboostore/core-node/types.d.ts
+/@dooboostore/dom-render/types.d.ts
+/@dooboostore/lib-node/types.d.ts
+/@dooboostore/lib-web/types.d.ts
+/@dooboostore/simple-boot/types.d.ts
+/@dooboostore/simple-boot-front/types.d.ts
+/@dooboostore/simple-boot-http-server/types.d.ts
+/@dooboostore/simple-boot-http-server-ssr/types.d.ts
