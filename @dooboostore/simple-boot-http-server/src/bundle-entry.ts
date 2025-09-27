@@ -1,4 +1,3 @@
-export * from './SimpleBootHttpServer';
 export * from './codes';
 export * from './decorators';
 export * from './endpoints';
@@ -10,3 +9,4 @@ export * from './models';
 export * from './option';
 export * from './resolvers';
 export * from './session';
+export * from './SimpleBootHttpServer';

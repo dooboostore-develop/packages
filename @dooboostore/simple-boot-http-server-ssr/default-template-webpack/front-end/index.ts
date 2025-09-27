@@ -1,3 +1,4 @@
+import 'reflect-metadata'
 import Factory, { MakeSimFrontOption } from '@src/bootfactory';
 import { services } from 'service';
 

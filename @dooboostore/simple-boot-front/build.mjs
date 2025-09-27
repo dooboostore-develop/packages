@@ -111,8 +111,8 @@ async function buildTarget(target, watch = false) {
         format: 'esm',
         resolveExtensions: ['.ts', '.tsx', '.js', '.jsx', '.json'],
         mainFields: ['module', 'main'],
-        platform: 'node',
-        target: 'node18',
+        // platform: 'node',
+        // target: 'node18',
         plugins: [esbuildPluginTsc({tsconfigPath:'tsconfig.esm.json'}), addJsExtensionPlugin],
         // tsconfig: 'tsconfig.esm.json',
       }, watch);
@@ -126,8 +126,8 @@ async function buildTarget(target, watch = false) {
         entryPoints: entryPoints,
         outdir: path.resolve(__dirname, 'dist', 'cjs'),
         format: 'cjs',
-        platform: 'node',
-        target: 'node18',
+        // platform: 'node',
+        // target: 'node18',
         // tsconfig: 'tsconfig.cjs.json',
         plugins: [esbuildPluginTsc({tsconfigPath:'tsconfig.cjs.json'})],
       }, watch);

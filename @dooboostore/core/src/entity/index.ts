@@ -1,4 +1,3 @@
-export * from './Ellipse';
 export * from './Point2D';
 export * from './Point2Ds';
 export * from './Point2DType';
@@ -7,6 +6,7 @@ export * from './Point3Ds';
 export * from './Point3DType';
 export * from './Polygon';
 export * from './Rect';
+export * from './Ellipse';
 export * from './Scalar';
 export * from './SizeType';
 export * from './Vector';

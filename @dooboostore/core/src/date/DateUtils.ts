@@ -103,7 +103,7 @@ export namespace DateUtils {
 
   export const fromISOString = (isoString: string): Date => new Date(isoString);
 
-  export const formatDuration = (timeSecond: number, locale: string = DateUtils.getDefaultLocale()) => {
+  export const formatDuration = (timeSecond: number, locale: string = getDefaultLocale()) => {
     const rtf = new Intl.RelativeTimeFormat(locale, { numeric: 'always', style: 'long' });
 
 
@@ -186,4 +186,3 @@ export namespace DateUtils {
 
   export const getDefaultLocale = (): string => Intl.DateTimeFormat().resolvedOptions().locale;
 }
-

@@ -1,5 +1,5 @@
 import { IncomingMessage, OutgoingHttpHeader, OutgoingHttpHeaders, ServerResponse } from 'http';
-import { HttpHeaders } from '../codes/HttpHeaders';
+import { HttpHeaders, HttpHeadersType } from '../codes/HttpHeaders';
 import { Mimes } from '../codes/Mimes';
 import { Intent } from '@dooboostore/simple-boot/intent/Intent';
 import { URL, URLSearchParams } from 'url';
@@ -462,7 +462,7 @@ export class RequestResponse {
     return this.req.method?.toUpperCase();
   }
 
-  reqHeader(key: HttpHeaders | string) {
+  reqHeader(key: keyof typeof HttpHeaders | string) {
     return this.req.headers[key.toLowerCase()];
   }
 
@@ -478,7 +478,7 @@ export class RequestResponse {
     return h;
   }
 
-  reqHeaderFirst(key: HttpHeaders | string, defaultValue?: string) {
+  reqHeaderFirst(key: HttpHeadersType | string, defaultValue?: string) {
     const header = this.req.headers[key.toLowerCase()];
     if (header && Array.isArray(header)) {
       return header[0] ?? defaultValue;
@@ -508,16 +508,16 @@ export class RequestResponse {
     }
   }
 
-  resHeader(key: HttpHeaders | string) {
+  resHeader(key: HttpHeadersType | string) {
     return this.res.getHeader(key.toLowerCase());
   }
 
-  resHeaderFirst(key: HttpHeaders | string, defaultValue?: string) {
+  resHeaderFirst(key: HttpHeadersType | string, defaultValue?: string) {
     const header = this.res.getHeader(key.toLowerCase());
     if (header && Array.isArray(header)) {
       return header[0] ?? defaultValue;
     } else {
-      return header ?? defaultValue;
+      return (header as string) ?? defaultValue;
     }
   }
 
@@ -560,11 +560,11 @@ export class RequestResponse {
     return this.resWrite(JSON.stringify(chunk), encoding);
   }
 
-  resSetHeader(key: HttpHeaders | string, value: string | string[]) {
+  resSetHeader(key: HttpHeadersType | string, value: string | string[]) {
     return this.createRequestResponseChain(this.res.setHeader(key.toLowerCase(), value));
   }
 
-  resAddHeader(key: HttpHeaders | string, value: string | string[]) {
+  resAddHeader(key: HttpHeadersType | string, value: string | string[]) {
     const existingValue = this.res.getHeader(key.toLowerCase());
     const newValue = Array.isArray(existingValue)
       ? existingValue.concat(value)

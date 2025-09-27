@@ -13,6 +13,7 @@ export * from './logger';
 export * from './math';
 export * from './message';
 export * from './object';
+export * from './reflect';
 // export * from './open-api/open-api';
 export * from './optional';
 export * from './parser/css/CssParser';

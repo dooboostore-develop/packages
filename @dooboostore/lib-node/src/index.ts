@@ -1,5 +1,3 @@
+// export * from './RandomImage';
 
-
-export default {
-
-}
+export default {}

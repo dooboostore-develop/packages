@@ -5,18 +5,28 @@
   "type": "module",
   "main": "./dist/cjs/index.js",
   "module": "./dist/esm/index.js",
-  "types": "./dist/esm/index.d.ts",
+  "types": "./dist/types/index.d.ts",
+  "typesVersions": {
+    ">=4.2": {
+      "*": [
+        "dist/types/*"
+      ]
+    }
+  },
   "files": [
-    "dist"
+    "dist",
+    "src",
+    "LICENSE.md",
+    "tsconfig.json"
   ],
   "exports": {
     ".": {
-      "types": "./dist/esm/index.d.ts",
+      "types": "./dist/types/index.d.ts",
       "import": "./dist/esm/index.js",
       "require": "./dist/cjs/index.js"
     },
     "./*": {
-      "types": "./dist/esm/*.d.ts",
+      "types": "./dist/types/*.d.ts",
       "import": "./dist/esm/*.js",
       "require": "./dist/cjs/*.js"
     }
@@ -65,7 +75,7 @@
     "watch:esm": "pnpm run build:esm && node build.mjs esm --watch",
     "build:cjs": "node build.mjs cjs && pnpm exec tsc -p tsconfig.cjs.json --emitDeclarationOnly && cp package.cjs.json dist/cjs/package.json",
     "watch:cjs": "pnpm run build:cjs && node build.mjs cjs --watch",
-    "build": "node build.mjs all && pnpm exec tsc -p tsconfig.esm.json --emitDeclarationOnly && pnpm exec tsc -p tsconfig.cjs.json --emitDeclarationOnly && cp package.cjs.json dist/cjs/package.json",
+    "build": "pnpm run clean && node build.mjs all && pnpm exec tsc -p tsconfig.esm.json --emitDeclarationOnly && pnpm exec tsc -p tsconfig.cjs.json --emitDeclarationOnly && cp package.cjs.json dist/cjs/package.json",
     "build:umd-bundle": "node build.mjs umd-bundle",
     "watch:umd-bundle": "pnpm run build:umd-bundle && node build.mjs umd-bundle --watch",
     "build:esm-bundle": "node build.mjs esm-bundle",

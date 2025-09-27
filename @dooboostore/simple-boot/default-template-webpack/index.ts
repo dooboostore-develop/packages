@@ -1,3 +1,4 @@
+import 'reflect-metadata'
 import { SimpleApplication } from '@dooboostore/simple-boot/SimpleApplication';
 import { Route, Router } from '@dooboostore/simple-boot/decorators/route/Router';
 import { Sim } from '@dooboostore/simple-boot/decorators/SimDecorator';
@@ -5,9 +6,10 @@ import { Inject } from '@dooboostore/simple-boot/decorators/inject/Inject';
 import { SimOption } from '@dooboostore/simple-boot/SimOption';
 import { Intent } from '@dooboostore/simple-boot/intent/Intent';
 import { RouteFilter } from '@dooboostore/simple-boot/route/RouteFilter';
-import { RouterAction, RoutingDataSet } from '@dooboostore/simple-boot/route/RouterAction';
+import { RouterAction } from '@dooboostore/simple-boot/route/RouterAction';
 import { Injection } from '@dooboostore/simple-boot/decorators/inject/Injection';
 import { GlobalAdvice } from './GlobalAdvice';
+import { RoutingDataSet } from '@dooboostore/simple-boot/route/RouterManager';
 //
 // @Sim
 // class User {
@@ -92,7 +94,7 @@ class SS {
   // filters: [new RFilter()],
   // route: {'/office': Office}
 })
-class SSRouter implements RouterAction {
+class SSRouter implements RouterAction.HasActivate {
   child: any;
 
   async canActivate(url: RoutingDataSet, module: any) {
@@ -143,7 +145,7 @@ class Office2 {
   },
   routers: [SSRouter]
 })
-class UsersRouter implements RouterAction {
+class UsersRouter implements RouterAction.HasActivate {
   child: any;
 
   async canActivate(url: RoutingDataSet, module: any) {
@@ -196,7 +198,7 @@ export class RFilter implements RouteFilter {
   //     }
   // }]
 })
-class AppRouter implements RouterAction {
+class AppRouter implements RouterAction.CanActivate {
   name = 'appRouter-name';
 
   @Injection

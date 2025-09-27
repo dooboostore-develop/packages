@@ -6,6 +6,7 @@
     "declarationMap": true,
     "stripInternal": true,
     "noEmit": true,
+    "target": "es2020",
     "lib": ["esnext", "dom"],
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
@@ -15,5 +16,5 @@
     "module": "esnext"
   },
   "include": ["src/**/*.ts"],
-  "exclude": ["node_modules", "**/*.spec.ts", "**/*.test.ts", "example", "test", "dist"]
+  "exclude": ["node_modules", "**/*.spec.ts", "**/*.test.ts", "example", "test"]
 }

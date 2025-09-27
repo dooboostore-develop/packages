@@ -5,6 +5,7 @@ export const HttpHeaders = {
   ...AHttpHeaders,
   XSimpleBootSsrIntentScheme: 'x-simple-boot-ssr-intent-scheme'
 };
+export type HttpHeadersType = typeof HttpHeaders;
 
 export const makeIntentHeaderBySymbol = (symbol: Symbol): HeadersInit => {
   return {

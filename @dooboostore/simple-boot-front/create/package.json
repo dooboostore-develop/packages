@@ -62,8 +62,8 @@
   "repository": "https://github.com/dooboostore-develop/packages",
   "scripts": {
     "dev": "NODE_ENV=development node ./bin/run",
-    "npm:build": "rm -rf lib && tsc --outDir lib --declarationDir lib && tsc",
-    "npm:publish": "npm run npm:build && npm publish",
+    "build": "rm -rf lib && tsc --outDir lib --declarationDir lib && tsc",
+    "publish:npm": "npm run build && npm publish",
     "posttest": "tslint -p test -t stylish",
     "fix": "tslint -p test -t stylish --fix",
     "prepack": "tsc",

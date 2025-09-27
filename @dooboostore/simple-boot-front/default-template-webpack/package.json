@@ -13,6 +13,15 @@
     "ts-node": "ts-node index.ts",
     "ts-node:watch": "ts-node-dev --respawn index.ts"
   },
+  "dependencies": {
+    "@dooboostore/core": "workspace:*",
+    "@dooboostore/core-node": "workspace:*",
+    "@dooboostore/core-web": "workspace:*",
+    "@dooboostore/dom-render": "workspace:*",
+    "@dooboostore/simple-boot": "workspace:*",
+    "@dooboostore/simple-boot-front": "workspace:*",
+    "reflect-metadata": "^0.2.2"
+  },
   "devDependencies": {
     "@babel/core": "^7.24.0",
     "@babel/plugin-proposal-class-properties": "^7.18.6",
@@ -37,13 +46,6 @@
     "webpack-cli": "^5.1.4",
     "webpack-dev-server": "^5.2.0",
     "nodemon-webpack-plugin": "^4.8.2",
-    "tsconfig-paths-webpack-plugin": "^4.2.0",
-    "@dooboostore/core": "latest",
-    "@dooboostore/core-node": "latest",
-    "@dooboostore/core-web": "latest",
-    "@dooboostore/dom-render": "latest",
-    "@dooboostore/simple-boot": "latest",
-    "@dooboostore/simple-boot-front": "latest",
-    "reflect-metadata": "^0.2.2"
+    "tsconfig-paths-webpack-plugin": "^4.2.0"
   }
 }

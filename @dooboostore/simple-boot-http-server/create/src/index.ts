@@ -1,3 +1,4 @@
+import 'reflect-metadata'
 import {Command, flags} from '@oclif/command';
 import chalk from 'chalk';
 import {cli} from 'cli-ux';
@@ -101,6 +102,13 @@ class CreateSvelteCmd extends Command {
       const pkgPath = join(projectName, 'package.json');
       const pkg = JSON.parse(readFileSync(pkgPath, 'utf-8'));
       pkg.name = projectName;
+      if (pkg.dependencies) {
+        Object.keys(pkg.dependencies).forEach(dep => {
+          if (pkg.dependencies[dep] === 'workspace:*') {
+            pkg.dependencies[dep] = 'latest';
+          }
+        });
+      }
       writeFileSync(pkgPath, JSON.stringify(pkg, null, 2));
       cli.action.stop('✔ Done');
     } catch (err) {

@@ -6,7 +6,6 @@ import { DomRender, DomRenderRunConfig } from '@dooboostore/dom-render/DomRender
 import { SimAtomic } from '@dooboostore/simple-boot/simstance/SimAtomic';
 import { SimpleApplication } from '@dooboostore/simple-boot/SimpleApplication';
 import { Intent } from '@dooboostore/simple-boot/intent/Intent';
-import { ViewService } from './service/view/ViewService';
 import { SimstanceManager } from '@dooboostore/simple-boot/simstance/SimstanceManager';
 import { IntentManager } from '@dooboostore/simple-boot/intent/IntentManager';
 import { RouterManager } from '@dooboostore/simple-boot/route/RouterManager';
@@ -45,7 +44,6 @@ export class SimpleBootFront extends SimpleApplication {
     RouterManager,
     SimstanceManager,
     SimFrontOption,
-    ViewService,
     Router as ConstructorType<any>
   ];
   public domRenderTargetElements: TargetElement[] = [];
