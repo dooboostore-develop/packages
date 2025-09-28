@@ -1,7 +1,7 @@
 {
   "name": "@dooboostore/create-simple-boot",
-  "description": "Create a simple-boot or Sapper site in a single command.",
-  "version": "1.0.0",
+  "description": "Create a simple-boot-front or Sapper site in a single command.",
+  "version": "1.0.10",
   "author": "dooboostore",
   "publishConfig": {
     "access": "public"
@@ -52,7 +52,7 @@
     "oclif",
     "simple-boot",
     "sapper",
-    "create-simple-boot"
+    "create-simple-boot-front"
   ],
   "license": "MIT",
   "main": "lib/index.js",
@@ -62,8 +62,8 @@
   "repository": "https://github.com/dooboostore-develop/packages",
   "scripts": {
     "dev": "NODE_ENV=development node ./bin/run",
-    "npm:build": "rm -rf lib && tsc --outDir lib --declarationDir lib && tsc",
-    "npm:publish": "npm run npm:build && npm publish",
+    "build": "rm -rf lib && tsc --outDir lib --declarationDir lib && tsc",
+    "publish:npm": "pnpm run build && (pnpm publish --no-git-checks || true)",
     "posttest": "tslint -p test -t stylish",
     "fix": "tslint -p test -t stylish --fix",
     "prepack": "tsc",

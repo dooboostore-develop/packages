@@ -1,5 +1,5 @@
 {
-  "name": "@dooboostore/create-simple-boot",
+  "name": "@dooboostore/create-dom-render",
   "description": "Create a simple-boot or Sapper site in a single command.",
   "version": "1.0.0",
   "author": "dooboostore",
@@ -57,7 +57,7 @@
   "license": "MIT",
   "main": "lib/index.js",
   "oclif": {
-    "bin": "create-simple-boot"
+    "bin": "create-dom-redner"
   },
   "repository": "https://github.com/dooboostore-develop/packages",
   "scripts": {

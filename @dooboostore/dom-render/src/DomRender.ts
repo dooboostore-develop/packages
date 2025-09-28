@@ -90,9 +90,21 @@ export class DomRender<T extends object = any> {
     if (typeof CanvasRenderingContext2D !== 'undefined' && !targetConfig.proxyExcludeTyps.some(it => it === CanvasRenderingContext2D)) {
       targetConfig.proxyExcludeTyps.push(CanvasRenderingContext2D);
     }
-    if (typeof HTMLCanvasElement !== 'undefined' && !targetConfig.proxyExcludeTyps.some(it => it === HTMLCanvasElement)) {
-      targetConfig.proxyExcludeTyps.push(HTMLCanvasElement);
+    if (typeof CSSStyleDeclaration !== 'undefined' && !targetConfig.proxyExcludeTyps.some(it => it === CSSStyleDeclaration)) {
+      targetConfig.proxyExcludeTyps.push(CSSStyleDeclaration);
     }
+    if (typeof MutationObserver !== 'undefined' && !targetConfig.proxyExcludeTyps.some(it => it === IntersectionObserver)) {
+      targetConfig.proxyExcludeTyps.push(IntersectionObserver);
+    }
+    if (typeof IntersectionObserver !== 'undefined' && !targetConfig.proxyExcludeTyps.some(it => it === IntersectionObserver)) {
+      targetConfig.proxyExcludeTyps.push(IntersectionObserver);
+    }
+    if (typeof HTMLElement !== 'undefined' && !targetConfig.proxyExcludeTyps.some(it => it === HTMLElement)) {
+      targetConfig.proxyExcludeTyps.push(HTMLElement);
+    }
+    // if (typeof HTMLCanvasElement !== 'undefined' && !targetConfig.proxyExcludeTyps.some(it => it === HTMLCanvasElement)) {
+    //   targetConfig.proxyExcludeTyps.push(HTMLCanvasElement);
+    // }
     if (!targetConfig.proxyExcludeTyps.some(it => it === RawSet)) {
       targetConfig.proxyExcludeTyps.push(RawSet);
     }

@@ -172,6 +172,12 @@ export class SimpleBootFront extends SimpleApplication {
   }
 
   private initRun(otherInstanceSim?: Map<ConstructorType<any>, any>) {
+    const targetElement = this.option.window.document
+      .querySelector(this.option.selector)?.cloneNode(true) as HTMLElement;
+    if (!targetElement) {
+      throw new Error('no element selector ' + this.option.selector)
+    }
+
     const simstanceManager = super.run(otherInstanceSim);
     this.initDomRenderConfigSetting();
     this.option.window.addEventListener('intent', event => {
@@ -179,9 +185,7 @@ export class SimpleBootFront extends SimpleApplication {
       this.publishIntent(new Intent(cevent.detail.uri, cevent.detail.data, event));
     });
 
-    const targetElement = this.option.window.document
-      .querySelector(this.option.selector)
-      .cloneNode(true) as HTMLElement;
+
     targetElement.innerHTML = DomRenderRootDefaultTemplate;
     targetElement.hidden = true;
     this.option.window.document.body.appendChild(targetElement);

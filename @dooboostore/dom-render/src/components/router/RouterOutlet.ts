@@ -5,7 +5,7 @@ import { OtherData } from '../../lifecycle/OnChangeAttrRender';
 import { OnInitRender } from '../../lifecycle/OnInitRender';
 import { ComponentSet } from '../../components/ComponentSet';
 import { OnDestroyRenderParams } from '../../lifecycle/OnDestroyRender';
-import { ComponentRouterBase } from '../../components/ComponentRouterBase';
+import { ComponentRouterBase, isOnCreatedOutletDebounce } from '../../components/ComponentRouterBase';
 export namespace RouterOutlet {
   export const selector = 'dr-router-outlet';
   export type Attribute = {
@@ -13,6 +13,7 @@ export namespace RouterOutlet {
     if: boolean | null;
     createArguments: any[];
     onCreated?: (value: any) => void;
+    onCreatedDebounce?: (value: any) => void;
     onDestroyRender?: () => void;
   };
 
@@ -28,8 +29,8 @@ export namespace RouterOutlet {
     onInitRender(param: any, rawSet: RawSet) {
       super.onInitRender(param, rawSet);
       const c = this.getParentThis();
-      if (c instanceof ComponentRouterBase){
-        this.value = c.child
+      if (c instanceof ComponentRouterBase) {
+        this.value = c.child;
       }
       // console.log('------',c);
     }
@@ -51,6 +52,14 @@ export namespace RouterOutlet {
       }
     }
 
+    onCreatedThisChildDebounce() {
+      let parentThis = this.getParentThis();
+      // console.log('---', parentThis);
+      if (isOnCreatedOutletDebounce(parentThis)) {
+        parentThis.onCreatedOutletDebounce(this.value?.obj);
+      }
+      this.getAttribute('onCreatedDebounce')?.(this.value?.obj);
+    }
     created(component: any) {
       component ??= this.value?.obj;
       this.getAttribute('onCreated')?.(component);
@@ -60,7 +69,7 @@ export namespace RouterOutlet {
 
 export default {
   // TODO: 왜 이놈만 webpack에서 순환참조 에러나는지모르겠다.. 왜 이놈만.. 그래서 이렇게 하긴함.
-  routerOutlet: (config?: DomRenderRunConfig, executer?: {run: (...data: any[])=>any}) => {
+  routerOutlet: (config?: DomRenderRunConfig, executer?: { run: (...data: any[]) => any }) => {
     return RawSet.createComponentTargetElement({
       name: RouterOutlet.selector,
       template:

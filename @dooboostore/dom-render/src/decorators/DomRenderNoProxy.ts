@@ -1,3 +1,5 @@
+import { ValidUtils } from '@dooboostore/core/valid/ValidUtils';
+
 export const DomRenderNoProxyKey = 'DomRender:NoProxy'
 export const DomRenderNoProxy = (target: any, propertyKey?: string | symbol) => {
     // 클래스 데코레이터로 사용된 경우
@@ -26,5 +28,5 @@ export const getDomRenderNoProxy = (target: any, propertyKey?: string | symbol) 
 }
 
 export const isDomRenderNoProxy = (target: any, propertyKey?: string | symbol) => {
-  return getDomRenderNoProxy(target, propertyKey) === true;
+  return ValidUtils.isNullOrUndefined(target) || getDomRenderNoProxy(target, propertyKey) === true;
 }

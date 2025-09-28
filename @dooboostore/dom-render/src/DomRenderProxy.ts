@@ -1,4 +1,4 @@
-import { RawSet } from './rawsets/RawSet';
+import { RawSet, RenderResult } from './rawsets/RawSet';
 import { EventManager } from './events/EventManager';
 import { DomRenderConfig } from './configs/DomRenderConfig';
 import { ScriptUtils } from '@dooboostore/core-web/script/ScriptUtils';
@@ -19,6 +19,7 @@ import { isOnChildRenderedByProperty } from './lifecycle/OnChildRenderedByProper
 import { ObjectUtils } from '@dooboostore/core/object/ObjectUtils';
 import {ValidUtils} from '@dooboostore/core/valid/ValidUtils'
 import { isOnProxyDomRender } from './lifecycle/OnProxyDomRender';
+import { isOnRawSetRendered } from './lifecycle/OnRawSetRendered';
 
 const excludeGetSetPropertys = ['onBeforeReturnGet', 'onBeforeReturnSet', '__domrender_components', '__render', '_DomRender_isFinal', '_domRender_ref', '_rawSets', '_domRender_proxy', '_targets', '_DomRender_origin', '_DomRender_ref', '_DomRender_proxy'];
 export const isWrapProxyDomRenderProxy = <T>(obj: T): boolean => {
@@ -75,7 +76,7 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
   }
 
   public static isFinal<T = any>(obj: T) {
-    return DomRenderFinalProxy.isFinal(obj);
+    return ValidUtils.isNull(obj) || DomRenderFinalProxy.isFinal(obj);
   }
 
   public run(objProxy: T) {
@@ -209,6 +210,8 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
         // console.log('getUsingTriggerVariables->', path);
         this.addRawSet(path, it);
       });
+
+      let renderResult: RenderResult | undefined;
       if (it.isConnected) {
         // 중요 render될때 targetAttribute 체크 해야함.
         const targetAttrMap = (it.point.node as Element)?.getAttribute?.(EventManager.normalAttrMapAttrName);
@@ -238,14 +241,22 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
           // ------------------->
         } else {
           const rawSets = await it.render(this._domRender_proxy, this._domRender_config);
+          renderResult = rawSets;
           // 그외 자식들 render
-          if (rawSets && rawSets.length > 0) {
-            await this.render(rawSets);
+          if (rawSets && rawSets.raws.length > 0) {
+            await this.render(rawSets.raws);
           }
         }
       } else {
         removeRawSets.push(it);
       }
+
+      const t = it.findNearThis(this._domRender_proxy)
+      // TODO: 호출된곳에서 또 변수를 수정하게되면 무한루프니깐 왠만하면 사용못하게 해야한다.
+      if(isOnRawSetRendered(t)){
+        await t.onRawSetRendered(it, {path: fullPathStr, renderResult});
+      }
+      // console.log('----', it);
     }
 
     if (removeRawSets.length > 0) {
@@ -397,6 +408,7 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
 
   public set(target: T, p: string | symbol, value: any, receiver: T): boolean {
     // console.log('set------->', target, p, value, receiver, Date.now())
+    // console.log('set------->', p,value)
     // console.log('set------->', target, p, value, receiver, Date.now())
     // try {
     //   const isNoProxy = Reflect.getMetadata(DomRenderNoProxyKey, target, p) || Reflect.getMetadata(DomRenderNoProxyKey, Object.getPrototypeOf(obj).constructor);
@@ -497,6 +509,8 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
         }
       })
     })
+
+    // console.log('---end',receiver);
     if (('onBeforeReturnSet' in receiver) && typeof p === 'string' && !(this._domRender_config.proxyExcludeOnBeforeReturnSets ?? []).concat(excludeGetSetPropertys).includes(p)) {
       if(isOnBeforeReturnSet(receiver)){
         receiver.onBeforeReturnSet?.(p, value, fullPathInfo.map(it => it.map(it=>it.path).join()));
@@ -555,8 +569,6 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
   }
 
   proxy(parentProxy: T, obj: T | any, p: string) {
-
-
     try {
       // const isNoProxy = Reflect.getMetadata(DomRenderNoProxyKey, obj, p) || Reflect.getMetadata(DomRenderNoProxyKey, Object.getPrototypeOf(obj).constructor);
       const isObject = typeof obj === 'object';
@@ -565,7 +577,7 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
       const isFinal = isObject && DomRenderProxy.isFinal(obj);
       const isFrozen = Object.isFrozen(obj);
       const isShield = obj instanceof Shield;
-      if (isNoProxy || isExclude || ValidUtils.isNullOrUndefined(obj) || !isObject || isFinal || isFrozen || isShield) {
+      if (obj === undefined || obj === null || isNoProxy || isExclude || ValidUtils.isNullOrUndefined(obj) || !isObject || isFinal || isFrozen || isShield) {
         return obj;
       }
     } catch (e) {

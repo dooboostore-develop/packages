@@ -82,21 +82,12 @@ module.exports = {
     extensions: ['.ts', '.js', '.html', '.css'],
     plugins: [new TsconfigPathsPlugin()],
     alias: {
-      // '@backend': path.resolve(__dirname),
-      // '@src': path.resolve(__dirname, '../src'),
-      // '@front': path.resolve(__dirname,'../front'),
     },
     modules: [
       'node_modules',
-      // path.resolve(__dirname, '..'),
-      // path.resolve(__dirname, '../..'),
-      // path.resolve(__dirname, '../../..')
     ]
   },
   externals: {
-    'canvas': 'commonjs canvas',
-    'utf-8-validate': 'commonjs utf-8-validate',
-    'bufferutil': 'commonjs bufferutil'
   },
   optimization: {
     minimize: false

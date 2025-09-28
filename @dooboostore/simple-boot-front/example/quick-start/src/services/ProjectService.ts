@@ -4,7 +4,7 @@ import { SimstanceManager } from '@dooboostore/simple-boot/simstance/SimstanceMa
 @Sim
 export class ProjectService {
     constructor(public sim: SimstanceManager) {
-        console.log('----sim', sim);
+        // console.log('----sim', sim);
     }
     sum(a: number, b: number): number {
         return a + b;

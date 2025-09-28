@@ -17,6 +17,8 @@
 
     "all:clean": "concurrently \"pnpm run --filter @dooboostore/core clean\"  \"pnpm run --filter @dooboostore/core-node clean\"  \"pnpm run --filter @dooboostore/core-web clean\"  \"pnpm run --filter @dooboostore/dom-render clean\"  \"pnpm run --filter @dooboostore/lib-node clean\" \"pnpm run --filter @dooboostore/lib-web clean\"  \"pnpm run --filter @dooboostore/simple-boot clean\"  \"pnpm run --filter @dooboostore/simple-boot-front clean\"  \"pnpm run --filter @dooboostore/simple-boot-http-server clean\"  \"pnpm run --filter @dooboostore/simple-boot-http-server-ssr clean\"",
     "all:build:step:cjs:esm": "concurrently \"pnpm run all:build:step:esm\" \"pnpm run all:build:step:cjs\"",
+    "build": "pnpm run all:build:step",
+
 
     "prettier:check": "pnpm prettier --config .prettierrc.json --check './apps/**/*.{ts,tsx,js,jsx}' './packages/**/*.{ts,tsx,js,jsx}' ",
     "prettier:write": "pnpm prettier --config .prettierrc.json --write './apps/**/*.{ts,tsx,js,jsx}' './packages/**/*.{ts,tsx,js,jsx}' ",

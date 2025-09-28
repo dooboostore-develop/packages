@@ -9,4 +9,5 @@ export * from './OnCreatedThisChild';
 export * from './OnDestroyRender';
 export * from './OnInitRender';
 export * from './OnProxyDomRender';
+export * from './OnRawSetRendered';
 export * from './dr-this';

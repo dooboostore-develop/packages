@@ -2,7 +2,17 @@ import { ChildrenSet, ComponentBase, ComponentBaseConfig } from './ComponentBase
 import { ComponentSet } from './ComponentSet';
 import { isOnDrThisUnBind } from '../lifecycle/dr-this/OnDrThisUnBind';
 
+export interface OnCreatedOutlet {
+  onCreatedOutlet(child: any): void;
+}
+export const isOnCreatedOutlet = (obj: any): obj is OnCreatedOutlet =>
+  typeof obj?.onCreatedOutlet === 'function';
 
+export interface OnCreatedOutletDebounce {
+  onCreatedOutletDebounce(child: any): void;
+}
+export const isOnCreatedOutletDebounce = (obj: any): obj is OnCreatedOutletDebounce =>
+  typeof obj?.onCreatedOutletDebounce === 'function';
 export type ComponentRouterBaseConfig = ComponentBaseConfig & { sameRouteNoApply?: boolean };
 
 export abstract class ComponentRouterBase<T = any>

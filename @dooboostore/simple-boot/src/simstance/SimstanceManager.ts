@@ -42,7 +42,6 @@ export class SimstanceManager implements Runnable<void, Map<ConstructorType<any>
     this.setStoreSet((option as any).constructor, option);
     this.setStoreSet(SimOption, option);
     this.simProxyHandler = new SimProxyHandler(this.simpleApplication, this, option);
-    console.log('simstanceManager constructor', this.name)
   }
 
   get storage() {

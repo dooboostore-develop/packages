@@ -16,6 +16,7 @@ import { DomRenderConfig } from '../configs/DomRenderConfig';
 import { Subject } from '@dooboostore/core/message/Subject';
 import { debounceTime } from '@dooboostore/core/message/operators/debounceTime';
 import type { Subscription } from '@dooboostore/core/message/Subscription';
+import { OnRawSetRendered, OnRawSetRenderedOtherData } from "../lifecycle/OnRawSetRendered";
 
 
 export const ATTRIBUTE_METADATA_KEY = Symbol('attribute');
@@ -36,6 +37,7 @@ export interface QueryMetadata {
     convert?: (e: Element) => any;
     onDestroy?: (componentInstance: any, element: Element) => void;
     refreshTime?: number; // milliseconds
+    refreshRawSetRendered?: boolean;
 }
 
 export interface EventMetadata {
@@ -44,6 +46,7 @@ export interface EventMetadata {
     methodName: string | symbol;
     onDestroy?: (componentInstance: any, element: Element) => void;
     refreshTime?: number; // milliseconds
+    refreshRawSetRendered?: boolean;
 }
 
 export function attribute(nameOrOptions?: string | { name?: string, converter?: (value: any | string | null) => any }): (target: object, propertyKey: string | symbol, descriptor?: PropertyDescriptor) => void {
@@ -74,7 +77,7 @@ export function attribute(nameOrOptions?: string | { name?: string, converter?: 
     };
 }
 
-export function query(selectorOrOptions: string | { selector: string, convert?: (e: Element) => any, onDestroy?: (componentInstance: any, element: Element) => void, refreshIntervalTime?: number }): (target: object, propertyKey: string | symbol, descriptor?: PropertyDescriptor) => void {
+export function query(selectorOrOptions: string | { selector: string, convert?: (e: Element) => any, onDestroy?: (componentInstance: any, element: Element) => void, refreshIntervalTime?: number, refreshRawSetRendered?: boolean }): (target: object, propertyKey: string | symbol, descriptor?: PropertyDescriptor) => void {
     return (target: object, propertyKey: string | symbol, descriptor?: PropertyDescriptor) => {
         const queries = ReflectUtils.getMetadata<QueryMetadata[]>(QUERY_METADATA_KEY, target.constructor) || [];
         
@@ -82,7 +85,8 @@ export function query(selectorOrOptions: string | { selector: string, convert?: 
         let convert: ((e: Element) => any) | undefined;
         let onDestroy: ((componentInstance: any, element: Element) => void) | undefined;
         let refreshTime: number | undefined;
-        
+        let refreshRawSetRendered: boolean | undefined;
+
         if (typeof selectorOrOptions === 'string') {
             selector = selectorOrOptions;
         } else {
@@ -90,6 +94,7 @@ export function query(selectorOrOptions: string | { selector: string, convert?: 
             convert = selectorOrOptions.convert;
             onDestroy = selectorOrOptions.onDestroy;
             refreshTime = selectorOrOptions.refreshIntervalTime;
+            refreshRawSetRendered = selectorOrOptions.refreshRawSetRendered;
         }
         
         const queryMetadata: QueryMetadata = {
@@ -98,7 +103,8 @@ export function query(selectorOrOptions: string | { selector: string, convert?: 
             isMethod: !!descriptor,
             convert: convert,
             onDestroy: onDestroy,
-            refreshTime: refreshTime
+            refreshTime: refreshTime,
+            refreshRawSetRendered
         };
         
         queries.push(queryMetadata);
@@ -106,7 +112,7 @@ export function query(selectorOrOptions: string | { selector: string, convert?: 
     };
 }
 
-export function event(options: { query: string, name: string, onDestroy?: (componentInstance: any, element: Element) => void, refreshTime?: number }): MethodDecorator {
+export function event(options: { query: string, name: string, onDestroy?: (componentInstance: any, element: Element) => void, refreshTime?: number, refreshRawSetRendered?: boolean }): MethodDecorator {
     return (target: object, propertyKey: string | symbol, descriptor: PropertyDescriptor) => {
         const events = ReflectUtils.getMetadata<EventMetadata[]>(EVENT_METADATA_KEY, target.constructor) || [];
         
@@ -115,7 +121,8 @@ export function event(options: { query: string, name: string, onDestroy?: (compo
             eventName: options.name,
             methodName: propertyKey,
             onDestroy: options.onDestroy,
-            refreshTime: options.refreshTime
+            refreshTime: options.refreshTime,
+            refreshRawSetRendered: options.refreshRawSetRendered
         };
         
         events.push(eventMetadata);
@@ -128,7 +135,7 @@ export type ComponentBaseConfig = { onlyParentType?: ConstructorType<any>[] | Co
 
 export type ChildrenSet = { instance: any, data: OnCreateRenderDataParams };
 
-export class ComponentBase<T = any, C extends ComponentBaseConfig = ComponentBaseConfig> implements OnChangeAttrRender, OnCreateRenderData, OnCreatedThisChild, OnDrThisBind, OnDrThisUnBind, OnInitRender, OnDestroyRender {
+export class ComponentBase<T = any, C extends ComponentBaseConfig = ComponentBaseConfig> implements OnChangeAttrRender, OnCreateRenderData, OnCreatedThisChild, OnDrThisBind, OnDrThisUnBind, OnInitRender, OnDestroyRender, OnRawSetRendered {
   @DomRenderNoProxy
   private _rawSet?: RawSet;
   @DomRenderNoProxy
@@ -366,6 +373,21 @@ export class ComponentBase<T = any, C extends ComponentBaseConfig = ComponentBas
     this._refreshTimers.clear();
   }
 
+  async onRawSetRendered(rawSet: RawSet, otherData: OnRawSetRenderedOtherData): Promise<void> {
+    const queries = ReflectUtils.getMetadata<QueryMetadata[]>(QUERY_METADATA_KEY, this.constructor);
+    if (queries) {
+      queries.filter(it => it.refreshRawSetRendered).forEach(queryInfo => {
+        this._updateQueryBinding(queryInfo, rawSet, true);
+      });
+    }
+
+    const events = ReflectUtils.getMetadata<EventMetadata[]>(EVENT_METADATA_KEY, this.constructor);
+    if (events) {
+      events.filter(it => it.refreshRawSetRendered).forEach(eventInfo => {
+        this._updateEventBinding(eventInfo, rawSet, true);
+      });
+    }
+  }
   /**
    * Manually refresh all query and event decorators
    * Useful when DOM elements are dynamically added/removed and you want to update bindings
@@ -587,7 +609,7 @@ export class ComponentBase<T = any, C extends ComponentBaseConfig = ComponentBas
 
   // TODO: rawSet isConnected로 체크해서 들어가있는것만 처리되도록 또는 이미들어가있는것도 뺴야될것같은데.. 적용하긴했음..지켜봐야될듯.
   onCreatedThisChild(child: any, data: OnCreateRenderDataParams) {
-    // console.log('------------------------',child, data, data.render?.rawSet?.isConnected)
+    // console.log('onCreatedThisChild------------------------',child, data, data.render?.rawSet?.isConnected)
     const n = [...this._children];
     n.push({instance:child, data});
     this._children = n.filter(it=>it.data.render?.rawSet?.isConnected)

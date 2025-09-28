@@ -1,53 +1,46 @@
-# @dooboostore Packages
-====
+# @dooboostore
 
-This repository contains a collection of packages that form the @dooboostore ecosystem, a comprehensive framework for building modern web applications. These packages work together to provide a complete solution for frontend and backend development.
+[![Build and Test](https://github.com/dooboostore-develop/packages/actions/workflows/main.yaml/badge.svg?branch=main)](https://github.com/dooboostore-develop/packages/actions/workflows/main.yaml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](https://opensource.org/licenses/MIT)
 
-## Package Overview
+**The Modern Framework for Web Applications**
 
-### Core Utilities
+This repository is the home for a collection of packages that constitute the `@dooboostore` ecosystem. It's a comprehensive framework designed for building modern, full-stack web applications with ease and efficiency.
 
-- [core](%40dooboostore/core) - A comprehensive utility library with modules for array manipulation, date handling, entity management, promise utilities, string utilities, validation, and more. This serves as the foundation for all other packages.
+---
 
-- [core-node](%40dooboostore/core-node) - Node.js-specific utilities that extend the core package functionality with file system operations, process management, and data conversion utilities.
+## Why @dooboostore?
 
-- [core-web](%40dooboostore/core-web) - Web-specific utilities that extend the core package functionality with browser-related utilities such as DOM manipulation, cookie handling, storage, animation, clipboard, and window management.
+- **Modular Architecture:** Build your applications with a set of cohesive, independent packages. Use only what you need.
+- **Full-Stack Solution:** From core utilities to frontend rendering and backend servers, `@dooboostore` provides a complete development experience.
+- **TypeScript First:** Written entirely in TypeScript to ensure type safety and improve developer productivity.
+- **Extensible:** Designed with extensibility in mind, allowing you to customize and build upon the core framework.
 
-### Rendering and UI
+## Packages
 
-- [dom-render](%40dooboostore/dom-render) - A view template engine for DOM control, rendering, and management. It uses a proxy-based approach to manage internal variables and provides features like expression syntax, attribute binding, style handling, and component lifecycle hooks.
+This repository is a monorepo containing the following packages:
 
-- [app-system](%40dooboostore/app-system) - A comprehensive framework for building single-page applications (SPAs). It provides a collection of utilities, services, and components including ApiService for HTTP requests, alert system, UI components, proxy system, and state management.
-
-### Application Framework
-
-- [simple-boot](%40dooboostore/simple-boot) - A core framework that provides object management with dependency injection, aspect-oriented programming, exception handling, router system, and intent event system.
-
-- [simple-boot-front](%40dooboostore/simple-boot-front) - A Single Page Application (SPA) framework for web development built on top of simple-boot-core and dom-render. It provides a component-based architecture, routing system, and template system.
-
-### Server Framework
-
-- [simple-boot-http-server](%40dooboostore/simple-boot-http-server) - An HTTP web server framework built on top of simple-boot-core. It provides URL and method mapping, filters for request/response processing, endpoints for handling requests, and exception handling.
-
-- [simple-boot-http-server-ssr](%40dooboostore/simple-boot-http-server-ssr) - A server-side rendering (SSR) extension for the simple-boot-http-server package that combines simple-boot-front and simple-boot-http-server to render frontend components on the server side.
-
-## Dependencies
-
-The packages have dependencies on each other, forming a layered architecture:
-
-1. `core` is the foundation with no dependencies on other @dooboostore packages
-2. `core-node` and `core-web` depend on `core`
-3. `dom-render` depends on `core-web`
-4. `simple-boot` has no dependencies on other @dooboostore packages
-5. `simple-boot-front` depends on `simple-boot` and `dom-render`
-6. `simple-boot-http-server` depends on `simple-boot`
-7. `simple-boot-http-server-ssr` depends on `simple-boot-front` and `simple-boot-http-server`
-8. `app-system` depends on all other packages
+| Package                                                                 | Description                                                             |
+|-------------------------------------------------------------------------|-------------------------------------------------------------------------|
+| [core](@dooboostore/core)                                               | Foundational utility library for all other packages.                    |
+| [core-node](@dooboostore/core-node)                                     | Node.js-specific utilities extending the core package.                  |
+| [core-web](@dooboostore/core-web)                                       | Web-specific utilities for browser environments.                        |
+| [dom-render](@dooboostore/dom-render)                                   | A powerful view template engine for DOM manipulation and rendering.     |
+| [simple-boot](@dooboostore/simple-boot)                                 | The core framework for dependency injection, AOP, and routing.          |
+| [simple-boot-front](@dooboostore/simple-boot-front)                     | A Single Page Application (SPA) framework built on `simple-boot`.       |
+| [simple-boot-http-server](@dooboostore/simple-boot-http-server)         | An HTTP web server framework.                                           |
+| [simple-boot-http-server-ssr](@dooboostore/simple-boot-http-server-ssr) | Server-Side Rendering (SSR) extension for the HTTP server.              |
+| [swt](@dooboostore/swt)                                                 | (Description for swt to be added)                                       |
+| [app-system](@dooboostore/app-system)                                   | A comprehensive framework for building single-page applications (SPAs). |
 
 ## Getting Started
 
-Each package has its own documentation and examples. Click on the package links above to learn more about each one.
+Each package is individually documented. Click on the package names in the table above to explore their specific documentation and examples.
+
+## Contribution
+
+Contributions are welcome! Please read our contributing guidelines to get started. (A `CONTRIBUTING.md` file can be added later).
 
 ## License
 
-All packages are licensed under the MIT License.
+All packages in this repository are licensed under the [MIT License](https://opensource.org/licenses/MIT).

@@ -52,7 +52,8 @@ export class SimpleApplication {
 
   public run(otherInstanceSim?: Map<ConstructorType<any> | Function | SimConfig, any>) {
     this.simstanceManager.run(otherInstanceSim);
-    return this.simstanceManager;
+    return this;
+    // return this.simstanceManager;
   }
 
   public simAtomic<T>(type: ConstructorType<T> | Function | Symbol) {

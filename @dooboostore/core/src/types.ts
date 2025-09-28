@@ -224,6 +224,16 @@ export type FlatJoinSlashKeyExcludeStartWithUnderBar<T> = {
     : // @ts-ignore
       `${P}`]: unknown;
 };
+export type FlatJoinKeyExcludeStartWith<T, J extends string, E extends string> = {
+  [P in keyof T as T[P] extends any
+    ? // @ts-ignore
+      P extends `${E}${string}`
+      ? never
+      : // @ts-ignore
+        `${P}${J}${keyof FlatJoinSlashKeyExcludeStartWithUnderBar<T[P]>}` | `${P}`
+    : // @ts-ignore
+      `${P}`]: unknown;
+};
 
 
 // https://amit08255.medium.com/the-most-mind-blowing-thing-ive-learned-in-typescript-930926ce848a

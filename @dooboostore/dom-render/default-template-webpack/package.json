@@ -1,5 +1,5 @@
 {
-  "name": "@dooboostore/dom-render/example/appender",
+  "name": "@dooboostore/dom-render/default-template-webpack",
   "version": "1.0.0",
   "main": "index.js",
   "license": "MIT",

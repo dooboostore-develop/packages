@@ -1,93 +1,46 @@
 # @dooboostore/core-node
 
+[![NPM version](https://img.shields.io/npm/v/@dooboostore/core-node.svg?style=flat-square)](https://www.npmjs.com/package/@dooboostore/core-node)
+[![Build and Test](https://github.com/dooboostore-develop/packages/actions/workflows/main.yaml/badge.svg?branch=main)](https://github.com/dooboostore-develop/packages/actions/workflows/main.yaml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](https://opensource.org/licenses/MIT)
+
+**Full Documentation:** [https://dooboostore-develop.github.io/packages/core-node](https://dooboostore-develop.github.io/packages/core-node)
+
 `@dooboostore/core-node` is a companion library to `@dooboostore/core`, providing utility functions and classes specifically for the Node.js environment. It extends the core functionalities with features that interact with the file system and Node.js processes.
+
+---
 
 ## Features
 
-- **File System Utilities**: A robust `File` class and helper functions for common file operations like writing, moving, renaming, and copying files.
-- **Buffer Conversion**: `ConvertUtils` for handling `Buffer` conversions, including Base64 decoding.
-- **Node.js Specific**: Designed to work seamlessly within the Node.js runtime.
+-   **File System Utilities**: A robust `File` class and helper functions for common file operations like writing, moving, renaming, and copying.
+-   **Buffer Conversion**: Extends the core `ConvertUtils` for handling `Buffer` conversions, including Base64 decoding.
+-   **Node.js Specific**: Designed to work seamlessly within the Node.js runtime.
 
 ## Installation
 
+Install `@dooboostore/core-node` using your favorite package manager:
+
 ```bash
-# Using pnpm
+# pnpm
 pnpm add @dooboostore/core-node
 
-# Using npm
+# npm
 npm install @dooboostore/core-node
 
-# Using yarn
+# yarn
 yarn add @dooboostore/core-node
 ```
 
 ## Peer Dependencies
 
-This package requires `@dooboostore/core` to be installed as a peer dependency.
+This package requires `@dooboostore/core` to be installed.
 
-```json
-"peerDependencies": {
-  "@dooboostore/core": "workspace:*"
-}
-```
+## Learn More
 
-## Modules Overview
+The detailed API documentation, including all modules and usage examples, is available on our documentation website.
 
-### `file/FileUtils`
+**[Explore the full @dooboostore/core-node documentation &raquo;](https://dooboostore-develop.github.io/packages/core-node)**
 
-This module provides tools for file system interaction.
+## License
 
-- **`File` class**: An object-oriented wrapper around a file path that provides methods to:
-  - Get file information (name, directory, extension, size).
-  - `delete()`: Delete the file.
-  - `copy(newPath)`: Copy the file to a new location.
-  - `move(newPath)`: Move the file to a new location, creating directories if necessary.
-  - `rename(newName)`: Rename the file within its current directory.
-
-- **`writeFile(buffer, config)`**: Asynchronously writes a `Buffer` to a file. It can automatically generate a unique temporary file path or use a specified path.
-
-### `convert/ConvertUtils`
-
-This module extends the core `ConvertUtils` with Node.js-specific conversions.
-
-- **`toBuffer(data, config)`**: Converts a string to a `Buffer`. It supports different encodings, including `'base64'`. When using `'base64'`, it can automatically strip the `data:image/png;base64,` prefix.
-
-### `process/ProcessUtils`
-
-This module is intended to contain utilities related to Node.js process management. (Currently, it contains commented-out examples of process event handlers like `exit`, `beforeExit`, `SIGINT`, and `uncaughtException`.)
-
-## Basic Usage
-
-### FileUtils
-
-```typescript
-import { FileUtils } from '@dooboostore/core-node/file/FileUtils';
-import { ConvertUtils } from '@dooboostore/core-node/convert/ConvertUtils';
-import * as fs from 'fs/promises';
-
-async function handleFileUpload(base64Data: string) {
-  // 1. Convert Base64 string to a Buffer
-  const imageBuffer = ConvertUtils.toBuffer(base64Data, { encoding: 'base64' });
-
-  // 2. Write the buffer to a temporary file
-  const tempFile = await FileUtils.writeFile(imageBuffer, {
-    originalName: 'my-image.png'
-  });
-
-  console.log(`File created at: ${tempFile.path}`);
-  console.log(`File size: ${tempFile.size} bytes`);
-
-  // 3. Move the file to a permanent location
-  const permanentPath = `./uploads/${tempFile.fileName}`;
-  await tempFile.move(permanentPath);
-
-  console.log(`File moved to: ${tempFile.path}`);
-
-  // 4. Clean up (optional, as move already relocated it)
-  // await tempFile.delete();
-}
-
-// Example usage with a dummy base64 string
-const dummyBase64 = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
-handleFileUpload(dummyBase64);
-```
+This package is licensed under the [MIT License](https://opensource.org/licenses/MIT).

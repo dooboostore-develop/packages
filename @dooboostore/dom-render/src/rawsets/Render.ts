@@ -14,6 +14,7 @@ export type Render = {
     router?: Router;
     range?: any;
     value?: any;
+    innerHTML?: string;
     currentThis?: any;
     currentThisPath?: any;
     nearThisPath?: string,

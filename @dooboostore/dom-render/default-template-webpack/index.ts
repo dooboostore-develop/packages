@@ -67,7 +67,7 @@ export class Sub implements OnDestroyRender, OnCreateRender, OnDrThisBind, OnDrT
 
 
   onDrThisBind(): void {
-    console.log(this.name, 'onDrThisBind');
+    // console.log(this.name, 'onDrThisBind');
     // setInterval(() => {
     //   this.name = new Date().toString();
     // }, 1000)
@@ -80,7 +80,7 @@ export class Sub implements OnDestroyRender, OnCreateRender, OnDrThisBind, OnDrT
     this.uuid = RandomUtils.uuid();
     // this.appender.set(RandomUtils.uuid(), 1);
     this.appender.set(this.uuid, 2);
-    console.log(this.name, 'add', this.appender);
+    // console.log(this.name, 'add', this.appender);
   }
 
   delete(): void {
