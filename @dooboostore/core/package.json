@@ -63,6 +63,7 @@
     "watch:umd-bundle": "pnpm run build:umd-bundle && node build.mjs umd-bundle --watch",
     "build:esm-bundle": "node build.mjs esm-bundle",
     "watch:esm-bundle": "pnpm run build:esm-bundle && node build.mjs esm-bundle --watch",
+    "watch": "pnpm run clean && node build.mjs all --watch",
     "prepublishOnly": "pnpm run build",
     "publish:npm": "pnpm run build && cd dist && pnpm publish --no-git-checks",
     "ts:clean": "find . -name '*.js' -o -name '*.map' -o -name '*.d.ts' | xargs rm -f",

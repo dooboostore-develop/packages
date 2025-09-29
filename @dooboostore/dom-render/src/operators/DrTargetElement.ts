@@ -10,6 +10,7 @@ import {
   Source
 } from './OperatorExecuter';
 import { Render } from '../rawsets/Render';
+import { ElementUtils } from '@dooboostore/core-web/element/ElementUtils';
 
 declare global {
   interface Window {
@@ -96,6 +97,19 @@ export class DrTargetElement extends OperatorExecuter<void> {
         }
         // console.log('----------2', ElementUtils.toInnerHTML(targetFragment, {document: this.source.config.window.document}));
         const rr = RawSet.checkPointCreates(targetFragment, this.source.obj, this.source.config);
+        rr.forEach((it, index) => {
+
+          // const z = ElementUtils.toInnerHTML(it.dataSet.fragment, {document: this.source.config.window.document});
+          // console.log('-z--z('+index+')', z, it);
+          // it.point.start;
+          // // 새로운 comment element 추가
+          // const comment = this.source.config.window.document.createComment('새로 만든 comment element');
+          // it.point.start.parentNode?.insertBefore(comment, it.point.start.nextSibling);
+        })
+        // for (let rawSet of rr) {
+        //   await rawSet.render(this.source.obj, this.source.config)
+        // }
+        // console.log('cccccccccccccccccccccc', rr, typeof Window);
         if (targetElement.noStrip) {
           Array.from(targetFragment.childNodes || []).forEach(child => {
             documentFragment.firstElementChild?.appendChild(child);

@@ -11,6 +11,7 @@ import { DomRenderNoProxy } from '../../decorators/DomRenderNoProxy';
 import { OnCreateRender } from '../../lifecycle/OnCreateRender';
 import { DomRenderConfig } from '../../configs/DomRenderConfig';
 import { WindowUtils } from '@dooboostore/core-web/window/WindowUtils';
+import { OnRawSetRenderedOtherData } from 'src/lifecycle';
 
 /** 사용법
  <dr-select class="card-select-container" changeSelected="${(data) => @this@.changeSelected(data)}$">  <!-- multiple attribute optional-->
@@ -137,6 +138,10 @@ export namespace Select {
     //   super.onCreatedThisChild(child, data);
     //   this.updateStatus();
     // }
+
+    // async onRawSetRendered(rawSet:RawSet, otherData:OnRawSetRenderedOtherData):Promise<void>{
+    //   await super.onRawSetRendered(rawSet, otherData);
+    // }
     onCreatedThisChildDebounce(childrenSet: ChildrenSet[]) {
       super.onCreatedThisChildDebounce(childrenSet);
       this.updateStatus();
@@ -210,22 +215,20 @@ export namespace Select {
 
   // --- Summary Component ---
   export class Summary extends ComponentBase implements OnInitRender {
-    @attribute({name: 'class', converter: v => (v === '' ? null : v)}) public classAttr: string | null = null;
+    @attribute({ name: 'class', converter: v => (v === '' ? null : v) }) public classAttr: string | null = null;
     private options: Select.Option[] = [];
     private disabled: boolean = false;
     public element?: HTMLElement;
 
-    constructor() {
-      super({onlyParentType: Select});
-    }
-
+    // constructor() {
+    //   super({ onlyParentType: Select });
+    // }
 
     setDisabled(disabled: boolean) {
       this.disabled = disabled;
-      this.getChildren(SummaryPlaceholder).forEach(it => it.hidden = true);
-      this.getChildren(SummarySelected).forEach(it => it.hidden = true);
-      this.getChildren(SummaryDisabled).forEach(it => it.hidden = false);
-
+      this.getChildren(SummaryPlaceholder).forEach(it => (it.hidden = true));
+      this.getChildren(SummarySelected).forEach(it => (it.hidden = true));
+      this.getChildren(SummaryDisabled).forEach(it => (it.hidden = false));
     }
 
     setOptions(options: Option[] = []): void {
@@ -234,16 +237,16 @@ export namespace Select {
       const selectedOptions = this.options.filter(it => it.selected && !it.disabled);
       if (!this.disabled) {
         if (selectedOptions.length > 0) {
-          this.getChildren(SummaryPlaceholder).forEach(it => it.hidden = true);
+          this.getChildren(SummaryPlaceholder).forEach(it => (it.hidden = true));
           this.getChildren(SummarySelected).forEach(c => {
             c.setOptions(options);
             c.hidden = false;
           });
-          this.getChildren(SummaryDisabled).forEach(it => it.hidden = true);
+          this.getChildren(SummaryDisabled).forEach(it => (it.hidden = true));
         } else {
-          this.getChildren(SummaryDisabled).forEach(it => it.hidden = true);
-          this.getChildren(SummaryPlaceholder).forEach(it => it.hidden = false);
-          this.getChildren(SummarySelected).forEach(c => c.hidden = true);
+          this.getChildren(SummaryDisabled).forEach(it => (it.hidden = true));
+          this.getChildren(SummaryPlaceholder).forEach(it => (it.hidden = false));
+          this.getChildren(SummarySelected).forEach(c => (c.hidden = true));
         }
       }
     }
@@ -261,18 +264,20 @@ export namespace Select {
     }
 
     updateView(hasSelection: boolean) {
-      this.getChildren(SummaryPlaceholder).forEach(c => c.hidden = hasSelection);
-      this.getChildren(SummarySelected).forEach(c => c.hidden = !hasSelection);
+      this.getChildren(SummaryPlaceholder).forEach(c => (c.hidden = hasSelection));
+      this.getChildren(SummarySelected).forEach(c => (c.hidden = !hasSelection));
     }
 
     // onCreatedThisChild(child: any, data: OnCreateRenderDataParams) {
     //   super.onCreatedThisChild(child, data);
     // }
+    // async onRawSetRendered(rawSet: RawSet, otherData: OnRawSetRenderedOtherData): Promise<void> {
+    //   await super.onRawSetRendered(rawSet, otherData);
+    // }
     onCreatedThisChildDebounce(childrenSet: ChildrenSet[]) {
       super.onCreatedThisChildDebounce(childrenSet);
-      this.updateView(this.getParentThis<Select>()?.selectedValues.length > 0);
+      this.updateView(this.getParentThis<Select>()?.selectedValues?.length > 0);
     }
-
 
     onSummaryClick(element: HTMLElement, event: Event) {
       if (this.getParentThis<Select>()?.disabled) {
@@ -285,27 +290,32 @@ export namespace Select {
 
 
   export class SelectBody extends ComponentBase<SelectBodyAttribute> {
-    @attribute({name: 'class', converter: v => (v === '' ? null : v)}) public classAttr: string | null = null;
-    @attribute({name: 'float'}) public float: 'bottom-left' | 'bottom-right' | 'top-left' | 'top-right' | null = null;
+    @attribute({ name: 'class', converter: v => (v === '' ? null : v) }) public classAttr: string | null = null;
+    @attribute({ name: 'float' }) public float: 'bottom-left' | 'bottom-right' | 'top-left' | 'top-right' | null = null;
 
     constructor() {
-      super({onlyParentType: Select});
+      super({ onlyParentType: Select });
     }
 
-    onCreatedThisChildDebounce(childrenSet: ChildrenSet[]) {
+    async onRawSetRendered(rawSet: RawSet, otherData: OnRawSetRenderedOtherData): Promise<void> {
+      await super.onRawSetRendered(rawSet, otherData);
+    // }
+    // onCreatedThisChildDebounce(childrenSet: ChildrenSet[]) {
+    //   super.onCreatedThisChildDebounce(childrenSet);
       this.changeOptionState();
     }
 
     changeOptionState(option?: Option) {
       const options = this.getChildren(Option);
       const select = this.getParentThis<Select>();
+      // console.log('------opti',option, select);
       // // 멀티플이 아닐때에는 마지막 선택된값으로 처리
       if (!select.multiple) {
         // 내가 선택한게 있으면
         if (option && option.selected) {
-          options.filter(it => it !== option).forEach(it => it.selected = false);
+          options.filter(it => it !== option).forEach(it => (it.selected = false));
         } else {
-          const selectedOptions = options.filter(it => it.selected && !it.disabled)
+          const selectedOptions = options.filter(it => it.selected && !it.disabled);
           selectedOptions.forEach((opt, idx) => {
             const isLast = idx === selectedOptions.length - 1;
             if (!isLast) {
@@ -535,7 +545,7 @@ export default {
         '</details>\n' +
         '<select hidden="hidden" name="${@this@.name}$" disabled="${@this@.disabled ? \'disabled\' : null}$"  style="width: 1500px; height:500px"  multiple>\n' +
         '    <option dr-for-of="@this@.options" value="${#it#.value}$" selected="${#it#.selected ? \'selected\' : null}$">#it# ${#it#.value}$</option>\n' +
-        '</select',
+        '</select>',
       objFactory: (e, o, r2, constructorParam) => DomRender.run({ rootObject: new Select.Select(config), config })
     });
   },

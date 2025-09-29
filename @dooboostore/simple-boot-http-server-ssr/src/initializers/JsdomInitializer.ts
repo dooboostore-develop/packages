@@ -65,6 +65,7 @@ export class JsdomInitializer {
     // global.navigator = jsdom.window.navigator;
     global.NodeFilter = jsdom.window.NodeFilter;
     global.Node = jsdom.window.Node;
+    global.DocumentFragment = jsdom.window.DocumentFragment;
     global.HTMLElement = jsdom.window.HTMLElement;
     global.HTMLMetaElement = jsdom.window.HTMLMetaElement;
     global.Element = jsdom.window.Element;

@@ -327,7 +327,7 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
           const firstTargetDictionary: RawSet[] = [];
           firstTargets?.forEach(it => {
             // console.log('----forEach---', it);
-            const type = (it.point.start as Element).getAttribute?.('type');
+            const type = (it.point.start as Element)?.getAttribute?.('type');
             if (type === RawSetOperatorType.DR_THIS_PROPERTY) {
               firstTargetDictionary.push(it);
             }

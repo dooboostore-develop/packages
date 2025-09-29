@@ -61,10 +61,20 @@ export namespace ElementUtils {
     // if (documentFragment) {
     const tempDiv = config.document.createElement('div');
     tempDiv.appendChild(documentFragment.cloneNode(true));
-    console.log('DocumentFragment innerHTML:', tempDiv.innerHTML);
+    // console.log('DocumentFragment innerHTML:', tempDiv.innerHTML);
     return tempDiv.innerHTML;
     // }
   }
+
+  export const htmlToFragment = (html: string, config: { document: Document } = { document }): DocumentFragment => {
+      const tempDiv = config.document.createElement('div');
+      tempDiv.innerHTML = html;
+      const fragment = config.document.createDocumentFragment();
+      while (tempDiv.firstChild) {
+        fragment.appendChild(tempDiv.firstChild);
+      }
+      return fragment;
+    }
 
 
 /*

@@ -183,6 +183,7 @@ export class SSRFilter implements Filter {
         );
         // console.log('rrrrrssss');
         // console.log('rrrrrssss122');
+        // await new Promise(r => setTimeout(r, 5000)); // <--중요: 이거 넣어야지 두번불러지는게 없어지는듯? 뭐지 event loop 변경된건가?
         const html = this.makeHTML(simpleBootFront);
         await this.writeOkHtmlAndEnd({ rr }, html);
       } finally {
