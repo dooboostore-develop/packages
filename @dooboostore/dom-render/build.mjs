@@ -257,6 +257,7 @@ async function buildTarget(target, watch = false) {
         globalName: 'dooboostoreDomRender',
         plugins: [esbuildPluginTsc({tsconfigPath:'tsconfig.umd.json'})],
         // tsconfig: 'tsconfig.umd.json',
+        external: [], // Bundle all dependencies including reflect-metadata
       }, watch);
       console.log('UMD bundle build complete.');
       break;
@@ -269,6 +270,7 @@ async function buildTarget(target, watch = false) {
         outfile: path.resolve(__dirname, 'dist', 'esm-bundle', 'dooboostore-dom-render.esm.js'),
         format: 'esm',
         plugins: [esbuildPluginTsc({tsconfigPath:'tsconfig.esm.json'})],
+        external: [], // Bundle all dependencies including reflect-metadata
       }, watch);
       console.log('ESM bundle build complete.');
       break;

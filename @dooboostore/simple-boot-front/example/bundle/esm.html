@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>@dooboostore/simple-boot-front ESM Bundle Example</title>
+  <style>
+    body { font-family: sans-serif; padding: 1em; }
+    h1 { color: #333; }
+    header, footer, main { border: #ccc 1px solid; padding: 20px; margin: 10px 0; border-radius: 5px; }
+    button { margin-right: 10px; padding: 5px 10px; }
+  </style>
+</head>
+<body>
+  <h1>@dooboostore/simple-boot-front ESM Bundle Example</h1>
+  <div id="app"></div>
+
+  <script type="module">
+    import { SimpleBootFront, SimFrontOption, UrlType, Component, ComponentRouterBase, ComponentBase, SimpleBoot, DomRender } from './dooboostore-simple-boot-front.esm.js';
+
+    console.log('SimpleBootFront', { SimpleBootFront, SimFrontOption, UrlType, Component, ComponentRouterBase, ComponentBase, SimpleBoot, DomRender });
+
+    // --- Define Pages ---
+    class Home extends ComponentBase {}
+    Component({ template: '<h2>Home Page</h2><p>Welcome to the home page!</p>' })(Home);
+    SimpleBoot.Sim(Home);
+
+    class User extends ComponentBase {}
+    Component({ template: '<h2>User Page</h2><p>This is the user page.</p>' })(User);
+    SimpleBoot.Sim(User);
+
+    // --- Define Root Component ---
+    class Index extends ComponentRouterBase {
+     onRouting(routingDataSet) {
+      console.log('onRouting', this.child);
+     }
+    }
+    Component({
+        template: `
+        <header>
+            <nav>
+                <button id="home-btn" dr-event-click="$router?.go('/home')">Home</button>
+                <button id="user-btn" dr-event-click="$router?.go('/user')">User</button>
+            </nav>
+        </header>
+        <main>
+            <dr-router-outlet></dr-router-outlet>
+        </main>
+        <footer>
+            <p>Footer</p>
+        </footer>
+      `
+    })(Index);
+    SimpleBoot.Router({
+        route: {
+            '':'/home',
+            '/umd.html':'/home',
+            '/esm.html':'/home',
+            '/home': Home,
+            '/user': User
+        }
+    })(Index);
+    SimpleBoot.Sim(Index);
+
+    // --- Application Setup ---
+    const config = new SimFrontOption(window).setUrlType(UrlType.path).setRootRouter(Index);
+    const app = new SimpleBootFront(config);
+    app.run();
+  </script>
+</body>
+</html>
+
+

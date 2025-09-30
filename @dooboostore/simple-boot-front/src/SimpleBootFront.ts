@@ -24,6 +24,7 @@ import { routerProcess } from '@dooboostore/simple-boot/decorators/route/Router'
 import { BehaviorSubject } from '@dooboostore/core/message/BehaviorSubject';
 import { RouterModule } from '@dooboostore/simple-boot/route/RouterModule';
 import { Observable } from '@dooboostore/core/message/Observable';
+import { UrlUtils } from '@dooboostore/core/url/UrlUtils';
 
 export type PopStateType = { type: 'popstateData'; router: any; noSimpleBootFrontRouting?: boolean };
 const isPopStateDataType = (state: any): state is PopStateType => {
@@ -199,7 +200,7 @@ export class SimpleBootFront extends SimpleApplication {
     this.simstanceManager.setStoreSet(DomRender, domRender);
     this.domRenderRootObject = domRender.rootObject;
     routerProcess({ path: '', routers: [this.option.rootRouter] }, DomRenderRootObject);
-    // console.log('dddddomRenderRootdd', domRenderRoot, config, config.router)
+    // 작업테스크 옮겨줘야 비동기적으로 처리됨에 깜빡임 없앨수있다.
     setTimeout(() => {
       targetElement.hidden = false;
       this.option.window.document.querySelector(this.option.selector).replaceWith(targetElement);
@@ -210,10 +211,7 @@ export class SimpleBootFront extends SimpleApplication {
       const intent = new Intent(this.domRenderRouter.getUrl() || '/');
       //   // TODO: 왜 canActivate가 두번 호출되는지 확인 필요!! 그래서 setTimeout으로 처리함 원인 모르겠음 아 씨발
       this.routing<SimAtomic, any>(intent, { router: this.domRenderRootObject }).then(async it => {
-        // //       this.afterSetting();
-        // console.log('routing!!', it)
         this.routingSubject.next({ state: 'start', routerModule: it });
-        //
         let findFirstRouter = it.firstRouteChainValue;
         //       setTimeout(() => {
         if (findFirstRouter.constructor === this.option.rootRouter) {
@@ -241,40 +239,6 @@ export class SimpleBootFront extends SimpleApplication {
 
     return simstanceManager;
   }
-
-  // public writeRootRouter(target: Element, router: any = this.option.rootRouter) {
-  //   // const routerAtomic = new SimAtomic({targetKeyType: this.option.rootRouter!, originalType: this.option.rootRouter!}, this.getSimstanceManager());
-  //   // const target = this.option.window.document.querySelector(this.option.selector);
-  //
-  //   // target.cloneNode()
-  //
-  //   const uuid = RandomUtils.uuid();
-  //   const id = `root-router-${uuid}`;
-  //   const point = RawSet.createStartEndPoint({node: target, id, type: RawSetType.TARGET_ELEMENT}, this.domRenderConfig as Config);
-  //   if (target && router) {
-  //     // target.innerHTML = '';
-  //     // console.log('----cleanbody', target.innerHTML)
-  //     // p.appendChild(startEndPoint.start);
-  //     // p.insertAdjacentHTML('beforeend', this.getComponentInnerHtml(this.option.rootRouter, id));
-  //     // p.appendChild(startEndPoint.end);
-  //     //
-  //     if (point.start instanceof HTMLElement) {
-  //       point.start.setAttribute('dr-root-router-start-point', '');
-  //     }
-  //     if (point.end instanceof HTMLElement) {
-  //       point.end.setAttribute('dr-root-router-end-point', '');
-  //     }
-  //     target.appendChild(point.start);
-  //     target.insertAdjacentHTML('beforeend', this.getComponentInnerHtml(router, id));
-  //     target.appendChild(point.end);
-  //     // target.innerHTML = this.getComponentInnerHtml(this.option.rootRouter, id);
-  //     // target.insertBefore(startEndPoint.start, target.firstChild);
-  //     // target.appendChild(startEndPoint.start);
-  //     // target.appendChild(startEndPoint.end);
-  //   }
-  //   return {point, uuid};
-  // }
-  //
   async goRouting(url: string) {
     await this.domRenderRouter?.go({ path: url, disabledPopEvent: false });
     // this.afterSetting();
@@ -286,22 +250,12 @@ export class SimpleBootFront extends SimpleApplication {
     return data;
   }
 
-  // async runRouting(otherInstanceSim?: Map<ConstructorType<any>, any>, url?: string): Promise<RouterModule<SimAtomic<Object>, any> | undefined> {
-  // const simstanceManager = this.initRun(otherInstanceSim);
-  // if (url) {
-  //     this.navigation.go({path:url, disabledPopEvent: true});
-  // }
-  // const intent = new Intent(this.navigation.getUrl() ?? '');
-  // const data = await this.routing<SimAtomic, any>(intent);
-  // this.afterSetting();
-  // return data;
-  // }
-
   public run(otherInstanceSim?: Map<ConstructorType<any>, any>, url?: string) {
     const simstanceManager = this.initRun(otherInstanceSim);
     // const currentUrl = UrlUtils.toUrl(this.option.window.location.href);
     // const origin = currentUrl.origin;
     // const path = `${url ? origin + (url ?? '/') : currentUrl.href}`;
+    // console.log('gorouting!!',path);
     // this.domRenderRouter.go({path: path});
     return simstanceManager;
   }

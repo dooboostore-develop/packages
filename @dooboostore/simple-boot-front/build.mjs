@@ -244,6 +244,7 @@ async function buildTarget(target, watch = false) {
         format: 'iife',
         globalName: 'dooboostoreSimpleBootFront',
         plugins: [esbuildPluginTsc({tsconfigPath:'tsconfig.umd.json'})],
+        external: [], // Bundle all dependencies including reflect-metadata
         // tsconfig: 'tsconfig.umd.json',
       }, watch);
       console.log('UMD bundle build complete.');
@@ -257,6 +258,7 @@ async function buildTarget(target, watch = false) {
         outfile: path.resolve(__dirname, 'dist', 'esm-bundle', 'dooboostore-simple-boot-front.esm.js'),
         format: 'esm',
         plugins: [esbuildPluginTsc({tsconfigPath:'tsconfig.esm.json'})],
+        external: [], // Bundle all dependencies including reflect-metadata
         // tsconfig: 'tsconfig.esm.json',
       }, watch);
       console.log('ESM bundle build complete.');

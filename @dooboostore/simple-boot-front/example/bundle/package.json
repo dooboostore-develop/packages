@@ -1,0 +1,13 @@
+{
+  "name": "simple-boot-front-bundle-examples",
+  "version": "1.0.0",
+  "description": "Example server for @dooboostore/simple-boot-front bundle demos",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node index.js"
+  },
+  "license": "MIT"
+}
+
+

@@ -269,8 +269,6 @@ importers:
         specifier: ^5.9.2
         version: 5.9.2
 
-  '@dooboostore/core-web/dist/cjs': {}
-
   '@dooboostore/core-web/example/angle':
     dependencies:
       '@dooboostore/core':
@@ -918,8 +916,6 @@ importers:
         specifier: ^5.2.0
         version: 5.2.2(webpack-cli@5.1.4)(webpack@5.101.3)
 
-  '@dooboostore/dom-render/dist/cjs': {}
-
   '@dooboostore/dom-render/example/appender':
     dependencies:
       '@dooboostore/core':
@@ -998,6 +994,8 @@ importers:
       webpack-dev-server:
         specifier: ^5.2.0
         version: 5.2.2(webpack-cli@5.1.4)(webpack@5.101.3)
+
+  '@dooboostore/dom-render/example/bundle': {}
 
   '@dooboostore/dom-render/example/event':
     dependencies:
@@ -1431,8 +1429,6 @@ importers:
         specifier: ^5.9.2
         version: 5.9.2
 
-  '@dooboostore/lib-node/dist/cjs': {}
-
   '@dooboostore/lib-web':
     dependencies:
       '@dooboostore/core':
@@ -1508,8 +1504,6 @@ importers:
       webpack-dev-server:
         specifier: ^5.2.0
         version: 5.2.2(webpack-cli@5.1.4)(webpack@5.101.3)
-
-  '@dooboostore/lib-web/dist/cjs': {}
 
   '@dooboostore/lib-web/example/gpsMarker':
     dependencies:
@@ -2073,7 +2067,7 @@ importers:
         specifier: ^5.2.0
         version: 5.2.2(webpack-cli@5.1.4)(webpack@5.101.3)
 
-  '@dooboostore/simple-boot-front/dist/cjs': {}
+  '@dooboostore/simple-boot-front/example/bundle': {}
 
   '@dooboostore/simple-boot-front/example/quick-start':
     dependencies:
@@ -2654,8 +2648,6 @@ importers:
         specifier: ^5.2.0
         version: 5.2.2(webpack-cli@5.1.4)(webpack@5.101.3)
 
-  '@dooboostore/simple-boot-http-server-ssr/dist/cjs': {}
-
   '@dooboostore/simple-boot-http-server-ssr/example/quick-start':
     dependencies:
       '@dooboostore/core':
@@ -3004,8 +2996,6 @@ importers:
         specifier: ^0.12.5
         version: 0.12.5
 
-  '@dooboostore/simple-boot-http-server/dist/cjs': {}
-
   '@dooboostore/simple-boot-http-server/example/filter':
     dependencies:
       '@dooboostore/core':
@@ -3304,7 +3294,7 @@ importers:
         specifier: ^5.2.0
         version: 5.2.2(webpack-cli@5.1.4)(webpack@5.101.3)
 
-  '@dooboostore/simple-boot/dist/cjs': {}
+  '@dooboostore/simple-boot/example/bundle': {}
 
   '@dooboostore/simple-boot/example/cache':
     dependencies:

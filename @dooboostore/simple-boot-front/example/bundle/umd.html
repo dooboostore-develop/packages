@@ -2,81 +2,74 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Simple Boot Front ESM Bundle Test</title>
+  <title>@dooboostore/simple-boot-front UMD Bundle Example</title>
   <style>
     body { font-family: sans-serif; padding: 1em; }
     h1 { color: #333; }
     header, footer, main { border: #ccc 1px solid; padding: 20px; margin: 10px 0; border-radius: 5px; }
     button { margin-right: 10px; padding: 5px 10px; }
   </style>
-  <script type="importmap">
-    {
-      "imports": {
-        "@dooboostore/simple-boot-front": "../../src/dist/dist/bundle.js"
-      }
-    }
-  </script>
 </head>
 <body>
-  <h1>@dooboostore/simple-boot-front ESM Bundle Test</h1>
+  <h1>@dooboostore/simple-boot-front UMD Bundle Example</h1>
   <div id="app"></div>
 
-  <script type="module">
-    import { SimpleBootFront, SimFrontOption, UrlType, Component, Sim, Router } from '@dooboostore/simple-boot-front';
+  <script src="./dooboostore-simple-boot-front.umd.js"></script>
+  <script>
+    const { SimpleBootFront, SimFrontOption, UrlType, Component, ComponentRouterBase, ComponentBase, SimpleBoot, DomRender } = window.dooboostoreSimpleBootFront;
+
+    console.log('SimpleBootFront', window.dooboostoreSimpleBootFront);
 
     // --- Define Pages ---
-    class Home {}
+    class Home extends ComponentBase {}
     Component({ template: '<h2>Home Page</h2><p>Welcome to the home page!</p>' })(Home);
-    Sim(Home);
+    SimpleBoot.Sim(Home);
 
-    class User {}
+    class User extends ComponentBase {}
     Component({ template: '<h2>User Page</h2><p>This is the user page.</p>' })(User);
-    Sim(User);
-
+    SimpleBoot.Sim(User);
 
     // --- Define Root Component ---
-    class Index {
-        child;
-        canActivate(url, module) {
-            this.child = module;
-            console.log('------', this.child)
-        }
+    class Index extends ComponentRouterBase {
+     onRouting(routingDataSet) {
+      console.log('onRouting', this.child);
+     }
     }
     Component({
         template: `
         <header>
             <nav>
-                <button id="home-btn">Home</button>
-                <button id="user-btn">User</button>
+                <button id="home-btn" dr-event-click="$router?.go('/home')">Home</button>
+                <button id="user-btn" dr-event-click="$router?.go('/user')">User</button>
             </nav>
         </header>
         <main>
-            <dr-this dr-this="this.child" dr-option-strip="false"></dr-this>
+            <dr-router-outlet></dr-router-outlet>
         </main>
         <footer>
             <p>Footer</p>
         </footer>
       `
     })(Index);
-    Router({
+    SimpleBoot.Router({
         route: {
-            '/': Home,
+            '':'/home',
+            '/umd.html':'/home',
+            '/esm.html':'/home',
+            '/home': Home,
             '/user': User
         }
     })(Index);
-    Sim(Index);
+    SimpleBoot.Sim(Index);
 
     // --- Application Setup ---
     const config = new SimFrontOption(window).setUrlType(UrlType.path).setRootRouter(Index);
     const app = new SimpleBootFront(config);
     app.run();
 
-    // --- Manual Navigation for Demo ---
-    document.getElementById('home-btn').addEventListener('click', () => app.goRouting('/'));
-    document.getElementById('user-btn').addEventListener('click', () => app.goRouting('/user'));
-
-
-
+   
   </script>
 </body>
 </html>
+
+

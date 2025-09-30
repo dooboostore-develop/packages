@@ -1,0 +1,16 @@
+{
+  "name": "dom-render-bundle-examples",
+  "version": "1.0.0",
+  "description": "Example server for @dooboostore/dom-render bundle demos",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node index.js"
+  },
+  "dependencies": {
+  },
+  "devDependencies": {},
+  "keywords": ["dom-render", "examples", "bundle", "demo"],
+  "author": "dooboostore",
+  "license": "MIT"
+}

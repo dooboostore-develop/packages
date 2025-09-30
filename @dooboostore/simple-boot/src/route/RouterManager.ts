@@ -29,7 +29,7 @@ export class RouterManager {
     return this.subject.asObservable();
   }
 
-  public routingMap(prefix: string = '',  option?: RoutingOption): { [key: string]: string | any } {
+  public routingMap(option?: RoutingOption & {prefix?: string}): { [key: string]: string | any } {
     const targetRouter = option?.router ?? this.simOption.rootRouter;
     if (!targetRouter) {
       throw new Error('no router');
@@ -41,7 +41,7 @@ export class RouterManager {
       const routerAtomic = new SimAtomic({targetKeyType: targetType, originalType: targetType, value: targetValue}, this.simstanceManager);
       const routerData = routerAtomic.getConfig<RouterConfig>(RouterMetadataKey);
       if (routerData) {
-        const currentPrefix = prefix + routerData.path;
+        const currentPrefix = (option?.prefix??'') + routerData.path;
         // Add the current router's path if it has a default route
         if (routerData.route && routerData.route['']) {
           map[currentPrefix] = routerData.route[''];
@@ -52,7 +52,7 @@ export class RouterManager {
           });
         }
         routerData.routers?.forEach(it => {
-          Object.assign(map, this.routingMap(currentPrefix, {...option, router: it}));
+          Object.assign(map, this.routingMap({...option, router: it, prefix: currentPrefix}));
         })
       }
     }
