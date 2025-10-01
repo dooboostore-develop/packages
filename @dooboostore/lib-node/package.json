@@ -1,6 +1,6 @@
 {
   "name": "@dooboostore/lib-node",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "dooboostore library for node",
   "license": "MIT",
   "type": "module",
@@ -71,7 +71,7 @@
     "clean": "rm -rf dist",
     "build:esm": "node build.mjs esm",
     "watch:esm": "pnpm run build:esm && node build.mjs esm --watch",
-    "build:cjs": "node build.mjs cjs && cp package.cjs.json dist/cjs/package.json",
+    "build:cjs": "node build.mjs cjs",
     "watch:cjs": "pnpm run build:cjs && node build.mjs cjs --watch",
     "build": "pnpm run clean && node build.mjs all",
     "build:umd-bundle": "node build.mjs umd-bundle",

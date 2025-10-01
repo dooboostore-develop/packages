@@ -18,7 +18,7 @@ export type PopCurrentState = PopStateCurrentTargetDomrenderRouter;
 export const isPopStateCurrentTargetDomrenderRouter = (obj: any): obj is PopStateCurrentTargetDomrenderRouter =>
   obj?.currentTargetName === 'domRenderRouter';
 
-export type RouterConfig<T = any> = { rootObject?: T, window: Window, disableAttach?: boolean,
+export type RouterConfig<T = any> = { rootObject?: T, window: Window, firstUrl?: string,
   // changeStateConvertDate?:(data: any)=>any
 };
 export type ChangeStateResult = {data?: any}
@@ -33,6 +33,35 @@ export abstract class Router<T = any> {
   private behaviorSubject: BehaviorSubject<RouteData>;
   private _config: RouterConfig<T>;
 
+  constructor(config: RouterConfig<any>) {
+    this._config = config;
+
+    let routeData: RouteData;
+    if (config?.firstUrl) {
+      const path = config.firstUrl.split('?');
+      routeData = {
+        url: config.firstUrl,
+        path: path[0],
+        searchParams: new URLSearchParams(path[1]??''),
+        router: this,
+      }
+      this.behaviorSubject = new BehaviorSubject<RouteData>(routeData);
+      this.go(config.firstUrl);
+    } else {
+      routeData = this.getRouteData();
+      this.behaviorSubject = new BehaviorSubject<RouteData>(routeData);
+    }
+    this.config.window.addEventListener('popstate', (event: PopStateEvent) => {
+      // domrender에서 발생하지 않은 즉 back, previous 일떄에도 이벤트가도록 처리
+      if(!isPopStateCurrentTargetDomrenderRouter(event.state)) {
+        // console.log('-------');
+        const routeData = this.getRouteData();
+        this.behaviorSubject.next(routeData);
+      }
+    })
+  }
+
+
   get observable(): Observable<RouteData> {
     return this.behaviorSubject.asObservable();
   }
@@ -45,18 +74,6 @@ export abstract class Router<T = any> {
     return this._config;
   }
 
-  constructor(config: RouterConfig<any>) {
-    this._config = config;
-    this.behaviorSubject = new BehaviorSubject<RouteData>(this.getRouteData());
-    this.config.window.addEventListener('popstate', (event: PopStateEvent) => {
-      if(!isPopStateCurrentTargetDomrenderRouter(event.state)) {
-        // console.log('-------');
-        const routeData = this.getRouteData();
-        this.behaviorSubject.next(routeData);
-      }
-    })
-  }
-
   public getSearchFirstParamsObject<T = any>(defaultValue?: T) {
     const a = ConvertUtils.toObject<T>(this.getSearchParams(), {firstValue: true});
     return Object.assign({}, defaultValue, a);
@@ -66,13 +83,13 @@ export abstract class Router<T = any> {
     return ConvertUtils.toObject<T>(this.getHashSearchParams(), {firstValue: true});
   }
 
-  async attach(): Promise<void> {
-    // const proxy = getDomRenderProxy(this.config.rootObject)
-    // if (proxy) {
-    //   const key = `___${EventManager.ROUTER_VARNAME}`;
-    //   await proxy.render(key);
-    // }
-  }
+  // async attach(): Promise<void> {
+  //   // const proxy = getDomRenderProxy(this.config.rootObject)
+  //   // if (proxy) {
+  //   //   const key = `___${EventManager.ROUTER_VARNAME}`;
+  //   //   await proxy.render(key);
+  //   // }
+  // }
 
   testRegexp(regexp?: string): boolean {
     if (regexp) {
@@ -156,9 +173,9 @@ export abstract class Router<T = any> {
     } else {
       this.push(config.path, config.data, config.title);
     }
-    if (!this.config.disableAttach) {
-      await this.attach();
-    }
+    // if (!this.config.disableAttach) {
+    //   await this.attach();
+    // }
     
     // 스크롤 제어 (기본값: true - 맨 위로 스크롤)
     if (config.scrollToTop !== false) {

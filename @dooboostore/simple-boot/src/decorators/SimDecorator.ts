@@ -93,7 +93,6 @@ export const simProcess = (config: SimConfig, inputTarget: ConstructorType<any> 
 export function Sim(target: ConstructorType<any> | Function): void;
 export function Sim(config: SimConfig): GenericClassDecorator<ConstructorType<any> | Function | any>;
 export function Sim(configOrTarget: SimConfig | ConstructorType<any> | Function): void | GenericClassDecorator<ConstructorType<any> | Function | any> {
-  // console.log('ssssssssssssssssssssssss', configOrTarget, typeof configOrTarget === 'function');
   // console.group('sim')
   // sims.forEach((v,k) => {
   //   console.log('sssss->', v, k)

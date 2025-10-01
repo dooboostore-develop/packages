@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>@dooboostore/dom-render ESM Bundle Example</title>
+</head>
+<body>
+  <div id="app">
+    <h1>${@this@.title}$</h1>
+    <p>${@this@.desc}$</p>
+  </div>
+
+  <script type="module">
+    import { DomRender } from 'https://cdn.jsdelivr.net/npm/@dooboostore/dom-render/dist/esm-bundle/dooboostore-dom-render.esm.min.js';
+
+    const rootEl = document.getElementById('app');
+    let state = {
+      title: 'Hello from ESM bundle',
+      desc: 'This text is bound via dr-inner-text.'
+    };
+
+    const result = new DomRender({ rootObject: state, target: rootEl, config: { window } });
+    state = result.rootObject;
+
+    setTimeout(() => {
+      state.title = 'Title updated (ESM)';
+      state.desc = 'Desc updated after 1s';
+    }, 1000);
+  </script>
+</body>
+</html>
+
+

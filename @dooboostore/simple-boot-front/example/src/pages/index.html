@@ -1,0 +1,26 @@
+<header>
+    <nav>
+        <ul>
+            <li>
+                <button dr-event-click="$router?.go({path:'/'})">🏠 Home</button>
+            </li>
+            <li>
+                <button dr-event-click="$router?.go({path:'/user'})">👤 User</button>
+            </li>
+            <li>
+                <button dr-event-click="$router?.go({path:'/about'})">ℹ️ About</button>
+            </li>
+            <li>
+                <button dr-event-click="console.log('Router:', $router)">🖨️ Print Router</button>
+            </li>
+        </ul>
+    </nav>
+</header>
+
+<main>
+    <dr-this value="${@this@.child}$"></dr-this>
+</main>
+
+<footer>
+    Simple Boot Front Example - Built with @dooboostore/simple-boot-front
+</footer>

@@ -5,7 +5,8 @@
 // }
 
 interface BundlerTemplate {
-  readonly webpack: string | null;
+  readonly 'browser-usage' : string | null;
+  readonly 'commonjs-typescript-webpack' : string | null;
 }
 
 export interface TemplateOption {
@@ -18,7 +19,8 @@ const TemplateOptions: TemplateOption[] = [
   {
     name: 'default-template',
     template: {
-      webpack: 'dooboostore-develop/packages/@dooboostore/simple-boot/default-template-webpack#main'
+        'browser-usage': 'dooboostore-develop/packages/@dooboostore/simple-boot/default-template/browser-usage#main',
+        'commonjs-typescript-webpack': 'dooboostore-develop/packages/@dooboostore/simple-boot/default-template/commonjs-typescript-webpack#main'
     }
   }
 ];

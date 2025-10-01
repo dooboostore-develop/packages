@@ -1,4 +1,4 @@
-import { ComponentBase } from '../ComponentBase';
+import { ChildrenSet, ComponentBase } from '../ComponentBase';
 import { DomRender, DomRenderRunConfig } from '../../DomRender';
 import { RawSet } from '../../rawsets/RawSet';
 import { OtherData } from '../../lifecycle/OnChangeAttrRender';
@@ -6,6 +6,7 @@ import { OnInitRender } from '../../lifecycle/OnInitRender';
 import { ComponentSet } from '../../components/ComponentSet';
 import { OnDestroyRenderParams } from '../../lifecycle/OnDestroyRender';
 import { ComponentRouterBase, isOnCreatedOutletDebounce } from '../../components/ComponentRouterBase';
+import { OnCreateRenderDataParams } from 'src/lifecycle';
 export namespace RouterOutlet {
   export const selector = 'dr-router-outlet';
   export type Attribute = {
@@ -24,12 +25,16 @@ export namespace RouterOutlet {
 
     setValue(value: ComponentSet) {
       this.value = value;
+      // console.log('sssssssssss');
     }
 
     onInitRender(param: any, rawSet: RawSet) {
       super.onInitRender(param, rawSet);
       const c = this.getParentThis();
-      if (c instanceof ComponentRouterBase) {
+      const userValue = this.getAttribute('value');
+      if (userValue) {
+        this.value = userValue;
+      } else if (c instanceof ComponentRouterBase) {
         this.value = c.child;
       }
       // console.log('------',c);
@@ -52,7 +57,13 @@ export namespace RouterOutlet {
       }
     }
 
-    onCreatedThisChildDebounce() {
+    onCreatedThisChild(child:any, data:OnCreateRenderDataParams){
+      super.onCreatedThisChild(child, data);
+      // console.log('outlet--oncreatedThisChild',child);
+    }
+
+    onCreatedThisChildDebounce(childrenSet: ChildrenSet[]) {
+      super.onCreatedThisChildDebounce(childrenSet);
       let parentThis = this.getParentThis();
       // console.log('---', parentThis);
       if (isOnCreatedOutletDebounce(parentThis)) {

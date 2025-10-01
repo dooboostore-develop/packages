@@ -1,0 +1,34 @@
+<div class="user-page">
+  <h2>User Profile</h2>
+  
+  <div class="profile-card">
+    <div class="profile-field">
+      <label>Name:</label>
+      <span>${@this@.userName}$</span>
+    </div>
+    
+    <div class="profile-field">
+      <label>Email:</label>
+      <span>${@this@.userEmail}$</span>
+    </div>
+    
+    <div class="profile-field">
+      <label>Member Since:</label>
+      <span>${@this@.formattedDate}$</span>
+    </div>
+    
+    <button dr-event-click="@this@.updateProfile()" class="btn-update">
+      Update Profile
+    </button>
+  </div>
+  
+  <div class="note">
+    <p>💡 This page demonstrates:</p>
+    <ul>
+      <li>Using utility functions (utils/dateUtils)</li>
+      <li>Component state management</li>
+      <li>Event handling</li>
+      <li>Route component (*.route.component.ts)</li>
+    </ul>
+  </div>
+</div>

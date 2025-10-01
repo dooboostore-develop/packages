@@ -1,7 +1,7 @@
 {
   "name": "@dooboostore/create-simple-boot-http-server",
   "description": "Create a simple-boot-http-server or Sapper site in a single command.",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "author": "dooboostore",
   "publishConfig": {
     "access": "public"

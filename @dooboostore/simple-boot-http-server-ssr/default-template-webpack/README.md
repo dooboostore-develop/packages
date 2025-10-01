@@ -1,1 +1,0 @@
-simple-boot-http-server-ssr default-template-webpack

@@ -1,7 +1,7 @@
 {
   "name": "@dooboostore/create-simple-boot-front",
   "description": "Create a simple-boot-front or Sapper site in a single command.",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "author": "dooboostore",
   "publishConfig": {
     "access": "public"

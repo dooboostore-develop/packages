@@ -313,13 +313,17 @@ export namespace Select {
       if (!select.multiple) {
         // 내가 선택한게 있으면
         if (option && option.selected) {
-          options.filter(it => it !== option).forEach(it => (it.selected = false));
+          options.filter(it => it !== option).forEach(it => {
+            it.selected = false;
+            it.updateStatus();
+          });
         } else {
           const selectedOptions = options.filter(it => it.selected && !it.disabled);
           selectedOptions.forEach((opt, idx) => {
             const isLast = idx === selectedOptions.length - 1;
             if (!isLast) {
               opt.selected = false;
+              opt.updateStatus();
             }
           });
         }
@@ -473,7 +477,7 @@ export default {
       name: Select.selector,
       styles:
         '.dr-select-container {\n' +
-        '  /*position: relative;*/\n' +
+        '  position: relative;\n' +
         '\n' +
         '}\n' +
         '.dr-select-options-container {\n' +

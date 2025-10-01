@@ -1,0 +1,44 @@
+{
+  "name": "@dooboostore/simple-boot-http-server-default-template-commonjs-typescript-webpack",
+  "version": "1.0.0",
+  "description": "Simple Boot HTTP Server Example",
+  "main": "dist/index.cjs",
+  "scripts": {
+    "dev": "webpack --config webpack.config.cjs --watch",
+    "start": "webpack --config webpack.config.cjs && node dist/index.cjs",
+    "build": "webpack --mode production --config webpack.config.cjs"
+  },
+  "keywords": ["simple-boot", "http-server", "example"],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@babel/core": "^7.24.0",
+    "@babel/plugin-proposal-class-properties": "^7.18.6",
+    "@babel/plugin-proposal-decorators": "^7.24.0",
+    "@babel/plugin-transform-private-property-in-object": "^7.25.9",
+    "@babel/preset-env": "^7.24.0",
+    "@babel/preset-typescript": "^7.24.0",
+    "@types/jest": "^26.0.22",
+    "@types/node-gzip": "^1.1.0",
+    "@typescript-eslint/eslint-plugin": "^4.16.1",
+    "@typescript-eslint/parser": "^4.16.1",
+    "nodemon-webpack-plugin": "^4.8.2",
+    "raw-loader": "^4.0.2",
+    "ts-loader": "^9.5.2",
+    "tsconfig-paths-webpack-plugin": "^4.2.0",
+    "tslib": "^2.8.1",
+    "typescript": "^5.9.2",
+    "webpack": "^5.98.0",
+    "webpack-cli": "^5.1.4"
+  },
+  "dependencies": {
+    "@dooboostore/core": "workspace:*",
+    "@dooboostore/core-node": "workspace:*",
+    "@dooboostore/simple-boot": "workspace:*",
+    "@dooboostore/simple-boot-http-server": "workspace:*",
+    "fast-json-patch": "^3.1.0",
+    "mime-types": "^2.1.34",
+    "node-gzip": "^1.1.2",
+    "reflect-metadata": "^0.2.2"
+  }
+}

@@ -5,27 +5,43 @@ export enum UrlType {
   path = 'path',
   hash = 'hash'
 }
+export type SimFrontOptionConfig = {
+  window: Window,
+  selector?: string | HTMLElement,
+  urlType?: UrlType
+  using?: ConstructorType<any>[]
+}
 
 export class SimFrontOption extends SimOption {
-  selector: string = '#app';
-  urlType: UrlType = UrlType.path;
 
-  constructor(public window: Window, initSimOption?: InitOptionType) {
+  constructor(public config: SimFrontOptionConfig, initSimOption?: InitOptionType) {
     super(initSimOption);
   }
 
-  setSelector(selector: string): SimFrontOption {
-    this.selector = selector;
-    return this;
+  get window() {
+    return this.config.window;
   }
 
-  setUrlType(urlType: UrlType): SimFrontOption {
-    this.urlType = urlType;
-    return this;
+  get selector() {
+    return this.config.selector ?? '#app'
   }
 
-  setRootRouter(rootRouter: ConstructorType<any>): SimFrontOption {
-    this.rootRouter = rootRouter;
-    return this;
+  get urlType() {
+    return this.config.urlType ?? UrlType.path;
   }
+
+  // setSelector(selector: string): SimFrontOption {
+  //   this.selector = selector;
+  //   return this;
+  // }
+  //
+  // setUrlType(urlType: UrlType): SimFrontOption {
+  //   this.urlType = urlType;
+  //   return this;
+  // }
+  //
+  // setRootRouter(rootRouter: ConstructorType<any>): SimFrontOption {
+  //   this.rootRouter = rootRouter;
+  //   return this;
+  // }
 }

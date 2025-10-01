@@ -1,0 +1,34 @@
+<div class="container">
+    <header class="hero">
+        <div class="hero-content">
+            <h1 class="title">🚀 Simple Boot SSR</h1>
+            <p class="subtitle">Server-Side Rendering with TypeScript & Webpack</p>
+        </div>
+    </header>
+
+    <section class="demo-section">
+        <h2 class="section-title">API Demo</h2>
+        <div class="button-group">
+            <button class="btn btn-primary" dr-event-click="@this@.apiFetch()">
+                <span class="btn-icon">📡</span>
+                Fetch API
+            </button>
+            <button class="btn btn-secondary" dr-event-click="@this@.apiIntentFetch()">
+                <span class="btn-icon">🎯</span>
+                Intent API
+            </button>
+        </div>
+    </section>
+
+    <section class="results-section">
+        <dr-appender value="${@this@.fetchAppender}$">
+            <div class="result-card">
+                <div class="result-content">${#it#}$</div>
+            </div>
+        </dr-appender>
+    </section>
+
+    <footer class="footer">
+        <p>Built with ❤️ using Simple Boot</p>
+    </footer>
+</div>

@@ -1,0 +1,11 @@
+import {Sim} from '@dooboostore/simple-boot/decorators/SimDecorator';
+import { SimstanceManager } from '@dooboostore/simple-boot/simstance/SimstanceManager.ts';
+
+@Sim
+export class ProjectService {
+    constructor(public sim: SimstanceManager) {
+    }
+    sum(a: number, b: number): number {
+        return a + b;
+    }
+}

@@ -11,24 +11,30 @@ import { drComponent } from './components';
 import { EventManager } from './events/EventManager';
 import { RandomUtils } from '@dooboostore/core/random/RandomUtils';
 
-export type DomRenderRunConfig<T = any> = Omit<DomRenderConfig<T>, 'router' | 'uuid' | 'eventManager' | 'messenger' | 'root' | 'rootElement'> & { routerType?: 'path' | 'hash' | ((obj: T, window: Window) => Router) | Router };
+export type DomRenderRunConfig<T = any> = Omit<DomRenderConfig<T>, 'router' | 'uuid' | 'eventManager' | 'messenger' | 'root' | 'rootElement'> & { routerType?: 'path' | 'hash' | ((obj: T, targetConfig: DomRenderConfig) => Router) | Router };
 export type CreateComponentParam = { type: ConstructorType<any> | any, tagName?: string, noStrip?: boolean, template?: string, styles?: string[] | string };
 let eventManager: EventManager | null = null;
 export type DomRenderRunParameter<T extends object> = { rootObject: T | (() => T), target?: Element | null, config?: DomRenderRunConfig | DomRenderConfig };
+
+export type ExecuteConfig = { firstUrl?: string };
 
 export class DomRender<T extends object = any> {
   private _config: DomRenderConfig;
   private _target: Element | null | undefined;
   private _rootObject: T;
+  private _router: Router;
+  private _eventManager: EventManager;
 
-  constructor(parameter: DomRenderRunParameter<T>, executeConfig?: { autoGo?: string }) {
-    const s = DomRender.runSet(parameter);
+  constructor(parameter: DomRenderRunParameter<T>, executeConfig?: ExecuteConfig) {
+    const s = DomRender.runSet(parameter,executeConfig);
     this._config = s.config;
     this._target = s.target;
     this._rootObject = s.rootObject;
-    if (executeConfig && executeConfig?.autoGo) {
-      this._config.router?.go(executeConfig.autoGo);
-    }
+    this._router = s.config.router;
+    this._eventManager = s.config.eventManager;
+    // if (executeConfig && executeConfig?.autoGo) {
+    //   this._config.router?.go(executeConfig.autoGo);
+    // }
   }
 
   public get rootObject(): T {
@@ -38,8 +44,14 @@ export class DomRender<T extends object = any> {
   public get config(): DomRenderConfig {
     return this._config;
   }
+  public get router(): Router {
+    return this._router;
+  }
 
-  public get target(): Element | null |undefined {
+  public get eventManager(): EventManager {
+    return this._eventManager;
+  }
+  public get target(): Element | null | undefined {
     return this._target;
   }
 
@@ -47,7 +59,11 @@ export class DomRender<T extends object = any> {
     return DomRender.runSet(data).rootObject;
   }
 
-  public static runSet<T extends object>({rootObject, target, config}: DomRenderRunParameter<T>): { rootObject: T, target?: Element | null, config: DomRenderConfig } {
+  public static runSet<T extends object>({
+    rootObject,
+    target,
+    config
+  }: DomRenderRunParameter<T>, executeConfig?: ExecuteConfig): { rootObject: T; target?: Element | null; config: DomRenderConfig } {
     // public static run<T extends object>({rootObject, target, config}: DomRenderRunParameter<T>): T {
     //   console.log('runSet')
     rootObject = typeof rootObject === 'function' ? rootObject() : rootObject;
@@ -58,7 +74,7 @@ export class DomRender<T extends object = any> {
       }
       targetObject = rootObject;
       // return targetObject;
-      return {rootObject: targetObject, target, config: (rootObject as any)._domRender_config};
+      return { rootObject: targetObject, target, config: (rootObject as any)._domRender_config };
     }
     const targetConfig = Object.assign({}, config) as DomRenderConfig;
     eventManager ??= new EventManager(targetConfig.window);
@@ -67,7 +83,6 @@ export class DomRender<T extends object = any> {
     targetConfig.messenger = DomRenderFinalProxy.final(targetConfig.messenger ?? new DefaultMessenger(targetConfig));
     targetConfig.proxyExcludeTyps = targetConfig.proxyExcludeTyps ?? [];
     targetConfig.targetElements ??= [];
-
 
     if (typeof Window !== 'undefined' && !targetConfig.proxyExcludeTyps.some(it => it === Window)) {
       targetConfig.proxyExcludeTyps.push(Window);
@@ -87,16 +102,19 @@ export class DomRender<T extends object = any> {
     if (typeof ImageBitmap !== 'undefined' && !targetConfig.proxyExcludeTyps.some(it => it === ImageBitmap)) {
       targetConfig.proxyExcludeTyps.push(ImageBitmap);
     }
-    if (typeof CanvasRenderingContext2D !== 'undefined' && !targetConfig.proxyExcludeTyps.some(it => it === CanvasRenderingContext2D)) {
+    if ( typeof CanvasRenderingContext2D !== 'undefined' && !targetConfig.proxyExcludeTyps.some(it => it === CanvasRenderingContext2D) ) {
       targetConfig.proxyExcludeTyps.push(CanvasRenderingContext2D);
     }
-    if (typeof CSSStyleDeclaration !== 'undefined' && !targetConfig.proxyExcludeTyps.some(it => it === CSSStyleDeclaration)) {
+    if ( typeof CSSStyleDeclaration !== 'undefined' && !targetConfig.proxyExcludeTyps.some(it => it === CSSStyleDeclaration) ) {
       targetConfig.proxyExcludeTyps.push(CSSStyleDeclaration);
     }
-    if (typeof MutationObserver !== 'undefined' && !targetConfig.proxyExcludeTyps.some(it => it === IntersectionObserver)) {
+    if ( typeof Date !== 'undefined' && !targetConfig.proxyExcludeTyps.some(it => it === Date) ) {
+      targetConfig.proxyExcludeTyps.push(Date);
+    }
+    if ( typeof MutationObserver !== 'undefined' && !targetConfig.proxyExcludeTyps.some(it => it === IntersectionObserver) ) {
       targetConfig.proxyExcludeTyps.push(IntersectionObserver);
     }
-    if (typeof IntersectionObserver !== 'undefined' && !targetConfig.proxyExcludeTyps.some(it => it === IntersectionObserver)) {
+    if ( typeof IntersectionObserver !== 'undefined' && !targetConfig.proxyExcludeTyps.some(it => it === IntersectionObserver) ) {
       targetConfig.proxyExcludeTyps.push(IntersectionObserver);
     }
     if (typeof HTMLElement !== 'undefined' && !targetConfig.proxyExcludeTyps.some(it => it === HTMLElement)) {
@@ -124,11 +142,11 @@ export class DomRender<T extends object = any> {
     if (!targetConfig.router) {
       let targetRouter: Router<any> | undefined;
       if ('routerType' in config && config?.routerType === 'hash') {
-        targetRouter = new HashRouter({rootObject: targetObject, window: targetConfig.window});
+        targetRouter = new HashRouter({ rootObject: targetObject, window: targetConfig.window, firstUrl: executeConfig?.firstUrl });
       } else if ('routerType' in config && config?.routerType === 'path') {
-        targetRouter = new PathRouter({rootObject: targetObject, window: targetConfig.window});
+        targetRouter = new PathRouter({ rootObject: targetObject, window: targetConfig.window, firstUrl: executeConfig?.firstUrl });
       } else if ('routerType' in config && typeof config?.routerType === 'function') {
-        targetRouter = config.routerType(targetObject, targetConfig.window);
+        targetRouter = config.routerType(targetObject, targetConfig);
       } else if ('routerType' in config && typeof config?.routerType === 'object') {
         targetRouter = config.routerType;
       }
@@ -153,33 +171,31 @@ export class DomRender<T extends object = any> {
     //   }
     // }
     domRender.run(targetObject);
-    return {rootObject: targetObject, config: targetConfig, target};
+    return { rootObject: targetObject, config: targetConfig, target };
     // return targetObject;
   }
 
   public static createComponent(param: CreateComponentParam) {
     // console.log('===>', typeof param.type, param.type.name, param.type.constructor.name)
-    const component = RawSet.createComponentTargetElement(
-      {
-        name: param.tagName ?? (typeof param.type === 'function' ? param.type.name : param.type.constructor.name),
-        objFactory: (e, o, r2, counstructorParam) => {
-          return typeof param.type === 'function' ? new param.type(...counstructorParam) : param.type;
-        },
-        noStrip: param.noStrip,
-        template: param.template ?? '',
-        styles: Array.isArray(param.styles) ? param.styles : (param.styles ? [param.styles] : undefined)
-      }
-    );
+    const component = RawSet.createComponentTargetElement({
+      name: param.tagName ?? (typeof param.type === 'function' ? param.type.name : param.type.constructor.name),
+      objFactory: (e, o, r2, counstructorParam) => {
+        return typeof param.type === 'function' ? new param.type(...counstructorParam) : param.type;
+      },
+      noStrip: param.noStrip,
+      template: param.template ?? '',
+      styles: Array.isArray(param.styles) ? param.styles : param.styles ? [param.styles] : undefined
+    });
     return component;
   }
 
   // ?? 언제 쓰는거지?? 훔..
-  public static createAttribute(attrName: string, getThisObj: (element: Element, attrValue: string, obj: any, rawSet: RawSet) => any, factory: (element: Element, attrValue: string, obj: any, rawSet: RawSet) => DocumentFragment) {
-    const targetAttribute = RawSet.createComponentTargetAttribute(
-      attrName,
-      getThisObj,
-      factory
-    );
+  public static createAttribute(
+    attrName: string,
+    getThisObj: (element: Element, attrValue: string, obj: any, rawSet: RawSet) => any,
+    factory: (element: Element, attrValue: string, obj: any, rawSet: RawSet) => DocumentFragment
+  ) {
+    const targetAttribute = RawSet.createComponentTargetAttribute(attrName, getThisObj, factory);
     return targetAttribute;
   }
 }

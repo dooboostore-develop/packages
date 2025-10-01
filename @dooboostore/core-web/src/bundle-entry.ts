@@ -1,3 +1,5 @@
+import 'reflect-metadata'
+export * as Core from '@dooboostore/core/bundle-entry'
 export * from './animation';
 export * from './clipboard';
 export * from './convert';

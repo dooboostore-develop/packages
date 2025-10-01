@@ -80,7 +80,7 @@ importers:
         specifier: ^5.1.4
         version: 5.1.4(webpack@5.101.3)
 
-  '@dooboostore/core-node/example/quick-start':
+  '@dooboostore/core-node/default-template/module-js':
     dependencies:
       '@dooboostore/core':
         specifier: workspace:*
@@ -162,7 +162,7 @@ importers:
         specifier: ^5.2.0
         version: 5.2.2(webpack-cli@5.1.4)(webpack@5.101.3)
 
-  '@dooboostore/core-node/example/quick-start-js':
+  '@dooboostore/core-node/default-template/module-typescript-webpack':
     dependencies:
       '@dooboostore/core':
         specifier: workspace:*
@@ -225,6 +225,87 @@ importers:
       ts-node-dev:
         specifier: ^2.0.0
         version: 2.0.0(@types/node@24.5.2)(node-notifier@8.0.2)(typescript@5.9.2)
+      tsconfig-paths-webpack-plugin:
+        specifier: ^4.2.0
+        version: 4.2.0
+      tslib:
+        specifier: ^2.8.1
+        version: 2.8.1
+      typescript:
+        specifier: ^5.9.2
+        version: 5.9.2
+      webpack:
+        specifier: ^5.98.0
+        version: 5.101.3(webpack-cli@5.1.4)
+      webpack-cli:
+        specifier: ^5.1.4
+        version: 5.1.4(webpack-dev-server@5.2.2)(webpack@5.101.3)
+      webpack-dev-server:
+        specifier: ^5.2.0
+        version: 5.2.2(webpack-cli@5.1.4)(webpack@5.101.3)
+
+  '@dooboostore/core-node/dist/cjs': {}
+
+  '@dooboostore/core-node/example':
+    dependencies:
+      '@clack/prompts':
+        specifier: ^0.11.0
+        version: 0.11.0
+      '@dooboostore/core':
+        specifier: workspace:*
+        version: link:../../core
+      '@dooboostore/core-node':
+        specifier: workspace:*
+        version: link:..
+      reflect-metadata:
+        specifier: ^0.2.2
+        version: 0.2.2
+    devDependencies:
+      '@babel/core':
+        specifier: ^7.24.0
+        version: 7.28.4
+      '@babel/plugin-proposal-class-properties':
+        specifier: ^7.18.6
+        version: 7.18.6(@babel/core@7.28.4)
+      '@babel/plugin-proposal-decorators':
+        specifier: ^7.24.0
+        version: 7.28.0(@babel/core@7.28.4)
+      '@babel/plugin-transform-private-property-in-object':
+        specifier: ^7.25.9
+        version: 7.27.1(@babel/core@7.28.4)
+      '@babel/preset-env':
+        specifier: ^7.24.0
+        version: 7.28.3(@babel/core@7.28.4)
+      '@babel/preset-typescript':
+        specifier: ^7.24.0
+        version: 7.27.1(@babel/core@7.28.4)
+      '@types/jest':
+        specifier: ^26.0.22
+        version: 26.0.24
+      '@typescript-eslint/eslint-plugin':
+        specifier: ^4.16.1
+        version: 4.33.0(@typescript-eslint/parser@4.33.0(eslint@7.32.0)(typescript@5.9.2))(eslint@7.32.0)(typescript@5.9.2)
+      '@typescript-eslint/parser':
+        specifier: ^4.16.1
+        version: 4.33.0(eslint@7.32.0)(typescript@5.9.2)
+      html-loader:
+        specifier: ^5.1.0
+        version: 5.1.0(webpack@5.101.3(webpack-cli@5.1.4))
+      html-webpack-plugin:
+        specifier: ^5.6.3
+        version: 5.6.4(webpack@5.101.3(webpack-cli@5.1.4))
+      nodemon-webpack-plugin:
+        specifier: ^4.8.2
+        version: 4.8.2(webpack@5.101.3(webpack-cli@5.1.4))
+      simple-boot-front-cli:
+        specifier: ^1.0.10
+        version: 1.0.10
+      supertest:
+        specifier: ^6.1.3
+        version: 6.3.4
+      ts-loader:
+        specifier: ^9.5.2
+        version: 9.5.4(typescript@5.9.2)(webpack@5.101.3(webpack-cli@5.1.4))
       tsconfig-paths-webpack-plugin:
         specifier: ^4.2.0
         version: 4.2.0
@@ -269,7 +350,13 @@ importers:
         specifier: ^5.9.2
         version: 5.9.2
 
-  '@dooboostore/core-web/example/angle':
+  '@dooboostore/core-web/default-template/browser-usage':
+    dependencies:
+      http-server:
+        specifier: ^14.1.1
+        version: 14.1.1
+
+  '@dooboostore/core-web/default-template/commonjs-typescript-webpack':
     dependencies:
       '@dooboostore/core':
         specifier: workspace:*
@@ -342,7 +429,7 @@ importers:
         specifier: ^5.2.0
         version: 5.2.2(webpack-cli@5.1.4)(webpack@5.101.3)
 
-  '@dooboostore/core-web/example/quick-start':
+  '@dooboostore/core-web/default-template/module-typescript-webpack':
     dependencies:
       '@dooboostore/core':
         specifier: workspace:*
@@ -424,7 +511,91 @@ importers:
         specifier: ^5.2.0
         version: 5.2.2(webpack-cli@5.1.4)(webpack@5.101.3)
 
-  '@dooboostore/core/example/quick-start':
+  '@dooboostore/core-web/dist/cjs': {}
+
+  '@dooboostore/core-web/example':
+    dependencies:
+      '@dooboostore/core':
+        specifier: workspace:*
+        version: link:../../core
+      '@dooboostore/core-web':
+        specifier: workspace:*
+        version: link:..
+      reflect-metadata:
+        specifier: ^0.2.2
+        version: 0.2.2
+    devDependencies:
+      '@babel/core':
+        specifier: ^7.24.0
+        version: 7.28.4
+      '@babel/plugin-proposal-class-properties':
+        specifier: ^7.18.6
+        version: 7.18.6(@babel/core@7.28.4)
+      '@babel/plugin-proposal-decorators':
+        specifier: ^7.24.0
+        version: 7.28.0(@babel/core@7.28.4)
+      '@babel/plugin-transform-private-property-in-object':
+        specifier: ^7.25.9
+        version: 7.27.1(@babel/core@7.28.4)
+      '@babel/preset-env':
+        specifier: ^7.24.0
+        version: 7.28.3(@babel/core@7.28.4)
+      '@babel/preset-typescript':
+        specifier: ^7.24.0
+        version: 7.27.1(@babel/core@7.28.4)
+      '@types/jest':
+        specifier: ^26.0.22
+        version: 26.0.24
+      '@typescript-eslint/eslint-plugin':
+        specifier: ^4.16.1
+        version: 4.33.0(@typescript-eslint/parser@4.33.0(eslint@7.32.0)(typescript@5.9.2))(eslint@7.32.0)(typescript@5.9.2)
+      '@typescript-eslint/parser':
+        specifier: ^4.16.1
+        version: 4.33.0(eslint@7.32.0)(typescript@5.9.2)
+      html-loader:
+        specifier: ^5.1.0
+        version: 5.1.0(webpack@5.101.3(webpack-cli@5.1.4))
+      html-webpack-plugin:
+        specifier: ^5.6.3
+        version: 5.6.4(webpack@5.101.3(webpack-cli@5.1.4))
+      ts-loader:
+        specifier: ^9.5.2
+        version: 9.5.4(typescript@5.9.2)(webpack@5.101.3(webpack-cli@5.1.4))
+      tsconfig-paths-webpack-plugin:
+        specifier: ^4.2.0
+        version: 4.2.0
+      tslib:
+        specifier: ^2.8.1
+        version: 2.8.1
+      typescript:
+        specifier: ^5.9.2
+        version: 5.9.2
+      webpack:
+        specifier: ^5.98.0
+        version: 5.101.3(webpack-cli@5.1.4)
+      webpack-cli:
+        specifier: ^5.1.4
+        version: 5.1.4(webpack-dev-server@5.2.2)(webpack@5.101.3)
+      webpack-dev-server:
+        specifier: ^5.2.0
+        version: 5.2.2(webpack-cli@5.1.4)(webpack@5.101.3)
+
+  '@dooboostore/core/default-template/browser-usage':
+    dependencies:
+      http-server:
+        specifier: ^14.1.1
+        version: 14.1.1
+
+  '@dooboostore/core/default-template/commonjs-js':
+    dependencies:
+      '@dooboostore/core':
+        specifier: workspace:*
+        version: link:../..
+      reflect-metadata:
+        specifier: ^0.2.2
+        version: 0.2.2
+
+  '@dooboostore/core/default-template/commonjs-typescript-webpack':
     dependencies:
       '@dooboostore/core':
         specifier: workspace:*
@@ -503,7 +674,7 @@ importers:
         specifier: ^5.2.0
         version: 5.2.2(webpack-cli@5.1.4)(webpack@5.101.3)
 
-  '@dooboostore/core/example/quick-start-commonjs':
+  '@dooboostore/core/default-template/module-typescript-webpack':
     dependencies:
       '@dooboostore/core':
         specifier: workspace:*
@@ -582,26 +753,95 @@ importers:
         specifier: ^5.2.0
         version: 5.2.2(webpack-cli@5.1.4)(webpack@5.101.3)
 
-  '@dooboostore/core/example/quick-start-js':
-    dependencies:
-      '@dooboostore/core':
-        specifier: workspace:*
-        version: link:../..
-      reflect-metadata:
-        specifier: ^0.2.2
-        version: 0.2.2
+  '@dooboostore/core/dist/cjs': {}
 
-  '@dooboostore/core/test':
+  '@dooboostore/core/example':
     dependencies:
+      '@clack/prompts':
+        specifier: ^0.11.0
+        version: 0.11.0
       '@dooboostore/core':
         specifier: workspace:*
         version: link:..
+      reflect-metadata:
+        specifier: ^0.2.2
+        version: 0.2.2
+    devDependencies:
+      '@babel/core':
+        specifier: ^7.24.0
+        version: 7.28.4
+      '@babel/plugin-proposal-class-properties':
+        specifier: ^7.18.6
+        version: 7.18.6(@babel/core@7.28.4)
+      '@babel/plugin-proposal-decorators':
+        specifier: ^7.24.0
+        version: 7.28.0(@babel/core@7.28.4)
+      '@babel/plugin-transform-private-property-in-object':
+        specifier: ^7.25.9
+        version: 7.27.1(@babel/core@7.28.4)
+      '@babel/preset-env':
+        specifier: ^7.24.0
+        version: 7.28.3(@babel/core@7.28.4)
+      '@babel/preset-typescript':
+        specifier: ^7.24.0
+        version: 7.27.1(@babel/core@7.28.4)
+      '@types/jest':
+        specifier: ^26.0.22
+        version: 26.0.24
+      '@typescript-eslint/eslint-plugin':
+        specifier: ^4.16.1
+        version: 4.33.0(@typescript-eslint/parser@4.33.0(eslint@7.32.0)(typescript@5.9.2))(eslint@7.32.0)(typescript@5.9.2)
+      '@typescript-eslint/parser':
+        specifier: ^4.16.1
+        version: 4.33.0(eslint@7.32.0)(typescript@5.9.2)
+      html-loader:
+        specifier: ^5.1.0
+        version: 5.1.0(webpack@5.101.3(webpack-cli@5.1.4))
+      html-webpack-plugin:
+        specifier: ^5.6.3
+        version: 5.6.4(webpack@5.101.3(webpack-cli@5.1.4))
+      nodemon-webpack-plugin:
+        specifier: ^4.8.2
+        version: 4.8.2(webpack@5.101.3(webpack-cli@5.1.4))
+      simple-boot-front-cli:
+        specifier: ^1.0.10
+        version: 1.0.10
+      supertest:
+        specifier: ^6.1.3
+        version: 6.3.4
+      ts-loader:
+        specifier: ^9.5.2
+        version: 9.5.4(typescript@5.9.2)(webpack@5.101.3(webpack-cli@5.1.4))
+      tsconfig-paths-webpack-plugin:
+        specifier: ^4.2.0
+        version: 4.2.0
+      tslib:
+        specifier: ^2.8.1
+        version: 2.8.1
+      typescript:
+        specifier: ^5.9.2
+        version: 5.9.2
+      webpack:
+        specifier: ^5.98.0
+        version: 5.101.3(webpack-cli@5.1.4)
+      webpack-cli:
+        specifier: ^5.1.4
+        version: 5.1.4(webpack-dev-server@5.2.2)(webpack@5.101.3)
+      webpack-dev-server:
+        specifier: ^5.2.0
+        version: 5.2.2(webpack-cli@5.1.4)(webpack@5.101.3)
+
+  '@dooboostore/core/test/case':
+    dependencies:
+      '@dooboostore/core':
+        specifier: workspace:*
+        version: link:../..
       '@dooboostore/core-node':
         specifier: workspace:*
-        version: link:../../core-node
+        version: link:../../../core-node
       '@dooboostore/simple-boot':
         specifier: workspace:*
-        version: link:../../simple-boot
+        version: link:../../../simple-boot
       '@types/node':
         specifier: ^24.3.1
         version: 24.5.2
@@ -837,17 +1077,98 @@ importers:
         specifier: ^4.2.3
         version: 4.9.5
 
-  '@dooboostore/dom-render/default-template-webpack':
+  '@dooboostore/dom-render/default-template/browser-usage':
+    dependencies:
+      http-server:
+        specifier: ^14.1.1
+        version: 14.1.1
+
+  '@dooboostore/dom-render/default-template/commonjs-typescript-webpack':
+    dependencies:
+      '@dooboostore/core':
+        specifier: workspace:*
+        version: link:../../../core
+      '@dooboostore/core-node':
+        specifier: workspace:*
+        version: link:../../../core-node
+      '@dooboostore/core-web':
+        specifier: workspace:*
+        version: link:../../../core-web
+      '@dooboostore/dom-render':
+        specifier: workspace:*
+        version: link:../..
+      reflect-metadata:
+        specifier: ^0.2.2
+        version: 0.2.2
+    devDependencies:
+      '@babel/core':
+        specifier: ^7.24.0
+        version: 7.28.4
+      '@babel/plugin-proposal-class-properties':
+        specifier: ^7.18.6
+        version: 7.18.6(@babel/core@7.28.4)
+      '@babel/plugin-proposal-decorators':
+        specifier: ^7.24.0
+        version: 7.28.0(@babel/core@7.28.4)
+      '@babel/plugin-transform-private-property-in-object':
+        specifier: ^7.25.9
+        version: 7.27.1(@babel/core@7.28.4)
+      '@babel/preset-env':
+        specifier: ^7.24.0
+        version: 7.28.3(@babel/core@7.28.4)
+      '@babel/preset-typescript':
+        specifier: ^7.24.0
+        version: 7.27.1(@babel/core@7.28.4)
+      '@types/jest':
+        specifier: ^26.0.22
+        version: 26.0.24
+      '@typescript-eslint/eslint-plugin':
+        specifier: ^4.16.1
+        version: 4.33.0(@typescript-eslint/parser@4.33.0(eslint@7.32.0)(typescript@5.9.2))(eslint@7.32.0)(typescript@5.9.2)
+      '@typescript-eslint/parser':
+        specifier: ^4.16.1
+        version: 4.33.0(eslint@7.32.0)(typescript@5.9.2)
+      html-webpack-plugin:
+        specifier: ^5.6.3
+        version: 5.6.4(webpack@5.101.3(webpack-cli@5.1.4))
+      simple-boot-front-cli:
+        specifier: ^1.0.10
+        version: 1.0.10
+      supertest:
+        specifier: ^6.1.3
+        version: 6.3.4
+      ts-loader:
+        specifier: ^9.5.2
+        version: 9.5.4(typescript@5.9.2)(webpack@5.101.3(webpack-cli@5.1.4))
+      ts-node:
+        specifier: ^10.0.0
+        version: 10.9.2(@types/node@24.5.2)(typescript@5.9.2)
+      ts-node-dev:
+        specifier: ^2.0.0
+        version: 2.0.0(@types/node@24.5.2)(node-notifier@8.0.2)(typescript@5.9.2)
+      tslib:
+        specifier: ^2.8.1
+        version: 2.8.1
+      typescript:
+        specifier: ^5.9.2
+        version: 5.9.2
+      webpack:
+        specifier: ^5.98.0
+        version: 5.101.3(webpack-cli@5.1.4)
+      webpack-cli:
+        specifier: ^5.1.4
+        version: 5.1.4(webpack-dev-server@5.2.2)(webpack@5.101.3)
+      webpack-dev-server:
+        specifier: ^5.2.0
+        version: 5.2.2(webpack-cli@5.1.4)(webpack@5.101.3)
+
+  '@dooboostore/dom-render/dist/cjs': {}
+
+  '@dooboostore/dom-render/example':
     dependencies:
       '@dooboostore/core':
         specifier: workspace:*
         version: link:../../core
-      '@dooboostore/core-node':
-        specifier: workspace:*
-        version: link:../../core-node
-      '@dooboostore/core-web':
-        specifier: workspace:*
-        version: link:../../core-web
       '@dooboostore/dom-render':
         specifier: workspace:*
         version: link:..
@@ -882,24 +1203,18 @@ importers:
       '@typescript-eslint/parser':
         specifier: ^4.16.1
         version: 4.33.0(eslint@7.32.0)(typescript@5.9.2)
+      html-loader:
+        specifier: ^5.1.0
+        version: 5.1.0(webpack@5.101.3(webpack-cli@5.1.4))
       html-webpack-plugin:
         specifier: ^5.6.3
         version: 5.6.4(webpack@5.101.3(webpack-cli@5.1.4))
-      simple-boot-front-cli:
-        specifier: ^1.0.10
-        version: 1.0.10
-      supertest:
-        specifier: ^6.1.3
-        version: 6.3.4
       ts-loader:
         specifier: ^9.5.2
         version: 9.5.4(typescript@5.9.2)(webpack@5.101.3(webpack-cli@5.1.4))
-      ts-node:
-        specifier: ^10.0.0
-        version: 10.9.2(@types/node@24.5.2)(typescript@5.9.2)
-      ts-node-dev:
-        specifier: ^2.0.0
-        version: 2.0.0(@types/node@24.5.2)(node-notifier@8.0.2)(typescript@5.9.2)
+      tsconfig-paths-webpack-plugin:
+        specifier: ^4.2.0
+        version: 4.2.0
       tslib:
         specifier: ^2.8.1
         version: 2.8.1
@@ -916,490 +1231,7 @@ importers:
         specifier: ^5.2.0
         version: 5.2.2(webpack-cli@5.1.4)(webpack@5.101.3)
 
-  '@dooboostore/dom-render/example/appender':
-    dependencies:
-      '@dooboostore/core':
-        specifier: workspace:*
-        version: link:../../../core
-      '@dooboostore/core-node':
-        specifier: workspace:*
-        version: link:../../../core-node
-      '@dooboostore/core-web':
-        specifier: workspace:*
-        version: link:../../../core-web
-      '@dooboostore/dom-render':
-        specifier: workspace:*
-        version: link:../..
-      reflect-metadata:
-        specifier: ^0.2.2
-        version: 0.2.2
-    devDependencies:
-      '@babel/core':
-        specifier: ^7.24.0
-        version: 7.28.4
-      '@babel/plugin-proposal-class-properties':
-        specifier: ^7.18.6
-        version: 7.18.6(@babel/core@7.28.4)
-      '@babel/plugin-proposal-decorators':
-        specifier: ^7.24.0
-        version: 7.28.0(@babel/core@7.28.4)
-      '@babel/plugin-transform-private-property-in-object':
-        specifier: ^7.25.9
-        version: 7.27.1(@babel/core@7.28.4)
-      '@babel/preset-env':
-        specifier: ^7.24.0
-        version: 7.28.3(@babel/core@7.28.4)
-      '@babel/preset-typescript':
-        specifier: ^7.24.0
-        version: 7.27.1(@babel/core@7.28.4)
-      '@types/jest':
-        specifier: ^26.0.22
-        version: 26.0.24
-      '@typescript-eslint/eslint-plugin':
-        specifier: ^4.16.1
-        version: 4.33.0(@typescript-eslint/parser@4.33.0(eslint@7.32.0)(typescript@5.9.2))(eslint@7.32.0)(typescript@5.9.2)
-      '@typescript-eslint/parser':
-        specifier: ^4.16.1
-        version: 4.33.0(eslint@7.32.0)(typescript@5.9.2)
-      html-webpack-plugin:
-        specifier: ^5.6.3
-        version: 5.6.4(webpack@5.101.3(webpack-cli@5.1.4))
-      simple-boot-front-cli:
-        specifier: ^1.0.10
-        version: 1.0.10
-      supertest:
-        specifier: ^6.1.3
-        version: 6.3.4
-      ts-loader:
-        specifier: ^9.5.2
-        version: 9.5.4(typescript@5.9.2)(webpack@5.101.3(webpack-cli@5.1.4))
-      ts-node:
-        specifier: ^10.0.0
-        version: 10.9.2(@types/node@24.5.2)(typescript@5.9.2)
-      ts-node-dev:
-        specifier: ^2.0.0
-        version: 2.0.0(@types/node@24.5.2)(node-notifier@8.0.2)(typescript@5.9.2)
-      tslib:
-        specifier: ^2.8.1
-        version: 2.8.1
-      typescript:
-        specifier: ^5.9.2
-        version: 5.9.2
-      webpack:
-        specifier: ^5.98.0
-        version: 5.101.3(webpack-cli@5.1.4)
-      webpack-cli:
-        specifier: ^5.1.4
-        version: 5.1.4(webpack-dev-server@5.2.2)(webpack@5.101.3)
-      webpack-dev-server:
-        specifier: ^5.2.0
-        version: 5.2.2(webpack-cli@5.1.4)(webpack@5.101.3)
-
-  '@dooboostore/dom-render/example/bundle': {}
-
-  '@dooboostore/dom-render/example/event':
-    dependencies:
-      '@dooboostore/core':
-        specifier: workspace:*
-        version: link:../../../core
-      '@dooboostore/core-node':
-        specifier: workspace:*
-        version: link:../../../core-node
-      '@dooboostore/core-web':
-        specifier: workspace:*
-        version: link:../../../core-web
-      '@dooboostore/dom-render':
-        specifier: workspace:*
-        version: link:../..
-      reflect-metadata:
-        specifier: ^0.2.2
-        version: 0.2.2
-    devDependencies:
-      '@babel/core':
-        specifier: ^7.24.0
-        version: 7.28.4
-      '@babel/plugin-proposal-class-properties':
-        specifier: ^7.18.6
-        version: 7.18.6(@babel/core@7.28.4)
-      '@babel/plugin-proposal-decorators':
-        specifier: ^7.24.0
-        version: 7.28.0(@babel/core@7.28.4)
-      '@babel/plugin-transform-private-property-in-object':
-        specifier: ^7.25.9
-        version: 7.27.1(@babel/core@7.28.4)
-      '@babel/preset-env':
-        specifier: ^7.24.0
-        version: 7.28.3(@babel/core@7.28.4)
-      '@babel/preset-typescript':
-        specifier: ^7.24.0
-        version: 7.27.1(@babel/core@7.28.4)
-      '@types/jest':
-        specifier: ^26.0.22
-        version: 26.0.24
-      '@typescript-eslint/eslint-plugin':
-        specifier: ^4.16.1
-        version: 4.33.0(@typescript-eslint/parser@4.33.0(eslint@7.32.0)(typescript@5.9.2))(eslint@7.32.0)(typescript@5.9.2)
-      '@typescript-eslint/parser':
-        specifier: ^4.16.1
-        version: 4.33.0(eslint@7.32.0)(typescript@5.9.2)
-      html-webpack-plugin:
-        specifier: ^5.6.3
-        version: 5.6.4(webpack@5.101.3(webpack-cli@5.1.4))
-      simple-boot-front-cli:
-        specifier: ^1.0.10
-        version: 1.0.10
-      supertest:
-        specifier: ^6.1.3
-        version: 6.3.4
-      ts-loader:
-        specifier: ^9.5.2
-        version: 9.5.4(typescript@5.9.2)(webpack@5.101.3(webpack-cli@5.1.4))
-      ts-node:
-        specifier: ^10.0.0
-        version: 10.9.2(@types/node@24.5.2)(typescript@5.9.2)
-      ts-node-dev:
-        specifier: ^2.0.0
-        version: 2.0.0(@types/node@24.5.2)(node-notifier@8.0.2)(typescript@5.9.2)
-      tslib:
-        specifier: ^2.8.1
-        version: 2.8.1
-      typescript:
-        specifier: ^5.9.2
-        version: 5.9.2
-      webpack:
-        specifier: ^5.98.0
-        version: 5.101.3(webpack-cli@5.1.4)
-      webpack-cli:
-        specifier: ^5.1.4
-        version: 5.1.4(webpack-dev-server@5.2.2)(webpack@5.101.3)
-      webpack-dev-server:
-        specifier: ^5.2.0
-        version: 5.2.2(webpack-cli@5.1.4)(webpack@5.101.3)
-
-  '@dooboostore/dom-render/example/playground':
-    dependencies:
-      '@dooboostore/core':
-        specifier: workspace:*
-        version: link:../../../core
-      '@dooboostore/core-node':
-        specifier: workspace:*
-        version: link:../../../core-node
-      '@dooboostore/core-web':
-        specifier: workspace:*
-        version: link:../../../core-web
-      '@dooboostore/dom-render':
-        specifier: workspace:*
-        version: link:../..
-      reflect-metadata:
-        specifier: ^0.2.2
-        version: 0.2.2
-    devDependencies:
-      '@babel/core':
-        specifier: ^7.24.0
-        version: 7.28.4
-      '@babel/plugin-proposal-class-properties':
-        specifier: ^7.18.6
-        version: 7.18.6(@babel/core@7.28.4)
-      '@babel/plugin-proposal-decorators':
-        specifier: ^7.24.0
-        version: 7.28.0(@babel/core@7.28.4)
-      '@babel/plugin-transform-private-property-in-object':
-        specifier: ^7.25.9
-        version: 7.27.1(@babel/core@7.28.4)
-      '@babel/preset-env':
-        specifier: ^7.24.0
-        version: 7.28.3(@babel/core@7.28.4)
-      '@babel/preset-typescript':
-        specifier: ^7.24.0
-        version: 7.27.1(@babel/core@7.28.4)
-      '@types/jest':
-        specifier: ^26.0.22
-        version: 26.0.24
-      '@typescript-eslint/eslint-plugin':
-        specifier: ^4.16.1
-        version: 4.33.0(@typescript-eslint/parser@4.33.0(eslint@7.32.0)(typescript@5.9.2))(eslint@7.32.0)(typescript@5.9.2)
-      '@typescript-eslint/parser':
-        specifier: ^4.16.1
-        version: 4.33.0(eslint@7.32.0)(typescript@5.9.2)
-      html-webpack-plugin:
-        specifier: ^5.6.3
-        version: 5.6.4(webpack@5.101.3(webpack-cli@5.1.4))
-      simple-boot-front-cli:
-        specifier: ^1.0.10
-        version: 1.0.10
-      supertest:
-        specifier: ^6.1.3
-        version: 6.3.4
-      ts-loader:
-        specifier: ^9.5.2
-        version: 9.5.4(typescript@5.9.2)(webpack@5.101.3(webpack-cli@5.1.4))
-      ts-node:
-        specifier: ^10.0.0
-        version: 10.9.2(@types/node@24.5.2)(typescript@5.9.2)
-      ts-node-dev:
-        specifier: ^2.0.0
-        version: 2.0.0(@types/node@24.5.2)(node-notifier@8.0.2)(typescript@5.9.2)
-      tslib:
-        specifier: ^2.8.1
-        version: 2.8.1
-      typescript:
-        specifier: ^5.9.2
-        version: 5.9.2
-      webpack:
-        specifier: ^5.98.0
-        version: 5.101.3(webpack-cli@5.1.4)
-      webpack-cli:
-        specifier: ^5.1.4
-        version: 5.1.4(webpack-dev-server@5.2.2)(webpack@5.101.3)
-      webpack-dev-server:
-        specifier: ^5.2.0
-        version: 5.2.2(webpack-cli@5.1.4)(webpack@5.101.3)
-
-  '@dooboostore/dom-render/example/quick-start':
-    dependencies:
-      '@dooboostore/core':
-        specifier: workspace:*
-        version: link:../../../core
-      '@dooboostore/core-node':
-        specifier: workspace:*
-        version: link:../../../core-node
-      '@dooboostore/core-web':
-        specifier: workspace:*
-        version: link:../../../core-web
-      '@dooboostore/dom-render':
-        specifier: workspace:*
-        version: link:../..
-      reflect-metadata:
-        specifier: ^0.2.2
-        version: 0.2.2
-    devDependencies:
-      '@babel/core':
-        specifier: ^7.24.0
-        version: 7.28.4
-      '@babel/plugin-proposal-class-properties':
-        specifier: ^7.18.6
-        version: 7.18.6(@babel/core@7.28.4)
-      '@babel/plugin-proposal-decorators':
-        specifier: ^7.24.0
-        version: 7.28.0(@babel/core@7.28.4)
-      '@babel/plugin-transform-private-property-in-object':
-        specifier: ^7.25.9
-        version: 7.27.1(@babel/core@7.28.4)
-      '@babel/preset-env':
-        specifier: ^7.24.0
-        version: 7.28.3(@babel/core@7.28.4)
-      '@babel/preset-typescript':
-        specifier: ^7.24.0
-        version: 7.27.1(@babel/core@7.28.4)
-      '@types/jest':
-        specifier: ^26.0.22
-        version: 26.0.24
-      '@typescript-eslint/eslint-plugin':
-        specifier: ^4.16.1
-        version: 4.33.0(@typescript-eslint/parser@4.33.0(eslint@7.32.0)(typescript@5.9.2))(eslint@7.32.0)(typescript@5.9.2)
-      '@typescript-eslint/parser':
-        specifier: ^4.16.1
-        version: 4.33.0(eslint@7.32.0)(typescript@5.9.2)
-      esbuild:
-        specifier: ^0.23.0
-        version: 0.23.1
-      html-webpack-plugin:
-        specifier: ^5.6.3
-        version: 5.6.4(webpack@5.101.3(esbuild@0.23.1)(webpack-cli@5.1.4))
-      http-server:
-        specifier: ^14.1.1
-        version: 14.1.1
-      nodemon:
-        specifier: ^3.0.1
-        version: 3.0.1
-      simple-boot-front-cli:
-        specifier: ^1.0.10
-        version: 1.0.10
-      supertest:
-        specifier: ^6.1.3
-        version: 6.3.4
-      ts-loader:
-        specifier: ^9.5.2
-        version: 9.5.4(typescript@5.9.2)(webpack@5.101.3(esbuild@0.23.1)(webpack-cli@5.1.4))
-      ts-node:
-        specifier: ^10.0.0
-        version: 10.9.2(@types/node@24.5.2)(typescript@5.9.2)
-      ts-node-dev:
-        specifier: ^2.0.0
-        version: 2.0.0(@types/node@24.5.2)(node-notifier@8.0.2)(typescript@5.9.2)
-      tslib:
-        specifier: ^2.8.1
-        version: 2.8.1
-      typescript:
-        specifier: ^5.9.2
-        version: 5.9.2
-      webpack:
-        specifier: ^5.98.0
-        version: 5.101.3(esbuild@0.23.1)(webpack-cli@5.1.4)
-      webpack-cli:
-        specifier: ^5.1.4
-        version: 5.1.4(webpack-dev-server@5.2.2)(webpack@5.101.3)
-      webpack-dev-server:
-        specifier: ^5.2.0
-        version: 5.2.2(webpack-cli@5.1.4)(webpack@5.101.3)
-
-  '@dooboostore/dom-render/example/route':
-    dependencies:
-      '@dooboostore/core':
-        specifier: workspace:*
-        version: link:../../../core
-      '@dooboostore/core-node':
-        specifier: workspace:*
-        version: link:../../../core-node
-      '@dooboostore/core-web':
-        specifier: workspace:*
-        version: link:../../../core-web
-      '@dooboostore/dom-render':
-        specifier: workspace:*
-        version: link:../..
-      reflect-metadata:
-        specifier: ^0.2.2
-        version: 0.2.2
-    devDependencies:
-      '@babel/core':
-        specifier: ^7.24.0
-        version: 7.28.4
-      '@babel/plugin-proposal-class-properties':
-        specifier: ^7.18.6
-        version: 7.18.6(@babel/core@7.28.4)
-      '@babel/plugin-proposal-decorators':
-        specifier: ^7.24.0
-        version: 7.28.0(@babel/core@7.28.4)
-      '@babel/plugin-transform-private-property-in-object':
-        specifier: ^7.25.9
-        version: 7.27.1(@babel/core@7.28.4)
-      '@babel/preset-env':
-        specifier: ^7.24.0
-        version: 7.28.3(@babel/core@7.28.4)
-      '@babel/preset-typescript':
-        specifier: ^7.24.0
-        version: 7.27.1(@babel/core@7.28.4)
-      '@types/jest':
-        specifier: ^26.0.22
-        version: 26.0.24
-      '@typescript-eslint/eslint-plugin':
-        specifier: ^4.16.1
-        version: 4.33.0(@typescript-eslint/parser@4.33.0(eslint@7.32.0)(typescript@5.9.2))(eslint@7.32.0)(typescript@5.9.2)
-      '@typescript-eslint/parser':
-        specifier: ^4.16.1
-        version: 4.33.0(eslint@7.32.0)(typescript@5.9.2)
-      html-webpack-plugin:
-        specifier: ^5.6.3
-        version: 5.6.4(webpack@5.101.3(webpack-cli@5.1.4))
-      simple-boot-front-cli:
-        specifier: ^1.0.10
-        version: 1.0.10
-      supertest:
-        specifier: ^6.1.3
-        version: 6.3.4
-      ts-loader:
-        specifier: ^9.5.2
-        version: 9.5.4(typescript@5.9.2)(webpack@5.101.3(webpack-cli@5.1.4))
-      ts-node:
-        specifier: ^10.0.0
-        version: 10.9.2(@types/node@24.5.2)(typescript@5.9.2)
-      ts-node-dev:
-        specifier: ^2.0.0
-        version: 2.0.0(@types/node@24.5.2)(node-notifier@8.0.2)(typescript@5.9.2)
-      tslib:
-        specifier: ^2.8.1
-        version: 2.8.1
-      typescript:
-        specifier: ^5.9.2
-        version: 5.9.2
-      webpack:
-        specifier: ^5.98.0
-        version: 5.101.3(webpack-cli@5.1.4)
-      webpack-cli:
-        specifier: ^5.1.4
-        version: 5.1.4(webpack-dev-server@5.2.2)(webpack@5.101.3)
-      webpack-dev-server:
-        specifier: ^5.2.0
-        version: 5.2.2(webpack-cli@5.1.4)(webpack@5.101.3)
-
-  '@dooboostore/dom-render/example/this':
-    dependencies:
-      '@dooboostore/core':
-        specifier: workspace:*
-        version: link:../../../core
-      '@dooboostore/core-node':
-        specifier: workspace:*
-        version: link:../../../core-node
-      '@dooboostore/core-web':
-        specifier: workspace:*
-        version: link:../../../core-web
-      '@dooboostore/dom-render':
-        specifier: workspace:*
-        version: link:../..
-      reflect-metadata:
-        specifier: ^0.2.2
-        version: 0.2.2
-    devDependencies:
-      '@babel/core':
-        specifier: ^7.24.0
-        version: 7.28.4
-      '@babel/plugin-proposal-class-properties':
-        specifier: ^7.18.6
-        version: 7.18.6(@babel/core@7.28.4)
-      '@babel/plugin-proposal-decorators':
-        specifier: ^7.24.0
-        version: 7.28.0(@babel/core@7.28.4)
-      '@babel/plugin-transform-private-property-in-object':
-        specifier: ^7.25.9
-        version: 7.27.1(@babel/core@7.28.4)
-      '@babel/preset-env':
-        specifier: ^7.24.0
-        version: 7.28.3(@babel/core@7.28.4)
-      '@babel/preset-typescript':
-        specifier: ^7.24.0
-        version: 7.27.1(@babel/core@7.28.4)
-      '@types/jest':
-        specifier: ^26.0.22
-        version: 26.0.24
-      '@typescript-eslint/eslint-plugin':
-        specifier: ^4.16.1
-        version: 4.33.0(@typescript-eslint/parser@4.33.0(eslint@7.32.0)(typescript@5.9.2))(eslint@7.32.0)(typescript@5.9.2)
-      '@typescript-eslint/parser':
-        specifier: ^4.16.1
-        version: 4.33.0(eslint@7.32.0)(typescript@5.9.2)
-      html-webpack-plugin:
-        specifier: ^5.6.3
-        version: 5.6.4(webpack@5.101.3(webpack-cli@5.1.4))
-      simple-boot-front-cli:
-        specifier: ^1.0.10
-        version: 1.0.10
-      supertest:
-        specifier: ^6.1.3
-        version: 6.3.4
-      ts-loader:
-        specifier: ^9.5.2
-        version: 9.5.4(typescript@5.9.2)(webpack@5.101.3(webpack-cli@5.1.4))
-      ts-node:
-        specifier: ^10.0.0
-        version: 10.9.2(@types/node@24.5.2)(typescript@5.9.2)
-      ts-node-dev:
-        specifier: ^2.0.0
-        version: 2.0.0(@types/node@24.5.2)(node-notifier@8.0.2)(typescript@5.9.2)
-      tslib:
-        specifier: ^2.8.1
-        version: 2.8.1
-      typescript:
-        specifier: ^5.9.2
-        version: 5.9.2
-      webpack:
-        specifier: ^5.98.0
-        version: 5.101.3(webpack-cli@5.1.4)
-      webpack-cli:
-        specifier: ^5.1.4
-        version: 5.1.4(webpack-dev-server@5.2.2)(webpack@5.101.3)
-      webpack-dev-server:
-        specifier: ^5.2.0
-        version: 5.2.2(webpack-cli@5.1.4)(webpack@5.101.3)
+  '@dooboostore/dom-render/test/bundle': {}
 
   '@dooboostore/lib-node':
     dependencies:
@@ -1428,6 +1260,8 @@ importers:
       typescript:
         specifier: ^5.9.2
         version: 5.9.2
+
+  '@dooboostore/lib-node/dist/cjs': {}
 
   '@dooboostore/lib-web':
     dependencies:
@@ -1504,6 +1338,8 @@ importers:
       webpack-dev-server:
         specifier: ^5.2.0
         version: 5.2.2(webpack-cli@5.1.4)(webpack@5.101.3)
+
+  '@dooboostore/lib-web/dist/cjs': {}
 
   '@dooboostore/lib-web/example/gpsMarker':
     dependencies:
@@ -1970,14 +1806,107 @@ importers:
         specifier: ^4.2.3
         version: 4.9.5
 
-  '@dooboostore/simple-boot-front/default-template-webpack':
+  '@dooboostore/simple-boot-front/default-template/browser-usage':
+    dependencies:
+      http-server:
+        specifier: ^14.1.1
+        version: 14.1.1
+
+  '@dooboostore/simple-boot-front/default-template/commonjs-typescript-webpack':
+    dependencies:
+      '@dooboostore/core':
+        specifier: workspace:*
+        version: link:../../../core
+      '@dooboostore/core-node':
+        specifier: workspace:*
+        version: link:../../../core-node
+      '@dooboostore/core-web':
+        specifier: workspace:*
+        version: link:../../../core-web
+      '@dooboostore/dom-render':
+        specifier: workspace:*
+        version: link:../../../dom-render
+      '@dooboostore/simple-boot':
+        specifier: workspace:*
+        version: link:../../../simple-boot
+      '@dooboostore/simple-boot-front':
+        specifier: workspace:*
+        version: link:../..
+      reflect-metadata:
+        specifier: ^0.2.2
+        version: 0.2.2
+    devDependencies:
+      '@babel/core':
+        specifier: ^7.24.0
+        version: 7.28.4
+      '@babel/plugin-proposal-class-properties':
+        specifier: ^7.18.6
+        version: 7.18.6(@babel/core@7.28.4)
+      '@babel/plugin-proposal-decorators':
+        specifier: ^7.24.0
+        version: 7.28.0(@babel/core@7.28.4)
+      '@babel/plugin-transform-private-property-in-object':
+        specifier: ^7.25.9
+        version: 7.27.1(@babel/core@7.28.4)
+      '@babel/preset-env':
+        specifier: ^7.24.0
+        version: 7.28.3(@babel/core@7.28.4)
+      '@babel/preset-typescript':
+        specifier: ^7.24.0
+        version: 7.27.1(@babel/core@7.28.4)
+      '@types/jest':
+        specifier: ^26.0.22
+        version: 26.0.24
+      '@typescript-eslint/eslint-plugin':
+        specifier: ^4.16.1
+        version: 4.33.0(@typescript-eslint/parser@4.33.0(eslint@7.32.0)(typescript@5.9.2))(eslint@7.32.0)(typescript@5.9.2)
+      '@typescript-eslint/parser':
+        specifier: ^4.16.1
+        version: 4.33.0(eslint@7.32.0)(typescript@5.9.2)
+      html-loader:
+        specifier: ^5.1.0
+        version: 5.1.0(webpack@5.101.3(webpack-cli@5.1.4))
+      html-webpack-plugin:
+        specifier: ^5.6.3
+        version: 5.6.4(webpack@5.101.3(webpack-cli@5.1.4))
+      nodemon-webpack-plugin:
+        specifier: ^4.8.2
+        version: 4.8.2(webpack@5.101.3(webpack-cli@5.1.4))
+      simple-boot-front-cli:
+        specifier: ^1.0.10
+        version: 1.0.10
+      supertest:
+        specifier: ^6.1.3
+        version: 6.3.4
+      ts-loader:
+        specifier: ^9.5.2
+        version: 9.5.4(typescript@5.9.2)(webpack@5.101.3(webpack-cli@5.1.4))
+      tsconfig-paths-webpack-plugin:
+        specifier: ^4.2.0
+        version: 4.2.0
+      tslib:
+        specifier: ^2.8.1
+        version: 2.8.1
+      typescript:
+        specifier: ^5.9.2
+        version: 5.9.2
+      webpack:
+        specifier: ^5.98.0
+        version: 5.101.3(webpack-cli@5.1.4)
+      webpack-cli:
+        specifier: ^5.1.4
+        version: 5.1.4(webpack-dev-server@5.2.2)(webpack@5.101.3)
+      webpack-dev-server:
+        specifier: ^5.2.0
+        version: 5.2.2(webpack-cli@5.1.4)(webpack@5.101.3)
+
+  '@dooboostore/simple-boot-front/dist/cjs': {}
+
+  '@dooboostore/simple-boot-front/example':
     dependencies:
       '@dooboostore/core':
         specifier: workspace:*
         version: link:../../core
-      '@dooboostore/core-node':
-        specifier: workspace:*
-        version: link:../../core-node
       '@dooboostore/core-web':
         specifier: workspace:*
         version: link:../../core-web
@@ -2027,27 +1956,9 @@ importers:
       html-webpack-plugin:
         specifier: ^5.6.3
         version: 5.6.4(webpack@5.101.3(webpack-cli@5.1.4))
-      http-server:
-        specifier: ^14.1.1
-        version: 14.1.1
-      nodemon-webpack-plugin:
-        specifier: ^4.8.2
-        version: 4.8.2(webpack@5.101.3(webpack-cli@5.1.4))
-      simple-boot-front-cli:
-        specifier: ^1.0.10
-        version: 1.0.10
-      supertest:
-        specifier: ^6.1.3
-        version: 6.3.4
       ts-loader:
         specifier: ^9.5.2
         version: 9.5.4(typescript@5.9.2)(webpack@5.101.3(webpack-cli@5.1.4))
-      ts-node:
-        specifier: ^10.0.0
-        version: 10.9.2(@types/node@24.5.2)(typescript@5.9.2)
-      ts-node-dev:
-        specifier: ^2.0.0
-        version: 2.0.0(@types/node@24.5.2)(node-notifier@8.0.2)(typescript@5.9.2)
       tsconfig-paths-webpack-plugin:
         specifier: ^4.2.0
         version: 4.2.0
@@ -2067,9 +1978,9 @@ importers:
         specifier: ^5.2.0
         version: 5.2.2(webpack-cli@5.1.4)(webpack@5.101.3)
 
-  '@dooboostore/simple-boot-front/example/bundle': {}
+  '@dooboostore/simple-boot-front/test/bundle': {}
 
-  '@dooboostore/simple-boot-front/example/quick-start':
+  '@dooboostore/simple-boot-front/tt/quick-start':
     dependencies:
       '@dooboostore/core':
         specifier: workspace:*
@@ -2145,7 +2056,7 @@ importers:
         specifier: ^5.9.2
         version: 5.9.2
 
-  '@dooboostore/simple-boot-front/example/router':
+  '@dooboostore/simple-boot-front/tt/router':
     dependencies:
       '@dooboostore/core':
         specifier: workspace:*
@@ -2491,7 +2402,169 @@ importers:
         specifier: ^4.2.3
         version: 4.9.5
 
-  '@dooboostore/simple-boot-http-server-ssr/default-template-webpack':
+  '@dooboostore/simple-boot-http-server-ssr/default-template/commonjs-typescript-webpack':
+    dependencies:
+      '@dooboostore/core':
+        specifier: workspace:*
+        version: link:../../../core
+      '@dooboostore/core-node':
+        specifier: workspace:*
+        version: link:../../../core-node
+      '@dooboostore/core-web':
+        specifier: workspace:*
+        version: link:../../../core-web
+      '@dooboostore/dom-render':
+        specifier: workspace:*
+        version: link:../../../dom-render
+      '@dooboostore/lib-node':
+        specifier: workspace:*
+        version: link:../../../lib-node
+      '@dooboostore/lib-web':
+        specifier: workspace:*
+        version: link:../../../lib-web
+      '@dooboostore/simple-boot':
+        specifier: workspace:*
+        version: link:../../../simple-boot
+      '@dooboostore/simple-boot-front':
+        specifier: workspace:*
+        version: link:../../../simple-boot-front
+      '@dooboostore/simple-boot-http-server':
+        specifier: workspace:*
+        version: link:../../../simple-boot-http-server
+      '@dooboostore/simple-boot-http-server-ssr':
+        specifier: workspace:*
+        version: link:../..
+      '@google/genai':
+        specifier: ^1.5.1
+        version: 1.20.0
+      canvas:
+        specifier: ^3.1.0
+        version: 3.2.0
+      jsdom:
+        specifier: ^26.0.0
+        version: 26.1.0(canvas@3.2.0)
+      reflect-metadata:
+        specifier: ^0.2.2
+        version: 0.2.2
+      rxjs:
+        specifier: ^7.8.2
+        version: 7.8.2
+    devDependencies:
+      '@babel/core':
+        specifier: ^7.24.0
+        version: 7.28.4
+      '@babel/plugin-proposal-class-properties':
+        specifier: ^7.18.6
+        version: 7.18.6(@babel/core@7.28.4)
+      '@babel/plugin-proposal-decorators':
+        specifier: ^7.24.0
+        version: 7.28.0(@babel/core@7.28.4)
+      '@babel/plugin-transform-private-property-in-object':
+        specifier: ^7.25.9
+        version: 7.27.1(@babel/core@7.28.4)
+      '@babel/preset-env':
+        specifier: ^7.24.0
+        version: 7.28.3(@babel/core@7.28.4)
+      '@babel/preset-typescript':
+        specifier: ^7.24.0
+        version: 7.27.1(@babel/core@7.28.4)
+      '@types/jest':
+        specifier: ^26.0.22
+        version: 26.0.24
+      '@types/node-gzip':
+        specifier: ^1.1.0
+        version: 1.1.3
+      '@typescript-eslint/eslint-plugin':
+        specifier: ^4.16.1
+        version: 4.33.0(@typescript-eslint/parser@4.33.0(eslint@7.32.0)(typescript@5.9.2))(eslint@7.32.0)(typescript@5.9.2)
+      '@typescript-eslint/parser':
+        specifier: ^4.16.1
+        version: 4.33.0(eslint@7.32.0)(typescript@5.9.2)
+      assert:
+        specifier: ^2.1.0
+        version: 2.1.0
+      browserify-zlib:
+        specifier: ^0.2.0
+        version: 0.2.0
+      concurrently:
+        specifier: ^9.2.1
+        version: 9.2.1
+      copy-webpack-plugin:
+        specifier: ^13.0.1
+        version: 13.0.1(webpack@5.101.3(webpack-cli@5.1.4))
+      html-loader:
+        specifier: ^5.1.0
+        version: 5.1.0(webpack@5.101.3(webpack-cli@5.1.4))
+      html-webpack-plugin:
+        specifier: ^5.6.3
+        version: 5.6.4(webpack@5.101.3(webpack-cli@5.1.4))
+      http-server:
+        specifier: ^14.1.1
+        version: 14.1.1
+      https-browserify:
+        specifier: ^1.0.0
+        version: 1.0.0
+      nodemon-webpack-plugin:
+        specifier: ^4.8.2
+        version: 4.8.2(webpack@5.101.3(webpack-cli@5.1.4))
+      path-browserify:
+        specifier: ^1.0.1
+        version: 1.0.1
+      raw-loader:
+        specifier: ^4.0.2
+        version: 4.0.2(webpack@5.101.3(webpack-cli@5.1.4))
+      simple-boot-front-cli:
+        specifier: ^1.0.10
+        version: 1.0.10
+      stream-browserify:
+        specifier: ^3.0.0
+        version: 3.0.0
+      stream-http:
+        specifier: ^3.2.0
+        version: 3.2.0
+      supertest:
+        specifier: ^6.1.3
+        version: 6.3.4
+      ts-loader:
+        specifier: ^9.5.2
+        version: 9.5.4(typescript@5.9.2)(webpack@5.101.3(webpack-cli@5.1.4))
+      ts-node:
+        specifier: ^10.0.0
+        version: 10.9.2(@types/node@24.5.2)(typescript@5.9.2)
+      ts-node-dev:
+        specifier: ^2.0.0
+        version: 2.0.0(@types/node@24.5.2)(node-notifier@8.0.2)(typescript@5.9.2)
+      tsconfig-paths:
+        specifier: ^3.12.0
+        version: 3.15.0
+      tsconfig-paths-webpack-plugin:
+        specifier: ^4.2.0
+        version: 4.2.0
+      tslib:
+        specifier: ^2.8.1
+        version: 2.8.1
+      typescript:
+        specifier: ^5.9.2
+        version: 5.9.2
+      url:
+        specifier: ^0.11.4
+        version: 0.11.4
+      util:
+        specifier: ^0.12.5
+        version: 0.12.5
+      webpack:
+        specifier: ^5.98.0
+        version: 5.101.3(webpack-cli@5.1.4)
+      webpack-cli:
+        specifier: ^5.1.4
+        version: 5.1.4(webpack-dev-server@5.2.2)(webpack@5.101.3)
+      webpack-dev-server:
+        specifier: ^5.2.0
+        version: 5.2.2(webpack-cli@5.1.4)(webpack@5.101.3)
+
+  '@dooboostore/simple-boot-http-server-ssr/dist/cjs': {}
+
+  '@dooboostore/simple-boot-http-server-ssr/example':
     dependencies:
       '@dooboostore/core':
         specifier: workspace:*
@@ -2575,6 +2648,9 @@ importers:
       browserify-zlib:
         specifier: ^0.2.0
         version: 0.2.0
+      concurrently:
+        specifier: ^9.2.1
+        version: 9.2.1
       copy-webpack-plugin:
         specifier: ^13.0.1
         version: 13.0.1(webpack@5.101.3(webpack-cli@5.1.4))
@@ -2648,7 +2724,7 @@ importers:
         specifier: ^5.2.0
         version: 5.2.2(webpack-cli@5.1.4)(webpack@5.101.3)
 
-  '@dooboostore/simple-boot-http-server-ssr/example/quick-start':
+  '@dooboostore/simple-boot-http-server-ssr/ttt/quick-start':
     dependencies:
       '@dooboostore/core':
         specifier: workspace:*
@@ -2887,7 +2963,91 @@ importers:
         specifier: ^4.2.3
         version: 4.9.5
 
-  '@dooboostore/simple-boot-http-server/default-template-webpack':
+  '@dooboostore/simple-boot-http-server/default-template/commonjs-typescript-webpack':
+    dependencies:
+      '@dooboostore/core':
+        specifier: workspace:*
+        version: link:../../../core
+      '@dooboostore/core-node':
+        specifier: workspace:*
+        version: link:../../../core-node
+      '@dooboostore/simple-boot':
+        specifier: workspace:*
+        version: link:../../../simple-boot
+      '@dooboostore/simple-boot-http-server':
+        specifier: workspace:*
+        version: link:../..
+      fast-json-patch:
+        specifier: ^3.1.0
+        version: 3.1.1
+      mime-types:
+        specifier: ^2.1.34
+        version: 2.1.35
+      node-gzip:
+        specifier: ^1.1.2
+        version: 1.1.2
+      reflect-metadata:
+        specifier: ^0.2.2
+        version: 0.2.2
+    devDependencies:
+      '@babel/core':
+        specifier: ^7.24.0
+        version: 7.28.4
+      '@babel/plugin-proposal-class-properties':
+        specifier: ^7.18.6
+        version: 7.18.6(@babel/core@7.28.4)
+      '@babel/plugin-proposal-decorators':
+        specifier: ^7.24.0
+        version: 7.28.0(@babel/core@7.28.4)
+      '@babel/plugin-transform-private-property-in-object':
+        specifier: ^7.25.9
+        version: 7.27.1(@babel/core@7.28.4)
+      '@babel/preset-env':
+        specifier: ^7.24.0
+        version: 7.28.3(@babel/core@7.28.4)
+      '@babel/preset-typescript':
+        specifier: ^7.24.0
+        version: 7.27.1(@babel/core@7.28.4)
+      '@types/jest':
+        specifier: ^26.0.22
+        version: 26.0.24
+      '@types/node-gzip':
+        specifier: ^1.1.0
+        version: 1.1.3
+      '@typescript-eslint/eslint-plugin':
+        specifier: ^4.16.1
+        version: 4.33.0(@typescript-eslint/parser@4.33.0(eslint@7.32.0)(typescript@5.9.2))(eslint@7.32.0)(typescript@5.9.2)
+      '@typescript-eslint/parser':
+        specifier: ^4.16.1
+        version: 4.33.0(eslint@7.32.0)(typescript@5.9.2)
+      nodemon-webpack-plugin:
+        specifier: ^4.8.2
+        version: 4.8.2(webpack@5.101.3(webpack-cli@5.1.4))
+      raw-loader:
+        specifier: ^4.0.2
+        version: 4.0.2(webpack@5.101.3(webpack-cli@5.1.4))
+      ts-loader:
+        specifier: ^9.5.2
+        version: 9.5.4(typescript@5.9.2)(webpack@5.101.3(webpack-cli@5.1.4))
+      tsconfig-paths-webpack-plugin:
+        specifier: ^4.2.0
+        version: 4.2.0
+      tslib:
+        specifier: ^2.8.1
+        version: 2.8.1
+      typescript:
+        specifier: ^5.9.2
+        version: 5.9.2
+      webpack:
+        specifier: ^5.98.0
+        version: 5.101.3(webpack-cli@5.1.4)
+      webpack-cli:
+        specifier: ^5.1.4
+        version: 5.1.4(webpack@5.101.3)
+
+  '@dooboostore/simple-boot-http-server/dist/cjs': {}
+
+  '@dooboostore/simple-boot-http-server/example':
     dependencies:
       '@dooboostore/core':
         specifier: workspace:*
@@ -2944,59 +3104,32 @@ importers:
       '@typescript-eslint/parser':
         specifier: ^4.16.1
         version: 4.33.0(eslint@7.32.0)(typescript@5.9.2)
-      assert:
-        specifier: ^2.1.0
-        version: 2.1.0
-      browserify-zlib:
-        specifier: ^0.2.0
-        version: 0.2.0
-      esbuild:
-        specifier: ^0.23.0
-        version: 0.23.1
-      http-server:
-        specifier: ^14.1.1
-        version: 14.1.1
-      https-browserify:
-        specifier: ^1.0.0
-        version: 1.0.0
-      path-browserify:
-        specifier: ^1.0.1
-        version: 1.0.1
-      simple-boot-front-cli:
-        specifier: ^1.0.10
-        version: 1.0.10
-      stream-browserify:
-        specifier: ^3.0.0
-        version: 3.0.0
-      stream-http:
-        specifier: ^3.2.0
-        version: 3.2.0
-      supertest:
-        specifier: ^6.1.3
-        version: 6.3.4
-      ts-node:
-        specifier: ^10.0.0
-        version: 10.9.2(@types/node@24.5.2)(typescript@5.9.2)
-      ts-node-dev:
-        specifier: ^2.0.0
-        version: 2.0.0(@types/node@24.5.2)(node-notifier@8.0.2)(typescript@5.9.2)
-      tsconfig-paths:
-        specifier: ^3.12.0
-        version: 3.15.0
+      nodemon-webpack-plugin:
+        specifier: ^4.8.2
+        version: 4.8.2(webpack@5.101.3(webpack-cli@5.1.4))
+      raw-loader:
+        specifier: ^4.0.2
+        version: 4.0.2(webpack@5.101.3(webpack-cli@5.1.4))
+      ts-loader:
+        specifier: ^9.5.2
+        version: 9.5.4(typescript@5.9.2)(webpack@5.101.3(webpack-cli@5.1.4))
+      tsconfig-paths-webpack-plugin:
+        specifier: ^4.2.0
+        version: 4.2.0
       tslib:
         specifier: ^2.8.1
         version: 2.8.1
       typescript:
         specifier: ^5.9.2
         version: 5.9.2
-      url:
-        specifier: ^0.11.4
-        version: 0.11.4
-      util:
-        specifier: ^0.12.5
-        version: 0.12.5
+      webpack:
+        specifier: ^5.98.0
+        version: 5.101.3(webpack-cli@5.1.4)
+      webpack-cli:
+        specifier: ^5.1.4
+        version: 5.1.4(webpack@5.101.3)
 
-  '@dooboostore/simple-boot-http-server/example/filter':
+  '@dooboostore/simple-boot-http-server/tt/filter':
     dependencies:
       '@dooboostore/core':
         specifier: workspace:*
@@ -3078,7 +3211,7 @@ importers:
         specifier: ^5.2.0
         version: 5.2.2(webpack-cli@5.1.4)(webpack@5.101.3)
 
-  '@dooboostore/simple-boot-http-server/example/quick-start':
+  '@dooboostore/simple-boot-http-server/tt/quick-start':
     dependencies:
       '@dooboostore/core':
         specifier: workspace:*
@@ -3212,8 +3345,95 @@ importers:
         specifier: ^4.2.3
         version: 4.9.5
 
-  '@dooboostore/simple-boot/default-template-webpack':
+  '@dooboostore/simple-boot/default-template/browser-usage':
     dependencies:
+      http-server:
+        specifier: ^14.1.1
+        version: 14.1.1
+
+  '@dooboostore/simple-boot/default-template/commonjs-typescript-webpack':
+    dependencies:
+      '@clack/prompts':
+        specifier: ^0.11.0
+        version: 0.11.0
+      '@dooboostore/core':
+        specifier: workspace:*
+        version: link:../../../core
+      '@dooboostore/core-node':
+        specifier: workspace:*
+        version: link:../../../core-node
+      '@dooboostore/simple-boot':
+        specifier: workspace:*
+        version: link:../..
+      reflect-metadata:
+        specifier: ^0.2.2
+        version: 0.2.2
+    devDependencies:
+      '@babel/core':
+        specifier: ^7.24.0
+        version: 7.28.4
+      '@babel/plugin-proposal-class-properties':
+        specifier: ^7.18.6
+        version: 7.18.6(@babel/core@7.28.4)
+      '@babel/plugin-proposal-decorators':
+        specifier: ^7.24.0
+        version: 7.28.0(@babel/core@7.28.4)
+      '@babel/plugin-transform-private-property-in-object':
+        specifier: ^7.25.9
+        version: 7.27.1(@babel/core@7.28.4)
+      '@babel/preset-env':
+        specifier: ^7.24.0
+        version: 7.28.3(@babel/core@7.28.4)
+      '@babel/preset-typescript':
+        specifier: ^7.24.0
+        version: 7.27.1(@babel/core@7.28.4)
+      '@types/jest':
+        specifier: ^26.0.22
+        version: 26.0.24
+      '@typescript-eslint/eslint-plugin':
+        specifier: ^4.16.1
+        version: 4.33.0(@typescript-eslint/parser@4.33.0(eslint@7.32.0)(typescript@5.9.2))(eslint@7.32.0)(typescript@5.9.2)
+      '@typescript-eslint/parser':
+        specifier: ^4.16.1
+        version: 4.33.0(eslint@7.32.0)(typescript@5.9.2)
+      html-loader:
+        specifier: ^5.1.0
+        version: 5.1.0(webpack@5.101.3(webpack-cli@5.1.4))
+      html-webpack-plugin:
+        specifier: ^5.6.3
+        version: 5.6.4(webpack@5.101.3(webpack-cli@5.1.4))
+      nodemon-webpack-plugin:
+        specifier: ^4.8.2
+        version: 4.8.2(webpack@5.101.3(webpack-cli@5.1.4))
+      ts-loader:
+        specifier: ^9.5.2
+        version: 9.5.4(typescript@5.9.2)(webpack@5.101.3(webpack-cli@5.1.4))
+      tsconfig-paths-webpack-plugin:
+        specifier: ^4.2.0
+        version: 4.2.0
+      tslib:
+        specifier: ^2.8.1
+        version: 2.8.1
+      typescript:
+        specifier: ^5.9.2
+        version: 5.9.2
+      webpack:
+        specifier: ^5.98.0
+        version: 5.101.3(webpack-cli@5.1.4)
+      webpack-cli:
+        specifier: ^5.1.4
+        version: 5.1.4(webpack-dev-server@5.2.2)(webpack@5.101.3)
+      webpack-dev-server:
+        specifier: ^5.2.0
+        version: 5.2.2(webpack-cli@5.1.4)(webpack@5.101.3)
+
+  '@dooboostore/simple-boot/dist/cjs': {}
+
+  '@dooboostore/simple-boot/example':
+    dependencies:
+      '@clack/prompts':
+        specifier: ^0.11.0
+        version: 0.11.0
       '@dooboostore/core':
         specifier: workspace:*
         version: link:../../core
@@ -3263,18 +3483,9 @@ importers:
       nodemon-webpack-plugin:
         specifier: ^4.8.2
         version: 4.8.2(webpack@5.101.3(webpack-cli@5.1.4))
-      supertest:
-        specifier: ^6.1.3
-        version: 6.3.4
       ts-loader:
         specifier: ^9.5.2
         version: 9.5.4(typescript@5.9.2)(webpack@5.101.3(webpack-cli@5.1.4))
-      ts-node:
-        specifier: ^10.0.0
-        version: 10.9.2(@types/node@24.5.2)(typescript@5.9.2)
-      ts-node-dev:
-        specifier: ^2.0.0
-        version: 2.0.0(@types/node@24.5.2)(node-notifier@8.0.2)(typescript@5.9.2)
       tsconfig-paths-webpack-plugin:
         specifier: ^4.2.0
         version: 4.2.0
@@ -3294,9 +3505,9 @@ importers:
         specifier: ^5.2.0
         version: 5.2.2(webpack-cli@5.1.4)(webpack@5.101.3)
 
-  '@dooboostore/simple-boot/example/bundle': {}
+  '@dooboostore/simple-boot/test/bundle': {}
 
-  '@dooboostore/simple-boot/example/cache':
+  '@dooboostore/simple-boot/test/case':
     dependencies:
       '@dooboostore/core':
         specifier: workspace:*
@@ -3375,7 +3586,7 @@ importers:
         specifier: ^5.2.0
         version: 5.2.2(webpack-cli@5.1.4)(webpack@5.101.3)
 
-  '@dooboostore/simple-boot/example/indent':
+  '@dooboostore/simple-boot/tt/cache':
     dependencies:
       '@dooboostore/core':
         specifier: workspace:*
@@ -3454,7 +3665,86 @@ importers:
         specifier: ^5.2.0
         version: 5.2.2(webpack-cli@5.1.4)(webpack@5.101.3)
 
-  '@dooboostore/simple-boot/example/quick-start':
+  '@dooboostore/simple-boot/tt/indent':
+    dependencies:
+      '@dooboostore/core':
+        specifier: workspace:*
+        version: link:../../../core
+      '@dooboostore/core-node':
+        specifier: workspace:*
+        version: link:../../../core-node
+      '@dooboostore/simple-boot':
+        specifier: workspace:*
+        version: link:../..
+      reflect-metadata:
+        specifier: ^0.2.2
+        version: 0.2.2
+    devDependencies:
+      '@babel/core':
+        specifier: ^7.24.0
+        version: 7.28.4
+      '@babel/plugin-proposal-class-properties':
+        specifier: ^7.18.6
+        version: 7.18.6(@babel/core@7.28.4)
+      '@babel/plugin-proposal-decorators':
+        specifier: ^7.24.0
+        version: 7.28.0(@babel/core@7.28.4)
+      '@babel/plugin-transform-private-property-in-object':
+        specifier: ^7.25.9
+        version: 7.27.1(@babel/core@7.28.4)
+      '@babel/preset-env':
+        specifier: ^7.24.0
+        version: 7.28.3(@babel/core@7.28.4)
+      '@babel/preset-typescript':
+        specifier: ^7.24.0
+        version: 7.27.1(@babel/core@7.28.4)
+      '@types/jest':
+        specifier: ^26.0.22
+        version: 26.0.24
+      '@typescript-eslint/eslint-plugin':
+        specifier: ^4.16.1
+        version: 4.33.0(@typescript-eslint/parser@4.33.0(eslint@7.32.0)(typescript@5.9.2))(eslint@7.32.0)(typescript@5.9.2)
+      '@typescript-eslint/parser':
+        specifier: ^4.16.1
+        version: 4.33.0(eslint@7.32.0)(typescript@5.9.2)
+      html-loader:
+        specifier: ^5.1.0
+        version: 5.1.0(webpack@5.101.3(webpack-cli@5.1.4))
+      html-webpack-plugin:
+        specifier: ^5.6.3
+        version: 5.6.4(webpack@5.101.3(webpack-cli@5.1.4))
+      simple-boot-front-cli:
+        specifier: ^1.0.10
+        version: 1.0.10
+      supertest:
+        specifier: ^6.1.3
+        version: 6.3.4
+      ts-loader:
+        specifier: ^9.5.2
+        version: 9.5.4(typescript@5.9.2)(webpack@5.101.3(webpack-cli@5.1.4))
+      ts-node:
+        specifier: ^10.0.0
+        version: 10.9.2(@types/node@24.5.2)(typescript@5.9.2)
+      ts-node-dev:
+        specifier: ^2.0.0
+        version: 2.0.0(@types/node@24.5.2)(node-notifier@8.0.2)(typescript@5.9.2)
+      tslib:
+        specifier: ^2.8.1
+        version: 2.8.1
+      typescript:
+        specifier: ^5.9.2
+        version: 5.9.2
+      webpack:
+        specifier: ^5.98.0
+        version: 5.101.3(webpack-cli@5.1.4)
+      webpack-cli:
+        specifier: ^5.1.4
+        version: 5.1.4(webpack-dev-server@5.2.2)(webpack@5.101.3)
+      webpack-dev-server:
+        specifier: ^5.2.0
+        version: 5.2.2(webpack-cli@5.1.4)(webpack@5.101.3)
+
+  '@dooboostore/simple-boot/tt/quick-start':
     dependencies:
       '@dooboostore/core':
         specifier: workspace:*
@@ -3539,7 +3829,7 @@ importers:
         specifier: ^5.2.0
         version: 5.2.2(webpack-cli@5.1.4)(webpack@5.101.3)
 
-  '@dooboostore/simple-boot/example/router':
+  '@dooboostore/simple-boot/tt/router':
     dependencies:
       '@dooboostore/core':
         specifier: workspace:*
@@ -3608,85 +3898,6 @@ importers:
       tsconfig-paths-webpack-plugin:
         specifier: ^4.2.0
         version: 4.2.0
-      tslib:
-        specifier: ^2.8.1
-        version: 2.8.1
-      typescript:
-        specifier: ^5.9.2
-        version: 5.9.2
-      webpack:
-        specifier: ^5.98.0
-        version: 5.101.3(webpack-cli@5.1.4)
-      webpack-cli:
-        specifier: ^5.1.4
-        version: 5.1.4(webpack-dev-server@5.2.2)(webpack@5.101.3)
-      webpack-dev-server:
-        specifier: ^5.2.0
-        version: 5.2.2(webpack-cli@5.1.4)(webpack@5.101.3)
-
-  '@dooboostore/simple-boot/test':
-    dependencies:
-      '@dooboostore/core':
-        specifier: workspace:*
-        version: link:../../core
-      '@dooboostore/core-node':
-        specifier: workspace:*
-        version: link:../../core-node
-      '@dooboostore/simple-boot':
-        specifier: workspace:*
-        version: link:..
-      reflect-metadata:
-        specifier: ^0.2.2
-        version: 0.2.2
-    devDependencies:
-      '@babel/core':
-        specifier: ^7.24.0
-        version: 7.28.4
-      '@babel/plugin-proposal-class-properties':
-        specifier: ^7.18.6
-        version: 7.18.6(@babel/core@7.28.4)
-      '@babel/plugin-proposal-decorators':
-        specifier: ^7.24.0
-        version: 7.28.0(@babel/core@7.28.4)
-      '@babel/plugin-transform-private-property-in-object':
-        specifier: ^7.25.9
-        version: 7.27.1(@babel/core@7.28.4)
-      '@babel/preset-env':
-        specifier: ^7.24.0
-        version: 7.28.3(@babel/core@7.28.4)
-      '@babel/preset-typescript':
-        specifier: ^7.24.0
-        version: 7.27.1(@babel/core@7.28.4)
-      '@types/jest':
-        specifier: ^26.0.22
-        version: 26.0.24
-      '@typescript-eslint/eslint-plugin':
-        specifier: ^4.16.1
-        version: 4.33.0(@typescript-eslint/parser@4.33.0(eslint@7.32.0)(typescript@5.9.2))(eslint@7.32.0)(typescript@5.9.2)
-      '@typescript-eslint/parser':
-        specifier: ^4.16.1
-        version: 4.33.0(eslint@7.32.0)(typescript@5.9.2)
-      html-loader:
-        specifier: ^5.1.0
-        version: 5.1.0(webpack@5.101.3(webpack-cli@5.1.4))
-      html-webpack-plugin:
-        specifier: ^5.6.3
-        version: 5.6.4(webpack@5.101.3(webpack-cli@5.1.4))
-      simple-boot-front-cli:
-        specifier: ^1.0.10
-        version: 1.0.10
-      supertest:
-        specifier: ^6.1.3
-        version: 6.3.4
-      ts-loader:
-        specifier: ^9.5.2
-        version: 9.5.4(typescript@5.9.2)(webpack@5.101.3(webpack-cli@5.1.4))
-      ts-node:
-        specifier: ^10.0.0
-        version: 10.9.2(@types/node@24.5.2)(typescript@5.9.2)
-      ts-node-dev:
-        specifier: ^2.0.0
-        version: 2.0.0(@types/node@24.5.2)(node-notifier@8.0.2)(typescript@5.9.2)
       tslib:
         specifier: ^2.8.1
         version: 2.8.1
@@ -4248,6 +4459,12 @@ packages:
   '@babel/types@7.28.4':
     resolution: {integrity: sha512-bkFqkLhh3pMBUQQkpVgWDWq/lqzc2678eUyDlTBhRqhCHFguYYGM0Efga7tYk4TogG/3x0EEl66/OQ+WGbWB/Q==}
     engines: {node: '>=6.9.0'}
+
+  '@clack/core@0.5.0':
+    resolution: {integrity: sha512-p3y0FIOwaYRUPRcMO7+dlmLh8PSRcrjuTndsiA0WAFbWES0mLZlrjVoBRZ9DzkPFJZG6KGkJmoEAY0ZcVWTkow==}
+
+  '@clack/prompts@0.11.0':
+    resolution: {integrity: sha512-pMN5FcrEw9hUkZA4f+zLlzivQSeQf5dRGJjSUbvVYDLvpKCdQx5OaknvKzgbtXOizhP+SJJJjqEbOe55uKKfAw==}
 
   '@cspotcode/source-map-support@0.8.1':
     resolution: {integrity: sha512-IchNf6dN4tHoMFIn/7OE8LWZ19Y6q/67Bmf6vnGREv8RSbBVb9LPJxEcnwrcwX6ixSvaiGoomAUvu4YSxXrVgw==}
@@ -7371,6 +7588,9 @@ packages:
     resolution: {integrity: sha512-a2B9Y0KlNXl9u/vsW6sTIu9vGEpfKu2wRV6l1H3XEas/0gUIzGzBoP/IouTcUQbm9JWZLH3COxyn03TYlFax6w==}
     engines: {node: '>=10'}
 
+  sisteransi@1.0.5:
+    resolution: {integrity: sha512-bLGGlR1QxBcynn2d5YmDX4MGjlZvy2MRBDRNHLJ8VI6l6+9FUiyTFNJ0IveOSP0bcXgVDPRcfGqA0pjaqUpfVg==}
+
   slash@3.0.0:
     resolution: {integrity: sha512-g9Q1haeby36OSStwb4ntCGGGaKsaVSjQ68fBxoQcutl5fS1vuY18H3wSt3jFyFtrkx+Kz0V1G85A4MyAdDMi2Q==}
     engines: {node: '>=8'}
@@ -8846,6 +9066,17 @@ snapshots:
     dependencies:
       '@babel/helper-string-parser': 7.27.1
       '@babel/helper-validator-identifier': 7.27.1
+
+  '@clack/core@0.5.0':
+    dependencies:
+      picocolors: 1.1.1
+      sisteransi: 1.0.5
+
+  '@clack/prompts@0.11.0':
+    dependencies:
+      '@clack/core': 0.5.0
+      picocolors: 1.1.1
+      sisteransi: 1.0.5
 
   '@cspotcode/source-map-support@0.8.1':
     dependencies:
@@ -12441,6 +12672,8 @@ snapshots:
   simple-update-notifier@2.0.0:
     dependencies:
       semver: 7.7.2
+
+  sisteransi@1.0.5: {}
 
   slash@3.0.0: {}
 

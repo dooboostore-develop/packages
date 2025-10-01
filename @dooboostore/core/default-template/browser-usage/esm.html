@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>dooboostoreCore ESM Bundle Test</title>
+    <style>
+        body { font-family: sans-serif; text-align: center; padding-top: 50px; transition: background-color 0.5s; }
+        h1 { color: white; text-shadow: 2px 2px 4px #000000; }
+    </style>
+    <!-- reflect-metadata는 이제 번들에 포함되어 있으므로 script 태그가 필요 없습니다. -->
+</head>
+<body>
+
+    <h1>Click anywhere to change the background color! (ESM Bundle Example)</h1>
+
+    <!-- 생성된 단일 ESM 번들 파일을 import 합니다. -->
+    <script type="module">
+        import { RandomUtils } from 'https://cdn.jsdelivr.net/npm/@dooboostore/core/dist/esm-bundle/dooboostore-core.esm.js';
+
+        console.log('ESM Bundle loaded and RandomUtils imported.', RandomUtils);
+
+        function changeBackgroundColor() {
+            const randomColor = RandomUtils.rgb();
+            console.log('New random color (ESM Bundle):', randomColor);
+            document.body.style.backgroundColor = randomColor;
+        }
+
+        // 페이지를 클릭할 때마다 배경색을 변경합니다.
+        document.body.addEventListener('click', changeBackgroundColor);
+
+        // 페이지 로드 시 초기 색상을 설정합니다.
+        changeBackgroundColor();
+    </script>
+
+</body>
+</html>
+

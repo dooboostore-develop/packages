@@ -9,7 +9,6 @@ import { HttpStatus } from './codes/HttpStatus';
 import { HttpHeaders } from './codes/HttpHeaders';
 import { Mimes } from './codes/Mimes';
 import { Filter } from './filters/Filter';
-import { SimstanceManager } from '@dooboostore/simple-boot/simstance/SimstanceManager';
 import { ExceptionHandlerSituationType, targetExceptionHandler } from '@dooboostore/simple-boot/decorators/exception/ExceptionDecorator';
 import { getInject, SituationTypeContainer, SituationTypeContainers } from '@dooboostore/simple-boot/decorators/inject/Inject';
 import { EndPoint } from './endpoints/EndPoint';
@@ -39,12 +38,12 @@ export class SimpleBootHttpServer extends SimpleApplication {
 
 
     public run(otherInstanceSim?: Map<ConstructorType<any>, any>) {
-        const simstanceManager = super.run(otherInstanceSim);
+        super.run(otherInstanceSim);
         const targets = [...this.option.closeEndPoints ?? [], ...this.option.errorEndPoints ?? [], ...this.option.requestEndPoints ?? [], ...this.option.filters ?? []];
         Promise.all(targets.map(it => (typeof it === 'function' ? this.simstanceManager.getOrNewSim({target:it as ConstructorType<any>}) : it) as OnInit).map(it => it.onInit(this))).then(it => {
             this.startServer();
         });
-        return simstanceManager;
+        return this;
     }
 
     private startServer() {

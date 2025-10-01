@@ -1,0 +1,17 @@
+<div class="app-container">
+  <header class="header">
+    <h1>Simple Boot Front</h1>
+    <nav>
+      <button dr-event-click="$router?.go({path:'/'})">Home</button>
+      <button dr-event-click="$router?.go({path:'/user'})">User</button>
+    </nav>
+  </header>
+  
+  <main class="main-content">
+    <dr-this value="${@this@.child}$"></dr-this>
+  </main>
+  
+  <footer class="footer">
+    <p>Built with Simple Boot Front 🚀</p>
+  </footer>
+</div>

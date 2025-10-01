@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>@dooboostore/core-web UMD Bundle Example</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      max-width: 800px;
+      margin: 40px auto;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    
+    .container {
+      background: white;
+      border-radius: 12px;
+      padding: 30px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    h1 {
+      color: #667eea;
+      margin-bottom: 10px;
+    }
+    
+    .section {
+      margin: 20px 0;
+      padding: 15px;
+      background: #f9f9f9;
+      border-radius: 8px;
+      border-left: 4px solid #667eea;
+    }
+    
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+      background: #667eea;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      margin: 5px;
+    }
+    
+    button:hover {
+      background: #5568d3;
+    }
+    
+    .result {
+      margin-top: 10px;
+      padding: 10px;
+      background: #e8f5e9;
+      border-radius: 6px;
+      border-left: 3px solid #4caf50;
+    }
+    
+    input {
+      padding: 8px 12px;
+      font-size: 14px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      margin: 5px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🌐 @dooboostore/core-web UMD Bundle</h1>
+    <p>Browser usage examples using UMD bundle from CDN</p>
+
+    <!-- Storage Example -->
+    <div class="section">
+      <h3>💾 Storage Utils</h3>
+      <input type="text" id="storage-key" placeholder="Key" value="test-key">
+      <input type="text" id="storage-value" placeholder="Value" value="test-value">
+      <button onclick="testStorage()">Set LocalStorage</button>
+      <button onclick="getStorage()">Get LocalStorage</button>
+      <button onclick="clearStorage()">Clear</button>
+      <div id="storage-result" class="result" style="display:none;"></div>
+    </div>
+
+    <!-- Cookie Example -->
+    <div class="section">
+      <h3>🍪 Cookie Utils</h3>
+      <input type="text" id="cookie-name" placeholder="Cookie name" value="test-cookie">
+      <input type="text" id="cookie-value" placeholder="Cookie value" value="cookie-value">
+      <button onclick="testCookie()">Set Cookie</button>
+      <button onclick="getCookie()">Get Cookie</button>
+      <button onclick="deleteCookie()">Delete Cookie</button>
+      <div id="cookie-result" class="result" style="display:none;"></div>
+    </div>
+
+    <!-- Clipboard Example -->
+    <div class="section">
+      <h3>📋 Clipboard Utils</h3>
+      <input type="text" id="clipboard-text" placeholder="Text to copy" value="Hello from clipboard!">
+      <button onclick="testClipboard()">Copy to Clipboard</button>
+      <button onclick="readClipboard()">Read Clipboard</button>
+      <div id="clipboard-result" class="result" style="display:none;"></div>
+    </div>
+
+    <!-- Element Utils Example -->
+    <div class="section">
+      <h3>🎯 Element Utils</h3>
+      <input type="text" id="image-url" placeholder="Image URL" value="https://via.placeholder.com/150">
+      <button onclick="loadImageExample()">Load Image</button>
+      <div id="element-result" class="result" style="display:none;"></div>
+    </div>
+
+    <!-- Event Utils Example -->
+    <div class="section">
+      <h3>⚡ Event Observable</h3>
+      <button id="event-button">Click Me! (Count: 0)</button>
+      <div id="event-result" class="result" style="display:none;"></div>
+    </div>
+
+    <!-- Window Utils Example -->
+    <div class="section">
+      <h3>🪟 Window Utils</h3>
+      <button onclick="startScrollObserver()">Start Scroll Observer</button>
+      <button onclick="stopScrollObserver()">Stop Scroll Observer</button>
+      <div id="window-result" class="result" style="display:none;"></div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@dooboostore/core-web/dist/umd-bundle/dooboostore-core-web.umd.js"></script>
+  <script>
+    // UMD exposes global variable `dooboostoreCoreWeb`
+    const { StorageUtils, CookieUtils, ClipBoardUtils, ElementUtils, EventUtils, WindowUtils } = dooboostoreCoreWeb;
+
+    // Storage Utils
+    function testStorage() {
+      const key = document.getElementById('storage-key').value;
+      const value = document.getElementById('storage-value').value;
+      StorageUtils.setLocalStorageItem(key, value, window);
+      showResult('storage-result', `✅ Set "${key}" = "${value}"`);
+    }
+
+    function getStorage() {
+      const key = document.getElementById('storage-key').value;
+      const value = StorageUtils.getLocalStorageItem(key, window);
+      showResult('storage-result', `📖 Value for "${key}": ${value || 'Not found'}`);
+    }
+
+    function clearStorage() {
+      const key = document.getElementById('storage-key').value;
+      StorageUtils.removeLocalStorageItem(key, window);
+      showResult('storage-result', `🗑️ Removed "${key}"`);
+    }
+
+    // Cookie Utils
+    function testCookie() {
+      const name = document.getElementById('cookie-name').value;
+      const value = document.getElementById('cookie-value').value;
+      const cookieStr = CookieUtils.make(name, value, { path: '/', expireSecond: 3600 });
+      document.cookie = cookieStr;
+      showResult('cookie-result', `✅ Set cookie "${name}" = "${value}"`);
+    }
+
+    function getCookie() {
+      const name = document.getElementById('cookie-name').value;
+      const value = CookieUtils.get(name);
+      showResult('cookie-result', `📖 Cookie "${name}": ${value || 'Not found'}`);
+    }
+
+    function deleteCookie() {
+      const name = document.getElementById('cookie-name').value;
+      const deleteCookie = CookieUtils.make(name, null, { expireSecond: null });
+      document.cookie = deleteCookie;
+      showResult('cookie-result', `🗑️ Deleted cookie "${name}"`);
+    }
+
+    // Clipboard Utils
+    async function testClipboard() {
+      const text = document.getElementById('clipboard-text').value;
+      try {
+        await ClipBoardUtils.writeText(text, window);
+        showResult('clipboard-result', `✅ Copied to clipboard: "${text}"`);
+      } catch (error) {
+        showResult('clipboard-result', `❌ Error: ${error.message}`);
+      }
+    }
+
+    async function readClipboard() {
+      try {
+        const text = await ClipBoardUtils.readText(window);
+        showResult('clipboard-result', `📖 Read from clipboard: "${text}"`);
+      } catch (error) {
+        showResult('clipboard-result', `❌ Error: ${error.message} (Permission required)`);
+      }
+    }
+
+    // Element Utils
+    async function loadImageExample() {
+      const url = document.getElementById('image-url').value;
+      const resultDiv = document.getElementById('element-result');
+      
+      try {
+        const img = await ElementUtils.loadImage(url);
+        resultDiv.innerHTML = `✅ Image loaded (${img.width}x${img.height})<br><img src="${url}" style="max-width: 150px; margin-top: 10px; border-radius: 6px;">`;
+        resultDiv.style.display = 'block';
+      } catch (error) {
+        showResult('element-result', `❌ Error: ${error.message}`);
+      }
+    }
+
+    // Event Observable
+    let clickCount = 0;
+    const eventButton = document.getElementById('event-button');
+    const clickObservable = EventUtils.htmlElementEventObservable(eventButton, 'click');
+    const clickSubscription = clickObservable.subscribe({
+      next: function() {
+        clickCount++;
+        eventButton.textContent = 'Click Me! (Count: ' + clickCount + ')';
+        showResult('event-result', '✅ Button clicked ' + clickCount + ' times');
+      }
+    });
+
+    // Window Observable
+    let scrollSubscription = null;
+    let scrollCount = 0;
+
+    function startScrollObserver() {
+      if (scrollSubscription) {
+        showResult('window-result', '⚠️ Already observing scroll events');
+        return;
+      }
+
+      scrollCount = 0;
+      const scrollObservable = WindowUtils.eventObservable(window, 'scroll');
+      scrollSubscription = scrollObservable.subscribe({
+        next: function() {
+          scrollCount++;
+          showResult('window-result', '📜 Scroll event #' + scrollCount + ' - Y: ' + window.scrollY + 'px');
+        }
+      });
+      showResult('window-result', '✅ Started scroll observer. Try scrolling!');
+    }
+
+    function stopScrollObserver() {
+      if (scrollSubscription) {
+        scrollSubscription.unsubscribe();
+        scrollSubscription = null;
+        showResult('window-result', '🛑 Stopped scroll observer. Total scrolls: ' + scrollCount);
+      } else {
+        showResult('window-result', '⚠️ No active scroll observer');
+      }
+    }
+
+    // Helper function
+    function showResult(elementId, message) {
+      const element = document.getElementById(elementId);
+      element.innerHTML = message;
+      element.style.display = 'block';
+    }
+  </script>
+</body>
+</html>

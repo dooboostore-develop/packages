@@ -84,12 +84,10 @@ export class SimpleBootFront extends SimpleApplication {
       option.urlType === 'path'
         ? new PathRouter({
             window: option.window,
-            disableAttach: true
             // changeStateConvertDate:(data) =>({...data, type: 'popstateData', router: this.routerAndSettingData.routerAtomic.getValue()} as PopStateType)
           })
         : new HashRouter({
             window: option.window,
-            disableAttach: true
             // changeStateConvertDate:(data) =>({...data, type: 'popstateData', router: this.routerAndSettingData.routerAtomic.getValue()} as PopStateType)
           });
     this.simstanceManager.setStoreSet(Router, this.domRenderRouter);
@@ -173,8 +171,9 @@ export class SimpleBootFront extends SimpleApplication {
   }
 
   private initRun(otherInstanceSim?: Map<ConstructorType<any>, any>) {
-    const targetElement = this.option.window.document
-      .querySelector(this.option.selector)?.cloneNode(true) as HTMLElement;
+    const targetUserElement = typeof this.option.selector === 'string' ? this.option.window.document
+      .querySelector(this.option.selector) : this.option.selector;
+    const targetElement = targetUserElement?.cloneNode(true) as HTMLElement;
     if (!targetElement) {
       throw new Error('no element selector ' + this.option.selector)
     }
@@ -203,7 +202,7 @@ export class SimpleBootFront extends SimpleApplication {
     // 작업테스크 옮겨줘야 비동기적으로 처리됨에 깜빡임 없앨수있다.
     setTimeout(() => {
       targetElement.hidden = false;
-      this.option.window.document.querySelector(this.option.selector).replaceWith(targetElement);
+      targetUserElement.replaceWith(targetElement);
     }, 0);
 
     this.domRenderRouter.observable.subscribe(it => {

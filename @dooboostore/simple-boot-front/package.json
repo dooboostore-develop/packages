@@ -1,6 +1,6 @@
 {
   "name": "@dooboostore/simple-boot-front",
-  "version": "1.0.127",
+  "version": "1.0.128",
   "license": "MIT",
   "type": "module",
   "main": "./dist/cjs/index.js",
@@ -97,7 +97,7 @@
     "clean": "rm -rf dist",
     "build:esm": "node build.mjs esm",
     "watch:esm": "pnpm run build:esm && node build.mjs esm --watch",
-    "build:cjs": "node build.mjs cjs && cp package.cjs.json dist/cjs/package.json",
+    "build:cjs": "node build.mjs cjs",
     "watch:cjs": "pnpm run build:cjs && node build.mjs cjs --watch",
     "build": "pnpm run clean && node build.mjs all",
     "build:umd-bundle": "node build.mjs umd-bundle",

@@ -25,5 +25,44 @@ export namespace PathUtils {
     return nodePath.basename(path, suffix);
   }
 
+  // resolve(...paths: string[]): 절대 경로를 생성합니다.
+  export const resolve = (...paths: string[]) => {
+    return nodePath.resolve(...paths);
+  }
+
+  // dirname(path: string): 경로에서 디렉터리 부분을 반환합니다.
+  export const dirname = (path: string) => {
+    return nodePath.dirname(path);
+  }
+
+  // extname(path: string): 경로에서 확장자를 반환합니다.
+  export const extname = (path: string) => {
+    return nodePath.extname(path);
+  }
+
+  // parse(path: string): 경로를 분석하여 객체로 반환합니다.
+  export const parse = (path: string) => {
+    return nodePath.parse(path);
+  }
+
+  // format(pathObject): 경로 객체를 경로 문자열로 변환합니다.
+  export const format = (pathObject: nodePath.FormatInputPathObject) => {
+    return nodePath.format(pathObject);
+  }
+
+  // isAbsolute(path: string): 경로가 절대 경로인지 확인합니다.
+  export const isAbsolute = (path: string) => {
+    return nodePath.isAbsolute(path);
+  }
+
+  // relative(from: string, to: string): from에서 to로 가는 상대 경로를 반환합니다.
+  export const relative = (from: string, to: string) => {
+    return nodePath.relative(from, to);
+  }
+
+  // normalize(path: string): 경로를 정규화합니다.
+  export const normalize = (path: string) => {
+    return nodePath.normalize(path);
+  }
 
 }

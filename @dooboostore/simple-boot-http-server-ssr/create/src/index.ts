@@ -51,7 +51,7 @@ class CreateSvelteCmd extends Command {
     let templateUrl: string = '';
     // let port: string = '';
 
-    const choices = ['webpack'];
+    const choices = ['commonjs-typescript-webpack'];
     // const choices = ['parcel', 'rollup'];
     // if (templates.other) templates.other.forEach((item) => choices.push(item.name));
     response = await inquirer.prompt([
@@ -68,7 +68,7 @@ class CreateSvelteCmd extends Command {
     //   port = typeof ports == 'string' ? ports as string : (ports as any).parcel;
     // } else
     if (template === 'webpack') {
-      templateUrl = templates.webpack as string;
+      templateUrl = templates['commonjs-typescript-webpack'] as string;
     }
     // if (template === 'rollup_introduction_template') {
     //   templateUrl = templates.rollup_introduction_template as string;

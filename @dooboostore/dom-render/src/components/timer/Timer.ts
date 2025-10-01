@@ -8,53 +8,19 @@ import { OnDestroyRenderParams } from '../../lifecycle/OnDestroyRender';
 export namespace Timer {
   export const selector = 'dr-timer';
   export type Attribute = {
-    timeSecond?: string;
+    value?: string;
+    interval?: number;
+    onCreated?: (timer: Timer) => void;
   }
-
-  // class RadioBase extends ComponentBase<Attribute> {
-  //   public hidden = true;
-  //
-  // }
-
-  // @Component({
-  //   template: '<div dr-if="!@this@.hidden" dr-strip="true">#innerHTML#</div>',
-  //   styles: '',
-  //   selector: `${selector}.Checked`
-  // })
-  // export class RadioChecked extends RadioBase {
-  //   public name = 'Checked';
-  //
-  //   constructor() {
-  //     super({ onlyParentType: Radio });
-  //   }
-  // }
-  //
-  // @Component({
-  //   template: '<div dr-if="!@this@.hidden" dr-strip="true">#innerHTML#</div>',
-  //   styles: '',
-  //   selector: `${selector}.UnChecked`
-  // })
-  // export class UnChecked extends RadioBase {
-  //   public name = 'unChecked';
-  //
-  //   constructor() {
-  //     super({ onlyParentType: Radio });
-  //   }
-  // }
-
-  // @Component({
-  //   template: '#innerHTML#',
-  //   selector: `${selector}`,
-  //   noStrip: true
-  // })
   export class Timer extends ComponentBase<Attribute> {
     private interval?: any;
-    private timeSecond?: number;
+    private value?: number;
 
 
     onInitRender(param: any, rawSet: RawSet) {
       super.onInitRender(param, rawSet);
-      console.log('---2', this.getElement()?.isConnected)
+      this.getAttribute('onCreated')?.(this);
+      // console.log('---2', this.getElement()?.isConnected)
       // const element = this.getElement();
       // if(element){
       //   (element as any).component = this;
@@ -62,23 +28,25 @@ export namespace Timer {
     }
 
     isRunning() {
-      return this.timeSecond !== undefined;
+      return this.value !== undefined;
     }
 
     start() {
-      const timeSecond = this.getAttribute('timeSecond');
-      if (timeSecond) {
-        this.timeSecond = parseInt(timeSecond);
+      const timems = this.getAttribute('value');
+      if (timems) {
+        this.value = parseInt(timems);
+        const intervalValue = this.getAttribute('interval') ?? 1000;
+        console.log('int', this.value, intervalValue);
         this.interval = setInterval(() => {
-          // console.log('--------->',this.timeSecond)
-          if (this.timeSecond) {
-            this.timeSecond--;
+          console.log('--------->',this.value)
+          if (this.value) {
+            this.value--;
           } else {
             clearInterval(this.interval);
-            this.timeSecond = undefined;
+            this.value = undefined;
             this.interval = undefined;
           }
-        }, 1000)
+        }, intervalValue)
       }
     }
 
@@ -87,7 +55,7 @@ export namespace Timer {
       if (this.interval) {
         clearInterval(this.interval);
         this.interval = undefined;
-        this.timeSecond = undefined;
+        this.value = undefined;
       }
     }
 
@@ -107,7 +75,7 @@ export namespace Timer {
 
 
 export default {
-  choose: (config?: DomRenderRunConfig) => {
+  timer: (config?: DomRenderRunConfig) => {
     return RawSet.createComponentTargetElement({
       name: `${Timer.selector}`,
       template: '#innerHTML#',

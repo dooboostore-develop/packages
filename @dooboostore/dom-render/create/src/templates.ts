@@ -5,7 +5,9 @@
 // }
 
 interface BundlerTemplate {
-  readonly webpack: string | null;
+  readonly 'browser-usage' : string | null;
+  readonly 'commonjs-typescript-webpack' : string | null;
+  readonly 'example' : string | null;
 }
 
 export interface TemplateOption {
@@ -18,7 +20,9 @@ const TemplateOptions: TemplateOption[] = [
   {
     name: 'default-template',
     template: {
-      webpack: 'dooboostore-develop/packages/@dooboostore/dom-render/default-template-webpack#main'
+      'browser-usage': 'dooboostore-develop/packages/@dooboostore/dom-render/default-template/browser-usage#main',
+      'commonjs-typescript-webpack': 'dooboostore-develop/packages/@dooboostore/dom-render/default-template/commonjs-typescript-webpack#main',
+      'example': 'dooboostore-develop/packages/@dooboostore/dom-render/example#main'
     }
   }
 ];

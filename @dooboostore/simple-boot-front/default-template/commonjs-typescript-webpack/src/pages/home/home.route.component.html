@@ -1,0 +1,39 @@
+<div class="home-page">
+  <h2>${@this@.title}$</h2>
+  
+  <div class="section">
+    <h3>Counter Example</h3>
+    <p>Count: <strong>${@this@.count}$</strong></p>
+    <button dr-event-click="@this@.increment()" class="btn">Increment</button>
+  </div>
+
+  <div class="section">
+    <h3>Service Example</h3>
+    <button dr-event-click="@this@.loadUsers()" class="btn">Load Users</button>
+  </div>
+
+  <div class="section">
+    <h3>Component Example</h3>
+    <hello-component></hello-component>
+  </div>
+  <div class="section">
+    <h3>Script Example</h3>
+   ${$scripts.concat('first','last')}$
+  </div>
+
+  <div class="info">
+    <h3>Project Structure</h3>
+    <ul>
+      <li><strong>pages/</strong> - Router and route pages</li>
+      <li><strong>components/</strong> - Reusable components (*.component.ts)</li>
+      <li><strong>services/</strong> - Business logic and data services</li>
+      <li><strong>utils/</strong> - Utility functions and helpers</li>
+    </ul>
+    <h4>Naming Convention</h4>
+    <ul>
+      <li><code>*.router.component.ts</code> - Router with Component (extends ComponentRouterBase)</li>
+      <li><code>*.route.component.ts</code> - Route with Component (extends ComponentBase)</li>
+      <li><code>*.component.ts</code> - Pure Component (extends ComponentBase)</li>
+    </ul>
+  </div>
+</div>

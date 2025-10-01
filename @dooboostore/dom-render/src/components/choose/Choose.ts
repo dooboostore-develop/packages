@@ -58,7 +58,9 @@ export namespace Choose {
       child.data = this.getAttribute('data') as any;
       // when.hidden = true;
 
+      console.log('eeeeeee?', child, child.getAttribute('test'), this.getAttribute('data'));
       if (!this.choose && child instanceof When && child.getAttribute('test')?.(this.getAttribute('data'))) {
+      console.log('eeeeeee?2');
         // console.log('------------', child.attribute?.test?.(this.attribute?.data))
         this.choose = child;
         if (child.hidden) {
@@ -69,12 +71,14 @@ export namespace Choose {
         child.hidden = true;
       }
 
+      console.log('eeeeeee?3');
       if (!this.choose && child instanceof OtherWise) {
         this.choose = child;
         if (child.hidden) {
           child.hidden = false;
         }
       }
+      console.log('eeeeeee?34');
     }
   }
 }

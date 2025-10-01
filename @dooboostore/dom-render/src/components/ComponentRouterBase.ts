@@ -1,6 +1,7 @@
 import { ChildrenSet, ComponentBase, ComponentBaseConfig } from './ComponentBase';
 import { ComponentSet } from './ComponentSet';
 import { isOnDrThisUnBind } from '../lifecycle/dr-this/OnDrThisUnBind';
+import {RouterOutlet} from '../components/router/RouterOutlet';
 
 export interface OnCreatedOutlet {
   onCreatedOutlet(child: any): void;
@@ -29,17 +30,21 @@ export abstract class ComponentRouterBase<T = any>
   //   return this._child;
   // }
 
+
   setChild(child: ComponentSet) {
-    // console.log('setChild!!', child, (this as any).name)
+    console.log('setChild!!', child, (this as any).name)
     if (child) {
       this.child = child;
     } else {
       this.child = undefined;
     }
+    const routerOutletChildren = this.getChildren(RouterOutlet.RouterOutlet);
+    routerOutletChildren.forEach(it => {
+      it.setValue(this.child)
+    })
   }
 
   onDrThisUnBind(): void {
-    // console.log('--ComponentRouterBase--onDrThisUnBind-')
     super.onDrThisUnBind();
     if (this.child && isOnDrThisUnBind(this.child?.obj)) {
       this.child.obj.onDrThisUnBind();

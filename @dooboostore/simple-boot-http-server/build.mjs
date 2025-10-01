@@ -241,6 +241,16 @@ async function buildTarget(target, watch = false) {
         format: 'cjs',
         plugins: [esbuildPluginTsc({tsconfigPath:'tsconfig.cjs.json'}),declarationGeneratorPlugin],
       }, watch);
+      // Create package.json in dist/cjs to mark it as CommonJS
+      const cjsPackageJson = { 
+        name: '@dooboostore/simple-boot-http-server-cjs-internal',
+        private: true,
+        type: 'commonjs' 
+      };
+      fs.writeFileSync(
+        path.resolve(__dirname, 'dist', 'cjs', 'package.json'),
+        JSON.stringify(cjsPackageJson, null, 2)
+      );
       console.log('CJS build complete.');
       break;
     case 'umd-bundle':
