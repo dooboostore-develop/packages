@@ -20,6 +20,7 @@
     "all:build:step:cjs:esm": "concurrently \"pnpm run all:build:step:esm\" \"pnpm run all:build:step:cjs\"",
     "build": "pnpm run all:build:step",
     "watch": "pnpm run all:watch",
+    "clean": "pnpm run all:clean",
 
 
     "prettier:check": "pnpm prettier --config .prettierrc.json --check './apps/**/*.{ts,tsx,js,jsx}' './packages/**/*.{ts,tsx,js,jsx}' ",

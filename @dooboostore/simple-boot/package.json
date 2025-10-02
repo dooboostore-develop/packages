@@ -7,7 +7,7 @@
   "module": "./dist/esm/index.js",
   "types": "./dist/types/index.d.ts",
   "typesVersions": {
-    ">=4.2": {
+    "*": {
       "*": [
         "dist/types/*"
       ]
@@ -22,7 +22,6 @@
   "files": [
     "dist",
     "src",
-    "types.d.ts",
     "LICENSE.md",
     "tsconfig.json"
   ],
@@ -30,17 +29,390 @@
     "access": "public"
   },
   "exports": {
-      ".": {
-        "types": "./dist/types/index.d.ts",
-        "import": "./dist/esm/index.js",
-        "require": "./dist/cjs/index.js"
-      },
-      "./*": {
-        "types": "./dist/types/*.d.ts",
-        "import": "./dist/esm/*.js",
-        "require": "./dist/cjs/*.js"
-      }
+    ".": {
+      "types": "./dist/types/index.d.ts",
+      "node": "./dist/cjs/index.js",
+      "require": "./dist/cjs/index.js",
+      "import": "./dist/esm/index.js"
     },
+    "./SimOption": {
+      "types": "./dist/types/SimOption.d.ts",
+      "node": "./dist/cjs/SimOption.js",
+      "require": "./dist/cjs/SimOption.js",
+      "import": "./dist/esm/SimOption.js"
+    },
+    "./SimpleApplication": {
+      "types": "./dist/types/SimpleApplication.d.ts",
+      "node": "./dist/cjs/SimpleApplication.js",
+      "require": "./dist/cjs/SimpleApplication.js",
+      "import": "./dist/esm/SimpleApplication.js"
+    },
+    "./alert": {
+      "types": "./dist/types/alert/index.d.ts",
+      "node": "./dist/cjs/alert/index.js",
+      "require": "./dist/cjs/alert/index.js",
+      "import": "./dist/esm/alert/index.js"
+    },
+    "./alert/Alert": {
+      "types": "./dist/types/alert/Alert.d.ts",
+      "node": "./dist/cjs/alert/Alert.js",
+      "require": "./dist/cjs/alert/Alert.js",
+      "import": "./dist/esm/alert/Alert.js"
+    },
+    "./alert/AlertAction": {
+      "types": "./dist/types/alert/AlertAction.d.ts",
+      "node": "./dist/cjs/alert/AlertAction.js",
+      "require": "./dist/cjs/alert/AlertAction.js",
+      "import": "./dist/esm/alert/AlertAction.js"
+    },
+    "./alert/AlertFactory": {
+      "types": "./dist/types/alert/AlertFactory.d.ts",
+      "node": "./dist/cjs/alert/AlertFactory.js",
+      "require": "./dist/cjs/alert/AlertFactory.js",
+      "import": "./dist/esm/alert/AlertFactory.js"
+    },
+    "./alert/AlertFactoryConfig": {
+      "types": "./dist/types/alert/AlertFactoryConfig.d.ts",
+      "node": "./dist/cjs/alert/AlertFactoryConfig.js",
+      "require": "./dist/cjs/alert/AlertFactoryConfig.js",
+      "import": "./dist/esm/alert/AlertFactoryConfig.js"
+    },
+    "./alert/AlertService": {
+      "types": "./dist/types/alert/AlertService.d.ts",
+      "node": "./dist/cjs/alert/AlertService.js",
+      "require": "./dist/cjs/alert/AlertService.js",
+      "import": "./dist/esm/alert/AlertService.js"
+    },
+    "./alert/AlertType": {
+      "types": "./dist/types/alert/AlertType.d.ts",
+      "node": "./dist/cjs/alert/AlertType.js",
+      "require": "./dist/cjs/alert/AlertType.js",
+      "import": "./dist/esm/alert/AlertType.js"
+    },
+    "./alert/ConsoleErrorAlert": {
+      "types": "./dist/types/alert/ConsoleErrorAlert.d.ts",
+      "node": "./dist/cjs/alert/ConsoleErrorAlert.js",
+      "require": "./dist/cjs/alert/ConsoleErrorAlert.js",
+      "import": "./dist/esm/alert/ConsoleErrorAlert.js"
+    },
+    "./alert/ConsoleLogAlert": {
+      "types": "./dist/types/alert/ConsoleLogAlert.d.ts",
+      "node": "./dist/cjs/alert/ConsoleLogAlert.js",
+      "require": "./dist/cjs/alert/ConsoleLogAlert.js",
+      "import": "./dist/esm/alert/ConsoleLogAlert.js"
+    },
+    "./cache": {
+      "types": "./dist/types/cache/index.d.ts",
+      "node": "./dist/cjs/cache/index.js",
+      "require": "./dist/cjs/cache/index.js",
+      "import": "./dist/esm/cache/index.js"
+    },
+    "./cache/CacheManager": {
+      "types": "./dist/types/cache/CacheManager.d.ts",
+      "node": "./dist/cjs/cache/CacheManager.js",
+      "require": "./dist/cjs/cache/CacheManager.js",
+      "import": "./dist/esm/cache/CacheManager.js"
+    },
+    "./decorators": {
+      "types": "./dist/types/decorators/index.d.ts",
+      "node": "./dist/cjs/decorators/index.js",
+      "require": "./dist/cjs/decorators/index.js",
+      "import": "./dist/esm/decorators/index.js"
+    },
+    "./decorators/MetaDataAtomic": {
+      "types": "./dist/types/decorators/MetaDataAtomic.d.ts",
+      "node": "./dist/cjs/decorators/MetaDataAtomic.js",
+      "require": "./dist/cjs/decorators/MetaDataAtomic.js",
+      "import": "./dist/esm/decorators/MetaDataAtomic.js"
+    },
+    "./decorators/SimDecorator": {
+      "types": "./dist/types/decorators/SimDecorator.d.ts",
+      "node": "./dist/cjs/decorators/SimDecorator.js",
+      "require": "./dist/cjs/decorators/SimDecorator.js",
+      "import": "./dist/esm/decorators/SimDecorator.js"
+    },
+    "./decorators/SimNoProxy": {
+      "types": "./dist/types/decorators/SimNoProxy.d.ts",
+      "node": "./dist/cjs/decorators/SimNoProxy.js",
+      "require": "./dist/cjs/decorators/SimNoProxy.js",
+      "import": "./dist/esm/decorators/SimNoProxy.js"
+    },
+    "./decorators/aop": {
+      "types": "./dist/types/decorators/aop/index.d.ts",
+      "node": "./dist/cjs/decorators/aop/index.js",
+      "require": "./dist/cjs/decorators/aop/index.js",
+      "import": "./dist/esm/decorators/aop/index.js"
+    },
+    "./decorators/aop/AOPDecorator": {
+      "types": "./dist/types/decorators/aop/AOPDecorator.d.ts",
+      "node": "./dist/cjs/decorators/aop/AOPDecorator.js",
+      "require": "./dist/cjs/decorators/aop/AOPDecorator.js",
+      "import": "./dist/esm/decorators/aop/AOPDecorator.js"
+    },
+    "./decorators/cache": {
+      "types": "./dist/types/decorators/cache/index.d.ts",
+      "node": "./dist/cjs/decorators/cache/index.js",
+      "require": "./dist/cjs/decorators/cache/index.js",
+      "import": "./dist/esm/decorators/cache/index.js"
+    },
+    "./decorators/cache/CacheDecorator": {
+      "types": "./dist/types/decorators/cache/CacheDecorator.d.ts",
+      "node": "./dist/cjs/decorators/cache/CacheDecorator.js",
+      "require": "./dist/cjs/decorators/cache/CacheDecorator.js",
+      "import": "./dist/esm/decorators/cache/CacheDecorator.js"
+    },
+    "./decorators/event": {
+      "types": "./dist/types/decorators/event/index.d.ts",
+      "node": "./dist/cjs/decorators/event/index.js",
+      "require": "./dist/cjs/decorators/event/index.js",
+      "import": "./dist/esm/decorators/event/index.js"
+    },
+    "./decorators/event/EventListener": {
+      "types": "./dist/types/decorators/event/EventListener.d.ts",
+      "node": "./dist/cjs/decorators/event/EventListener.js",
+      "require": "./dist/cjs/decorators/event/EventListener.js",
+      "import": "./dist/esm/decorators/event/EventListener.js"
+    },
+    "./decorators/exception": {
+      "types": "./dist/types/decorators/exception/index.d.ts",
+      "node": "./dist/cjs/decorators/exception/index.js",
+      "require": "./dist/cjs/decorators/exception/index.js",
+      "import": "./dist/esm/decorators/exception/index.js"
+    },
+    "./decorators/exception/ExceptionDecorator": {
+      "types": "./dist/types/decorators/exception/ExceptionDecorator.d.ts",
+      "node": "./dist/cjs/decorators/exception/ExceptionDecorator.js",
+      "require": "./dist/cjs/decorators/exception/ExceptionDecorator.js",
+      "import": "./dist/esm/decorators/exception/ExceptionDecorator.js"
+    },
+    "./decorators/inject": {
+      "types": "./dist/types/decorators/inject/index.d.ts",
+      "node": "./dist/cjs/decorators/inject/index.js",
+      "require": "./dist/cjs/decorators/inject/index.js",
+      "import": "./dist/esm/decorators/inject/index.js"
+    },
+    "./decorators/inject/Inject": {
+      "types": "./dist/types/decorators/inject/Inject.d.ts",
+      "node": "./dist/cjs/decorators/inject/Inject.js",
+      "require": "./dist/cjs/decorators/inject/Inject.js",
+      "import": "./dist/esm/decorators/inject/Inject.js"
+    },
+    "./decorators/inject/Injectable": {
+      "types": "./dist/types/decorators/inject/Injectable.d.ts",
+      "node": "./dist/cjs/decorators/inject/Injectable.js",
+      "require": "./dist/cjs/decorators/inject/Injectable.js",
+      "import": "./dist/esm/decorators/inject/Injectable.js"
+    },
+    "./decorators/inject/Injection": {
+      "types": "./dist/types/decorators/inject/Injection.d.ts",
+      "node": "./dist/cjs/decorators/inject/Injection.js",
+      "require": "./dist/cjs/decorators/inject/Injection.js",
+      "import": "./dist/esm/decorators/inject/Injection.js"
+    },
+    "./decorators/route": {
+      "types": "./dist/types/decorators/route/index.d.ts",
+      "node": "./dist/cjs/decorators/route/index.js",
+      "require": "./dist/cjs/decorators/route/index.js",
+      "import": "./dist/esm/decorators/route/index.js"
+    },
+    "./decorators/route/OnRoute": {
+      "types": "./dist/types/decorators/route/OnRoute.d.ts",
+      "node": "./dist/cjs/decorators/route/OnRoute.js",
+      "require": "./dist/cjs/decorators/route/OnRoute.js",
+      "import": "./dist/esm/decorators/route/OnRoute.js"
+    },
+    "./decorators/route/Router": {
+      "types": "./dist/types/decorators/route/Router.d.ts",
+      "node": "./dist/cjs/decorators/route/Router.js",
+      "require": "./dist/cjs/decorators/route/Router.js",
+      "import": "./dist/esm/decorators/route/Router.js"
+    },
+    "./decorators/validate": {
+      "types": "./dist/types/decorators/validate/index.d.ts",
+      "node": "./dist/cjs/decorators/validate/index.js",
+      "require": "./dist/cjs/decorators/validate/index.js",
+      "import": "./dist/esm/decorators/validate/index.js"
+    },
+    "./decorators/validate/Validation": {
+      "types": "./dist/types/decorators/validate/Validation.d.ts",
+      "node": "./dist/cjs/decorators/validate/Validation.js",
+      "require": "./dist/cjs/decorators/validate/Validation.js",
+      "import": "./dist/esm/decorators/validate/Validation.js"
+    },
+    "./errors": {
+      "types": "./dist/types/errors/index.d.ts",
+      "node": "./dist/cjs/errors/index.js",
+      "require": "./dist/cjs/errors/index.js",
+      "import": "./dist/esm/errors/index.js"
+    },
+    "./errors/ValidException": {
+      "types": "./dist/types/errors/ValidException.d.ts",
+      "node": "./dist/cjs/errors/ValidException.js",
+      "require": "./dist/cjs/errors/ValidException.js",
+      "import": "./dist/esm/errors/ValidException.js"
+    },
+    "./fetch": {
+      "types": "./dist/types/fetch/index.d.ts",
+      "node": "./dist/cjs/fetch/index.js",
+      "require": "./dist/cjs/fetch/index.js",
+      "import": "./dist/esm/fetch/index.js"
+    },
+    "./fetch/ApiService": {
+      "types": "./dist/types/fetch/ApiService.d.ts",
+      "node": "./dist/cjs/fetch/ApiService.js",
+      "require": "./dist/cjs/fetch/ApiService.js",
+      "import": "./dist/esm/fetch/ApiService.js"
+    },
+    "./intent": {
+      "types": "./dist/types/intent/index.d.ts",
+      "node": "./dist/cjs/intent/index.js",
+      "require": "./dist/cjs/intent/index.js",
+      "import": "./dist/esm/intent/index.js"
+    },
+    "./intent/Intent": {
+      "types": "./dist/types/intent/Intent.d.ts",
+      "node": "./dist/cjs/intent/Intent.js",
+      "require": "./dist/cjs/intent/Intent.js",
+      "import": "./dist/esm/intent/Intent.js"
+    },
+    "./intent/IntentEvent": {
+      "types": "./dist/types/intent/IntentEvent.d.ts",
+      "node": "./dist/cjs/intent/IntentEvent.js",
+      "require": "./dist/cjs/intent/IntentEvent.js",
+      "import": "./dist/esm/intent/IntentEvent.js"
+    },
+    "./intent/IntentManager": {
+      "types": "./dist/types/intent/IntentManager.d.ts",
+      "node": "./dist/cjs/intent/IntentManager.js",
+      "require": "./dist/cjs/intent/IntentManager.js",
+      "import": "./dist/esm/intent/IntentManager.js"
+    },
+    "./intent/IntentSubscribe": {
+      "types": "./dist/types/intent/IntentSubscribe.d.ts",
+      "node": "./dist/cjs/intent/IntentSubscribe.js",
+      "require": "./dist/cjs/intent/IntentSubscribe.js",
+      "import": "./dist/esm/intent/IntentSubscribe.js"
+    },
+    "./lifecycle": {
+      "types": "./dist/types/lifecycle/index.d.ts",
+      "node": "./dist/cjs/lifecycle/index.js",
+      "require": "./dist/cjs/lifecycle/index.js",
+      "import": "./dist/esm/lifecycle/index.js"
+    },
+    "./lifecycle/OnSimCreate": {
+      "types": "./dist/types/lifecycle/OnSimCreate.d.ts",
+      "node": "./dist/cjs/lifecycle/OnSimCreate.js",
+      "require": "./dist/cjs/lifecycle/OnSimCreate.js",
+      "import": "./dist/esm/lifecycle/OnSimCreate.js"
+    },
+    "./lifecycle/OnSimCreateCompleted": {
+      "types": "./dist/types/lifecycle/OnSimCreateCompleted.d.ts",
+      "node": "./dist/cjs/lifecycle/OnSimCreateCompleted.js",
+      "require": "./dist/cjs/lifecycle/OnSimCreateCompleted.js",
+      "import": "./dist/esm/lifecycle/OnSimCreateCompleted.js"
+    },
+    "./proxy": {
+      "types": "./dist/types/proxy/index.d.ts",
+      "node": "./dist/cjs/proxy/index.js",
+      "require": "./dist/cjs/proxy/index.js",
+      "import": "./dist/esm/proxy/index.js"
+    },
+    "./proxy/SimProxyHandler": {
+      "types": "./dist/types/proxy/SimProxyHandler.d.ts",
+      "node": "./dist/cjs/proxy/SimProxyHandler.js",
+      "require": "./dist/cjs/proxy/SimProxyHandler.js",
+      "import": "./dist/esm/proxy/SimProxyHandler.js"
+    },
+    "./route": {
+      "types": "./dist/types/route/index.d.ts",
+      "node": "./dist/cjs/route/index.js",
+      "require": "./dist/cjs/route/index.js",
+      "import": "./dist/esm/route/index.js"
+    },
+    "./route/RouteFilter": {
+      "types": "./dist/types/route/RouteFilter.d.ts",
+      "node": "./dist/cjs/route/RouteFilter.js",
+      "require": "./dist/cjs/route/RouteFilter.js",
+      "import": "./dist/esm/route/RouteFilter.js"
+    },
+    "./route/RouterAction": {
+      "types": "./dist/types/route/RouterAction.d.ts",
+      "node": "./dist/cjs/route/RouterAction.js",
+      "require": "./dist/cjs/route/RouterAction.js",
+      "import": "./dist/esm/route/RouterAction.js"
+    },
+    "./route/RouterManager": {
+      "types": "./dist/types/route/RouterManager.d.ts",
+      "node": "./dist/cjs/route/RouterManager.js",
+      "require": "./dist/cjs/route/RouterManager.js",
+      "import": "./dist/esm/route/RouterManager.js"
+    },
+    "./route/RouterModule": {
+      "types": "./dist/types/route/RouterModule.d.ts",
+      "node": "./dist/cjs/route/RouterModule.js",
+      "require": "./dist/cjs/route/RouterModule.js",
+      "import": "./dist/esm/route/RouterModule.js"
+    },
+    "./simstance": {
+      "types": "./dist/types/simstance/index.d.ts",
+      "node": "./dist/cjs/simstance/index.js",
+      "require": "./dist/cjs/simstance/index.js",
+      "import": "./dist/esm/simstance/index.js"
+    },
+    "./simstance/SimAtomic": {
+      "types": "./dist/types/simstance/SimAtomic.d.ts",
+      "node": "./dist/cjs/simstance/SimAtomic.js",
+      "require": "./dist/cjs/simstance/SimAtomic.js",
+      "import": "./dist/esm/simstance/SimAtomic.js"
+    },
+    "./simstance/SimstanceManager": {
+      "types": "./dist/types/simstance/SimstanceManager.d.ts",
+      "node": "./dist/cjs/simstance/SimstanceManager.js",
+      "require": "./dist/cjs/simstance/SimstanceManager.js",
+      "import": "./dist/esm/simstance/SimstanceManager.js"
+    },
+    "./throwable": {
+      "types": "./dist/types/throwable/index.d.ts",
+      "node": "./dist/cjs/throwable/index.js",
+      "require": "./dist/cjs/throwable/index.js",
+      "import": "./dist/esm/throwable/index.js"
+    },
+    "./throwable/MethodNoSuch": {
+      "types": "./dist/types/throwable/MethodNoSuch.d.ts",
+      "node": "./dist/cjs/throwable/MethodNoSuch.js",
+      "require": "./dist/cjs/throwable/MethodNoSuch.js",
+      "import": "./dist/esm/throwable/MethodNoSuch.js"
+    },
+    "./throwable/SimError": {
+      "types": "./dist/types/throwable/SimError.d.ts",
+      "node": "./dist/cjs/throwable/SimError.js",
+      "require": "./dist/cjs/throwable/SimError.js",
+      "import": "./dist/esm/throwable/SimError.js"
+    },
+    "./throwable/SimNoSuch": {
+      "types": "./dist/types/throwable/SimNoSuch.d.ts",
+      "node": "./dist/cjs/throwable/SimNoSuch.js",
+      "require": "./dist/cjs/throwable/SimNoSuch.js",
+      "import": "./dist/esm/throwable/SimNoSuch.js"
+    },
+    "./types": {
+      "types": "./dist/types/types/index.d.ts",
+      "node": "./dist/cjs/types/index.js",
+      "require": "./dist/cjs/types/index.js",
+      "import": "./dist/esm/types/index.js"
+    },
+    "./types/Types": {
+      "types": "./dist/types/types/Types.d.ts",
+      "node": "./dist/cjs/types/Types.js",
+      "require": "./dist/cjs/types/Types.js",
+      "import": "./dist/esm/types/Types.js"
+    },
+    "./*": {
+      "types": "./dist/types/*.d.ts",
+      "require": "./dist/cjs/*.js",
+      "import": "./dist/esm/*.js"
+    }
+  },
   "author": "dooboostore <dooboostore@gmail.com> (https://github.com/dooboostore)",
   "contributors": [
     "sewoo <sewooimda@nate.com> (https://github.com/sewoo)",

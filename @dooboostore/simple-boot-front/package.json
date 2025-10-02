@@ -7,7 +7,7 @@
   "module": "./dist/esm/index.js",
   "types": "./dist/types/index.d.ts",
   "typesVersions": {
-    ">=4.2": {
+    "*": {
       "*": [
         "dist/types/*"
       ]
@@ -29,22 +29,196 @@
     "framwork",
     "node"
   ],
-
-"publishConfig": {
+  "publishConfig": {
     "access": "public"
   },
   "exports": {
-      ".": {
-        "types": "./dist/types/index.d.ts",
-        "import": "./dist/esm/index.js",
-        "require": "./dist/cjs/index.js"
-      },
-      "./*": {
-        "types": "./dist/types/*.d.ts",
-        "import": "./dist/esm/*.js",
-        "require": "./dist/cjs/*.js"
-      }
+    ".": {
+      "types": "./dist/types/index.d.ts",
+      "node": "./dist/cjs/index.js",
+      "require": "./dist/cjs/index.js",
+      "import": "./dist/esm/index.js"
     },
+    "./DomRenderRootObject": {
+      "types": "./dist/types/DomRenderRootObject.d.ts",
+      "node": "./dist/cjs/DomRenderRootObject.js",
+      "require": "./dist/cjs/DomRenderRootObject.js",
+      "import": "./dist/esm/DomRenderRootObject.js"
+    },
+    "./SimpleBootFront": {
+      "types": "./dist/types/SimpleBootFront.d.ts",
+      "node": "./dist/cjs/SimpleBootFront.js",
+      "require": "./dist/cjs/SimpleBootFront.js",
+      "import": "./dist/esm/SimpleBootFront.js"
+    },
+    "./component": {
+      "types": "./dist/types/component/index.d.ts",
+      "node": "./dist/cjs/component/index.js",
+      "require": "./dist/cjs/component/index.js",
+      "import": "./dist/esm/component/index.js"
+    },
+    "./component/ComponentBase": {
+      "types": "./dist/types/component/ComponentBase.d.ts",
+      "node": "./dist/cjs/component/ComponentBase.js",
+      "require": "./dist/cjs/component/ComponentBase.js",
+      "import": "./dist/esm/component/ComponentBase.js"
+    },
+    "./component/ComponentRouterBase": {
+      "types": "./dist/types/component/ComponentRouterBase.d.ts",
+      "node": "./dist/cjs/component/ComponentRouterBase.js",
+      "require": "./dist/cjs/component/ComponentRouterBase.js",
+      "import": "./dist/esm/component/ComponentRouterBase.js"
+    },
+    "./component/ComponentSet": {
+      "types": "./dist/types/component/ComponentSet.d.ts",
+      "node": "./dist/cjs/component/ComponentSet.js",
+      "require": "./dist/cjs/component/ComponentSet.js",
+      "import": "./dist/esm/component/ComponentSet.js"
+    },
+    "./decorators": {
+      "types": "./dist/types/decorators/index.d.ts",
+      "node": "./dist/cjs/decorators/index.js",
+      "require": "./dist/cjs/decorators/index.js",
+      "import": "./dist/esm/decorators/index.js"
+    },
+    "./decorators/Component": {
+      "types": "./dist/types/decorators/Component.d.ts",
+      "node": "./dist/cjs/decorators/Component.js",
+      "require": "./dist/cjs/decorators/Component.js",
+      "import": "./dist/esm/decorators/Component.js"
+    },
+    "./decorators/Script": {
+      "types": "./dist/types/decorators/Script.d.ts",
+      "node": "./dist/cjs/decorators/Script.js",
+      "require": "./dist/cjs/decorators/Script.js",
+      "import": "./dist/esm/decorators/Script.js"
+    },
+    "./decorators/inject/InjectFrontSituationType": {
+      "types": "./dist/types/decorators/inject/InjectFrontSituationType.d.ts",
+      "node": "./dist/cjs/decorators/inject/InjectFrontSituationType.js",
+      "require": "./dist/cjs/decorators/inject/InjectFrontSituationType.js",
+      "import": "./dist/esm/decorators/inject/InjectFrontSituationType.js"
+    },
+    "./lifecycle": {
+      "types": "./dist/types/lifecycle/index.d.ts",
+      "node": "./dist/cjs/lifecycle/index.js",
+      "require": "./dist/cjs/lifecycle/index.js",
+      "import": "./dist/esm/lifecycle/index.js"
+    },
+    "./lifecycle/OnChangedRender": {
+      "types": "./dist/types/lifecycle/OnChangedRender.d.ts",
+      "node": "./dist/cjs/lifecycle/OnChangedRender.js",
+      "require": "./dist/cjs/lifecycle/OnChangedRender.js",
+      "import": "./dist/esm/lifecycle/OnChangedRender.js"
+    },
+    "./lifecycle/OnDestroy": {
+      "types": "./dist/types/lifecycle/OnDestroy.d.ts",
+      "node": "./dist/cjs/lifecycle/OnDestroy.js",
+      "require": "./dist/cjs/lifecycle/OnDestroy.js",
+      "import": "./dist/esm/lifecycle/OnDestroy.js"
+    },
+    "./lifecycle/OnFinish": {
+      "types": "./dist/types/lifecycle/OnFinish.d.ts",
+      "node": "./dist/cjs/lifecycle/OnFinish.js",
+      "require": "./dist/cjs/lifecycle/OnFinish.js",
+      "import": "./dist/esm/lifecycle/OnFinish.js"
+    },
+    "./lifecycle/OnInit": {
+      "types": "./dist/types/lifecycle/OnInit.d.ts",
+      "node": "./dist/cjs/lifecycle/OnInit.js",
+      "require": "./dist/cjs/lifecycle/OnInit.js",
+      "import": "./dist/esm/lifecycle/OnInit.js"
+    },
+    "./lifecycle/OnInitedChild": {
+      "types": "./dist/types/lifecycle/OnInitedChild.d.ts",
+      "node": "./dist/cjs/lifecycle/OnInitedChild.js",
+      "require": "./dist/cjs/lifecycle/OnInitedChild.js",
+      "import": "./dist/esm/lifecycle/OnInitedChild.js"
+    },
+    "./option": {
+      "types": "./dist/types/option/index.d.ts",
+      "node": "./dist/cjs/option/index.js",
+      "require": "./dist/cjs/option/index.js",
+      "import": "./dist/esm/option/index.js"
+    },
+    "./option/SimFrontOption": {
+      "types": "./dist/types/option/SimFrontOption.d.ts",
+      "node": "./dist/cjs/option/SimFrontOption.js",
+      "require": "./dist/cjs/option/SimFrontOption.js",
+      "import": "./dist/esm/option/SimFrontOption.js"
+    },
+    "./script": {
+      "types": "./dist/types/script/index.d.ts",
+      "node": "./dist/cjs/script/index.js",
+      "require": "./dist/cjs/script/index.js",
+      "import": "./dist/esm/script/index.js"
+    },
+    "./script/ScriptRunnable": {
+      "types": "./dist/types/script/ScriptRunnable.d.ts",
+      "node": "./dist/cjs/script/ScriptRunnable.js",
+      "require": "./dist/cjs/script/ScriptRunnable.js",
+      "import": "./dist/esm/script/ScriptRunnable.js"
+    },
+    "./service": {
+      "types": "./dist/types/service/index.d.ts",
+      "node": "./dist/cjs/service/index.js",
+      "require": "./dist/cjs/service/index.js",
+      "import": "./dist/esm/service/index.js"
+    },
+    "./service/CookieService": {
+      "types": "./dist/types/service/CookieService.d.ts",
+      "node": "./dist/cjs/service/CookieService.js",
+      "require": "./dist/cjs/service/CookieService.js",
+      "import": "./dist/esm/service/CookieService.js"
+    },
+    "./service/MetaTagService": {
+      "types": "./dist/types/service/MetaTagService.d.ts",
+      "node": "./dist/cjs/service/MetaTagService.js",
+      "require": "./dist/cjs/service/MetaTagService.js",
+      "import": "./dist/esm/service/MetaTagService.js"
+    },
+    "./service/ScriptService": {
+      "types": "./dist/types/service/ScriptService.d.ts",
+      "node": "./dist/cjs/service/ScriptService.js",
+      "require": "./dist/cjs/service/ScriptService.js",
+      "import": "./dist/esm/service/ScriptService.js"
+    },
+    "./service/StorageService": {
+      "types": "./dist/types/service/StorageService.d.ts",
+      "node": "./dist/cjs/service/StorageService.js",
+      "require": "./dist/cjs/service/StorageService.js",
+      "import": "./dist/esm/service/StorageService.js"
+    },
+    "./throwable": {
+      "types": "./dist/types/throwable/index.d.ts",
+      "node": "./dist/cjs/throwable/index.js",
+      "require": "./dist/cjs/throwable/index.js",
+      "import": "./dist/esm/throwable/index.js"
+    },
+    "./throwable/RouterError": {
+      "types": "./dist/types/throwable/RouterError.d.ts",
+      "node": "./dist/cjs/throwable/RouterError.js",
+      "require": "./dist/cjs/throwable/RouterError.js",
+      "import": "./dist/esm/throwable/RouterError.js"
+    },
+    "./throwable/RouterIntentError": {
+      "types": "./dist/types/throwable/RouterIntentError.d.ts",
+      "node": "./dist/cjs/throwable/RouterIntentError.js",
+      "require": "./dist/cjs/throwable/RouterIntentError.js",
+      "import": "./dist/esm/throwable/RouterIntentError.js"
+    },
+    "./throwable/RouterNotFount": {
+      "types": "./dist/types/throwable/RouterNotFount.d.ts",
+      "node": "./dist/cjs/throwable/RouterNotFount.js",
+      "require": "./dist/cjs/throwable/RouterNotFount.js",
+      "import": "./dist/esm/throwable/RouterNotFount.js"
+    },
+    "./*": {
+      "types": "./dist/types/*.d.ts",
+      "require": "./dist/cjs/*.js",
+      "import": "./dist/esm/*.js"
+    }
+  },
   "author": "dooboostore <dooboostore@gmail.com> (https://github.com/dooboostore)",
   "contributors": [
     "sewoo <sewooimda@nate.com> (https://github.com/sewoo)",
@@ -70,7 +244,6 @@
     "@dooboostore/dom-render": "workspace:*",
     "@dooboostore/simple-boot": "workspace:*"
   },
-
   "devDependencies": {
     "@babel/core": "^7.24.0",
     "@babel/plugin-proposal-class-properties": "^7.18.6",
@@ -107,7 +280,7 @@
     "watch": "node build.mjs all --watch",
     "prepublishOnly": "pnpm run build",
     "publish:npm": "pnpm run build && cp package.json package.json.back && pnpm pack && TARBALL_NAME=$(ls dooboostore-simple-boot-front-*.tgz | head -n 1) && tar -xzf \"$TARBALL_NAME\" -C . --strip-components=1 package/package.json && rm \"$TARBALL_NAME\" && (pnpm publish --no-git-checks || true) && cp package.json.back package.json && rm -rf package.json.back  ",
-     "ts:clean": "find . -name '*.js' -o -name '*.map' -o -name '*.d.ts' | xargs rm -f",
+    "ts:clean": "find . -name '*.js' -o -name '*.map' -o -name '*.d.ts' | xargs rm -f",
     "typecheck": "tsc --noEmit",
     "test": "echo test"
   }

@@ -7,7 +7,7 @@
   "module": "./dist/esm/index.js",
   "types": "./dist/types/index.d.ts",
   "typesVersions": {
-    ">=4.2": {
+    "*": {
       "*": [
         "dist/types/*"
       ]
@@ -17,7 +17,6 @@
   "files": [
     "dist",
     "src",
-    "types.d.ts",
     "LICENSE.md",
     "tsconfig.json"
   ],
@@ -34,17 +33,48 @@
     "node"
   ],
   "exports": {
-      ".": {
-        "types": "./dist/types/index.d.ts",
-        "import": "./dist/esm/index.js",
-        "require": "./dist/cjs/index.js"
-      },
-      "./*": {
-        "types": "./dist/types/*.d.ts",
-        "import": "./dist/esm/*.js",
-        "require": "./dist/cjs/*.js"
-      }
+    ".": {
+      "types": "./dist/types/index.d.ts",
+      "node": "./dist/cjs/index.js",
+      "require": "./dist/cjs/index.js",
+      "import": "./dist/esm/index.js"
     },
+    "./canvas": {
+      "types": "./dist/types/canvas/index.d.ts",
+      "node": "./dist/cjs/canvas/index.js",
+      "require": "./dist/cjs/canvas/index.js",
+      "import": "./dist/esm/canvas/index.js"
+    },
+    "./canvas/GpsMarkerCanvas": {
+      "types": "./dist/types/canvas/GpsMarkerCanvas.d.ts",
+      "node": "./dist/cjs/canvas/GpsMarkerCanvas.js",
+      "require": "./dist/cjs/canvas/GpsMarkerCanvas.js",
+      "import": "./dist/esm/canvas/GpsMarkerCanvas.js"
+    },
+    "./canvas/ImageCropCanvas": {
+      "types": "./dist/types/canvas/ImageCropCanvas.d.ts",
+      "node": "./dist/cjs/canvas/ImageCropCanvas.js",
+      "require": "./dist/cjs/canvas/ImageCropCanvas.js",
+      "import": "./dist/esm/canvas/ImageCropCanvas.js"
+    },
+    "./canvas/ImageEditorCanvas": {
+      "types": "./dist/types/canvas/ImageEditorCanvas.d.ts",
+      "node": "./dist/cjs/canvas/ImageEditorCanvas.js",
+      "require": "./dist/cjs/canvas/ImageEditorCanvas.js",
+      "import": "./dist/esm/canvas/ImageEditorCanvas.js"
+    },
+    "./canvas/angle": {
+      "types": "./dist/types/canvas/angle/index.d.ts",
+      "node": "./dist/cjs/canvas/angle/index.js",
+      "require": "./dist/cjs/canvas/angle/index.js",
+      "import": "./dist/esm/canvas/angle/index.js"
+    },
+    "./*": {
+      "types": "./dist/types/*.d.ts",
+      "require": "./dist/cjs/*.js",
+      "import": "./dist/esm/*.js"
+    }
+  },
   "author": "dooboostore <dooboostore@gmail.com> (https://github.com/dooboostore)",
   "contributors": [
     "sewoo <sewooimda@nate.com> (https://github.com/sewoo)",
@@ -62,7 +92,6 @@
     "type": "git",
     "url": "https://github.com/dooboostore-develop/packages"
   },
-
   "peerDependencies": {
     "reflect-metadata": "^0.2.2",
     "@dooboostore/core": "workspace:*",

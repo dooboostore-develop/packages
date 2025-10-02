@@ -33,6 +33,9 @@ function findFiles(dir, extension) {
   return filelist;
 }
 
+// DEPRECATED: These functions are no longer needed as package.json exports handle deep imports
+// Kept for reference but not used in the build process
+/*
 function generateModuleDeclarations() {
     console.log('Generating module declarations for deep imports...');
     const packageName = '@dooboostore/core-web';
@@ -118,6 +121,69 @@ function addSubmoduleReferences() {
         console.error('Failed to add submodule reference directives:', e);
     }
 }
+*/
+
+function generateExportsInPackageJson() {
+    console.log('Generating exports in package.json...');
+    const typesDir = path.resolve(__dirname, 'dist/types');
+    const packageJsonPath = path.resolve(__dirname, 'package.json');
+
+    if (!fs.existsSync(typesDir)) {
+        console.warn(`Warning: '${typesDir}' not found. Skipping exports generation.`);
+        return;
+    }
+
+    const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
+    const dtsFiles = findFiles(typesDir, '.d.ts')
+        .filter(file => !file.includes('bundle-entry'))
+        .map(file => path.relative(typesDir, file).replace(/\.d\.ts$/, '').replace(/\\/g, '/'));
+
+    const exports = {
+        ".": {
+            "types": "./dist/types/index.d.ts",
+            "node": "./dist/cjs/index.js",
+            "require": "./dist/cjs/index.js",
+            "import": "./dist/esm/index.js"
+        }
+    };
+
+    const exportPaths = new Set();
+    dtsFiles.forEach(file => {
+        if (file !== 'index' && file !== 'types') {
+            let exportPath = file;
+            if (exportPath.endsWith('/index')) {
+                exportPath = exportPath.slice(0, -6);
+            }
+            exportPaths.add(exportPath);
+        }
+    });
+
+    Array.from(exportPaths).sort().forEach(modulePath => {
+        const exportKey = `./${modulePath}`;
+        const typePath = `./dist/types/${modulePath}${fs.existsSync(path.resolve(typesDir, modulePath, 'index.d.ts')) ? '/index.d.ts' : '.d.ts'}`;
+        const esmPath = `./dist/esm/${modulePath}${fs.existsSync(path.resolve(__dirname, 'dist/esm', modulePath, 'index.js')) ? '/index.js' : '.js'}`;
+        const cjsPath = `./dist/cjs/${modulePath}${fs.existsSync(path.resolve(__dirname, 'dist/cjs', modulePath, 'index.js')) ? '/index.js' : '.js'}`;
+        
+        exports[exportKey] = {
+            "types": typePath,
+            "node": cjsPath,
+            "require": cjsPath,
+            "import": esmPath
+        };
+    });
+
+    exports["./*"] = {
+        "types": "./dist/types/*.d.ts",
+        "require": "./dist/cjs/*.js",
+        "import": "./dist/esm/*.js"
+    };
+
+    packageJson.exports = exports;
+    fs.writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 2) + '\n', 'utf8');
+    
+    console.log(`✅ Generated ${Object.keys(exports).length} exports in package.json`);
+    console.log(`   Including ${Object.keys(exports).length - 2} explicit module paths`);
+}
 
 const declarationGeneratorPlugin = {
     name: 'declaration-generator',
@@ -127,8 +193,8 @@ const declarationGeneratorPlugin = {
                 console.log('Build successful, generating declarations...');
                 try {
                     execSync('pnpm exec tsc -p tsconfig.json --emitDeclarationOnly', { stdio: 'inherit' });
-                    generateModuleDeclarations();
-                    addSubmoduleReferences();
+                    console.log('✅ Type declarations generated to dist/types/');
+                    generateExportsInPackageJson();
                 } catch (e) {
                     console.error('Declaration generation failed:', e);
                 }
@@ -168,11 +234,14 @@ function addJsExtensionToImports(dir) {
 const srcDir = path.resolve(__dirname, 'src');
 const tsFiles = findFiles(srcDir, '.ts');
 
-const entryPoints = tsFiles.reduce((acc, file) => {
-  const entryName = path.relative(srcDir, file).replace(/\.ts$/, '');
-  acc[entryName] = file;
-  return acc;
-}, {});
+// Build all TypeScript files including bundle-entry (needed by other packages)
+// Note: bundle-entry will NOT be included in exports (filtered in generateExportsInPackageJson)
+const entryPoints = tsFiles
+  .reduce((acc, file) => {
+    const entryName = path.relative(srcDir, file).replace(/\.ts$/, '');
+    acc[entryName] = file;
+    return acc;
+  }, {});
 
 async function performBuild(options, watch) {
   if (watch) {
@@ -245,7 +314,7 @@ async function buildTarget(target, watch = false) {
       console.log('CJS build complete.');
       break;
     case 'umd-bundle':
-      console.log('Starting UMD bundle build...');
+      console.log('Starting UMD bundle build (browser-only, no type declarations)...');
       await performBuild({
         ...baseOptions,
           bundle:true,
@@ -259,7 +328,7 @@ async function buildTarget(target, watch = false) {
       console.log('UMD bundle build complete.');
       break;
     case 'esm-bundle':
-      console.log('Starting ESM bundle build...');
+      console.log('Starting ESM bundle build (browser-only, no type declarations)...');
       await performBuild({
         ...baseOptions,
           bundle:true,

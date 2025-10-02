@@ -7,7 +7,7 @@
   "module": "./dist/esm/index.js",
   "types": "./dist/types/index.d.ts",
   "typesVersions": {
-    ">=4.2": {
+    "*": {
       "*": [
         "dist/types/*"
       ]
@@ -29,21 +29,148 @@
     "framwork",
     "node"
   ],
-    "publishConfig": {
+  "publishConfig": {
     "access": "public"
   },
   "exports": {
-      ".": {
-        "types": "./dist/types/index.d.ts",
-        "import": "./dist/esm/index.js",
-        "require": "./dist/cjs/index.js"
-      },
-      "./*": {
-        "types": "./dist/types/*.d.ts",
-        "import": "./dist/esm/*.js",
-        "require": "./dist/cjs/*.js"
-      }
+    ".": {
+      "types": "./dist/types/index.d.ts",
+      "node": "./dist/cjs/index.js",
+      "require": "./dist/cjs/index.js",
+      "import": "./dist/esm/index.js"
     },
+    "./SimpleBootHttpSSRFactory": {
+      "types": "./dist/types/SimpleBootHttpSSRFactory.d.ts",
+      "node": "./dist/cjs/SimpleBootHttpSSRFactory.js",
+      "require": "./dist/cjs/SimpleBootHttpSSRFactory.js",
+      "import": "./dist/esm/SimpleBootHttpSSRFactory.js"
+    },
+    "./SimpleBootHttpSSRServer": {
+      "types": "./dist/types/SimpleBootHttpSSRServer.d.ts",
+      "node": "./dist/cjs/SimpleBootHttpSSRServer.js",
+      "require": "./dist/cjs/SimpleBootHttpSSRServer.js",
+      "import": "./dist/esm/SimpleBootHttpSSRServer.js"
+    },
+    "./codes": {
+      "types": "./dist/types/codes/index.d.ts",
+      "node": "./dist/cjs/codes/index.js",
+      "require": "./dist/cjs/codes/index.js",
+      "import": "./dist/esm/codes/index.js"
+    },
+    "./codes/HttpHeaders": {
+      "types": "./dist/types/codes/HttpHeaders.d.ts",
+      "node": "./dist/cjs/codes/HttpHeaders.js",
+      "require": "./dist/cjs/codes/HttpHeaders.js",
+      "import": "./dist/esm/codes/HttpHeaders.js"
+    },
+    "./codes/Mimes": {
+      "types": "./dist/types/codes/Mimes.d.ts",
+      "node": "./dist/cjs/codes/Mimes.js",
+      "require": "./dist/cjs/codes/Mimes.js",
+      "import": "./dist/esm/codes/Mimes.js"
+    },
+    "./decorators": {
+      "types": "./dist/types/decorators/index.d.ts",
+      "node": "./dist/cjs/decorators/index.js",
+      "require": "./dist/cjs/decorators/index.js",
+      "import": "./dist/esm/decorators/index.js"
+    },
+    "./decorators/LoadAroundBefore": {
+      "types": "./dist/types/decorators/LoadAroundBefore.d.ts",
+      "node": "./dist/cjs/decorators/LoadAroundBefore.js",
+      "require": "./dist/cjs/decorators/LoadAroundBefore.js",
+      "import": "./dist/esm/decorators/LoadAroundBefore.js"
+    },
+    "./decorators/SaveAroundAfter": {
+      "types": "./dist/types/decorators/SaveAroundAfter.d.ts",
+      "node": "./dist/cjs/decorators/SaveAroundAfter.js",
+      "require": "./dist/cjs/decorators/SaveAroundAfter.js",
+      "import": "./dist/esm/decorators/SaveAroundAfter.js"
+    },
+    "./filters": {
+      "types": "./dist/types/filters/index.d.ts",
+      "node": "./dist/cjs/filters/index.js",
+      "require": "./dist/cjs/filters/index.js",
+      "import": "./dist/esm/filters/index.js"
+    },
+    "./filters/IntentSchemeFilter": {
+      "types": "./dist/types/filters/IntentSchemeFilter.d.ts",
+      "node": "./dist/cjs/filters/IntentSchemeFilter.js",
+      "require": "./dist/cjs/filters/IntentSchemeFilter.js",
+      "import": "./dist/esm/filters/IntentSchemeFilter.js"
+    },
+    "./filters/SSRFilter": {
+      "types": "./dist/types/filters/SSRFilter.d.ts",
+      "node": "./dist/cjs/filters/SSRFilter.js",
+      "require": "./dist/cjs/filters/SSRFilter.js",
+      "import": "./dist/esm/filters/SSRFilter.js"
+    },
+    "./filters/SSRWorker": {
+      "types": "./dist/types/filters/SSRWorker.d.ts",
+      "node": "./dist/cjs/filters/SSRWorker.js",
+      "require": "./dist/cjs/filters/SSRWorker.js",
+      "import": "./dist/esm/filters/SSRWorker.js"
+    },
+    "./initializers": {
+      "types": "./dist/types/initializers/index.d.ts",
+      "node": "./dist/cjs/initializers/index.js",
+      "require": "./dist/cjs/initializers/index.js",
+      "import": "./dist/esm/initializers/index.js"
+    },
+    "./initializers/JsdomInitializer": {
+      "types": "./dist/types/initializers/JsdomInitializer.d.ts",
+      "node": "./dist/cjs/initializers/JsdomInitializer.js",
+      "require": "./dist/cjs/initializers/JsdomInitializer.js",
+      "import": "./dist/esm/initializers/JsdomInitializer.js"
+    },
+    "./option": {
+      "types": "./dist/types/option/index.d.ts",
+      "node": "./dist/cjs/option/index.js",
+      "require": "./dist/cjs/option/index.js",
+      "import": "./dist/esm/option/index.js"
+    },
+    "./option/HttpSSRServerOption": {
+      "types": "./dist/types/option/HttpSSRServerOption.d.ts",
+      "node": "./dist/cjs/option/HttpSSRServerOption.js",
+      "require": "./dist/cjs/option/HttpSSRServerOption.js",
+      "import": "./dist/esm/option/HttpSSRServerOption.js"
+    },
+    "./proxy": {
+      "types": "./dist/types/proxy/index.d.ts",
+      "node": "./dist/cjs/proxy/index.js",
+      "require": "./dist/cjs/proxy/index.js",
+      "import": "./dist/esm/proxy/index.js"
+    },
+    "./proxy/IntentSchemeFrontProxy": {
+      "types": "./dist/types/proxy/IntentSchemeFrontProxy.d.ts",
+      "node": "./dist/cjs/proxy/IntentSchemeFrontProxy.js",
+      "require": "./dist/cjs/proxy/IntentSchemeFrontProxy.js",
+      "import": "./dist/esm/proxy/IntentSchemeFrontProxy.js"
+    },
+    "./proxy/IntentSchemeServerProxy": {
+      "types": "./dist/types/proxy/IntentSchemeServerProxy.d.ts",
+      "node": "./dist/cjs/proxy/IntentSchemeServerProxy.js",
+      "require": "./dist/cjs/proxy/IntentSchemeServerProxy.js",
+      "import": "./dist/esm/proxy/IntentSchemeServerProxy.js"
+    },
+    "./proxy/SymbolIntentApiServiceProxy": {
+      "types": "./dist/types/proxy/SymbolIntentApiServiceProxy.d.ts",
+      "node": "./dist/cjs/proxy/SymbolIntentApiServiceProxy.js",
+      "require": "./dist/cjs/proxy/SymbolIntentApiServiceProxy.js",
+      "import": "./dist/esm/proxy/SymbolIntentApiServiceProxy.js"
+    },
+    "./proxy/SymbolIntentApiServiceProxyBase": {
+      "types": "./dist/types/proxy/SymbolIntentApiServiceProxyBase.d.ts",
+      "node": "./dist/cjs/proxy/SymbolIntentApiServiceProxyBase.js",
+      "require": "./dist/cjs/proxy/SymbolIntentApiServiceProxyBase.js",
+      "import": "./dist/esm/proxy/SymbolIntentApiServiceProxyBase.js"
+    },
+    "./*": {
+      "types": "./dist/types/*.d.ts",
+      "require": "./dist/cjs/*.js",
+      "import": "./dist/esm/*.js"
+    }
+  },
   "author": "dooboostore <dooboostore@gmail.com> (https://github.com/dooboostore)",
   "contributors": [
     "sewoo <sewooimda@nate.com> (https://github.com/sewoo)",

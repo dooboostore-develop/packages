@@ -98,7 +98,7 @@ export namespace PromiseSwitch {
     //
     // }
     private promiseState?: Promises.Result.PromiseState<any, unknown>;
-    private status?: Promises.Result.PromiseState<any, unknown>["status"];
+    private state?: Promises.Result.PromiseState<any, unknown>["status"];
 
     onCreatedThisChild(child: any, data: OnCreateRenderDataParams) {
       super.onCreatedThisChild(child, data);
@@ -113,16 +113,16 @@ export namespace PromiseSwitch {
       const full = [...fulfilleds, ...rejecteds, ...pendings, ...defaults]
       // console.log('----!!!!!!-------', this.promiseState, full)
       if (this.promiseState === undefined) {
-        this.status = undefined;
+        this.state = undefined;
         full.filter(it => !it.hidden).forEach(it => it.hidden = true)
         defaults.filter(it => it.hidden).forEach(it => it.hidden = false);
         pendings.filter(it => it.getAttribute('defaultView') && it.hidden).forEach(it => it.hidden = false);
       } else if (this.promiseState.status === 'pending') {
-        this.status = 'pending';
+        this.state = 'pending';
         full.filter(it => !it.hidden).forEach(it => it.hidden = true)
         pendings.filter(it => it.hidden).forEach(it => it.hidden = false);
       } else if (this.promiseState.status === 'fulfilled') {
-        this.status = 'fulfilled';
+        this.state = 'fulfilled';
         const value = this.promiseState.value;
         // console.log('-----------fulfilled promises', value);
         full.filter(it => !it.hidden).forEach(it => it.hidden = true)
@@ -131,7 +131,7 @@ export namespace PromiseSwitch {
         })
         fulfilleds.filter(it => it.hidden).forEach(it => it.hidden = false);
       } else if (this.promiseState.status === 'rejected') {
-        this.status = 'rejected';
+        this.state = 'rejected';
         const value = this.promiseState.reason;
         full.filter(it => !it.hidden).forEach(it => it.hidden = true)
         rejecteds.forEach(it => {
@@ -139,7 +139,7 @@ export namespace PromiseSwitch {
         })
         rejecteds.filter(it => it.hidden).forEach(it => it.hidden = false);
       }
-      return this.status;
+      return this.state;
       // console.log('----!!!!!!-end------', this.promiseState, full.map(it=>it.hidden))
     }
 
@@ -149,7 +149,7 @@ export namespace PromiseSwitch {
       if (this.equalsAttributeName(name, 'data') && value) {
         // this.childStateChange();
         this.promiseState = undefined;
-        this.status = undefined;
+        this.state = undefined;
         this.promiseState = Promises.Result.wrap(typeof value === 'function' ? value() : value as Promise<any>);
         this.getAttribute('change')?.({status: 'pending'});
         this.childStateChange();

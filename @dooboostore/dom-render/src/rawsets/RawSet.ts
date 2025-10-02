@@ -82,10 +82,8 @@ export class RawSet {
   public static readonly DR_DESTROY_OPTIONNAME = 'dr-option-destroy';
 
   public static readonly DR_THIS_NAME_OPTIONNAME = 'dr-option-this-name';
-  /**
-   * @deprecated
-   */
-  public static readonly DR_COMPONENT_NAME_OPTIONNAME = 'dr-option-component-name';
+
+  public static readonly DR_COMPONENT_VARIABLE_NAME_OPTIONNAME = 'dr-option-component-variable-name';
   public static readonly DR_COMPONENT_INNER_HTML_NAME_OPTIONNAME = 'dr-option-component-inner-html-name';
   public static readonly DR_KEY_OPTIONNAME = 'dr-option-key';
   public static readonly DR_HAS_KEYS_OPTIONNAME = 'dr-option-has-keys';
@@ -1629,7 +1627,6 @@ export class RawSet {
         const domrenderComponents = obj.__domrender_components;
         // debugger;
         const renderScript = ` /*createComponentTargetElement*/
-            // console.log('-------------------',this.__render);
             var ${EventManager.RAWSET_VARNAME} = this.__render.rawSet; 
             var ${EventManager.COMPONENT_VARNAME} = this.__render.component; 
             var ${EventManager.ELEMENT_VARNAME} = this.__render.element; 
@@ -1745,15 +1742,19 @@ export class RawSet {
         // }
         let applayTemplate = element.innerHTML;
         let innerHTMLThisRandom;
-        const componentName = element.getAttribute(RawSet.DR_COMPONENT_NAME_OPTIONNAME) ?? 'component';
+        const componentName = element.getAttribute(RawSet.DR_COMPONENT_VARIABLE_NAME_OPTIONNAME) ?? 'component';
         const innerHTMLName = element.getAttribute(RawSet.DR_COMPONENT_INNER_HTML_NAME_OPTIONNAME) ?? 'innerHTML';
+        // if (element.getAttribute(RawSet.DR_COMPONENT_VARIABLE_NAME_OPTIONNAME)) {
+        //   console.log('vvvvvvv', element.getAttribute(RawSet.DR_COMPONENT_VARIABLE_NAME_OPTIONNAME));
+        // }
         if (applayTemplate) {
           // if (rawSet.point.thisVariableName) {
           // 넘어온 innerHTML에 this가 있으면 해당안되게 우선 치환.
           innerHTMLThisRandom = RandomUtils.uuid();
           applayTemplate = applayTemplate.replace(/this\./g, innerHTMLThisRandom);
           // }
-          applayTemplate = applayTemplate.replace(RegExp(`#${componentName}#`, 'g'), 'this');
+          // applayTemplate = applayTemplate.replace(RegExp(`#${componentName}#`, 'g'), 'this');
+          applayTemplate = applayTemplate.replace(RegExp(`#${componentName}#`, 'g'), nearThisPath);
         }
         // applayTemplate = template.replace(RegExp(`#${innerHTMLName}#`, 'g'), applayTemplate);
         applayTemplate = (this.template ?? '').replace(RegExp(`#${innerHTMLName}#`, 'g'), applayTemplate);

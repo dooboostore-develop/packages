@@ -7,7 +7,7 @@
   "module": "./dist/esm/index.js",
   "types": "./dist/types/index.d.ts",
   "typesVersions": {
-    ">=4.2": {
+    "*": {
       "*": [
         "dist/types/*"
       ]
@@ -30,7 +30,6 @@
   "files": [
     "dist",
     "src",
-    "types.d.ts",
     "LICENSE.md",
     "tsconfig.json"
   ],
@@ -38,17 +37,840 @@
     "access": "public"
   },
   "exports": {
-      ".": {
-        "types": "./dist/types/index.d.ts",
-        "import": "./dist/esm/index.js",
-        "require": "./dist/cjs/index.js"
-      },
-      "./*": {
-        "types": "./dist/types/*.d.ts",
-        "import": "./dist/esm/*.js",
-        "require": "./dist/cjs/*.js"
-      }
+    ".": {
+      "types": "./dist/types/index.d.ts",
+      "node": "./dist/cjs/index.js",
+      "require": "./dist/cjs/index.js",
+      "import": "./dist/esm/index.js"
     },
+    "./DomRender": {
+      "types": "./dist/types/DomRender.d.ts",
+      "node": "./dist/cjs/DomRender.js",
+      "require": "./dist/cjs/DomRender.js",
+      "import": "./dist/esm/DomRender.js"
+    },
+    "./DomRenderProxy": {
+      "types": "./dist/types/DomRenderProxy.d.ts",
+      "node": "./dist/cjs/DomRenderProxy.js",
+      "require": "./dist/cjs/DomRenderProxy.js",
+      "import": "./dist/esm/DomRenderProxy.js"
+    },
+    "./components": {
+      "types": "./dist/types/components/index.d.ts",
+      "node": "./dist/cjs/components/index.js",
+      "require": "./dist/cjs/components/index.js",
+      "import": "./dist/esm/components/index.js"
+    },
+    "./components/ComponentBase": {
+      "types": "./dist/types/components/ComponentBase.d.ts",
+      "node": "./dist/cjs/components/ComponentBase.js",
+      "require": "./dist/cjs/components/ComponentBase.js",
+      "import": "./dist/esm/components/ComponentBase.js"
+    },
+    "./components/ComponentRouterBase": {
+      "types": "./dist/types/components/ComponentRouterBase.d.ts",
+      "node": "./dist/cjs/components/ComponentRouterBase.js",
+      "require": "./dist/cjs/components/ComponentRouterBase.js",
+      "import": "./dist/esm/components/ComponentRouterBase.js"
+    },
+    "./components/ComponentSet": {
+      "types": "./dist/types/components/ComponentSet.d.ts",
+      "node": "./dist/cjs/components/ComponentSet.js",
+      "require": "./dist/cjs/components/ComponentSet.js",
+      "import": "./dist/esm/components/ComponentSet.js"
+    },
+    "./components/a": {
+      "types": "./dist/types/components/a/index.d.ts",
+      "node": "./dist/cjs/components/a/index.js",
+      "require": "./dist/cjs/components/a/index.js",
+      "import": "./dist/esm/components/a/index.js"
+    },
+    "./components/a/A": {
+      "types": "./dist/types/components/a/A.d.ts",
+      "node": "./dist/cjs/components/a/A.js",
+      "require": "./dist/cjs/components/a/A.js",
+      "import": "./dist/esm/components/a/A.js"
+    },
+    "./components/appender": {
+      "types": "./dist/types/components/appender/index.d.ts",
+      "node": "./dist/cjs/components/appender/index.js",
+      "require": "./dist/cjs/components/appender/index.js",
+      "import": "./dist/esm/components/appender/index.js"
+    },
+    "./components/appender/Appender": {
+      "types": "./dist/types/components/appender/Appender.d.ts",
+      "node": "./dist/cjs/components/appender/Appender.js",
+      "require": "./dist/cjs/components/appender/Appender.js",
+      "import": "./dist/esm/components/appender/Appender.js"
+    },
+    "./components/checkbox": {
+      "types": "./dist/types/components/checkbox/index.d.ts",
+      "node": "./dist/cjs/components/checkbox/index.js",
+      "require": "./dist/cjs/components/checkbox/index.js",
+      "import": "./dist/esm/components/checkbox/index.js"
+    },
+    "./components/checkbox/CheckBox": {
+      "types": "./dist/types/components/checkbox/CheckBox.d.ts",
+      "node": "./dist/cjs/components/checkbox/CheckBox.js",
+      "require": "./dist/cjs/components/checkbox/CheckBox.js",
+      "import": "./dist/esm/components/checkbox/CheckBox.js"
+    },
+    "./components/choose": {
+      "types": "./dist/types/components/choose/index.d.ts",
+      "node": "./dist/cjs/components/choose/index.js",
+      "require": "./dist/cjs/components/choose/index.js",
+      "import": "./dist/esm/components/choose/index.js"
+    },
+    "./components/choose/Choose": {
+      "types": "./dist/types/components/choose/Choose.d.ts",
+      "node": "./dist/cjs/components/choose/Choose.js",
+      "require": "./dist/cjs/components/choose/Choose.js",
+      "import": "./dist/esm/components/choose/Choose.js"
+    },
+    "./components/details": {
+      "types": "./dist/types/components/details/index.d.ts",
+      "node": "./dist/cjs/components/details/index.js",
+      "require": "./dist/cjs/components/details/index.js",
+      "import": "./dist/esm/components/details/index.js"
+    },
+    "./components/details/Details": {
+      "types": "./dist/types/components/details/Details.d.ts",
+      "node": "./dist/cjs/components/details/Details.js",
+      "require": "./dist/cjs/components/details/Details.js",
+      "import": "./dist/esm/components/details/Details.js"
+    },
+    "./components/dialog/Dialog": {
+      "types": "./dist/types/components/dialog/Dialog.d.ts",
+      "node": "./dist/cjs/components/dialog/Dialog.js",
+      "require": "./dist/cjs/components/dialog/Dialog.js",
+      "import": "./dist/esm/components/dialog/Dialog.js"
+    },
+    "./components/dialog/example/ImageEditorDialog": {
+      "types": "./dist/types/components/dialog/example/ImageEditorDialog.d.ts",
+      "node": "./dist/cjs/components/dialog/example/ImageEditorDialog.js",
+      "require": "./dist/cjs/components/dialog/example/ImageEditorDialog.js",
+      "import": "./dist/esm/components/dialog/example/ImageEditorDialog.js"
+    },
+    "./components/forOf": {
+      "types": "./dist/types/components/forOf/index.d.ts",
+      "node": "./dist/cjs/components/forOf/index.js",
+      "require": "./dist/cjs/components/forOf/index.js",
+      "import": "./dist/esm/components/forOf/index.js"
+    },
+    "./components/forOf/ForOf": {
+      "types": "./dist/types/components/forOf/ForOf.d.ts",
+      "node": "./dist/cjs/components/forOf/ForOf.js",
+      "require": "./dist/cjs/components/forOf/ForOf.js",
+      "import": "./dist/esm/components/forOf/ForOf.js"
+    },
+    "./components/if": {
+      "types": "./dist/types/components/if/index.d.ts",
+      "node": "./dist/cjs/components/if/index.js",
+      "require": "./dist/cjs/components/if/index.js",
+      "import": "./dist/esm/components/if/index.js"
+    },
+    "./components/if/If": {
+      "types": "./dist/types/components/if/If.d.ts",
+      "node": "./dist/cjs/components/if/If.js",
+      "require": "./dist/cjs/components/if/If.js",
+      "import": "./dist/esm/components/if/If.js"
+    },
+    "./components/input": {
+      "types": "./dist/types/components/input/index.d.ts",
+      "node": "./dist/cjs/components/input/index.js",
+      "require": "./dist/cjs/components/input/index.js",
+      "import": "./dist/esm/components/input/index.js"
+    },
+    "./components/input/Input": {
+      "types": "./dist/types/components/input/Input.d.ts",
+      "node": "./dist/cjs/components/input/Input.js",
+      "require": "./dist/cjs/components/input/Input.js",
+      "import": "./dist/esm/components/input/Input.js"
+    },
+    "./components/promise": {
+      "types": "./dist/types/components/promise/index.d.ts",
+      "node": "./dist/cjs/components/promise/index.js",
+      "require": "./dist/cjs/components/promise/index.js",
+      "import": "./dist/esm/components/promise/index.js"
+    },
+    "./components/promise/PromiseSwitch": {
+      "types": "./dist/types/components/promise/PromiseSwitch.d.ts",
+      "node": "./dist/cjs/components/promise/PromiseSwitch.js",
+      "require": "./dist/cjs/components/promise/PromiseSwitch.js",
+      "import": "./dist/esm/components/promise/PromiseSwitch.js"
+    },
+    "./components/radio": {
+      "types": "./dist/types/components/radio/index.d.ts",
+      "node": "./dist/cjs/components/radio/index.js",
+      "require": "./dist/cjs/components/radio/index.js",
+      "import": "./dist/esm/components/radio/index.js"
+    },
+    "./components/radio/Radio": {
+      "types": "./dist/types/components/radio/Radio.d.ts",
+      "node": "./dist/cjs/components/radio/Radio.js",
+      "require": "./dist/cjs/components/radio/Radio.js",
+      "import": "./dist/esm/components/radio/Radio.js"
+    },
+    "./components/router": {
+      "types": "./dist/types/components/router/index.d.ts",
+      "node": "./dist/cjs/components/router/index.js",
+      "require": "./dist/cjs/components/router/index.js",
+      "import": "./dist/esm/components/router/index.js"
+    },
+    "./components/router/Route": {
+      "types": "./dist/types/components/router/Route.d.ts",
+      "node": "./dist/cjs/components/router/Route.js",
+      "require": "./dist/cjs/components/router/Route.js",
+      "import": "./dist/esm/components/router/Route.js"
+    },
+    "./components/router/RouterOutlet": {
+      "types": "./dist/types/components/router/RouterOutlet.d.ts",
+      "node": "./dist/cjs/components/router/RouterOutlet.js",
+      "require": "./dist/cjs/components/router/RouterOutlet.js",
+      "import": "./dist/esm/components/router/RouterOutlet.js"
+    },
+    "./components/select": {
+      "types": "./dist/types/components/select/index.d.ts",
+      "node": "./dist/cjs/components/select/index.js",
+      "require": "./dist/cjs/components/select/index.js",
+      "import": "./dist/esm/components/select/index.js"
+    },
+    "./components/select/Select": {
+      "types": "./dist/types/components/select/Select.d.ts",
+      "node": "./dist/cjs/components/select/Select.js",
+      "require": "./dist/cjs/components/select/Select.js",
+      "import": "./dist/esm/components/select/Select.js"
+    },
+    "./components/this": {
+      "types": "./dist/types/components/this/index.d.ts",
+      "node": "./dist/cjs/components/this/index.js",
+      "require": "./dist/cjs/components/this/index.js",
+      "import": "./dist/esm/components/this/index.js"
+    },
+    "./components/this/This": {
+      "types": "./dist/types/components/this/This.d.ts",
+      "node": "./dist/cjs/components/this/This.js",
+      "require": "./dist/cjs/components/this/This.js",
+      "import": "./dist/esm/components/this/This.js"
+    },
+    "./components/timer": {
+      "types": "./dist/types/components/timer/index.d.ts",
+      "node": "./dist/cjs/components/timer/index.js",
+      "require": "./dist/cjs/components/timer/index.js",
+      "import": "./dist/esm/components/timer/index.js"
+    },
+    "./components/timer/Timer": {
+      "types": "./dist/types/components/timer/Timer.d.ts",
+      "node": "./dist/cjs/components/timer/Timer.js",
+      "require": "./dist/cjs/components/timer/Timer.js",
+      "import": "./dist/esm/components/timer/Timer.js"
+    },
+    "./configs": {
+      "types": "./dist/types/configs/index.d.ts",
+      "node": "./dist/cjs/configs/index.js",
+      "require": "./dist/cjs/configs/index.js",
+      "import": "./dist/esm/configs/index.js"
+    },
+    "./configs/DomRenderConfig": {
+      "types": "./dist/types/configs/DomRenderConfig.d.ts",
+      "node": "./dist/cjs/configs/DomRenderConfig.js",
+      "require": "./dist/cjs/configs/DomRenderConfig.js",
+      "import": "./dist/esm/configs/DomRenderConfig.js"
+    },
+    "./configs/TargetAttr": {
+      "types": "./dist/types/configs/TargetAttr.d.ts",
+      "node": "./dist/cjs/configs/TargetAttr.js",
+      "require": "./dist/cjs/configs/TargetAttr.js",
+      "import": "./dist/esm/configs/TargetAttr.js"
+    },
+    "./configs/TargetElement": {
+      "types": "./dist/types/configs/TargetElement.d.ts",
+      "node": "./dist/cjs/configs/TargetElement.js",
+      "require": "./dist/cjs/configs/TargetElement.js",
+      "import": "./dist/esm/configs/TargetElement.js"
+    },
+    "./decorators": {
+      "types": "./dist/types/decorators/index.d.ts",
+      "node": "./dist/cjs/decorators/index.js",
+      "require": "./dist/cjs/decorators/index.js",
+      "import": "./dist/esm/decorators/index.js"
+    },
+    "./decorators/DomRenderNoProxy": {
+      "types": "./dist/types/decorators/DomRenderNoProxy.d.ts",
+      "node": "./dist/cjs/decorators/DomRenderNoProxy.js",
+      "require": "./dist/cjs/decorators/DomRenderNoProxy.js",
+      "import": "./dist/esm/decorators/DomRenderNoProxy.js"
+    },
+    "./events": {
+      "types": "./dist/types/events/index.d.ts",
+      "node": "./dist/cjs/events/index.js",
+      "require": "./dist/cjs/events/index.js",
+      "import": "./dist/esm/events/index.js"
+    },
+    "./events/EventManager": {
+      "types": "./dist/types/events/EventManager.d.ts",
+      "node": "./dist/cjs/events/EventManager.js",
+      "require": "./dist/cjs/events/EventManager.js",
+      "import": "./dist/esm/events/EventManager.js"
+    },
+    "./iterators": {
+      "types": "./dist/types/iterators/index.d.ts",
+      "node": "./dist/cjs/iterators/index.js",
+      "require": "./dist/cjs/iterators/index.js",
+      "import": "./dist/esm/iterators/index.js"
+    },
+    "./iterators/Range": {
+      "types": "./dist/types/iterators/Range.d.ts",
+      "node": "./dist/cjs/iterators/Range.js",
+      "require": "./dist/cjs/iterators/Range.js",
+      "import": "./dist/esm/iterators/Range.js"
+    },
+    "./lifecycle": {
+      "types": "./dist/types/lifecycle/index.d.ts",
+      "node": "./dist/cjs/lifecycle/index.js",
+      "require": "./dist/cjs/lifecycle/index.js",
+      "import": "./dist/esm/lifecycle/index.js"
+    },
+    "./lifecycle/OnBeforeReturnGet": {
+      "types": "./dist/types/lifecycle/OnBeforeReturnGet.d.ts",
+      "node": "./dist/cjs/lifecycle/OnBeforeReturnGet.js",
+      "require": "./dist/cjs/lifecycle/OnBeforeReturnGet.js",
+      "import": "./dist/esm/lifecycle/OnBeforeReturnGet.js"
+    },
+    "./lifecycle/OnBeforeReturnSet": {
+      "types": "./dist/types/lifecycle/OnBeforeReturnSet.d.ts",
+      "node": "./dist/cjs/lifecycle/OnBeforeReturnSet.js",
+      "require": "./dist/cjs/lifecycle/OnBeforeReturnSet.js",
+      "import": "./dist/esm/lifecycle/OnBeforeReturnSet.js"
+    },
+    "./lifecycle/OnChangeAttrRender": {
+      "types": "./dist/types/lifecycle/OnChangeAttrRender.d.ts",
+      "node": "./dist/cjs/lifecycle/OnChangeAttrRender.js",
+      "require": "./dist/cjs/lifecycle/OnChangeAttrRender.js",
+      "import": "./dist/esm/lifecycle/OnChangeAttrRender.js"
+    },
+    "./lifecycle/OnChildRenderedByProperty": {
+      "types": "./dist/types/lifecycle/OnChildRenderedByProperty.d.ts",
+      "node": "./dist/cjs/lifecycle/OnChildRenderedByProperty.js",
+      "require": "./dist/cjs/lifecycle/OnChildRenderedByProperty.js",
+      "import": "./dist/esm/lifecycle/OnChildRenderedByProperty.js"
+    },
+    "./lifecycle/OnCreateRender": {
+      "types": "./dist/types/lifecycle/OnCreateRender.d.ts",
+      "node": "./dist/cjs/lifecycle/OnCreateRender.js",
+      "require": "./dist/cjs/lifecycle/OnCreateRender.js",
+      "import": "./dist/esm/lifecycle/OnCreateRender.js"
+    },
+    "./lifecycle/OnCreateRenderData": {
+      "types": "./dist/types/lifecycle/OnCreateRenderData.d.ts",
+      "node": "./dist/cjs/lifecycle/OnCreateRenderData.js",
+      "require": "./dist/cjs/lifecycle/OnCreateRenderData.js",
+      "import": "./dist/esm/lifecycle/OnCreateRenderData.js"
+    },
+    "./lifecycle/OnCreateRendered": {
+      "types": "./dist/types/lifecycle/OnCreateRendered.d.ts",
+      "node": "./dist/cjs/lifecycle/OnCreateRendered.js",
+      "require": "./dist/cjs/lifecycle/OnCreateRendered.js",
+      "import": "./dist/esm/lifecycle/OnCreateRendered.js"
+    },
+    "./lifecycle/OnCreatedThisChild": {
+      "types": "./dist/types/lifecycle/OnCreatedThisChild.d.ts",
+      "node": "./dist/cjs/lifecycle/OnCreatedThisChild.js",
+      "require": "./dist/cjs/lifecycle/OnCreatedThisChild.js",
+      "import": "./dist/esm/lifecycle/OnCreatedThisChild.js"
+    },
+    "./lifecycle/OnDestroyRender": {
+      "types": "./dist/types/lifecycle/OnDestroyRender.d.ts",
+      "node": "./dist/cjs/lifecycle/OnDestroyRender.js",
+      "require": "./dist/cjs/lifecycle/OnDestroyRender.js",
+      "import": "./dist/esm/lifecycle/OnDestroyRender.js"
+    },
+    "./lifecycle/OnInitRender": {
+      "types": "./dist/types/lifecycle/OnInitRender.d.ts",
+      "node": "./dist/cjs/lifecycle/OnInitRender.js",
+      "require": "./dist/cjs/lifecycle/OnInitRender.js",
+      "import": "./dist/esm/lifecycle/OnInitRender.js"
+    },
+    "./lifecycle/OnProxyDomRender": {
+      "types": "./dist/types/lifecycle/OnProxyDomRender.d.ts",
+      "node": "./dist/cjs/lifecycle/OnProxyDomRender.js",
+      "require": "./dist/cjs/lifecycle/OnProxyDomRender.js",
+      "import": "./dist/esm/lifecycle/OnProxyDomRender.js"
+    },
+    "./lifecycle/OnRawSetRendered": {
+      "types": "./dist/types/lifecycle/OnRawSetRendered.d.ts",
+      "node": "./dist/cjs/lifecycle/OnRawSetRendered.js",
+      "require": "./dist/cjs/lifecycle/OnRawSetRendered.js",
+      "import": "./dist/esm/lifecycle/OnRawSetRendered.js"
+    },
+    "./lifecycle/dr-this": {
+      "types": "./dist/types/lifecycle/dr-this/index.d.ts",
+      "node": "./dist/cjs/lifecycle/dr-this/index.js",
+      "require": "./dist/cjs/lifecycle/dr-this/index.js",
+      "import": "./dist/esm/lifecycle/dr-this/index.js"
+    },
+    "./lifecycle/dr-this/OnDrThisBind": {
+      "types": "./dist/types/lifecycle/dr-this/OnDrThisBind.d.ts",
+      "node": "./dist/cjs/lifecycle/dr-this/OnDrThisBind.js",
+      "require": "./dist/cjs/lifecycle/dr-this/OnDrThisBind.js",
+      "import": "./dist/esm/lifecycle/dr-this/OnDrThisBind.js"
+    },
+    "./lifecycle/dr-this/OnDrThisUnBind": {
+      "types": "./dist/types/lifecycle/dr-this/OnDrThisUnBind.d.ts",
+      "node": "./dist/cjs/lifecycle/dr-this/OnDrThisUnBind.js",
+      "require": "./dist/cjs/lifecycle/dr-this/OnDrThisUnBind.js",
+      "import": "./dist/esm/lifecycle/dr-this/OnDrThisUnBind.js"
+    },
+    "./messenger": {
+      "types": "./dist/types/messenger/index.d.ts",
+      "node": "./dist/cjs/messenger/index.js",
+      "require": "./dist/cjs/messenger/index.js",
+      "import": "./dist/esm/messenger/index.js"
+    },
+    "./messenger/DefaultMessenger": {
+      "types": "./dist/types/messenger/DefaultMessenger.d.ts",
+      "node": "./dist/cjs/messenger/DefaultMessenger.js",
+      "require": "./dist/cjs/messenger/DefaultMessenger.js",
+      "import": "./dist/esm/messenger/DefaultMessenger.js"
+    },
+    "./messenger/Messenger": {
+      "types": "./dist/types/messenger/Messenger.d.ts",
+      "node": "./dist/cjs/messenger/Messenger.js",
+      "require": "./dist/cjs/messenger/Messenger.js",
+      "import": "./dist/esm/messenger/Messenger.js"
+    },
+    "./operators": {
+      "types": "./dist/types/operators/index.d.ts",
+      "node": "./dist/cjs/operators/index.js",
+      "require": "./dist/cjs/operators/index.js",
+      "import": "./dist/esm/operators/index.js"
+    },
+    "./operators/Appender": {
+      "types": "./dist/types/operators/Appender.d.ts",
+      "node": "./dist/cjs/operators/Appender.js",
+      "require": "./dist/cjs/operators/Appender.js",
+      "import": "./dist/esm/operators/Appender.js"
+    },
+    "./operators/Dr": {
+      "types": "./dist/types/operators/Dr.d.ts",
+      "node": "./dist/cjs/operators/Dr.js",
+      "require": "./dist/cjs/operators/Dr.js",
+      "import": "./dist/esm/operators/Dr.js"
+    },
+    "./operators/DrAppender": {
+      "types": "./dist/types/operators/DrAppender.d.ts",
+      "node": "./dist/cjs/operators/DrAppender.js",
+      "require": "./dist/cjs/operators/DrAppender.js",
+      "import": "./dist/esm/operators/DrAppender.js"
+    },
+    "./operators/DrFor": {
+      "types": "./dist/types/operators/DrFor.d.ts",
+      "node": "./dist/cjs/operators/DrFor.js",
+      "require": "./dist/cjs/operators/DrFor.js",
+      "import": "./dist/esm/operators/DrFor.js"
+    },
+    "./operators/DrForOf": {
+      "types": "./dist/types/operators/DrForOf.d.ts",
+      "node": "./dist/cjs/operators/DrForOf.js",
+      "require": "./dist/cjs/operators/DrForOf.js",
+      "import": "./dist/esm/operators/DrForOf.js"
+    },
+    "./operators/DrForm": {
+      "types": "./dist/types/operators/DrForm.d.ts",
+      "node": "./dist/cjs/operators/DrForm.js",
+      "require": "./dist/cjs/operators/DrForm.js",
+      "import": "./dist/esm/operators/DrForm.js"
+    },
+    "./operators/DrIf": {
+      "types": "./dist/types/operators/DrIf.d.ts",
+      "node": "./dist/cjs/operators/DrIf.js",
+      "require": "./dist/cjs/operators/DrIf.js",
+      "import": "./dist/esm/operators/DrIf.js"
+    },
+    "./operators/DrInnerHTML": {
+      "types": "./dist/types/operators/DrInnerHTML.d.ts",
+      "node": "./dist/cjs/operators/DrInnerHTML.js",
+      "require": "./dist/cjs/operators/DrInnerHTML.js",
+      "import": "./dist/esm/operators/DrInnerHTML.js"
+    },
+    "./operators/DrInnerText": {
+      "types": "./dist/types/operators/DrInnerText.d.ts",
+      "node": "./dist/cjs/operators/DrInnerText.js",
+      "require": "./dist/cjs/operators/DrInnerText.js",
+      "import": "./dist/esm/operators/DrInnerText.js"
+    },
+    "./operators/DrPre": {
+      "types": "./dist/types/operators/DrPre.d.ts",
+      "node": "./dist/cjs/operators/DrPre.js",
+      "require": "./dist/cjs/operators/DrPre.js",
+      "import": "./dist/esm/operators/DrPre.js"
+    },
+    "./operators/DrRepeat": {
+      "types": "./dist/types/operators/DrRepeat.d.ts",
+      "node": "./dist/cjs/operators/DrRepeat.js",
+      "require": "./dist/cjs/operators/DrRepeat.js",
+      "import": "./dist/esm/operators/DrRepeat.js"
+    },
+    "./operators/DrStripElement": {
+      "types": "./dist/types/operators/DrStripElement.d.ts",
+      "node": "./dist/cjs/operators/DrStripElement.js",
+      "require": "./dist/cjs/operators/DrStripElement.js",
+      "import": "./dist/esm/operators/DrStripElement.js"
+    },
+    "./operators/DrTargetAttr": {
+      "types": "./dist/types/operators/DrTargetAttr.d.ts",
+      "node": "./dist/cjs/operators/DrTargetAttr.js",
+      "require": "./dist/cjs/operators/DrTargetAttr.js",
+      "import": "./dist/esm/operators/DrTargetAttr.js"
+    },
+    "./operators/DrTargetElement": {
+      "types": "./dist/types/operators/DrTargetElement.d.ts",
+      "node": "./dist/cjs/operators/DrTargetElement.js",
+      "require": "./dist/cjs/operators/DrTargetElement.js",
+      "import": "./dist/esm/operators/DrTargetElement.js"
+    },
+    "./operators/DrTargetElementIsElement": {
+      "types": "./dist/types/operators/DrTargetElementIsElement.d.ts",
+      "node": "./dist/cjs/operators/DrTargetElementIsElement.js",
+      "require": "./dist/cjs/operators/DrTargetElementIsElement.js",
+      "import": "./dist/esm/operators/DrTargetElementIsElement.js"
+    },
+    "./operators/DrThis": {
+      "types": "./dist/types/operators/DrThis.d.ts",
+      "node": "./dist/cjs/operators/DrThis.js",
+      "require": "./dist/cjs/operators/DrThis.js",
+      "import": "./dist/esm/operators/DrThis.js"
+    },
+    "./operators/DrThisProperty": {
+      "types": "./dist/types/operators/DrThisProperty.d.ts",
+      "node": "./dist/cjs/operators/DrThisProperty.js",
+      "require": "./dist/cjs/operators/DrThisProperty.js",
+      "import": "./dist/esm/operators/DrThisProperty.js"
+    },
+    "./operators/OperatorExecuter": {
+      "types": "./dist/types/operators/OperatorExecuter.d.ts",
+      "node": "./dist/cjs/operators/OperatorExecuter.js",
+      "require": "./dist/cjs/operators/OperatorExecuter.js",
+      "import": "./dist/esm/operators/OperatorExecuter.js"
+    },
+    "./operators/OperatorExecuterAttrRequire": {
+      "types": "./dist/types/operators/OperatorExecuterAttrRequire.d.ts",
+      "node": "./dist/cjs/operators/OperatorExecuterAttrRequire.js",
+      "require": "./dist/cjs/operators/OperatorExecuterAttrRequire.js",
+      "import": "./dist/esm/operators/OperatorExecuterAttrRequire.js"
+    },
+    "./rawsets": {
+      "types": "./dist/types/rawsets/index.d.ts",
+      "node": "./dist/cjs/rawsets/index.js",
+      "require": "./dist/cjs/rawsets/index.js",
+      "import": "./dist/esm/rawsets/index.js"
+    },
+    "./rawsets/AttrInitCallBack": {
+      "types": "./dist/types/rawsets/AttrInitCallBack.d.ts",
+      "node": "./dist/cjs/rawsets/AttrInitCallBack.js",
+      "require": "./dist/cjs/rawsets/AttrInitCallBack.js",
+      "import": "./dist/esm/rawsets/AttrInitCallBack.js"
+    },
+    "./rawsets/Attrs": {
+      "types": "./dist/types/rawsets/Attrs.d.ts",
+      "node": "./dist/cjs/rawsets/Attrs.js",
+      "require": "./dist/cjs/rawsets/Attrs.js",
+      "import": "./dist/esm/rawsets/Attrs.js"
+    },
+    "./rawsets/CreatorMetaData": {
+      "types": "./dist/types/rawsets/CreatorMetaData.d.ts",
+      "node": "./dist/cjs/rawsets/CreatorMetaData.js",
+      "require": "./dist/cjs/rawsets/CreatorMetaData.js",
+      "import": "./dist/esm/rawsets/CreatorMetaData.js"
+    },
+    "./rawsets/DestroyOptionType": {
+      "types": "./dist/types/rawsets/DestroyOptionType.d.ts",
+      "node": "./dist/cjs/rawsets/DestroyOptionType.js",
+      "require": "./dist/cjs/rawsets/DestroyOptionType.js",
+      "import": "./dist/esm/rawsets/DestroyOptionType.js"
+    },
+    "./rawsets/ElementInitCallBack": {
+      "types": "./dist/types/rawsets/ElementInitCallBack.d.ts",
+      "node": "./dist/cjs/rawsets/ElementInitCallBack.js",
+      "require": "./dist/cjs/rawsets/ElementInitCallBack.js",
+      "import": "./dist/esm/rawsets/ElementInitCallBack.js"
+    },
+    "./rawsets/RawSet": {
+      "types": "./dist/types/rawsets/RawSet.d.ts",
+      "node": "./dist/cjs/rawsets/RawSet.js",
+      "require": "./dist/cjs/rawsets/RawSet.js",
+      "import": "./dist/esm/rawsets/RawSet.js"
+    },
+    "./rawsets/RawSetOperatorType": {
+      "types": "./dist/types/rawsets/RawSetOperatorType.d.ts",
+      "node": "./dist/cjs/rawsets/RawSetOperatorType.js",
+      "require": "./dist/cjs/rawsets/RawSetOperatorType.js",
+      "import": "./dist/esm/rawsets/RawSetOperatorType.js"
+    },
+    "./rawsets/RawSetType": {
+      "types": "./dist/types/rawsets/RawSetType.d.ts",
+      "node": "./dist/cjs/rawsets/RawSetType.js",
+      "require": "./dist/cjs/rawsets/RawSetType.js",
+      "import": "./dist/esm/rawsets/RawSetType.js"
+    },
+    "./rawsets/Render": {
+      "types": "./dist/types/rawsets/Render.d.ts",
+      "node": "./dist/cjs/rawsets/Render.js",
+      "require": "./dist/cjs/rawsets/Render.js",
+      "import": "./dist/esm/rawsets/Render.js"
+    },
+    "./routers": {
+      "types": "./dist/types/routers/index.d.ts",
+      "node": "./dist/cjs/routers/index.js",
+      "require": "./dist/cjs/routers/index.js",
+      "import": "./dist/esm/routers/index.js"
+    },
+    "./routers/HashRouter": {
+      "types": "./dist/types/routers/HashRouter.d.ts",
+      "node": "./dist/cjs/routers/HashRouter.js",
+      "require": "./dist/cjs/routers/HashRouter.js",
+      "import": "./dist/esm/routers/HashRouter.js"
+    },
+    "./routers/PathRouter": {
+      "types": "./dist/types/routers/PathRouter.d.ts",
+      "node": "./dist/cjs/routers/PathRouter.js",
+      "require": "./dist/cjs/routers/PathRouter.js",
+      "import": "./dist/esm/routers/PathRouter.js"
+    },
+    "./routers/Router": {
+      "types": "./dist/types/routers/Router.d.ts",
+      "node": "./dist/cjs/routers/Router.js",
+      "require": "./dist/cjs/routers/Router.js",
+      "import": "./dist/esm/routers/Router.js"
+    },
+    "./types": {
+      "types": "./dist/types/types/index.d.ts",
+      "node": "./dist/cjs/types/index.js",
+      "require": "./dist/cjs/types/index.js",
+      "import": "./dist/esm/types/index.js"
+    },
+    "./types/Types": {
+      "types": "./dist/types/types/Types.d.ts",
+      "node": "./dist/cjs/types/Types.js",
+      "require": "./dist/cjs/types/Types.js",
+      "import": "./dist/esm/types/Types.js"
+    },
+    "./types/type": {
+      "types": "./dist/types/types/type.d.ts",
+      "node": "./dist/cjs/types/type.js",
+      "require": "./dist/cjs/types/type.js",
+      "import": "./dist/esm/types/type.js"
+    },
+    "./validators": {
+      "types": "./dist/types/validators/index.d.ts",
+      "node": "./dist/cjs/validators/index.js",
+      "require": "./dist/cjs/validators/index.js",
+      "import": "./dist/esm/validators/index.js"
+    },
+    "./validators/AllCheckedValidatorArray": {
+      "types": "./dist/types/validators/AllCheckedValidatorArray.d.ts",
+      "node": "./dist/cjs/validators/AllCheckedValidatorArray.js",
+      "require": "./dist/cjs/validators/AllCheckedValidatorArray.js",
+      "import": "./dist/esm/validators/AllCheckedValidatorArray.js"
+    },
+    "./validators/AllUnCheckedValidatorArray": {
+      "types": "./dist/types/validators/AllUnCheckedValidatorArray.d.ts",
+      "node": "./dist/cjs/validators/AllUnCheckedValidatorArray.js",
+      "require": "./dist/cjs/validators/AllUnCheckedValidatorArray.js",
+      "import": "./dist/esm/validators/AllUnCheckedValidatorArray.js"
+    },
+    "./validators/CheckedValidator": {
+      "types": "./dist/types/validators/CheckedValidator.d.ts",
+      "node": "./dist/cjs/validators/CheckedValidator.js",
+      "require": "./dist/cjs/validators/CheckedValidator.js",
+      "import": "./dist/esm/validators/CheckedValidator.js"
+    },
+    "./validators/CountEqualsCheckedValidatorArray": {
+      "types": "./dist/types/validators/CountEqualsCheckedValidatorArray.d.ts",
+      "node": "./dist/cjs/validators/CountEqualsCheckedValidatorArray.js",
+      "require": "./dist/cjs/validators/CountEqualsCheckedValidatorArray.js",
+      "import": "./dist/esm/validators/CountEqualsCheckedValidatorArray.js"
+    },
+    "./validators/CountEqualsUnCheckedValidatorArray": {
+      "types": "./dist/types/validators/CountEqualsUnCheckedValidatorArray.d.ts",
+      "node": "./dist/cjs/validators/CountEqualsUnCheckedValidatorArray.js",
+      "require": "./dist/cjs/validators/CountEqualsUnCheckedValidatorArray.js",
+      "import": "./dist/esm/validators/CountEqualsUnCheckedValidatorArray.js"
+    },
+    "./validators/CountGreaterThanCheckedValidatorArray": {
+      "types": "./dist/types/validators/CountGreaterThanCheckedValidatorArray.d.ts",
+      "node": "./dist/cjs/validators/CountGreaterThanCheckedValidatorArray.js",
+      "require": "./dist/cjs/validators/CountGreaterThanCheckedValidatorArray.js",
+      "import": "./dist/esm/validators/CountGreaterThanCheckedValidatorArray.js"
+    },
+    "./validators/CountGreaterThanEqualsCheckedValidatorArray": {
+      "types": "./dist/types/validators/CountGreaterThanEqualsCheckedValidatorArray.d.ts",
+      "node": "./dist/cjs/validators/CountGreaterThanEqualsCheckedValidatorArray.js",
+      "require": "./dist/cjs/validators/CountGreaterThanEqualsCheckedValidatorArray.js",
+      "import": "./dist/esm/validators/CountGreaterThanEqualsCheckedValidatorArray.js"
+    },
+    "./validators/CountGreaterThanEqualsUnCheckedValidatorArray": {
+      "types": "./dist/types/validators/CountGreaterThanEqualsUnCheckedValidatorArray.d.ts",
+      "node": "./dist/cjs/validators/CountGreaterThanEqualsUnCheckedValidatorArray.js",
+      "require": "./dist/cjs/validators/CountGreaterThanEqualsUnCheckedValidatorArray.js",
+      "import": "./dist/esm/validators/CountGreaterThanEqualsUnCheckedValidatorArray.js"
+    },
+    "./validators/CountGreaterThanUnCheckedValidatorArray": {
+      "types": "./dist/types/validators/CountGreaterThanUnCheckedValidatorArray.d.ts",
+      "node": "./dist/cjs/validators/CountGreaterThanUnCheckedValidatorArray.js",
+      "require": "./dist/cjs/validators/CountGreaterThanUnCheckedValidatorArray.js",
+      "import": "./dist/esm/validators/CountGreaterThanUnCheckedValidatorArray.js"
+    },
+    "./validators/CountLessThanCheckedValidatorArray": {
+      "types": "./dist/types/validators/CountLessThanCheckedValidatorArray.d.ts",
+      "node": "./dist/cjs/validators/CountLessThanCheckedValidatorArray.js",
+      "require": "./dist/cjs/validators/CountLessThanCheckedValidatorArray.js",
+      "import": "./dist/esm/validators/CountLessThanCheckedValidatorArray.js"
+    },
+    "./validators/CountLessThanEqualsCheckedValidatorArray": {
+      "types": "./dist/types/validators/CountLessThanEqualsCheckedValidatorArray.d.ts",
+      "node": "./dist/cjs/validators/CountLessThanEqualsCheckedValidatorArray.js",
+      "require": "./dist/cjs/validators/CountLessThanEqualsCheckedValidatorArray.js",
+      "import": "./dist/esm/validators/CountLessThanEqualsCheckedValidatorArray.js"
+    },
+    "./validators/CountLessThanEqualsUnCheckedValidatorArray": {
+      "types": "./dist/types/validators/CountLessThanEqualsUnCheckedValidatorArray.d.ts",
+      "node": "./dist/cjs/validators/CountLessThanEqualsUnCheckedValidatorArray.js",
+      "require": "./dist/cjs/validators/CountLessThanEqualsUnCheckedValidatorArray.js",
+      "import": "./dist/esm/validators/CountLessThanEqualsUnCheckedValidatorArray.js"
+    },
+    "./validators/CountLessThanUnCheckedValidatorArray": {
+      "types": "./dist/types/validators/CountLessThanUnCheckedValidatorArray.d.ts",
+      "node": "./dist/cjs/validators/CountLessThanUnCheckedValidatorArray.js",
+      "require": "./dist/cjs/validators/CountLessThanUnCheckedValidatorArray.js",
+      "import": "./dist/esm/validators/CountLessThanUnCheckedValidatorArray.js"
+    },
+    "./validators/CountUnCheckedValidatorArray": {
+      "types": "./dist/types/validators/CountUnCheckedValidatorArray.d.ts",
+      "node": "./dist/cjs/validators/CountUnCheckedValidatorArray.js",
+      "require": "./dist/cjs/validators/CountUnCheckedValidatorArray.js",
+      "import": "./dist/esm/validators/CountUnCheckedValidatorArray.js"
+    },
+    "./validators/EmptyValidator": {
+      "types": "./dist/types/validators/EmptyValidator.d.ts",
+      "node": "./dist/cjs/validators/EmptyValidator.js",
+      "require": "./dist/cjs/validators/EmptyValidator.js",
+      "import": "./dist/esm/validators/EmptyValidator.js"
+    },
+    "./validators/ExcludeCheckedValidatorArray": {
+      "types": "./dist/types/validators/ExcludeCheckedValidatorArray.d.ts",
+      "node": "./dist/cjs/validators/ExcludeCheckedValidatorArray.js",
+      "require": "./dist/cjs/validators/ExcludeCheckedValidatorArray.js",
+      "import": "./dist/esm/validators/ExcludeCheckedValidatorArray.js"
+    },
+    "./validators/FormValidator": {
+      "types": "./dist/types/validators/FormValidator.d.ts",
+      "node": "./dist/cjs/validators/FormValidator.js",
+      "require": "./dist/cjs/validators/FormValidator.js",
+      "import": "./dist/esm/validators/FormValidator.js"
+    },
+    "./validators/IncludeCheckedValidatorArray": {
+      "types": "./dist/types/validators/IncludeCheckedValidatorArray.d.ts",
+      "node": "./dist/cjs/validators/IncludeCheckedValidatorArray.js",
+      "require": "./dist/cjs/validators/IncludeCheckedValidatorArray.js",
+      "import": "./dist/esm/validators/IncludeCheckedValidatorArray.js"
+    },
+    "./validators/MultipleValidator": {
+      "types": "./dist/types/validators/MultipleValidator.d.ts",
+      "node": "./dist/cjs/validators/MultipleValidator.js",
+      "require": "./dist/cjs/validators/MultipleValidator.js",
+      "import": "./dist/esm/validators/MultipleValidator.js"
+    },
+    "./validators/NonPassValidator": {
+      "types": "./dist/types/validators/NonPassValidator.d.ts",
+      "node": "./dist/cjs/validators/NonPassValidator.js",
+      "require": "./dist/cjs/validators/NonPassValidator.js",
+      "import": "./dist/esm/validators/NonPassValidator.js"
+    },
+    "./validators/NotEmptyValidator": {
+      "types": "./dist/types/validators/NotEmptyValidator.d.ts",
+      "node": "./dist/cjs/validators/NotEmptyValidator.js",
+      "require": "./dist/cjs/validators/NotEmptyValidator.js",
+      "import": "./dist/esm/validators/NotEmptyValidator.js"
+    },
+    "./validators/NotRegExpTestValidator": {
+      "types": "./dist/types/validators/NotRegExpTestValidator.d.ts",
+      "node": "./dist/cjs/validators/NotRegExpTestValidator.js",
+      "require": "./dist/cjs/validators/NotRegExpTestValidator.js",
+      "import": "./dist/esm/validators/NotRegExpTestValidator.js"
+    },
+    "./validators/PassValidator": {
+      "types": "./dist/types/validators/PassValidator.d.ts",
+      "node": "./dist/cjs/validators/PassValidator.js",
+      "require": "./dist/cjs/validators/PassValidator.js",
+      "import": "./dist/esm/validators/PassValidator.js"
+    },
+    "./validators/RegExpTestValidator": {
+      "types": "./dist/types/validators/RegExpTestValidator.d.ts",
+      "node": "./dist/cjs/validators/RegExpTestValidator.js",
+      "require": "./dist/cjs/validators/RegExpTestValidator.js",
+      "import": "./dist/esm/validators/RegExpTestValidator.js"
+    },
+    "./validators/RequiredValidator": {
+      "types": "./dist/types/validators/RequiredValidator.d.ts",
+      "node": "./dist/cjs/validators/RequiredValidator.js",
+      "require": "./dist/cjs/validators/RequiredValidator.js",
+      "import": "./dist/esm/validators/RequiredValidator.js"
+    },
+    "./validators/UnCheckedValidator": {
+      "types": "./dist/types/validators/UnCheckedValidator.d.ts",
+      "node": "./dist/cjs/validators/UnCheckedValidator.js",
+      "require": "./dist/cjs/validators/UnCheckedValidator.js",
+      "import": "./dist/esm/validators/UnCheckedValidator.js"
+    },
+    "./validators/ValidMultipleValidator": {
+      "types": "./dist/types/validators/ValidMultipleValidator.d.ts",
+      "node": "./dist/cjs/validators/ValidMultipleValidator.js",
+      "require": "./dist/cjs/validators/ValidMultipleValidator.js",
+      "import": "./dist/esm/validators/ValidMultipleValidator.js"
+    },
+    "./validators/ValidValidator": {
+      "types": "./dist/types/validators/ValidValidator.d.ts",
+      "node": "./dist/cjs/validators/ValidValidator.js",
+      "require": "./dist/cjs/validators/ValidValidator.js",
+      "import": "./dist/esm/validators/ValidValidator.js"
+    },
+    "./validators/ValidValidatorArray": {
+      "types": "./dist/types/validators/ValidValidatorArray.d.ts",
+      "node": "./dist/cjs/validators/ValidValidatorArray.js",
+      "require": "./dist/cjs/validators/ValidValidatorArray.js",
+      "import": "./dist/esm/validators/ValidValidatorArray.js"
+    },
+    "./validators/Validator": {
+      "types": "./dist/types/validators/Validator.d.ts",
+      "node": "./dist/cjs/validators/Validator.js",
+      "require": "./dist/cjs/validators/Validator.js",
+      "import": "./dist/esm/validators/Validator.js"
+    },
+    "./validators/ValidatorArray": {
+      "types": "./dist/types/validators/ValidatorArray.d.ts",
+      "node": "./dist/cjs/validators/ValidatorArray.js",
+      "require": "./dist/cjs/validators/ValidatorArray.js",
+      "import": "./dist/esm/validators/ValidatorArray.js"
+    },
+    "./validators/ValueEqualsValidator": {
+      "types": "./dist/types/validators/ValueEqualsValidator.d.ts",
+      "node": "./dist/cjs/validators/ValueEqualsValidator.js",
+      "require": "./dist/cjs/validators/ValueEqualsValidator.js",
+      "import": "./dist/esm/validators/ValueEqualsValidator.js"
+    },
+    "./validators/ValueNotEqualsValidator": {
+      "types": "./dist/types/validators/ValueNotEqualsValidator.d.ts",
+      "node": "./dist/cjs/validators/ValueNotEqualsValidator.js",
+      "require": "./dist/cjs/validators/ValueNotEqualsValidator.js",
+      "import": "./dist/esm/validators/ValueNotEqualsValidator.js"
+    },
+    "./*": {
+      "types": "./dist/types/*.d.ts",
+      "require": "./dist/cjs/*.js",
+      "import": "./dist/esm/*.js"
+    }
+  },
   "author": "dooboostore <dooboostore@gmail.com> (https://github.com/dooboostore)",
   "contributors": [
     "sewoo <sewooimda@nate.com> (https://github.com/sewoo)",
@@ -112,5 +934,4 @@
     "typecheck": "pnpm exec tsc --noEmit",
     "test": "echo test"
   }
-
 }

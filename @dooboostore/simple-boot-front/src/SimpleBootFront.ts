@@ -24,19 +24,20 @@ import { routerProcess } from '@dooboostore/simple-boot/decorators/route/Router'
 import { BehaviorSubject } from '@dooboostore/core/message/BehaviorSubject';
 import { RouterModule } from '@dooboostore/simple-boot/route/RouterModule';
 import { Observable } from '@dooboostore/core/message/Observable';
-import { UrlUtils } from '@dooboostore/core/url/UrlUtils';
 
 export type PopStateType = { type: 'popstateData'; router: any; noSimpleBootFrontRouting?: boolean };
 const isPopStateDataType = (state: any): state is PopStateType => {
   return state && state.type === 'popstateData' && 'router' in state;
 };
 
-type RoutingSubjectDataType = {
-  state: 'start' | 'end' | 'error-end';
-  routerModule: RouterModule<SimAtomic<any>>;
-} | {
-  state: 'initial'
-};
+type RoutingSubjectDataType =
+  | {
+      state: 'start' | 'end' | 'error-end';
+      routerModule: RouterModule<SimAtomic<any>>;
+    }
+  | {
+      state: 'initial';
+    };
 
 export class SimpleBootFront extends SimpleApplication {
   public domRendoerExcludeProxy: ConstructorType<any>[] = [
@@ -59,7 +60,7 @@ export class SimpleBootFront extends SimpleApplication {
   // private rootRouterTargetElement?: Element;
   private rootRouter?: ComponentSet<any>;
   private domRenderRootObject: DomRenderRootObject;
-  private routingSubject = new BehaviorSubject<RoutingSubjectDataType>({state:'initial'});
+  private routingSubject = new BehaviorSubject<RoutingSubjectDataType>({ state: 'initial' });
 
   constructor(public option: SimFrontOption) {
     super(option);
@@ -83,11 +84,11 @@ export class SimpleBootFront extends SimpleApplication {
     this.domRenderRouter =
       option.urlType === 'path'
         ? new PathRouter({
-            window: option.window,
+            window: option.window
             // changeStateConvertDate:(data) =>({...data, type: 'popstateData', router: this.routerAndSettingData.routerAtomic.getValue()} as PopStateType)
           })
         : new HashRouter({
-            window: option.window,
+            window: option.window
             // changeStateConvertDate:(data) =>({...data, type: 'popstateData', router: this.routerAndSettingData.routerAtomic.getValue()} as PopStateType)
           });
     this.simstanceManager.setStoreSet(Router, this.domRenderRouter);
@@ -171,11 +172,13 @@ export class SimpleBootFront extends SimpleApplication {
   }
 
   private initRun(otherInstanceSim?: Map<ConstructorType<any>, any>) {
-    const targetUserElement = typeof this.option.selector === 'string' ? this.option.window.document
-      .querySelector(this.option.selector) : this.option.selector;
+    const targetUserElement =
+      typeof this.option.selector === 'string'
+        ? this.option.window.document.querySelector(this.option.selector)
+        : this.option.selector;
     const targetElement = targetUserElement?.cloneNode(true) as HTMLElement;
     if (!targetElement) {
-      throw new Error('no element selector ' + this.option.selector)
+      throw new Error('no element selector ' + this.option.selector);
     }
 
     const simstanceManager = super.run(otherInstanceSim);
@@ -184,7 +187,6 @@ export class SimpleBootFront extends SimpleApplication {
       const cevent = event as CustomEvent;
       this.publishIntent(new Intent(cevent.detail.uri, cevent.detail.data, event));
     });
-
 
     targetElement.innerHTML = DomRenderRootDefaultTemplate;
     targetElement.hidden = true;

@@ -7,7 +7,7 @@
   "module": "./dist/esm/index.js",
   "types": "./dist/types/index.d.ts",
   "typesVersions": {
-    ">=4.2": {
+    "*": {
       "*": [
         "dist/types/*"
       ]
@@ -16,7 +16,6 @@
   "files": [
     "dist",
     "src",
-    "types.d.ts",
     "LICENSE.md",
     "tsconfig.json"
   ],
@@ -24,17 +23,90 @@
     "access": "public"
   },
   "exports": {
-      ".": {
-        "types": "./dist/types/index.d.ts",
-        "import": "./dist/esm/index.js",
-        "require": "./dist/cjs/index.js"
-      },
-      "./*": {
-        "types": "./dist/types/*.d.ts",
-        "import": "./dist/esm/*.js",
-        "require": "./dist/cjs/*.js"
-      }
+    ".": {
+      "types": "./dist/types/index.d.ts",
+      "node": "./dist/cjs/index.js",
+      "require": "./dist/cjs/index.js",
+      "import": "./dist/esm/index.js"
     },
+    "./convert": {
+      "types": "./dist/types/convert/index.d.ts",
+      "node": "./dist/cjs/convert/index.js",
+      "require": "./dist/cjs/convert/index.js",
+      "import": "./dist/esm/convert/index.js"
+    },
+    "./convert/ConvertUtils": {
+      "types": "./dist/types/convert/ConvertUtils.d.ts",
+      "node": "./dist/cjs/convert/ConvertUtils.js",
+      "require": "./dist/cjs/convert/ConvertUtils.js",
+      "import": "./dist/esm/convert/ConvertUtils.js"
+    },
+    "./fetch": {
+      "types": "./dist/types/fetch/index.d.ts",
+      "node": "./dist/cjs/fetch/index.js",
+      "require": "./dist/cjs/fetch/index.js",
+      "import": "./dist/esm/fetch/index.js"
+    },
+    "./fetch/HttpPageDownloader": {
+      "types": "./dist/types/fetch/HttpPageDownloader.d.ts",
+      "node": "./dist/cjs/fetch/HttpPageDownloader.js",
+      "require": "./dist/cjs/fetch/HttpPageDownloader.js",
+      "import": "./dist/esm/fetch/HttpPageDownloader.js"
+    },
+    "./file": {
+      "types": "./dist/types/file/index.d.ts",
+      "node": "./dist/cjs/file/index.js",
+      "require": "./dist/cjs/file/index.js",
+      "import": "./dist/esm/file/index.js"
+    },
+    "./file/FileUtils": {
+      "types": "./dist/types/file/FileUtils.d.ts",
+      "node": "./dist/cjs/file/FileUtils.js",
+      "require": "./dist/cjs/file/FileUtils.js",
+      "import": "./dist/esm/file/FileUtils.js"
+    },
+    "./memory": {
+      "types": "./dist/types/memory/index.d.ts",
+      "node": "./dist/cjs/memory/index.js",
+      "require": "./dist/cjs/memory/index.js",
+      "import": "./dist/esm/memory/index.js"
+    },
+    "./memory/MemoryUtils": {
+      "types": "./dist/types/memory/MemoryUtils.d.ts",
+      "node": "./dist/cjs/memory/MemoryUtils.js",
+      "require": "./dist/cjs/memory/MemoryUtils.js",
+      "import": "./dist/esm/memory/MemoryUtils.js"
+    },
+    "./path": {
+      "types": "./dist/types/path/index.d.ts",
+      "node": "./dist/cjs/path/index.js",
+      "require": "./dist/cjs/path/index.js",
+      "import": "./dist/esm/path/index.js"
+    },
+    "./path/PathUtils": {
+      "types": "./dist/types/path/PathUtils.d.ts",
+      "node": "./dist/cjs/path/PathUtils.js",
+      "require": "./dist/cjs/path/PathUtils.js",
+      "import": "./dist/esm/path/PathUtils.js"
+    },
+    "./process": {
+      "types": "./dist/types/process/index.d.ts",
+      "node": "./dist/cjs/process/index.js",
+      "require": "./dist/cjs/process/index.js",
+      "import": "./dist/esm/process/index.js"
+    },
+    "./process/ProcessUtils": {
+      "types": "./dist/types/process/ProcessUtils.d.ts",
+      "node": "./dist/cjs/process/ProcessUtils.js",
+      "require": "./dist/cjs/process/ProcessUtils.js",
+      "import": "./dist/esm/process/ProcessUtils.js"
+    },
+    "./*": {
+      "types": "./dist/types/*.d.ts",
+      "require": "./dist/cjs/*.js",
+      "import": "./dist/esm/*.js"
+    }
+  },
   "author": "dooboostore <dooboostore@gmail.com> (https://github.com/dooboostore)",
   "contributors": [
     "sewoo <sewooimda@nate.com> (https://github.com/sewoo)",

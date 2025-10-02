@@ -33,6 +33,9 @@ function findFiles(dir, extension) {
   return filelist;
 }
 
+// DEPRECATED: These functions are no longer needed as package.json exports handle deep imports
+// Kept for reference but not used in the build process
+/*
 function generateModuleDeclarations() {
     console.log('Generating module declarations for deep imports...');
     const packageName = '@dooboostore/core';
@@ -118,6 +121,78 @@ function addSubmoduleReferences() {
         console.error('Failed to add submodule reference directives:', e);
     }
 }
+*/
+
+function generateExportsInPackageJson() {
+    console.log('Generating exports in package.json...');
+    const typesDir = path.resolve(__dirname, 'dist/types');
+    const packageJsonPath = path.resolve(__dirname, 'package.json');
+
+    if (!fs.existsSync(typesDir)) {
+        console.warn(`Warning: '${typesDir}' not found. Skipping exports generation.`);
+        return;
+    }
+
+    // Read current package.json
+    const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
+
+    // Find all .d.ts files (excluding bundle-entry)
+    const dtsFiles = findFiles(typesDir, '.d.ts')
+        .filter(file => !file.includes('bundle-entry'))
+        .map(file => path.relative(typesDir, file).replace(/\.d\.ts$/, '').replace(/\\/g, '/'));
+
+    // Build exports object - RxJS style with full paths
+    const exports = {
+        ".": {
+            "types": "./dist/types/index.d.ts",
+            "node": "./dist/cjs/index.js",
+            "require": "./dist/cjs/index.js",
+            "import": "./dist/esm/index.js"
+        }
+    };
+
+    // Add ALL files explicitly (not just directories)
+    const exportPaths = new Set();
+    dtsFiles.forEach(file => {
+        if (file !== 'index' && file !== 'types') {
+            // Remove /index from the end for cleaner paths
+            let exportPath = file;
+            if (exportPath.endsWith('/index')) {
+                exportPath = exportPath.slice(0, -6); // Remove '/index'
+            }
+            exportPaths.add(exportPath);
+        }
+    });
+
+    // Sort and add all exports
+    Array.from(exportPaths).sort().forEach(modulePath => {
+        const exportKey = `./${modulePath}`;
+        const typePath = `./dist/types/${modulePath}${fs.existsSync(path.resolve(typesDir, modulePath, 'index.d.ts')) ? '/index.d.ts' : '.d.ts'}`;
+        const esmPath = `./dist/esm/${modulePath}${fs.existsSync(path.resolve(__dirname, 'dist/esm', modulePath, 'index.js')) ? '/index.js' : '.js'}`;
+        const cjsPath = `./dist/cjs/${modulePath}${fs.existsSync(path.resolve(__dirname, 'dist/cjs', modulePath, 'index.js')) ? '/index.js' : '.js'}`;
+        
+        exports[exportKey] = {
+            "types": typePath,
+            "node": cjsPath,
+            "require": cjsPath,
+            "import": esmPath
+        };
+    });
+
+    // Add wildcard fallback for any missed deep imports
+    exports["./*"] = {
+        "types": "./dist/types/*.d.ts",
+        "require": "./dist/cjs/*.js",
+        "import": "./dist/esm/*.js"
+    };
+
+    // Update package.json
+    packageJson.exports = exports;
+    fs.writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 2) + '\n', 'utf8');
+    
+    console.log(`✅ Generated ${Object.keys(exports).length} exports in package.json`);
+    console.log(`   Including ${Object.keys(exports).length - 3} explicit module paths`);
+}
 
 const declarationGeneratorPlugin = {
     name: 'declaration-generator',
@@ -127,8 +202,10 @@ const declarationGeneratorPlugin = {
                 console.log('Build successful, generating declarations...');
                 try {
                     execSync('pnpm exec tsc -p tsconfig.json --emitDeclarationOnly', { stdio: 'inherit' });
-                    generateModuleDeclarations();
-                    addSubmoduleReferences();
+                    console.log('✅ Type declarations generated to dist/types/');
+                    
+                    // Auto-generate exports in package.json based on generated types
+                    generateExportsInPackageJson();
                 } catch (e) {
                     console.error('Declaration generation failed:', e);
                 }
@@ -168,11 +245,14 @@ function addJsExtensionToImports(dir) {
 const srcDir = path.resolve(__dirname, 'src');
 const tsFiles = findFiles(srcDir, '.ts');
 
-const entryPoints = tsFiles.reduce((acc, file) => {
-  const entryName = path.relative(srcDir, file).replace(/\.ts$/, '');
-  acc[entryName] = file;
-  return acc;
-}, {});
+// Build all TypeScript files including bundle-entry (needed by other packages)
+// Note: bundle-entry will NOT be included in exports (filtered in generateExportsInPackageJson)
+const entryPoints = tsFiles
+  .reduce((acc, file) => {
+    const entryName = path.relative(srcDir, file).replace(/\.ts$/, '');
+    acc[entryName] = file;
+    return acc;
+  }, {});
 
 async function performBuild(options, watch) {
   if (watch) {
@@ -241,7 +321,7 @@ async function buildTarget(target, watch = false) {
       console.log('CJS build complete.');
       break;
     case 'umd-bundle':
-      console.log('Starting UMD bundle build...');
+      console.log('Starting UMD bundle build (browser-only, no type declarations)...');
       await performBuild({
         ...baseOptions,
         bundle: true,
@@ -250,11 +330,12 @@ async function buildTarget(target, watch = false) {
         format: 'iife',
         globalName: 'dooboostoreCore',
         plugins: [esbuildPluginTsc({tsconfigPath:'tsconfig.umd.json'})],
+        // Note: No declarationGeneratorPlugin - bundles don't need separate type declarations
       }, watch);
       console.log('UMD bundle build complete.');
       break;
     case 'esm-bundle':
-      console.log('Starting ESM bundle build...');
+      console.log('Starting ESM bundle build (browser-only, no type declarations)...');
       await performBuild({
         ...baseOptions,
         bundle: true,
@@ -262,6 +343,7 @@ async function buildTarget(target, watch = false) {
         outfile: path.resolve(__dirname, 'dist', 'esm-bundle', 'dooboostore-core.esm.js'),
         format: 'esm',
         plugins: [esbuildPluginTsc({tsconfigPath:'tsconfig.esm.json'})],
+        // Note: No declarationGeneratorPlugin - bundles don't need separate type declarations
       }, watch);
       console.log('ESM bundle build complete.');
       break;

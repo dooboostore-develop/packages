@@ -25,10 +25,11 @@ export class PromiseSwitchExample {
           </button>
         </div>
         
-        <dr-promise-switch data="\${@this@.userPromise}$">
+        <dr-promise-switch data="\${@this@.userPromise}$" dr-option-component-variable-name="switch">
+           [\${#switch#.state}$]
           <dr-promise-switch-default>
             <div style="padding: 15px; background: #e5e7eb; border-radius: 4px;">
-              👤 Click a button to load user data
+              👤 Click a button to load user data 
             </div>
           </dr-promise-switch-default>
           
@@ -38,23 +39,22 @@ export class PromiseSwitchExample {
               <span>Loading user data...</span>
             </div>
           </dr-promise-switch-pending>
-          
-          <dr-promise-switch-fulfilled>
+          <dr-promise-switch-fulfilled dr-option-component-variable-name="fulfilled">
             <div style="padding: 15px; background: #d1fae5; border-radius: 4px; border-left: 4px solid #10b981;">
               <strong>✅ User Loaded Successfully!</strong><br>
               <div style="margin-top: 10px; font-size: 14px;">
-                Name: <strong>\${@nearThis@.data?.name}$</strong><br>
-                Email: <strong>\${@nearThis@.data?.email}$</strong><br>
-                Role: <strong>\${@nearThis@.data?.role}$</strong>
+                Name: <strong>\${#fulfilled#.data?.name}$</strong><br>
+                Email: <strong>\${#fulfilled#.data?.email}$</strong><br>
+                Role: <strong>\${#fulfilled#.data?.role}$</strong>
               </div>
             </div>
           </dr-promise-switch-fulfilled>
           
-          <dr-promise-switch-rejected>
+          <dr-promise-switch-rejected dr-option-component-variable-name="rejected">
             <div style="padding: 15px; background: #fee2e2; border-radius: 4px; border-left: 4px solid #ef4444;">
               <strong>❌ Error Loading User</strong><br>
               <div style="margin-top: 10px; font-size: 14px; color: #991b1b;">
-                \${@nearThis@.data?.message || @nearThis@.data}$
+                \${#rejected#.data?.message || #rejected#.data}$
               </div>
             </div>
           </dr-promise-switch-rejected>
