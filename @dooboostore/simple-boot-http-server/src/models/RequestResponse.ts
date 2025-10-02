@@ -13,6 +13,7 @@ import { HttpStatus } from '../codes/HttpStatus';
 import { gzip } from 'node-gzip';
 import { SessionManager } from '../session/SessionManager';
 import { HttpServerOption } from '../option/HttpServerOption';
+import { Blob } from 'node:buffer';
 import * as fs from 'fs';
 import * as os from 'os';
 import { RandomUtils } from '@dooboostore/core/random/RandomUtils';
@@ -595,8 +596,31 @@ export class RequestResponse {
     this.res.end(data);
   }
 
-  async resEnd(chunk?: string | Buffer) {
-    this.resWriteChunk = chunk ?? this.resWriteChunk;
+  async resEnd(chunk?: string | Buffer | Blob | ArrayBuffer | Response) {
+    if (chunk instanceof Response) {
+      // 헤더를 직접 설정하여 체이닝 오버헤드 제거
+      chunk.headers.forEach((value, key) => {
+        this.res.setHeader(`ORIGIN-${key}`, value);
+      });
+      if (!this.resHeader(HttpHeaders.ContentType)) {
+        const contentType = chunk.headers.get(HttpHeaders.ContentType);
+        if (contentType) {
+          this.res.setHeader(HttpHeaders.ContentType, contentType);
+        }
+      }
+      this.res.statusCode = chunk.status;
+      this.resWriteChunk = Buffer.from(await chunk.arrayBuffer());
+    } else if (chunk instanceof Blob) {
+        this.resWriteChunk = Buffer.from(await chunk.arrayBuffer());
+        if (!this.resHeader(HttpHeaders.ContentType)) {
+            this.res.setHeader(HttpHeaders.ContentType, chunk.type);
+        }
+    } else if (chunk instanceof ArrayBuffer) {
+        this.resWriteChunk = Buffer.from(chunk);
+    } else {
+        this.resWriteChunk = chunk ?? this.resWriteChunk;
+    }
+
     if (this.req.readable) {
       await this.reqBodyData();
       await this.resEndChunk();

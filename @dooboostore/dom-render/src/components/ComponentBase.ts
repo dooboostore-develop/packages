@@ -245,11 +245,11 @@ export class ComponentBase<T = any, C extends ComponentBaseConfig = ComponentBas
           const paramTypes = ReflectUtils.getParameterTypes(this, propertyKey);
           if (paramTypes && paramTypes.length > 0 && paramTypes[0] === Array) {
               // For array methods, pass only new elements
-              method.call(this, processedNewElements, processedElements);
+              method.call(this, processedNewElements, {all: processedElements});
           } else {
               // For single element methods, pass first new element
               if (processedNewElements.length > 0) {
-                  method.call(this, processedNewElements[0]);
+                  method.call(this, processedNewElements[0], {all: processedElements, newAll: processedNewElements});
               }
           }
       }
@@ -663,7 +663,7 @@ export class ComponentBase<T = any, C extends ComponentBaseConfig = ComponentBas
     }
   }
 
-  onInitRender(param: any, rawSet: RawSet) {
+  async onInitRender(param: any, rawSet: RawSet) {
     this.createChildrenDebounceSubscription = this.childrenSetSubject.pipe(debounceTime(this.componentConfig?.createChildrenDebounce??0)).subscribe(it => {
       this.onCreatedThisChildDebounce(it);
     });

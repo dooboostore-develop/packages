@@ -1,7 +1,7 @@
 import { attribute, ChildrenSet, ComponentBase } from '../ComponentBase';
 import { DomRender, DomRenderRunConfig } from '../../DomRender';
 import { RawSet } from '../../rawsets/RawSet';
-import { OnCreateRenderData, OnCreateRenderDataParams } from '../../lifecycle/OnCreateRenderData';
+import { OnCreateRenderData } from '../../lifecycle/OnCreateRenderData';
 import { OnInitRender } from '../../lifecycle/OnInitRender';
 import { OnDestroyRender } from '../../lifecycle/OnDestroyRender';
 import { EventUtils } from '@dooboostore/core-web/event/EventUtils';
@@ -122,8 +122,8 @@ export namespace Select {
       super({onlyParentType: SelectBody});
     }
 
-    onInitRender(param: any, rawSet: RawSet) {
-      super.onInitRender(param, rawSet);
+    async onInitRender(param: any, rawSet: RawSet) {
+      await super.onInitRender(param, rawSet);
       // console.log('-----', this.value, this.selected)
       // this.getElement()?.addEventListener('click', (e) => {
       //   e.stopPropagation();
@@ -251,8 +251,8 @@ export namespace Select {
       }
     }
 
-    onInitRender(param: any, rawSet: RawSet) {
-      super.onInitRender(param, rawSet);
+    async onInitRender(param: any, rawSet: RawSet) {
+      await super.onInitRender(param, rawSet);
       // this.getElement()?.addEventListener('click', (e) => {
       //   e.stopPropagation();
       //   this.getParentThis<Select>().toggle();
@@ -380,8 +380,8 @@ export namespace Select {
 
     }
 
-    onInitRender(param: any, rawSet: RawSet) {
-      super.onInitRender(param, rawSet);
+    async onInitRender(param: any, rawSet: RawSet) {
+      await super.onInitRender(param, rawSet);
       // console.log('select onInitRender', this.multiple)
 
       if (ValidUtils.isBrowser() && this.rawSet?.dataSet.config.window) {

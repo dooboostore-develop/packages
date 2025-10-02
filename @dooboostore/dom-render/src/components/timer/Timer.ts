@@ -4,21 +4,19 @@ import { RawSet } from '../../rawsets/RawSet';
 import { OtherData } from '../../lifecycle/OnChangeAttrRender';
 import { OnDestroyRenderParams } from '../../lifecycle/OnDestroyRender';
 
-
 export namespace Timer {
   export const selector = 'dr-timer';
   export type Attribute = {
     value?: string;
     interval?: number;
     onCreated?: (timer: Timer) => void;
-  }
+  };
   export class Timer extends ComponentBase<Attribute> {
     private interval?: any;
     private value?: number;
 
-
-    onInitRender(param: any, rawSet: RawSet) {
-      super.onInitRender(param, rawSet);
+    async onInitRender(param: any, rawSet: RawSet) {
+      await super.onInitRender(param, rawSet);
       this.getAttribute('onCreated')?.(this);
       // console.log('---2', this.getElement()?.isConnected)
       // const element = this.getElement();
@@ -38,7 +36,7 @@ export namespace Timer {
         const intervalValue = this.getAttribute('interval') ?? 1000;
         console.log('int', this.value, intervalValue);
         this.interval = setInterval(() => {
-          console.log('--------->',this.value)
+          console.log('--------->', this.value);
           if (this.value) {
             this.value--;
           } else {
@@ -46,10 +44,9 @@ export namespace Timer {
             this.value = undefined;
             this.interval = undefined;
           }
-        }, intervalValue)
+        }, intervalValue);
       }
     }
-
 
     stop() {
       if (this.interval) {
@@ -61,27 +58,26 @@ export namespace Timer {
 
     onChangeAttrRender(name: string, val: any, other: OtherData) {
       super.onChangeAttrRender(name, val, other);
-      console.log('-----', name, val, this.getElement())
+      console.log('-----', name, val, this.getElement());
     }
 
     onDestroyRender(data: OnDestroyRenderParams) {
       super.onDestroyRender(data);
-      if (this.interval){
+      if (this.interval) {
         clearInterval(this.interval);
       }
     }
   }
 }
 
-
 export default {
   timer: (config?: DomRenderRunConfig) => {
     return RawSet.createComponentTargetElement({
       name: `${Timer.selector}`,
       template: '#innerHTML#',
-      objFactory: (e,o,r2, counstructorParam) => {
-        return DomRender.run({rootObject: new Timer.Timer(...counstructorParam), config: config});
+      objFactory: (e, o, r2, counstructorParam) => {
+        return DomRender.run({ rootObject: new Timer.Timer(...counstructorParam), config: config });
       }
-    })
-  },
-}
+    });
+  }
+};

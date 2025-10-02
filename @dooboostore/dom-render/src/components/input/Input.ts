@@ -11,7 +11,6 @@ import { EventUtils } from '@dooboostore/core-web/event/EventUtils';
 import { debounceTime } from '@dooboostore/core/message/operators/debounceTime';
 import { distinctUntilChanged } from '@dooboostore/core/message/operators/distinctUntilChanged';
 
-
 export namespace Input {
   export const selector = `dr-input`;
   export type Attribute = {
@@ -21,13 +20,10 @@ export namespace Input {
     class?: string;
     debounceTime?: number;
     distinct?: boolean;
-    input?: (value: string, element: Element) => void
+    input?: (value: string, element: Element) => void;
+  };
 
-  }
-
-  export class Base extends ComponentBase<any> {
-
-  }
+  export class Base extends ComponentBase<any> {}
 
   // @Component({
   //   selector: `${selector}`,
@@ -39,16 +35,16 @@ export namespace Input {
     private inputSubscription?: Subscription;
     private resetSubscripton?: Subscription;
 
-    onCreateRender(...param: any[]): void {
-    }
+    onCreateRender(...param: any[]): void {}
 
-
-    onInitRender(param: any, rawSet: RawSet) {
-      super.onInitRender(param, rawSet);
+    async onInitRender(param: any, rawSet: RawSet) {
+      await super.onInitRender(param, rawSet);
       // console.log('dr-input, rawSet', rawSet)
       const inputElement = this.element;
       const debounceTimeAttribute = this.getAttribute('debounceTime');
-      const debounceTimeValue = ValidUtils.isNotNullUndefined(debounceTimeAttribute) ? Number(debounceTimeAttribute) : 0;
+      const debounceTimeValue = ValidUtils.isNotNullUndefined(debounceTimeAttribute)
+        ? Number(debounceTimeAttribute)
+        : 0;
       const distinct = ValidUtils.isNotNullUndefined(this.getAttribute('distinct'));
 
       if (inputElement) {
@@ -87,11 +83,9 @@ export namespace Input {
               // console.log('rrrr?')
               this.getAttribute('input')?.(it, inputElement);
             });
-          })
+          });
         }
       }
-
-
     }
 
     onChangeAttrRender(name: string, value: any, other: OtherData) {
@@ -108,7 +102,6 @@ export namespace Input {
       this.resetSubscripton?.unsubscribe();
       this.inputSubscription?.unsubscribe();
     }
-
   }
 }
 
@@ -116,10 +109,11 @@ export default {
   input: (config?: DomRenderRunConfig) => {
     return RawSet.createComponentTargetElement({
       name: `${Input.selector}`,
-      template: '<Input type="${@this@.getAttribute(\'type\')}$" class="${@this@.getAttribute(\'class\')}$" id="${@this@.getAttribute(\'id\')}$" name="${@this@.getAttribute(\'name\')}$" dr-on-init="@this@.element=$element" >#innerHTML#',
+      template:
+        '<Input type="${@this@.getAttribute(\'type\')}$" class="${@this@.getAttribute(\'class\')}$" id="${@this@.getAttribute(\'id\')}$" name="${@this@.getAttribute(\'name\')}$" dr-on-init="@this@.element=$element" >#innerHTML#',
       objFactory: (e, o, r2, counstructorParam) => {
-        return DomRender.run({rootObject: new Input.Input(...counstructorParam), config: config});
+        return DomRender.run({ rootObject: new Input.Input(...counstructorParam), config: config });
       }
-    })
-  },
-}
+    });
+  }
+};

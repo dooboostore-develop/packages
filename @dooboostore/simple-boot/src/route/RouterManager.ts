@@ -159,7 +159,7 @@ export class RouterManager {
         if (RouterAction.isOnRouting(value)) {
           await value.onRouting(routingDataSet);
         }
-
+        // 가지고있는 선택된 Route도 isRouting이면
         if (moduleInstance && RouterAction.isOnRouting(moduleInstance)) {
           await moduleInstance.onRouting(routingDataSet);
         }

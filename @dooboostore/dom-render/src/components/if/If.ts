@@ -1,6 +1,6 @@
 import { ComponentBase } from '../ComponentBase';
 import { OtherData } from '../../lifecycle/OnChangeAttrRender';
-import { DomRender, DomRenderRunConfig } from '../../DomRender';
+import { DomRender } from '../../DomRender';
 import { OnInitRender } from '../../lifecycle/OnInitRender';
 import { RawSet } from '../../rawsets/RawSet';
 import { DomRenderConfig } from '../../configs/DomRenderConfig';
@@ -15,12 +15,12 @@ export namespace If {
   // }
   export type Attribute<D> = {
     value?: null | boolean;
-  }
+  };
 
   export class If<D> extends ComponentBase<Attribute<D>> implements OnInitRender {
     private sw: boolean = false;
 
-    onInitRender(param: any, rawSet: RawSet) {
+    async onInitRender(param: any, rawSet: RawSet) {
       super.onInitRender(param, rawSet);
     }
 
@@ -41,8 +41,6 @@ export namespace If {
 //   template: '<div dr-if="@this@.sw" dr-option-strip="true">#innerHTML#</div>' });
 export default {
   if: (config?: DomRenderConfig) => {
-
-
     // if (!customElements.get(If.selector)) {
     //   customElements.define(If.selector, class extends HTMLElement {
     //     constructor() {
@@ -56,8 +54,8 @@ export default {
       name: If.selector,
       template: '<div dr-if="@this@.sw" dr-option-strip="true">#innerHTML#</div>',
       objFactory: (e, o, r2, counstructorParam) => {
-        return DomRender.run({rootObject: new If.If(...counstructorParam), config: config});
+        return DomRender.run({ rootObject: new If.If(...counstructorParam), config: config });
       }
-    })
-  },
-}
+    });
+  }
+};

@@ -16,6 +16,7 @@
   "files": [
     "dist",
     "src",
+    "types.d.ts",
     "LICENSE.md",
     "tsconfig.json"
   ],
@@ -23,222 +24,17 @@
     "access": "public"
   },
   "exports": {
-    ".": {
-      "types": "./dist/types/index.d.ts",
-      "node": "./dist/cjs/index.js",
-      "require": "./dist/cjs/index.js",
-      "import": "./dist/esm/index.js"
+      ".": {
+        "types": "./dist/types/index.d.ts",
+        "import": "./dist/esm/index.js",
+        "require": "./dist/cjs/index.js"
+      },
+      "./*": {
+        "types": "./dist/types/*.d.ts",
+        "import": "./dist/esm/*.js",
+        "require": "./dist/cjs/*.js"
+      }
     },
-    "./animation": {
-      "types": "./dist/types/animation/index.d.ts",
-      "node": "./dist/cjs/animation/index.js",
-      "require": "./dist/cjs/animation/index.js",
-      "import": "./dist/esm/animation/index.js"
-    },
-    "./animation/AnimationFrameUtils": {
-      "types": "./dist/types/animation/AnimationFrameUtils.d.ts",
-      "node": "./dist/cjs/animation/AnimationFrameUtils.js",
-      "require": "./dist/cjs/animation/AnimationFrameUtils.js",
-      "import": "./dist/esm/animation/AnimationFrameUtils.js"
-    },
-    "./clipboard": {
-      "types": "./dist/types/clipboard/index.d.ts",
-      "node": "./dist/cjs/clipboard/index.js",
-      "require": "./dist/cjs/clipboard/index.js",
-      "import": "./dist/esm/clipboard/index.js"
-    },
-    "./clipboard/ClipBoardUtils": {
-      "types": "./dist/types/clipboard/ClipBoardUtils.d.ts",
-      "node": "./dist/cjs/clipboard/ClipBoardUtils.js",
-      "require": "./dist/cjs/clipboard/ClipBoardUtils.js",
-      "import": "./dist/esm/clipboard/ClipBoardUtils.js"
-    },
-    "./convert": {
-      "types": "./dist/types/convert/index.d.ts",
-      "node": "./dist/cjs/convert/index.js",
-      "require": "./dist/cjs/convert/index.js",
-      "import": "./dist/esm/convert/index.js"
-    },
-    "./convert/ConvertUtils": {
-      "types": "./dist/types/convert/ConvertUtils.d.ts",
-      "node": "./dist/cjs/convert/ConvertUtils.js",
-      "require": "./dist/cjs/convert/ConvertUtils.js",
-      "import": "./dist/esm/convert/ConvertUtils.js"
-    },
-    "./cookie": {
-      "types": "./dist/types/cookie/index.d.ts",
-      "node": "./dist/cjs/cookie/index.js",
-      "require": "./dist/cjs/cookie/index.js",
-      "import": "./dist/esm/cookie/index.js"
-    },
-    "./cookie/CookieUtils": {
-      "types": "./dist/types/cookie/CookieUtils.d.ts",
-      "node": "./dist/cjs/cookie/CookieUtils.js",
-      "require": "./dist/cjs/cookie/CookieUtils.js",
-      "import": "./dist/esm/cookie/CookieUtils.js"
-    },
-    "./document": {
-      "types": "./dist/types/document/index.d.ts",
-      "node": "./dist/cjs/document/index.js",
-      "require": "./dist/cjs/document/index.js",
-      "import": "./dist/esm/document/index.js"
-    },
-    "./document/DocumentUtils": {
-      "types": "./dist/types/document/DocumentUtils.d.ts",
-      "node": "./dist/cjs/document/DocumentUtils.js",
-      "require": "./dist/cjs/document/DocumentUtils.js",
-      "import": "./dist/esm/document/DocumentUtils.js"
-    },
-    "./download": {
-      "types": "./dist/types/download/index.d.ts",
-      "node": "./dist/cjs/download/index.js",
-      "require": "./dist/cjs/download/index.js",
-      "import": "./dist/esm/download/index.js"
-    },
-    "./download/DownloadUtils": {
-      "types": "./dist/types/download/DownloadUtils.d.ts",
-      "node": "./dist/cjs/download/DownloadUtils.js",
-      "require": "./dist/cjs/download/DownloadUtils.js",
-      "import": "./dist/esm/download/DownloadUtils.js"
-    },
-    "./element": {
-      "types": "./dist/types/element/index.d.ts",
-      "node": "./dist/cjs/element/index.js",
-      "require": "./dist/cjs/element/index.js",
-      "import": "./dist/esm/element/index.js"
-    },
-    "./element/CanvasUtils": {
-      "types": "./dist/types/element/CanvasUtils.d.ts",
-      "node": "./dist/cjs/element/CanvasUtils.js",
-      "require": "./dist/cjs/element/CanvasUtils.js",
-      "import": "./dist/esm/element/CanvasUtils.js"
-    },
-    "./element/ElementUtils": {
-      "types": "./dist/types/element/ElementUtils.d.ts",
-      "node": "./dist/cjs/element/ElementUtils.js",
-      "require": "./dist/cjs/element/ElementUtils.js",
-      "import": "./dist/esm/element/ElementUtils.js"
-    },
-    "./event": {
-      "types": "./dist/types/event/index.d.ts",
-      "node": "./dist/cjs/event/index.js",
-      "require": "./dist/cjs/event/index.js",
-      "import": "./dist/esm/event/index.js"
-    },
-    "./event/EventUtils": {
-      "types": "./dist/types/event/EventUtils.d.ts",
-      "node": "./dist/cjs/event/EventUtils.js",
-      "require": "./dist/cjs/event/EventUtils.js",
-      "import": "./dist/esm/event/EventUtils.js"
-    },
-    "./fetch/HttpDomParserFetcher": {
-      "types": "./dist/types/fetch/HttpDomParserFetcher.d.ts",
-      "node": "./dist/cjs/fetch/HttpDomParserFetcher.js",
-      "require": "./dist/cjs/fetch/HttpDomParserFetcher.js",
-      "import": "./dist/esm/fetch/HttpDomParserFetcher.js"
-    },
-    "./image": {
-      "types": "./dist/types/image/index.d.ts",
-      "node": "./dist/cjs/image/index.js",
-      "require": "./dist/cjs/image/index.js",
-      "import": "./dist/esm/image/index.js"
-    },
-    "./image/ImageUtils": {
-      "types": "./dist/types/image/ImageUtils.d.ts",
-      "node": "./dist/cjs/image/ImageUtils.js",
-      "require": "./dist/cjs/image/ImageUtils.js",
-      "import": "./dist/esm/image/ImageUtils.js"
-    },
-    "./location": {
-      "types": "./dist/types/location/index.d.ts",
-      "node": "./dist/cjs/location/index.js",
-      "require": "./dist/cjs/location/index.js",
-      "import": "./dist/esm/location/index.js"
-    },
-    "./location/LocationUtils": {
-      "types": "./dist/types/location/LocationUtils.d.ts",
-      "node": "./dist/cjs/location/LocationUtils.js",
-      "require": "./dist/cjs/location/LocationUtils.js",
-      "import": "./dist/esm/location/LocationUtils.js"
-    },
-    "./node": {
-      "types": "./dist/types/node/index.d.ts",
-      "node": "./dist/cjs/node/index.js",
-      "require": "./dist/cjs/node/index.js",
-      "import": "./dist/esm/node/index.js"
-    },
-    "./node/NodeUtils": {
-      "types": "./dist/types/node/NodeUtils.d.ts",
-      "node": "./dist/cjs/node/NodeUtils.js",
-      "require": "./dist/cjs/node/NodeUtils.js",
-      "import": "./dist/esm/node/NodeUtils.js"
-    },
-    "./script": {
-      "types": "./dist/types/script/index.d.ts",
-      "node": "./dist/cjs/script/index.js",
-      "require": "./dist/cjs/script/index.js",
-      "import": "./dist/esm/script/index.js"
-    },
-    "./script/ScriptUtils": {
-      "types": "./dist/types/script/ScriptUtils.d.ts",
-      "node": "./dist/cjs/script/ScriptUtils.js",
-      "require": "./dist/cjs/script/ScriptUtils.js",
-      "import": "./dist/esm/script/ScriptUtils.js"
-    },
-    "./storage": {
-      "types": "./dist/types/storage/index.d.ts",
-      "node": "./dist/cjs/storage/index.js",
-      "require": "./dist/cjs/storage/index.js",
-      "import": "./dist/esm/storage/index.js"
-    },
-    "./storage/StorageUtils": {
-      "types": "./dist/types/storage/StorageUtils.d.ts",
-      "node": "./dist/cjs/storage/StorageUtils.js",
-      "require": "./dist/cjs/storage/StorageUtils.js",
-      "import": "./dist/esm/storage/StorageUtils.js"
-    },
-    "./stylecss": {
-      "types": "./dist/types/stylecss/index.d.ts",
-      "node": "./dist/cjs/stylecss/index.js",
-      "require": "./dist/cjs/stylecss/index.js",
-      "import": "./dist/esm/stylecss/index.js"
-    },
-    "./stylecss/StyleCssUtils": {
-      "types": "./dist/types/stylecss/StyleCssUtils.d.ts",
-      "node": "./dist/cjs/stylecss/StyleCssUtils.js",
-      "require": "./dist/cjs/stylecss/StyleCssUtils.js",
-      "import": "./dist/esm/stylecss/StyleCssUtils.js"
-    },
-    "./valid": {
-      "types": "./dist/types/valid/index.d.ts",
-      "node": "./dist/cjs/valid/index.js",
-      "require": "./dist/cjs/valid/index.js",
-      "import": "./dist/esm/valid/index.js"
-    },
-    "./valid/ValidUtils": {
-      "types": "./dist/types/valid/ValidUtils.d.ts",
-      "node": "./dist/cjs/valid/ValidUtils.js",
-      "require": "./dist/cjs/valid/ValidUtils.js",
-      "import": "./dist/esm/valid/ValidUtils.js"
-    },
-    "./window": {
-      "types": "./dist/types/window/index.d.ts",
-      "node": "./dist/cjs/window/index.js",
-      "require": "./dist/cjs/window/index.js",
-      "import": "./dist/esm/window/index.js"
-    },
-    "./window/WindowUtils": {
-      "types": "./dist/types/window/WindowUtils.d.ts",
-      "node": "./dist/cjs/window/WindowUtils.js",
-      "require": "./dist/cjs/window/WindowUtils.js",
-      "import": "./dist/esm/window/WindowUtils.js"
-    },
-    "./*": {
-      "types": "./dist/types/*.d.ts",
-      "require": "./dist/cjs/*.js",
-      "import": "./dist/esm/*.js"
-    }
-  },
   "author": "dooboostore <dooboostore@gmail.com> (https://github.com/dooboostore)",
   "contributors": [
     "sewoo <sewooimda@nate.com> (https://github.com/sewoo)",
@@ -262,10 +58,10 @@
     "node"
   ],
   "peerDependencies": {
-    "reflect-metadata": "^0.2.2",
-    "@dooboostore/core": "workspace:*"
+    "reflect-metadata": "^0.2.2"
   },
   "devDependencies": {
+    "@dooboostore/core": "workspace:*",
     "esbuild-plugin-tsc": "^0.5.0",
     "tslib": "^2.8.1",
     "@types/node": "^20",
@@ -290,4 +86,5 @@
     "typecheck": "tsc --noEmit",
     "test": "echo test"
   }
+
 }

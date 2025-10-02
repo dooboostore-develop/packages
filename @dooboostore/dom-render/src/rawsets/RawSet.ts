@@ -434,7 +434,7 @@ export class RawSet {
     // RawSet.generateStyleSheetsLocal(config);
     for (const it of onThisComponentSetCallBacks) {
       if (isOnInitRender(it.obj)) {
-        it.obj?.onInitRender?.({}, this);
+        await it.obj?.onInitRender?.({}, this);
       }
     }
     for (const it of onElementInitCallBacks) {
@@ -463,7 +463,7 @@ export class RawSet {
         //     it.targetElement.__render.component.onInitRender?.(...param);
         //   }
         // }
-        this.dataSet.render.currentThis.onInitRender({}, this);
+        await this.dataSet.render.currentThis.onInitRender({}, this);
       }
 
       config?.onElementInit?.(it.name, obj, this, it.targetElement);

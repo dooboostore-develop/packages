@@ -5,6 +5,7 @@ import { OtherData } from '../../lifecycle/OnChangeAttrRender';
 import { OnInitRender } from '../../lifecycle/OnInitRender';
 import { ComponentSet } from '../../components/ComponentSet';
 import { OnDestroyRenderParams } from '../../lifecycle/OnDestroyRender';
+
 export namespace This {
   export const selector = 'dr-this';
   export type Attribute = {
@@ -13,15 +14,15 @@ export namespace This {
     createArguments: any[];
     onCreated?: (value: any) => void;
     onDestroyRender?: () => void;
-  }
+  };
 
   export class This extends ComponentBase<Attribute> implements OnInitRender {
-    private value?: ComponentSet
+    private value?: ComponentSet;
     private if?: boolean | null = null;
-    private createArguments?: any[]
+    private createArguments?: any[];
 
-    onInitRender(param: any, rawSet: RawSet) {
-      super.onInitRender(param, rawSet);
+    async onInitRender(param: any, rawSet: RawSet) {
+      await super.onInitRender(param, rawSet);
     }
 
     onDestroyRender(data: OnDestroyRenderParams) {
@@ -41,8 +42,8 @@ export namespace This {
       }
     }
 
-    created(component: any){
-      component??=this.value?.obj;
+    created(component: any) {
+      component ??= this.value?.obj;
       this.getAttribute('onCreated')?.(component);
     }
   }
@@ -52,11 +53,11 @@ export default {
   this: (config?: DomRenderRunConfig) => {
     return RawSet.createComponentTargetElement({
       name: This.selector,
-      template: '<div dr-this="@this@.value" dr-detect-option-if="@this@?.value && @this@?.if" dr-option-strip="true" dr-on-create:arguments="@this@.createArguments" dr-on-create:callback="@this@?.created?.($component)">#innerHTML#</div>',
+      template:
+        '<div dr-this="@this@.value" dr-detect-option-if="@this@?.value && @this@?.if" dr-option-strip="true" dr-on-create:arguments="@this@.createArguments" dr-on-create:callback="@this@?.created?.($component)">#innerHTML#</div>',
       objFactory: (e, o, r2, counstructorParam) => {
-        return DomRender.run({rootObject: new This.This(...counstructorParam), config: config});
+        return DomRender.run({ rootObject: new This.This(...counstructorParam), config: config });
       }
-    })
+    });
   }
-}
-
+};

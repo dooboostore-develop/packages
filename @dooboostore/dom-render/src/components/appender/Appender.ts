@@ -33,12 +33,7 @@ export namespace Appender {
     // test() {
     //   console.log('t', this.getAttribute('appender'))
     // }
-    onInitRender(param: any, rawSet: RawSet) {
-      // console.log('--onInitRender onInitRender')
-      super.onInitRender(param, rawSet);
 
-
-    }
 
     // push(...data:D[]) {
     //   console.log('push/////', data);

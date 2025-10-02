@@ -258,7 +258,7 @@ export class SimpleBootFront extends SimpleApplication {
     // const path = `${url ? origin + (url ?? '/') : currentUrl.href}`;
     // console.log('gorouting!!',path);
     // this.domRenderRouter.go({path: path});
-    return simstanceManager;
+    return this;
   }
 
   private dispatchPopStateEvent(noSimpleBootFrontRouting?: boolean) {

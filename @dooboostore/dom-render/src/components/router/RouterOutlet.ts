@@ -1,5 +1,5 @@
 import { ChildrenSet, ComponentBase } from '../ComponentBase';
-import { DomRender, DomRenderRunConfig } from '../../DomRender';
+import { DomRenderRunConfig } from '../../DomRender';
 import { RawSet } from '../../rawsets/RawSet';
 import { OtherData } from '../../lifecycle/OnChangeAttrRender';
 import { OnInitRender } from '../../lifecycle/OnInitRender';
@@ -7,6 +7,7 @@ import { ComponentSet } from '../../components/ComponentSet';
 import { OnDestroyRenderParams } from '../../lifecycle/OnDestroyRender';
 import { ComponentRouterBase, isOnCreatedOutletDebounce } from '../../components/ComponentRouterBase';
 import { OnCreateRenderDataParams } from 'src/lifecycle';
+
 export namespace RouterOutlet {
   export const selector = 'dr-router-outlet';
   export type Attribute = {
@@ -28,8 +29,8 @@ export namespace RouterOutlet {
       // console.log('sssssssssss');
     }
 
-    onInitRender(param: any, rawSet: RawSet) {
-      super.onInitRender(param, rawSet);
+    async onInitRender(param: any, rawSet: RawSet) {
+      await super.onInitRender(param, rawSet);
       const c = this.getParentThis();
       const userValue = this.getAttribute('value');
       if (userValue) {
@@ -57,7 +58,7 @@ export namespace RouterOutlet {
       }
     }
 
-    onCreatedThisChild(child:any, data:OnCreateRenderDataParams){
+    onCreatedThisChild(child: any, data: OnCreateRenderDataParams) {
       super.onCreatedThisChild(child, data);
       // console.log('outlet--oncreatedThisChild',child);
     }

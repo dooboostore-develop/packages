@@ -17,6 +17,7 @@
   "files": [
     "dist",
     "src",
+    "types.d.ts",
     "LICENSE.md",
     "tsconfig.json"
   ],
@@ -24,24 +25,17 @@
     "access": "public"
   },
   "exports": {
-    ".": {
-      "types": "./dist/types/index.d.ts",
-      "node": "./dist/cjs/index.js",
-      "require": "./dist/cjs/index.js",
-      "import": "./dist/esm/index.js"
+      ".": {
+        "types": "./dist/types/index.d.ts",
+        "import": "./dist/esm/index.js",
+        "require": "./dist/cjs/index.js"
+      },
+      "./*": {
+        "types": "./dist/types/*.d.ts",
+        "import": "./dist/esm/*.js",
+        "require": "./dist/cjs/*.js"
+      }
     },
-    "./RandomImage": {
-      "types": "./dist/types/RandomImage.d.ts",
-      "node": "./dist/cjs/RandomImage.js",
-      "require": "./dist/cjs/RandomImage.js",
-      "import": "./dist/esm/RandomImage.js"
-    },
-    "./*": {
-      "types": "./dist/types/*.d.ts",
-      "require": "./dist/cjs/*.js",
-      "import": "./dist/esm/*.js"
-    }
-  },
   "author": "dooboostore <dooboostore@gmail.com> (https://github.com/dooboostore)",
   "contributors": [
     "sewoo <sewooimda@nate.com> (https://github.com/sewoo)",
@@ -60,18 +54,18 @@
     "url": "https://github.com/dooboostore-develop/packages"
   },
   "peerDependencies": {
-    "@dooboostore/core": "workspace:*",
-    "@dooboostore/core-node": "workspace:*",
     "reflect-metadata": "^0.2.2"
   },
-  "dependencies": {
-    "canvas": "^3.1.2"
-  },
   "devDependencies": {
+    "@dooboostore/core": "workspace:*",
+    "@dooboostore/core-node": "workspace:*",
     "@types/node": "^20",
     "typescript": "^5.9.2",
     "esbuild-plugin-tsc": "^0.5.0",
     "esbuild": "^0.23.0"
+  },
+  "dependencies": {
+    "canvas": "^3.1.2"
   },
   "scripts": {
     "clean": "rm -rf dist",

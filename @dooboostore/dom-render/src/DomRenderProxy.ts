@@ -79,7 +79,7 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
     return ValidUtils.isNull(obj) || DomRenderFinalProxy.isFinal(obj);
   }
 
-  public run(objProxy: T) {
+  public async run(objProxy: T) {
     this._domRender_proxy = objProxy;
     if (isOnProxyDomRender(objProxy)) {
       objProxy.onProxyDomRender(this._domRender_config);
@@ -107,12 +107,12 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
       });
     }
     // console.log('target', this._targets);
-    this._targets.forEach(target => {
-      this.initRender(target);
-    });
+    for (let target of this._targets) {
+      await this.initRender(target);
+    }
   }
 
-  public initRender(target: Node, rawSet?: RawSet) {
+  public async initRender(target: Node, rawSet?: RawSet) {
 
     // if (target instanceof Element) {
     //   target.setAttribute('dr-this', 'this');
@@ -161,25 +161,19 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
         });
       }
     });
-    this.render(this.getRawSets()).then(it => {
-      // const render = {target} as Render;
-      // const creatorMetaData = {
-      //     creator: this._domRender_proxy,
-      //     rootCreator: this._domRender_proxy,
-      //     innerHTML
-      // } as CreatorMetaData;
+
+    const targetRawSets = await this.render(this.getRawSets());
+    for (let targetRawSet of targetRawSets) {
       const onInit = (target as any).getAttribute?.(RawSet.DR_ON_INIT_ARGUMENTS_OPTIONNAME);
       let initParam: any;
       if (onCreate) {
         initParam = ScriptUtils.evaluateReturn(onCreate, this._domRender_proxy);
-        // if (!Array.isArray(initParam)) {
-        //   initParam = [initParam];
-        // }
       }
       if (isOnInitRender(this._domRender_proxy)) {
-        this._domRender_proxy.onInitRender(initParam, rawSet ?? {dataSet: {config: this._domRender_config}} as any);
+        await this._domRender_proxy.onInitRender(initParam, rawSet ?? {dataSet: {config: this._domRender_config}} as any);
       }
-    });
+    }
+
 
   }
 
@@ -601,7 +595,7 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
       return obj;
     }
  */
-    if ( !isWrapProxyDomRenderProxy(obj)) {
+    if (!isWrapProxyDomRenderProxy(obj)) {
       const domRender = new DomRenderProxy(obj, undefined, this._domRender_config);
       domRender.addRef(parentProxy, p);
       const proxy = new Proxy(obj, domRender);

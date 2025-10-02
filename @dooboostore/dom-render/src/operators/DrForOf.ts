@@ -18,7 +18,7 @@ export class DrForOf extends OperatorExecuterAttrRequire<string> {
     const newTemp = this.source.config.window.document.createElement('temp');
     // console.log('----!', this.elementSource.attrs)
     // ScriptUtils.evalReturn()
-    ScriptUtils.evaluate(`
+    ObjectUtils.Script.evaluate(`
                     ${this.render.bindScript}
                     ${this.elementSource.attrs.drBeforeOption ?? ''}
                     var i = -1; 

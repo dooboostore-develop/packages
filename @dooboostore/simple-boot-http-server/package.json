@@ -29,304 +29,21 @@
     "framwork",
     "node"
   ],
-  "publishConfig": {
+"publishConfig": {
     "access": "public"
   },
   "exports": {
-    ".": {
-      "types": "./dist/types/index.d.ts",
-      "node": "./dist/cjs/index.js",
-      "require": "./dist/cjs/index.js",
-      "import": "./dist/esm/index.js"
+      ".": {
+        "types": "./dist/types/index.d.ts",
+        "import": "./dist/esm/index.js",
+        "require": "./dist/cjs/index.js"
+      },
+      "./*": {
+        "types": "./dist/types/*.d.ts",
+        "import": "./dist/esm/*.js",
+        "require": "./dist/cjs/*.js"
+      }
     },
-    "./SimpleBootHttpServer": {
-      "types": "./dist/types/SimpleBootHttpServer.d.ts",
-      "node": "./dist/cjs/SimpleBootHttpServer.js",
-      "require": "./dist/cjs/SimpleBootHttpServer.js",
-      "import": "./dist/esm/SimpleBootHttpServer.js"
-    },
-    "./codes": {
-      "types": "./dist/types/codes/index.d.ts",
-      "node": "./dist/cjs/codes/index.js",
-      "require": "./dist/cjs/codes/index.js",
-      "import": "./dist/esm/codes/index.js"
-    },
-    "./codes/HttpHeaders": {
-      "types": "./dist/types/codes/HttpHeaders.d.ts",
-      "node": "./dist/cjs/codes/HttpHeaders.js",
-      "require": "./dist/cjs/codes/HttpHeaders.js",
-      "import": "./dist/esm/codes/HttpHeaders.js"
-    },
-    "./codes/HttpMethod": {
-      "types": "./dist/types/codes/HttpMethod.d.ts",
-      "node": "./dist/cjs/codes/HttpMethod.js",
-      "require": "./dist/cjs/codes/HttpMethod.js",
-      "import": "./dist/esm/codes/HttpMethod.js"
-    },
-    "./codes/HttpStatus": {
-      "types": "./dist/types/codes/HttpStatus.d.ts",
-      "node": "./dist/cjs/codes/HttpStatus.js",
-      "require": "./dist/cjs/codes/HttpStatus.js",
-      "import": "./dist/esm/codes/HttpStatus.js"
-    },
-    "./codes/Mimes": {
-      "types": "./dist/types/codes/Mimes.d.ts",
-      "node": "./dist/cjs/codes/Mimes.js",
-      "require": "./dist/cjs/codes/Mimes.js",
-      "import": "./dist/esm/codes/Mimes.js"
-    },
-    "./decorators": {
-      "types": "./dist/types/decorators/index.d.ts",
-      "node": "./dist/cjs/decorators/index.js",
-      "require": "./dist/cjs/decorators/index.js",
-      "import": "./dist/esm/decorators/index.js"
-    },
-    "./decorators/MethodMapping": {
-      "types": "./dist/types/decorators/MethodMapping.d.ts",
-      "node": "./dist/cjs/decorators/MethodMapping.js",
-      "require": "./dist/cjs/decorators/MethodMapping.js",
-      "import": "./dist/esm/decorators/MethodMapping.js"
-    },
-    "./endpoints": {
-      "types": "./dist/types/endpoints/index.d.ts",
-      "node": "./dist/cjs/endpoints/index.js",
-      "require": "./dist/cjs/endpoints/index.js",
-      "import": "./dist/esm/endpoints/index.js"
-    },
-    "./endpoints/CrossDomainHeaderEndPoint": {
-      "types": "./dist/types/endpoints/CrossDomainHeaderEndPoint.d.ts",
-      "node": "./dist/cjs/endpoints/CrossDomainHeaderEndPoint.js",
-      "require": "./dist/cjs/endpoints/CrossDomainHeaderEndPoint.js",
-      "import": "./dist/esm/endpoints/CrossDomainHeaderEndPoint.js"
-    },
-    "./endpoints/EndPoint": {
-      "types": "./dist/types/endpoints/EndPoint.d.ts",
-      "node": "./dist/cjs/endpoints/EndPoint.js",
-      "require": "./dist/cjs/endpoints/EndPoint.js",
-      "import": "./dist/esm/endpoints/EndPoint.js"
-    },
-    "./endpoints/HeaderEndPoint": {
-      "types": "./dist/types/endpoints/HeaderEndPoint.d.ts",
-      "node": "./dist/cjs/endpoints/HeaderEndPoint.js",
-      "require": "./dist/cjs/endpoints/HeaderEndPoint.js",
-      "import": "./dist/esm/endpoints/HeaderEndPoint.js"
-    },
-    "./errors": {
-      "types": "./dist/types/errors/index.d.ts",
-      "node": "./dist/cjs/errors/index.js",
-      "require": "./dist/cjs/errors/index.js",
-      "import": "./dist/esm/errors/index.js"
-    },
-    "./errors/BadRequestError": {
-      "types": "./dist/types/errors/BadRequestError.d.ts",
-      "node": "./dist/cjs/errors/BadRequestError.js",
-      "require": "./dist/cjs/errors/BadRequestError.js",
-      "import": "./dist/esm/errors/BadRequestError.js"
-    },
-    "./errors/ForbiddenError": {
-      "types": "./dist/types/errors/ForbiddenError.d.ts",
-      "node": "./dist/cjs/errors/ForbiddenError.js",
-      "require": "./dist/cjs/errors/ForbiddenError.js",
-      "import": "./dist/esm/errors/ForbiddenError.js"
-    },
-    "./errors/HttpError": {
-      "types": "./dist/types/errors/HttpError.d.ts",
-      "node": "./dist/cjs/errors/HttpError.js",
-      "require": "./dist/cjs/errors/HttpError.js",
-      "import": "./dist/esm/errors/HttpError.js"
-    },
-    "./errors/InternalServerError": {
-      "types": "./dist/types/errors/InternalServerError.d.ts",
-      "node": "./dist/cjs/errors/InternalServerError.js",
-      "require": "./dist/cjs/errors/InternalServerError.js",
-      "import": "./dist/esm/errors/InternalServerError.js"
-    },
-    "./errors/NotFoundError": {
-      "types": "./dist/types/errors/NotFoundError.d.ts",
-      "node": "./dist/cjs/errors/NotFoundError.js",
-      "require": "./dist/cjs/errors/NotFoundError.js",
-      "import": "./dist/esm/errors/NotFoundError.js"
-    },
-    "./errors/UnauthorizedError": {
-      "types": "./dist/types/errors/UnauthorizedError.d.ts",
-      "node": "./dist/cjs/errors/UnauthorizedError.js",
-      "require": "./dist/cjs/errors/UnauthorizedError.js",
-      "import": "./dist/esm/errors/UnauthorizedError.js"
-    },
-    "./filters": {
-      "types": "./dist/types/filters/index.d.ts",
-      "node": "./dist/cjs/filters/index.js",
-      "require": "./dist/cjs/filters/index.js",
-      "import": "./dist/esm/filters/index.js"
-    },
-    "./filters/CacheFilter": {
-      "types": "./dist/types/filters/CacheFilter.d.ts",
-      "node": "./dist/cjs/filters/CacheFilter.js",
-      "require": "./dist/cjs/filters/CacheFilter.js",
-      "import": "./dist/esm/filters/CacheFilter.js"
-    },
-    "./filters/Filter": {
-      "types": "./dist/types/filters/Filter.d.ts",
-      "node": "./dist/cjs/filters/Filter.js",
-      "require": "./dist/cjs/filters/Filter.js",
-      "import": "./dist/esm/filters/Filter.js"
-    },
-    "./filters/HttpStatusFilter": {
-      "types": "./dist/types/filters/HttpStatusFilter.d.ts",
-      "node": "./dist/cjs/filters/HttpStatusFilter.js",
-      "require": "./dist/cjs/filters/HttpStatusFilter.js",
-      "import": "./dist/esm/filters/HttpStatusFilter.js"
-    },
-    "./filters/OpenApi3Filter": {
-      "types": "./dist/types/filters/OpenApi3Filter.d.ts",
-      "node": "./dist/cjs/filters/OpenApi3Filter.js",
-      "require": "./dist/cjs/filters/OpenApi3Filter.js",
-      "import": "./dist/esm/filters/OpenApi3Filter.js"
-    },
-    "./filters/ResourceFilter": {
-      "types": "./dist/types/filters/ResourceFilter.d.ts",
-      "node": "./dist/cjs/filters/ResourceFilter.js",
-      "require": "./dist/cjs/filters/ResourceFilter.js",
-      "import": "./dist/esm/filters/ResourceFilter.js"
-    },
-    "./filters/ThrowFilter": {
-      "types": "./dist/types/filters/ThrowFilter.d.ts",
-      "node": "./dist/cjs/filters/ThrowFilter.js",
-      "require": "./dist/cjs/filters/ThrowFilter.js",
-      "import": "./dist/esm/filters/ThrowFilter.js"
-    },
-    "./inject": {
-      "types": "./dist/types/inject/index.d.ts",
-      "node": "./dist/cjs/inject/index.js",
-      "require": "./dist/cjs/inject/index.js",
-      "import": "./dist/esm/inject/index.js"
-    },
-    "./inject/InjectSituationType": {
-      "types": "./dist/types/inject/InjectSituationType.d.ts",
-      "node": "./dist/cjs/inject/InjectSituationType.js",
-      "require": "./dist/cjs/inject/InjectSituationType.js",
-      "import": "./dist/esm/inject/InjectSituationType.js"
-    },
-    "./lifecycle": {
-      "types": "./dist/types/lifecycle/index.d.ts",
-      "node": "./dist/cjs/lifecycle/index.js",
-      "require": "./dist/cjs/lifecycle/index.js",
-      "import": "./dist/esm/lifecycle/index.js"
-    },
-    "./lifecycle/OnInit": {
-      "types": "./dist/types/lifecycle/OnInit.d.ts",
-      "node": "./dist/cjs/lifecycle/OnInit.js",
-      "require": "./dist/cjs/lifecycle/OnInit.js",
-      "import": "./dist/esm/lifecycle/OnInit.js"
-    },
-    "./models": {
-      "types": "./dist/types/models/index.d.ts",
-      "node": "./dist/cjs/models/index.js",
-      "require": "./dist/cjs/models/index.js",
-      "import": "./dist/esm/models/index.js"
-    },
-    "./models/RequestResponse": {
-      "types": "./dist/types/models/RequestResponse.d.ts",
-      "node": "./dist/cjs/models/RequestResponse.js",
-      "require": "./dist/cjs/models/RequestResponse.js",
-      "import": "./dist/esm/models/RequestResponse.js"
-    },
-    "./models/datas/HeaderData": {
-      "types": "./dist/types/models/datas/HeaderData.d.ts",
-      "node": "./dist/cjs/models/datas/HeaderData.js",
-      "require": "./dist/cjs/models/datas/HeaderData.js",
-      "import": "./dist/esm/models/datas/HeaderData.js"
-    },
-    "./models/datas/MultipartData": {
-      "types": "./dist/types/models/datas/MultipartData.d.ts",
-      "node": "./dist/cjs/models/datas/MultipartData.js",
-      "require": "./dist/cjs/models/datas/MultipartData.js",
-      "import": "./dist/esm/models/datas/MultipartData.js"
-    },
-    "./models/datas/ReqHeader": {
-      "types": "./dist/types/models/datas/ReqHeader.d.ts",
-      "node": "./dist/cjs/models/datas/ReqHeader.js",
-      "require": "./dist/cjs/models/datas/ReqHeader.js",
-      "import": "./dist/esm/models/datas/ReqHeader.js"
-    },
-    "./models/datas/Resource": {
-      "types": "./dist/types/models/datas/Resource.d.ts",
-      "node": "./dist/cjs/models/datas/Resource.js",
-      "require": "./dist/cjs/models/datas/Resource.js",
-      "import": "./dist/esm/models/datas/Resource.js"
-    },
-    "./models/datas/body/ReqFormUrlBody": {
-      "types": "./dist/types/models/datas/body/ReqFormUrlBody.d.ts",
-      "node": "./dist/cjs/models/datas/body/ReqFormUrlBody.js",
-      "require": "./dist/cjs/models/datas/body/ReqFormUrlBody.js",
-      "import": "./dist/esm/models/datas/body/ReqFormUrlBody.js"
-    },
-    "./models/datas/body/ReqJsonBody": {
-      "types": "./dist/types/models/datas/body/ReqJsonBody.d.ts",
-      "node": "./dist/cjs/models/datas/body/ReqJsonBody.js",
-      "require": "./dist/cjs/models/datas/body/ReqJsonBody.js",
-      "import": "./dist/esm/models/datas/body/ReqJsonBody.js"
-    },
-    "./models/datas/body/ReqMultipartFormBody": {
-      "types": "./dist/types/models/datas/body/ReqMultipartFormBody.d.ts",
-      "node": "./dist/cjs/models/datas/body/ReqMultipartFormBody.js",
-      "require": "./dist/cjs/models/datas/body/ReqMultipartFormBody.js",
-      "import": "./dist/esm/models/datas/body/ReqMultipartFormBody.js"
-    },
-    "./models/method/patch/PatchJson": {
-      "types": "./dist/types/models/method/patch/PatchJson.d.ts",
-      "node": "./dist/cjs/models/method/patch/PatchJson.js",
-      "require": "./dist/cjs/models/method/patch/PatchJson.js",
-      "import": "./dist/esm/models/method/patch/PatchJson.js"
-    },
-    "./option": {
-      "types": "./dist/types/option/index.d.ts",
-      "node": "./dist/cjs/option/index.js",
-      "require": "./dist/cjs/option/index.js",
-      "import": "./dist/esm/option/index.js"
-    },
-    "./option/HttpServerOption": {
-      "types": "./dist/types/option/HttpServerOption.d.ts",
-      "node": "./dist/cjs/option/HttpServerOption.js",
-      "require": "./dist/cjs/option/HttpServerOption.js",
-      "import": "./dist/esm/option/HttpServerOption.js"
-    },
-    "./resolvers": {
-      "types": "./dist/types/resolvers/index.d.ts",
-      "node": "./dist/cjs/resolvers/index.js",
-      "require": "./dist/cjs/resolvers/index.js",
-      "import": "./dist/esm/resolvers/index.js"
-    },
-    "./resolvers/Resolver": {
-      "types": "./dist/types/resolvers/Resolver.d.ts",
-      "node": "./dist/cjs/resolvers/Resolver.js",
-      "require": "./dist/cjs/resolvers/Resolver.js",
-      "import": "./dist/esm/resolvers/Resolver.js"
-    },
-    "./resolvers/ResourceResolver": {
-      "types": "./dist/types/resolvers/ResourceResolver.d.ts",
-      "node": "./dist/cjs/resolvers/ResourceResolver.js",
-      "require": "./dist/cjs/resolvers/ResourceResolver.js",
-      "import": "./dist/esm/resolvers/ResourceResolver.js"
-    },
-    "./session": {
-      "types": "./dist/types/session/index.d.ts",
-      "node": "./dist/cjs/session/index.js",
-      "require": "./dist/cjs/session/index.js",
-      "import": "./dist/esm/session/index.js"
-    },
-    "./session/SessionManager": {
-      "types": "./dist/types/session/SessionManager.d.ts",
-      "node": "./dist/cjs/session/SessionManager.js",
-      "require": "./dist/cjs/session/SessionManager.js",
-      "import": "./dist/esm/session/SessionManager.js"
-    },
-    "./*": {
-      "types": "./dist/types/*.d.ts",
-      "require": "./dist/cjs/*.js",
-      "import": "./dist/esm/*.js"
-    }
-  },
   "author": "dooboostore <dooboostore@gmail.com> (https://github.com/dooboostore)",
   "contributors": [
     "sewoo <sewooimda@nate.com> (https://github.com/sewoo)",
@@ -345,19 +62,14 @@
     "url": "https://github.com/dooboostore-develop/packages"
   },
   "peerDependencies": {
-    "reflect-metadata": "^0.2.2",
+    "reflect-metadata": "^0.2.2"
+  },
+   "devDependencies": {
     "@dooboostore/core": "workspace:*",
     "@dooboostore/core-node": "workspace:*",
     "@dooboostore/core-web": "workspace:*",
     "@dooboostore/dom-render": "workspace:*",
-    "@dooboostore/simple-boot": "workspace:*"
-  },
-  "dependencies": {
-    "fast-json-patch": "^3.1.0",
-    "mime-types": "^2.1.34",
-    "node-gzip": "^1.1.2"
-  },
-  "devDependencies": {
+    "@dooboostore/simple-boot": "workspace:*",
     "@babel/core": "^7.24.0",
     "@babel/plugin-proposal-class-properties": "^7.18.6",
     "@babel/plugin-proposal-decorators": "^7.24.0",
@@ -379,6 +91,11 @@
     "@types/node-gzip": "^1.1.0",
     "esbuild-plugin-tsc": "^0.5.0",
     "esbuild": "^0.23.0"
+  },
+  "dependencies": {
+    "fast-json-patch": "^3.1.0",
+    "mime-types": "^2.1.34",
+    "node-gzip": "^1.1.2"
   },
   "scripts": {
     "clean": "rm -rf dist",

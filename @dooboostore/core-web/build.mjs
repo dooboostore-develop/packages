@@ -33,9 +33,6 @@ function findFiles(dir, extension) {
   return filelist;
 }
 
-// DEPRECATED: These functions are no longer needed as package.json exports handle deep imports
-// Kept for reference but not used in the build process
-/*
 function generateModuleDeclarations() {
     console.log('Generating module declarations for deep imports...');
     const packageName = '@dooboostore/core-web';
@@ -121,7 +118,6 @@ function addSubmoduleReferences() {
         console.error('Failed to add submodule reference directives:', e);
     }
 }
-*/
 
 function generateExportsInPackageJson() {
     console.log('Generating exports in package.json...');
@@ -194,7 +190,7 @@ const declarationGeneratorPlugin = {
                 try {
                     execSync('pnpm exec tsc -p tsconfig.json --emitDeclarationOnly', { stdio: 'inherit' });
                     console.log('✅ Type declarations generated to dist/types/');
-                    generateExportsInPackageJson();
+                    // generateExportsInPackageJson();
                 } catch (e) {
                     console.error('Declaration generation failed:', e);
                 }
