@@ -21,6 +21,7 @@ module.exports = {
     },
     compress: true,
     historyApiFallback: true,
+    watchFiles: [path.resolve(__dirname, 'src/index.html')],
   },
   plugins: [
     new HtmlWebpackPlugin({
@@ -54,14 +55,14 @@ module.exports = {
     extensions: ['.ts', '.js', '.html'],
     plugins: [new TsconfigPathsPlugin()],
     alias: {
-      // '@dooboostore/simple-boot': path.resolve(__dirname, '../../../packages/@dooboostore/simple-boot/src'),
-      // '@dooboostore/simple-boot-http-server': path.resolve(__dirname, '../../../packages/@dooboostore/simple-boot-http-server/src'),
-      // '@dooboostore/simple-boot-http-server-ssr': path.resolve(__dirname, '../../../packages/@dooboostore/simple-boot-http-server-ssr/src'),
-      // '@dooboostore/simple-boot-front': path.resolve(__dirname, '../../../packages/@dooboostore/simple-boot-front/src'),
-      // '@dooboostore/core': path.resolve(__dirname, '../../../packages/@dooboostore/core/src'),
-      // '@dooboostore/core-node': path.resolve(__dirname, '../../../packages/@dooboostore/core-node/src'),
-      // '@dooboostore/core-web': path.resolve(__dirname, '../../../packages/@dooboostore/core-web/src'),
-      // '@dooboostore/dom-render': path.resolve(__dirname, '../../../packages/@dooboostore/dom-render/src')
+      // '@dooboostore/simple-boot': path.resolve(__dirname, '../../../../@dooboostore/simple-boot/src'),
+      // '@dooboostore/simple-boot-http-server': path.resolve(__dirname, '../../../../@dooboostore/simple-boot-http-server/src'),
+      // '@dooboostore/simple-boot-http-server-ssr': path.resolve(__dirname, '../../../../@dooboostore/simple-boot-http-server-ssr/src'),
+      // '@dooboostore/simple-boot-front': path.resolve(__dirname, '../../../@dooboostore/simple-boot-front/src'),
+      '@dooboostore/core': path.resolve(__dirname, '../../../../@dooboostore/core/src'),
+      '@dooboostore/core-node': path.resolve(__dirname, '../../../../@dooboostore/core-node/src'),
+      '@dooboostore/core-web': path.resolve(__dirname, '../../../../@dooboostore/core-web/src'),
+      '@dooboostore/dom-render': path.resolve(__dirname, '../../../../@dooboostore/dom-render/src')
 
     },
     modules: [

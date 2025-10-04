@@ -28,7 +28,7 @@ export namespace If {
       super.onChangeAttrRender(name, value, other);
 
       if (this.equalsAttributeName(name, 'value')) {
-        // console.log('------',this,name, value)
+        // console.log('--', value, typeof value);
         this.sw = value;
       }
     }
@@ -52,7 +52,7 @@ export default {
 
     return RawSet.createComponentTargetElement({
       name: If.selector,
-      template: '<div dr-if="@this@.sw" dr-option-strip="true">#innerHTML#</div>',
+      template: '<div dr-if="@this@.sw" >#innerHTML#</div>',
       objFactory: (e, o, r2, counstructorParam) => {
         return DomRender.run({ rootObject: new If.If(...counstructorParam), config: config });
       }

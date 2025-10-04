@@ -172,8 +172,8 @@ export class SSRFilter implements Filter {
           simpleBootFront.routingSubjectObservable.pipe(
           // @ts-ignore
             filter(
-              (it: any) =>
-                it.state === 'end' &&
+              (it) =>
+                it.triggerPoint === 'end' &&
                 typeof it.routerModule.intent.uri === 'string' &&
                 targetUrl.endsWith(it.routerModule.intent.uri)
             ),

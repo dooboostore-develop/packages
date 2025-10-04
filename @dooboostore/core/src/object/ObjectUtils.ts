@@ -619,6 +619,7 @@ export namespace ObjectUtils {
         // 전역 컨텍스트와 함께 실행
         const func = new Function('window', 'document', 'console', `"use strict"; ${script}; `);
         func.call(destUser, globalContext.window, globalContext.document, globalContext.console);
+        // console.log('------->', script);
       } catch (e) {
         console.error('detectPathFromScript error:', e);
       }
