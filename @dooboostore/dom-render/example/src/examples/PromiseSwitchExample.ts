@@ -25,7 +25,7 @@ export class PromiseSwitchExample {
           </button>
         </div>
         
-        <dr-promise-switch data="\${@this@.userPromise}$" dr-option-component-variable-name="switch">
+        <dr-promise-switch data="\${@this@.userPromise}$" dr-option-variable-name="switch">
            [\${#switch#.state}$]
           <dr-promise-switch-default>
             <div style="padding: 15px; background: #e5e7eb; border-radius: 4px;">
@@ -39,7 +39,7 @@ export class PromiseSwitchExample {
               <span>Loading user data...</span>
             </div>
           </dr-promise-switch-pending>
-          <dr-promise-switch-fulfilled dr-option-component-variable-name="fulfilled">
+          <dr-promise-switch-fulfilled dr-option-variable-name="fulfilled">
             <div style="padding: 15px; background: #d1fae5; border-radius: 4px; border-left: 4px solid #10b981;">
               <strong>✅ User Loaded Successfully!</strong><br>
               <div style="margin-top: 10px; font-size: 14px;">
@@ -50,7 +50,7 @@ export class PromiseSwitchExample {
             </div>
           </dr-promise-switch-fulfilled>
           
-          <dr-promise-switch-rejected dr-option-component-variable-name="rejected">
+          <dr-promise-switch-rejected dr-option-variable-name="rejected">
             <div style="padding: 15px; background: #fee2e2; border-radius: 4px; border-left: 4px solid #ef4444;">
               <strong>❌ Error Loading User</strong><br>
               <div style="margin-top: 10px; font-size: 14px; color: #991b1b;">

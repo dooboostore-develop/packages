@@ -1,4 +1,5 @@
 import { Runnable } from '@dooboostore/core/runs/Runnable';
+import { Advice } from '@dooboostore/core/advice/Advice';
 
 // Custom error types
 class NetworkError extends Error {
@@ -15,61 +16,55 @@ class ValidationError extends Error {
   }
 }
 
-// Simple advice interface
-interface ErrorHandler {
-  isSupport(e: Error): boolean;
-  handle(e: Error): string;
-}
-
-// Error handler implementations
-class NetworkErrorHandler implements ErrorHandler {
-  isSupport(e: Error): boolean {
+// Error handler implementations using Advice interface
+class NetworkErrorHandler extends Advice<Error, string, any> {
+  async isSupport(e: Error, context?: any): Promise<boolean> {
     return e instanceof NetworkError;
   }
 
-  handle(e: Error): string {
+  async exception(e: Error, context?: any): Promise<string> {
     console.log('  [NetworkErrorHandler] Handling network error:', e.message);
     return `Network error handled: ${e.message}`;
   }
 }
 
-class ValidationErrorHandler implements ErrorHandler {
-  isSupport(e: Error): boolean {
+class ValidationErrorHandler extends Advice<Error, string, any> {
+  async isSupport(e: Error, context?: any): Promise<boolean> {
     return e instanceof ValidationError;
   }
 
-  handle(e: Error): string {
+  async exception(e: Error, context?: any): Promise<string> {
     console.log('  [ValidationErrorHandler] Handling validation error:', e.message);
     return `Validation error handled: ${e.message}`;
   }
 }
 
-class GenericErrorHandler implements ErrorHandler {
-  isSupport(e: Error): boolean {
+class GenericErrorHandler extends Advice<Error, string, any> {
+  async isSupport(e: Error, context?: any): Promise<boolean> {
     return true; // Supports all errors as fallback
   }
 
-  handle(e: Error): string {
+  async exception(e: Error, context?: any): Promise<string> {
     console.log('  [GenericErrorHandler] Handling generic error:', e.message);
     return `Generic error handled: ${e.message}`;
   }
 }
 
 export class AdviceExample implements Runnable {
-  run(): void {
+  async run(): Promise<void> {
     console.log('\n=== Advice Pattern Example ===\n');
-    console.log('Advice pattern provides a way to handle exceptions in a structured way.\n');
+    console.log('Advice pattern provides a way to handle exceptions in a structured way using the Advice interface.\n');
     
-    const handlers: ErrorHandler[] = [
+    const handlers: Advice<Error, string, any>[] = [
       new NetworkErrorHandler(),
       new ValidationErrorHandler(),
       new GenericErrorHandler()
     ];
     
-    const handleError = (error: Error): string => {
+    const handleError = async (error: Error): Promise<string> => {
       for (const handler of handlers) {
-        if (handler.isSupport(error)) {
-          return handler.handle(error);
+        if (await handler.isSupport(error)) {
+          return await handler.exception(error);
         }
       }
       return 'Unhandled error';
@@ -78,17 +73,17 @@ export class AdviceExample implements Runnable {
     // Test different error types
     console.log('1. Testing NetworkError:');
     const networkError = new NetworkError('Connection timeout');
-    const result1 = handleError(networkError);
+    const result1 = await handleError(networkError);
     console.log('  Result:', result1);
     
     console.log('\n2. Testing ValidationError:');
     const validationError = new ValidationError('Invalid email format');
-    const result2 = handleError(validationError);
+    const result2 = await handleError(validationError);
     console.log('  Result:', result2);
     
     console.log('\n3. Testing Generic Error:');
     const genericError = new Error('Something went wrong');
-    const result3 = handleError(genericError);
+    const result3 = await handleError(genericError);
     console.log('  Result:', result3);
     
     console.log('\n=========================\n');

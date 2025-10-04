@@ -13,7 +13,10 @@ type HandlerInfo = {
   priority: number;
   property?: string; // for link type
 };
-
+export type NormalAttrDataType = {
+  originalAttrValue: string;
+  variablePaths: {origin: string, inner: string}[];
+}
 export class EventManager {
   public static readonly attrPrefix = 'dr-';
   public readonly eventNames = [
@@ -90,6 +93,7 @@ export class EventManager {
   public static readonly WINDOW_EVENT_POPSTATE = 'popstate';
   public static readonly WINDOW_EVENT_RESIZE = 'resize';
   public static readonly WINDOW_EVENTS = [EventManager.WINDOW_EVENT_POPSTATE, EventManager.WINDOW_EVENT_RESIZE];
+  public static readonly noDetectAttr = [EventManager.normalAttrMapAttrName]
   public static readonly attrNames = [
     EventManager.valueAttrName,
     EventManager.checkedAttrName,
@@ -464,9 +468,16 @@ export class EventManager {
     });
 
     this.procAttr(childNodes, EventManager.normalAttrMapAttrName, (it, attribute) => {
-      const map = new Map<string, string>(JSON.parse(attribute));
+      const map = new Map<string, NormalAttrDataType>(JSON.parse(attribute));
       map.forEach((v, k) => {
-        const data = ScriptUtils.evaluate(`const $element = this.element;  return ${v} `, Object.assign(obj, {
+
+        const variablePaths = v.variablePaths;
+        let targetScript = v.originalAttrValue;//typeof v.originalAttrValue === 'string' ? JSON.parse(v.originalAttrValue) : v.originalAttrValue;
+        variablePaths.forEach(it => {
+          let r = ObjectUtils.Path.toOptionalChainPath(it.inner);
+          targetScript = targetScript.replaceAll(it.origin,`\${${r}}`);
+        })
+        const data = ObjectUtils.Script.evaluate(`const $element = this.element;  return ${'`'+targetScript+'`'} `, Object.assign(obj, {
           __render: Object.freeze({
             element: it,
             attribute: ElementUtils.getAttributeToObject(it)
@@ -672,7 +683,7 @@ export class EventManager {
   }
 
   public getValue<T = any>(obj: any, name: string, bindObj?: any): T {
-    let r = ScriptUtils.evaluateReturn(name, obj);
+    let r = ObjectUtils.Script.evaluateReturn(name, obj);
     if (typeof r === 'function') {
       r = r.bind(bindObj ?? obj);
     }

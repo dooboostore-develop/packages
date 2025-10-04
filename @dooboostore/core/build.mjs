@@ -199,7 +199,9 @@ const declarationGeneratorPlugin = {
                 try {
                     execSync('pnpm exec tsc -p tsconfig.json --emitDeclarationOnly', { stdio: 'inherit' });
                     console.log('✅ Type declarations generated to dist/types/');
-                    
+
+                  // generateModuleDeclarations();
+                  // addSubmoduleReferences();
                     // Auto-generate exports in package.json based on generated types
                     // generateExportsInPackageJson();
                 } catch (e) {

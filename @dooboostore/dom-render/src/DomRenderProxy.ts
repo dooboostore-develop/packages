@@ -1,5 +1,5 @@
 import { RawSet, RenderResult } from './rawsets/RawSet';
-import { EventManager } from './events/EventManager';
+import { EventManager, NormalAttrDataType } from './events/EventManager';
 import { DomRenderConfig } from './configs/DomRenderConfig';
 import { ScriptUtils } from '@dooboostore/core-web/script/ScriptUtils';
 import { DomRenderFinalProxy, Shield } from './types/Types';
@@ -17,34 +17,47 @@ import { isDefined } from '@dooboostore/core/types';
 import { isOnBeforeReturnSet } from './lifecycle/OnBeforeReturnSet';
 import { isOnChildRenderedByProperty } from './lifecycle/OnChildRenderedByProperty';
 import { ObjectUtils } from '@dooboostore/core/object/ObjectUtils';
-import {ValidUtils} from '@dooboostore/core/valid/ValidUtils'
+import { ValidUtils } from '@dooboostore/core/valid/ValidUtils';
 import { isOnProxyDomRender } from './lifecycle/OnProxyDomRender';
 import { isOnRawSetRendered } from './lifecycle/OnRawSetRendered';
 
-const excludeGetSetPropertys = ['onBeforeReturnGet', 'onBeforeReturnSet', '__domrender_components', '__render', '_DomRender_isFinal', '_domRender_ref', '_rawSets', '_domRender_proxy', '_targets', '_DomRender_origin', '_DomRender_ref', '_DomRender_proxy'];
+const excludeGetSetPropertys = [
+  'onBeforeReturnGet',
+  'onBeforeReturnSet',
+  '__domrender_components',
+  '__render',
+  '_DomRender_isFinal',
+  '_domRender_ref',
+  '_rawSets',
+  '_domRender_proxy',
+  '_targets',
+  '_DomRender_origin',
+  '_DomRender_ref',
+  '_DomRender_proxy'
+];
 export const isWrapProxyDomRenderProxy = <T>(obj: T): boolean => {
-  return obj && typeof obj === 'object' && ('_DomRender_isProxy' in obj);
+  return obj && typeof obj === 'object' && '_DomRender_isProxy' in obj;
 };
-export const getDomRenderOriginObject = <T>(obj: T):T => {
+export const getDomRenderOriginObject = <T>(obj: T): T => {
   if (isWrapProxyDomRenderProxy(obj)) {
     return (obj as any)._domRender_origin;
   }
   return obj;
-}
+};
 export const getDomRenderConfig = (obj: any): DomRenderConfig | undefined => {
   if (isWrapProxyDomRenderProxy(obj)) {
     return obj._domRender_config;
   }
   return undefined;
-}
+};
 //@ts-ignore
 export const getDomRenderProxy = <T>(obj: T): DomRenderProxy<T> | undefined => {
   if (isWrapProxyDomRenderProxy(obj)) {
-  //@ts-ignore
+    //@ts-ignore
     return (obj as any)._domRender_proxy as DomRenderProxy<T>;
   }
   return undefined;
-}
+};
 export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
   public _domRender_ref = new Map<object, Set<string>>();
   public _rawSets = new Map<string, Set<RawSet>>();
@@ -52,7 +65,11 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
   // public _firstTarget: Node;
   public _targets = new Set<Node>();
 
-  constructor(public _domRender_origin: T, target: Node | null | undefined, public _domRender_config: DomRenderConfig) {
+  constructor(
+    public _domRender_origin: T,
+    target: Node | null | undefined,
+    public _domRender_config: DomRenderConfig
+  ) {
     if (target) {
       this._targets.add(target);
       // this._firstTarget = target;
@@ -89,14 +106,22 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
       Object.keys(obj).forEach(it => {
         // Reflect 메타데이터에서 domRender:NoProxy 여부 확인
         try {
-          const isNoProxy = Reflect.getMetadata(DomRenderNoProxyKey, obj, it) || Reflect.getMetadata(DomRenderNoProxyKey, Object.getPrototypeOf(obj).constructor);
+          const isNoProxy =
+            Reflect.getMetadata(DomRenderNoProxyKey, obj, it) ||
+            Reflect.getMetadata(DomRenderNoProxyKey, Object.getPrototypeOf(obj).constructor);
           if (isNoProxy) {
             return obj;
           }
-        } catch (e) {
-        }
+        } catch (e) {}
         const target = obj[it];
-        if (target !== undefined && target !== null && typeof target === 'object' && !DomRenderProxy.isFinal(target) && !Object.isFrozen(target) && !(obj instanceof Shield)) {
+        if (
+          target !== undefined &&
+          target !== null &&
+          typeof target === 'object' &&
+          !DomRenderProxy.isFinal(target) &&
+          !Object.isFrozen(target) &&
+          !(obj instanceof Shield)
+        ) {
           const isExcluded = this._domRender_config.proxyExcludeTyps?.some(it => target instanceof it) ?? false;
           // const filter = this._domRender_config.proxyExcludeTyps?.filter(it => target instanceof it) ?? [];
           if (!isExcluded) {
@@ -113,7 +138,6 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
   }
 
   public async initRender(target: Node, rawSet?: RawSet) {
-
     // if (target instanceof Element) {
     //   target.setAttribute('dr-this', 'this');
     //   const rawSets = RawSet.checkPointCreates(target, this._domRender_proxy, this.config);
@@ -131,7 +155,7 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
     const onCreate = (target as any).getAttribute?.(RawSet.DR_ON_CREATE_ARGUMENTS_OPTIONNAME);
     let createParam: any[] = [];
     if (onCreate) {
-      createParam = ScriptUtils.evaluateReturn(onCreate, this._domRender_proxy);
+      createParam = ObjectUtils.Script.evaluateReturn(onCreate, this._domRender_proxy);
       if (!Array.isArray(createParam)) {
         createParam = [createParam];
       }
@@ -150,7 +174,11 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
     const rawSets = RawSet.checkPointCreates(target, this._domRender_proxy, this._domRender_config);
     // console.log('initRender -------rawSet', rawSets)
     // 중요 초기에 한번 튕겨줘야함.
-    this._domRender_config.eventManager.applyEvent(this._domRender_proxy, this._domRender_config.eventManager.findAttrElements(target as Element, this._domRender_config), this._domRender_config);
+    this._domRender_config.eventManager.applyEvent(
+      this._domRender_proxy,
+      this._domRender_config.eventManager.findAttrElements(target as Element, this._domRender_config),
+      this._domRender_config
+    );
     rawSets.forEach(it => {
       const variables = it.getUsingTriggerVariables(this._domRender_config);
       if (variables.size <= 0) {
@@ -170,11 +198,12 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
         initParam = ScriptUtils.evaluateReturn(onCreate, this._domRender_proxy);
       }
       if (isOnInitRender(this._domRender_proxy)) {
-        await this._domRender_proxy.onInitRender(initParam, rawSet ?? {dataSet: {config: this._domRender_config}} as any);
+        await this._domRender_proxy.onInitRender(
+          initParam,
+          rawSet ?? ({ dataSet: { config: this._domRender_config } } as any)
+        );
       }
     }
-
-
   }
 
   public getRawSets() {
@@ -214,13 +243,23 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
         if (it.detect?.action) {
           it.detect.action();
           // } else if (it.type === RawSetType.TARGET_ELEMENT && it.data && fullPathStr && targetAttrMap && (it.fragment as any).render) {
-        } else if (it.type === RawSetType.TARGET_ELEMENT && it.dataSet?.render?.currentThis && fullPathStr && targetAttrMap) {
-          new Map<string, string>(JSON.parse(targetAttrMap)).forEach((v, k) => {
+        } else if (
+          it.type === RawSetType.TARGET_ELEMENT &&
+          it.dataSet?.render?.currentThis &&
+          fullPathStr &&
+          targetAttrMap
+        ) {
+          new Map<string, NormalAttrDataType>(JSON.parse(targetAttrMap)).forEach((v, k) => {
             // it?.data.onChangeAttrRender(k, null, v);
-            const isUsing = EventManager.isUsingThisVar(v, `this.${fullPathStr}`);
+            // console.log('------->?',v,k);
+            const isUsing = v.variablePaths.some(it => EventManager.isUsingThisVar(it.inner, `this.${fullPathStr}`))
+            // console.log('------->?',v,k, isUsing);
             if (isUsing) {
-              const targetAttrObject = RawSet.getAttributeObject((it.point.node as Element), { script: it.dataSet?.render?.renderScript ?? '', obj: Object.assign(this._domRender_proxy ?? {}, { __render: it.dataSet?.render }) });
-              it.dataSet.render??={};
+              const targetAttrObject = RawSet.getAttributeObject(it.point.node as Element, {
+                script: it.dataSet?.render?.renderScript ?? '',
+                obj: Object.assign(this._domRender_proxy ?? {}, { __render: it.dataSet?.render })
+              });
+              it.dataSet.render ??= {};
               it.dataSet.render.attribute = targetAttrObject;
               // const render = it.dataSet?.render;
               // console.log('render-->!!!!!', it.dataSet.render);
@@ -245,10 +284,10 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
         removeRawSets.push(it);
       }
 
-      const t = it.findNearThis(this._domRender_proxy)
+      const t = it.findNearThis(this._domRender_proxy);
       // TODO: 호출된곳에서 또 변수를 수정하게되면 무한루프니깐 왠만하면 사용못하게 해야한다.
-      if(isOnRawSetRendered(t)){
-        await t.onRawSetRendered(it, {path: fullPathStr, renderResult});
+      if (isOnRawSetRendered(t)) {
+        await t.onRawSetRendered(it, { path: fullPathStr, renderResult });
       }
       // console.log('----', it);
     }
@@ -260,25 +299,32 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
   }
 
   // domrender_ref로 찾는걸로 바꿈
-    // public findRootDomRenderProxy(): DomRenderProxy<any> {
-    //   let current:DomRenderProxy<any>  = this;
-    //   while (current.parentProxy) {
-    //     current = current.parentProxy;
-    //   }
-    //   return current;
-    // }
+  // public findRootDomRenderProxy(): DomRenderProxy<any> {
+  //   let current:DomRenderProxy<any>  = this;
+  //   while (current.parentProxy) {
+  //     current = current.parentProxy;
+  //   }
+  //   return current;
+  // }
 
-  public root(pathInfos: {path: string, obj: any}[][], value?: any, lastDoneExecute = true): {path: string, obj:any}[][] {
+  public root(
+    pathInfos: { path: string; obj: any }[][],
+    value?: any,
+    lastDoneExecute = true
+  ): { path: string; obj: any }[][] {
     // console.log('root--->', paths, value, this._domRender_ref, this._domRender_origin);
-    const fullPaths: {path: string, obj:any}[][] = [];
+    const fullPaths: { path: string; obj: any }[][] = [];
     if (this._domRender_ref.size > 0) {
       this._domRender_ref.forEach((it, key) => {
         if ('_DomRender_isProxy' in key) {
           it.forEach(sit => {
             try {
-
-              const concat = pathInfos.concat([[{path: sit, obj: key}]]);
-              const items:{path: string, obj:any}[][] = (key as any)._DomRender_proxy?.root(concat, value, lastDoneExecute);
+              const concat = pathInfos.concat([[{ path: sit, obj: key }]]);
+              const items: { path: string; obj: any }[][] = (key as any)._DomRender_proxy?.root(
+                concat,
+                value,
+                lastDoneExecute
+              );
 
               fullPaths.push(items.flat());
               // fullPaths.push({path: items.map(it=>it.path).join(','), obj: this._domRender_proxy});
@@ -293,9 +339,12 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
       });
     } else {
       // const firstPathStr = paths.slice(1).reverse().join('.');
-      const strings = pathInfos.reverse().map(it=>it.map(it=>it.path).join(','));
+      const strings = pathInfos.reverse().map(it => it.map(it => it.path).join(','));
       // array같은경우도 키값으로 접근하기때문에 특정 인덱스를 찾아서 그부분만 바꿔줄수 있다.
-      const fullPathStr = strings.map(it => isNaN(Number(it)) ? '.' + it : `[${it}]`).join('').slice(1);
+      const fullPathStr = strings
+        .map(it => (isNaN(Number(it)) ? '.' + it : `[${it}]`))
+        .join('')
+        .slice(1);
       // console.log('-------fullPathStr', fullPathStr, lastDoneExecute);
       if (lastDoneExecute) {
         // const firstData = ScriptUtils.evalReturn('this.' + firstPathStr, this._domRender_proxy);
@@ -304,7 +353,10 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
         // }
         const iterable = this._rawSets.get(fullPathStr);
         // array check
-        const front = strings.slice(0, strings.length - 1).map(it => isNaN(Number(it)) ? '.' + it : `[${it}]`).join('');
+        const front = strings
+          .slice(0, strings.length - 1)
+          .map(it => (isNaN(Number(it)) ? '.' + it : `[${it}]`))
+          .join('');
         const lastPropertyName = strings[strings.length - 1];
         const path = 'this' + front;
         const data = ScriptUtils.evaluateReturn(ObjectUtils.Path.toOptionalChainPath(path), this._domRender_proxy);
@@ -336,10 +388,19 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
               if (value === undefined) {
                 const rawSet = it.getHasRawSet(lastPropertyName);
                 rawSet?.remove();
-                startElement.setAttribute(RawSet.DR_HAS_KEYS_OPTIONNAME, keys.filter(it => it !== lastPropertyName).join(','));
+                startElement.setAttribute(
+                  RawSet.DR_HAS_KEYS_OPTIONNAME,
+                  keys.filter(it => it !== lastPropertyName).join(',')
+                );
               }
               if (!keys.includes(lastPropertyName)) {
-                const raws = DrThisProperty.append(this._domRender_proxy, fullPathStr, lastPropertyName, it, this._domRender_config);
+                const raws = DrThisProperty.append(
+                  this._domRender_proxy,
+                  fullPathStr,
+                  lastPropertyName,
+                  it,
+                  this._domRender_config
+                );
                 if (raws) {
                   rawSets.push(...raws);
                 }
@@ -348,7 +409,7 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
               }
             });
             if (skip === false || rawSets.length > 0) {
-             rData = await this.render(rawSets);
+              rData = await this.render(rawSets);
             }
           }
 
@@ -362,8 +423,6 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
             rData = await this.render(Array.from(iterable), fullPathStr);
           }
 
-
-
           // console.log('-----------', this, lastPropertyName );
           // this._targets.forEach(it => {
           //   // return;
@@ -373,18 +432,26 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
           //   }
           // });
 
-
+          const Node = ((this._domRender_config.window as any).Node)
           this._targets.forEach(it => {
             // return;
             if (it.nodeType === Node.DOCUMENT_FRAGMENT_NODE || it.nodeType === Node.ELEMENT_NODE) {
-              const targets = this._domRender_config.eventManager.findAttrElements((it as DocumentFragment | Element), this._domRender_config);
-              this._domRender_config.eventManager.changeVar(this._domRender_proxy, targets, `this.${fullPathStr}`, this._domRender_config);
+              const targets = this._domRender_config.eventManager.findAttrElements(
+                it as DocumentFragment | Element,
+                this._domRender_config
+              );
+              this._domRender_config.eventManager.changeVar(
+                this._domRender_proxy,
+                targets,
+                `this.${fullPathStr}`,
+                this._domRender_config
+              );
             }
           });
 
           //랜더대상된게있으면
-          if(rData?.length > 0 && isOnChildRenderedByProperty(data)) {
-            const propertyValue = ScriptUtils.evaluateReturn(`this.${lastPropertyName}`, data)
+          if (rData?.length > 0 && isOnChildRenderedByProperty(data)) {
+            const propertyValue = ScriptUtils.evaluateReturn(`this.${lastPropertyName}`, data);
             data.onChildRenderedByProperty(lastPropertyName, propertyValue);
             // data
           }
@@ -393,7 +460,7 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
           // console.log('DonrenderProxy root RenderDone')
         });
       }
-      fullPaths.push([{path:fullPathStr, obj: this._domRender_proxy}]);
+      fullPaths.push([{ path: fullPathStr, obj: this._domRender_proxy }]);
     }
 
     // console.log('dddddd', fullPaths.flatMap(it=>it).map(it=>it.path))
@@ -437,77 +504,116 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
     //   (target as any)[p]?.obj?.onDrThisUnBind?.();
     // }
     // is ComponentSet
-    if ((value instanceof ComponentSet) && ((target as any)[p] instanceof ComponentSet)) {
+    if (value instanceof ComponentSet && (target as any)[p] instanceof ComponentSet) {
       value.config.beforeComponentSet = (target as any)[p];
     }
     (target as any)[p] = value;
-    let fullPathInfo: {path: string, obj:any}[][] = [];
+    let fullPathInfo: { path: string; obj: any }[][] = [];
     if (typeof p === 'string') {
-      fullPathInfo = this.root([[{path:p, obj: this._domRender_proxy}]], value)
+      fullPathInfo = this.root([[{ path: p, obj: this._domRender_proxy }]], value);
     }
 
     // console.log('setRooot', fullPathInfo);
-
 
     //normal attribute 또한 링크랑 같은 증세라서 이렇게 해줘야한다!!
     // const rootDomRenderProxy = this.findRootDomRenderProxy();
     // console.log('set!!!!!!!', fullPathInfo, rootDomRenderProxy)
     // console.log('--------rootDom',fullPathInfo, rootDomRenderProxy, rootDomRenderProxy._domRender_proxy)
     const rootElement = this._domRender_config.rootElement ?? this._domRender_config.window.document;
-    DocumentUtils.querySelectorAllByAttributeName(rootElement, EventManager.normalAttrMapAttrName)?.forEach(elementInfo => {
-      // @ts-ignore
-      // const optionalPath = ObjectUtils.Path.toOptionalChainPath(elementInfo.value);
-      const targets = new Map<string,string>(ScriptUtils.evaluateReturn<[string, string][]>(elementInfo.value));
-      Array.from(targets.entries()).filter(([key, value])=>value.trim()).filter(isDefined).flatMap(([key,valueScript])=> {
-        return fullPathInfo.flat().filter(it => valueScript.includes(`this.${it.path}`)).flatMap(it=> ({key, valueScript: valueScript, pathInfo: it}));
-      }).forEach(it=> {
-        const optionalPath = ObjectUtils.Path.toOptionalChainPath(it.valueScript);
-        const value1 = ScriptUtils.evaluateReturn(optionalPath, it.pathInfo.obj);
-        // console.log('proxy set!Attribut======', it.key, value1)
-        if (value1 === null) {
-          elementInfo.element.removeAttribute(it.key);
-          elementInfo.element[it.key] = null;
-        } else {
-          elementInfo.element.setAttribute(it.key, value1);
-          elementInfo.element[it.key] = value1
-        }
-      })
-    })
+    DocumentUtils.querySelectorAllByAttributeName(rootElement, EventManager.normalAttrMapAttrName)?.forEach(
+      elementInfo => {
+        // @ts-ignore
+        // const optionalPath = ObjectUtils.Path.toOptionalChainPath(elementInfo.value);
+        const targets = new Map<string, NormalAttrDataType>(
+          ObjectUtils.Script.evaluateReturn<[string, NormalAttrDataType][]>(elementInfo.value)
+        );
+        Array.from(targets.entries())
+          .filter(isDefined)
+          .flatMap(([key, valueScript]) => {
+            return fullPathInfo
+              .flat()
+              .filter(it => valueScript.variablePaths?.some(vit=> vit.inner.includes(`this.${it.path}`)))
+              .flatMap(it => ({ key, valueScript: valueScript, pathInfo: it }));
+          })
+          .forEach(it => {
+            // const optionalPaths = it.valueScript.variablePaths.map(it => ObjectUtils.Path.toOptionalChainPath(it))
+            const variablePaths = it.valueScript.variablePaths;
+            let targetScript = it.valueScript.originalAttrValue;
+            variablePaths.forEach(it => {
+              let r = ObjectUtils.Path.toOptionalChainPath(it.inner);
+              targetScript = targetScript.replaceAll(it.origin,`\${${r}}`);
+            })
+            const value1 = ObjectUtils.Script.evaluateReturn('`'+targetScript+'`', it.pathInfo.obj);
+            // console.log('proxy set!Attribut======', it.key, value1)
+            if (value1 === null) {
+              elementInfo.element.removeAttribute(it.key);
+              elementInfo.element[it.key] = null;
+            } else {
+              elementInfo.element.setAttribute(it.key, value1);
+              elementInfo.element[it.key] = value1;
+            }
+          });
+      }
+    );
 
     //여기서 링크 같은거 해줘야함  *-link로 변수값이 변경되면 그걸 참고하고있는 다른것들에도 해줘야한다.
-    DocumentUtils.querySelectorAllByAttributeName(rootElement, EventManager.linkTargetMapAttrName)?.forEach(elementInfo => {
-      // @ts-ignore
-       const targets = new Map<string,string>(ScriptUtils.evaluateReturn<[string, string][]>(elementInfo.value));
+    DocumentUtils.querySelectorAllByAttributeName(rootElement, EventManager.linkTargetMapAttrName)?.forEach(
+      elementInfo => {
+        // @ts-ignore
+        const targets = new Map<string, string>(ScriptUtils.evaluateReturn<[string, string][]>(elementInfo.value));
 
-      Array.from(targets.entries()).filter(([key, value])=>value.trim()).filter(isDefined).flatMap(([key,valueScript])=> {
-        return fullPathInfo.flat().filter(it => valueScript.includes(`this.${it.path}`)).flatMap(it=> ({key, valueScript: valueScript, pathInfo: it}));
-      }).forEach(info=> {
-        const value1 = ScriptUtils.evaluateReturn(info.valueScript, info.pathInfo.obj);
-        const applyAttributeName = EventManager.linkAttrs.find(it => it.name === info.key);
-        if (applyAttributeName) {
-          if (value1 === null) {
-            elementInfo.element.removeAttribute(applyAttributeName.property);
-          } else {
-            // console.log('ppppppppppppppppppppppp', applyAttributeName, elementInfo)
-            elementInfo.element.setAttribute(applyAttributeName.property, value1);
-          }
-        }
-      })
+        Array.from(targets.entries())
+          .filter(([key, value]) => value.trim())
+          .filter(isDefined)
+          .flatMap(([key, valueScript]) => {
+            return fullPathInfo
+              .flat()
+              .filter(it => valueScript.includes(`this.${it.path}`))
+              .flatMap(it => ({ key, valueScript: valueScript, pathInfo: it }));
+          })
+          .forEach(info => {
+            const value1 = ScriptUtils.evaluateReturn(info.valueScript, info.pathInfo.obj);
+            const applyAttributeName = EventManager.linkAttrs.find(it => it.name === info.key);
+            if (applyAttributeName) {
+              if (value1 === null) {
+                elementInfo.element.removeAttribute(applyAttributeName.property);
+              } else {
+                // console.log('ppppppppppppppppppppppp', applyAttributeName, elementInfo)
+                elementInfo.element.setAttribute(applyAttributeName.property, value1);
+              }
+            }
+          });
 
-      Array.from(targets.entries()).filter(([key, value])=>value.trim()).filter(isDefined).flatMap(([key,valueScript])=> {
-        return fullPathInfo.flat().filter(it => valueScript.includes(`this.${it.path}`)).flatMap(it=> ({key, valueScript: valueScript, pathInfo: it}));
-      }).forEach(info=> {
-       const linkInfo = EventManager.linkAttrs.find(it=>it.name === info.key)
-        if (linkInfo) {
-          elementInfo.element[linkInfo.property] = value
-        }
-      })
-    })
+        Array.from(targets.entries())
+          .filter(([key, value]) => value.trim())
+          .filter(isDefined)
+          .flatMap(([key, valueScript]) => {
+            return fullPathInfo
+              .flat()
+              .filter(it => valueScript.includes(`this.${it.path}`))
+              .flatMap(it => ({ key, valueScript: valueScript, pathInfo: it }));
+          })
+          .forEach(info => {
+            const linkInfo = EventManager.linkAttrs.find(it => it.name === info.key);
+            if (linkInfo) {
+              elementInfo.element[linkInfo.property] = value;
+            }
+          });
+      }
+    );
 
     // console.log('---end',receiver);
-    if (('onBeforeReturnSet' in receiver) && typeof p === 'string' && !(this._domRender_config.proxyExcludeOnBeforeReturnSets ?? []).concat(excludeGetSetPropertys).includes(p)) {
-      if(isOnBeforeReturnSet(receiver)){
-        receiver.onBeforeReturnSet?.(p, value, fullPathInfo.map(it => it.map(it=>it.path).join()));
+    if (
+      'onBeforeReturnSet' in receiver &&
+      typeof p === 'string' &&
+      !(this._domRender_config.proxyExcludeOnBeforeReturnSets ?? []).concat(excludeGetSetPropertys).includes(p)
+    ) {
+      if (isOnBeforeReturnSet(receiver)) {
+        receiver.onBeforeReturnSet?.(
+          p,
+          value,
+          fullPathInfo.map(it => it.map(it => it.path).join())
+        );
       }
     }
     return true;
@@ -519,9 +625,9 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
       return this._domRender_origin;
     } else if (p === '_DomRender_ref' || p === '_domRender_ref') {
       return this._domRender_ref;
-    } else if (p === '_DomRender_config' || p ==='_domRender_config') {
+    } else if (p === '_DomRender_config' || p === '_domRender_config') {
       return this._domRender_config;
-    } else if (p === '_DomRender_proxy' || p ==='_domRender_proxy') {
+    } else if (p === '_DomRender_proxy' || p === '_domRender_proxy') {
       return this;
     } else {
       // Date라던지 이런놈들은-_-프록시가 이상하게 동작해서
@@ -539,12 +645,25 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
       // console.log('-->', p, Object.prototype.toString.call((target as any)[p]), (target as any)[p])
       // return (target as any)[p]
       let it = (target as any)[p];
-      if (it && typeof it === 'object' && ('_DomRender_isProxy' in it) && Object.prototype.toString.call(it._DomRender_origin) === '[object Date]') {
+      if (
+        it &&
+        typeof it === 'object' &&
+        '_DomRender_isProxy' in it &&
+        Object.prototype.toString.call(it._DomRender_origin) === '[object Date]'
+      ) {
         it = it._DomRender_origin;
       }
 
-      if (('onBeforeReturnGet' in receiver) && typeof p === 'string' && !(this._domRender_config.proxyExcludeOnBeforeReturnGets ?? []).concat(excludeGetSetPropertys).includes(p)) {
-        (receiver as any)?.onBeforeReturnGet?.(p, it, this.root([[{path:p, obj: this._domRender_proxy}]], it, false));
+      if (
+        'onBeforeReturnGet' in receiver &&
+        typeof p === 'string' &&
+        !(this._domRender_config.proxyExcludeOnBeforeReturnGets ?? []).concat(excludeGetSetPropertys).includes(p)
+      ) {
+        (receiver as any)?.onBeforeReturnGet?.(
+          p,
+          it,
+          this.root([[{ path: p, obj: this._domRender_proxy }]], it, false)
+        );
       }
       return it;
     }
@@ -553,7 +672,7 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
   deleteProperty(target: T, p: string | symbol): boolean {
     delete (target as any)[p];
     if (typeof p === 'string') {
-      this.root([[{path:p, obj: this._domRender_proxy}]]);
+      this.root([[{ path: p, obj: this._domRender_proxy }]]);
     }
     return true;
   }
@@ -566,19 +685,27 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
     try {
       // const isNoProxy = Reflect.getMetadata(DomRenderNoProxyKey, obj, p) || Reflect.getMetadata(DomRenderNoProxyKey, Object.getPrototypeOf(obj).constructor);
       const isObject = typeof obj === 'object';
-      const isNoProxy = isObject && isDomRenderNoProxy(obj,p)
-      const isExclude = (this._domRender_config.proxyExcludeTyps?.some(it => obj instanceof it)) ?? false;
+      const isNoProxy = isObject && isDomRenderNoProxy(obj, p);
+      const isExclude = this._domRender_config.proxyExcludeTyps?.some(it => obj instanceof it) ?? false;
       const isFinal = isObject && DomRenderProxy.isFinal(obj);
       const isFrozen = Object.isFrozen(obj);
       const isShield = obj instanceof Shield;
-      if (obj === undefined || obj === null || isNoProxy || isExclude || ValidUtils.isNullOrUndefined(obj) || !isObject || isFinal || isFrozen || isShield) {
+      if (
+        obj === undefined ||
+        obj === null ||
+        isNoProxy ||
+        isExclude ||
+        ValidUtils.isNullOrUndefined(obj) ||
+        !isObject ||
+        isFinal ||
+        isFrozen ||
+        isShield
+      ) {
         return obj;
       }
-    } catch (e) {
-    }
+    } catch (e) {}
 
-
-/*
+    /*
     const proxyTarget = (this._domRender_config.proxyExcludeTyps?.filter(it => obj instanceof it) ?? []).length <= 0;
     if (proxyTarget && obj !== undefined && obj !== null && typeof obj === 'object' && !('_DomRender_isProxy' in obj) && !DomRenderProxy.isFinal(obj) && !Object.isFrozen(obj) && !(obj instanceof Shield)) {
       const domRender = new DomRenderProxy(obj, undefined, this._domRender_config);

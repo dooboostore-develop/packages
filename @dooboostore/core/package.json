@@ -1,6 +1,6 @@
 {
   "name": "@dooboostore/core",
-  "version": "1.0.22",
+  "version": "1.0.26",
   "license": "MIT",
   "type": "module",
   "main": "./dist/cjs/index.js",
@@ -68,7 +68,7 @@
     "publish:npm": "pnpm run build && cd dist && pnpm publish --no-git-checks",
     "ts:clean": "find . -name '*.js' -o -name '*.map' -o -name '*.d.ts' | xargs rm -f",
     "typecheck": "pnpm exec tsc --noEmit",
-    "test": "echo test"
+    "test": "pnpm run build && cd test/case && pnpm run ts-node"
   },
   "peerDependencies": {
     "reflect-metadata": "^0.2.2"

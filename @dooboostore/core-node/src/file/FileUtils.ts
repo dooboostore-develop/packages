@@ -137,6 +137,22 @@ export namespace FileUtils {
     // const buffer = node_fs.readFileSync(p);
     return buffer;
   }
+
+  export const readAsync = async (path: PathParamType, config?: {  option?: Parameters<typeof node_fs.promises.readFile>[1] }) => {
+    const p = FileUtils.path(path);
+    return node_fs.promises.readFile(p, config?.option);
+  }
+
+  export const readStringSync = (path: PathParamType): string  => {
+    const p = FileUtils.path(path);
+    return node_fs.readFileSync(p, 'utf-8');
+  }
+
+  export const readStringAsync = async (path: PathParamType): Promise<string>  => {
+    const p = FileUtils.path(path);
+    return node_fs.promises.readFile(p, 'utf-8');
+  }
+
   export const read = async (path: PathParamType, config: {  option: Parameters<typeof node_fs['readFile']>[1] }) => {
     const p = FileUtils.path(path);
     return node_fs.readFile(p, config.option);

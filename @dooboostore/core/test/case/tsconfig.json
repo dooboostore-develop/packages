@@ -10,6 +10,10 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "strict": false,
-    "moduleResolution": "bundler"
+    "moduleResolution": "node",
+    "baseUrl": ".",
+    "paths": {
+      "@dooboostore/core": ["../../../src/*"]
+    }
   }
 }

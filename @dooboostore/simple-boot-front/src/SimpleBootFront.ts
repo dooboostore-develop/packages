@@ -24,6 +24,7 @@ import { routerProcess } from '@dooboostore/simple-boot/decorators/route/Router'
 import { BehaviorSubject } from '@dooboostore/core/message/BehaviorSubject';
 import { RouterModule } from '@dooboostore/simple-boot/route/RouterModule';
 import { Observable } from '@dooboostore/core/message/Observable';
+import { filter } from '@dooboostore/core/message/operators/filter';
 
 export type PopStateType = { type: 'popstateData'; router: any; noSimpleBootFrontRouting?: boolean };
 const isPopStateDataType = (state: any): state is PopStateType => {
@@ -32,11 +33,11 @@ const isPopStateDataType = (state: any): state is PopStateType => {
 
 type RoutingSubjectDataType =
   | {
-      state: 'start' | 'end' | 'error-end';
+      triggerPoint: 'start' | 'end' | 'error-end';
       routerModule: RouterModule<SimAtomic<any>>;
     }
   | {
-      state: 'initial';
+      triggerPoint: 'initial';
     };
 
 export class SimpleBootFront extends SimpleApplication {
@@ -60,7 +61,7 @@ export class SimpleBootFront extends SimpleApplication {
   // private rootRouterTargetElement?: Element;
   private rootRouter?: ComponentSet<any>;
   private domRenderRootObject: DomRenderRootObject;
-  private routingSubject = new BehaviorSubject<RoutingSubjectDataType>({ state: 'initial' });
+  private routingSubject = new BehaviorSubject<RoutingSubjectDataType>({ triggerPoint: 'initial' });
 
   constructor(public option: SimFrontOption) {
     super(option);
@@ -129,8 +130,7 @@ export class SimpleBootFront extends SimpleApplication {
   }
 
   get routingSubjectObservable() {
-    const observable: Observable<RoutingSubjectDataType> = this.routingSubject.asObservable();
-    return observable;
+    return this.routingSubject.asObservable();
   }
   public getComponentInnerHtml(targetObj: any, id: string) {
     const component = getComponent(targetObj);
@@ -172,6 +172,7 @@ export class SimpleBootFront extends SimpleApplication {
   }
 
   private initRun(otherInstanceSim?: Map<ConstructorType<any>, any>) {
+    // console.log('!@!!', this.option.window.document.body.innerHTML);
     const targetUserElement =
       typeof this.option.selector === 'string'
         ? this.option.window.document.querySelector(this.option.selector)
@@ -207,12 +208,16 @@ export class SimpleBootFront extends SimpleApplication {
       targetUserElement.replaceWith(targetElement);
     }, 0);
 
-    this.domRenderRouter.observable.subscribe(it => {
+    // dom-render 라우팅 끝나면
+    this.domRenderRouter.observable.pipe(filter(it=>it.triggerPoint==='end')).subscribe(it => {
       // console.log('this.domRenderRouter.observable.subscribe---------------', it)
-      const intent = new Intent(this.domRenderRouter.getUrl() || '/');
+      const intent = new Intent(it.path || '/');
       //   // TODO: 왜 canActivate가 두번 호출되는지 확인 필요!! 그래서 setTimeout으로 처리함 원인 모르겠음 아 씨발
       this.routing<SimAtomic, any>(intent, { router: this.domRenderRootObject }).then(async it => {
-        this.routingSubject.next({ state: 'start', routerModule: it });
+
+        // console.log('vvvvvvvvv', it);
+      // dom-render 라우팅 끝나면 -> simple-boot-front routing start!
+        this.routingSubject.next({ triggerPoint: 'start', routerModule: it });
         let findFirstRouter = it.firstRouteChainValue;
         //       setTimeout(() => {
         if (findFirstRouter.constructor === this.option.rootRouter) {
@@ -233,7 +238,7 @@ export class SimpleBootFront extends SimpleApplication {
           // }
           // },5)
         }
-        this.routingSubject.next({ state: 'end', routerModule: it });
+        this.routingSubject.next({ triggerPoint: 'end', routerModule: it });
         //       }, 0);
       });
     });
@@ -241,7 +246,7 @@ export class SimpleBootFront extends SimpleApplication {
     return simstanceManager;
   }
   async goRouting(url: string) {
-    await this.domRenderRouter?.go({ path: url, disabledPopEvent: false });
+    await this.domRenderRouter?.go({ path: url });
     // this.afterSetting();
   }
 
@@ -261,13 +266,13 @@ export class SimpleBootFront extends SimpleApplication {
     return this;
   }
 
-  private dispatchPopStateEvent(noSimpleBootFrontRouting?: boolean) {
-    const state: PopStateType = this.routerAndSettingData
-      ? { type: 'popstateData', noSimpleBootFrontRouting, router: this.routerAndSettingData.routerAtomic.getValue() }
-      : undefined;
-    // console.log('dispatchPopState', state)
-    this.option.window.dispatchEvent(new PopStateEvent('popstate', { state: state }));
-  }
+  // private dispatchPopStateEvent(noSimpleBootFrontRouting?: boolean) {
+  //   const state: PopStateType = this.routerAndSettingData
+  //     ? { type: 'popstateData', noSimpleBootFrontRouting, router: this.routerAndSettingData.routerAtomic.getValue() }
+  //     : undefined;
+  //   // console.log('dispatchPopState', state)
+  //   this.option.window.dispatchEvent(new PopStateEvent('popstate', { triggerPoint: state }));
+  // }
 
   // TODO: 이거 나중에 없에야될것같은데 이제 안쓰는거라..훔.. 남겨둬야하나..훔..
   //   private afterSetting() {

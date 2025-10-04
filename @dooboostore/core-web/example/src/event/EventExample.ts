@@ -4,42 +4,62 @@ import { showResult } from '../index';
 
 export class EventExample implements Runnable {
   async run(): Promise<void> {
-    showResult('Event Utils', 'Testing event observable utilities');
-
-    // Create a test button
+    showResult('Event Utils', 'Testing event handling with Observable pattern');
+    
+    // Create a test button element
+    const testButton = document.createElement('button');
+    testButton.textContent = 'Click Me!';
+    testButton.style.padding = '10px 20px';
+    testButton.style.margin = '10px';
+    testButton.style.backgroundColor = '#007bff';
+    testButton.style.color = 'white';
+    testButton.style.border = 'none';
+    testButton.style.borderRadius = '4px';
+    testButton.style.cursor = 'pointer';
+    
+    // Add button to output
     const output = document.getElementById('output');
-    if (!output) return;
+    if (output) {
+      output.appendChild(testButton);
+    }
     
-    const button = document.createElement('button');
-    button.textContent = 'Click Me!';
-    button.style.padding = '10px 20px';
-    button.style.fontSize = '16px';
-    button.style.margin = '10px 0';
-    button.style.cursor = 'pointer';
-    button.style.background = '#667eea';
-    button.style.color = 'white';
-    button.style.border = 'none';
-    button.style.borderRadius = '6px';
-    output.appendChild(button);
-    
-
-    showResult('Event Listener Added', 'Click the button to see events in action!', true);
-    showResult('Info', 'EventUtils provides Observable-based event handling for DOM elements');
-    
-    // Observable 예제도 추가
-    showResult('Testing Observable', 'Creating Observable-based event listener...', true);
-    const clickObservable = EventUtils.htmlElementEventObservable(button, 'click');
-    const subscription = clickObservable.subscribe({
+    // Subscribe to click events
+    let clickCount = 0;
+    const clickSubscription = EventUtils.htmlElementEventObservable(testButton, 'click').subscribe({
       next: (event) => {
-        console.log('Observable click event:', event);
-        showResult('Observable Event', 'Observable detected a click!', true);
+        clickCount++;
+        showResult('Click Event', `Button clicked ${clickCount} times!`, true);
+        
+        if (clickCount >= 3) {
+          showResult('Event Cleanup', 'Unsubscribing after 3 clicks', true);
+          clickSubscription.unsubscribe();
+        }
       }
     });
     
-    // Cleanup after 30 seconds
+    // Subscribe to mouse events
+    const mouseSubscription = EventUtils.htmlElementEventObservable(testButton, 'mouseenter').subscribe({
+      next: (event) => {
+        showResult('Mouse Enter', 'Mouse entered button area', true);
+      }
+    });
+    
+    // Subscribe to mouse leave events
+    const mouseLeaveSubscription = EventUtils.htmlElementEventObservable(testButton, 'mouseleave').subscribe({
+      next: (event) => {
+        showResult('Mouse Leave', 'Mouse left button area', true);
+      }
+    });
+    
+    // Clean up after 10 seconds
     setTimeout(() => {
-      subscription.unsubscribe();
-      button.remove();
-    }, 30000);
+      clickSubscription.unsubscribe();
+      mouseSubscription.unsubscribe();
+      mouseLeaveSubscription.unsubscribe();
+      showResult('Cleanup', 'All event subscriptions cleaned up', true);
+    }, 10000);
+    
+    showResult('Info', 'EventUtils provides reactive event handling with Observable pattern');
+    showResult('Instructions', 'Click the button above to test event handling!', true);
   }
 }

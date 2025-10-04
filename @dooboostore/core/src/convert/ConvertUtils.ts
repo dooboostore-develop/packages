@@ -208,6 +208,88 @@ export namespace ConvertUtils {
                    .replace(/&#x2F;/g, '/');
   }
 
+  export function escapeHTML(htmlString: string, option?: { targets?: string[] }): string {
+    if (!htmlString) return '';
+    
+    // HTML escape map - 순서 중요: & 를 먼저 처리해야 함
+    // https://dev-handbook.tistory.com/23
+    const escapeMap: Record<string, string> = {
+      '&': '&amp;',   // 반드시 먼저 처리
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#39;',   // or &apos; (하지만 HTML4에서는 &#39; 권장)
+      '/': '&#x2F;',
+      '`': '&#x60;',
+      '=': '&#x3D;',
+      '{': '&#123;',
+      '}': '&#125;',
+      '#': '&#35;',
+      '$': '&#36;',
+      '\n': '&#10;',  // newline
+      '\r': '&#13;',  // carriage return
+      '\t': '&#9;',   // tab
+      '\u00A0': '&nbsp;', // non-breaking space
+      '¢': '&cent;',
+      '£': '&pound;',
+      '¥': '&yen;',
+      '€': '&euro;',
+      '©': '&copy;',
+      '®': '&reg;',
+      '™': '&trade;',
+      '°': '&deg;',
+      '±': '&plusmn;',
+      '×': '&times;',
+      '÷': '&divide;',
+      '−': '&minus;',
+      '•': '&bull;',
+      '…': '&hellip;',
+      '←': '&larr;',
+      '→': '&rarr;',
+      '↑': '&uarr;',
+      '↓': '&darr;',
+      '↔': '&harr;',
+    };
+
+    // targets 옵션이 있으면 해당 문자만 필터링
+    const targetsSet = option?.targets ? new Set(option.targets) : null;
+    const filteredEscapeMap = targetsSet 
+      ? Object.fromEntries(Object.entries(escapeMap).filter(([key]) => targetsSet.has(key)))
+      : escapeMap;
+
+    // & 가 targets에 포함되어 있거나 targets가 없으면 & 를 먼저 처리
+    const shouldEscapeAmpersand = !targetsSet || targetsSet.has('&');
+    
+    // 이스케이프할 문자들로 정규식 패턴 생성
+    const charsToEscape = Object.keys(filteredEscapeMap).filter(char => char !== '&');
+    if (charsToEscape.length === 0 && !shouldEscapeAmpersand) {
+      return htmlString; // 이스케이프할 문자가 없으면 원본 반환
+    }
+
+    // 정규식 생성 (특수 문자 이스케이프 필요)
+    const escapedChars = charsToEscape.map(char => {
+      // 정규식에서 특별한 의미를 가진 문자들을 이스케이프
+      return char.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    }).join('');
+
+    let result = htmlString;
+    
+    // & 를 먼저 처리 (옵션에 포함된 경우)
+    if (shouldEscapeAmpersand) {
+      result = result.replace(/&/g, '&amp;');
+    }
+    
+    // 나머지 문자 처리
+    if (escapedChars.length > 0) {
+      const regex = new RegExp(`[${escapedChars}]`, 'g');
+      result = result.replace(regex, (match) => {
+        return filteredEscapeMap[match] || match;
+      });
+    }
+
+    return result;
+  }
+
   export const copyObject = <T extends Record<string, any>>(obj: T, update: Partial<T> = {}): T => {
     return {...obj, ...update};
   };

@@ -36,7 +36,7 @@ export namespace Timer {
         const intervalValue = this.getAttribute('interval') ?? 1000;
         console.log('int', this.value, intervalValue);
         this.interval = setInterval(() => {
-          console.log('--------->', this.value);
+          // console.log('--------->', this.value);
           if (this.value) {
             this.value--;
           } else {

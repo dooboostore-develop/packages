@@ -17,7 +17,7 @@ export class TimerExample {
       <div style="margin-bottom: 30px; padding: 20px; background: #f0f9ff; border-radius: 8px;">
         <h4 style="color: #0284c7; margin-bottom: 15px;">Example 1: Simple Countdown Timer</h4>
         
-        <dr-timer value="5" interval="1000" dr-option-component-variable-name="timer">
+        <dr-timer value="5" interval="1000" dr-option-variable-name="timer">
           <div style="text-align: center; margin-bottom: 15px;">
             <div style="font-size: 48px; font-weight: bold; color: #0284c7; font-family: monospace;">
               \${#timer#.value !== undefined ? #timer#.value : '--'}$
@@ -46,7 +46,7 @@ export class TimerExample {
       <div style="margin-bottom: 30px; padding: 20px; background: #fef3c7; border-radius: 8px;">
         <h4 style="color: #d97706; margin-bottom: 15px;">Example 2: Pomodoro Timer (25 min)</h4>
         
-        <dr-timer value="1500" dr-option-component-variable-name="timer">
+        <dr-timer value="1500" dr-option-variable-name="timer">
           <div style="text-align: center; margin-bottom: 15px;">
             <div style="font-size: 56px; font-weight: bold; color: #d97706; font-family: monospace;">
               \${#timer#.value !== undefined ? Math.floor(#timer#.value / 60).toString().padStart(2, '0') : '--'}$:\${#timer#.value !== undefined ? (#timer#.value % 60).toString().padStart(2, '0') : '--'}$

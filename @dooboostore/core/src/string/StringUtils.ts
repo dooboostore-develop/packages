@@ -21,16 +21,7 @@ export namespace StringUtils {
     return usingVars;
   }
 
-  export const regexExecArrayReplace = (origin: string, regexpExecArrayOrRegex: RegExpExecArray[] | RegExp, replace: string | ((data: RegExpExecArray) => string)) => {
-    // console.log('------origin', origin ,regexpExecArrayOrRegex, replace)
-    const regexpExecArrays = Array.isArray(regexpExecArrayOrRegex) ? regexpExecArrayOrRegex : StringUtils.regexExec(regexpExecArrayOrRegex, origin);
-    regexpExecArrays.reverse().forEach(it => {
-      const r = typeof replace === 'string' ? replace : replace(it);
-      origin = origin.substr(0, it.index) + origin.substr(it.index).replace(it[0], r);
-    })
-    // console.log('------origin2', origin)
-    return origin;
-  }
+  
 
   export const escapeSpecialCharacterRegExp = (data: string) => {
     return data.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
@@ -139,5 +130,56 @@ export namespace StringUtils {
       consonant: string;
     }): string => {
     return `${text}${ValidUtils.lastConsonantLetter(text) ? consonant : vowel}`;
+  };
+
+  export interface SequentialReplacement {
+    regex: RegExp;
+    callback: (matched: string) => string;
+  }
+
+  export const replaceSequentially = (
+    text: string,
+    replacements: SequentialReplacement[]
+  ): string => {
+    let remainingText = text;
+    let result = '';
+    // console.log('Executing replaceSequentially with robust fix');
+
+    while (remainingText.length > 0) {
+      let bestMatch: {
+        index: number;
+        match: RegExpExecArray;
+        replacement: SequentialReplacement;
+      } | null = null;
+
+      // Find the earliest match in the remaining text
+      for (const replacement of replacements) {
+        const newRegex = new RegExp(replacement.regex);
+        const match = newRegex.exec(remainingText);
+        if (match) {
+          if (bestMatch === null || match.index < bestMatch.index) {
+            bestMatch = { index: match.index, match, replacement };
+          }
+        }
+      }
+
+      if (bestMatch) {
+        const { index, match, replacement } = bestMatch;
+        const matchedString = match[0];
+
+        // Append the text before the match and the replacement
+        result += remainingText.substring(0, index);
+        result += replacement.callback(matchedString);
+
+        // Update remainingText to be the part after the match
+        remainingText = remainingText.substring(index + matchedString.length);
+      } else {
+        // No more matches, append the rest of the text and finish
+        result += remainingText;
+        break;
+      }
+    }
+
+    return result;
   };
 }

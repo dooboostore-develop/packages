@@ -33,15 +33,70 @@ export class StringExample implements Runnable {
     
     // Pick emoji
     console.log('\n5. Pick Emoji:');
-    const textWithEmoji = 'Hello 👋 World 🌍 !';
+    const textWithEmoji = 'Hello 👋 World 🌍 ! 🚀';
     console.log('  Original:', textWithEmoji);
     console.log('  Emojis:', StringUtils.pickEmoji(textWithEmoji));
     
-    // Regex operations
-    console.log('\n6. Regex operations:');
+    // HTML entity unescaping
+    console.log('\n6. HTML Entity Unescaping:');
     const html = 'Price: &pound;100 &amp; &copy;2024';
     console.log('  HTML entities:', html);
     console.log('  Unescaped:', StringUtils.unescape(html));
+    
+    // Expression execution
+    console.log('\n7. Expression Execution:');
+    const template = 'Hello ${name}, you have ${count} messages!';
+    const data = { name: 'John', count: 5 };
+    console.log('  Template:', template);
+    console.log('  Data:', data);
+    console.log('  Result:', StringUtils.executeExpression(template, data));
+    
+    // Ellipsis
+    console.log('\n8. Ellipsis:');
+    const longText = 'This is a very long text that should be truncated';
+    console.log('  Original:', longText);
+    console.log('  Truncated (20 chars):', StringUtils.ellipsis(longText, 20));
+    console.log('  Truncated (50 chars):', StringUtils.ellipsis(longText, 50));
+    
+    // Korean postposition
+    console.log('\n9. Korean Postposition:');
+    const koreanNames = ['김철수', '박영희', '이민수'];
+    koreanNames.forEach(name => {
+      const withEun = StringUtils.appendPostposition(name, { vowel: '은', consonant: '은' });
+      const withI = StringUtils.appendPostposition(name, { vowel: '이', consonant: '이' });
+      console.log(`  ${name} -> ${withEun}, ${withI}`);
+    });
+    
+    // String appending
+    console.log('\n10. String Appending:');
+    const baseString = 'Hello';
+    console.log('  Base string:', baseString);
+    console.log('  Append 3 times "!":', StringUtils.lappend(3, '!'));
+    
+    // Regex operations
+    console.log('\n11. Regex Operations:');
+    const textWithNumbers = 'I have 5 apples and 10 oranges, total 15 fruits';
+    const numberRegex = /\d+/g;
+    const matches = StringUtils.regexExec(numberRegex, textWithNumbers);
+    console.log('  Text:', textWithNumbers);
+    console.log('  Number matches:', matches.map(m => m[0]));
+    
+    // Regex replacement
+    console.log('\n12. Regex Replacement:');
+    const phoneText = 'Call me at 010-1234-5678 or 02-123-4567';
+    const phoneRegex = /(\d{3,4})-(\d{3,4})-(\d{4})/g;
+    const phoneMatches = StringUtils.regexExec(phoneRegex, phoneText);
+    const maskedText = StringUtils.regexExecArrayReplace(phoneText, phoneMatches, (match) => {
+      return `${match[1]}-****-${match[3]}`;
+    });
+    console.log('  Original:', phoneText);
+    console.log('  Masked:', maskedText);
+    
+    // Special character escaping
+    console.log('\n13. Special Character Escaping:');
+    const specialChars = '.*+?^${}()|[]\\';
+    console.log('  Special chars:', specialChars);
+    console.log('  Escaped:', StringUtils.escapeSpecialCharacterRegExp(specialChars));
     
     console.log('\n=========================\n');
   }

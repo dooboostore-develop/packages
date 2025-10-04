@@ -57,7 +57,7 @@ export namespace ElementUtils {
     return promise;
   }
 
-  export const toInnerHTML = (documentFragment: DocumentFragment, config: { document: Document }) => {
+  export const toInnerHTML = (documentFragment: DocumentFragment | HTMLElement, config: { document: Document }) => {
     // if (documentFragment) {
     const tempDiv = config.document.createElement('div');
     tempDiv.appendChild(documentFragment.cloneNode(true));
@@ -65,6 +65,11 @@ export namespace ElementUtils {
     return tempDiv.innerHTML;
     // }
   }
+  // export const fragmentToHTML = (fragment: DocumentFragment, config: { document: Document } = { document }): string => {
+  //    const tempDiv = config.document.createElement('div');
+  //    tempDiv.appendChild(fragment.cloneNode(true));
+  //    return tempDiv.innerHTML;
+  //  }
 
   export const htmlToFragment = (html: string, config: { document: Document } = { document }): DocumentFragment => {
       const tempDiv = config.document.createElement('div');
@@ -75,6 +80,7 @@ export namespace ElementUtils {
       }
       return fragment;
     }
+
 
 
 /*

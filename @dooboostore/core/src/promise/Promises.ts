@@ -166,6 +166,94 @@ export namespace Promises {
     return {promise, resolve, reject};
   }
 
+  /**
+   * Execute promises in chunks with concurrency limit to prevent network overload
+   * @param promiseFactories Array of promise factories (functions that return promises)
+   * @param chunkSize Number of promises to execute concurrently
+   * @returns Promise that resolves with all results
+   */
+  export const executeInChunks = async <T>(
+    promiseFactories: (() => Promise<T>)[],
+    chunkSize: number = 10
+  ): Promise<T[]> => {
+    const results: T[] = [];
+    
+    for (let i = 0; i < promiseFactories.length; i += chunkSize) {
+      const chunk = promiseFactories.slice(i, i + chunkSize);
+      const chunkResults = await Promise.all(chunk.map(factory => factory()));
+      results.push(...chunkResults);
+      
+      // Add small delay between chunks to be extra safe
+      if (i + chunkSize < promiseFactories.length) {
+        await sleep(100);
+      }
+    }
+    
+    return results;
+  };
+
+  /**
+   * Execute promises with concurrency limit using a pool pattern
+   * @param promiseFactories Array of promise factories
+   * @param concurrency Maximum number of concurrent executions
+   * @returns Promise that resolves with all results
+   */
+  export const executeWithConcurrency = async <T>(
+    promiseFactories: (() => Promise<T>)[],
+    concurrency: number = 10
+  ): Promise<T[]> => {
+    const results: T[] = new Array(promiseFactories.length);
+    let currentIndex = 0;
+
+    const executeNext = async (index: number): Promise<void> => {
+      while (currentIndex < promiseFactories.length) {
+        const factoryIndex = currentIndex++;
+        results[factoryIndex] = await promiseFactories[factoryIndex]();
+      }
+    };
+
+    // Create pool of concurrent workers
+    const workers = Array(Math.min(concurrency, promiseFactories.length))
+      .fill(0)
+      .map((_, i) => executeNext(i));
+
+    await Promise.all(workers);
+    return results;
+  };
+
+  /**
+   * Execute promises with concurrency limit using race pattern (most efficient)
+   * Automatically starts a new promise as soon as one completes
+   * @param promiseFactories Array of promise factories
+   * @param limit Maximum number of concurrent executions (default: 5)
+   * @returns Promise that resolves with all results
+   */
+  export const executeWithLimit = async <T>(
+    promiseFactories: (() => Promise<T>)[],
+    limit: number = 5
+  ): Promise<T[]> => {
+    const results: T[] = new Array(promiseFactories.length);
+    const executing: Promise<void>[] = [];
+
+    for (const [index, factory] of promiseFactories.entries()) {
+      const promise = factory()
+        .then(result => {
+          results[index] = result;
+        })
+        .finally(() => {
+          executing.splice(executing.indexOf(promise), 1);
+        });
+
+      executing.push(promise);
+
+      if (executing.length >= limit) {
+        await Promise.race(executing);
+      }
+    }
+
+    await Promise.all(executing);
+    return results;
+  };
 
   export namespace Result {
     export type FulfilledType<T> = PromiseFulfilledResult<T>;

@@ -18,20 +18,24 @@ export namespace Expression {
           return binder;
         });
   }
-  export namespace Group {
-  export const isExpression = (data: string | null) => {
-      // const reg = /(?:[$#]\{(?:(([$#]\{)??[^$#]?[^{]*?)\}[$#]))/g;
-      const reg = /[$#]\{([\s\S.]*?)\}[$#]/g;
-      return reg.test(data ?? '');
-    }
 
-  export const expressionGroups = (data: string | null) => {
-      // const reg = /(?:[$#]\{(?:(([$#]\{)??[^$#]*?)\}[$#]))/g;
-      // const reg = /(?:[$#]\{(?:(([$#]\{)??[^$#]?[^{]*?)\}[$#]))/g;
-      const reg = /[$#]\{([\s\S.]*?)\}[$#]/g;
-      return StringUtils.regexExec(reg, data ?? '');
-    }
-  }
+  /**
+   * @deprecated
+   */
+  // export namespace Group {
+  // export const isExpression = (data: string | null) => {
+  //     // const reg = /(?:[$#]\{(?:(([$#]\{)??[^$#]?[^{]*?)\}[$#]))/g;
+  //     const reg = /[$#]\{([\s\S.]*?)\}[$#]/g;
+  //     return reg.test(data ?? '');
+  //   }
+  //
+  // export const expressionGroups = (data: string | null) => {
+  //     // const reg = /(?:[$#]\{(?:(([$#]\{)??[^$#]*?)\}[$#]))/g;
+  //     // const reg = /(?:[$#]\{(?:(([$#]\{)??[^$#]?[^{]*?)\}[$#]))/g;
+  //     const reg = /[$#]\{([\s\S.]*?)\}[$#]/g;
+  //     return StringUtils.regexExec(reg, data ?? '');
+  //   }
+  // }
   export namespace Path {
     export type PathNameData = { [name: string]: string }
     export const pathNameData = (pathName: string, urlExpression: string) => {

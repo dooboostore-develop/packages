@@ -17,6 +17,8 @@ import { DomRenderProxy } from '@dooboostore/dom-render/DomRenderProxy';
 import { filter } from '@dooboostore/core/message/operators/filter';
 import { first } from '@dooboostore/core/message/operators/first';
 import { firstValueFrom } from '@dooboostore/core/message/internal/firstValueFrom';
+import { parseHTML } from 'linkedom';
+import { LinkedomInitializer } from '../initializers/LinkedomInitializer';
 
 export type FactoryAndParams = {
   frontDistPath: string;
@@ -36,10 +38,10 @@ export type FactoryAndParams = {
   };
 };
 
-export class SSRFilter implements Filter {
+export class SSRLinkDomDomFilter implements Filter {
   private simpleBootFrontPool: SimpleBootFront[] = [];
   private simpleBootFrontQueue = new AsyncBlockingQueue<SimpleBootFront>();
-  private indexHTML: string;
+  // private indexHTML: string;
   private welcomUrl = 'http://localhost';
   private poolGeneration = 0;
   private intervalId?: NodeJS.Timeout;
@@ -49,7 +51,7 @@ export class SSRFilter implements Filter {
     public otherInstanceSim?: Map<ConstructorType<any>, any>
   ) {
     config.frontDistIndexFileName = config.frontDistIndexFileName || 'index.html';
-    this.indexHTML = JsdomInitializer.loadFile(this.config.frontDistPath, config.frontDistIndexFileName);
+    // this.indexHTML = JsdomInitializer.loadFile(this.config.frontDistPath, config.frontDistIndexFileName);
   }
 
   async onInit(app: SimpleBootHttpServer) {
@@ -62,7 +64,6 @@ export class SSRFilter implements Filter {
         this.poolGeneration++;
       }, this.config.poolOption.clearIntervalTime);
     }
-    // console.log('SimpleBootHttpSSRFactory init success ', + this.simpleBootFrontPool.length)
   }
 
   async onDestroy() {
@@ -76,33 +77,26 @@ export class SSRFilter implements Filter {
     this.simpleBootFrontPool = [];
   }
 
-  // workerTs(workerOptions: WorkerOptions) {
-  //     workerOptions.eval = true;
-  //     if (!workerOptions.workerData) {
-  //         workerOptions.workerData = {};
-  //     }
-  //     workerOptions.workerData.__filename = '/Users/hyunhakim/source/visualkhh/pet-space/libs/simple-boot-http-ssr/dist/filters/SSRCreatorWorker.js';
-  //     return new Worker(` const wk = require('worker_threads'); require('ts-node').register(); let file = wk.workerData.__filename; require(file); `, workerOptions,);
-  // }
-
-  async makeJsdom() {
-    const jsdom = await new JsdomInitializer(
+  async makePage() {
+    return new LinkedomInitializer(
       this.config.frontDistPath,
       this.config.frontDistIndexFileName || 'index.html',
       { url: this.welcomUrl }
     ).run();
-    return jsdom;
+    // const jsdom = await new JsdomInitializer(
+    //   this.config.frontDistPath,
+    //   this.config.frontDistIndexFileName || 'index.html',
+    //   { url: this.welcomUrl }
+    // ).run();
+    // return jsdom;
   }
 
-  async makeFront(jsdom: JSDOM.JSDOM) {
+  async makeFront(window: Window) {
     const name = RandomUtils.uuid();
-    // const jsdom = await this.makeJsdom();
-    const window = jsdom.window as unknown as Window & typeof globalThis;
     (window as any).ssrUse = false;
     const option = this.config.factorySimFrontOption(DomRenderProxy.final(window));
     const simpleBootFront = await this.config.factory.create(option, this.config.using, this.config.domExcludes);
     simpleBootFront.run(this.otherInstanceSim);
-    (simpleBootFront as any).jsdom = jsdom;
     (simpleBootFront as any).generation = this.poolGeneration;
     return simpleBootFront;
   }
@@ -112,14 +106,9 @@ export class SSRFilter implements Filter {
     this.simpleBootFrontPool.push(simpleBootFront);
     this.simpleBootFrontQueue.enqueue(simpleBootFront);
   }
-
-  // async pushQueue(destorFront?: SimpleBootFront) {
-  //     if (destorFront) {
-  //         this.simpleBootFrontPool.delete(destorFront.option.name!);
-  //     }
   async pushQueue() {
     if (this.simpleBootFrontPool.length < this.config.poolOption.max) {
-      this.enqueueFrontApp(await this.makeFront(await this.makeJsdom()));
+      this.enqueueFrontApp(await this.makeFront(await this.makePage()));
     }
   }
 
@@ -133,10 +122,8 @@ export class SSRFilter implements Filter {
       }
       const simpleBootFront = await this.simpleBootFrontQueue.dequeue();
       try {
-        // console.log('SSRFilter before-->' , simpleBootFront.option.name, 'poolLength:',this.simpleBootFrontPool.size);
         (simpleBootFront.option.window as any).ssrUse = true;
         delete (simpleBootFront.option.window as any).server_side_data;
-
         const url = rr.reqUrlObj({ host: 'localhost' });
         if (this.config.simpleBootFront?.notFoundError) {
           // intent router check first
@@ -149,24 +136,17 @@ export class SSRFilter implements Filter {
 
         // runRouting!!
         const targetUrl = url.toString();
-        // console.log('rrrrr');
-        // simpleBootFront.routingSubjectObservable.subscribe(it => {
-        //   if (it.state === 'end' && it.routerModule.intent.uri === targetUrl) {
-        //     console.log('vvvvvvvvvvvv', it.state, it.routerModule.intent.uri);
-        //   }
-        // });
         await simpleBootFront.goRouting(targetUrl);
         await new Promise(r => setTimeout(r, 0)); // <--중요: 이거 넣어야지 두번불러지는게 없어지는듯? 뭐지 event loop 변경된건가?
-        // TODO: 옵션으로 이거 키고 끄고할수있게 해야될까..?
-        // simpleBootFront.routingSubjectObservable.pipe(
-        //     filter((it) =>
-        //         it.state === 'end' &&
-        //         typeof it.routerModule.intent.uri === 'string' &&
-        //         targetUrl.endsWith(it.routerModule.intent.uri)
-        //     ),
-        //     // delay(1000),
-        //     first()
-        // );
+
+
+        // simpleBootFront.routingSubjectObservable.subscribe(it=>{
+        //   console.log('zzzzzzzzzzzzzzzzzzz', it);
+        //   if (it.triggerPoint==='end') {
+        //     console.log('zzz@@', it.routerModule.intent);
+        //   }
+        // })
+
         const data = await firstValueFrom(
           // @ts-ignore
           simpleBootFront.routingSubjectObservable.pipe(
@@ -181,19 +161,12 @@ export class SSRFilter implements Filter {
             first()
           )
         );
-        // console.log('rrrrrssss');
-        // console.log('rrrrrssss122');
-        // await new Promise(r => setTimeout(r, 5000)); // <--중요: 이거 넣어야지 두번불러지는게 없어지는듯? 뭐지 event loop 변경된건가?
+        // console.log('???????done');
         const html = this.makeHTML(simpleBootFront);
         await this.writeOkHtmlAndEnd({ rr }, html);
       } finally {
         (simpleBootFront.option.window as any).ssrUse = false;
         delete (simpleBootFront.option.window as any).server_side_data;
-        // console.log('--------->', simpleBootFront.option.window)
-        // simpleBootFront.ninitWriteRootRouter();
-        // ((simpleBootFront as any).jsdom as JSDOM.JSDOM)?.reconfigure({url: '/' });
-        // simpleBootFront.option.window.location.href = 'about:blank';
-        // console.log('ddddddddd', (simpleBootFront as any).generation, this.poolGeneration)
         if ((simpleBootFront as any).generation < this.poolGeneration) {
           // Stale instance, destroy it
           const jsdom = (simpleBootFront as any).jsdom as JSDOM.JSDOM | undefined;
@@ -202,100 +175,17 @@ export class SSRFilter implements Filter {
           if (index > -1) {
             this.simpleBootFrontPool.splice(index, 1);
           }
-          // Create a new one to maintain pool size
           this.pushQueue();
         } else {
           // Current instance, return to queue
           this.simpleBootFrontQueue.enqueue(simpleBootFront);
         }
-        // simpleBootFront.option.window.document.body.innerHTML = this.rootJSDOM.window.document.body.innerHTML;
-        // simpleBootFront.writeRootRouter()
-        // await simpleBootFront.goRouting('/');
-
-        // ((simpleBootFront as any).jsdom as JSDOM.JSDOM)?.reconfigure({url: this.welcomUrl });
-
-        // simpleBootFront.option.window.location.href = this.welcomUrl;
-        // simpleBootFront.option.window.document.documentElement.outerHTML = this.indexHTML;
-        // this.simpleBootFrontQueue.enqueue(simpleBootFront);
-        // await new Promise((re, r) => setTimeout(() => re(true), 10000));
-        // new Promise((re, r) => setTimeout(() => re(true), 10000)).then(it => {
-        //     console.log('ddddddddddd')
-        // });
-        // this.simpleBootFrontPool.delete(simpleBootFront.option.name!);
-        // if (isMainThread) { // 메인 스레드
-        //     console.log('file-->', __filename)
-        //     const worker = new Worker(__filename);
-        //     worker.on('message', (value: any) => {
-        //         console.log('워커로부터', value)
-        //     })
-        //     worker.on('exit', (value: any) => { // parentPort.close()가 일어나면 이벤트 발생
-        //         console.log('워커 끝~');
-        //     })
-        //     worker.postMessage('ping'); // 워커스레드에게 메세지를 보낸다.
-        // } else { // 워커스레드
-        //     parentPort.on('message', (value: any) => {
-        //         console.log("부모로부터", value);
-        //         parentPort.postMessage('pong');
-        //         parentPort.close(); // 워커스레드 종료라고 메인스레드에 알려줘야 exit이벤트 발생
-        //     })
-        // }
-
-        //worker thrad
-        // const workerPath = path.join(__dirname, 'SSRWorker.js');
-        // const worker = new Worker(workerPath);
-        // worker.once('message', (value: any) => {
-        //     console.log('워커로부터', value)
-        // });
-        // const receiveWorker = new Worker('/Users/hyunhakim/source/visualkhh/pet-space/libs/simple-boot-http-ssr/dist/filters/SSRCreatorWorker.js');
-        // receiveWorker.on('message', (msg: JSDOM.JSDOM)=>{
-        //     console.log('워커로부터', msg, msg.window.document.body.innerHTML)
-        //     console.log('a message is sent! : ', msg)
-        //
-        // });
-        //
-        // receiveWorker.on('error', err=>{
-        //     console.error(err);
-        // })
-        //
-        // receiveWorker.on('exit', ()=>console.log('exited!'));
-        // receiveWorker.postMessage(
-        //     {
-        //         frontDistPath: this.factory.frontDistPath,
-        //         frontDistIndexFileName: this.factory.frontDistIndexFileName,
-        //     }
-        // );
-
-        // const myWorkers = this.workerTs({});
-        // myWorkers.postMessage(this);
-        // myWorkers.on('message', (value: SimpleBootFront) => {
-        //     this.pushQueue(value);
-        // })
-        // this
-        // this.pushQueue(simpleBootFront).then(it => {
-        //     console.log('deee')
-        // });
-        // console.log('-1->', simpleBootFront.option.window.location.href);
-        // simpleBootFront.option.window.location.href = this.welcomUrl;
-        // simpleBootFront.option.window.location.reload();
-        // console.log('-2->', simpleBootFront.option.window.location.href);
-        // simpleBootFront.option.window.location.reload();
-        // console.log('-3->', simpleBootFront.option.window.location.href);
-        // this.simpleBootFrontQueue.enqueue(simpleBootFront);
-        // await this.makeJsdom();
-        // simpleBootFront.option.window.location.href = this.welcomUrl;
       }
-      // console.log('----doen')
       return false;
     } else {
-      // console.log('----doen2')
       return true;
     }
   }
-
-  // const e = Expression.Path.pathNameData(rr.reqUrlPathName, intent.getRouterPath())
-  // console.log('------intent', rr.reqUrl, rr.reqUrlPathName, intent.module, intent.getRouterPath(), e)
-  // simpleBootFront.option.window.document.documentElemenh
-  // "dr-"로 시작하는 모든 attribute를 가진 element에서 해당 attribute를 제거
 
   makeHTML(simpleBootFront: SimpleBootFront) {
     (simpleBootFront.option.window as any).document.querySelectorAll('*').forEach((el:HTMLElement )=> {
@@ -326,14 +216,12 @@ export class SSRFilter implements Filter {
     return html;
   }
   async writeOkHtmlAndEnd({ rr, status = HttpStatus.Ok }: { rr: RequestResponse; status?: HttpStatus }, html: string) {
-    // rr.res.writeHead(status, {[HttpHeaders.ContentType]: Mimes.TextHtml});
     rr.resStatusCode(status);
     rr.resSetHeader(HttpHeaders.ContentType, Mimes.TextHtml);
     await rr.resEnd(html);
   }
 
   async proceedAfter({ rr, app }: { rr: RequestResponse; app: SimpleBootHttpServer; carrier: Map<string, any> }) {
-    // console.log('done--------', sw)
     return true;
   }
 }

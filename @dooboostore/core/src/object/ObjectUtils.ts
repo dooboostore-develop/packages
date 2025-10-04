@@ -619,8 +619,9 @@ export namespace ObjectUtils {
         // 전역 컨텍스트와 함께 실행
         const func = new Function('window', 'document', 'console', `"use strict"; ${script}; `);
         func.call(destUser, globalContext.window, globalContext.document, globalContext.console);
+        // console.log('------->', script);
       } catch (e) {
-        console.error('detectPathFromScript error:', e);
+        console.error('detectPathFromScript error:', script, e);
       }
 
       // excludeThis 옵션이 true면 'this'로 시작하는 경로에서 'this' 제거

@@ -1,7 +1,7 @@
 import { Sim } from '@dooboostore/simple-boot/decorators/SimDecorator';
 import { Component } from '@dooboostore/simple-boot-front/decorators/Component';
-import template from './item.html';
-import style from './item.css';
+import template from './item.component.html';
+import style from './item.component.css';
 
 @Sim
 @Component({

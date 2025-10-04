@@ -44,7 +44,7 @@ export class ResourceFilter implements Filter {
         const url = (rr.reqUrlPathName ?? '').replace(/\.\./g, '');
         const urlObj = rr.reqUrlObject;
         // const requestUrl = parse(rr.reqUrl ?? '', true);
-      // console.log('-------', url);
+      // console.log('resource filter!!**-------', url);
         let sw = true;
         const regExps = this.resources?.filter(it => {
             if (it instanceof RegExp) {
@@ -113,6 +113,7 @@ export class ResourceFilter implements Filter {
     }
 
     async proceedAfter({rr, app}: {rr: RequestResponse, app: SimpleBootHttpServer, carrier: Map<string, any>}) {
+      // console.log('resource filter!!end@@**-------');
         return true;
     }
 }

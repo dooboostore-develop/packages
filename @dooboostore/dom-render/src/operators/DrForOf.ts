@@ -16,6 +16,10 @@ export class DrForOf extends OperatorExecuterAttrRequire<string> {
     const itRandom = RawSet.drItOtherEncoding(this.elementSource.element, 'DrForOf');
     const vars = RawSet.drVarEncoding(this.elementSource.element, this.elementSource.attrs.drVarOption ?? '');
     const newTemp = this.source.config.window.document.createElement('temp');
+
+    const variableName = this.elementSource.element.getAttribute(RawSet.DR_VARIABLE_NAME_OPTIONNAME);
+    const itemVariableName = this.elementSource.element.getAttribute(RawSet.DR_ITEM_VARIABLE_NAME_OPTIONNAME);
+    const itemIndexVariableName = this.elementSource.element.getAttribute(RawSet.DR_ITEM_INDEX_VARIABLE_NAME_OPTIONNAME);
     // console.log('----!', this.elementSource.attrs)
     // ScriptUtils.evalReturn()
     ObjectUtils.Script.evaluate(`
@@ -41,11 +45,18 @@ export class DrForOf extends OperatorExecuterAttrRequire<string> {
                                 destIt = forOfStr + '[' + i +']'
                             }
                             const n = this.__render.element.cloneNode(true);
-                            // console.log('zzzzzzzzzzz', n.getAttribute('${RawSet.DR_DETECT_ATTR_OPTIONNAME}'));
                             Object.entries(this.__render.drAttr).filter(([k,v]) => k !== 'drForOf' && k !== 'drNextOption' && v).forEach(([k, v]) => n.setAttribute(this.__render.drAttrsOriginName[k], v));
-                            // console.log('---------'+destIt,n, Array.from(n.getAttributeNames()).map(it=>({name:it,attr: n.getAttribute(it)})));
-                            // console.log('---------destItdestIt',destIt);
                             n.getAttributeNames().forEach(it => n.setAttribute(it, n.getAttribute(it).replace(/\\#it\\#/g, destIt).replace(/\\#nearForOfIt\\#/g, destIt).replace(/\\#it\\#/g, destIt).replace(/\\#nearForOfIndex\\#/g, i)))
+                            if ('${variableName}') {
+                              n.getAttributeNames().forEach(it => n.setAttribute(it, n.getAttribute(it).replaceAll('#${variableName}#', forOfStr)));
+                            }
+                            if ('${itemVariableName}') {
+                              n.getAttributeNames().forEach(it => n.setAttribute(it, n.getAttribute(it).replaceAll('#${itemVariableName}#', destIt)));
+                            }
+                            if ('${itemIndexVariableName}') {
+                              n.getAttributeNames().forEach(it => n.setAttribute(it, n.getAttribute(it).replaceAll('#${itemIndexVariableName}#', i)));
+                            }
+                            
                             const drOptionAttr = n.getAttribute('${RawSet.DR_DETECT_ATTR_OPTIONNAME}');
                             if (drOptionAttr) {
                               const drOptionAttrResult = $scriptUtils.evaluateReturn(drOptionAttr, this);
@@ -68,12 +79,16 @@ export class DrForOf extends OperatorExecuterAttrRequire<string> {
                             }
 
                             n.innerHTML = n.innerHTML.replace(/\\#it\\#/g, destIt).replace(/\\#index\\#/g, i);
-                            // console.log('!@@@@', n.innerHTML);
-                            // DR_THIS_OPTIONNAME 는 제거한다 꼬인다. strip 할때 막 꼬여버린다.
-                            // const drOptionThis = n.getAttribute('${RawSet.DR_THIS_OPTIONNAME}');
-                            // if (drOptionThis) {
-                            //  n.setAttribute('${RawSet.DR_THIS_NAME}', drOptionThis)
-                            // }
+                            if ('${variableName}') {
+                              n.innerHTML = n.innerHTML.replaceAll('#${variableName}#', forOfStr);
+                            }
+                            if ('${itemVariableName}') {
+                              n.innerHTML = n.innerHTML.replaceAll('#${itemVariableName}#', destIt);
+                            }
+                            if ('${itemIndexVariableName}') {
+                              n.innerHTML = n.innerHTML.replaceAll('#${itemIndexVariableName}#', i);
+                            }
+                   
                             if (this.__render.drStripOption === 'true') {
                                 Array.from(n.childNodes).forEach(it => this.__render.fag.append(it));
                             } else {

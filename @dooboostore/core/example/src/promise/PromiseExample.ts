@@ -54,6 +54,125 @@ export class PromiseExample implements Runnable {
     // Wait for loop to finish
     await Promises.sleep(2000);
     
+    // Result utilities example
+    console.log('\n5. Result utilities:');
+    
+    // Wrap promise with Result
+    const successPromise2 = Promise.resolve('Success data');
+    const wrappedSuccess = Promises.Result.wrap(successPromise2);
+    
+    console.log('  Initial state:', {
+      status: wrappedSuccess.status,
+      isPending: wrappedSuccess.isPending,
+      isFulfilled: wrappedSuccess.isFulfilled,
+      isRejected: wrappedSuccess.isRejected
+    });
+
+    // Wait for the promise to resolve
+    await wrappedSuccess;
+    
+    console.log('  After resolution:', {
+      status: wrappedSuccess.status,
+      isPending: wrappedSuccess.isPending,
+      isFulfilled: wrappedSuccess.isFulfilled,
+      isRejected: wrappedSuccess.isRejected,
+      value: wrappedSuccess.value
+    });
+
+    // Wrap rejected promise
+    const failurePromise2 = Promise.reject(new Error('Test error'));
+    const wrappedFailure = Promises.Result.wrap(failurePromise2);
+    
+    try {
+      await wrappedFailure;
+    } catch (e) {
+      // Expected to throw
+    }
+    
+    console.log('  After rejection:', {
+      status: wrappedFailure.status,
+      isPending: wrappedFailure.isPending,
+      isFulfilled: wrappedFailure.isFulfilled,
+      isRejected: wrappedFailure.isRejected,
+      reason: wrappedFailure.reason
+    });
+
+    // AwaitWrap example
+    console.log('\n6. AwaitWrap example:');
+    
+    const asyncFunction = async () => {
+      await Promises.sleep(500);
+      return 'Async function result';
+    };
+
+    const result = await Promises.Result.awaitWrap(asyncFunction);
+    console.log('  AwaitWrap result:', {
+      status: result.status,
+      isFulfilled: result.isFulfilled,
+      isRejected: result.isRejected,
+      isPending: result.isPending,
+      value: result.value
+    });
+
+    // Factory pattern with awaitWrap
+    const factoryResult = await Promises.Result.awaitWrap(() => asyncFunction());
+    console.log('  Factory result:', {
+      status: factoryResult.status,
+      isFulfilled: factoryResult.isFulfilled,
+      hasFactory: !!factoryResult.factory
+    });
+
+    // Use factory to create new instance
+    if (factoryResult.factory) {
+      const newResult = await factoryResult.factory();
+      console.log('  New factory result:', {
+        status: newResult.status,
+        isFulfilled: newResult.isFulfilled,
+        value: newResult.value
+      });
+    }
+
+    // Filter catch example
+    console.log('\n7. Filter catch example:');
+    
+    const errorPromise = Promise.reject(new Error('Specific error'));
+    
+    try {
+      const filteredError = await Promises.filterCatch(errorPromise, Error);
+      console.log('  Filtered error:', filteredError);
+    } catch (e) {
+      console.log('  Error not filtered:', e.message);
+    }
+
+    // Transaction example
+    console.log('\n8. Transaction example:');
+    
+    const transactionPromise = Promise.resolve('Transaction data');
+    
+    Promises.transaction(transactionPromise, {
+      delay: 100,
+      before: () => {
+        console.log('  Before transaction');
+        return 'before data';
+      },
+      after: () => {
+        console.log('  After transaction');
+        return 'after data';
+      },
+      then: (data, context) => {
+        console.log('  Transaction success:', data, 'with context:', context);
+      },
+      catch: (error, context) => {
+        console.log('  Transaction error:', error, 'with context:', context);
+      },
+      finally: (context) => {
+        console.log('  Transaction finally:', context);
+      }
+    });
+
+    // Wait for transaction to complete
+    await Promises.sleep(1000);
+    
     console.log('\n=========================\n');
   }
 }

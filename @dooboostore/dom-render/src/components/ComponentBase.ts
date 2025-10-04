@@ -578,7 +578,7 @@ export class ComponentBase<T = any, C extends ComponentBaseConfig = ComponentBas
   }
 
   getFirstChild<T>(type: ConstructorType<T>): T | undefined {
-    return this._children.find(it => it instanceof type)?.instance;
+    return this._children.find(it => it.instance instanceof type)?.instance;
   }
 
   getParentThis<P>():P {

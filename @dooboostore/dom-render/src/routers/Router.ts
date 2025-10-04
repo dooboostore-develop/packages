@@ -11,32 +11,22 @@ export type RouteData = {
   searchParams: URLSearchParams;
   pathData?: any;
   router: Router;
-  currentTarget?:PopCurrentState;
 }
-export type PopStateCurrentTargetDomrenderRouter = { currentTargetName: 'domRenderRouter' };
-export type PopCurrentState = PopStateCurrentTargetDomrenderRouter;
-export const isPopStateCurrentTargetDomrenderRouter = (obj: any): obj is PopStateCurrentTargetDomrenderRouter =>
-  obj?.currentTargetName === 'domRenderRouter';
 
-export type RouterConfig<T = any> = { rootObject?: T, window: Window, firstUrl?: string,
-  // changeStateConvertDate?:(data: any)=>any
-};
+export type RouterConfig<T = any> = { rootObject?: T, window: Window, firstUrl?: string};
 export type ChangeStateResult = {data?: any}
 export type RouteAction = string | { path?: string, searchParams?: ToURLSearchParamsParams };
 
-/*
-    this.option.window.addEventListener('popstate', (event) => { // history.back, forward에만 popstate 발생되고 값이 도출된다
-   console.log('popstate-------!!', event.state, this.domRenderConfig.window.history.state)
-   })
- */
+type RouterEventType = RouteData & { triggerPoint: 'start' | 'end' };
+
 export abstract class Router<T = any> {
-  private behaviorSubject: BehaviorSubject<RouteData>;
+  private behaviorSubject: BehaviorSubject<RouterEventType>;
   private _config: RouterConfig<T>;
 
   constructor(config: RouterConfig<any>) {
     this._config = config;
 
-    let routeData: RouteData;
+    let routeData: RouterEventType;
     if (config?.firstUrl) {
       const path = config.firstUrl.split('?');
       routeData = {
@@ -44,25 +34,26 @@ export abstract class Router<T = any> {
         path: path[0],
         searchParams: new URLSearchParams(path[1]??''),
         router: this,
+        triggerPoint: 'end'
       }
-      this.behaviorSubject = new BehaviorSubject<RouteData>(routeData);
+      this.behaviorSubject = new BehaviorSubject<RouterEventType>(routeData);
       this.go(config.firstUrl);
     } else {
-      routeData = this.getRouteData();
-      this.behaviorSubject = new BehaviorSubject<RouteData>(routeData);
+      routeData = {...this.getRouteData(), triggerPoint: 'end'};
+      this.behaviorSubject = new BehaviorSubject<RouterEventType>(routeData);
     }
     this.config.window.addEventListener('popstate', (event: PopStateEvent) => {
       // domrender에서 발생하지 않은 즉 back, previous 일떄에도 이벤트가도록 처리
-      if(!isPopStateCurrentTargetDomrenderRouter(event.state)) {
-        // console.log('-------');
-        const routeData = this.getRouteData();
-        this.behaviorSubject.next(routeData);
-      }
+      // if(!isPopStateCurrentTargetDomrenderRouter(event.state)) {
+      // console.log('-------');
+      const routeData: RouterEventType = {...this.getRouteData(), triggerPoint: 'end'};
+      this.behaviorSubject.next(routeData);
+      // }
     })
   }
 
 
-  get observable(): Observable<RouteData> {
+  get observable(): Observable<RouterEventType> {
     return this.behaviorSubject.asObservable();
   }
 
@@ -108,10 +99,32 @@ export abstract class Router<T = any> {
     }
   }
 
-  getRouteData(config?: {urlExpression?: string, currentTarget?: PopCurrentState}): RouteData {
+  getRouteData(config?: {pathOrUrl?: string, urlExpression?: string}): RouteData {
+
+    let path = '';
+    let url ='';
+    if (config?.pathOrUrl) {
+      let isUrl = false;
+      try {
+        new URL(config.pathOrUrl);
+        isUrl = true;
+      } catch {
+        isUrl = false;
+      }
+      if(isUrl){
+        const u = new URL(config.pathOrUrl);
+        path = u.pathname;
+        url = u.pathname + u.search;
+      } else {
+        path = config.pathOrUrl.split('?')[0];
+      }
+    } else {
+      path = this.getPathName();
+      url = this.getUrl();
+    }
     const newVar = {
-      path: this.getPathName(),
-      url: this.getUrl(),
+      path: path,
+      url: url,
       searchParams: this.getSearchParams()
     } as RouteData;
 
@@ -126,43 +139,58 @@ export abstract class Router<T = any> {
       }
     }
     newVar.router = this;
-    newVar.currentTarget = config?.currentTarget;
+    // newVar.currentTarget = config?.currentTarget;
     return Object.freeze(newVar);
   }
 
   pushState(data: any, title: string | undefined, path: string):ChangeStateResult {
     // data = this.config.changeStateConvertDate?this.config.changeStateConvertDate(data): data;
     // console.log('--->pushState', data);
-    this.config.window.history.pushState(data, title??'', path);
-    this.behaviorSubject.next(this.getRouteData({currentTarget: {currentTargetName: 'domRenderRouter'}}));
+    this.behaviorSubject.next({ ...this.getRouteData({pathOrUrl:path}), triggerPoint: 'start' });
+    this.config.window.history?.pushState(data, title ?? '', path);
+    this.behaviorSubject.next({ ...this.getRouteData({pathOrUrl:path}), triggerPoint: 'end' });
     return {data};
   }
 
   replaceState(data: any, title: string | undefined, path: string):ChangeStateResult {
     // data = this.config.changeStateConvertDate?this.config.changeStateConvertDate(data): data;
     // console.log('--->replaceState', data);
-    this.config.window.history.replaceState(data, title??'', path);
-    this.behaviorSubject.next(this.getRouteData({currentTarget: {currentTargetName: 'domRenderRouter'}}));
+    this.behaviorSubject.next({ ...this.getRouteData({pathOrUrl:path}), triggerPoint: 'start' });
+    this.config.window.history?.replaceState(data, title ?? '', path);
+    this.behaviorSubject.next({ ...this.getRouteData({pathOrUrl:path}), triggerPoint: 'end' });
     return {data};
   }
 
-  private dispatchPopStateEvent(data?: any) {
-    this.config.window.dispatchEvent(new PopStateEvent('popstate', {state: {...data, currentTargetName: 'domRenderRouter'}}));
-  }
-
-  reload(data?: any) {
-    this.config.window.dispatchEvent(new PopStateEvent('popstate', {state: data}));
-  }
-
   getData(): any {
-    return this.config.window.history.state;
+    return this.config.window.history?.state;
   }
 
   getPathData(urlExpression: string, currentUrl = this.getPathName()): any {
     return Expression.Path.pathNameData(currentUrl, urlExpression);
   }
 
-  async go(config:  string | { path: RouteAction, data?: any, replace?: boolean, title?: string, disabledPopEvent?: boolean, scrollToTop?: boolean } | string): Promise<void> {
+  back(): void {
+    this.behaviorSubject.next({...this.getRouteData(),triggerPoint:'start'});
+    this.config.window.history.back();
+    //en부분은 constructo의  this.config.window.addEventListener('popstate'   에서 받아서 처리된다 호출된다.
+  }
+
+  forward(): void {
+    this.behaviorSubject.next({...this.getRouteData(),triggerPoint:'start'});
+    this.config.window.history?.forward();
+    //end부분은 constructor의  this.config.window.addEventListener('popstate'   에서 받아서 처리된다 호출된다.
+  }
+
+  go(i: number): void;
+  async go(config:  string | { path: RouteAction, data?: any, replace?: boolean, title?: string, scrollToTop?: boolean } | string): Promise<void> ;
+  go(config: number | string | { path: RouteAction, data?: any, replace?: boolean, title?: string, scrollToTop?: boolean } | string): Promise<void> | void {
+    if (typeof config === 'number') {
+      this.behaviorSubject.next({...this.getRouteData(),triggerPoint:'start'});
+      this.config.window.history?.go(config);
+      //end부분은 constructor의  this.config.window.addEventListener('popstate'   에서 받아서 처리된다 호출된다.
+      return;
+    }
+
     if (typeof config === 'string') {
       config = { path: config };
     }
@@ -176,21 +204,22 @@ export abstract class Router<T = any> {
     // if (!this.config.disableAttach) {
     //   await this.attach();
     // }
-    
+
     // 스크롤 제어 (기본값: true - 맨 위로 스크롤)
     if (config.scrollToTop !== false) {
       try {
-      this._config.window?.scrollTo?.(0, 0);
+        this._config.window?.scrollTo?.(0, 0);
       }catch (e){}
     }
-    
+
     // console.log('----------', data, config)
-    if (!config.disabledPopEvent) {
-      this.dispatchPopStateEvent(config?.data);
-    }
+    // if (!config.disabledPopEvent) {
+    //   this.dispatchPopStateEvent(config?.data);
+    // }
   }
 
   toUrl(data: RouteAction) {
+    console.log('toUrl', data);
     let targetPath: string;
     if (typeof data === 'string') {
       targetPath = data;

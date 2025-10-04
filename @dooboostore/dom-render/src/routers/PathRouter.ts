@@ -6,7 +6,11 @@ export class PathRouter extends Router {
   }
 
   getSearchParams(data?:{delete?:string[], append?:[[string, string]]}): URLSearchParams {
-    const searchParams =  (new URL(this.config.window.document.location.href)).searchParams;
+    if (!this.config.window.document?.location?.href) {
+      return new URLSearchParams();
+    }
+
+    const searchParams =  (new URL(this.config.window.document.location?.href)).searchParams;
     data?.delete?.forEach(it => {
       searchParams.delete(it);
     })
@@ -34,7 +38,7 @@ export class PathRouter extends Router {
   pushDeleteHashSearchParam(name: string, data?: any, title?: string) {
     const s = this.getHashSearchParams({delete: [name]});
     const size = Array.from(s.entries()).length;
-    const href = `${this.config.window.location.pathname}${this.config.window.location.search}${size > 0 ? '#' + s.toString() : ''}`;
+    const href = `${this.config.window.location?.pathname??'/'}${this.config.window.location?.search}${size > 0 ? '#' + s.toString() : ''}`;
     super.pushState(data, title, href);
   }
 
@@ -50,7 +54,7 @@ export class PathRouter extends Router {
   replaceDeleteHashSearchParam(name: string | string[], data?: any, title?: string) {
     const s = this.getHashSearchParams({delete: Array.isArray(name) ? name : [name]});
     const size = Array.from(s.entries()).length;
-    const href = `${this.config.window.location.pathname}${this.config.window.location.search}${size > 0 ? '#' + s.toString() : ''}`;
+    const href = `${this.config.window.location?.pathname??'/'}${this.config.window.location?.search}${size > 0 ? '#' + s.toString() : ''}`;
     super.replaceState(data, title, href);
   }
 
@@ -61,21 +65,24 @@ export class PathRouter extends Router {
 
 
   getUrl(): string {
-    const url = new URL(this.config.window.document.location.href);
+    if (!this.config.window.document?.location?.href) {
+      return '/';
+    }
+    const url = new URL(this.config.window.document.location?.href);
     return url.pathname + url.search;
   }
 
   getHref(): string {
-    return this.config.window.location.href;
+    return this.config.window.location?.href??'/';
   }
 
   getPathName(): string {
-    return this.config.window.location.pathname;
+    return this.config.window.location?.pathname??'/';
   }
 
   getHashSearchParams(data?:{delete?:string[], append?:[[string, string]]}): URLSearchParams {
     // http://local.com/#wow=222&wow=bb&z=2
-    const searchParams =  new URLSearchParams(this.config.window.location.hash.slice(1));
+    const searchParams =  new URLSearchParams(this.config.window.location?.hash.slice(1)??'');
 
     data?.delete?.forEach(it => {
       searchParams.delete(it);

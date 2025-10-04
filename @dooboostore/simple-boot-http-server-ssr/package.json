@@ -1,6 +1,6 @@
 {
   "name": "@dooboostore/simple-boot-http-server-ssr",
-  "version": "1.0.12",
+  "version": "1.0.13",
   "license": "MIT",
   "type": "module",
   "main": "./dist/cjs/index.js",
@@ -91,7 +91,8 @@
     "esbuild": "^0.23.0"
   },
   "dependencies": {
-    "jsdom": "^26.0.0"
+    "jsdom": "^26.0.0",
+    "linkedom": "0.18.12"
   },
   "scripts": {
     "clean": "rm -rf dist",
