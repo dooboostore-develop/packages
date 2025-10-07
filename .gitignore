@@ -230,3 +230,5 @@ storybook-static
 /@dooboostore/simple-boot-http-server-ssr/default-template/commonjs-typescript-webpack/dist-back-end/
 /@dooboostore/simple-boot-http-server-ssr/default-template/commonjs-typescript-webpack/dist-front-end/
 /@dooboostore/dom-render/create/lib/
+/@dooboostore/simple-boot-http-server-ssr/test/dist-back-end/
+/@dooboostore/simple-boot-http-server-ssr/test/dist-front-end/

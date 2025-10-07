@@ -4,7 +4,7 @@ import { RawSet } from '../../rawsets/RawSet';
 import { OtherData } from '../../lifecycle/OnChangeAttrRender';
 
 export namespace ForOf {
-  export const selector = 'System:ForOf';
+  export const selector = 'dr-for-of';
   export type Attribute<D> = {
     value: D;
   };
@@ -29,7 +29,7 @@ export default {
   forOf: (config?: DomRenderRunConfig) => {
     return RawSet.createComponentTargetElement({
       name: ForOf.selector,
-      template: '<div dr-for-of="@this@.data" dr-option-strip="true">#innerHTML#</div>',
+      template: '<div dr-for-of="@this@.value" >#innerHTML#</div>',
       objFactory: (e, o, r2, counstructorParam) => {
         return DomRender.run({ rootObject: new ForOf.ForOf(...counstructorParam), config: config });
       }

@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+<div id="parent">
+    <span id="first">First</span>
+    <p id="second">Second</p>
+</div>
+<script>
+    // assert function for testing
+    const assert = {
+        ok(condition, message) {
+            if (!condition) throw new Error(message || 'Assertion failed');
+        },
+        equal(actual, expected, message) {
+            if (actual !== expected) throw new Error(message || `Expected ${expected}, but got ${actual}`);
+        }
+    };
+
+    const first = document.querySelector('#first');
+    const second = document.querySelector('#second');
+
+    // Test basic position relationships
+    const position = first.compareDocumentPosition(second);
+    assert.ok(position & DOCUMENT_POSITION_FOLLOWING, 'Second should follow first');
+
+    console.log('✅ compareDocumentPosition() works');
+</script>
+</body>
+
+</html>

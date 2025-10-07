@@ -109,7 +109,7 @@ export class RouterModule<R = SimAtomic, M = any> {
   }
 
   get firstRouteChainValue() {
-    return (this.firstRouteChain as unknown as SimAtomic<any>).getValue();
+    return (this.firstRouteChain as unknown as SimAtomic<any>)?.getValue();
   }
 
   get lastRouteChain() {
@@ -117,7 +117,7 @@ export class RouterModule<R = SimAtomic, M = any> {
   }
 
   get lastRouteChainValue() {
-    return (this.lastRouteChain as unknown as SimAtomic<any>).getValue();
+    return (this.lastRouteChain as unknown as SimAtomic<any>)?.getValue();
   }
 
   hasActivateInLastRoute(obj: any) {

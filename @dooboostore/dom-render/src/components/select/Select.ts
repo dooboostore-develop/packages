@@ -11,7 +11,7 @@ import { DomRenderNoProxy } from '../../decorators/DomRenderNoProxy';
 import { OnCreateRender } from '../../lifecycle/OnCreateRender';
 import { DomRenderConfig } from '../../configs/DomRenderConfig';
 import { WindowUtils } from '@dooboostore/core-web/window/WindowUtils';
-import { OnRawSetRenderedOtherData } from 'src/lifecycle';
+import { OnRawSetRenderedOtherData } from '../../lifecycle';
 
 /** 사용법
  <dr-select class="card-select-container" changeSelected="${(data) => @this@.changeSelected(data)}$">  <!-- multiple attribute optional-->

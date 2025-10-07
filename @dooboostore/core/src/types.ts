@@ -17,6 +17,7 @@ export type ChangeArrayElement<T, M> = T extends (infer U)[] ? M[] : never;
 export type ChangeArrayElementMix<T, M> = T extends (infer U)[] ? (U & M)[] : never;
 export type ChangePickArrayElementMix<T, M, K extends keyof T> = Omit<T, K> & PickArrayElementMix<T, M, K>;
 
+// InstanceType
 export interface ConstructorType<T> {
   new (...args: any[]): T;
 }

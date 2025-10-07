@@ -1,0 +1,96 @@
+.hello-component {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 2rem;
+}
+
+.hello-card {
+    background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+    border-radius: 16px;
+    padding: 3rem 2rem;
+    text-align: center;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+    max-width: 500px;
+    width: 100%;
+    border: 1px solid rgba(102, 126, 234, 0.1);
+}
+
+.hello-icon {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+    animation: wave 0.6s ease-in-out;
+}
+
+@keyframes wave {
+    0%, 100% { transform: rotate(0deg); }
+    25% { transform: rotate(-10deg); }
+    75% { transform: rotate(10deg); }
+}
+
+.hello-message {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: #2d3748;
+    margin: 0 0 2rem 0;
+    line-height: 1.4;
+}
+
+.hello-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem 2rem;
+    font-size: 1.125rem;
+    font-weight: 600;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.hello-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(102, 126, 234, 0.5);
+}
+
+.hello-btn:active {
+    transform: translateY(-1px);
+}
+
+.btn-text {
+    flex: 1;
+}
+
+.btn-arrow {
+    font-size: 1.5rem;
+    transition: transform 0.3s ease;
+}
+
+.hello-btn:hover .btn-arrow {
+    transform: translateX(4px);
+}
+
+@media (max-width: 768px) {
+    .hello-card {
+        padding: 2rem 1.5rem;
+    }
+    
+    .hello-icon {
+        font-size: 3rem;
+    }
+    
+    .hello-message {
+        font-size: 1.5rem;
+    }
+    
+    .hello-btn {
+        padding: 0.875rem 1.5rem;
+        font-size: 1rem;
+        width: 100%;
+        justify-content: center;
+    }
+}

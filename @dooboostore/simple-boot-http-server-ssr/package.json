@@ -91,6 +91,7 @@
     "esbuild": "^0.23.0"
   },
   "dependencies": {
+    "@dooboostore/dom-parser": "workspace:*",
     "jsdom": "^26.0.0",
     "linkedom": "0.18.12"
   },

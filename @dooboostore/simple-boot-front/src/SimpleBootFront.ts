@@ -19,7 +19,7 @@ import { Router } from '@dooboostore/dom-render/routers/Router';
 import { HashRouter } from '@dooboostore/dom-render/routers/HashRouter';
 import { PathRouter } from '@dooboostore/dom-render/routers/PathRouter';
 import { ComponentSet } from './component/ComponentSet';
-import { DomRenderRootDefaultTemplate, DomRenderRootObject } from './DomRenderRootObject';
+import {DomRenderRootDefaultStyle, DomRenderRootDefaultTemplate, DomRenderRootObject} from './DomRenderRootObject';
 import { routerProcess } from '@dooboostore/simple-boot/decorators/route/Router';
 import { BehaviorSubject } from '@dooboostore/core/message/BehaviorSubject';
 import { RouterModule } from '@dooboostore/simple-boot/route/RouterModule';
@@ -190,6 +190,7 @@ export class SimpleBootFront extends SimpleApplication {
     });
 
     targetElement.innerHTML = DomRenderRootDefaultTemplate;
+    // targetElement.innerHTML = DomRenderRootDefaultStyle;
     targetElement.hidden = true;
     this.option.window.document.body.appendChild(targetElement);
     // const targetElement = this.option.window.document.querySelector(this.option.selector);
@@ -210,7 +211,7 @@ export class SimpleBootFront extends SimpleApplication {
 
     // dom-render 라우팅 끝나면
     this.domRenderRouter.observable.pipe(filter(it=>it.triggerPoint==='end')).subscribe(it => {
-      // console.log('this.domRenderRouter.observable.subscribe---------------', it)
+      // console.log('this.domRenderRouter.observable.subscribe---------------', it, this.domRenderRouter)
       const intent = new Intent(it.path || '/');
       //   // TODO: 왜 canActivate가 두번 호출되는지 확인 필요!! 그래서 setTimeout으로 처리함 원인 모르겠음 아 씨발
       this.routing<SimAtomic, any>(intent, { router: this.domRenderRootObject }).then(async it => {
@@ -220,7 +221,7 @@ export class SimpleBootFront extends SimpleApplication {
         this.routingSubject.next({ triggerPoint: 'start', routerModule: it });
         let findFirstRouter = it.firstRouteChainValue;
         //       setTimeout(() => {
-        if (findFirstRouter.constructor === this.option.rootRouter) {
+        if (findFirstRouter && findFirstRouter.constructor === this.option.rootRouter) {
           const rootRouter = getDomRenderOriginObject(this.rootRouter?.obj);
           const findRouter = getDomRenderOriginObject(findFirstRouter);
           // console.log('!!!!!', domRenderRoot, rootRouter, findRouter);

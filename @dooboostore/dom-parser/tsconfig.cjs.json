@@ -1,0 +1,10 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "module": "esnext",
+    "outDir": "dist/cjs",
+    "declarationDir": "dist/types",
+    "target": "es2020"
+  }
+}

@@ -6,7 +6,7 @@ import { OnInitRender } from '../../lifecycle/OnInitRender';
 import { ComponentSet } from '../../components/ComponentSet';
 import { OnDestroyRenderParams } from '../../lifecycle/OnDestroyRender';
 import { ComponentRouterBase, isOnCreatedOutletDebounce } from '../../components/ComponentRouterBase';
-import { OnCreateRenderDataParams } from 'src/lifecycle';
+import { OnCreateRenderDataParams } from '../../lifecycle';
 
 export namespace RouterOutlet {
   export const selector = 'dr-router-outlet';

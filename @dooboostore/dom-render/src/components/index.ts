@@ -1,3 +1,4 @@
+
 export * from './ComponentBase';
 export * from './ComponentRouterBase';
 export * from './ComponentSet';
@@ -30,6 +31,7 @@ import Details from './details/Details';
 import Input from './input/Input';
 import Route from './router/Route';
 import A from './a/A';
+import ForOf from './forOf/ForOf';
 
 export const drComponent = {
   ...If,
@@ -46,4 +48,5 @@ export const drComponent = {
   ...Route,
   ...RouterOutlet,
   ...A,
+...ForOf
 }

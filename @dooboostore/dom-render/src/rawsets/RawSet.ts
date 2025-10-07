@@ -991,7 +991,8 @@ export class RawSet {
           lasterIndex = regexArr.index + it.content.length;
         }
         template.content.append(config.window.document.createTextNode(text.substring(lasterIndex, text.length)));
-        currentNode?.parentNode?.replaceChild(template.content, currentNode); // <-- 여기서 text를 fragment로 replace했기때문에 추적 변경이 가능하다.
+        const p = currentNode?.parentNode;
+        p?.replaceChild(template.content, currentNode); // <-- 여기서 text를 fragment로 replace했기때문에 추적 변경이 가능하다.
       } else if (currentNode.nodeType === Node.ELEMENT_NODE) {
         // const uuid = `${RandomUtils.alphabet(40)}___${obj?.constructor?.name}`;
         const uuid = `${RandomUtils.alphabet(40)}`;
@@ -1721,58 +1722,6 @@ export class RawSet {
         // 추적 및 destroy 위해.
         instance.__rawSet = rawSet;
 
-        //
-        // const i = instance.__domrender_component_new = (instance.__domrender_component_new ?? new Proxy({}, new DomRenderFinalProxy())) as CreatorMetaData;
-        // i.thisVariableName = rawSet.point.thisVariableName;
-        // i.thisFullVariableName = `this.__domrender_components.${componentKey}`;
-        // i.componentKey = componentKey;
-        // i.rawSet = rawSet;
-        // i.attribute = attribute;
-        // i.router = config.router;
-        // i.scripts = render.scripts;
-        // i.drAttrs = attrs;
-        // i.innerHTML = element.innerHTML;
-        // i.rootCreator = new Proxy(obj, new DomRenderFinalProxy());
-        // i.creator = new Proxy(rawSet.point.thisVariableName ? ObjectUtils.Script.evalReturn(rawSet.point.thisVariableName, obj) : obj, new DomRenderFinalProxy());
-        // this.__creatorMetaData = i;
-        // render = {
-        //   component: instance,
-        //   creatorMetaData: i,
-        //   ...render
-        // };
-        //
-        // // 중요 dr-normal-attr-map
-        // const normalAttrMap = element.getAttribute(EventManager.normalAttrMapAttrName);
-        // if (isOnChangeAttrRender(instance) && normalAttrMap) {
-        //   new Map<string, string>(JSON.parse(normalAttrMap)).forEach((value, key) => {
-        //     const script = `${renderScript} return ${value} `;
-        //     const cval = ObjectUtils.Script.eval(script, Object.assign(obj, { __render: render }));
-        //     // element.setAttribute(key, cval);
-        //     instance.onChangeAttrRender(key, cval);
-        //   });
-        // }
-        //
-        // // dr-on-create data
-        // const onCreateDataScript = `return {rootParent: this, render: this.__render}`;
-        // const onCreateDataParam = ObjectUtils.Script.eval(onCreateDataScript, Object.assign(obj, { __render: render }));
-        // if (isOnCreateRenderData(instance)) {
-        //   instance?.onCreateRenderData(onCreateDataParam);
-        // }
-        //
-        // // dr-on-create onCreateRender
-        // const onCreate = element.getAttribute(RawSet.DR_ON_CREATE_ARGUMENTS_OPTIONNAME);
-        // this.__render = render;
-        // let createParam = [];
-        // if (onCreate) {
-        //   const script = `${renderScript} return ${onCreate} `;
-        //   createParam = ObjectUtils.Script.eval(script, Object.assign(obj, { __render: render }));
-        //   if (!Array.isArray(createParam)) {
-        //     createParam = [createParam];
-        //   }
-        // }
-        // if (isOnCreateRender(instance)) {
-        //   instance?.onCreateRender?.(...createParam);
-        // }
         let applayTemplate = element.innerHTML;
         let applayTemplateText = element.textContent?.trim() ?? '';
         let applayTemplateEscape =  ConvertUtils.escapeHTML(element.innerHTML);
@@ -1862,7 +1811,8 @@ export class RawSet {
           // d.innerHTML='<a></a>'
           // console.log('-----XX', ElementUtils.toInnerHTML(data, {document: config.window.document}));
           // template.innerHTML = template.innerHTML.replace(RegExp(innerHTMLThisRandom, 'g'), 'this.');
-          template.innerHTML = ElementUtils.toInnerHTML(data, {document: config.window.document}).replace(RegExp(innerHTMLThisRandom, 'g'), 'this.');;
+            let s = ElementUtils.toInnerHTML(data, {document: config.window.document});
+            template.innerHTML = s.replace(RegExp(innerHTMLThisRandom, 'g'), 'this.');;
           // console.log('ccc?', template.innerHTML);
           // template.innerHTML = '<div>zzzzzzz</div>'
           data = template.content;

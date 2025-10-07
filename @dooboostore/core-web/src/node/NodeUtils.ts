@@ -37,6 +37,7 @@ export namespace NodeUtils {
         return;
       }
 
+        // console.log('----------',node.childNodes)
       node.childNodes.forEach(child => {
         const result = filter(child);
 

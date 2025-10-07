@@ -107,6 +107,7 @@
     "@dooboostore/dom-render": "workspace:*",
     "@dooboostore/lib-node": "workspace:*",
     "@dooboostore/lib-web": "workspace:*",
+    "@dooboostore/dom-parser": "workspace:*",
     "@dooboostore/simple-boot": "workspace:*",
     "@dooboostore/simple-boot-front": "workspace:*",
     "@dooboostore/simple-boot-http-server": "workspace:*",
