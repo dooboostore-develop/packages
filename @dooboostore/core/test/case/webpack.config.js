@@ -82,7 +82,7 @@ module.exports = {
     extensions: ['.ts', '.js', '.html', '.css'],
     plugins: [],
     alias: {
-      '@dooboostore/simple-boot': path.resolve(__dirname, '../../../src'),
+      '@dooboostore/core': path.resolve(__dirname, '../../src'),
     },
     modules: [
       'node_modules',

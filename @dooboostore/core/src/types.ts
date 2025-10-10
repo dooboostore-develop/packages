@@ -85,6 +85,21 @@ export type FieldType<T, F> = Record<keyof T, F>;
 export type FieldUnionType<T, F> = {
   [P in keyof T]: T[P] | F;
 };
+export type FieldReplaceType<T, F extends keyof T, R> = Omit<T, F> & {
+  [P in F]: R;
+};
+export type FieldPartialType<T, F extends keyof T> = Omit<T, F> & {
+  [P in F]?: T[P];
+};
+export type FieldRequiredType<T, F extends keyof T> = Omit<T, F> & {
+  [P in F]-?: T[P];
+};
+export type FieldReadonlyType<T, F extends keyof T> = Omit<T, F> & {
+  readonly [P in F]: T[P];
+};
+export type FieldMutableType<T, F extends keyof T> = Omit<T, F> & {
+  -readonly [P in F]: T[P];
+};
 
 
 

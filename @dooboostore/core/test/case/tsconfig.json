@@ -13,7 +13,7 @@
     "moduleResolution": "node",
     "baseUrl": ".",
     "paths": {
-      "@dooboostore/core": ["../../../src/*"]
+      "@dooboostore/core": ["../../src/*"]
     }
   }
 }
