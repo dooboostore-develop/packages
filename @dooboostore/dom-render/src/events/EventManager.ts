@@ -601,7 +601,7 @@ export class EventManager {
 
   public changeVar(obj: any, elements: Set<Element> | Set<ChildNode>, varName?: string, config?: DomRenderConfig) {
     // console.log('changeVar', obj, elements, varName)
-    this.procAttr(elements, EventManager.styleAttrName, (it, attribute) => {
+    this.procAttr(elements, EventManager.styleAttrName, (it: HTMLElement, attribute) => {
       let script = attribute;
       if (script) {
         script = 'return ' + script;
@@ -614,14 +614,27 @@ export class EventManager {
           })
         }));
         if (typeof data === 'string') {
-          it.setAttribute('style', data);
+            data.split(';').forEach(sit => {
+                const [key, value] = sit.split(':').map(s => s.trim());
+                if (key && value) {
+                    (it.style as any)[key] = value;
+                }
+            })
+          // it.setAttribute('style', data);
         } else if (Array.isArray(data)) {
-          it.setAttribute('style', data.join(';'));
+            data.forEach(sit => {
+                const [key, value] = sit.split(':').map(s => s.trim());
+                if (key && value) {
+                    (it.style as any)[key] = value;
+                }
+            })
+
+          // it.setAttribute('style', data.join(';'));
         } else {
           for (const [key, value] of Object.entries(data)) {
-            if (it instanceof HTMLElement) {
-              (it.style as any)[key] = String(value);
-            }
+            // if (it instanceof HTMLElement) {
+              (it.style as any)[key] = value === null ? null :String(value);
+            // }
           }
         }
       }
@@ -640,17 +653,18 @@ export class EventManager {
           })
         }));
 
+        // alert(1)
         if (typeof data === 'string') {
-          it.setAttribute('class', data);
+            data.split(' ').forEach(cit => it.classList.add(cit.trim()));
         } else if (Array.isArray(data)) {
-          it.setAttribute('class', data.join(' '));
+            data.forEach(cit => it.classList.add(cit.trim()));
         } else {
           for (const [key, value] of Object.entries(data)) {
             if (it instanceof HTMLElement) {
               if (value) {
-                it.classList.add(key);
+                it.classList.add(key.trim());
               } else {
-                it.classList.remove(key);
+                it.classList.remove(key.trim());
               }
             }
           }

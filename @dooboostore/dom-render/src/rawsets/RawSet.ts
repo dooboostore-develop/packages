@@ -825,9 +825,10 @@ export class RawSet {
           return r;
         }
         if (element.hasAttribute(EventManager.attrAttrName)) {
+        // console.log('elementAttrAttrName-->', element.outerHTML);
           const script = element.getAttribute(EventManager.attrAttrName) ?? '';
           // console.log('scriptscriptscriptscriptscriptscript,', script)
-          const keyValuePairs = Array.from(script.matchAll(/(\w+):\s*([^,}]+)/g)).map(match => ({
+          const keyValuePairs = Array.from(script.matchAll(/['"]?(\w+)['"]?:\s*([^,}]+)/g)).map(match => ({
             key: match[1],
             value: match[2]
           }));

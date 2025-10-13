@@ -115,7 +115,22 @@ export namespace StringUtils {
     if (text.length > length) return `${text.slice(0, length)}...`;
     return text;
   };
+/*
+const str = 'dr-class:set("MycLasS")'; // 또는 'dr-class'
+const regex = /^([^\s:]+)(?::(\w+)\("([^"]+)"\))?$/;
+const match = str.match(regex);
 
+if (match) {
+  const className = match[1]; // dr-class
+  const functionName = match[2] || ''; // set 또는 ''
+  const argument = match[3] || ''; // MycLasS 또는 ''
+  console.log('Class Name:', className);
+  console.log('Function Name:', functionName);
+  console.log('Argument:', argument);
+} else {
+  console.log('Invalid format');
+}
+ */
   // type Postposition =
   /**
    * Appends a postposition to the given text based on the provided options.
