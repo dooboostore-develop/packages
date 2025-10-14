@@ -15,6 +15,7 @@ type HandlerInfo = {
 };
 export type NormalAttrDataType = {
   originalAttrValue: string;
+  isStringTemplate: boolean;
   variablePaths: {origin: string, inner: string}[];
 }
 export class EventManager {
@@ -473,16 +474,27 @@ export class EventManager {
 
         const variablePaths = v.variablePaths;
         let targetScript = v.originalAttrValue;//typeof v.originalAttrValue === 'string' ? JSON.parse(v.originalAttrValue) : v.originalAttrValue;
-        variablePaths.forEach(it => {
-          let r = ObjectUtils.Path.toOptionalChainPath(it.inner);
-          targetScript = targetScript.replaceAll(it.origin,`\${${r}}`);
-        })
-        const data = ObjectUtils.Script.evaluate(`const $element = this.element;  return ${'`'+targetScript+'`'} `, Object.assign(obj, {
+          let script: string;
+          if (v.isStringTemplate) {
+              variablePaths.forEach(it => {
+                  let r = ObjectUtils.Path.toOptionalChainPath(it.inner);
+                  targetScript = targetScript.replaceAll(it.origin, `\${${r}}`);
+              })
+                script = '`' + targetScript + '`';
+          } else {
+              variablePaths.forEach(it => {
+                  let r = ObjectUtils.Path.toOptionalChainPath(it.inner);
+                  targetScript = targetScript.replaceAll(it.origin, `${r}`);
+              })
+              script = targetScript;
+          }
+        const data = ObjectUtils.Script.evaluate(`const $element = this.element;  return ${script}`, Object.assign(obj, {
           __render: Object.freeze({
             element: it,
             attribute: ElementUtils.getAttributeToObject(it)
           })
         }));
+          // console.log('!!!!!!!!!!!', k, data, script, variablePaths, v)
         if (data === null) {
           it.removeAttribute(k);
         } else {

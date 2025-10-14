@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        #draggable {
+            width: 100px;
+            height: 100px;
+            background: #3498db;
+            color: white;
+            text-align: center;
+            line-height: 100px;
+            cursor: move;
+            position: absolute;
+            user-select: none;
+            touch-action: none; /* 터치 스크롤 방지 */
+        }
+    </style>
+</head>
+<body>
+<div id="draggable">Drag Me</div>
+<div draggable="true" ondragstart="event.dataTransfer.setData('text/plain', 'dragged-item')" style="padding: 10px; border: 1px solid #ccc; cursor: move;">
+    이 요소를 드래그해 보세요.
+</div>
+<div id="dropzone" ondrop="event.preventDefault(); alert('Dropped!')" ondragover="event.preventDefault()" style="width: 200px; height: 100px; border: 2px dashed #ccc;">
+    여기에 드롭하세요.
+</div>
+<script>
+    const draggable = document.getElementById('draggable');
+    let isDragging = false;
+    let currentX = 0;
+    let currentY = 0;
+    let initialX;
+    let initialY;
+
+    // 마우스 이벤트
+    draggable.addEventListener('mousedown', startDragging);
+    document.addEventListener('mousemove', drag);
+    document.addEventListener('mouseup', stopDragging);
+
+    // 터치 이벤트
+    draggable.addEventListener('touchstart', startDragging);
+    document.addEventListener('touchmove', drag);
+    document.addEventListener('touchend', stopDragging);
+
+    function startDragging(e) {
+        const clientX = e.clientX || e.touches[0].clientX;
+        const clientY = e.clientY || e.touches[0].clientY;
+        initialX = clientX - currentX;
+        initialY = clientY - currentY;
+        isDragging = true;
+    }
+
+    function drag(e) {
+        if (isDragging) {
+            e.preventDefault();
+            const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+            const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+            currentX = clientX - initialX;
+            currentY = clientY - initialY;
+            draggable.style.left = currentX + 'px';
+            draggable.style.top = currentY + 'px';
+        }
+    }
+
+    function stopDragging() {
+        isDragging = false;
+    }
+
+    // 초기 위치 설정
+    draggable.style.left = '0px';
+    draggable.style.top = '0px';
+</script>
+</body>
+</html>

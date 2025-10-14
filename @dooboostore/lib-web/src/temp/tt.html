@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        .draggable {
+            width: 200px;
+            height: 100px;
+            background: #3498db;
+            color: white;
+            text-align: center;
+            line-height: 100px;
+            cursor: move;
+            position: absolute;
+            user-select: none;
+            touch-action: none;
+            border: 1px solid #ccc;
+        }
+        .draggable.focused {
+            border: 2px solid #ff0;
+        }
+        .draggable.dragging {
+            cursor: grabbing;
+        }
+        .resize-handle {
+            width: 20px;
+            height: 20px;
+            background: #ff0;
+            position: absolute;
+            cursor: se-resize;
+            border-radius: 50%;
+            z-index: 10;
+        }
+        .width-handle {
+            width: 20px;
+            height: 20px;
+            background: #0f0;
+            position: absolute;
+            cursor: ew-resize;
+            border-radius: 50%;
+            z-index: 10;
+        }
+        .height-handle {
+            width: 20px;
+            height: 20px;
+            background: #0f0;
+            position: absolute;
+            cursor: ns-resize;
+            border-radius: 50%;
+            z-index: 10;
+        }
+        .group-container {
+            position: absolute;
+            border: 2px dashed #f00;
+            pointer-events: none; /* 컨테이너 자체는 이벤트 무시 */
+        }
+        .group-container .resize-handle,
+        .group-container .width-handle,
+        .group-container .height-handle {
+            pointer-events: auto; /* 핸들은 이벤트 허용 */
+        }
+    </style>
+</head>
+<body data-dr-class="set(MycLasS),set(AnotherClass)">
+<div class="draggable" contenteditable="true" style="left: 50px; top: 50px;">Drag Me 1</div>
+<div class="draggable" contenteditable="true" style="left: 300px; top: 100px;">Drag Me 2</div>
+
+<script>
+    const draggables = document.querySelectorAll('.draggable');
+    const body = document.body;
+    let isDragging = false;
+    let isResizing = false;
+    let currentX, currentY;
+    let initialX, initialY;
+    let initialWidth, initialHeight;
+    let selectedElements = [];
+    let groupContainer = null;
+    let activeHandle = null;
+
+    // 대소문자 클래스 적용
+    const directives = body.getAttribute('data-dr-class').split(',');
+    directives.forEach(directive => {
+        const match = directive.match(/^set\("([^"]+)"\)$/);
+        if (match) {
+            body.classList.add(match[1]);
+            console.log('Applied class:', match[1]);
+        }
+    });
+
+    // 컨트롤러 생성
+    function createControls(element) {
+        // 기존 컨트롤러 제거
+        element.querySelectorAll('.resize-handle, .width-handle, .height-handle').forEach(h => h.remove());
+
+        // 꼭지점 핸들 (대각선 리사이징)
+        const corners = [
+            { class: 'resize-handle', top: '-10px', left: '-10px', cursor: 'nwse-resize' },
+            { class: 'resize-handle', top: '-10px', right: '-10px', cursor: 'nesw-resize' },
+            { class: 'resize-handle', bottom: '-10px', left: '-10px', cursor: 'nesw-resize' },
+            { class: 'resize-handle', bottom: '-10px', right: '-10px', cursor: 'nwse-resize' }
+        ];
+        corners.forEach(corner => {
+            const handle = document.createElement('div');
+            handle.className = corner.class;
+            Object.assign(handle.style, {
+                top: corner.top,
+                left: corner.left,
+                right: corner.right,
+                bottom: corner.bottom,
+                cursor: corner.cursor
+            });
+            element.appendChild(handle);
+        });
+
+        // 가로/세로 핸들
+        const edges = [
+            { class: 'width-handle', left: '-10px', top: '50%', transform: 'translateY(-50%)', cursor: 'ew-resize' },
+            { class: 'width-handle', right: '-10px', top: '50%', transform: 'translateY(-50%)', cursor: 'ew-resize' },
+            { class: 'height-handle', top: '-10px', left: '50%', transform: 'translateX(-50%)', cursor: 'ns-resize' },
+            { class: 'height-handle', bottom: '-10px', left: '50%', transform: 'translateX(-50%)', cursor: 'ns-resize' }
+        ];
+        edges.forEach(edge => {
+            const handle = document.createElement('div');
+            handle.className = edge.class;
+            Object.assign(handle.style, {
+                top: edge.top,
+                left: edge.left,
+                right: edge.right,
+                bottom: edge.bottom,
+                transform: edge.transform,
+                cursor: edge.cursor
+            });
+            element.appendChild(handle);
+        });
+    }
+
+    // 그룹 컨테이너 생성
+    function createGroupContainer() {
+        if (groupContainer) groupContainer.remove();
+        if (selectedElements.length < 2) return;
+
+        const rects = selectedElements.map(el => el.getBoundingClientRect());
+        const minX = Math.min(...rects.map(r => r.left));
+        const minY = Math.min(...rects.map(r => r.top));
+        const maxX = Math.max(...rects.map(r => r.right));
+        const maxY = Math.max(...rects.map(r => r.bottom));
+
+        groupContainer = document.createElement('div');
+        groupContainer.className = 'group-container';
+        Object.assign(groupContainer.style, {
+            left: minX + 'px',
+            top: minY + 'px',
+            width: (maxX - minX) + 'px',
+            height: (maxY - minY) + 'px'
+        });
+        body.appendChild(groupContainer);
+        createControls(groupContainer);
+    }
+
+    // 포커스 및 다중 선택 처리
+    draggables.forEach(draggable => {
+        draggable.addEventListener('mousedown', e => {
+            if (e.shiftKey) {
+                // Shift 키로 다중 선택
+                if (!selectedElements.includes(draggable)) {
+                    selectedElements.push(draggable);
+                    draggable.classList.add('focused');
+                    createControls(draggable);
+                }
+            } else {
+                // 단일 선택
+                selectedElements.forEach(el => {
+                    el.classList.remove('focused');
+                    el.querySelectorAll('.resize-handle, .width-handle, .height-handle').forEach(h => h.remove());
+                });
+                selectedElements = [draggable];
+                draggable.classList.add('focused');
+                createControls(draggable);
+            }
+            createGroupContainer();
+        });
+
+        draggable.addEventListener('touchstart', e => {
+            // Shift 키 대신 터치에서는 더블 탭으로 다중 선택 시뮬레이션 (예시)
+            if (e.touches.length === 2) {
+                if (!selectedElements.includes(draggable)) {
+                    selectedElements.push(draggable);
+                    draggable.classList.add('focused');
+                    createControls(draggable);
+                }
+            } else {
+                selectedElements.forEach(el => {
+                    el.classList.remove('focused');
+                    el.querySelectorAll('.resize-handle, .width-handle, .height-handle').forEach(h => h.remove());
+                });
+                selectedElements = [draggable];
+                draggable.classList.add('focused');
+                createControls(draggable);
+            }
+            createGroupContainer();
+            startDragging(e);
+        });
+    });
+
+    // 포커스 해제
+    document.addEventListener('mousedown', e => {
+        if (!e.target.closest('.draggable, .group-container, .resize-handle, .width-handle, .height-handle')) {
+            selectedElements.forEach(el => {
+                el.classList.remove('focused');
+                el.querySelectorAll('.resize-handle, .width-handle, .height-handle').forEach(h => h.remove());
+            });
+            selectedElements = [];
+            if (groupContainer) groupContainer.remove();
+            groupContainer = null;
+        }
+    });
+
+    // 마우스 이벤트 (드래그)
+    document.addEventListener('mousedown', e => {
+        if (e.target.classList.contains('resize-handle') || e.target.classList.contains('width-handle') || e.target.classList.contains('height-handle')) {
+            startResizing(e);
+        } else if (e.target.closest('.draggable, .group-container')) {
+            startDragging(e);
+        }
+    });
+    document.addEventListener('mousemove', drag);
+    document.addEventListener('mouseup', stopDragging);
+
+    // 터치 이벤트 (드래그 및 리사이징)
+    document.addEventListener('touchstart', e => {
+        if (e.target.classList.contains('resize-handle') || e.target.classList.contains('width-handle') || e.target.classList.contains('height-handle')) {
+            startResizing(e);
+        } else if (e.target.closest('.draggable, .group-container')) {
+            startDragging(e);
+        }
+    }, { passive: false });
+    document.addEventListener('touchmove', drag, { passive: false });
+    document.addEventListener('touchend', stopDragging);
+
+    function startDragging(e) {
+        if (e.target === document.activeElement || isResizing) return;
+        const target = e.target.closest('.draggable') || e.target.closest('.group-container');
+        if (!target) return;
+
+        const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+        const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+        initialX = clientX;
+        initialY = clientY;
+        if (target.classList.contains('group-container')) {
+            selectedElements.forEach(el => {
+                el.dataset.initialX = parseFloat(el.style.left || 0);
+                el.dataset.initialY = parseFloat(el.style.top || 0);
+            });
+        } else {
+            currentX = parseFloat(target.style.left || 0);
+            currentY = parseFloat(target.style.top || 0);
+            initialX = clientX - currentX;
+            initialY = clientY - currentY;
+        }
+        isDragging = true;
+        target.classList.add('dragging');
+    }
+
+    function drag(e) {
+        if (!isDragging && !isResizing) return;
+        e.preventDefault();
+        const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+        const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+
+        if (isDragging) {
+            const target = e.target.closest('.draggable') || e.target.closest('.group-container');
+            if (!target) return;
+            if (target.classList.contains('group-container')) {
+                const deltaX = clientX - initialX;
+                const deltaY = clientY - initialY;
+                selectedElements.forEach(el => {
+                    el.style.left = (parseFloat(el.dataset.initialX) + deltaX) + 'px';
+                    el.style.top = (parseFloat(el.dataset.initialY) + deltaY) + 'px';
+                });
+                updateGroupContainer();
+            } else {
+                currentX = clientX - initialX;
+                currentY = clientY - initialY;
+                target.style.left = currentX + 'px';
+                target.style.top = currentY + 'px';
+            }
+        } else if (isResizing) {
+            const deltaX = clientX - initialX;
+            const deltaY = clientY - initialY;
+            const targets = groupContainer ? selectedElements : [selectedElements[0]];
+            targets.forEach(target => {
+                if (activeHandle.classList.contains('resize-handle')) {
+                    // 대각선 리사이징
+                    let newWidth = initialWidth + deltaX * (activeHandle.style.left === '-10px' ? -1 : 1);
+                    let newHeight = initialHeight + deltaY * (activeHandle.style.top === '-10px' ? -1 : 1);
+                    target.style.width = Math.max(50, newWidth) + 'px';
+                    target.style.height = Math.max(50, newHeight) + 'px';
+                    if (activeHandle.style.left === '-10px') {
+                        target.style.left = (initialX + deltaX) + 'px';
+                    }
+                    if (activeHandle.style.top === '-10px') {
+                        target.style.top = (initialY + deltaY) + 'px';
+                    }
+                } else if (activeHandle.classList.contains('width-handle')) {
+                    // 가로 리사이징
+                    let newWidth = initialWidth + deltaX * (activeHandle.style.left === '-10px' ? -1 : 1);
+                    target.style.width = Math.max(50, newWidth) + 'px';
+                    if (activeHandle.style.left === '-10px') {
+                        target.style.left = (initialX + deltaX) + 'px';
+                    }
+                } else if (activeHandle.classList.contains('height-handle')) {
+                    // 세로 리사이징
+                    let newHeight = initialHeight + deltaY * (activeHandle.style.top === '-10px' ? -1 : 1);
+                    target.style.height = Math.max(50, newHeight) + 'px';
+                    if (activeHandle.style.top === '-10px') {
+                        target.style.top = (initialY + deltaY) + 'px';
+                    }
+                }
+            });
+            if (groupContainer) updateGroupContainer();
+        }
+    }
+
+    function stopDragging() {
+        isDragging = false;
+        isResizing = false;
+        const target = document.querySelector('.dragging');
+        if (target) target.classList.remove('dragging');
+    }
+
+    function startResizing(e) {
+        e.preventDefault();
+        if (e.target.classList.contains('resize-handle') || e.target.classList.contains('width-handle') || e.target.classList.contains('height-handle')) {
+            activeHandle = e.target;
+            const target = groupContainer || selectedElements[0];
+            initialX = e.clientX || (e.touches && e.touches[0].clientX);
+            initialY = e.clientY || (e.touches && e.touches[0].clientY);
+            initialWidth = target.offsetWidth;
+            initialHeight = target.offsetHeight;
+            initialX = parseFloat(target.style.left || 0);
+            initialY = parseFloat(target.style.top || 0);
+            isResizing = true;
+        }
+    }
+
+    function updateGroupContainer() {
+        if (!groupContainer) return;
+        const rects = selectedElements.map(el => el.getBoundingClientRect());
+        const minX = Math.min(...rects.map(r => r.left));
+        const minY = Math.min(...rects.map(r => r.top));
+        const maxX = Math.max(...rects.map(r => r.right));
+        const maxY = Math.max(...rects.map(r => r.bottom));
+        Object.assign(groupContainer.style, {
+            left: minX + 'px',
+            top: minY + 'px',
+            width: (maxX - minX) + 'px',
+            height: (maxY - minY) + 'px'
+        });
+    }
+</script>
+</body>
+</html>

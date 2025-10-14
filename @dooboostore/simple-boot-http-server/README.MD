@@ -4,7 +4,7 @@
 [![Build and Test](https://github.com/dooboostore-develop/packages/actions/workflows/main.yaml/badge.svg?branch=main)](https://github.com/dooboostore-develop/packages/actions/workflows/main.yaml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](https://opensource.org/licenses/MIT)
 
-**Full Documentation:** [https://dooboostore-develop.github.io/packages/simple-boot-http-server](https://dooboostore-develop.github.io/packages/simple-boot-http-server)
+**Full Documentation:** [https://dooboostore-develop.github.io/@dooboostore/simple-boot-http-server](https://dooboostore-develop.github.io/@dooboostore/simple-boot-http-server)
 
 A lightweight and powerful HTTP web server framework for Node.js, built on `@dooboostore/simple-boot`.
 
@@ -30,8 +30,6 @@ npm start
 ## Learn More
 
 The detailed API documentation, including all decorators and usage examples, is available on our documentation website.
-
-**[Explore the full @dooboostore/simple-boot-http-server documentation &raquo;](https://dooboostore-develop.github.io/packages/simple-boot-http-server)**
 
 ## License
 

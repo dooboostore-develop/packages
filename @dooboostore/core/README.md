@@ -4,7 +4,7 @@
 [![Build and Test](https://github.com/dooboostore-develop/packages/actions/workflows/main.yaml/badge.svg?branch=main)](https://github.com/dooboostore-develop/packages/actions/workflows/main.yaml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](https://opensource.org/licenses/MIT)
 
-**Full Documentation:** [https://dooboostore-develop.github.io/packages/core](https://dooboostore-develop.github.io/packages/core)
+**Full Documentation:** [https://dooboostore-develop.github.io/@dooboostore/core](https://dooboostore-develop.github.io/@dooboostore/core)
 
 `@dooboostore/core` is the foundational utility library for the @dooboostore ecosystem. It provides a comprehensive set of tools and helpers for TypeScript/JavaScript projects to streamline development, from data manipulation to complex asynchronous operations.
 
@@ -39,7 +39,6 @@ yarn add @dooboostore/core
 
 The detailed API documentation, including all modules and usage examples, is available on our documentation website.
 
-**[Explore the full @dooboostore/core documentation &raquo;](https://dooboostore-develop.github.io/packages/core)**
 
 ## License
 

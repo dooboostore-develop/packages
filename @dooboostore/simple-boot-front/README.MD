@@ -4,7 +4,7 @@
 [![Build and Test](https://github.com/dooboostore-develop/packages/actions/workflows/main.yaml/badge.svg?branch=main)](https://github.com/dooboostore-develop/packages/actions/workflows/main.yaml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](https://opensource.org/licenses/MIT)
 
-**Full Documentation:** [https://dooboostore-develop.github.io/packages/simple-boot-front](https://dooboostore-develop.github.io/packages/simple-boot-front)
+**Full Documentation:** [https://dooboostore-develop.github.io/@dooboostore/simple-boot-front](https://dooboostore-develop.github.io/@dooboostore/simple-boot-front)
 
 A component-based framework for building fast and modern Single Page Applications (SPAs), built on top of `@dooboostore/simple-boot` and `@dooboostore/dom-render`.
 
@@ -30,8 +30,6 @@ npm start
 ## Learn More
 
 The detailed API documentation, including all decorators and usage examples, is available on our documentation website.
-
-**[Explore the full @dooboostore/simple-boot-front documentation &raquo;](https://dooboostore-develop.github.io/packages/simple-boot-front)**
 
 ## License
 

@@ -4,7 +4,7 @@
 [![Build and Test](https://github.com/dooboostore-develop/packages/actions/workflows/main.yaml/badge.svg?branch=main)](https://github.com/dooboostore-develop/packages/actions/workflows/main.yaml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](https://opensource.org/licenses/MIT)
 
-**Full Documentation:** [https://dooboostore-develop.github.io/packages/lib-node](https://dooboostore-develop.github.io/packages/lib-node)
+**Full Documentation:** [https://dooboostore-develop.github.io/@dooboostore/lib-node](https://dooboostore-develop.github.io/@dooboostore/lib-node)
 
 A Node.js library for generating random placeholder images.
 
@@ -51,8 +51,6 @@ generateImage();
 ## Learn More
 
 The detailed API documentation is available on our documentation website.
-
-**[Explore the full @dooboostore/lib-node documentation &raquo;](https://dooboostore-develop.github.io/packages/lib-node)**
 
 ## License
 

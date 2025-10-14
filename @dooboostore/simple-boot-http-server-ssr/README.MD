@@ -4,7 +4,7 @@
 [![Build and Test](https://github.com/dooboostore-develop/packages/actions/workflows/main.yaml/badge.svg?branch=main)](https://github.com/dooboostore-develop/packages/actions/workflows/main.yaml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](https://opensource.org/licenses/MIT)
 
-**Full Documentation:** [https://dooboostore-develop.github.io/packages/simple-boot-http-server-ssr](https://dooboostore-develop.github.io/packages/simple-boot-http-server-ssr)
+**Full Documentation:** [https://dooboostore-develop.github.io/@dooboostore/simple-boot-http-server-ssr](https://dooboostore-develop.github.io/@dooboostore/simple-boot-http-server-ssr)
 
 A framework for building Server-Side Rendered (SSR) applications by seamlessly integrating `@dooboostore/simple-boot-front` and `@dooboostore/simple-boot-http-server`.
 
@@ -30,8 +30,6 @@ npm start
 ## Learn More
 
 The detailed API documentation is available on our documentation website.
-
-**[Explore the full documentation &raquo;](https://dooboostore-develop.github.io/packages/simple-boot-http-server-ssr)**
 
 ## License
 
