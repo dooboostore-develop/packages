@@ -4,7 +4,7 @@
 [![Build and Test](https://github.com/dooboostore-develop/packages/actions/workflows/main.yaml/badge.svg?branch=main)](https://github.com/dooboostore-develop/packages/actions/workflows/main.yaml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](https://opensource.org/licenses/MIT)
 
-**Full Documentation:** [https://dooboostore-develop.github.io/packages/core-node](https://dooboostore-develop.github.io/packages/core-node)
+**Full Documentation:** [https://dooboostore-develop.github.io/@dooboostore/core-node](https://dooboostore-develop.github.io/@dooboostore/core-node)
 
 `@dooboostore/core-node` is a companion library to `@dooboostore/core`, providing utility functions and classes specifically for the Node.js environment. It extends the core functionalities with features that interact with the file system and Node.js processes.
 
@@ -38,8 +38,6 @@ This package requires `@dooboostore/core` to be installed.
 ## Learn More
 
 The detailed API documentation, including all modules and usage examples, is available on our documentation website.
-
-**[Explore the full @dooboostore/core-node documentation &raquo;](https://dooboostore-develop.github.io/packages/core-node)**
 
 ## License
 

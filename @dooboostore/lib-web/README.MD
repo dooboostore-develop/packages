@@ -4,7 +4,7 @@
 [![Build and Test](https://github.com/dooboostore-develop/packages/actions/workflows/main.yaml/badge.svg?branch=main)](https://github.com/dooboostore-develop/packages/actions/workflows/main.yaml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](https://opensource.org/licenses/MIT)
 
-**Full Documentation:** [https://dooboostore-develop.github.io/packages/lib-web](https://dooboostore-develop.github.io/packages/lib-web)
+**Full Documentation:** [https://dooboostore-develop.github.io/@dooboostore/lib-web](https://dooboostore-develop.github.io/@dooboostore/lib-web)
 
 A library of advanced, canvas-based components for web applications.
 
@@ -47,7 +47,6 @@ yarn add @dooboostore/lib-web
 
 The detailed API documentation for each component is available on our documentation website.
 
-**[Explore the full @dooboostore/lib-web documentation &raquo;](https://dooboostore-develop.github.io/packages/lib-web)**
 
 ## License
 

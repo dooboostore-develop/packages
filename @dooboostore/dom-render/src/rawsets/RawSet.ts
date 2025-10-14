@@ -856,7 +856,7 @@ export class RawSet {
         const linkNames = EventManager.linkAttrs.map(it => it.name);
         const isAttr =
           element.getAttributeNames().filter(it=>!EventManager.noDetectAttr.includes(it)).filter(it => {
-            const value = element.getAttribute(it);
+            const value = element.getAttribute(it)?.trim();
 
             // link일때
             if (value && linkNames.includes(it)) {
@@ -864,9 +864,10 @@ export class RawSet {
             } else if (value && RawSet.isExpression(value)) {
               // 표현식있을떄
               const variablePaths: { origin: string; inner: string }[] = RawSet.expressionGroups(value).map(it => ({
-                origin: it[0],
-                inner: it[1]
+                origin: it[0].trim(),
+                inner: it[1].trim()
               }));
+              const isStringTemplate = variablePaths.length > 1 || (variablePaths[0] && variablePaths[0].origin !== value);
               // normal Attribute 초반에 셋팅해주기.
               // TODO: 이거 하긴했는데 사이드 이팩트?
               // let variablePath: string = RawSet.expressionGroups(value)[0][1];
@@ -888,7 +889,7 @@ export class RawSet {
               } else {
                 element.setAttribute(it, cval);
               }
-              normalAttrs.set(it, { originalAttrValue: value, variablePaths: variablePaths });
+              normalAttrs.set(it, { originalAttrValue: value, variablePaths: variablePaths, isStringTemplate });
               // normalAttrs.set(it, originVariable);
               // console.log('normalAttribute', it, variablePath);
             }
@@ -1917,31 +1918,24 @@ export class RawSet {
         const variablePaths = v.variablePaths;
         let targetScript = v.originalAttrValue.trim();
 
-        let checktargetScript = v.originalAttrValue.trim();
-        variablePaths.forEach(it => {
-          checktargetScript = targetScript.replaceAll(it.origin, '');
-        })
-
-
         //중요!! expression 하나만 존재 및 그외것들이 없을때  그자체가 값이다 그외 여러개 있으면 문자열 합치는걸로 간주한다.
-        let isScriptValue = checktargetScript.length === 0 && variablePaths.length === 1;
-
-        if (isScriptValue) {
-          let r = ObjectUtils.Path.toOptionalChainPath(variablePaths[0].inner);
-          targetScript = targetScript.replaceAll(variablePaths[0].origin, r);
-        } else {
-          variablePaths.forEach(it => {
-            let r = ObjectUtils.Path.toOptionalChainPath(it.inner);
-            targetScript = targetScript.replaceAll(it.origin, `\${${r}}`);
-          });
-        }
+          if (v.isStringTemplate) {
+              variablePaths.forEach(it => {
+                  let r = ObjectUtils.Path.toOptionalChainPath(it.inner);
+                  targetScript = targetScript.replaceAll(it.origin, `\${${r}}`);
+              });
+          } else {
+              let r = ObjectUtils.Path.toOptionalChainPath(variablePaths[0].inner);
+              targetScript = targetScript.replaceAll(variablePaths[0].origin, r);
+          }
         const cval = ObjectUtils.Script.evaluateReturn(
-          { bodyScript: config.script, returnScript: isScriptValue ? targetScript : '`' + targetScript + '`' },
+          { bodyScript: config.script, returnScript: v.isStringTemplate ? '`' + targetScript + '`' : targetScript },
           Object.assign(config.obj, config.renderData ? { __render: config.renderData } : undefined)
         );
         attribute[k] = cval;
       });
     }
+      // console.log('attribute', attribute);
     return attribute;
   }
 }

@@ -539,11 +539,25 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
             // const optionalPaths = it.valueScript.variablePaths.map(it => ObjectUtils.Path.toOptionalChainPath(it))
             const variablePaths = it.valueScript.variablePaths;
             let targetScript = it.valueScript.originalAttrValue;
-            variablePaths.forEach(it => {
-              let r = ObjectUtils.Path.toOptionalChainPath(it.inner);
-              targetScript = targetScript.replaceAll(it.origin,`\${${r}}`);
-            })
-            const value1 = ObjectUtils.Script.evaluateReturn('`'+targetScript+'`', it.pathInfo.obj);
+              let script: string;
+              if (it.valueScript.isStringTemplate) {
+                  variablePaths.forEach(it => {
+                      let r = ObjectUtils.Path.toOptionalChainPath(it.inner);
+                      targetScript = targetScript.replaceAll(it.origin, `\${${r}}`);
+                  })
+                  script = '`' + targetScript + '`';
+              } else {
+                  variablePaths.forEach(it => {
+                      let r = ObjectUtils.Path.toOptionalChainPath(it.inner);
+                      targetScript = targetScript.replaceAll(it.origin, `${r}`);
+                  })
+                  script = targetScript;
+              }
+            // variablePaths.forEach(it => {
+            //   let r = ObjectUtils.Path.toOptionalChainPath(it.inner);
+            //   targetScript = targetScript.replaceAll(it.origin,`\${${r}}`);
+            // })
+            const value1 = ObjectUtils.Script.evaluateReturn(script, it.pathInfo.obj);
             // console.log('proxy set!Attribut======', it.key, value1)
             if (value1 === null) {
               elementInfo.element.removeAttribute(it.key);

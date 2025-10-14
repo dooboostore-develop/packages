@@ -4,7 +4,7 @@
 [![Build and Test](https://github.com/dooboostore-develop/packages/actions/workflows/main.yaml/badge.svg?branch=main)](https://github.com/dooboostore-develop/packages/actions/workflows/main.yaml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](https://opensource.org/licenses/MIT)
 
-**Full Documentation:** [https://dooboostore-develop.github.io/packages/dom-render](https://dooboostore-develop.github.io/packages/dom-render)
+**Full Documentation:** [https://dooboostore-develop.github.io/@dooboostore/dom-render](https://dooboostore-develop.github.io/@dooboostore/dom-render)
 
 A powerful and reactive view template engine for fine-grained DOM control and rendering. All internal state is managed through a proxy system for automatic UI updates.
 
@@ -36,7 +36,6 @@ yarn add @dooboostore/dom-render
 
 The detailed API documentation, including all directives, components, and usage examples, is available on our documentation website.
 
-**[Explore the full @dooboostore/dom-render documentation &raquo;](https://dooboostore-develop.github.io/packages/dom-render)**
 
 ## License
 

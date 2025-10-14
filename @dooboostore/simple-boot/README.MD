@@ -4,7 +4,7 @@
 [![Build and Test](https://github.com/dooboostore-develop/packages/actions/workflows/main.yaml/badge.svg?branch=main)](https://github.com/dooboostore-develop/packages/actions/workflows/main.yaml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](https://opensource.org/licenses/MIT)
 
-**Full Documentation:** [https://dooboostore-develop.github.io/packages/simple-boot](https://dooboostore-develop.github.io/packages/simple-boot)
+**Full Documentation:** [https://dooboostore-develop.github.io/@dooboostore/simple-boot](https://dooboostore-develop.github.io/@dooboostore/simple-boot)
 
 A powerful and flexible framework for backend and service development, providing dependency injection, AOP, routing, and more.
 
@@ -29,8 +29,6 @@ npm install @dooboostore/simple-boot my-project
 ## Learn More
 
 The detailed API documentation, including all decorators and usage examples, is available on our documentation website.
-
-**[Explore the full @dooboostore/simple-boot documentation &raquo;](https://dooboostore-develop.github.io/packages/simple-boot)**
 
 ## License
 

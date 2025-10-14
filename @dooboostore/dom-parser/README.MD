@@ -4,7 +4,7 @@
 [![Build and Test](https://github.com/dooboostore-develop/packages/actions/workflows/main.yaml/badge.svg?branch=main)](https://github.com/dooboostore-develop/packages/actions/workflows/main.yaml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](https://opensource.org/licenses/MIT)
 
-**Full Documentation:** [https://dooboostore-develop.github.io/packages/dom-parser](https://dooboostore-develop.github.io/packages/dom-parser)
+**Full Documentation:** [https://dooboostore-develop.github.io/@dooboostore/dom-parser](https://dooboostore-develop.github.io/@dooboostore/dom-parser)
 
 A lightweight DOM parser for server-side HTML parsing and manipulation with full DOM API support.
 
@@ -227,7 +227,6 @@ global.window = parser.window;
 
 The detailed API documentation, including all supported DOM methods and usage examples, is available on our documentation website.
 
-**[Explore the full @dooboostore/dom-parser documentation &raquo;](https://dooboostore-develop.github.io/packages/dom-parser)**
 
 ## License
 
