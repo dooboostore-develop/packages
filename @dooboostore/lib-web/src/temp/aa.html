@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        #draggable {
+            width: 200px;
+            height: 100px;
+            background: #3498db;
+            color: white;
+            text-align: center;
+            line-height: 100px;
+            cursor: move;
+            position: absolute;
+            user-select: none;
+            touch-action: none; /* 터치 스크롤 방지 */
+            border: 1px solid #ccc;
+            resize: both;
+            overflow: auto;
+        }
+        #draggable.dragging {
+            cursor: grabbing; /* 드래그 중 커서 */
+        }
+    </style>
+</head>
+<body>
+<div id="draggable" contenteditable="true">Drag Me</div>
+
+<script>
+    const draggable = document.getElementById('draggable');
+    let isDragging = false;
+    let isResizing = false;
+    let currentX = 0;
+    let currentY = 0;
+    let initialX, initialY;
+
+    // 마우스 이벤트
+    draggable.addEventListener('mousedown', startDragging);
+    document.addEventListener('mousemove', drag);
+    document.addEventListener('mouseup', stopDragging);
+
+    // 터치 이벤트
+    draggable.addEventListener('touchstart', startDragging);
+    document.addEventListener('touchmove', drag);
+    document.addEventListener('touchend', stopDragging);
+
+    // 리사이징 감지
+    draggable.addEventListener('resize', () => {
+        console.log('resize?')
+        isResizing = true;
+        setTimeout(() => { isResizing = false; }, 100); // 리사이징 후 짧은 딜레이로 플래그 해제
+    });
+
+    function startDragging(e) {
+        // 리사이징 중이면 드래그 시작 안 함
+        if (isResizing) return;
+
+        // contenteditable 영역 편집 중이면 드래그 방지
+        if (document.activeElement === draggable && e.target === draggable) return;
+
+        const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+        const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+        initialX = clientX - currentX;
+        initialY = clientY - currentY;
+        isDragging = true;
+        draggable.classList.add('dragging');
+    }
+
+    function drag(e) {
+        if (!isDragging || isResizing) return;
+        e.preventDefault();
+        const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+        const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+        currentX = clientX - initialX;
+        currentY = clientY - initialY;
+        draggable.style.left = currentX + 'px';
+        draggable.style.top = currentY + 'px';
+    }
+
+    function stopDragging() {
+        isDragging = false;
+        draggable.classList.remove('dragging');
+    }
+
+    // 초기 위치 설정
+    draggable.style.left = '0px';
+    draggable.style.top = '0px';
+</script>
+</body>
+</html>
