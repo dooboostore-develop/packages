@@ -4,7 +4,7 @@ import { ComponentSet } from '../components/ComponentSet';
 import { ExecuteState } from './OperatorExecuter';
 import { isOnDrThisUnBind } from '../lifecycle/dr-this/OnDrThisUnBind';
 import { isOnDrThisBind } from '../lifecycle/dr-this/OnDrThisBind';
-import { ScriptUtils } from '@dooboostore/core-web/script/ScriptUtils';
+import { ObjectUtils } from '@dooboostore/core/object/ObjectUtils';
 import { Render } from '../rawsets/Render';
 
 export class DrThis extends OperatorExecuterAttrRequire<string> {
@@ -12,7 +12,7 @@ export class DrThis extends OperatorExecuterAttrRequire<string> {
     // const e = this.elementSource;
     // console.log('drThis!!!!!!!!!!!!!', this.elementSource.attrs.drDetectIfOption, this.elementSource.attrs.drIfOption);
     const optionIf = this.elementSource.attrs.drDetectIfOption ?? this.elementSource.attrs.drIfOption;
-    const ok = ScriptUtils.evaluate(`
+    const ok = ObjectUtils.Script.evaluate(`
                 ${this.render.bindScript}
                 try {
                   const ok  = ${this.elementSource.attrs.drThis};

@@ -1,4 +1,4 @@
-import { ScriptUtils } from '@dooboostore/core-web/script/ScriptUtils';
+import { ObjectUtils } from '@dooboostore/core/object/ObjectUtils';
 import { RawSet } from '../rawsets/RawSet';
 import { CreatorMetaData } from '../rawsets/CreatorMetaData';
 import {
@@ -11,6 +11,7 @@ import {
 } from './OperatorExecuter';
 import { Render } from '../rawsets/Render';
 import { ElementUtils } from '@dooboostore/core-web/element/ElementUtils';
+import { TargetElement } from '../configs';
 
 declare global {
   interface Window {
@@ -33,9 +34,20 @@ export class DrTargetElement extends OperatorExecuter<void> {
   }
 
   async execute(): Promise<ExecuteState> {
-    const targetElement = this.source.config?.targetElements?.find(
-      it => it.name.toLowerCase() === this.elementSource.element.tagName.toLowerCase()
-    );
+    let targetElement: TargetElement | undefined = undefined;
+    let isTargetElementElement = this.elementSource.element.tagName.toLowerCase() === RawSet.DR_TARGET_ELEMENT_ELEMENTNAME.toLowerCase();
+    if (isTargetElementElement){
+      const targetElementTagName = this.elementSource.element.getAttribute(`${RawSet.DR_TARGET_ELEMENT_ELEMENTNAME}:is`)?.toLowerCase();
+      targetElement = this.source.config?.targetElements?.find(
+        it => it.name.toLowerCase() === targetElementTagName
+      );
+    } else {
+      targetElement = this.source.config?.targetElements?.find(
+        it => it.name.toLowerCase() === this.elementSource.element.tagName.toLowerCase()
+      );
+    }
+    // console.log('--------------tar', isTargetElementElement, targetElement, this.elementSource.element.tagName);
+
     if (targetElement) {
       if (
         this.rawSet.point.start instanceof this.source.config.window.HTMLMetaElement &&
@@ -71,7 +83,7 @@ export class DrTargetElement extends OperatorExecuter<void> {
           this.rawSet.detect = {
             action: () => {
               const script = `var $component = this.__render.component; var $element = this.__render.element; var $innerHTML = this.__render.innerHTML; var $attribute = this.__render.attribute;  ${detectAction} `;
-              ScriptUtils.evaluate(
+              ObjectUtils.Script.evaluate(
                 script,
                 Object.assign(this.source.obj, {
                   __render: this.rawSet.dataSet.render

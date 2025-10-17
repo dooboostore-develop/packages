@@ -61,6 +61,8 @@ export class RawSet {
   public static readonly DR_STRIP_NAME = 'dr-strip';
   public static readonly DR_REPLACE_TARGET_ELEMENT_IS_NAME = 'dr-replace-target-element-is';
 
+  // elementName
+  public static readonly DR_TARGET_ELEMENT_ELEMENTNAME = 'dr-target-element';
   // 감지처리되는 옵션
   public static readonly DR_DETECT_IF_OPTIONNAME = 'dr-detect-option-if';
   public static readonly DR_DETECT_FILTER_OPTIONNAME = 'dr-detect-option-filter';
@@ -101,6 +103,7 @@ export class RawSet {
   public static readonly DR_ON_INIT_ARGUMENTS_OPTIONNAME = 'dr-on-init:arguments';
   public static readonly DR_ON_CONSTRUCTOR_ARGUMENTS_OPTIONNAME = 'dr-on-constructor:arguments';
 
+
   public static readonly drAttrsOriginName: Attrs = {
     dr: RawSet.DR_NAME,
     drIf: RawSet.DR_IF_NAME,
@@ -135,6 +138,10 @@ export class RawSet {
   // public static readonly DR_REPLACE_ACTION_ATTRIBUTES = [
   //   RawSet.DR_REPLACE_TARGET_ELEMENT_IS_NAME
   // ]
+
+  public static readonly DR_ELEMENTS = [
+    RawSet.DR_TARGET_ELEMENT_ELEMENTNAME
+  ];
 
   public static readonly DR_ATTRIBUTES = [
     RawSet.DR_NAME,
@@ -331,18 +338,13 @@ export class RawSet {
         // console.log('--->', RawSet.exporesionGrouops(textContent), textContent,runText, runText[0][1])
         let newNode: Node;
         if (textContent?.startsWith('#')) {
-          const r = ObjectUtils.Script.evaluate(
-            `${__render.bindScript} return ${runText}`,
-            Object.assign(obj, { __render })
+          const r = ObjectUtils.Script.evaluateReturn({bodyScript: __render.bindScript, returnScript: runText}, Object.assign(obj, { __render })
           );
           const template = config.window.document.createElement('template') as HTMLTemplateElement;
           template.innerHTML = r;
           newNode = template.content;
         } else {
-          const r = ObjectUtils.Script.evaluate(
-            `${__render.bindScript}  return ${runText}`,
-            Object.assign(obj, { __render })
-          );
+          const r = ObjectUtils.Script.evaluateReturn({bodyScript:__render.bindScript , returnScript:runText},Object.assign(obj, { __render }));
           newNode = config.window.document.createTextNode(r);
         }
         cNode.parentNode?.replaceChild(newNode, cNode);
@@ -385,140 +387,23 @@ export class RawSet {
         drAttrs.push(drAttr);
         // 아래 순서 중요
         const operators = [
-          new DrPre(
-            this,
-            __render,
-            { raws, fag },
-            { element, attrName: RawSet.DR_PRE_NAME, attr: drAttr.drPre, attrs: drAttr },
-            { config, obj, operatorAround: config.operatorAround?.drPre },
-            { onAttrInitCallBacks, onElementInitCallBacks, onThisComponentSetCallBacks }
-          ),
-          new Dr(
-            this,
-            __render,
-            { raws, fag },
-            { element, attrName: RawSet.DR_NAME, attr: drAttr.dr, attrs: drAttr },
-            { config, obj, operatorAround: config.operatorAround?.dr },
-            { onAttrInitCallBacks, onElementInitCallBacks, onThisComponentSetCallBacks }
-          ),
+          new DrPre( this, __render, { raws, fag }, { element, attrName: RawSet.DR_PRE_NAME, attr: drAttr.drPre, attrs: drAttr }, { config, obj, operatorAround: config.operatorAround?.drPre }, { onAttrInitCallBacks, onElementInitCallBacks, onThisComponentSetCallBacks } ),
+          new Dr( this, __render, { raws, fag }, { element, attrName: RawSet.DR_NAME, attr: drAttr.dr, attrs: drAttr }, { config, obj, operatorAround: config.operatorAround?.dr }, { onAttrInitCallBacks, onElementInitCallBacks, onThisComponentSetCallBacks } ),
           // new Dr(this, __render, {raws, fag}, {element, attrName: EventManager.onRenderedInitAttrName, attr: drAttr.dr, attrs: drAttr}, {config, obj, operatorAround: config.operatorAround?.dr}, {onAttrInitCallBacks, onElementInitCallBacks, onThisComponentSetCallBacks}),
-          new DrIf(
-            this,
-            __render,
-            { raws, fag },
-            { element, attrName: RawSet.DR_IF_NAME, attr: drAttr.drIf, attrs: drAttr },
-            { config, obj, operatorAround: config.operatorAround?.drIf },
-            { onAttrInitCallBacks, onElementInitCallBacks, onThisComponentSetCallBacks }
-          ),
-          new DrStripElement(
-            this,
-            __render,
-            { raws, fag },
-            { element, attrName: RawSet.DR_STRIP_NAME, attr: drAttr.drStripElement, attrs: drAttr },
-            { config, obj, operatorAround: config.operatorAround?.drThis },
-            { onAttrInitCallBacks, onElementInitCallBacks, onThisComponentSetCallBacks }
-          ),
-          new DrThis(
-            this,
-            __render,
-            { raws, fag },
-            { element, attrName: RawSet.DR_THIS_NAME, attr: drAttr.drThis, attrs: drAttr },
-            { config, obj, operatorAround: config.operatorAround?.drThis },
-            { onAttrInitCallBacks, onElementInitCallBacks, onThisComponentSetCallBacks }
-          ),
-          new DrForm(
-            this,
-            __render,
-            { raws, fag },
-            { element, attrName: RawSet.DR_FOR_NAME, attr: drAttr.drForm, attrs: drAttr },
-            { config, obj, operatorAround: config.operatorAround?.drForm },
-            { onAttrInitCallBacks, onElementInitCallBacks, onThisComponentSetCallBacks }
-          ),
-          new DrInnerText(
-            this,
-            __render,
-            { raws, fag },
-            { element, attrName: RawSet.DR_INNERTEXT_NAME, attr: drAttr.drInnerText, attrs: drAttr },
-            { config, obj, operatorAround: config.operatorAround?.drInnerText },
-            { onAttrInitCallBacks, onElementInitCallBacks, onThisComponentSetCallBacks }
-          ),
-          new DrInnerHTML(
-            this,
-            __render,
-            { raws, fag },
-            { element, attrName: RawSet.DR_INNERHTML_NAME, attr: drAttr.drInnerHTML, attrs: drAttr },
-            { config, obj, operatorAround: config.operatorAround?.drInnerHTML },
-            { onAttrInitCallBacks, onElementInitCallBacks, onThisComponentSetCallBacks }
-          ),
-          new DrFor(
-            this,
-            __render,
-            { raws, fag },
-            { element, attrName: RawSet.DR_FOR_NAME, attr: drAttr.drFor, attrs: drAttr },
-            { config, obj, operatorAround: config.operatorAround?.drFor },
-            { onAttrInitCallBacks, onElementInitCallBacks, onThisComponentSetCallBacks }
-          ),
-          new DrForOf(
-            this,
-            __render,
-            { raws, fag },
-            { element, attrName: RawSet.DR_FOR_OF_NAME, attr: drAttr.drForOf, attrs: drAttr },
-            { config, obj, operatorAround: config.operatorAround?.drForOf },
-            { onAttrInitCallBacks, onElementInitCallBacks, onThisComponentSetCallBacks }
-          ),
-          new DrThisProperty(
-            this,
-            __render,
-            { raws, fag },
-            { element, attrName: RawSet.DR_THIS_PROPERTY_NAME, attr: drAttr.drThisProperty, attrs: drAttr },
-            { config, obj, operatorAround: config.operatorAround?.drThisProperty },
-            { onAttrInitCallBacks, onElementInitCallBacks, onThisComponentSetCallBacks }
-          ),
-          new DrAppender(
-            this,
-            __render,
-            { raws, fag },
-            { element, attrName: RawSet.DR_APPENDER_NAME, attr: drAttr.drAppender, attrs: drAttr },
-            { config, obj, operatorAround: config.operatorAround?.drAppender },
-            { onAttrInitCallBacks, onElementInitCallBacks, onThisComponentSetCallBacks }
-          ),
-          new DrRepeat(
-            this,
-            __render,
-            { raws, fag },
-            { element, attrName: RawSet.DR_REPEAT_NAME, attr: drAttr.drRepeat, attrs: drAttr },
-            { config, obj, operatorAround: config.operatorAround?.drRepeat },
-            { onAttrInitCallBacks, onElementInitCallBacks, onThisComponentSetCallBacks }
-          ),
-          new DrTargetElementIsElement(
-            this,
-            __render,
-            { raws, fag },
-            {
-              element,
-              attrName: RawSet.DR_REPLACE_TARGET_ELEMENT_IS_NAME,
-              attr: drAttr.drReplaceTargetElementIs,
-              attrs: drAttr
-            },
-            { config, obj },
-            { onAttrInitCallBacks, onElementInitCallBacks, onThisComponentSetCallBacks }
-          ),
-          new DrTargetElement(
-            this,
-            __render,
-            { raws, fag },
-            { element, attrs: drAttr },
-            { config, obj },
-            { onAttrInitCallBacks, onElementInitCallBacks, onThisComponentSetCallBacks }
-          ),
-          new DrTargetAttr(
-            this,
-            __render,
-            { raws, fag },
-            { element, attrs: drAttr },
-            { config, obj },
-            { onAttrInitCallBacks, onElementInitCallBacks, onThisComponentSetCallBacks }
-          )
+          new DrIf( this, __render, { raws, fag }, { element, attrName: RawSet.DR_IF_NAME, attr: drAttr.drIf, attrs: drAttr }, { config, obj, operatorAround: config.operatorAround?.drIf }, { onAttrInitCallBacks, onElementInitCallBacks, onThisComponentSetCallBacks } ),
+          new DrStripElement( this, __render, { raws, fag }, { element, attrName: RawSet.DR_STRIP_NAME, attr: drAttr.drStripElement, attrs: drAttr }, { config, obj, operatorAround: config.operatorAround?.drThis }, { onAttrInitCallBacks, onElementInitCallBacks, onThisComponentSetCallBacks } ),
+          new DrThis( this, __render, { raws, fag }, { element, attrName: RawSet.DR_THIS_NAME, attr: drAttr.drThis, attrs: drAttr }, { config, obj, operatorAround: config.operatorAround?.drThis }, { onAttrInitCallBacks, onElementInitCallBacks, onThisComponentSetCallBacks } ),
+          new DrForm( this, __render, { raws, fag }, { element, attrName: RawSet.DR_FOR_NAME, attr: drAttr.drForm, attrs: drAttr }, { config, obj, operatorAround: config.operatorAround?.drForm }, { onAttrInitCallBacks, onElementInitCallBacks, onThisComponentSetCallBacks } ),
+          new DrInnerText( this, __render, { raws, fag }, { element, attrName: RawSet.DR_INNERTEXT_NAME, attr: drAttr.drInnerText, attrs: drAttr }, { config, obj, operatorAround: config.operatorAround?.drInnerText }, { onAttrInitCallBacks, onElementInitCallBacks, onThisComponentSetCallBacks } ),
+          new DrInnerHTML( this, __render, { raws, fag }, { element, attrName: RawSet.DR_INNERHTML_NAME, attr: drAttr.drInnerHTML, attrs: drAttr }, { config, obj, operatorAround: config.operatorAround?.drInnerHTML }, { onAttrInitCallBacks, onElementInitCallBacks, onThisComponentSetCallBacks } ),
+          new DrFor( this, __render, { raws, fag }, { element, attrName: RawSet.DR_FOR_NAME, attr: drAttr.drFor, attrs: drAttr }, { config, obj, operatorAround: config.operatorAround?.drFor }, { onAttrInitCallBacks, onElementInitCallBacks, onThisComponentSetCallBacks } ),
+          new DrForOf( this, __render, { raws, fag }, { element, attrName: RawSet.DR_FOR_OF_NAME, attr: drAttr.drForOf, attrs: drAttr }, { config, obj, operatorAround: config.operatorAround?.drForOf }, { onAttrInitCallBacks, onElementInitCallBacks, onThisComponentSetCallBacks } ),
+          new DrThisProperty( this, __render, { raws, fag }, { element, attrName: RawSet.DR_THIS_PROPERTY_NAME, attr: drAttr.drThisProperty, attrs: drAttr }, { config, obj, operatorAround: config.operatorAround?.drThisProperty }, { onAttrInitCallBacks, onElementInitCallBacks, onThisComponentSetCallBacks } ),
+          new DrAppender( this, __render, { raws, fag }, { element, attrName: RawSet.DR_APPENDER_NAME, attr: drAttr.drAppender, attrs: drAttr }, { config, obj, operatorAround: config.operatorAround?.drAppender }, { onAttrInitCallBacks, onElementInitCallBacks, onThisComponentSetCallBacks } ),
+          new DrRepeat( this, __render, { raws, fag }, { element, attrName: RawSet.DR_REPEAT_NAME, attr: drAttr.drRepeat, attrs: drAttr }, { config, obj, operatorAround: config.operatorAround?.drRepeat }, { onAttrInitCallBacks, onElementInitCallBacks, onThisComponentSetCallBacks } ),
+          new DrTargetElementIsElement( this, __render, { raws, fag }, { element, attrName: RawSet.DR_REPLACE_TARGET_ELEMENT_IS_NAME, attr: drAttr.drReplaceTargetElementIs, attrs: drAttr }, { config, obj }, { onAttrInitCallBacks, onElementInitCallBacks, onThisComponentSetCallBacks } ),
+          new DrTargetElement( this, __render, { raws, fag }, { element, attrs: drAttr }, { config, obj }, { onAttrInitCallBacks, onElementInitCallBacks, onThisComponentSetCallBacks } ),
+          new DrTargetAttr( this, __render, { raws, fag }, { element, attrs: drAttr }, { config, obj }, { onAttrInitCallBacks, onElementInitCallBacks, onThisComponentSetCallBacks } )
         ];
 
         for (const operator of operators) {
@@ -839,6 +724,7 @@ export class RawSet {
         // element.setAttribute('dr-event-click', 'console.log(11)');
         const targetElementIs = element.getAttribute(RawSet.DR_REPLACE_TARGET_ELEMENT_IS_NAME);
         const targetElementNames = config.targetElements?.map(it => it.name.toLowerCase()) ?? [];
+        targetElementNames.push(...RawSet.DR_ELEMENTS)
         const isElement =
           targetElementNames.includes(element.tagName.toLowerCase()) ||
           targetElementNames.includes(targetElementIs?.toLowerCase() as any);
@@ -1006,6 +892,7 @@ export class RawSet {
         // 여기서 등록한 component 추가한다.
         const targetElementIs = element.getAttribute(RawSet.DR_REPLACE_TARGET_ELEMENT_IS_NAME);
         const targetElementNames = config.targetElements?.map(it => it.name.toLowerCase()) ?? [];
+        targetElementNames.push(...RawSet.DR_ELEMENTS)
         const isElement =
           targetElementNames.includes(element.tagName.toLowerCase()) ||
           targetElementNames.includes(targetElementIs?.toLowerCase() as any);

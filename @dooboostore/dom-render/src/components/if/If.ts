@@ -7,6 +7,7 @@ import { DomRenderConfig } from '../../configs/DomRenderConfig';
 
 export namespace If {
   export const selector = 'dr-if';
+
   // export type AppenderInterface<D> = {
   //   push(...data:D[]):void;
   //   set(key: string, ...v:D[]):void
@@ -19,7 +20,6 @@ export namespace If {
 
   export class If<D> extends ComponentBase<Attribute<D>> implements OnInitRender {
     private sw: boolean = false;
-
     async onInitRender(param: any, rawSet: RawSet) {
       super.onInitRender(param, rawSet);
     }
@@ -50,9 +50,10 @@ export default {
     //   });
     // }
 
+
     return RawSet.createComponentTargetElement({
       name: If.selector,
-      template: '<div dr-if="@this@.sw" >#innerHTML#</div>',
+      template: '<div dr-if="@this@.sw" dr-option-strip="true" >#innerHTML#</div>',
       objFactory: (e, o, r2, counstructorParam) => {
         return DomRender.run({ rootObject: new If.If(...counstructorParam), config: config });
       }

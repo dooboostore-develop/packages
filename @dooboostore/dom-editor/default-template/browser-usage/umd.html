@@ -1,0 +1,350 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>@dooboostore/dom-editor UMD Bundle Example</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
+    
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 16px;
+      padding: 30px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+    }
+    
+    h1 {
+      color: #ff6b35;
+      text-align: center;
+      margin-bottom: 30px;
+      font-size: 2.5rem;
+    }
+    
+    .info {
+      background: #fff3cd;
+      border: 1px solid #ffeaa7;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 30px;
+    }
+    
+    .info h3 {
+      color: #856404;
+      margin-bottom: 10px;
+    }
+    
+    .info p {
+      color: #856404;
+      margin-bottom: 10px;
+    }
+    
+    .controls {
+      display: flex;
+      gap: 15px;
+      flex-wrap: wrap;
+      margin-bottom: 30px;
+    }
+    
+    .btn {
+      padding: 12px 24px;
+      font-size: 14px;
+      font-weight: 600;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+    
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+    }
+    
+    .btn-primary {
+      background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%);
+      color: white;
+    }
+    
+    .btn-success {
+      background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+      color: white;
+    }
+    
+    .btn-info {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+    }
+    
+    .btn-warning {
+      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+      color: white;
+    }
+    
+    #editor-container {
+      border: 2px solid #e2e8f0;
+      border-radius: 12px;
+      min-height: 400px;
+      background: #f8f9fa;
+      margin-bottom: 20px;
+    }
+    
+    .output {
+      background: #f8f9fa;
+      border: 1px solid #dee2e6;
+      border-radius: 8px;
+      padding: 20px;
+      margin-top: 20px;
+      display: none;
+    }
+    
+    .output h3 {
+      color: #495057;
+      margin-bottom: 15px;
+    }
+    
+    .code {
+      background: #2d3748;
+      color: #e2e8f0;
+      padding: 15px;
+      border-radius: 6px;
+      font-family: 'Monaco', 'Menlo', monospace;
+      font-size: 12px;
+      overflow-x: auto;
+      white-space: pre-wrap;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🌐 Dom Editor UMD Example</h1>
+    
+    <div class="info">
+      <h3>📦 UMD Bundle Demo</h3>
+      <p>This example uses the UMD (Universal Module Definition) bundle of @dooboostore/dom-editor loaded from CDN.</p>
+      <p><strong>Compatibility:</strong> Works in all browsers, including older ones that don't support ES modules.</p>
+      <p><strong>Try:</strong> All the same features as the ESM version, but with universal browser support!</p>
+    </div>
+    
+    <div class="controls">
+      <button class="btn btn-primary" id="add-element">➕ Add Element</button>
+      <button class="btn btn-success" id="add-card">🎴 Add Card</button>
+      <button class="btn btn-warning" id="add-interactive">🎮 Add Interactive</button>
+      <button class="btn btn-info" id="export-data">📊 Export Data</button>
+      <button class="btn btn-info" id="load-complex">🏗️ Load Complex</button>
+    </div>
+    
+    <div id="editor-container"></div>
+    
+    <div class="output" id="output">
+      <h3>Output</h3>
+      <div class="code" id="code-output"></div>
+    </div>
+  </div>
+
+  <!-- Load UMD bundle from CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@dooboostore/dom-editor/dist/umd-bundle/dooboostore-dom-editor.umd.js"></script>
+  
+  <script>
+    // UMD exposes global variable `dooboostoreDomEditor`
+    const { DomEditor } = dooboostoreDomEditor;
+    
+    console.log('Dom Editor UMD loaded successfully!', dooboostoreDomEditor);
+    
+    // Initialize editor
+    const editorContainer = document.getElementById('editor-container');
+    const output = document.getElementById('output');
+    const codeOutput = document.getElementById('code-output');
+    
+    const editor = new DomEditor({
+      container: editorContainer,
+      debug: true,
+      enableMobileSupport: true,
+      customStyles: `
+        .umd-welcome {
+          background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+          color: white;
+          border-radius: 12px;
+          padding: 25px;
+          text-align: center;
+          border: none;
+          box-shadow: 0 8px 25px rgba(240, 147, 251, 0.3);
+        }
+        
+        .umd-card {
+          background: white;
+          border: 2px solid #e2e8f0;
+          border-radius: 12px;
+          padding: 20px;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+          border-left: 4px solid #667eea;
+        }
+        
+        .umd-interactive {
+          background: linear-gradient(45deg, #667eea, #764ba2);
+          color: white;
+          border-radius: 12px;
+          padding: 20px;
+          border: none;
+          text-align: center;
+        }
+        
+        .umd-interactive button {
+          background: rgba(255,255,255,0.2);
+          color: white;
+          border: 1px solid rgba(255,255,255,0.3);
+          border-radius: 6px;
+          padding: 8px 16px;
+          margin: 5px;
+          cursor: pointer;
+          transition: all 0.3s ease;
+        }
+        
+        .umd-interactive button:hover {
+          background: rgba(255,255,255,0.3);
+        }
+      `,
+      initialContent: `
+        <div class="draggable umd-welcome">
+          <h2>🌐 UMD Bundle Demo</h2>
+          <p>This editor is loaded from the UMD bundle!</p>
+          <p>Compatible with all browsers, including legacy ones.</p>
+          <small>Global variable: dooboostoreDomEditor</small>
+        </div>
+      `
+    });
+    
+    // Event handlers
+    document.getElementById('add-element').addEventListener('click', function() {
+      const timestamp = Date.now();
+      const newElement = `
+        <div class="draggable umd-card" id="element-${timestamp}">
+          <h3>📦 UMD Element</h3>
+          <p>Created at: ${new Date().toLocaleTimeString()}</p>
+          <p>This element was added using the UMD bundle!</p>
+          <button onclick="alert('Hello from UMD bundle! Element ID: ${timestamp}')">Test UMD</button>
+        </div>
+      `;
+      
+      const currentContent = editor.getContent();
+      editor.loadContent(currentContent + newElement);
+    });
+    
+    document.getElementById('add-card').addEventListener('click', function() {
+      const timestamp = Date.now();
+      const cardElement = `
+        <div class="draggable umd-card" id="card-${timestamp}">
+          <h4>🎴 Info Card</h4>
+          <p><strong>Bundle Type:</strong> UMD (Universal Module Definition)</p>
+          <p><strong>Compatibility:</strong> All browsers</p>
+          <p><strong>Global Variable:</strong> dooboostoreDomEditor</p>
+          <p><strong>Created:</strong> ${new Date().toLocaleString()}</p>
+        </div>
+      `;
+      
+      const currentContent = editor.getContent();
+      editor.loadContent(currentContent + cardElement);
+    });
+    
+    document.getElementById('add-interactive').addEventListener('click', function() {
+      const timestamp = Date.now();
+      const interactiveElement = `
+        <div class="draggable umd-interactive" id="interactive-${timestamp}">
+          <h4>🎮 Interactive UMD Element</h4>
+          <p>This element has interactive features!</p>
+          <button onclick="this.parentElement.style.transform = this.parentElement.style.transform ? '' : 'scale(1.1)'">Scale</button>
+          <button onclick="this.parentElement.style.filter = this.parentElement.style.filter ? '' : 'hue-rotate(180deg)'">Color Shift</button>
+          <button onclick="this.parentElement.style.animation = this.parentElement.style.animation ? '' : 'pulse 1s infinite'">Animate</button>
+        </div>
+      `;
+      
+      const currentContent = editor.getContent();
+      editor.loadContent(currentContent + interactiveElement);
+      
+      // Add CSS animation if not already present
+      if (!document.getElementById('pulse-animation')) {
+        const style = document.createElement('style');
+        style.id = 'pulse-animation';
+        style.textContent = `
+          @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+          }
+        `;
+        document.head.appendChild(style);
+      }
+    });
+    
+    document.getElementById('export-data').addEventListener('click', function() {
+      const data = editor.exportData();
+      const jsonString = JSON.stringify(data, null, 2);
+      codeOutput.textContent = 'Exported Data (JSON):\n\n' + jsonString;
+      output.style.display = 'block';
+      output.scrollIntoView({ behavior: 'smooth' });
+      
+      // Copy to clipboard if available
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(jsonString).then(function() {
+          console.log('Data copied to clipboard');
+        });
+      }
+    });
+    
+    document.getElementById('load-complex').addEventListener('click', function() {
+      const complexContent = `
+        <div class="draggable umd-welcome">
+          <h2>🏗️ Complex Layout</h2>
+          <p>This is a complex layout with nested elements.</p>
+        </div>
+        <div class="draggable umd-card">
+          <h3>📊 Dashboard Widget</h3>
+          <p>This widget contains multiple nested elements:</p>
+          <div class="draggable umd-interactive">
+            <h4>📈 Chart Section</h4>
+            <button onclick="alert('Chart clicked!')">View Chart</button>
+            <button onclick="this.parentElement.style.background = 'linear-gradient(45deg, #11998e, #38ef7d)'">Change Theme</button>
+          </div>
+          <div class="draggable umd-card" style="margin-top: 15px; border-left-color: #f093fb;">
+            <h5>📋 Data Table</h5>
+            <p>Nested data visualization component</p>
+            <button onclick="this.parentElement.style.display = this.parentElement.style.display === 'none' ? 'block' : 'none'">Toggle</button>
+          </div>
+        </div>
+        <div class="draggable umd-interactive">
+          <h3>🎮 Control Panel</h3>
+          <p>Interactive control panel with multiple actions:</p>
+          <button onclick="document.querySelectorAll('.draggable').forEach(el => el.style.opacity = el.style.opacity === '0.5' ? '1' : '0.5')">Toggle All Opacity</button>
+          <button onclick="document.querySelectorAll('.umd-card').forEach(el => el.style.transform = el.style.transform ? '' : 'rotate(2deg)')">Tilt Cards</button>
+        </div>
+      `;
+      
+      editor.loadContent(complexContent);
+      output.style.display = 'none';
+    });
+    
+    // Make editor globally available for debugging
+    window.__domEditor = editor;
+    window.__dooboostoreDomEditor = dooboostoreDomEditor;
+    
+    console.log('UMD Demo initialized!');
+    console.log('Try window.__domEditor or window.__dooboostoreDomEditor in console.');
+  </script>
+</body>
+</html>

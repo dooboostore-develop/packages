@@ -2,7 +2,7 @@ import { RawSet } from '../rawsets/RawSet';
 import { CreatorMetaData } from '../rawsets/CreatorMetaData';
 import { AfterCallBack, ElementSource, ExecuteState, OperatorExecuter, ReturnContainer, Source } from './OperatorExecuter';
 import { Render } from '../rawsets/Render';
-import { ScriptUtils } from '@dooboostore/core-web/script/ScriptUtils';
+import { ObjectUtils } from '@dooboostore/core/object/ObjectUtils';
 
 
 // 여기서 사용자가 등록한 TargetElement가 들어간다.
@@ -34,7 +34,7 @@ export class DrTargetElementIsElement extends OperatorExecuter<string | null> {
           this.rawSet.detect = {
             action: () => {
               const script = `var $component = this.__render.component; var $element = this.__render.element; var $innerHTML = this.__render.innerHTML; var $attribute = this.__render.attribute;  ${detectAction} `;
-              ScriptUtils.evaluate(script, Object.assign(this.source.obj, {
+              ObjectUtils.Script.evaluate(script, Object.assign(this.source.obj, {
                 __render: this.rawSet.dataSet.render
               }))
             }

@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DOM Editor Example</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+        }
+        
+        #editor-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .controls {
+            padding: 20px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #dee2e6;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+        
+        .btn-primary {
+            background: #007bff;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #0056b3;
+        }
+        
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+        
+        .btn-success:hover {
+            background: #218838;
+        }
+        
+        .btn-info {
+            background: #17a2b8;
+            color: white;
+        }
+        
+        .btn-info:hover {
+            background: #138496;
+        }
+        
+        #output {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🎨 DOM Editor Demo</h1>
+        <p>Visual drag-and-drop HTML editor with mobile support</p>
+    </div>
+    
+    <div class="controls">
+        <button class="btn btn-primary" onclick="exportHTML()">📄 Export HTML</button>
+        <button class="btn btn-success" onclick="exportData()">📊 Export Data</button>
+        <button class="btn btn-info" onclick="loadSample()">🎯 Load Sample</button>
+        <button class="btn btn-primary" onclick="clearEditor()">🗑️ Clear All</button>
+    </div>
+    
+    <div id="editor-container"></div>
+    
+    <div id="output" style="display: none;"></div>
+    
+    <!-- Load the UMD bundle -->
+    <script src="./dist/umd-bundle/dooboostore-dom-editor.umd.js"></script>
+    
+    <script>
+        // Initialize the editor
+        const editor = new dooboostoreDomEditor.DomEditor({
+            container: document.getElementById('editor-container'),
+            debug: true,
+            enableMobileSupport: true,
+            dragDelay: 500,
+            customStyles: `
+                .custom-element {
+                    background: linear-gradient(45deg, #ff6b35, #f7931e);
+                    color: white;
+                    border-radius: 8px;
+                }
+                
+                .highlight-box {
+                    background: #fff3cd;
+                    border: 2px solid #ffc107;
+                    border-radius: 6px;
+                }
+            `
+        });
+        
+        // Control functions
+        function exportHTML() {
+            const html = editor.getContent();
+            showOutput('HTML Export:', html);
+        }
+        
+        function exportData() {
+            const data = editor.exportData();
+            showOutput('Data Export:', JSON.stringify(data, null, 2));
+        }
+        
+        function loadSample() {
+            const sampleHTML = `
+                <div class="custom-element">
+                    <h2>Welcome to DOM Editor!</h2>
+                    <p>This is a sample layout created with the DOM Editor.</p>
+                    <div class="highlight-box">
+                        <h3>Features:</h3>
+                        <ul>
+                            <li>Drag and drop elements</li>
+                            <li>Mobile touch support</li>
+                            <li>Real-time editing</li>
+                            <li>Property panel</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="draggable">
+                    <h3>Try dragging me!</h3>
+                    <p>You can drag this element around and drop it in different positions.</p>
+                    <div class="draggable">
+                        <p>I'm a nested element! You can drag me too.</p>
+                    </div>
+                </div>
+            `;
+            
+            editor.loadContent(sampleHTML);
+        }
+        
+        function clearEditor() {
+            if (confirm('Are you sure you want to clear all content?')) {
+                editor.loadContent('');
+            }
+        }
+        
+        function showOutput(title, content) {
+            const output = document.getElementById('output');
+            output.style.display = 'block';
+            output.textContent = title + '\n\n' + content;
+            output.scrollTop = 0;
+        }
+        
+        // Load sample content on page load
+        setTimeout(() => {
+            loadSample();
+        }, 500);
+        
+        console.log('DOM Editor initialized successfully!');
+        console.log('Available methods:', Object.getOwnPropertyNames(Object.getPrototypeOf(editor)));
+    </script>
+</body>
+</html>

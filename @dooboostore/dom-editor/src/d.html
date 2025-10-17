@@ -1,0 +1,3404 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>간단한 드래그 앤 드롭</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+
+        .draggable {
+            background: white;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 10px;
+            cursor: move;
+            user-select: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            /* touch-action: none; 제거하여 스크롤 허용 */
+            -webkit-touch-callout: none;
+            /* iOS 컨텍스트 메뉴 방지 */
+            -webkit-tap-highlight-color: transparent;
+            /* 터치 하이라이트 방지 */
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            min-height: 50px;
+            position: relative;
+        }
+
+        /* 드래그 준비 중일 때 전역 텍스트 선택 방지 및 터치 동작 제한 */
+        body.drag-preparing {
+            user-select: none !important;
+            -webkit-user-select: none !important;
+            -moz-user-select: none !important;
+            -ms-user-select: none !important;
+        }
+
+        /* 드래그 준비 중일 때만 터치 동작 제한 */
+        body.drag-preparing .draggable {
+            touch-action: none !important;
+        }
+
+        /* 애니메이션 관련 클래스 */
+        .draggable.path-animating {
+            transition: transform 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            z-index: 999;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+        }
+
+        .draggable.ghost-element {
+            opacity: 0.3;
+            pointer-events: none;
+        }
+
+
+
+        .draggable.slide-in {
+            animation: slideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .draggable.slide-out {
+            animation: slideOut 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-20px) scale(0.95);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateX(0) scale(1);
+            }
+        }
+
+        @keyframes slideOut {
+            from {
+                opacity: 1;
+                transform: translateX(0) scale(1);
+            }
+
+            to {
+                opacity: 0;
+                transform: translateX(20px) scale(0.95);
+            }
+        }
+
+
+
+        @keyframes bounce {
+
+            0%,
+            20%,
+            50%,
+            80%,
+            100% {
+                transform: translateY(0);
+            }
+
+            40% {
+                transform: translateY(-10px);
+            }
+
+            60% {
+                transform: translateY(-5px);
+            }
+        }
+
+        .draggable.bounce {
+            animation: bounce 0.6s ease-in-out;
+        }
+
+        /* 중첩된 아이템 스타일 */
+        .draggable .draggable {
+            margin-left: 20px;
+            border-left: 4px solid #007bff;
+            background-color: #f8f9fa;
+        }
+
+        .draggable .draggable .draggable {
+            border-left-color: #28a745;
+            background-color: #e8f5e8;
+        }
+
+        .draggable .draggable .draggable .draggable {
+            border-left-color: #ffc107;
+            background-color: #fff8e1;
+        }
+
+        .draggable:hover {
+            border-color: #007bff;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        /* 선택된 요소 스타일 */
+        .draggable.selected {
+            border-color: #ff6b35;
+            background-color: #fff5f0;
+            box-shadow: 0 0 15px rgba(255, 107, 53, 0.3);
+        }
+
+        /* 선택된 컨테이너 스타일 */
+        .container.selected {
+            position: relative;
+            border-color: #ff6b35;
+            background-color: #fff5f0;
+            box-shadow: 0 0 15px rgba(255, 107, 53, 0.3);
+        }
+
+        /* 조작 버튼 컨테이너 */
+        .action-buttons {
+            position: absolute;
+            top: -40px;
+            right: 0;
+            display: flex;
+            gap: 5px;
+            z-index: 1002;
+        }
+
+        /* Root Container의 버튼은 내부 상단에 표시 */
+        .container.selected .action-buttons {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 5px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        /* TagName 입력 필드 */
+        .tag-input {
+            position: absolute;
+            top: -70px;
+            left: 0;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 8px;
+            border-radius: 6px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
+            border: 2px solid #007bff;
+            z-index: 1003;
+        }
+
+        .tag-input input {
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 4px 8px;
+            font-size: 12px;
+            width: 100px;
+            margin-right: 5px;
+        }
+
+        .tag-input button {
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 4px 8px;
+            font-size: 12px;
+            cursor: pointer;
+            margin: 0 2px;
+        }
+
+        .tag-input button:hover {
+            background: #0056b3;
+        }
+
+        .tag-input button.cancel {
+            background: #6c757d;
+        }
+
+        .tag-input button.cancel:hover {
+            background: #545b62;
+        }
+
+        /* 속성 편집 영역 */
+        .property-panel {
+            background: #f8f9fa;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 10px 0;
+            display: none;
+        }
+
+        .property-panel.active {
+            display: block;
+        }
+
+        .property-panel h4 {
+            margin: 0 0 15px 0;
+            color: #495057;
+            font-size: 16px;
+        }
+
+        .property-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .property-row label {
+            min-width: 80px;
+            font-weight: bold;
+            color: #495057;
+        }
+
+        .property-row input {
+            flex: 1;
+            padding: 6px 10px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .property-row button {
+            padding: 6px 10px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            min-width: 60px;
+        }
+
+        .btn-primary {
+            background: #007bff;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #0056b3;
+        }
+
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #218838;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #c82333;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+
+        .btn-info {
+            background: #17a2b8;
+            color: white;
+        }
+
+        .btn-info:hover {
+            background: #138496;
+        }
+
+        .btn-warning {
+            background: #ffc107;
+            color: #212529;
+        }
+
+        .btn-warning:hover {
+            background: #e0a800;
+        }
+
+        .attributes-list {
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 10px;
+            background: white;
+        }
+
+        .attribute-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 5px 0;
+            border-bottom: 1px solid #f1f3f4;
+        }
+
+        .attribute-item:last-child {
+            border-bottom: none;
+        }
+
+        .children-list {
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 10px;
+            background: white;
+        }
+
+        .child-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px;
+            border: 1px solid #e9ecef;
+            border-radius: 4px;
+            margin-bottom: 5px;
+            background: #f8f9fa;
+            cursor: pointer;
+        }
+
+        .child-item:hover {
+            background: #e9ecef;
+        }
+
+        .child-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .child-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .child-actions {
+            display: flex;
+            gap: 5px;
+        }
+
+        .attribute-item input {
+            flex: 1;
+            padding: 4px 8px;
+            border: 1px solid #ced4da;
+            border-radius: 3px;
+            font-size: 12px;
+        }
+
+        .attribute-item button {
+            padding: 4px 8px;
+            font-size: 11px;
+            min-width: 50px;
+        }
+
+        .action-btn {
+            background: #ff6b35;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 5px 8px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            min-width: 30px;
+        }
+
+        .action-btn:hover {
+            background: #e55a2b;
+            transform: scale(1.05);
+        }
+
+        .action-btn.delete {
+            background: #dc3545;
+        }
+
+        .action-btn.delete:hover {
+            background: #c82333;
+        }
+
+        .action-btn.move-up {
+            background: #28a745;
+        }
+
+        .action-btn.move-up:hover {
+            background: #218838;
+        }
+
+        .action-btn.move-down {
+            background: #17a2b8;
+        }
+
+        .action-btn.move-down:hover {
+            background: #138496;
+        }
+
+        .action-btn.add-child {
+            background: #6f42c1;
+        }
+
+        .action-btn.add-child:hover {
+            background: #5a32a3;
+        }
+
+        .action-btn.move-to-parent {
+            background: #fd7e14;
+        }
+
+        .action-btn.move-to-parent:hover {
+            background: #e8690b;
+        }
+
+        .action-btn.move-into-up {
+            background: #20c997;
+        }
+
+        .action-btn.move-into-up:hover {
+            background: #1ba085;
+        }
+
+        .action-btn.move-into-down {
+            background: #e83e8c;
+        }
+
+        .action-btn.move-into-down:hover {
+            background: #d91a72;
+        }
+
+        .action-btn.change-tag {
+            background: #17a2b8;
+        }
+
+        .action-btn.change-tag:hover {
+            background: #138496;
+        }
+
+        /* Root Container 전용 버튼 스타일 */
+        .action-btn.root-add {
+            background: #28a745;
+        }
+
+        .action-btn.root-add:hover {
+            background: #218838;
+        }
+
+        .action-btn.root-clear {
+            background: #dc3545;
+        }
+
+        .action-btn.root-clear:hover {
+            background: #c82333;
+        }
+
+        .action-btn.root-save {
+            background: #007bff;
+        }
+
+        .action-btn.root-save:hover {
+            background: #0056b3;
+        }
+
+        .action-btn.root-load {
+            background: #6c757d;
+        }
+
+        .action-btn.root-load:hover {
+            background: #545b62;
+        }
+
+        .draggable.dragging {
+            opacity: 0.5;
+            transform: rotate(5deg);
+            z-index: 1000;
+        }
+
+        .draggable.drag-over {
+            border-color: #28a745;
+            background-color: #d4edda;
+            box-shadow: 0 0 15px rgba(40, 167, 69, 0.4);
+        }
+
+        /* 드롭 위치별 하이라이트 */
+        .draggable.drag-over-before {
+            border-top: 6px solid #28a745;
+            background-color: #d4edda;
+            position: relative;
+        }
+
+        .draggable.drag-over-before::before {
+            content: "↑ 앞에 삽입";
+            position: absolute;
+            top: -25px;
+            left: 10px;
+            background: #28a745;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            z-index: 1001;
+        }
+
+        .draggable.drag-over-after {
+            border-bottom: 6px solid #28a745;
+            background-color: #d4edda;
+            position: relative;
+        }
+
+        .draggable.drag-over-after::after {
+            content: "↓ 뒤에 삽입";
+            position: absolute;
+            bottom: -25px;
+            left: 10px;
+            background: #28a745;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            z-index: 1001;
+        }
+
+        .draggable.drag-over-child {
+            border: 3px solid #007bff;
+            background-color: #e7f3ff;
+            box-shadow: inset 0 0 15px rgba(0, 123, 255, 0.4);
+            position: relative;
+        }
+
+        .draggable.drag-over-child::before {
+            content: "📁 자식으로 삽입";
+            position: absolute;
+            top: 5px;
+            right: 10px;
+            background: #007bff;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            z-index: 1001;
+        }
+
+        .container {
+            min-height: 100px;
+            border: 2px dashed #ccc;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 10px;
+            background-color: #fafafa;
+        }
+
+        .container.drag-over {
+            border-color: #007bff;
+            background-color: #e7f3ff;
+        }
+
+        .trash {
+            background-color: #ffebee;
+            border-color: #f44336;
+            text-align: center;
+            color: #d32f2f;
+            font-weight: bold;
+        }
+
+        .trash.drag-over {
+            background-color: #ffcdd2;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+
+        .debug {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            max-width: 250px;
+            z-index: 2000;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- HTML 태그 목록 -->
+    <datalist id="htmlTags">
+        <option value="div">div - 일반적인 컨테이너</option>
+        <option value="span">span - 인라인 컨테이너</option>
+        <option value="p">p - 문단</option>
+        <option value="h1">h1 - 제목 1</option>
+        <option value="h2">h2 - 제목 2</option>
+        <option value="h3">h3 - 제목 3</option>
+        <option value="h4">h4 - 제목 4</option>
+        <option value="h5">h5 - 제목 5</option>
+        <option value="h6">h6 - 제목 6</option>
+        <option value="header">header - 헤더</option>
+        <option value="nav">nav - 네비게이션</option>
+        <option value="main">main - 메인 콘텐츠</option>
+        <option value="section">section - 섹션</option>
+        <option value="article">article - 아티클</option>
+        <option value="aside">aside - 사이드바</option>
+        <option value="footer">footer - 푸터</option>
+        <option value="ul">ul - 순서없는 목록</option>
+        <option value="ol">ol - 순서있는 목록</option>
+        <option value="li">li - 목록 아이템</option>
+        <option value="a">a - 링크</option>
+        <option value="img">img - 이미지</option>
+        <option value="button">button - 버튼</option>
+        <option value="input">input - 입력</option>
+        <option value="textarea">textarea - 텍스트 영역</option>
+        <option value="select">select - 선택</option>
+        <option value="form">form - 폼</option>
+        <option value="table">table - 테이블</option>
+        <option value="thead">thead - 테이블 헤드</option>
+        <option value="tbody">tbody - 테이블 바디</option>
+        <option value="tr">tr - 테이블 행</option>
+        <option value="th">th - 테이블 헤더 셀</option>
+        <option value="td">td - 테이블 데이터 셀</option>
+    </datalist>
+
+    <div class="debug" id="debug">드래그 앤 드롭 준비</div>
+
+    <h1>간단한 드래그 앤 드롭</h1>
+
+    <div style="text-align: center; margin: 20px 0;">
+        <button onclick="saveData()"
+            style="margin: 5px; padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer;">💾
+            데이터 저장</button>
+        <button onclick="loadData()"
+            style="margin: 5px; padding: 10px 20px; background: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer;">📂
+            데이터 불러오기</button>
+        <button onclick="addNewItem()"
+            style="margin: 5px; padding: 10px 20px; background: #ffc107; color: black; border: none; border-radius: 5px; cursor: pointer;">➕
+            새 아이템</button>
+        <button onclick="clearAll()"
+            style="margin: 5px; padding: 10px 20px; background: #dc3545; color: white; border: none; border-radius: 5px; cursor: pointer;">🗑️
+            전체 삭제</button>
+        <button onclick="loadSampleData()"
+            style="margin: 5px; padding: 10px 20px; background: #6f42c1; color: white; border: none; border-radius: 5px; cursor: pointer;">🎯
+            샘플 데이터</button>
+    </div>
+
+    <!-- 속성 편집 패널 -->
+    <div id="propertyPanel" class="property-panel">
+        <h4 id="selectedElementTitle">선택된 요소 없음</h4>
+
+
+
+        <!-- TagName 편집 -->
+        <div class="property-row" id="tagNameRow">
+            <label>TagName:</label>
+            <input type="text" id="tagNameInput" list="htmlTags" placeholder="태그명 입력">
+            <button class="btn-primary" onclick="updateTagName()">변경</button>
+        </div>
+
+        <!-- 텍스트 노드 편집 -->
+        <div class="property-row" id="textNodeRow" style="display: none;">
+            <label>텍스트 내용:</label>
+            <textarea id="textContentInput" placeholder="텍스트 내용 입력" rows="3"
+                style="width: 100%; resize: vertical;"></textarea>
+            <button class="btn-primary" onclick="updateTextContent()" style="margin-top: 5px;">저장</button>
+        </div>
+
+        <!-- 새 속성 추가 -->
+        <div class="property-row">
+            <label>새 속성:</label>
+            <input type="text" id="newAttrName" placeholder="속성명">
+            <input type="text" id="newAttrValue" placeholder="속성값">
+            <button class="btn-success" onclick="addAttribute()">추가</button>
+        </div>
+
+        <!-- 기존 속성 목록 -->
+        <div class="property-row">
+            <label>속성 목록:</label>
+        </div>
+        <div id="attributesList" class="attributes-list">
+            <div style="text-align: center; color: #6c757d; padding: 20px;">
+                요소를 선택하면 속성이 표시됩니다
+            </div>
+        </div>
+
+        <!-- 요소 이동 -->
+        <div class="property-row">
+            <label>요소 이동:</label>
+        </div>
+        <div class="property-row">
+            <button class="btn-secondary" onclick="moveElementUp()" style="margin-right: 5px;">⬆️ 위로</button>
+            <button class="btn-secondary" onclick="moveElementDown()" style="margin-right: 5px;">⬇️ 아래로</button>
+            <button class="btn-info" onclick="moveToParent()" style="margin-right: 5px;">↗️ 상위로</button>
+        </div>
+        <div class="property-row">
+            <button class="btn-warning" onclick="moveToUpperSibling()" style="margin-right: 5px;">↖️ 위 요소 자식</button>
+            <button class="btn-warning" onclick="moveToLowerSibling()">↙️ 아래 요소 자식</button>
+        </div>
+
+        <!-- 자식 요소 관리 -->
+        <div class="property-row">
+            <label>자식 요소 관리:</label>
+        </div>
+        <div class="property-row">
+            <button class="btn-success" onclick="addChildElement()" style="margin-right: 5px;">➕ 자식 요소</button>
+            <button class="btn-info" onclick="addTextNode()" style="margin-right: 5px;">📝 텍스트</button>
+            <button class="btn-danger" onclick="deleteSelectedElement()">🗑️ 요소 삭제</button>
+        </div>
+        <div class="property-row">
+            <label>자식 요소 목록:</label>
+        </div>
+        <div id="childrenList" class="children-list">
+            <div style="text-align: center; color: #6c757d; padding: 20px;">
+                자식 요소가 없습니다
+            </div>
+        </div>
+    </div>
+
+    <input type="file" id="fileInput" accept=".json" style="display: none;" onchange="handleFileImport(event)">
+
+    <!-- Root Container -->
+    <div id="rootContainer" class="container"
+        style="min-height: 400px; border: 2px solid #007bff; background-color: #f8f9fa;">
+        <h3 style="margin-top: 0; color: #007bff;">�1 작업 영역</h3>
+
+        <div class="draggable" id="item1">📄 아이템 1</div>
+        <div class="draggable" id="item2">📄 아이템 2
+            <div class="draggable" id="item2-1">📄 아이템 2-1</div>
+            <div class="draggable" id="item2-2">📄 아이템 2-2
+                <div class="draggable" id="item2-2-1">📄 아이템 2-2-1</div>
+            </div>
+        </div>
+        <div class="draggable" id="item3">📄 아이템 3
+            <div class="draggable" id="item3-1">📄 아이템 3-1</div>
+        </div>
+        <div class="draggable" id="item4">📄 아이템 4</div>
+        <div class="draggable" id="item5">📄 아이템 5</div>
+    </div>
+
+
+
+    <div class="container trash">
+        <h3>🗑️ 휴지통</h3>
+        <p>여기로 드래그하면 삭제됩니다</p>
+    </div>
+
+    <script>
+        let draggedElement = null;
+        let isDragging = false;
+        let startX, startY;
+        let offsetX, offsetY;
+        let selectedElement = null; // 선택된 요소
+
+        const debug = document.getElementById('debug');
+
+        function updateDebug(message) {
+            debug.textContent = message;
+            console.log(message);
+        }
+
+        // 순환 참조 방지
+        function isDescendant(parent, child) {
+            let node = parent.parentNode;
+            while (node != null) {
+                if (node === child) return true;
+                node = node.parentNode;
+            }
+            return false;
+        }
+
+        // 드롭 가능한지 확인
+        function canDrop(draggedElement, targetElement) {
+            if (draggedElement === targetElement) return false;
+            if (isDescendant(targetElement, draggedElement)) return false;
+            return true;
+        }
+
+        // 드롭 위치 결정 (상단/중간/하단)
+        function getDropPosition(clientY, targetElement) {
+            const rect = targetElement.getBoundingClientRect();
+            const relativeY = clientY - rect.top;
+            const height = rect.height;
+
+            console.log(`getDropPosition: clientY=${clientY}, rect.top=${rect.top}, relativeY=${relativeY}, height=${height}`);
+
+            // 중첩된 요소가 있는 경우 더 관대한 child 영역 설정
+            const hasChildren = targetElement.querySelector('.draggable') !== null;
+
+            if (hasChildren) {
+                // 자식이 있는 경우: 상단 20%, 중간 60%, 하단 20%
+                if (relativeY < height * 0.2) {
+                    console.log('Position: before (has children)');
+                    return 'before';
+                }
+                if (relativeY > height * 0.8) {
+                    console.log('Position: after (has children)');
+                    return 'after';
+                }
+                console.log('Position: child (has children)');
+                return 'child';
+            } else {
+                // 자식이 없는 경우: 상단 25%, 중간 50%, 하단 25%
+                if (relativeY < height * 0.25) {
+                    console.log('Position: before (no children)');
+                    return 'before';
+                }
+                if (relativeY > height * 0.75) {
+                    console.log('Position: after (no children)');
+                    return 'after';
+                }
+                console.log('Position: child (no children)');
+                return 'child';
+            }
+        }
+
+        // 드래그 활성화 관련 변수들
+        let dragActivationTimer = null;
+        let isDragReady = false;
+        let dragStartElement = null;
+        let customDragElement = null;
+        let isCustomDragging = false;
+        let isHTML5Dragging = false;
+        let dragStartPos = { x: 0, y: 0 };
+        let dragOffset = { x: 0, y: 0 };
+
+        // 모든 draggable 요소에 이벤트 리스너 추가
+        function initDragAndDrop() {
+            document.querySelectorAll('.draggable, .container').forEach(element => {
+                // 드래그 가능한 요소만 드래그 이벤트 추가
+                if (element.classList.contains('draggable')) {
+                    // 1초 대기 후 드래그 활성화
+                    element.draggable = false;
+
+                    // 마우스/터치 이벤트로 드래그 활성화 제어
+                    element.addEventListener('mousedown', handleDragActivationStart);
+                    element.addEventListener('mouseup', handleDragActivationEnd);
+                    element.addEventListener('mouseleave', handleDragActivationEnd);
+                    element.addEventListener('touchstart', handleDragActivationStart, { passive: false });
+                    element.addEventListener('touchend', handleDragActivationEnd, { passive: false });
+                    element.addEventListener('touchcancel', handleDragActivationEnd, { passive: false });
+
+                    // 실제 드래그 이벤트들
+                    element.addEventListener('dragstart', handleDragStart);
+                    element.addEventListener('dragend', handleDragEnd);
+                    element.addEventListener('touchmove', handleTouchMove, { passive: false });
+                }
+
+                // 모든 요소에 드롭 이벤트 추가 (draggable도 드롭 가능)
+                element.addEventListener('dragover', handleDragOver);
+                element.addEventListener('dragleave', handleDragLeave);
+                element.addEventListener('drop', handleDrop);
+            });
+        }
+
+        // 드래그 활성화 시작 (1초 대기)
+        function handleDragActivationStart(e) {
+            // 이벤트 전파 중단 (부모 요소의 드래그 활성화 방지)
+            e.stopPropagation();
+
+            // 액션 버튼 클릭은 무시
+            if (e.target.closest('.action-buttons')) {
+                return;
+            }
+
+            // 이미 다른 요소가 드래그 준비 중이면 무시
+            if (dragStartElement && dragStartElement !== e.currentTarget) {
+                return;
+            }
+
+            dragStartElement = e.currentTarget;
+            isDragReady = false;
+
+            // 마우스/터치 시작 위치 저장
+            if (e.type === 'mousedown') {
+                dragStartPos = { x: e.clientX, y: e.clientY };
+                const rect = dragStartElement.getBoundingClientRect();
+                dragOffset = {
+                    x: e.clientX - rect.left,
+                    y: e.clientY - rect.top
+                };
+            } else if (e.type === 'touchstart') {
+                const touch = e.touches[0];
+                dragStartPos = { x: touch.clientX, y: touch.clientY };
+                const rect = dragStartElement.getBoundingClientRect();
+                dragOffset = {
+                    x: touch.clientX - rect.left,
+                    y: touch.clientY - rect.top
+                };
+            }
+
+            // 스크롤 감지를 위한 이동 이벤트 리스너 추가 (passive로 스크롤 허용)
+            document.addEventListener('mousemove', handlePreDragMove);
+            document.addEventListener('touchmove', handlePreDragMove, { passive: true });
+
+            // 1초 후 드래그 활성화
+            const delay = 500;
+            dragActivationTimer = setTimeout(() => {
+                if (dragStartElement) {
+                    isDragReady = true;
+
+                    // 이제 스크롤 방지 적용
+                    document.body.classList.add('drag-preparing');
+
+                    // 텍스트 선택 방지를 위한 추가 스타일 적용
+                    dragStartElement.style.webkitUserSelect = 'none';
+                    dragStartElement.style.userSelect = 'none';
+                    dragStartElement.style.webkitTouchCallout = 'none'; // iOS 컨텍스트 메뉴 방지
+
+                    // HTML5 드래그 활성화 (PC용)
+                    dragStartElement.draggable = true;
+
+                    // 시각적 피드백 (드래그 준비됨을 표시)
+                    dragStartElement.style.cursor = 'grab';
+                    dragStartElement.style.opacity = '0.8';
+
+                    updateDebug(`드래그 모드 활성화됨 (${delay}ms 대기 완료)`);
+
+                    // 진동 피드백 (모바일)
+                    if (navigator.vibrate) {
+                        navigator.vibrate(50);
+                    }
+
+                    // 즉시 커스텀 드래그 시작 (플로팅 효과)
+                    startCustomDrag();
+
+                    // 기존 이동 리스너 제거하고 드래그 이동 리스너 추가
+                    document.removeEventListener('mousemove', handlePreDragMove);
+                    document.removeEventListener('touchmove', handlePreDragMove);
+                    document.addEventListener('mousemove', handleCustomDragMove);
+                    document.addEventListener('touchmove', handleCustomDragMove, { passive: false });
+                }
+            }, delay);
+        }
+
+        // 드래그 활성화 전 이동 처리 (스크롤 감지)
+        function handlePreDragMove(e) {
+            if (!dragStartElement) return;
+
+            let currentX, currentY;
+            if (e.type === 'mousemove') {
+                currentX = e.clientX;
+                currentY = e.clientY;
+            } else if (e.type === 'touchmove') {
+                const touch = e.touches[0];
+                if (!touch) return;
+                currentX = touch.clientX;
+                currentY = touch.clientY;
+            }
+
+            // 이동 거리 계산
+            const deltaX = Math.abs(currentX - dragStartPos.x);
+            const deltaY = Math.abs(currentY - dragStartPos.y);
+
+            // 스크롤로 판단되는 경우 (주로 세로 이동이 크고, 가로 이동이 작은 경우)
+            // 또는 충분한 이동이 감지된 경우
+            if ((deltaY > 15 && deltaY > deltaX * 1.5) || (deltaX > 20 || deltaY > 20)) {
+                // 스크롤 또는 의도적인 이동으로 판단하여 드래그 활성화 취소
+                if (dragActivationTimer) {
+                    clearTimeout(dragActivationTimer);
+                    dragActivationTimer = null;
+                }
+
+                // 정리
+                document.removeEventListener('mousemove', handlePreDragMove);
+                document.removeEventListener('touchmove', handlePreDragMove);
+
+                // 요소 스타일 원상복구
+                if (dragStartElement) {
+                    dragStartElement.style.webkitUserSelect = '';
+                    dragStartElement.style.userSelect = '';
+                    dragStartElement.style.webkitTouchCallout = '';
+                }
+
+                dragStartElement = null;
+                isDragReady = false;
+
+                // 스크롤인지 드래그인지 구분하여 메시지 표시
+                if (deltaY > 15 && deltaY > deltaX * 1.5) {
+                    updateDebug('스크롤 감지됨 - 자연스러운 스크롤 허용');
+                } else {
+                    updateDebug('이동 감지됨 - 드래그 취소');
+                }
+            }
+        }
+
+        // 커스텀 드래그 이동 처리
+        function handleCustomDragMove(e) {
+            if (!isDragReady || !dragStartElement) return;
+
+            let currentX, currentY;
+            if (e.type === 'mousemove') {
+                currentX = e.clientX;
+                currentY = e.clientY;
+            } else if (e.type === 'touchmove') {
+                e.preventDefault();
+                const touch = e.touches[0];
+                currentX = touch.clientX;
+                currentY = touch.clientY;
+            }
+
+            // 이미 커스텀 드래그가 시작된 상태에서만 위치 업데이트
+            if (isCustomDragging && customDragElement) {
+                // 플로팅 요소 위치 업데이트
+                customDragElement.style.left = (currentX - dragOffset.x) + 'px';
+                customDragElement.style.top = (currentY - dragOffset.y) + 'px';
+
+                // 드롭 타겟 하이라이트 (플로팅 요소 임시 숨김)
+                customDragElement.style.display = 'none';
+                const elementBelow = document.elementFromPoint(currentX, currentY);
+                customDragElement.style.display = '';
+
+                // 가장 구체적인 draggable 요소 찾기
+                let dropTarget = null;
+                if (elementBelow) {
+                    if (elementBelow.classList && elementBelow.classList.contains('draggable')) {
+                        dropTarget = elementBelow;
+                    } else {
+                        dropTarget = elementBelow.closest('.draggable, .container');
+                    }
+                }
+
+                clearHighlights();
+                if (dropTarget && dropTarget !== dragStartElement && canDrop(dragStartElement, dropTarget)) {
+                    // 드롭 위치에 따른 시각적 피드백 (CSS 클래스 사용)
+                    const position = calculateDropPosition(dropTarget, currentX, currentY);
+
+                    if (position === 'before') {
+                        dropTarget.classList.add('drag-over-before');
+                    } else if (position === 'after') {
+                        dropTarget.classList.add('drag-over-after');
+                    } else if (position === 'child') {
+                        dropTarget.classList.add('drag-over-child');
+                    }
+
+                    // 기본 drag-over 클래스도 추가
+                    dropTarget.classList.add('drag-over');
+                }
+            }
+        }
+
+        // 커스텀 드래그 시작
+        function startCustomDrag() {
+            if (!dragStartElement) return;
+
+            isCustomDragging = true;
+            draggedElement = dragStartElement;
+
+            // 선택 해제
+            deselectElement();
+
+            // 플로팅 드래그 요소 생성
+            customDragElement = dragStartElement.cloneNode(true);
+            customDragElement.style.position = 'fixed';
+            customDragElement.style.pointerEvents = 'none';
+            customDragElement.style.zIndex = '9999';
+            customDragElement.style.opacity = '0.8';
+            customDragElement.style.transform = 'rotate(5deg)';
+            customDragElement.style.boxShadow = '0 5px 15px rgba(0,0,0,0.3)';
+
+            // 초기 위치를 드래그 시작 위치로 설정
+            customDragElement.style.left = (dragStartPos.x - dragOffset.x) + 'px';
+            customDragElement.style.top = (dragStartPos.y - dragOffset.y) + 'px';
+
+            // 액션 버튼 제거
+            const actionButtons = customDragElement.querySelector('.action-buttons');
+            if (actionButtons) {
+                actionButtons.remove();
+            }
+
+            document.body.appendChild(customDragElement);
+
+            // 원본 요소 스타일 변경
+            dragStartElement.style.opacity = '0.3';
+            dragStartElement.style.cursor = 'grabbing';
+
+            updateDebug(`커스텀 드래그 시작: ${dragStartElement.id || 'unnamed'}`);
+        }
+
+        // 드래그 활성화 종료
+        function handleDragActivationEnd(e) {
+            // 이벤트 전파 중단
+            e.stopPropagation();
+
+            // 타이머 정리
+            if (dragActivationTimer) {
+                clearTimeout(dragActivationTimer);
+                dragActivationTimer = null;
+            }
+
+            // 모든 이벤트 리스너 제거
+            document.removeEventListener('mousemove', handlePreDragMove);
+            document.removeEventListener('touchmove', handlePreDragMove);
+            document.removeEventListener('mousemove', handleCustomDragMove);
+            document.removeEventListener('touchmove', handleCustomDragMove);
+
+            // 커스텀 드래그 종료 처리
+            if (isCustomDragging) {
+                // 이벤트가 있으면 정상 처리, 없으면 정리만
+                if (e && (e.type === 'mouseup' || e.type === 'touchend')) {
+                    handleCustomDragEnd(e);
+                } else {
+                    cleanupCustomDrag();
+                }
+            } else if (dragStartElement) {
+                // 드래그가 시작되지 않았다면 원상복구
+                dragStartElement.draggable = false;
+                dragStartElement.style.cursor = '';
+                dragStartElement.style.opacity = '';
+                dragStartElement.style.webkitUserSelect = '';
+                dragStartElement.style.userSelect = '';
+                dragStartElement.style.webkitTouchCallout = '';
+            }
+
+            // 상태 초기화
+            document.body.classList.remove('drag-preparing');
+            dragStartElement = null;
+            isDragReady = false;
+        }
+
+        // 커스텀 드래그 종료
+        function handleCustomDragEnd(e) {
+            if (!isCustomDragging) return;
+
+            let dropX, dropY;
+            if (e.type === 'mouseup') {
+                dropX = e.clientX;
+                dropY = e.clientY;
+            } else if (e.type === 'touchend') {
+                const touch = e.changedTouches && e.changedTouches[0];
+                if (touch) {
+                    dropX = touch.clientX;
+                    dropY = touch.clientY;
+                } else {
+                    // 터치 정보가 없으면 기본값 사용
+                    dropX = 0;
+                    dropY = 0;
+                }
+            }
+
+            // 좌표값 검증
+            if (!isFinite(dropX) || !isFinite(dropY) || dropX < 0 || dropY < 0) {
+                console.warn('유효하지 않은 드롭 좌표:', { dropX, dropY });
+                // 정리만 하고 드롭 처리는 건너뛰기
+                cleanupCustomDrag();
+                return;
+            }
+
+            // 드롭 타겟 찾기 (플로팅 요소 임시 숨김)
+            if (customDragElement) {
+                customDragElement.style.display = 'none';
+            }
+
+            const elementBelow = document.elementFromPoint(dropX, dropY);
+            console.log('elementFromPoint 결과:', elementBelow);
+
+            // 가장 구체적인 draggable 요소 찾기 (가장 깊은 자식부터)
+            let dropTarget = null;
+            if (elementBelow) {
+                // 클릭된 요소가 draggable이면 그것을 사용
+                if (elementBelow.classList && elementBelow.classList.contains('draggable')) {
+                    dropTarget = elementBelow;
+                } else {
+                    // 아니면 가장 가까운 draggable 또는 container 찾기
+                    dropTarget = elementBelow.closest('.draggable, .container');
+                }
+            }
+
+            console.log('최종 드롭 타겟:', dropTarget);
+
+            // 플로팅 요소 다시 표시
+            if (customDragElement) {
+                customDragElement.style.display = '';
+            }
+
+            // 드롭 처리
+            if (dropTarget && dropTarget !== draggedElement && canDrop(draggedElement, dropTarget)) {
+                // 드롭 위치 계산
+                const position = calculateDropPosition(dropTarget, dropX, dropY);
+                performDrop(draggedElement, dropTarget, position);
+            }
+
+            // 정리
+            cleanupCustomDrag();
+            updateDebug('커스텀 드래그 종료');
+        }
+
+        // 커스텀 드래그 정리
+        function cleanupCustomDrag() {
+            // 정리
+            if (customDragElement) {
+                customDragElement.remove();
+                customDragElement = null;
+            }
+
+            if (draggedElement) {
+                draggedElement.style.opacity = '';
+                draggedElement.style.cursor = '';
+            }
+
+            clearHighlights();
+            draggedElement = null;
+            isCustomDragging = false;
+        }
+
+        // 드롭 위치 계산
+        function calculateDropPosition(targetElement, x, y) {
+            const rect = targetElement.getBoundingClientRect();
+
+            // 컨테이너는 항상 자식으로
+            if (targetElement.classList.contains('container') || targetElement === rootContainer) {
+                return 'child';
+            }
+
+            // draggable 요소의 경우
+            if (targetElement.classList.contains('draggable')) {
+                // 요소의 중앙 영역 (30%-70%)에 드롭하면 자식으로, 그 외는 before/after
+                const topThreshold = rect.top + rect.height * 0.3;
+                const bottomThreshold = rect.top + rect.height * 0.7;
+
+                if (y >= topThreshold && y <= bottomThreshold) {
+                    return 'child';
+                } else if (y < topThreshold) {
+                    return 'before';
+                } else {
+                    return 'after';
+                }
+            }
+
+            return 'child';
+        }
+
+        // 데스크톱 드래그 이벤트
+        function handleDragStart(e) {
+            console.log('handleDragStart 호출됨:', e.target);
+
+            // 가장 가까운 draggable 요소 찾기
+            draggedElement = e.target.closest('.draggable');
+            if (!draggedElement) {
+                console.log('draggable 요소를 찾을 수 없음');
+                return;
+            }
+
+            // HTML5 드래그 시작 플래그 설정
+            isHTML5Dragging = true;
+            console.log('HTML5 드래그 플래그 설정됨');
+
+            // 드래그 시작시 선택 해제
+            deselectElement();
+
+            draggedElement.classList.add('dragging');
+            draggedElement.style.cursor = 'grabbing';
+            updateDebug(`HTML5 드래그 시작: ${draggedElement.id || 'unnamed'}`);
+
+            // 드래그 데이터 설정
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/html', draggedElement.outerHTML);
+        }
+
+        function handleDragEnd(e) {
+            if (draggedElement) {
+                draggedElement.classList.remove('dragging');
+                draggedElement.style.cursor = '';
+                draggedElement.style.opacity = '';
+                draggedElement.draggable = false; // 드래그 종료 후 비활성화
+            }
+            clearHighlights();
+            draggedElement = null;
+            isDragReady = false;
+            isHTML5Dragging = false;
+            updateDebug('HTML5 드래그 종료');
+        }
+
+        function handleDragOver(e) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            const target = e.currentTarget;
+
+            if (!draggedElement || !canDrop(draggedElement, target)) {
+                return;
+            }
+
+            clearHighlights();
+
+            if (target.classList.contains('trash')) {
+                target.classList.add('drag-over');
+                return;
+            }
+
+            if (target.classList.contains('draggable')) {
+                // 커스텀 드래그와 동일한 위치 계산 로직 사용
+                const position = calculateDropPosition(target, e.clientX, e.clientY);
+
+                console.log(`PC DragOver: ${target.id || 'unnamed'} - position: ${position}`);
+
+                if (position === 'before') {
+                    target.classList.add('drag-over-before');
+                } else if (position === 'after') {
+                    target.classList.add('drag-over-after');
+                } else if (position === 'child') {
+                    target.classList.add('drag-over-child');
+                }
+
+                target.classList.add('drag-over');
+
+                // 더 명확한 디버그 메시지
+                const draggedId = draggedElement.id || 'unnamed';
+                const targetId = target.id || 'unnamed';
+                updateDebug(`PC: ${draggedId} -> ${targetId} (${position})`);
+            } else if (target === rootContainer) {
+                target.classList.add('drag-over');
+                updateDebug('드래그 오버: Root Container');
+            }
+        }
+
+        function handleDragLeave(e) {
+            e.stopPropagation();
+            clearHighlights();
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            const dropZone = e.currentTarget;
+            clearHighlights();
+
+            if (!draggedElement || !canDrop(draggedElement, dropZone)) {
+                console.log('Drop cancelled: invalid drop');
+                return;
+            }
+
+            // HTML5 드래그는 즉시 허용, 커스텀 드래그는 1.5초 지연 체크
+            if (!isHTML5Dragging && !isDragReady && !isCustomDragging) {
+                console.log('Drop cancelled: drag not ready (need 1.5s hold for custom drag)');
+                updateDebug('커스텀 드래그: 1.5초 홀드 필요');
+                return;
+            }
+
+            const draggedId = draggedElement.id || 'unnamed';
+            const dropZoneId = dropZone.id || dropZone.className;
+
+            console.log(`handleDrop: ${draggedId} -> ${dropZoneId}`);
+
+            if (dropZone.classList.contains('trash')) {
+                // 휴지통에 드롭하면 삭제
+                if (confirm('정말 삭제하시겠습니까?')) {
+                    draggedElement.remove();
+                    updateDebug('아이템 삭제됨');
+                }
+            } else if (dropZone.classList.contains('draggable')) {
+                // 다른 draggable 요소에 드롭 (root container 내부에서만)
+                if (rootContainer && rootContainer.contains(dropZone)) {
+                    const position = getDropPosition(e.clientY, dropZone);
+                    console.log(`Dropping ${draggedId} to ${dropZoneId} at position: ${position}`);
+                    performDrop(draggedElement, dropZone, position);
+                } else {
+                    updateDebug('Root container 외부로는 이동할 수 없습니다');
+                }
+            } else if (dropZone === rootContainer) {
+                // Root container에 직접 드롭
+                dropZone.appendChild(draggedElement);
+                updateDebug(`Root container로 이동`);
+            } else {
+                updateDebug('유효하지 않은 드롭 위치입니다');
+            }
+
+            reinitializeDragAndDrop();
+        }
+
+        // 모바일 터치 이벤트 (이제 handleDragActivationStart에서 처리됨)
+        function handleTouchStart(e) {
+            // 드래그 활성화 시스템에서 이미 처리되므로 여기서는 기본 터치 정보만 저장
+            if (!isDragReady) {
+                return;
+            }
+
+            e.preventDefault();
+
+            // 가장 가까운 draggable 요소 찾기
+            draggedElement = e.target.closest('.draggable');
+            if (!draggedElement) {
+                return;
+            }
+
+            isDragging = false;
+
+            const touch = e.touches[0];
+            startX = touch.clientX;
+            startY = touch.clientY;
+
+            const rect = draggedElement.getBoundingClientRect();
+            offsetX = touch.clientX - rect.left;
+            offsetY = touch.clientY - rect.top;
+
+            updateDebug(`터치 드래그 시작: ${draggedElement.textContent}`);
+            setTimeout(() => {
+                if (draggedElement && !isDragging) {
+                    isDragging = true;
+                    draggedElement.classList.add('dragging');
+                    draggedElement.style.position = 'fixed';
+                    draggedElement.style.zIndex = '1000';
+                    draggedElement.style.pointerEvents = 'none';
+                    updateDebug('모바일 드래그 시작');
+                }
+            }, 150);
+        }
+
+        function handleTouchMove(e) {
+            if (!draggedElement) return;
+            e.preventDefault();
+
+            const touch = e.touches[0];
+            const deltaX = Math.abs(touch.clientX - startX);
+            const deltaY = Math.abs(touch.clientY - startY);
+
+            // 최소 이동 거리 체크 (모바일에서 선택과 드래그 구분을 위해 임계값 증가)
+            if (deltaX > 20 || deltaY > 20) {
+                isDragging = true;
+                draggedElement.classList.add('dragging');
+                draggedElement.style.position = 'fixed';
+                draggedElement.style.zIndex = '1000';
+                draggedElement.style.pointerEvents = 'none';
+                updateDebug('모바일 드래그 시작');
+            }
+
+            if (isDragging) {
+                // 요소 위치 업데이트
+                draggedElement.style.left = `${touch.clientX - offsetX}px`;
+                draggedElement.style.top = `${touch.clientY - offsetY}px`;
+
+                // 드롭 타겟 하이라이트
+                clearHighlights();
+                const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
+
+                // 가장 가까운 draggable 또는 container 찾기 (드래그 중인 요소 제외)
+                let draggableTarget = elementBelow?.closest('.draggable');
+                if (draggableTarget === draggedElement) {
+                    // 드래그 중인 요소 자체라면 부모에서 다른 draggable 찾기
+                    draggableTarget = elementBelow?.parentElement?.closest('.draggable');
+                }
+
+                const containerTarget = elementBelow?.closest('.container');
+
+                if (draggableTarget && draggableTarget !== draggedElement && canDrop(draggedElement, draggableTarget)) {
+                    const position = getDropPosition(touch.clientY, draggableTarget);
+                    draggableTarget.classList.add(`drag-over-${position}`);
+                    updateDebug(`드래그 중: ${draggableTarget.id || 'unnamed'} - ${position} 위치`);
+                } else if (containerTarget === rootContainer) {
+                    containerTarget.classList.add('drag-over');
+                    updateDebug(`드래그 중: Root Container`);
+                } else if (containerTarget?.classList.contains('trash')) {
+                    containerTarget.classList.add('drag-over');
+                    updateDebug(`드래그 중: 휴지통`);
+                }
+            }
+        }
+
+        function handleTouchEnd(e) {
+            if (!draggedElement) return;
+            e.preventDefault();
+
+            const touch = e.changedTouches[0];
+            updateDebug('터치 종료');
+
+            if (isDragging) {
+                // 드롭 타겟 찾기
+                const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
+                let draggableTarget = elementBelow?.closest('.draggable');
+                if (draggableTarget === draggedElement) {
+                    // 드래그 중인 요소 자체라면 부모에서 다른 draggable 찾기
+                    draggableTarget = elementBelow?.parentElement?.closest('.draggable');
+                }
+                const containerTarget = elementBelow?.closest('.container');
+
+                if (draggableTarget && canDrop(draggedElement, draggableTarget)) {
+                    // 다른 draggable 요소에 드롭 (root container 내부에서만)
+                    if (rootContainer && rootContainer.contains(draggableTarget)) {
+                        const position = getDropPosition(touch.clientY, draggableTarget);
+                        performDrop(draggedElement, draggableTarget, position);
+                    } else {
+                        updateDebug('Root container 외부로는 이동할 수 없습니다');
+                    }
+                } else if (containerTarget) {
+                    if (containerTarget.classList.contains('trash')) {
+                        // 휴지통에 드롭
+                        if (confirm('정말 삭제하시겠습니까?')) {
+                            draggedElement.remove();
+                            updateDebug('아이템 삭제됨');
+                        }
+                    } else if (containerTarget === rootContainer) {
+                        // Root container에 드롭
+                        containerTarget.appendChild(draggedElement);
+                        updateDebug(`Root container로 이동`);
+                    } else {
+                        updateDebug('유효하지 않은 드롭 위치입니다');
+                    }
+                }
+
+                reinitializeDragAndDrop();
+            }
+
+            // 정리
+            if (draggedElement) {
+                draggedElement.classList.remove('dragging');
+                draggedElement.style.position = '';
+                draggedElement.style.left = '';
+                draggedElement.style.top = '';
+                draggedElement.style.zIndex = '';
+                draggedElement.style.pointerEvents = '';
+            }
+
+            // 드래그가 발생하지 않았다면 선택 기능 실행
+            if (!isDragging && draggedElement) {
+                console.log('모바일 터치 선택:', draggedElement);
+
+                // Root Container 클릭 확인
+                if (draggedElement === rootContainer) {
+                    if (selectedElement === rootContainer) {
+                        deselectElement();
+                    } else {
+                        selectElement(rootContainer);
+                    }
+                } else if (draggedElement.classList.contains('draggable')) {
+                    // draggable 요소 선택
+                    if (selectedElement === draggedElement) {
+                        deselectElement();
+                    } else {
+                        selectElement(draggedElement);
+                    }
+                }
+            }
+
+            clearHighlights();
+            draggedElement = null;
+            isDragging = false;
+            updateDebug('드래그 앤 드롭 준비');
+        }
+
+        // 드롭 실행 (경로 애니메이션 포함)
+        function performDrop(draggedElement, targetElement, position) {
+            const draggedId = draggedElement.id || 'unnamed';
+            const targetId = targetElement.id || 'unnamed';
+
+            console.log(`performDrop: ${draggedId} -> ${targetId} (${position})`);
+
+            // 경로 애니메이션과 함께 드롭 실행
+            animateDragDrop(draggedElement, targetElement, position, () => {
+                const parent = targetElement.parentNode;
+
+                switch (position) {
+                    case 'before':
+                        parent.insertBefore(draggedElement, targetElement);
+                        updateDebug(`${draggedId} -> ${targetId} 앞에 삽입`);
+                        break;
+                    case 'after':
+                        parent.insertBefore(draggedElement, targetElement.nextSibling);
+                        updateDebug(`${draggedId} -> ${targetId} 뒤에 삽입`);
+                        break;
+                    case 'child':
+                        targetElement.appendChild(draggedElement);
+                        updateDebug(`${draggedId} -> ${targetId} 내부에 삽입`);
+                        break;
+                }
+            });
+        }
+
+        // Root Container 참조
+        let rootContainer = null;
+
+        // 이벤트 리스너 재등록
+        function reinitializeDragAndDrop() {
+            // Root Container 설정
+            rootContainer = document.getElementById('rootContainer');
+            if (!rootContainer) {
+                console.error('Root container not found!');
+                return;
+            }
+
+            console.log('이벤트 리스너 재등록 시작');
+
+            // 모든 요소에서 기존 이벤트 리스너 제거
+            document.querySelectorAll('[data-drag-initialized]').forEach(el => {
+                el.removeAttribute('data-drag-initialized');
+            });
+
+            // Root Container에 이벤트 리스너 추가
+            rootContainer.setAttribute('data-drag-initialized', 'true');
+            rootContainer.addEventListener('dragover', handleDragOver);
+            rootContainer.addEventListener('dragleave', handleDragLeave);
+            rootContainer.addEventListener('drop', handleDrop);
+            rootContainer.addEventListener('click', handleElementClick);
+            console.log('Root Container 이벤트 등록됨');
+
+            // 모든 draggable 요소들에 이벤트 리스너 추가
+            const draggableElements = rootContainer.querySelectorAll('.draggable');
+            draggableElements.forEach(element => {
+                element.setAttribute('data-drag-initialized', 'true');
+                element.draggable = false; // 1초 대기 후 활성화
+
+                // 드래그 활성화 이벤트들
+                element.addEventListener('mousedown', handleDragActivationStart);
+                element.addEventListener('mouseup', handleDragActivationEnd);
+                element.addEventListener('mouseleave', handleDragActivationEnd);
+                element.addEventListener('touchstart', handleDragActivationStart, { passive: false });
+                element.addEventListener('touchend', handleDragActivationEnd, { passive: false });
+                element.addEventListener('touchcancel', handleDragActivationEnd, { passive: false });
+
+                // 실제 드래그 이벤트들
+                element.addEventListener('dragstart', handleDragStart);
+                element.addEventListener('dragend', handleDragEnd);
+                element.addEventListener('touchmove', handleTouchMove, { passive: false });
+
+                // 드롭 이벤트
+                element.addEventListener('dragover', handleDragOver);
+                element.addEventListener('dragleave', handleDragLeave);
+                element.addEventListener('drop', handleDrop);
+
+                // 클릭 이벤트 (선택 기능)
+                element.addEventListener('click', handleElementClick);
+            });
+
+            // 휴지통에 이벤트 리스너 추가
+            const trashElement = document.querySelector('.trash');
+            if (trashElement) {
+                trashElement.setAttribute('data-drag-initialized', 'true');
+                trashElement.addEventListener('dragover', handleDragOver);
+                trashElement.addEventListener('dragleave', handleDragLeave);
+                trashElement.addEventListener('drop', handleDrop);
+            }
+
+            // 배경 클릭 이벤트 추가 (한 번만)
+            if (!document.body.hasAttribute('data-background-click-initialized')) {
+                document.body.setAttribute('data-background-click-initialized', 'true');
+                document.body.addEventListener('click', handleBackgroundClick);
+            }
+
+            console.log(`이벤트 리스너 등록 완료: ${draggableElements.length}개 draggable 요소`);
+            updateDebug(`이벤트 리스너 등록: ${draggableElements.length}개 요소`);
+        }
+
+        // 하이라이트 제거
+        function clearHighlights() {
+            document.querySelectorAll('.drag-over, .drag-over-before, .drag-over-after, .drag-over-child').forEach(el => {
+                el.classList.remove('drag-over', 'drag-over-before', 'drag-over-after', 'drag-over-child');
+            });
+        }
+
+        // 요소 선택 기능
+        function selectElement(element) {
+            console.log('selectElement 호출됨:', element, element === rootContainer);
+
+            // 기존 선택 해제
+            if (selectedElement) {
+                selectedElement.classList.remove('selected');
+                removeActionButtons(selectedElement);
+            }
+
+            // 새 요소 선택
+            selectedElement = element;
+            if (selectedElement) {
+                selectedElement.classList.add('selected');
+
+                // Root Container인지 확인해서 다른 버튼 세트 표시
+                if (selectedElement === rootContainer) {
+                    console.log('Root Container 버튼 추가 중...');
+                    addRootContainerButtons(selectedElement);
+                    updateDebug('작업영역 선택됨');
+                    hidePropertyPanel(); // Root Container 선택시 속성 패널 숨김
+                } else {
+                    console.log('일반 요소 버튼 추가 중...');
+                    addActionButtons(selectedElement);
+                    updateDebug(`선택됨: ${selectedElement.id || 'unnamed'}`);
+                    showPropertyPanel(selectedElement); // 일반 요소 선택시 속성 패널 표시
+                }
+            }
+        }
+
+        // 선택 해제
+        function deselectElement() {
+            if (selectedElement) {
+                selectedElement.classList.remove('selected');
+                removeActionButtons(selectedElement);
+                selectedElement = null;
+                updateDebug('선택 해제');
+                hidePropertyPanel(); // 선택 해제시 속성 패널 숨김
+            }
+        }
+
+        // 조작 버튼 추가
+        function addActionButtons(element) {
+            // 기존 버튼 제거
+            removeActionButtons(element);
+
+            const buttonsContainer = document.createElement('div');
+            buttonsContainer.className = 'action-buttons';
+
+            // 삭제 버튼
+            const deleteBtn = document.createElement('button');
+            deleteBtn.className = 'action-btn delete';
+            deleteBtn.innerHTML = '🗑️';
+            deleteBtn.title = '삭제';
+            deleteBtn.onclick = (e) => {
+                e.stopPropagation();
+                deleteSelectedElement();
+            };
+
+            // 위로 이동 버튼
+            const moveUpBtn = document.createElement('button');
+            moveUpBtn.className = 'action-btn move-up';
+            moveUpBtn.innerHTML = '↑';
+            moveUpBtn.title = '위로 이동';
+            moveUpBtn.onclick = (e) => {
+                e.stopPropagation();
+                moveElementUp();
+            };
+
+            // 아래로 이동 버튼
+            const moveDownBtn = document.createElement('button');
+            moveDownBtn.className = 'action-btn move-down';
+            moveDownBtn.innerHTML = '↓';
+            moveDownBtn.title = '아래로 이동';
+            moveDownBtn.onclick = (e) => {
+                e.stopPropagation();
+                moveElementDown();
+            };
+
+            // 자식 요소 추가 버튼
+            const addChildBtn = document.createElement('button');
+            addChildBtn.className = 'action-btn add-child';
+            addChildBtn.innerHTML = '➕';
+            addChildBtn.title = '자식 요소 추가';
+            addChildBtn.onclick = (e) => {
+                e.stopPropagation();
+                addChildElement();
+            };
+
+            // 텍스트 노드 추가 버튼
+            const addTextBtn = document.createElement('button');
+            addTextBtn.className = 'action-btn add-text';
+            addTextBtn.innerHTML = '📝';
+            addTextBtn.title = '텍스트 추가';
+            addTextBtn.onclick = (e) => {
+                e.stopPropagation();
+                addTextNode();
+            };
+
+            // 부모로 이동 버튼
+            const moveToParentBtn = document.createElement('button');
+            moveToParentBtn.className = 'action-btn move-to-parent';
+            moveToParentBtn.innerHTML = '⬆️';
+            moveToParentBtn.title = '부모로 이동';
+            moveToParentBtn.onclick = (e) => {
+                e.stopPropagation();
+                moveToParent();
+            };
+
+            // 위쪽 형제의 자식으로 이동 버튼 (조건부)
+            const previousSibling = element.previousElementSibling;
+            let moveIntoUpBtn = null;
+            if (previousSibling && previousSibling.classList.contains('draggable')) {
+                moveIntoUpBtn = document.createElement('button');
+                moveIntoUpBtn.className = 'action-btn move-into-up';
+                moveIntoUpBtn.innerHTML = '⇡';
+                moveIntoUpBtn.title = '위쪽 요소의 자식으로 이동';
+                moveIntoUpBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    moveIntoSibling('up');
+                };
+            }
+
+            // 아래쪽 형제의 자식으로 이동 버튼 (조건부)
+            const nextSibling = element.nextElementSibling;
+            let moveIntoDownBtn = null;
+            if (nextSibling && nextSibling.classList.contains('draggable')) {
+                moveIntoDownBtn = document.createElement('button');
+                moveIntoDownBtn.className = 'action-btn move-into-down';
+                moveIntoDownBtn.innerHTML = '⇣';
+                moveIntoDownBtn.title = '아래쪽 요소의 자식으로 이동';
+                moveIntoDownBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    moveIntoSibling('down');
+                };
+            }
+
+            // 버튼들을 순서대로 추가
+            buttonsContainer.appendChild(deleteBtn);
+            buttonsContainer.appendChild(moveUpBtn);
+            buttonsContainer.appendChild(moveDownBtn);
+            if (moveIntoUpBtn) buttonsContainer.appendChild(moveIntoUpBtn);
+            if (moveIntoDownBtn) buttonsContainer.appendChild(moveIntoDownBtn);
+            buttonsContainer.appendChild(addChildBtn);
+            buttonsContainer.appendChild(addTextBtn);
+            buttonsContainer.appendChild(moveToParentBtn);
+
+            element.appendChild(buttonsContainer);
+        }
+
+        // Root Container용 조작 버튼 추가
+        function addRootContainerButtons(element) {
+            console.log('addRootContainerButtons 호출됨:', element);
+
+            // 기존 버튼 제거
+            removeActionButtons(element);
+
+            const buttonsContainer = document.createElement('div');
+            buttonsContainer.className = 'action-buttons';
+            console.log('버튼 컨테이너 생성됨');
+
+            // 요소 추가 버튼
+            const addItemBtn = document.createElement('button');
+            addItemBtn.className = 'action-btn root-add';
+            addItemBtn.innerHTML = '➕';
+            addItemBtn.title = '새 요소 추가';
+            addItemBtn.onclick = (e) => {
+                e.stopPropagation();
+                addNewItem();
+            };
+
+            // 텍스트 추가 버튼
+            const addTextBtn = document.createElement('button');
+            addTextBtn.className = 'action-btn root-add-text';
+            addTextBtn.innerHTML = '📝';
+            addTextBtn.title = '텍스트 추가';
+            addTextBtn.onclick = (e) => {
+                e.stopPropagation();
+                addTextToRoot();
+            };
+
+            // 모두 지우기 버튼
+            const clearAllBtn = document.createElement('button');
+            clearAllBtn.className = 'action-btn root-clear';
+            clearAllBtn.innerHTML = '🗑️';
+            clearAllBtn.title = '모두 지우기';
+            clearAllBtn.onclick = (e) => {
+                e.stopPropagation();
+                clearAll();
+            };
+
+            // 저장하기 버튼
+            const saveBtn = document.createElement('button');
+            saveBtn.className = 'action-btn root-save';
+            saveBtn.innerHTML = '💾';
+            saveBtn.title = '저장하기';
+            saveBtn.onclick = (e) => {
+                e.stopPropagation();
+                saveData();
+            };
+
+            // 불러오기 버튼
+            const loadBtn = document.createElement('button');
+            loadBtn.className = 'action-btn root-load';
+            loadBtn.innerHTML = '📂';
+            loadBtn.title = '불러오기';
+            loadBtn.onclick = (e) => {
+                e.stopPropagation();
+                loadData();
+            };
+
+            buttonsContainer.appendChild(addItemBtn);
+            buttonsContainer.appendChild(addTextBtn);
+            buttonsContainer.appendChild(clearAllBtn);
+            buttonsContainer.appendChild(saveBtn);
+            buttonsContainer.appendChild(loadBtn);
+
+            element.appendChild(buttonsContainer);
+            console.log('Root Container 버튼들이 추가됨:', buttonsContainer);
+        }
+
+        // 조작 버튼 제거
+        function removeActionButtons(element) {
+            const existingButtons = element.querySelector('.action-buttons');
+            if (existingButtons) {
+                existingButtons.remove();
+            }
+        }
+
+        // 선택된 요소 삭제 (애니메이션 포함)
+        function deleteSelectedElement() {
+            if (!selectedElement) return;
+
+            if (confirm('선택된 요소를 삭제하시겠습니까?')) {
+                const elementId = selectedElement.id || 'unnamed';
+                const elementToDelete = selectedElement;
+
+                // 선택 해제
+                selectedElement = null;
+
+                // 삭제 애니메이션 실행
+                animateElementDelete(elementToDelete, () => {
+                    elementToDelete.remove();
+                    updateDebug(`삭제됨: ${elementId}`);
+                    reinitializeDragAndDrop();
+                });
+            }
+        }
+
+        // 선택된 요소 위로 이동 (애니메이션 포함)
+        function moveElementUp() {
+            if (!selectedElement) return;
+
+            const parent = selectedElement.parentNode;
+            const previousSibling = selectedElement.previousElementSibling;
+
+            if (previousSibling && previousSibling.classList.contains('draggable')) {
+                animateElementMove(selectedElement, 'up', () => {
+                    parent.insertBefore(selectedElement, previousSibling);
+                    updateDebug(`위로 이동: ${selectedElement.id || 'unnamed'}`);
+                });
+
+                // 애니메이션 완료 후 재초기화
+                setTimeout(() => {
+                    reinitializeDragAndDrop();
+                    selectElement(selectedElement);
+                }, 600);
+            } else {
+                // 이동할 수 없을 때 bounce 애니메이션
+                selectedElement.classList.add('bounce');
+                setTimeout(() => selectedElement.classList.remove('bounce'), 600);
+                updateDebug('더 이상 위로 이동할 수 없습니다');
+            }
+        }
+
+        // 선택된 요소 아래로 이동 (애니메이션 포함)
+        function moveElementDown() {
+            if (!selectedElement) return;
+
+            const parent = selectedElement.parentNode;
+            const nextSibling = selectedElement.nextElementSibling;
+
+            if (nextSibling && nextSibling.classList.contains('draggable')) {
+                animateElementMove(selectedElement, 'down', () => {
+                    parent.insertBefore(nextSibling, selectedElement);
+                    updateDebug(`아래로 이동: ${selectedElement.id || 'unnamed'}`);
+                });
+
+                // 애니메이션 완료 후 재초기화
+                setTimeout(() => {
+                    reinitializeDragAndDrop();
+                    selectElement(selectedElement);
+                }, 600);
+            } else {
+                // 이동할 수 없을 때 bounce 애니메이션
+                selectedElement.classList.add('bounce');
+                setTimeout(() => selectedElement.classList.remove('bounce'), 600);
+                updateDebug('더 이상 아래로 이동할 수 없습니다');
+            }
+        }
+
+        // 선택된 요소에 자식 추가 (애니메이션 포함)
+        function addChildElement() {
+            if (!selectedElement) return;
+
+            const newId = `child-${itemCounter++}`;
+            const newChild = document.createElement('div');
+            newChild.className = 'draggable';
+            newChild.id = newId;
+            newChild.textContent = `📄 새 자식 ${itemCounter - 1000}`;
+
+            // 자식 요소를 선택된 요소에 추가
+            selectedElement.appendChild(newChild);
+
+            // 추가 애니메이션 실행
+            animateElementAdd(newChild);
+
+            // 이벤트 리스너 재등록
+            reinitializeDragAndDrop();
+
+            updateDebug(`자식 추가: ${newId} -> ${selectedElement.id || 'unnamed'}`);
+        }
+
+        // 선택된 요소를 부모 레벨로 이동 (애니메이션 포함)
+        function moveToParent() {
+            if (!selectedElement) return;
+
+            const currentParent = selectedElement.parentNode;
+
+            // Root Container가 부모인 경우 더 이상 올라갈 수 없음
+            if (currentParent === rootContainer) {
+                selectedElement.classList.add('bounce');
+                setTimeout(() => selectedElement.classList.remove('bounce'), 600);
+                updateDebug('이미 최상위 레벨입니다');
+                return;
+            }
+
+            // 부모의 부모가 존재하는지 확인
+            const grandParent = currentParent.parentNode;
+            if (!grandParent) {
+                selectedElement.classList.add('bounce');
+                setTimeout(() => selectedElement.classList.remove('bounce'), 600);
+                updateDebug('더 이상 상위로 이동할 수 없습니다');
+                return;
+            }
+
+            // 애니메이션과 함께 부모 레벨로 이동
+            animateElementMove(selectedElement, 'parent', () => {
+                // 현재 부모의 바로 다음 위치에 삽입
+                grandParent.insertBefore(selectedElement, currentParent.nextSibling);
+                updateDebug(`부모로 이동: ${selectedElement.id || 'unnamed'} -> ${grandParent.id || grandParent.className}`);
+            });
+
+            // 애니메이션 완료 후 재초기화
+            setTimeout(() => {
+                reinitializeDragAndDrop();
+                selectElement(selectedElement);
+            }, 600);
+        }
+
+        // 선택된 요소를 형제 요소의 자식으로 이동 (애니메이션 포함)
+        function moveIntoSibling(direction) {
+            if (!selectedElement) return;
+
+            const targetSibling = direction === 'up' ?
+                selectedElement.previousElementSibling :
+                selectedElement.nextElementSibling;
+
+            if (!targetSibling || !targetSibling.classList.contains('draggable')) {
+                selectedElement.classList.add('bounce');
+                setTimeout(() => selectedElement.classList.remove('bounce'), 600);
+                updateDebug(`${direction === 'up' ? '위쪽' : '아래쪽'} 형제 요소가 없습니다`);
+                return;
+            }
+
+            // 애니메이션과 함께 형제 요소의 자식으로 이동
+            animateElementMove(selectedElement, `into-${direction}`, () => {
+                targetSibling.appendChild(selectedElement);
+                updateDebug(`${direction === 'up' ? '위쪽' : '아래쪽'} 형제의 자식으로 이동: ${selectedElement.id || 'unnamed'} -> ${targetSibling.id || 'unnamed'}`);
+            });
+
+            // 애니메이션 완료 후 재초기화
+            setTimeout(() => {
+                reinitializeDragAndDrop();
+                selectElement(selectedElement);
+            }, 600);
+        }
+
+        // TagName 입력 UI 표시
+        function showTagNameInput(element) {
+            // 기존 입력 UI 제거
+            hideTagNameInput();
+
+            const inputContainer = document.createElement('div');
+            inputContainer.className = 'tag-input';
+            inputContainer.id = 'tagNameInput';
+
+            const currentTag = element.tagName.toLowerCase();
+
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.value = currentTag;
+            input.list = 'htmlTags';
+            input.placeholder = 'tagName';
+            input.id = 'tagNameField';
+
+            const confirmBtn = document.createElement('button');
+            confirmBtn.innerHTML = '✓';
+            confirmBtn.title = '확인';
+            confirmBtn.onclick = (e) => {
+                e.stopPropagation();
+                changeElementTagName(element, input.value.trim());
+            };
+
+            const cancelBtn = document.createElement('button');
+            cancelBtn.className = 'cancel';
+            cancelBtn.innerHTML = '✕';
+            cancelBtn.title = '취소';
+            cancelBtn.onclick = (e) => {
+                e.stopPropagation();
+                hideTagNameInput();
+            };
+
+            inputContainer.appendChild(input);
+            inputContainer.appendChild(confirmBtn);
+            inputContainer.appendChild(cancelBtn);
+
+            element.appendChild(inputContainer);
+
+            // 입력 필드에 포커스
+            input.focus();
+            input.select();
+
+            // Enter 키로 확인
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.stopPropagation();
+                    changeElementTagName(element, input.value.trim());
+                } else if (e.key === 'Escape') {
+                    e.stopPropagation();
+                    hideTagNameInput();
+                }
+            });
+
+            updateDebug(`TagName 변경 모드: ${currentTag}`);
+        }
+
+        // TagName 입력 UI 숨기기 (더 이상 사용하지 않음 - 속성 패널의 일부이므로)
+        function hideTagNameInput() {
+            // 이 함수는 더 이상 tagNameInput을 제거하지 않습니다.
+            // tagNameInput은 속성 패널의 일부이므로 항상 존재해야 합니다.
+        }
+
+        // 요소의 TagName 변경
+        function changeElementTagName(oldElement, newTagName) {
+            if (!newTagName || newTagName === oldElement.tagName.toLowerCase()) {
+                return;
+            }
+
+            // 유효한 HTML 태그명인지 확인
+            const validTags = ['div', 'span', 'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+                'header', 'nav', 'main', 'section', 'article', 'aside', 'footer',
+                'ul', 'ol', 'li', 'a', 'img', 'button', 'input', 'textarea',
+                'select', 'form', 'table', 'thead', 'tbody', 'tr', 'th', 'td'];
+
+            if (!validTags.includes(newTagName.toLowerCase())) {
+                alert('유효하지 않은 HTML 태그명입니다.');
+                return;
+            }
+
+            // 새 요소 생성
+            const newElement = document.createElement(newTagName);
+
+            // 기존 속성들 복사 (class, id 등)
+            for (let attr of oldElement.attributes) {
+                if (attr.name !== 'data-drag-initialized') {
+                    newElement.setAttribute(attr.name, attr.value);
+                }
+            }
+
+            // 자식 노드들 복사
+            while (oldElement.firstChild) {
+                newElement.appendChild(oldElement.firstChild);
+            }
+
+            // 기존 요소를 새 요소로 교체
+            oldElement.parentNode.replaceChild(newElement, oldElement);
+
+            // 선택 상태 업데이트
+            selectedElement = newElement;
+
+            // 이벤트 리스너 재등록
+            reinitializeDragAndDrop();
+
+            // 속성 패널 먼저 숨기기
+            hidePropertyPanel();
+
+            // 새 요소 선택 (더 긴 지연시간으로)
+            setTimeout(() => {
+                selectElement(newElement);
+            }, 200);
+
+            updateDebug(`TagName 변경됨: ${newTagName}`);
+        }
+
+        // 속성 패널 표시
+        function showPropertyPanel(element, retryCount = 0) {
+            const panel = document.getElementById('propertyPanel');
+            const title = document.getElementById('selectedElementTitle');
+            const tagNameInput = document.getElementById('tagNameInput');
+
+            if (!panel || !title || !tagNameInput) {
+                console.error('속성 패널 요소를 찾을 수 없습니다:', { panel, title, tagNameInput });
+
+                // 최대 3번까지 재시도
+                if (retryCount < 3) {
+                    setTimeout(() => {
+                        showPropertyPanel(element, retryCount + 1);
+                    }, 100 * (retryCount + 1)); // 점진적으로 지연시간 증가
+                }
+                return;
+            }
+
+            panel.classList.add('active');
+            title.textContent = `선택된 요소: <${element.tagName.toLowerCase()}> (${element.id || 'no-id'})`;
+
+            // 텍스트 노드 선택 해제
+            selectedTextNode = null;
+
+            // 모든 요소 관련 UI 표시
+            const allPropertyRows = panel.querySelectorAll('.property-row');
+            allPropertyRows.forEach(row => {
+                if (row.id !== 'textNodeRow') {
+                    row.style.display = 'block';
+                }
+            });
+
+            // 텍스트 노드 UI 숨기기
+            const textNodeRow = document.getElementById('textNodeRow');
+            if (textNodeRow) textNodeRow.style.display = 'none';
+
+            // 속성 목록과 자식 목록 표시
+            const attributesList = document.getElementById('attributesList');
+            const childrenList = document.getElementById('childrenList');
+
+            if (attributesList && attributesList.parentElement) {
+                attributesList.parentElement.style.display = 'block';
+            }
+            if (childrenList && childrenList.parentElement) {
+                childrenList.parentElement.style.display = 'block';
+            }
+
+            // tagNameInput이 존재하는지 다시 확인
+            if (tagNameInput) {
+                tagNameInput.value = element.tagName.toLowerCase();
+            }
+
+
+
+            updateAttributesList(element);
+            updateChildrenList(element);
+        }
+
+        // 속성 패널 숨김
+        function hidePropertyPanel() {
+            const panel = document.getElementById('propertyPanel');
+            panel.classList.remove('active');
+        }
+
+        // 속성 목록 업데이트
+        function updateAttributesList(element) {
+            const attributesList = document.getElementById('attributesList');
+            if (!attributesList) {
+                console.error('attributesList 요소를 찾을 수 없습니다.');
+                return;
+            }
+            attributesList.innerHTML = '';
+
+            if (element.attributes.length === 0) {
+                attributesList.innerHTML = '<div style="text-align: center; color: #6c757d; padding: 20px;">속성이 없습니다</div>';
+                return;
+            }
+
+            for (let attr of element.attributes) {
+                if (attr.name === 'data-drag-initialized') continue; // 내부 속성 제외
+
+                const attrItem = document.createElement('div');
+                attrItem.className = 'attribute-item';
+
+                const nameInput = document.createElement('input');
+                nameInput.type = 'text';
+                nameInput.value = attr.name;
+                nameInput.placeholder = '속성명';
+                nameInput.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        updateAttribute(element, attr.name, nameInput.value, valueInput.value);
+                    }
+                });
+
+                const valueInput = document.createElement('input');
+                valueInput.type = 'text';
+                valueInput.value = attr.value;
+                valueInput.placeholder = '속성값';
+                valueInput.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        updateAttribute(element, attr.name, nameInput.value, valueInput.value);
+                    }
+                });
+
+                const updateBtn = document.createElement('button');
+                updateBtn.className = 'btn-primary';
+                updateBtn.textContent = '수정';
+                updateBtn.onclick = () => updateAttribute(element, attr.name, nameInput.value, valueInput.value);
+
+                const deleteBtn = document.createElement('button');
+                deleteBtn.className = 'btn-danger';
+                deleteBtn.textContent = '삭제';
+                deleteBtn.onclick = () => deleteAttribute(element, attr.name);
+
+                attrItem.appendChild(nameInput);
+                attrItem.appendChild(valueInput);
+                attrItem.appendChild(updateBtn);
+                attrItem.appendChild(deleteBtn);
+                attributesList.appendChild(attrItem);
+            }
+        }
+
+        // TagName 업데이트 (속성 패널에서)
+        function updateTagName() {
+            if (!selectedElement) return;
+
+            const tagNameInput = document.getElementById('tagNameInput');
+            if (!tagNameInput) {
+                console.error('tagNameInput을 찾을 수 없습니다.');
+                return;
+            }
+
+            const newTagName = tagNameInput.value.trim();
+            if (!newTagName) {
+                alert('태그명을 입력해주세요.');
+                return;
+            }
+
+            changeElementTagName(selectedElement, newTagName);
+        }
+
+
+
+        // 새 속성 추가
+        function addAttribute() {
+            if (!selectedElement) return;
+
+            const nameInput = document.getElementById('newAttrName');
+            const valueInput = document.getElementById('newAttrValue');
+            const name = nameInput.value.trim();
+            const value = valueInput.value.trim();
+
+            if (!name) {
+                alert('속성명을 입력해주세요.');
+                return;
+            }
+
+            selectedElement.setAttribute(name, value);
+            nameInput.value = '';
+            valueInput.value = '';
+
+            updateAttributesList(selectedElement);
+            updateDebug(`속성 추가: ${name}="${value}"`);
+        }
+
+        // 속성 업데이트
+        function updateAttribute(element, oldName, newName, newValue) {
+            if (oldName !== newName) {
+                // 속성명이 변경된 경우
+                element.removeAttribute(oldName);
+                if (newName.trim()) {
+                    element.setAttribute(newName.trim(), newValue);
+                }
+            } else {
+                // 속성값만 변경된 경우
+                element.setAttribute(oldName, newValue);
+            }
+
+            updateAttributesList(element);
+            updateDebug(`속성 수정: ${newName}="${newValue}"`);
+        }
+
+        // 속성 삭제
+        function deleteAttribute(element, attrName) {
+            if (confirm(`속성 "${attrName}"을 삭제하시겠습니까?`)) {
+                element.removeAttribute(attrName);
+                updateAttributesList(element);
+                updateDebug(`속성 삭제: ${attrName}`);
+            }
+        }
+
+        // 자식 요소 목록 업데이트 (텍스트 노드 포함)
+        function updateChildrenList(element) {
+            console.log('updateChildrenList 호출됨:', element);
+            const childrenList = document.getElementById('childrenList');
+            if (!childrenList) {
+                console.error('childrenList 요소를 찾을 수 없습니다.');
+                return;
+            }
+            childrenList.innerHTML = '';
+
+            // 모든 자식 노드 (요소 + 텍스트 노드)
+            const allChildren = Array.from(element.childNodes);
+            const relevantChildren = allChildren.filter(child => {
+                if (child.nodeType === Node.ELEMENT_NODE) {
+                    return child.classList.contains('draggable') || child === rootContainer;
+                } else if (child.nodeType === Node.TEXT_NODE) {
+                    return child.textContent.trim().length > 0; // 빈 텍스트 노드 제외
+                }
+                return false;
+            });
+
+            console.log('관련 자식들:', relevantChildren.length, relevantChildren);
+
+            if (relevantChildren.length === 0) {
+                childrenList.innerHTML = '<div style="text-align: center; color: #6c757d; padding: 20px;">자식 노드가 없습니다</div>';
+                return;
+            }
+
+            relevantChildren.forEach((child, index) => {
+                const childItem = document.createElement('div');
+                childItem.className = 'child-item';
+
+                const childInfo = document.createElement('div');
+                childInfo.className = 'child-info';
+
+                if (child.nodeType === Node.ELEMENT_NODE) {
+                    // 요소 노드
+                    const displayName = child.id || 'no-name';
+                    const textPreview = child.textContent.substring(0, 20);
+                    childInfo.innerHTML = `
+                        <span style="color: #007bff;">📄 ${child.tagName.toLowerCase()}</span>
+                        <span style="color: #007bff; font-weight: bold;">${displayName}</span>
+                        ${textPreview ? `<span style="color: #28a745;">${textPreview}${child.textContent.length > 20 ? '...' : ''}</span>` : ''}
+                    `;
+                } else if (child.nodeType === Node.TEXT_NODE) {
+                    // 텍스트 노드 - 직접 편집 가능한 textarea로 표시
+                    const textContent = child.textContent.trim();
+                    const textarea = document.createElement('textarea');
+                    textarea.style.cssText = 'color: #28a745; font-style: italic; border: 1px solid #ddd; border-radius: 3px; padding: 4px; resize: vertical; min-height: 20px; width: 200px; margin-left: 10px;';
+                    textarea.value = textContent;
+                    textarea.setAttribute('data-text-node-index', index);
+
+                    textarea.onblur = function () {
+                        updateTextNodeContent(this);
+                    };
+
+                    textarea.onkeydown = function (event) {
+                        if (event.key === 'Enter' && !event.shiftKey) {
+                            event.preventDefault();
+                            this.blur();
+                        }
+                    };
+
+                    childInfo.innerHTML = '<span style="color: #6c757d;">📝 TEXT_NODE</span>';
+                    childInfo.appendChild(textarea);
+                }
+
+                const childActions = document.createElement('div');
+                childActions.className = 'child-actions';
+
+                // 공통 이동 버튼들
+                const upBtn = document.createElement('button');
+                upBtn.className = 'btn-secondary';
+                upBtn.textContent = '↑';
+                upBtn.style.fontSize = '12px';
+                upBtn.style.padding = '4px 6px';
+                upBtn.style.marginRight = '2px';
+                upBtn.onclick = () => moveChildUp(child, index);
+
+                const downBtn = document.createElement('button');
+                downBtn.className = 'btn-secondary';
+                downBtn.textContent = '↓';
+                downBtn.style.fontSize = '12px';
+                downBtn.style.padding = '4px 6px';
+                downBtn.style.marginRight = '5px';
+                downBtn.onclick = () => moveChildDown(child, index);
+
+                childActions.appendChild(upBtn);
+                childActions.appendChild(downBtn);
+
+                if (child.nodeType === Node.TEXT_NODE) {
+                    // 텍스트 노드는 저장과 삭제 버튼
+                    const saveBtn = document.createElement('button');
+                    saveBtn.className = 'btn-success';
+                    saveBtn.textContent = '💾';
+                    saveBtn.style.fontSize = '12px';
+                    saveBtn.style.padding = '4px 6px';
+                    saveBtn.style.marginRight = '2px';
+                    saveBtn.onclick = () => {
+                        const textarea = childItem.querySelector('textarea');
+                        if (textarea) updateTextNodeContent(textarea);
+                    };
+
+                    const deleteBtn = document.createElement('button');
+                    deleteBtn.className = 'btn-danger';
+                    deleteBtn.textContent = '🗑️';
+                    deleteBtn.style.fontSize = '12px';
+                    deleteBtn.style.padding = '4px 6px';
+                    deleteBtn.onclick = () => deleteTextNode(child);
+
+                    childActions.appendChild(saveBtn);
+                    childActions.appendChild(deleteBtn);
+                } else {
+                    // 요소 노드는 선택과 삭제 버튼
+                    const selectBtn = document.createElement('button');
+                    selectBtn.className = 'btn-primary';
+                    selectBtn.textContent = '선택';
+                    selectBtn.style.fontSize = '12px';
+                    selectBtn.style.padding = '4px 8px';
+                    selectBtn.style.marginRight = '2px';
+                    selectBtn.onclick = () => selectElement(child);
+
+                    const deleteBtn = document.createElement('button');
+                    deleteBtn.className = 'btn-danger';
+                    deleteBtn.textContent = '🗑️';
+                    deleteBtn.style.fontSize = '12px';
+                    deleteBtn.style.padding = '4px 6px';
+                    deleteBtn.onclick = () => deleteChildElement(child);
+
+                    childActions.appendChild(selectBtn);
+                    childActions.appendChild(deleteBtn);
+                }
+
+                childItem.appendChild(childInfo);
+                childItem.appendChild(childActions);
+                childrenList.appendChild(childItem);
+            });
+        }
+
+        // 자식 요소 추가
+        function addChildElement() {
+            if (!selectedElement) {
+                alert('요소를 먼저 선택해주세요.');
+                return;
+            }
+
+            const tagName = 'div'; // 기본값으로 div 사용
+            const newElement = document.createElement(tagName);
+            newElement.className = 'draggable';
+            newElement.id = `new-${Date.now()}`;
+            // textContent는 비워둠 - 사용자가 직접 입력
+
+
+            selectedElement.appendChild(newElement);
+            reinitializeDragAndDrop();
+            updateChildrenList(selectedElement);
+            updateDebug(`자식 요소 추가: ${tagName}`);
+        }
+
+        // 자식 요소 삭제
+        function deleteChildElement(element) {
+            if (confirm(`"${element.id || element.tagName}"을 삭제하시겠습니까?`)) {
+                const parent = element.parentElement;
+                element.remove();
+
+                if (selectedElement === element) {
+                    deselectElement();
+                }
+
+                if (parent) {
+                    updateChildrenList(parent);
+                }
+                updateDebug(`요소 삭제: ${element.id || element.tagName}`);
+            }
+        }
+
+        // 선택된 요소 삭제
+        function deleteSelectedElement() {
+            if (!selectedElement) {
+                alert('삭제할 요소를 먼저 선택해주세요.');
+                return;
+            }
+
+            if (selectedElement === rootContainer) {
+                alert('작업 영역은 삭제할 수 없습니다.');
+                return;
+            }
+
+            deleteChildElement(selectedElement);
+        }
+
+        // 요소를 위로 이동
+        function moveElementUp() {
+            if (!selectedElement || selectedElement === rootContainer) {
+                alert('이동할 요소를 선택해주세요.');
+                return;
+            }
+
+            const parent = selectedElement.parentElement;
+            const previousSibling = selectedElement.previousElementSibling;
+
+            if (previousSibling) {
+                parent.insertBefore(selectedElement, previousSibling);
+                updateDebug('요소를 위로 이동했습니다.');
+
+                // 부모의 자식 목록 업데이트
+                if (parent && parent.classList.contains('draggable')) {
+                    updateChildrenList(parent);
+                }
+            } else {
+                alert('이미 첫 번째 위치입니다.');
+            }
+        }
+
+        // 요소를 아래로 이동
+        function moveElementDown() {
+            if (!selectedElement || selectedElement === rootContainer) {
+                alert('이동할 요소를 선택해주세요.');
+                return;
+            }
+
+            const parent = selectedElement.parentElement;
+            const nextSibling = selectedElement.nextElementSibling;
+
+            if (nextSibling) {
+                parent.insertBefore(nextSibling, selectedElement);
+                updateDebug('요소를 아래로 이동했습니다.');
+
+                // 부모의 자식 목록 업데이트
+                if (parent && parent.classList.contains('draggable')) {
+                    updateChildrenList(parent);
+                }
+            } else {
+                alert('이미 마지막 위치입니다.');
+            }
+        }
+
+        // 요소를 상위로 이동 (부모의 형제로)
+        function moveToParent() {
+            if (!selectedElement || selectedElement === rootContainer) {
+                alert('이동할 요소를 선택해주세요.');
+                return;
+            }
+
+            const parent = selectedElement.parentElement;
+            const grandParent = parent.parentElement;
+
+            if (!grandParent) {
+                alert('더 이상 상위로 이동할 수 없습니다.');
+                return;
+            }
+
+            // 부모 다음에 삽입
+            if (parent.nextElementSibling) {
+                grandParent.insertBefore(selectedElement, parent.nextElementSibling);
+            } else {
+                grandParent.appendChild(selectedElement);
+            }
+
+            updateDebug('요소를 상위로 이동했습니다.');
+
+            // 기존 부모와 새 부모의 자식 목록 업데이트
+            if (parent.classList.contains('draggable')) {
+                updateChildrenList(parent);
+            }
+            if (grandParent.classList.contains('draggable') || grandParent === rootContainer) {
+                updateChildrenList(grandParent);
+            }
+        }
+
+        // 위쪽 형제 요소의 자식으로 이동
+        function moveToUpperSibling() {
+            if (!selectedElement || selectedElement === rootContainer) {
+                alert('이동할 요소를 선택해주세요.');
+                return;
+            }
+
+            const previousSibling = selectedElement.previousElementSibling;
+
+            if (!previousSibling) {
+                alert('위쪽에 형제 요소가 없습니다.');
+                return;
+            }
+
+            const oldParent = selectedElement.parentElement;
+            previousSibling.appendChild(selectedElement);
+
+            updateDebug('요소를 위쪽 형제의 자식으로 이동했습니다.');
+
+            // 기존 부모와 새 부모의 자식 목록 업데이트
+            if (oldParent && oldParent.classList.contains('draggable')) {
+                updateChildrenList(oldParent);
+            }
+            updateChildrenList(previousSibling);
+        }
+
+        // 아래쪽 형제 요소의 자식으로 이동
+        function moveToLowerSibling() {
+            if (!selectedElement || selectedElement === rootContainer) {
+                alert('이동할 요소를 선택해주세요.');
+                return;
+            }
+
+            const nextSibling = selectedElement.nextElementSibling;
+
+            if (!nextSibling) {
+                alert('아래쪽에 형제 요소가 없습니다.');
+                return;
+            }
+
+            const oldParent = selectedElement.parentElement;
+            nextSibling.appendChild(selectedElement);
+
+            updateDebug('요소를 아래쪽 형제의 자식으로 이동했습니다.');
+
+            // 기존 부모와 새 부모의 자식 목록 업데이트
+            if (oldParent && oldParent.classList.contains('draggable')) {
+                updateChildrenList(oldParent);
+            }
+            updateChildrenList(nextSibling);
+        }
+
+        // 텍스트 노드 선택
+        let selectedTextNode = null;
+
+        function selectTextNode(textNode) {
+            // 텍스트 노드는 이제 직접 편집 가능하므로 선택 기능 불필요
+            updateDebug(`텍스트 노드: "${textNode.textContent.substring(0, 20)}..." (직접 편집 가능)`);
+        }
+
+
+
+
+
+        // 텍스트 내용 업데이트
+        function updateTextContent() {
+            if (!selectedTextNode) return;
+
+            const textContentInput = document.getElementById('textContentInput');
+            if (!textContentInput) {
+                console.error('textContentInput을 찾을 수 없습니다.');
+                return;
+            }
+
+            const newContent = textContentInput.value;
+            selectedTextNode.textContent = newContent;
+
+            updateDebug(`텍스트 내용 업데이트: "${newContent.substring(0, 20)}..."`);
+
+            // 부모 요소의 자식 목록 업데이트
+            if (selectedTextNode.parentElement) {
+                updateChildrenList(selectedTextNode.parentElement);
+            }
+        }
+
+        // 텍스트 노드 삭제
+        function deleteTextNode(textNode) {
+            if (confirm(`텍스트 노드 "${textNode.textContent.substring(0, 30)}..."을 삭제하시겠습니까?`)) {
+                const parent = textNode.parentElement;
+                textNode.remove();
+
+                if (selectedTextNode === textNode) {
+                    selectedTextNode = null;
+                    hidePropertyPanel();
+                }
+
+                if (parent) {
+                    updateChildrenList(parent);
+                }
+                updateDebug('텍스트 노드 삭제됨');
+            }
+        }
+
+        // 텍스트 노드 추가
+        function addTextNode() {
+            if (!selectedElement) {
+                alert('텍스트를 추가할 요소를 먼저 선택해주세요.');
+                return;
+            }
+
+            const textContent = prompt('추가할 텍스트 내용을 입력하세요:', '새 텍스트');
+            if (textContent === null) return;
+
+            const textNode = document.createTextNode(textContent);
+            selectedElement.appendChild(textNode);
+
+            updateChildrenList(selectedElement);
+            updateDebug(`텍스트 노드 추가: "${textContent}"`);
+        }
+
+        // 텍스트 노드 내용 직접 업데이트
+        function updateTextNodeContent(textarea) {
+            console.log('updateTextNodeContent 호출됨:', textarea.value);
+            const newContent = textarea.value;
+            const index = parseInt(textarea.getAttribute('data-text-node-index'));
+
+            // 현재 선택된 요소의 자식 노드들 중에서 해당 텍스트 노드 찾기
+            const parentContainer = selectedElement || rootContainer;
+            const allChildren = Array.from(parentContainer.childNodes).filter(child => {
+                if (child.nodeType === Node.ELEMENT_NODE) {
+                    return child.classList.contains('draggable') || child === rootContainer;
+                } else if (child.nodeType === Node.TEXT_NODE) {
+                    return child.textContent.trim().length > 0;
+                }
+                return false;
+            });
+
+            console.log('찾은 자식들:', allChildren.length, '인덱스:', index);
+            const targetTextNode = allChildren[index];
+            if (targetTextNode && targetTextNode.nodeType === Node.TEXT_NODE) {
+                targetTextNode.textContent = newContent;
+                updateDebug(`텍스트 노드 업데이트: "${newContent}"`);
+                console.log('텍스트 노드 업데이트 완료');
+            } else {
+                console.error('텍스트 노드를 찾을 수 없습니다:', targetTextNode);
+            }
+        }
+
+        // 자식 노드 위로 이동
+        function moveChildUp(child, index) {
+            const parent = child.parentElement;
+            if (!parent || index === 0) return; // 이미 첫 번째이면 이동 불가
+
+            const allChildren = Array.from(parent.childNodes).filter(node => {
+                if (node.nodeType === Node.ELEMENT_NODE) {
+                    return node.classList.contains('draggable') || node === rootContainer;
+                } else if (node.nodeType === Node.TEXT_NODE) {
+                    return node.textContent.trim().length > 0;
+                }
+                return false;
+            });
+
+            const previousChild = allChildren[index - 1];
+            if (previousChild) {
+                parent.insertBefore(child, previousChild);
+                updateChildrenList(parent);
+                updateDebug('자식 노드를 위로 이동했습니다.');
+            }
+        }
+
+        // 자식 노드 아래로 이동
+        function moveChildDown(child, index) {
+            const parent = child.parentElement;
+            if (!parent) return;
+
+            const allChildren = Array.from(parent.childNodes).filter(node => {
+                if (node.nodeType === Node.ELEMENT_NODE) {
+                    return node.classList.contains('draggable') || node === rootContainer;
+                } else if (node.nodeType === Node.TEXT_NODE) {
+                    return node.textContent.trim().length > 0;
+                }
+                return false;
+            });
+
+            if (index >= allChildren.length - 1) return; // 이미 마지막이면 이동 불가
+
+            const nextChild = allChildren[index + 1];
+            if (nextChild && nextChild.nextSibling) {
+                parent.insertBefore(child, nextChild.nextSibling);
+            } else {
+                parent.appendChild(child);
+            }
+            updateChildrenList(parent);
+            updateDebug('자식 노드를 아래로 이동했습니다.');
+        }
+
+        // 요소 클릭 이벤트 처리
+        function handleElementClick(e) {
+            console.log('클릭 이벤트:', e.target, e.currentTarget);
+
+            // 드래그 중이면 클릭 무시
+            if (isDragging) return;
+
+            // Root Container 클릭 확인 (빈 공간 클릭)
+            if (e.currentTarget === rootContainer) {
+                // 실제로 클릭된 요소가 draggable이 아닌 경우에만 Root Container 선택
+                const clickedDraggable = e.target.closest('.draggable');
+                if (!clickedDraggable) {
+                    console.log('Root Container 빈 공간 클릭됨');
+                    e.stopPropagation();
+
+                    if (selectedElement === rootContainer) {
+                        // 이미 선택된 Root Container를 다시 클릭하면 선택 해제
+                        deselectElement();
+                    } else {
+                        // Root Container 선택
+                        selectElement(rootContainer);
+                    }
+                    return;
+                }
+            }
+
+            // draggable 요소 클릭 확인
+            if (e.currentTarget.classList.contains('draggable')) {
+                console.log('Draggable 요소 클릭됨:', e.currentTarget.id);
+                e.stopPropagation();
+
+                const clickedElement = e.currentTarget;
+                if (selectedElement === clickedElement) {
+                    // 이미 선택된 요소를 다시 클릭하면 선택 해제
+                    deselectElement();
+                } else {
+                    // 새 요소 선택
+                    selectElement(clickedElement);
+                }
+            }
+        }
+
+        // 배경 클릭시 선택 해제
+        function handleBackgroundClick(e) {
+            // Root Container 클릭은 handleElementClick에서 처리하므로 제외
+            if (e.target === document.body) {
+                deselectElement();
+            }
+        }
+
+        // 간단하고 확실한 애니메이션
+        function animateElementMove(element, direction, callback) {
+            console.log('애니메이션 시작:', element.id, direction);
+
+            // 현재 위치 저장
+            const startRect = element.getBoundingClientRect();
+
+            // 실제 DOM 이동 실행
+            callback();
+
+            // 이동 후 위치 계산
+            const endRect = element.getBoundingClientRect();
+
+            // 이동 거리 계산
+            const deltaX = startRect.left - endRect.left;
+            const deltaY = startRect.top - endRect.top;
+
+            console.log('이동 거리:', deltaX, deltaY);
+
+            // 애니메이션 실행
+            if (Math.abs(deltaX) > 2 || Math.abs(deltaY) > 2) {
+                console.log('애니메이션 실행 중...');
+
+                // 애니메이션 스타일 설정
+                element.style.transition = 'none';
+                element.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
+                element.style.zIndex = '999';
+                element.style.boxShadow = '0 8px 25px rgba(0, 0, 0, 0.2)';
+
+                // 한 프레임 대기 후 애니메이션 시작
+                requestAnimationFrame(() => {
+                    element.style.transition = 'all 0.5s ease-out';
+                    element.style.transform = 'translate(0, 0)';
+
+                    // 애니메이션 완료 후 정리
+                    setTimeout(() => {
+                        element.style.transition = '';
+                        element.style.transform = '';
+                        element.style.zIndex = '';
+                        element.style.boxShadow = '';
+                        console.log('애니메이션 완료');
+                    }, 500);
+                });
+            } else {
+                console.log('이동 거리가 작아서 애니메이션 생략');
+            }
+        }
+
+        // 요소 삭제 애니메이션
+        function animateElementDelete(element, callback) {
+            element.classList.add('slide-out');
+
+            setTimeout(() => {
+                callback();
+            }, 300);
+        }
+
+        // 새 요소 추가 애니메이션
+        function animateElementAdd(element) {
+            element.classList.add('slide-in');
+            setTimeout(() => {
+                element.classList.remove('slide-in');
+            }, 400);
+        }
+
+
+
+        // 드래그 앤 드롭 경로 애니메이션
+        function animateDragDrop(draggedElement, targetElement, position, callback) {
+            console.log('드래그 드롭 애니메이션 시작');
+
+            // 현재 위치 저장
+            const startRect = draggedElement.getBoundingClientRect();
+
+            // 실제 DOM 이동 실행
+            callback();
+
+            // 이동 후 위치 계산
+            const endRect = draggedElement.getBoundingClientRect();
+
+            // 이동 거리 계산
+            const deltaX = startRect.left - endRect.left;
+            const deltaY = startRect.top - endRect.top;
+
+            console.log('드래그 드롭 이동 거리:', deltaX, deltaY);
+
+            // 애니메이션 실행
+            if (Math.abs(deltaX) > 2 || Math.abs(deltaY) > 2) {
+                console.log('드래그 드롭 애니메이션 실행 중...');
+
+                // 애니메이션 스타일 설정
+                draggedElement.style.transition = 'none';
+                draggedElement.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
+                draggedElement.style.zIndex = '999';
+                draggedElement.style.boxShadow = '0 8px 25px rgba(0, 0, 0, 0.2)';
+
+                // 한 프레임 대기 후 애니메이션 시작
+                requestAnimationFrame(() => {
+                    draggedElement.style.transition = 'all 0.5s ease-out';
+                    draggedElement.style.transform = 'translate(0, 0)';
+
+                    // 애니메이션 완료 후 정리
+                    setTimeout(() => {
+                        draggedElement.style.transition = '';
+                        draggedElement.style.transform = '';
+                        draggedElement.style.zIndex = '';
+                        draggedElement.style.boxShadow = '';
+                        console.log('드래그 드롭 애니메이션 완료');
+                    }, 500);
+                });
+            }
+        }
+
+        // 데이터 구조 정의
+        // type El = {
+        //     tagName: string,
+        //     attributes: { [key: string]: string },
+        //     children: El[]
+        // }
+
+        let itemCounter = 1000; // 새 아이템 ID 생성용
+
+        // DOM 노드를 데이터 구조로 변환
+        function nodeToData(node) {
+            if (node.nodeType === Node.TEXT_NODE) {
+                // 텍스트 노드
+                const textContent = node.textContent.trim();
+                if (!textContent) return null; // 빈 텍스트 노드는 무시
+
+                return {
+                    nodeType: 'TEXT_NODE',
+                    textContent: textContent
+                };
+            } else if (node.nodeType === Node.ELEMENT_NODE) {
+                // action-buttons는 내부 UI이므로 제외
+                if (node.classList && node.classList.contains('action-buttons')) {
+                    return null;
+                }
+
+                // 엘리먼트 노드
+                const data = {
+                    nodeType: 'ELEMENT_NODE',
+                    tagName: node.tagName.toLowerCase(),
+                    attributes: {},
+                    children: []
+                };
+
+                // 속성 복사 (내부 속성 제외)
+                for (let attr of node.attributes) {
+                    // 내부 드래그 속성과 선택 상태는 제외
+                    if (attr.name !== 'data-drag-initialized' && attr.name !== 'class' ||
+                        (attr.name === 'class' && !attr.value.includes('selected'))) {
+                        data.attributes[attr.name] = attr.value;
+                    } else if (attr.name === 'class') {
+                        // class 속성에서 selected 클래스만 제거
+                        const cleanedClass = attr.value.replace(/\bselected\b/g, '').trim().replace(/\s+/g, ' ');
+                        if (cleanedClass) {
+                            data.attributes[attr.name] = cleanedClass;
+                        }
+                    }
+                }
+
+                // 모든 자식 노드들을 재귀적으로 변환 (action-buttons 제외)
+                for (let child of node.childNodes) {
+                    // action-buttons 컨테이너는 건너뛰기
+                    if (child.nodeType === Node.ELEMENT_NODE &&
+                        child.classList && child.classList.contains('action-buttons')) {
+                        continue;
+                    }
+
+                    const childData = nodeToData(child);
+                    if (childData) {
+                        data.children.push(childData);
+                    }
+                }
+
+                return data;
+            }
+
+            return null; // 다른 노드 타입은 무시
+        }
+
+        // 호환성을 위한 래퍼 함수
+        function elementToData(element) {
+            return nodeToData(element);
+        }
+
+        // 데이터 구조를 DOM 노드로 변환
+        function dataToNode(data) {
+            if (data.nodeType === 'TEXT_NODE') {
+                // 텍스트 노드 생성
+                return document.createTextNode(data.textContent);
+            } else if (data.nodeType === 'ELEMENT_NODE') {
+                // 엘리먼트 노드 생성
+                const element = document.createElement(data.tagName);
+
+                // 속성 설정
+                for (let [key, value] of Object.entries(data.attributes)) {
+                    element.setAttribute(key, value);
+                }
+
+                // 자식 노드들 재귀적으로 생성
+                for (let childData of data.children) {
+                    const childNode = dataToNode(childData);
+                    if (childNode) {
+                        element.appendChild(childNode);
+                    }
+                }
+
+                return element;
+            }
+
+            return null;
+        }
+
+        // 호환성을 위한 래퍼 함수 (기존 데이터 구조 지원)
+        function dataToElement(data) {
+            // 새로운 구조인지 확인
+            if (data.nodeType) {
+                return dataToNode(data);
+            }
+
+            // 기존 구조 (data-text 방식) 지원
+            const element = document.createElement(data.tagName);
+
+            // 속성 설정
+            for (let [key, value] of Object.entries(data.attributes)) {
+                if (key === 'data-text') {
+                    // 텍스트 내용은 나중에 설정
+                    continue;
+                }
+                element.setAttribute(key, value);
+            }
+
+            // 텍스트 내용 설정 (기존 방식)
+            if (data.attributes['data-text']) {
+                element.appendChild(document.createTextNode(data.attributes['data-text']));
+            }
+
+            // 자식 요소들 재귀적으로 생성
+            for (let childData of data.children) {
+                const childElement = dataToElement(childData);
+                if (childElement) {
+                    element.appendChild(childElement);
+                }
+            }
+
+            return element;
+        }
+
+        // 현재 구조를 데이터로 저장
+        function saveData() {
+            if (!rootContainer) {
+                alert('Root container를 찾을 수 없습니다.');
+                return;
+            }
+
+            const draggableElements = Array.from(rootContainer.children).filter(child =>
+                child.classList.contains('draggable')
+            );
+
+            const data = {
+                version: "1.0",
+                timestamp: new Date().toISOString(),
+                rootContainer: {
+                    id: rootContainer.id,
+                    className: rootContainer.className
+                },
+                elements: draggableElements.map(el => elementToData(el))
+            };
+
+            const jsonString = JSON.stringify(data, null, 2);
+
+            // 파일 다운로드
+            const blob = new Blob([jsonString], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `drag-drop-data-${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+
+            updateDebug(`데이터 저장됨: ${draggableElements.length}개 요소`);
+            console.log('저장된 데이터:', data);
+        }
+
+        // 데이터 불러오기
+        function loadData() {
+            document.getElementById('fileInput').click();
+        }
+
+        // 파일에서 데이터 불러오기
+        function handleFileImport(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+
+                    if (!data.elements || !Array.isArray(data.elements)) {
+                        throw new Error('잘못된 데이터 형식입니다.');
+                    }
+
+                    if (!rootContainer) {
+                        throw new Error('Root container를 찾을 수 없습니다.');
+                    }
+
+                    // Root Container 내의 기존 draggable 요소들 제거
+                    rootContainer.querySelectorAll('.draggable').forEach(el => el.remove());
+
+                    // 새 요소들 생성 및 Root Container에 추가
+                    for (let elementData of data.elements) {
+                        const element = dataToElement(elementData);
+                        rootContainer.appendChild(element);
+                    }
+
+                    // 이벤트 리스너 재등록
+                    reinitializeDragAndDrop();
+
+                    updateDebug(`데이터 불러옴: ${data.elements.length}개 요소`);
+                    console.log('불러온 데이터:', data);
+
+                } catch (error) {
+                    alert('파일을 불러오는데 실패했습니다: ' + error.message);
+                    updateDebug('데이터 불러오기 실패');
+                }
+            };
+            reader.readAsText(file);
+
+            // 파일 입력 초기화
+            event.target.value = '';
+        }
+
+        // 새 아이템 추가 (애니메이션 포함)
+        function addNewItem() {
+            if (!rootContainer) {
+                alert('Root container를 찾을 수 없습니다.');
+                return;
+            }
+
+            const newId = `item-${itemCounter++}`;
+            const newItem = document.createElement('div');
+            newItem.className = 'draggable';
+            newItem.id = newId;
+            newItem.textContent = `📄 새 아이템 ${itemCounter - 1000}`;
+
+            rootContainer.appendChild(newItem);
+
+            // 추가 애니메이션 실행
+            animateElementAdd(newItem);
+
+            reinitializeDragAndDrop();
+            updateDebug(`새 아이템 추가: ${newId}`);
+        }
+
+        // 루트 컨테이너에 텍스트 노드 추가
+        function addTextToRoot() {
+            if (!rootContainer) {
+                alert('Root container를 찾을 수 없습니다.');
+                return;
+            }
+
+            const textContent = prompt('추가할 텍스트 내용을 입력하세요:', '새 텍스트');
+            if (textContent === null) return;
+
+            const textNode = document.createTextNode(textContent);
+            rootContainer.appendChild(textNode);
+
+            updateDebug(`루트에 텍스트 노드 추가: "${textContent}"`);
+
+            // 루트 컨테이너가 선택되어 있다면 자식 목록 업데이트
+            if (selectedElement === rootContainer) {
+                updateChildrenList(rootContainer);
+            }
+        }
+
+        // 전체 삭제
+        function clearAll() {
+            if (!rootContainer) {
+                alert('Root container를 찾을 수 없습니다.');
+                return;
+            }
+
+            if (confirm('모든 아이템을 삭제하시겠습니까?')) {
+                rootContainer.querySelectorAll('.draggable').forEach(el => el.remove());
+                updateDebug('모든 아이템 삭제됨');
+            }
+        }
+
+        // 샘플 데이터 로드
+        function loadSampleData() {
+            const sampleData = {
+                version: "1.0",
+                timestamp: new Date().toISOString(),
+                elements: [
+                    {
+                        nodeType: "ELEMENT_NODE",
+                        tagName: "div",
+                        attributes: {
+                            class: "draggable",
+                            id: "sample1"
+                        },
+                        children: [
+                            {
+                                nodeType: "TEXT_NODE",
+                                textContent: "📋 프로젝트 관리"
+                            }
+                        ]
+                    },
+                    {
+                        nodeType: "ELEMENT_NODE",
+                        tagName: "div",
+                        attributes: {
+                            class: "draggable",
+                            id: "sample2"
+                        },
+                        children: [
+                            {
+                                nodeType: "TEXT_NODE",
+                                textContent: "🎯 개발 작업"
+                            },
+                            {
+                                nodeType: "ELEMENT_NODE",
+                                tagName: "div",
+                                attributes: {
+                                    class: "draggable",
+                                    id: "sample2-1"
+                                },
+                                children: [
+                                    {
+                                        nodeType: "TEXT_NODE",
+                                        textContent: "🔧 백엔드 개발"
+                                    }
+                                ]
+                            },
+                            {
+                                nodeType: "ELEMENT_NODE",
+                                tagName: "div",
+                                attributes: {
+                                    class: "draggable",
+                                    id: "sample2-2"
+                                },
+                                children: [
+                                    {
+                                        nodeType: "TEXT_NODE",
+                                        textContent: "🎨 프론트엔드 개발"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        nodeType: "ELEMENT_NODE",
+                        tagName: "div",
+                        attributes: {
+                            class: "draggable",
+                            id: "sample3"
+                        },
+                        children: [
+                            {
+                                nodeType: "TEXT_NODE",
+                                textContent: "📚 문서화"
+                            }
+                        ]
+                    }
+                ]
+            };
+
+            if (!rootContainer) {
+                alert('Root container를 찾을 수 없습니다.');
+                return;
+            }
+
+            // 기존 요소들 제거
+            rootContainer.querySelectorAll('.draggable').forEach(el => el.remove());
+
+            // 샘플 데이터로 요소들 생성
+            for (let elementData of sampleData.elements) {
+                const element = dataToElement(elementData);
+                rootContainer.appendChild(element);
+            }
+
+            // 이벤트 리스너 재등록
+            reinitializeDragAndDrop();
+
+            updateDebug(`샘플 데이터 로드됨: ${sampleData.elements.length}개 요소`);
+        }
+
+        // 초기화
+        reinitializeDragAndDrop();
+        updateDebug('드래그 앤 드롭 준비 완료');
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,286 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>@dooboostore/dom-editor ESM Bundle Example</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
+    
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 16px;
+      padding: 30px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+    }
+    
+    h1 {
+      color: #ff6b35;
+      text-align: center;
+      margin-bottom: 30px;
+      font-size: 2.5rem;
+    }
+    
+    .info {
+      background: #e6fffa;
+      border: 1px solid #81e6d9;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 30px;
+    }
+    
+    .info h3 {
+      color: #234e52;
+      margin-bottom: 10px;
+    }
+    
+    .info p {
+      color: #2c7a7b;
+      margin-bottom: 10px;
+    }
+    
+    .controls {
+      display: flex;
+      gap: 15px;
+      flex-wrap: wrap;
+      margin-bottom: 30px;
+    }
+    
+    .btn {
+      padding: 12px 24px;
+      font-size: 14px;
+      font-weight: 600;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+    
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+    }
+    
+    .btn-primary {
+      background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%);
+      color: white;
+    }
+    
+    .btn-success {
+      background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+      color: white;
+    }
+    
+    .btn-info {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+    }
+    
+    #editor-container {
+      border: 2px solid #e2e8f0;
+      border-radius: 12px;
+      min-height: 400px;
+      background: #f8f9fa;
+      margin-bottom: 20px;
+    }
+    
+    .output {
+      background: #f8f9fa;
+      border: 1px solid #dee2e6;
+      border-radius: 8px;
+      padding: 20px;
+      margin-top: 20px;
+      display: none;
+    }
+    
+    .output h3 {
+      color: #495057;
+      margin-bottom: 15px;
+    }
+    
+    .code {
+      background: #2d3748;
+      color: #e2e8f0;
+      padding: 15px;
+      border-radius: 6px;
+      font-family: 'Monaco', 'Menlo', monospace;
+      font-size: 12px;
+      overflow-x: auto;
+      white-space: pre-wrap;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🎨 Dom Editor ESM Example</h1>
+    
+    <div class="info">
+      <h3>📦 ESM Bundle Demo</h3>
+      <p>This example uses the ESM (ES Module) bundle of @dooboostore/dom-editor loaded directly from CDN.</p>
+      <p><strong>Try:</strong> Drag elements around, click to select them, and use the buttons below to interact with the editor.</p>
+    </div>
+    
+    <div class="controls">
+      <button class="btn btn-primary" id="add-element">➕ Add Element</button>
+      <button class="btn btn-success" id="add-form">📋 Add Form</button>
+      <button class="btn btn-info" id="export-html">📄 Export HTML</button>
+      <button class="btn btn-info" id="load-sample">🎯 Load Sample</button>
+    </div>
+    
+    <div id="editor-container"></div>
+    
+    <div class="output" id="output">
+      <h3>Output</h3>
+      <div class="code" id="code-output"></div>
+    </div>
+  </div>
+
+  <script type="module">
+    // Import from CDN using ESM
+    import { DomEditor } from 'https://cdn.jsdelivr.net/npm/@dooboostore/dom-editor/dist/esm-bundle/dooboostore-dom-editor.esm.js';
+    
+    console.log('Dom Editor ESM loaded successfully!');
+    
+    // Initialize editor
+    const editorContainer = document.getElementById('editor-container');
+    const output = document.getElementById('output');
+    const codeOutput = document.getElementById('code-output');
+    
+    const editor = new DomEditor({
+      container: editorContainer,
+      debug: true,
+      enableMobileSupport: true,
+      customStyles: `
+        .welcome-card {
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          color: white;
+          border-radius: 12px;
+          padding: 25px;
+          text-align: center;
+          border: none;
+        }
+        
+        .demo-element {
+          background: linear-gradient(45deg, #ff6b35, #f7931e);
+          color: white;
+          border-radius: 8px;
+          padding: 20px;
+          border: none;
+        }
+        
+        .form-element {
+          background: #f7fafc;
+          border: 2px solid #cbd5e0;
+          border-radius: 8px;
+          padding: 20px;
+        }
+        
+        .form-element input, .form-element textarea {
+          width: 100%;
+          padding: 8px 12px;
+          border: 1px solid #cbd5e0;
+          border-radius: 4px;
+          margin-top: 5px;
+        }
+      `,
+      initialContent: `
+        <div class="draggable welcome-card">
+          <h2>🎉 ESM Bundle Demo</h2>
+          <p>This editor is loaded from the ESM bundle via CDN!</p>
+          <p>Try dragging this card around or adding new elements.</p>
+        </div>
+      `
+    });
+    
+    // Event handlers
+    document.getElementById('add-element').addEventListener('click', () => {
+      const timestamp = Date.now();
+      const newElement = `
+        <div class="draggable demo-element" id="element-${timestamp}">
+          <h3>✨ New Element</h3>
+          <p>Created at: ${new Date().toLocaleTimeString()}</p>
+          <button onclick="alert('Hello from ESM bundle!')">Click Me!</button>
+        </div>
+      `;
+      
+      const currentContent = editor.getContent();
+      editor.loadContent(currentContent + newElement);
+    });
+    
+    document.getElementById('add-form').addEventListener('click', () => {
+      const timestamp = Date.now();
+      const formElement = `
+        <div class="draggable form-element" id="form-${timestamp}">
+          <h4>📋 Contact Form</h4>
+          <label>Name: <input type="text" placeholder="Your name" /></label>
+          <label>Email: <input type="email" placeholder="your@email.com" /></label>
+          <label>Message: <textarea placeholder="Your message" rows="3"></textarea></label>
+          <button type="button" style="margin-top: 10px; padding: 8px 16px; background: #48bb78; color: white; border: none; border-radius: 4px;">Send</button>
+        </div>
+      `;
+      
+      const currentContent = editor.getContent();
+      editor.loadContent(currentContent + formElement);
+    });
+    
+    document.getElementById('export-html').addEventListener('click', () => {
+      const html = editor.getContent();
+      codeOutput.textContent = html;
+      output.style.display = 'block';
+      output.scrollIntoView({ behavior: 'smooth' });
+      
+      // Copy to clipboard if available
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(html).then(() => {
+          console.log('HTML copied to clipboard');
+        });
+      }
+    });
+    
+    document.getElementById('load-sample').addEventListener('click', () => {
+      const sampleContent = `
+        <div class="draggable welcome-card">
+          <h2>🎯 Sample Layout</h2>
+          <p>This is a sample layout loaded from the ESM bundle.</p>
+        </div>
+        <div class="draggable demo-element">
+          <h3>🚀 Interactive Element</h3>
+          <p>You can drag me around and interact with my buttons!</p>
+          <button onclick="this.parentElement.style.transform = this.parentElement.style.transform ? '' : 'rotate(10deg)'">Rotate</button>
+          <button onclick="this.parentElement.style.opacity = this.parentElement.style.opacity === '0.5' ? '1' : '0.5'">Fade</button>
+        </div>
+        <div class="draggable form-element">
+          <h4>📝 Quick Form</h4>
+          <label>Name: <input type="text" value="John Doe" /></label>
+          <label>Email: <input type="email" value="john@example.com" /></label>
+          <button type="button" style="margin-top: 10px; padding: 8px 16px; background: #007bff; color: white; border: none; border-radius: 4px;">Submit</button>
+        </div>
+      `;
+      
+      editor.loadContent(sampleContent);
+      output.style.display = 'none';
+    });
+    
+    // Make editor globally available for debugging
+    window.__domEditor = editor;
+    
+    console.log('ESM Demo initialized! Try window.__domEditor in console.');
+  </script>
+</body>
+</html>

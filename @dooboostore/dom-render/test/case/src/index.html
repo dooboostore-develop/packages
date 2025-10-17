@@ -15,6 +15,13 @@
       <div class="ww" style="color:red;" dr-class="['zz']" dr-style="{'backgroundColor':@this@.attrValue}" dr-attr="{ww:@this@.attrValue}">aaa</div>
       <img  dr-attr="{'src':@this@.imgSrc}" loading="lazy" />
       <button dr-event-click="@this@.changeAttr()">change attr</button>
+      #{@this@.tag}#
+
+      <hr>
+<!--      <div dr-replace-target-element-is="dr-if" value="${true}$">azz</div>-->
+      <dr-target-element  dr-target-element:is="${@this@.t}$" value="${true}$">azz</dr-target-element>
+      <hr>
+      <dr-if value="${true}$">dddd</dr-if>
 <!--      ${@this@.name}$-->
 <!--      <div class="asdasd ${@this@.name}$&#45;&#45; ${`^^${@this@.age}^^`}$"> www</div>-->
 
