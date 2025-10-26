@@ -143,6 +143,16 @@ export namespace FileUtils {
     return node_fs.promises.readFile(p, config?.option);
   }
 
+  export const readJsonSync = <T = any>(path: PathParamType): T => {
+    const json = FileUtils.readStringSync(path);
+    return JSON.parse(json) as T;
+  }
+
+  export const readJsonAsync = async <T = any>(path: PathParamType): Promise<T> => {
+    const json = await FileUtils.readStringAsync(path);
+    return JSON.parse(json) as T;
+  }
+
   export const readStringSync = (path: PathParamType): string  => {
     const p = FileUtils.path(path);
     return node_fs.readFileSync(p, 'utf-8');

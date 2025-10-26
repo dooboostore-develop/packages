@@ -13,7 +13,10 @@ export namespace PathUtils {
   // global: 전역 객체 (브라우저의 window와 유사)
   // process: 현재 Node.js 프로세스에 대한 정보와 제어 제공
 
-
+// cwd(): 현재 프로세스의 작업 디렉터리(working directory)를 반환합니다. 내부적으로 process.cwd()를 사용합니다.
+  export const processCwd = () => {
+    return process.cwd();
+  }
   // join(...paths: string[]): 여러 경로 조각을 하나의 경로로 합칩니다. 내부적으로 Node.js의 path.join을 사용합니다.
   export const join = (...paths: string[]) => {
     return nodePath.join(...paths);

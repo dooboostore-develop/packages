@@ -2,7 +2,6 @@ import { DomRenderConfig } from '../configs/DomRenderConfig';
 import { ScriptUtils } from '@dooboostore/core-web/script/ScriptUtils';
 import { ElementUtils } from '@dooboostore/core-web/element/ElementUtils';
 import { Range } from '../iterators/Range';
-import { DomRenderFinalProxy } from '../types/Types';
 import { getDomRenderConfig } from '../DomRenderProxy';
 import { ObjectUtils } from '@dooboostore/core/object/ObjectUtils';
 
@@ -380,11 +379,11 @@ export class EventManager {
   public findAttrElements(fragment: DocumentFragment | Element, config?: DomRenderConfig): Set<Element> {
     const elements = new Set<Element>();
     const addAttributes = config?.applyEvents?.map(it => it.attrName) ?? [];
-    addAttributes.concat([...EventManager.attrNames]).forEach(attrName => {
-      fragment?.querySelectorAll(`[${attrName}]`).forEach(it => {
-        elements.add(it);
-      });
-    });
+   const attrs = addAttributes.concat([...EventManager.attrNames]).filter(Boolean);
+   if (attrs.length) {
+     const selector = attrs.map(a => `[${a}]`).join(',');
+     fragment?.querySelectorAll(selector).forEach(it => elements.add(it));
+   }
     return elements;
   }
 
@@ -619,7 +618,7 @@ export class EventManager {
         script = 'return ' + script;
       }
       if (EventManager.isUsingThisVar(script, varName) || varName === undefined) {
-        const data = ScriptUtils.evaluate(`const $element = this.__render.element;  ${script} `, Object.assign(obj, {
+        const data = ObjectUtils.Script.evaluate(`const $element = this.__render.element;  ${script} `, Object.assign(obj, {
           __render: Object.freeze({
             element: it,
             attribute: ElementUtils.getAttributeToObject(it)
@@ -658,7 +657,7 @@ export class EventManager {
         script = 'return ' + script;
       }
       if (EventManager.isUsingThisVar(script, varName) || varName === undefined) {
-        const data = ScriptUtils.evaluate(`const $element = this.element;  ${script} `, Object.assign(obj, {
+        const data = ObjectUtils.Script.evaluate(`const $element = this.element;  ${script} `, Object.assign(obj, {
           __render: Object.freeze({
             element: it,
             attribute: ElementUtils.getAttributeToObject(it)

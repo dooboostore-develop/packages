@@ -112,7 +112,7 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
           if (isNoProxy) {
             return obj;
           }
-        } catch (e) {}
+        } catch (e) { }
         const target = obj[it];
         if (
           target !== undefined &&
@@ -287,7 +287,7 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
       const t = it.findNearThis(this._domRender_proxy);
       // TODO: 호출된곳에서 또 변수를 수정하게되면 무한루프니깐 왠만하면 사용못하게 해야한다.
       if (isOnRawSetRendered(t)) {
-        await t.onRawSetRendered(it, { path: fullPathStr, renderResult });
+        await t.onRawSetRendered(it, { path: fullPathStr, value: ObjectUtils.Script.evaluateReturn(`this.${fullPathStr}`, this._domRender_proxy), root: this._domRender_proxy, renderResult });
       }
       // console.log('----', it);
     }
@@ -312,19 +312,25 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
     value?: any,
     lastDoneExecute = true
   ): { path: string; obj: any }[][] {
-    // console.log('root--->', paths, value, this._domRender_ref, this._domRender_origin);
+    const rootStartTime = Date.now();
+    const pathKey = pathInfos.flat().map(i => i.path).join('.');
+
+    // console.group(`🌳 DomRenderProxy root: ${pathKey}`);
+    // console.log('root--->', pathInfos, value, this._domRender_ref, this._domRender_origin);
     const fullPaths: { path: string; obj: any }[][] = [];
     if (this._domRender_ref.size > 0) {
       this._domRender_ref.forEach((it, key) => {
         if ('_DomRender_isProxy' in key) {
           it.forEach(sit => {
             try {
+              const recursiveStartTime = Date.now();
               const concat = pathInfos.concat([[{ path: sit, obj: key }]]);
               const items: { path: string; obj: any }[][] = (key as any)._DomRender_proxy?.root(
                 concat,
                 value,
                 lastDoneExecute
               );
+              // console.log(`🔄 Recursive root call for ${sit}: ${Date.now() - recursiveStartTime}ms`);
 
               fullPaths.push(items.flat());
               // fullPaths.push({path: items.map(it=>it.path).join(','), obj: this._domRender_proxy});
@@ -338,6 +344,7 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
         }
       });
     } else {
+      const pathProcessStartTime = Date.now();
       // const firstPathStr = paths.slice(1).reverse().join('.');
       const strings = pathInfos.reverse().map(it => it.map(it => it.path).join(','));
       // array같은경우도 키값으로 접근하기때문에 특정 인덱스를 찾아서 그부분만 바꿔줄수 있다.
@@ -345,7 +352,7 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
         .map(it => (isNaN(Number(it)) ? '.' + it : `[${it}]`))
         .join('')
         .slice(1);
-      // console.log('-------fullPathStr', fullPathStr, lastDoneExecute);
+      // console.log(`🛤️ Path processing time: ${Date.now() - pathProcessStartTime}ms for path: ${fullPathStr}`);
       if (lastDoneExecute) {
         // const firstData = ScriptUtils.evalReturn('this.' + firstPathStr, this._domRender_proxy);
         // console.log('-------', firstPathStr, firstData);
@@ -363,11 +370,14 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
         // console.log('root-->', this._rawSets, path, data );
         // console.log('--!!!!', fullPathStr, iterable, data, front, last);
         // 왜여기서 promise를 했을까를 생각해보면......훔.. 변수변경과 화면 뿌려주는걸 동기로하면 성능이 안나오고 비현실적이다.  그래서 promise
+        const promiseStartTime = Date.now();
         new Promise<RawSet[]>(async resolve => {
+          const promiseInnerStartTime = Date.now();
           let rData: RawSet[] = [];
           const firstPathStr = front.slice(1);
 
           // check dictionary
+          const dictionaryCheckStartTime = Date.now();
           // console.log('-promise-------', firstPathStr, this)
           const firstTargets = this._rawSets.get(firstPathStr);
           const firstTargetDictionary: RawSet[] = [];
@@ -378,6 +388,8 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
               firstTargetDictionary.push(it);
             }
           });
+          // console.log(`📚 Dictionary check time: ${Date.now() - dictionaryCheckStartTime}ms (${firstTargetDictionary.length} found)`);
+
           if (firstTargetDictionary.length > 0) {
             // console.log('ddddddddddd', firstTargetDictionary);
             const rawSets: RawSet[] = [];
@@ -413,6 +425,7 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
             }
           }
 
+          const renderStartTime = Date.now();
           if (lastPropertyName === 'length' && Array.isArray(data)) {
             const aIterable = this._rawSets.get(firstPathStr);
             if (aIterable) {
@@ -422,6 +435,7 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
             // console.log('------------',iterable, fullPaths)
             rData = await this.render(Array.from(iterable), fullPathStr);
           }
+          // console.log(`🎨 Render time: ${Date.now() - renderStartTime}ms (${rData?.length || 0} rawSets)`);
 
           // console.log('-----------', this, lastPropertyName );
           // this._targets.forEach(it => {
@@ -432,26 +446,36 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
           //   }
           // });
 
+          const eventProcessStartTime = Date.now();
           const Node = ((this._domRender_config.window as any).Node)
           this._targets.forEach(it => {
             // return;
             if (it.nodeType === Node.DOCUMENT_FRAGMENT_NODE || it.nodeType === Node.ELEMENT_NODE) {
+              const findAttrStartTime = Date.now();
               const targets = this._domRender_config.eventManager.findAttrElements(
                 it as DocumentFragment | Element,
                 this._domRender_config
               );
+              const targetCount = (targets as any)?.size || (targets as any)?.length || 0;
+              // console.log(`🔍 findAttrElements time: ${Date.now() - findAttrStartTime}ms (${targetCount} elements)`, it);
+
+              const changeVarStartTime = Date.now();
               this._domRender_config.eventManager.changeVar(
                 this._domRender_proxy,
                 targets,
                 `this.${fullPathStr}`,
                 this._domRender_config
               );
+              // console.log(`🔄 changeVar time: ${Date.now() - changeVarStartTime}ms`);
             }
           });
+          // console.log(`⚡ Event processing time: ${Date.now() - eventProcessStartTime}ms (${this._targets.size} targets)`);
+
+          // console.log(`🔄 Promise inner total time: ${Date.now() - promiseInnerStartTime}ms`);
 
           //랜더대상된게있으면
           if (rData?.length > 0 && isOnChildRenderedByProperty(data)) {
-            const propertyValue = ScriptUtils.evaluateReturn(`this.${lastPropertyName}`, data);
+            const propertyValue = ObjectUtils.Script.evaluateReturn(`this.${lastPropertyName}`, data);
             data.onChildRenderedByProperty(lastPropertyName, propertyValue);
             // data
           }
@@ -463,7 +487,9 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
       fullPaths.push([{ path: fullPathStr, obj: this._domRender_proxy }]);
     }
 
-    // console.log('dddddd', fullPaths.flatMap(it=>it).map(it=>it.path))
+    // console.log(`🏁 Root method total time: ${Date.now() - rootStartTime}ms`);
+    // console.log('dddddd', fullPaths.flatMap(it => it).map(it => it.path))
+    // console.groupEnd();
     return fullPaths;
   }
 
@@ -532,27 +558,27 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
           .flatMap(([key, valueScript]) => {
             return fullPathInfo
               .flat()
-              .filter(it => valueScript.variablePaths?.some(vit=> vit.inner.includes(`this.${it.path}`)))
+              .filter(it => valueScript.variablePaths?.some(vit => vit.inner.includes(`this.${it.path}`)))
               .flatMap(it => ({ key, valueScript: valueScript, pathInfo: it }));
           })
           .forEach(it => {
             // const optionalPaths = it.valueScript.variablePaths.map(it => ObjectUtils.Path.toOptionalChainPath(it))
             const variablePaths = it.valueScript.variablePaths;
             let targetScript = it.valueScript.originalAttrValue;
-              let script: string;
-              if (it.valueScript.isStringTemplate) {
-                  variablePaths.forEach(it => {
-                      let r = ObjectUtils.Path.toOptionalChainPath(it.inner);
-                      targetScript = targetScript.replaceAll(it.origin, `\${${r}}`);
-                  })
-                  script = '`' + targetScript + '`';
-              } else {
-                  variablePaths.forEach(it => {
-                      let r = ObjectUtils.Path.toOptionalChainPath(it.inner);
-                      targetScript = targetScript.replaceAll(it.origin, `${r}`);
-                  })
-                  script = targetScript;
-              }
+            let script: string;
+            if (it.valueScript.isStringTemplate) {
+              variablePaths.forEach(it => {
+                let r = ObjectUtils.Path.toOptionalChainPath(it.inner);
+                targetScript = targetScript.replaceAll(it.origin, `\${${r}}`);
+              })
+              script = '`' + targetScript + '`';
+            } else {
+              variablePaths.forEach(it => {
+                let r = ObjectUtils.Path.toOptionalChainPath(it.inner);
+                targetScript = targetScript.replaceAll(it.origin, `${r}`);
+              })
+              script = targetScript;
+            }
             // variablePaths.forEach(it => {
             //   let r = ObjectUtils.Path.toOptionalChainPath(it.inner);
             //   targetScript = targetScript.replaceAll(it.origin,`\${${r}}`);
@@ -717,7 +743,7 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
       ) {
         return obj;
       }
-    } catch (e) {}
+    } catch (e) { }
 
     /*
     const proxyTarget = (this._domRender_config.proxyExcludeTyps?.filter(it => obj instanceof it) ?? []).length <= 0;

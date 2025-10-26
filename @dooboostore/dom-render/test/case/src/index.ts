@@ -25,16 +25,23 @@ class Root {
     }
 }
 
-
+class WOWComponent {
+  attrValue = 'initial value'
+  changeAttr(){
+    this.attrValue = RandomUtils.rgba()
+  }
+}
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
   const appElement = document.querySelector('#app');
   if (appElement) {
+    const wowComponent =    DomRender.createComponent({type: WOWComponent, tagName:'wow', template:'<div dr-event-click="@this@.changeAttr()">wow ${@this@.attrValue}$</div>'});
     const result = new DomRender({
       rootObject: new Root(),
       target: appElement,
-      config: { window }
+      config: { window, targetElements: [wowComponent] }
     });
+
     const root = result.rootObject;
     root.name='z';
     (window as any).root = root;

@@ -1,7 +1,9 @@
 import { RawSet, RenderResult } from '../rawsets/RawSet';
 
 export type OnRawSetRenderedOtherData = {
-  path?: string
+  path?: string;
+  value?: any;
+  root: any;
   renderResult?: RenderResult
   //     rawSet?: RawSet
 }

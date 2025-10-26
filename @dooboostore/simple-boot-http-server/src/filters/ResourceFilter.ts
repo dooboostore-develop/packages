@@ -91,6 +91,7 @@ export class ResourceFilter implements Filter {
               if (this.resourceDistPath) {
                 // It's a string path
                 const resourcePath = path.join(this.resourceDistPath, distValue);
+                console.log('-----------',this.resourceDistPath, resourcePath);
                 if (fs.existsSync(resourcePath)) {
                   rr.resStatusCode(HttpStatus.Ok);
                   rr.resSetHeader(HttpHeaders.ContentType, mime.lookup(resourcePath).toString());

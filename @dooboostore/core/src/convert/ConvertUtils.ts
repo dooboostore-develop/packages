@@ -34,6 +34,10 @@ export namespace ConvertUtils {
   export const decodeURIString = (data: string) => {
     return decodeURIComponent(data);
   }
+  
+  export const encodeURIString = (data: string) => {
+    return encodeURIComponent(data);
+  }
 
   export const objToStrMap = (obj: any): Map<string, string> => {
     const strMap = new Map();
