@@ -10,14 +10,14 @@ document.addEventListener('DOMContentLoaded', () => {
       enableMobileSupport: true,
       dragDelay: 500,
       initialContent: `
-        <div class="draggable welcome-card">
+        <div class="welcome-card">
           <h2>🎉 Welcome to DOM Editor!</h2>
           <p>이제 사용법이 훨씬 간단해졌습니다!</p>
           <p>new DomEditor('#target') 또는 new DomEditor(element) 만 하면 끝!</p>
         </div>
-        <div class="draggable feature-box">
+        <div class="feature-box">
           <h3>✨ 자동 설정</h3>
-          <p>• Root container 자동 생성</p>
+          <p>• 모든 요소 편집 가능</p>
           <p>• Property panel 자동 생성 (floating!)</p>
           <p>• 모든 이벤트 리스너 자동 설정</p>
           <p>• initialContent는 string 또는 ElementData 객체 지원!</p>
@@ -38,29 +38,55 @@ document.addEventListener('DOMContentLoaded', () => {
     (window as any).testStructuredData = () => {
       // 구조화된 데이터로 테스트
       const structuredData = {
+        nodeType: 'element' as const,
         tagName: 'div',
-        className: 'draggable',
+        className: 'structured-test',
         id: 'structured-test',
         children: [
           {
+            nodeType: 'element' as const,
             tagName: 'h2',
-            textContent: '📊 구조화된 데이터 테스트'
-          },
-          {
-            tagName: 'p',
-            textContent: 'ElementData 객체로 생성된 요소입니다!'
-          },
-          {
-            tagName: 'div',
-            className: 'draggable',
             children: [
               {
+                nodeType: 'text' as const,
+                textContent: '📊 구조화된 데이터 테스트'
+              }
+            ]
+          },
+          {
+            nodeType: 'element' as const,
+            tagName: 'p',
+            children: [
+              {
+                nodeType: 'text' as const,
+                textContent: 'NodeData 객체로 생성된 요소입니다!'
+              }
+            ]
+          },
+          {
+            nodeType: 'element' as const,
+            tagName: 'div',
+            className: 'nested-element',
+            children: [
+              {
+                nodeType: 'element' as const,
                 tagName: 'h4',
-                textContent: '🎯 중첩된 요소'
+                children: [
+                  {
+                    nodeType: 'text' as const,
+                    textContent: '🎯 중첩된 요소'
+                  }
+                ]
               },
               {
+                nodeType: 'element' as const,
                 tagName: 'p',
-                textContent: '구조화된 데이터에서도 중첩이 완벽하게 지원됩니다.'
+                children: [
+                  {
+                    nodeType: 'text' as const,
+                    textContent: '구조화된 데이터에서도 중첩이 완벽하게 지원됩니다.'
+                  }
+                ]
               }
             ]
           }

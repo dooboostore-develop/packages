@@ -1,7 +1,7 @@
 import { ChildrenSet, ComponentBase } from '../ComponentBase';
 import { DomRenderRunConfig } from '../../DomRender';
 import { RawSet } from '../../rawsets/RawSet';
-import { OtherData } from '../../lifecycle/OnChangeAttrRender';
+import { isOnChangeAttrRender, OtherData } from '../../lifecycle/OnChangeAttrRender';
 import { OnInitRender } from '../../lifecycle/OnInitRender';
 import { ComponentSet } from '../../components/ComponentSet';
 import { OnDestroyRenderParams } from '../../lifecycle/OnDestroyRender';
@@ -11,7 +11,7 @@ import { OnCreateRenderDataParams } from '../../lifecycle';
 export namespace RouterOutlet {
   export const selector = 'dr-router-outlet';
   export type Attribute = {
-    value: ComponentSet;
+    value: ComponentSet | string;
     if: boolean | null;
     createArguments: any[];
     onCreated?: (value: any) => void;
@@ -23,6 +23,8 @@ export namespace RouterOutlet {
     private value?: ComponentSet;
     private if?: boolean | null = null;
     private createArguments?: any[];
+    private childObject?: any;
+    private childRawSet?: RawSet;
 
     setValue(value: ComponentSet) {
       this.value = value;
@@ -31,11 +33,13 @@ export namespace RouterOutlet {
 
     async onInitRender(param: any, rawSet: RawSet) {
       await super.onInitRender(param, rawSet);
-      const c = this.getParentThis();
+      const c = this.getParentThis<any>();
       const userValue = this.getAttribute('value');
-      if (userValue) {
+      if (typeof userValue === 'string') {
+        this.value = c[userValue];
+      } else if (userValue instanceof ComponentSet) {
         this.value = userValue;
-      } else if (c instanceof ComponentRouterBase) {
+      } else if (!userValue && c instanceof ComponentRouterBase) {
         this.value = c.child;
       }
       // console.log('------',c);
@@ -47,6 +51,7 @@ export namespace RouterOutlet {
 
     onChangeAttrRender(name: string, value: any, other: OtherData) {
       super.onChangeAttrRender(name, value, other);
+      console.log('--------------', name, value);
       if (this.equalsAttributeName(name, 'value')) {
         this.value = value;
       }
@@ -55,6 +60,10 @@ export namespace RouterOutlet {
       }
       if (this.equalsAttributeName(name, 'createArguments')) {
         this.createArguments = value;
+      }
+
+      if (this.childObject && this.childRawSet && isOnChangeAttrRender(this.childObject)) {
+        this.childObject.onChangeAttrRender(name, value, { rawSet: this.childRawSet });
       }
     }
 
@@ -72,9 +81,25 @@ export namespace RouterOutlet {
       }
       this.getAttribute('onCreatedDebounce')?.(this.value?.obj);
     }
-    created(component: any) {
-      component ??= this.value?.obj;
-      this.getAttribute('onCreated')?.(component);
+
+
+    onCreateDrThis($component: any, $rawSet: RawSet) {
+      this.childObject = $component ??= this.value?.obj;
+      this.childRawSet = $rawSet;
+      if ($component) {
+        this.getAttribute('onCreated')?.($component);
+        // console.log('21222');
+        if (isOnChangeAttrRender($component)) {
+          this.getAttributeNames()
+            .filter(it => it.startsWith('attribute-'))
+            .forEach(it => {
+              const attrName = it.replace(/^attribute-/, '');
+              const attrValue = this.getAttribute(it as any);
+              $component.onChangeAttrRender(attrName, attrValue, { rawSet: $rawSet });
+            });
+        }
+        // console.log(' vv');
+      }
     }
   }
 }
@@ -85,7 +110,7 @@ export default {
     return RawSet.createComponentTargetElement({
       name: RouterOutlet.selector,
       template:
-        '<div dr-this="@this@.value" dr-detect-option-if="@this@?.value && @this@?.if" dr-option-strip="true" dr-on-create:arguments="@this@.createArguments" dr-on-create:callback="@this@?.created?.($component)">#innerHTML#</div>',
+        '<div dr-this="@this@.value" dr-detect-option-if="@this@?.value && @this@?.if" dr-option-strip="true" dr-on-create:arguments="@this@.createArguments" dr-on-create:callback="@this@?.onCreateDrThis?.($component, $rawSet)">#innerHTML#</div>',
       objFactory: (e, o, r2, counstructorParam) => {
         return executer?.run({ rootObject: new RouterOutlet.RouterOutlet(...counstructorParam), config: config });
       }

@@ -6,12 +6,25 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dom Editor - Quick Start</title>
     <style>
+        body {
+            margin:0;
+            padding:0;
+        }
 
+        #editor-container {
+            width:100dvw;
+            height: 100dvh;
+            background-color: aqua;
+            /* margin:0; */
+            /* padding:0; */
+            box-sizing: border-box; /* Include padding in width/height */
+            padding:20px;
+        }
     </style>
 </head>
 
 <body>
-    <div id="editor-container" style="width: 500px; height: 500px; overflow: auto;"></div>
+    <div id="editor-container"></div>
 </body>
 
 </html>

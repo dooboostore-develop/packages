@@ -6,8 +6,8 @@
  */
 
 export interface DomEditorOptions {
-  /** Initial content to load - can be HTML string or structured ElementData */
-  initialContent?: string | ElementData;
+  /** Initial content to load - can be HTML string or structured NodeData */
+  initialContent?: string | NodeData;
   /** Enable debug mode */
   debug?: boolean;
   /** Custom CSS styles to inject */
@@ -18,14 +18,24 @@ export interface DomEditorOptions {
   enableMobileSupport?: boolean;
 }
 
-export interface ElementData {
+export interface ElementNodeData {
+  nodeType: 'element';
   tagName: string;
   id?: string;
   className?: string;
   attributes?: Record<string, string>;
-  textContent?: string;
-  children?: ElementData[];
+  children?: NodeData[];
 }
+
+export interface TextNodeData {
+  nodeType: 'text';
+  textContent: string;
+}
+
+export type NodeData = ElementNodeData | TextNodeData;
+
+// 하위 호환성을 위한 타입 별칭
+export type ElementData = ElementNodeData;
 
 export class DomEditor {
   private container: HTMLElement;
@@ -114,23 +124,13 @@ export class DomEditor {
         position: relative;
       }
 
-      .dom-editor .draggable {
-        background: white;
-        border: 2px solid #ddd;
-        border-radius: 8px;
-        padding: 15px;
-        margin: 10px;
-        cursor: move;
-        user-select: none;
-        -webkit-user-select: none;
-        -moz-user-select: none;
-        -ms-user-select: none;
-        -webkit-touch-callout: none;
-        -webkit-tap-highlight-color: transparent;
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        min-height: 50px;
+      .dom-editor *:not([data-editor-ignore]):not([data-editor-ignore] *) {
+        cursor: pointer;
+        transition: all 0.2s ease;
         position: relative;
       }
+      
+
 
       .dom-editor body.drag-preparing {
         user-select: none !important;
@@ -138,41 +138,39 @@ export class DomEditor {
         -moz-user-select: none !important;
         -ms-user-select: none !important;
       }
+
+      .dom-editor *:not([data-editor-ignore]):not([data-editor-ignore] *):hover {
+        outline: 2px solid #007bff;
+        outline-offset: 2px;
+      }
+
+      .dom-editor .selected {
+        outline: 3px solid #ff6b35 !important;
+        outline-offset: 2px;
+        background-color: rgba(255, 107, 53, 0.1) !important;
+      }
       
-      .dom-editor body.drag-preparing .draggable {
-        touch-action: none !important;
-      }
 
-      .dom-editor .draggable:hover {
-        border-color: #007bff;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-      }
 
-      .dom-editor .draggable.selected {
-        border-color: #ff6b35;
-        background-color: #fff5f0;
-        box-shadow: 0 0 15px rgba(255, 107, 53, 0.3);
-      }
-
-      .dom-editor .draggable.dragging {
+      .dom-editor .dragging {
         opacity: 0.5;
         transform: rotate(5deg);
         z-index: 1000;
       }
 
-      .dom-editor .draggable.drag-over {
-        border-color: #28a745;
-        background-color: #d4edda;
-        box-shadow: 0 0 15px rgba(40, 167, 69, 0.4);
+      .dom-editor .drag-over {
+        outline: 3px solid #28a745;
+        outline-offset: 2px;
+        background-color: rgba(40, 167, 69, 0.1);
       }
 
-      .dom-editor .draggable.drag-over-before {
+      .dom-editor .drag-over-before {
         border-top: 6px solid #28a745;
-        background-color: #d4edda;
+        background-color: rgba(40, 167, 69, 0.1);
         position: relative;
       }
 
-      .dom-editor .draggable.drag-over-before::before {
+      .dom-editor .drag-over-before::before {
         content: "↑ 앞에 삽입";
         position: absolute;
         top: -25px;
@@ -185,13 +183,13 @@ export class DomEditor {
         z-index: 1001;
       }
 
-      .dom-editor .draggable.drag-over-after {
+      .dom-editor .drag-over-after {
         border-bottom: 6px solid #28a745;
-        background-color: #d4edda;
+        background-color: rgba(40, 167, 69, 0.1);
         position: relative;
       }
 
-      .dom-editor .draggable.drag-over-after::after {
+      .dom-editor .drag-over-after::after {
         content: "↓ 뒤에 삽입";
         position: absolute;
         bottom: -25px;
@@ -204,14 +202,14 @@ export class DomEditor {
         z-index: 1001;
       }
 
-      .dom-editor .draggable.drag-over-child {
-        border: 3px solid #007bff;
-        background-color: #e7f3ff;
-        box-shadow: inset 0 0 15px rgba(0, 123, 255, 0.4);
+      .dom-editor .drag-over-child {
+        outline: 3px solid #007bff;
+        outline-offset: 2px;
+        background-color: rgba(0, 123, 255, 0.1);
         position: relative;
       }
 
-      .dom-editor .draggable.drag-over-child::before {
+      .dom-editor .drag-over-child::before {
         content: "📁 자식으로 삽입";
         position: absolute;
         top: 5px;
@@ -231,6 +229,7 @@ export class DomEditor {
         border-radius: 8px;
         background-color: #fafafa;
         position: relative;
+        overflow: visible;
       }
 
       .dom-editor.drag-over {
@@ -273,7 +272,9 @@ export class DomEditor {
         top: 8px;
         right: 8px;
         display: flex;
-        gap: 5px;
+        flex-wrap: wrap;
+        gap: 3px;
+        max-width: 200px;
         z-index: 1002;
         background: rgba(255, 255, 255, 0.95);
         padding: 4px;
@@ -282,7 +283,7 @@ export class DomEditor {
         backdrop-filter: blur(4px);
       }
 
-      .dom-editor .draggable.selected .action-buttons {
+      .dom-editor .selected .action-buttons {
         background: rgba(255, 107, 53, 0.1);
         border: 1px solid rgba(255, 107, 53, 0.3);
       }
@@ -292,11 +293,31 @@ export class DomEditor {
         color: white;
         border: none;
         border-radius: 4px;
-        padding: 5px 8px;
-        font-size: 12px;
+        padding: 4px 6px;
+        font-size: 11px;
         cursor: pointer;
         transition: all 0.2s ease;
-        min-width: 30px;
+        min-width: 28px;
+        height: 28px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .dom-editor .action-btn.root-export {
+        background: #28a745;
+      }
+
+      .dom-editor .action-btn.root-import {
+        background: #007bff;
+      }
+
+      .dom-editor .action-btn.root-add {
+        background: #17a2b8;
+      }
+
+      .dom-editor .action-btn.root-clear {
+        background: #dc3545;
       }
 
       .dom-editor .action-btn:hover {
@@ -304,26 +325,26 @@ export class DomEditor {
         transform: scale(1.05);
       }
 
-      .dom-editor .property-panel {
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        width: 320px;
-        max-height: 80vh;
+      .property-panel {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        width: 300px;
+        max-height: calc(100% - 20px);
         overflow-y: auto;
         background: white;
         border: 2px solid #dee2e6;
         border-radius: 12px;
-        padding: 20px;
-        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
-        z-index: 10000;
+        padding: 15px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+        z-index: 1000;
         display: none;
-        backdrop-filter: blur(10px);
-        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(8px);
+        background: rgba(255, 255, 255, 0.98);
       }
 
-      .dom-editor .property-panel.active {
-        display: block;
+      .property-panel.active {
+        display: block !important;
         animation: slideInRight 0.3s ease-out;
       }
 
@@ -338,7 +359,7 @@ export class DomEditor {
         }
       }
 
-      .dom-editor .property-panel .panel-header {
+      .property-panel .panel-header {
         display: flex;
         justify-content: space-between;
         align-items: center;
@@ -347,14 +368,14 @@ export class DomEditor {
         border-bottom: 2px solid #e9ecef;
       }
 
-      .dom-editor .property-panel .panel-header h4 {
+      .property-panel .panel-header h4 {
         margin: 0;
         color: #495057;
         font-size: 18px;
         font-weight: 600;
       }
 
-      .dom-editor .property-panel .close-btn {
+      .property-panel .close-btn {
         background: #dc3545;
         color: white;
         border: none;
@@ -369,14 +390,14 @@ export class DomEditor {
         transition: all 0.2s ease;
       }
 
-      .dom-editor .property-panel .close-btn:hover {
+      .property-panel .close-btn:hover {
         background: #c82333;
         transform: scale(1.1);
       }
 
       /* 모바일 대응 */
       @media (max-width: 768px) {
-        .dom-editor .property-panel {
+        .property-panel {
           position: fixed;
           top: 0;
           right: 0;
@@ -401,16 +422,16 @@ export class DomEditor {
       }
 
       .dom-editor .debug {
-        position: fixed;
-        bottom: 20px;
-        right: 20px;
+        position: absolute;
+        bottom: 10px;
+        left: 10px;
         background: rgba(0, 0, 0, 0.8);
         color: white;
-        padding: 10px;
-        border-radius: 4px;
-        font-size: 12px;
-        max-width: 250px;
-        z-index: 2000;
+        padding: 8px 12px;
+        border-radius: 6px;
+        font-size: 11px;
+        max-width: 200px;
+        z-index: 1000;
         display: ${this.options.debug ? 'block' : 'none'};
       }
     `;
@@ -423,6 +444,7 @@ export class DomEditor {
     // Create debug element
     this.debugElement = document.createElement('div');
     this.debugElement.className = 'debug';
+    this.debugElement.setAttribute('data-editor-ignore', 'true');
     this.debugElement.textContent = 'DOM Editor Ready';
     this.container.appendChild(this.debugElement);
 
@@ -437,6 +459,7 @@ export class DomEditor {
     this.propertyPanel = document.createElement('div');
     this.propertyPanel.id = 'propertyPanel';
     this.propertyPanel.className = 'property-panel';
+    this.propertyPanel.setAttribute('data-editor-ignore', 'true');
 
     this.propertyPanel.innerHTML = `
       <div class="panel-header">
@@ -467,8 +490,8 @@ export class DomEditor {
       </div>
     `;
 
-    // Property panel을 body에 직접 추가 (floating)
-    document.body.appendChild(this.propertyPanel);
+    // Property panel을 container에 추가 (absolute positioning)
+    this.container.appendChild(this.propertyPanel);
 
     // 이벤트 리스너 추가
     const closeBtn = this.propertyPanel.querySelector('.close-btn');
@@ -498,11 +521,24 @@ export class DomEditor {
   private initializeEventListeners(): void {
     this.initDragAndDrop();
 
-    // Background click handler
+    // Background click handler - 지연 실행으로 요소 클릭 이벤트 후에 실행
     document.body.addEventListener('click', (e) => {
-      if (!this.container.contains(e.target as Node)) {
-        this.deselectElement();
-      }
+      // 약간의 지연을 두어 요소 클릭 이벤트가 먼저 처리되도록 함
+      setTimeout(() => {
+        const target = e.target as Node;
+        // 컨테이너 외부 클릭이고, property panel이나 action buttons가 아닌 경우에만 선택 해제
+        if (!this.container.contains(target)) {
+          const element = target as HTMLElement;
+          if (element.closest &&
+            !element.closest('.property-panel') &&
+            !element.closest('.action-buttons')) {
+            this.deselectElement();
+          } else if (!element.closest) {
+            // Node가 Element가 아닌 경우 (예: TextNode)
+            this.deselectElement();
+          }
+        }
+      }, 0);
     });
   }
 
@@ -518,38 +554,28 @@ export class DomEditor {
   }
 
   private reinitializeDragAndDrop(): void {
-    const draggableElements = this.container.querySelectorAll('.draggable');
+    // 모든 요소를 편집 가능하게 (editor UI 요소 제외)
+    const editableElements = this.container.querySelectorAll('*:not([data-editor-ignore]):not([data-editor-ignore] *)');
 
-    draggableElements.forEach(element => {
+    editableElements.forEach(element => {
       const el = element as HTMLElement;
-      el.draggable = false; // Will be activated after delay
+      
+      // editor UI 요소는 제외
+      if (el.hasAttribute('data-editor-ignore')) return;
 
-      // Drag activation events
-      el.addEventListener('mousedown', this.handleDragActivationStart.bind(this));
-      el.addEventListener('mouseup', this.handleDragActivationEnd.bind(this));
-      el.addEventListener('mouseleave', this.handleDragActivationEnd.bind(this));
+      // 드래그는 이동 버튼으로만 가능하도록 변경
+      el.draggable = false;
 
-      if (this.options.enableMobileSupport) {
-        el.addEventListener('touchstart', this.handleDragActivationStart.bind(this), { passive: false });
-        el.addEventListener('touchend', this.handleDragActivationEnd.bind(this), { passive: false });
-        el.addEventListener('touchcancel', this.handleDragActivationEnd.bind(this), { passive: false });
-        el.addEventListener('touchmove', this.handleTouchMove.bind(this), { passive: false });
-      }
-
-      // Actual drag events
-      el.addEventListener('dragstart', this.handleDragStart.bind(this));
-      el.addEventListener('dragend', this.handleDragEnd.bind(this));
-
-      // Drop events
+      // Drop events (다른 요소가 이 요소 위에 드롭될 수 있도록)
       el.addEventListener('dragover', this.handleDragOver.bind(this));
       el.addEventListener('dragleave', this.handleDragLeave.bind(this));
       el.addEventListener('drop', this.handleDrop.bind(this));
 
-      // Click events
+      // Click events (선택용)
       el.addEventListener('click', this.handleElementClick.bind(this));
     });
 
-    this.updateDebug(`Event listeners registered: ${draggableElements.length} elements`);
+    this.updateDebug(`Event listeners registered: ${editableElements.length} elements`);
   }
 
   private handleDragActivationStart(e: MouseEvent | TouchEvent): void {
@@ -621,8 +647,11 @@ export class DomEditor {
 
   private handleDragStart(e: DragEvent): void {
     this.draggedElement = e.target as HTMLElement;
-    if (!this.draggedElement.classList.contains('draggable')) {
-      this.draggedElement = this.draggedElement.closest('.draggable') as HTMLElement;
+    
+    // editor UI 요소는 드래그 불가
+    if (this.draggedElement.hasAttribute('data-editor-ignore')) {
+      e.preventDefault();
+      return;
     }
 
     if (!this.draggedElement) return;
@@ -637,19 +666,7 @@ export class DomEditor {
     this.updateDebug(`Drag start: ${this.draggedElement.id || 'unnamed'}`);
   }
 
-  private handleDragEnd(e: DragEvent): void {
-    if (this.draggedElement) {
-      this.draggedElement.classList.remove('dragging');
-      this.draggedElement.style.cursor = '';
-      this.draggedElement.style.opacity = '';
-      this.draggedElement.draggable = false;
-    }
 
-    this.clearHighlights();
-    this.draggedElement = null;
-    this.isDragReady = false;
-    this.updateDebug('Drag end');
-  }
 
   private handleDragOver(e: DragEvent): void {
     e.preventDefault();
@@ -668,8 +685,8 @@ export class DomEditor {
       return;
     }
 
-    // draggable 요소에 드롭하는 경우 - 위치에 따른 가이드 표시
-    if (target.classList.contains('draggable')) {
+    // 편집 가능한 요소에 드롭하는 경우 - 위치에 따른 가이드 표시
+    if (target !== this.container && !target.hasAttribute('data-editor-ignore')) {
       const rect = target.getBoundingClientRect();
       const mouseY = e.clientY;
       const elementTop = rect.top;
@@ -727,7 +744,7 @@ export class DomEditor {
     // 하이라이트 제거
     this.clearHighlights();
 
-    if (dropZone.classList.contains('draggable')) {
+    if (dropZone !== this.container && !dropZone.hasAttribute('data-editor-ignore')) {
       if (insertionType === 'before') {
         // 앞에 삽입
         dropZone.parentNode?.insertBefore(this.draggedElement, dropZone);
@@ -777,23 +794,187 @@ export class DomEditor {
   }
 
   private handleElementClick(e: MouseEvent): void {
+    e.preventDefault();
     e.stopPropagation();
-    const target = e.target as HTMLElement;
-    const draggable = target.closest('.draggable') as HTMLElement;
+    e.stopImmediatePropagation();
 
-    if (draggable) {
-      if (this.selectedElement === draggable) {
-        this.deselectElement();
-      } else {
-        this.selectElement(draggable);
+    const target = e.target as HTMLElement;
+
+    // action buttons 클릭은 무시
+    if (target.closest('.action-buttons')) {
+      return;
+    }
+
+
+
+    // editor UI 요소가 아닌 모든 요소 선택 가능
+    let targetElement = target;
+    
+    // editor UI 요소인지 확인
+    while (targetElement && targetElement !== this.container) {
+      if (targetElement.hasAttribute('data-editor-ignore')) {
+        return; // editor UI 요소는 선택 불가
       }
-    } else if (target === this.container) {
+      targetElement = targetElement.parentElement;
+    }
+
+    if (target === this.container) {
       if (this.selectedElement === this.container) {
         this.deselectElement();
       } else {
         this.selectElement(this.container);
       }
+    } else {
+      if (this.selectedElement === target) {
+        this.deselectElement();
+      } else {
+        this.selectElement(target);
+      }
     }
+  }
+
+  private handleTextNodeEdit(e: MouseEvent): void {
+    const target = e.target as HTMLElement;
+
+    // 텍스트가 있는 요소인지 확인
+    if (target.childNodes.length === 1 && target.childNodes[0].nodeType === Node.TEXT_NODE) {
+      const textNode = target.childNodes[0] as Text;
+      this.selectedTextNode = textNode;
+      this.showTextNodeEditor(target, textNode);
+    } else if (target.textContent && target.textContent.trim()) {
+      // 혼합 콘텐츠가 있는 경우 전체 텍스트 편집
+      this.showTextContentEditor(target);
+    }
+  }
+
+  private showTextNodeEditor(element: HTMLElement, textNode: Text): void {
+    // 기존 선택 해제
+    this.deselectElement();
+
+    // 텍스트 편집을 위한 input 생성
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.value = textNode.textContent || '';
+    input.style.cssText = `
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      border: 2px solid #007bff;
+      background: white;
+      font-size: inherit;
+      font-family: inherit;
+      padding: 4px;
+      box-sizing: border-box;
+      z-index: 1001;
+    `;
+
+    // 요소를 상대 위치로 설정
+    const originalPosition = element.style.position;
+    element.style.position = 'relative';
+
+    // input 추가
+    element.appendChild(input);
+    input.focus();
+    input.select();
+
+    // 저장/취소 이벤트
+    const saveText = () => {
+      textNode.textContent = input.value;
+      // input이 아직 DOM에 있는지 확인
+      if (input.parentNode === element) {
+        element.removeChild(input);
+      }
+      element.style.position = originalPosition;
+      this.selectedTextNode = null;
+      this.updateDebug(`Text updated: "${input.value}"`);
+    };
+
+    const cancelEdit = () => {
+      // input이 아직 DOM에 있는지 확인
+      if (input.parentNode === element) {
+        element.removeChild(input);
+      }
+      element.style.position = originalPosition;
+      this.selectedTextNode = null;
+      this.updateDebug('Text edit cancelled');
+    };
+
+    input.addEventListener('blur', saveText);
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        saveText();
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        cancelEdit();
+      }
+    });
+  }
+
+  private showTextContentEditor(element: HTMLElement): void {
+    // 기존 선택 해제
+    this.deselectElement();
+
+    // 텍스트 편집을 위한 textarea 생성 (여러 줄 지원)
+    const textarea = document.createElement('textarea');
+    textarea.value = element.textContent || '';
+    textarea.style.cssText = `
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      border: 2px solid #007bff;
+      background: white;
+      font-size: inherit;
+      font-family: inherit;
+      padding: 4px;
+      box-sizing: border-box;
+      z-index: 1001;
+      resize: none;
+    `;
+
+    // 요소를 상대 위치로 설정
+    const originalPosition = element.style.position;
+    element.style.position = 'relative';
+
+    // textarea 추가
+    element.appendChild(textarea);
+    textarea.focus();
+    textarea.select();
+
+    // 저장/취소 이벤트
+    const saveText = () => {
+      // textarea가 아직 DOM에 있는지 확인
+      if (textarea.parentNode === element) {
+        element.removeChild(textarea);
+      }
+      element.textContent = textarea.value;
+      element.style.position = originalPosition;
+      this.updateDebug(`Text content updated: "${textarea.value}"`);
+    };
+
+    const cancelEdit = () => {
+      // textarea가 아직 DOM에 있는지 확인
+      if (textarea.parentNode === element) {
+        element.removeChild(textarea);
+      }
+      element.style.position = originalPosition;
+      this.updateDebug('Text edit cancelled');
+    };
+
+    textarea.addEventListener('blur', saveText);
+    textarea.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && e.ctrlKey) {
+        e.preventDefault();
+        saveText();
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        cancelEdit();
+      }
+    });
   }
 
   private selectElement(element: HTMLElement): void {
@@ -831,6 +1012,22 @@ export class DomEditor {
 
     const buttonsContainer = document.createElement('div');
     buttonsContainer.className = 'action-buttons';
+    buttonsContainer.setAttribute('data-editor-ignore', 'true');
+
+    // Move button (drag handle)
+    const moveBtn = document.createElement('button');
+    moveBtn.className = 'action-btn move';
+    moveBtn.innerHTML = '↔️';
+    moveBtn.title = '이동 (드래그)';
+    moveBtn.draggable = true;
+    moveBtn.onmousedown = (e) => {
+      e.stopPropagation();
+      this.startElementDrag(element, e);
+    };
+    moveBtn.ontouchstart = (e) => {
+      e.stopPropagation();
+      this.startElementDrag(element, e);
+    };
 
     // Delete button
     const deleteBtn = document.createElement('button');
@@ -842,6 +1039,21 @@ export class DomEditor {
       this.deleteSelectedElement();
     };
 
+    // Text edit button (텍스트가 있는 경우에만 표시)
+    const hasText = element.textContent && element.textContent.trim();
+    let textEditBtn: HTMLButtonElement | null = null;
+
+    if (hasText) {
+      textEditBtn = document.createElement('button');
+      textEditBtn.className = 'action-btn text-edit';
+      textEditBtn.innerHTML = '📝';
+      textEditBtn.title = '텍스트 편집';
+      textEditBtn.onclick = (e) => {
+        e.stopPropagation();
+        this.handleTextNodeEdit({ target: element } as any);
+      };
+    }
+
     // Add child button
     const addChildBtn = document.createElement('button');
     addChildBtn.className = 'action-btn add-child';
@@ -852,6 +1064,10 @@ export class DomEditor {
       this.addChildElement();
     };
 
+    buttonsContainer.appendChild(moveBtn);
+    if (textEditBtn) {
+      buttonsContainer.appendChild(textEditBtn);
+    }
     buttonsContainer.appendChild(deleteBtn);
     buttonsContainer.appendChild(addChildBtn);
     element.appendChild(buttonsContainer);
@@ -862,6 +1078,7 @@ export class DomEditor {
 
     const buttonsContainer = document.createElement('div');
     buttonsContainer.className = 'action-buttons';
+    buttonsContainer.setAttribute('data-editor-ignore', 'true');
 
     // Add item button
     const addItemBtn = document.createElement('button');
@@ -871,6 +1088,26 @@ export class DomEditor {
     addItemBtn.onclick = (e) => {
       e.stopPropagation();
       this.addNewItem();
+    };
+
+    // Export button
+    const exportBtn = document.createElement('button');
+    exportBtn.className = 'action-btn root-export';
+    exportBtn.innerHTML = '📤';
+    exportBtn.title = '데이터 내보내기';
+    exportBtn.onclick = (e) => {
+      e.stopPropagation();
+      this.exportToFile();
+    };
+
+    // Import button
+    const importBtn = document.createElement('button');
+    importBtn.className = 'action-btn root-import';
+    importBtn.innerHTML = '📥';
+    importBtn.title = '데이터 가져오기';
+    importBtn.onclick = (e) => {
+      e.stopPropagation();
+      this.importFromFile();
     };
 
     // Clear all button
@@ -884,6 +1121,8 @@ export class DomEditor {
     };
 
     buttonsContainer.appendChild(addItemBtn);
+    buttonsContainer.appendChild(exportBtn);
+    buttonsContainer.appendChild(importBtn);
     buttonsContainer.appendChild(clearAllBtn);
     element.appendChild(buttonsContainer);
   }
@@ -898,13 +1137,178 @@ export class DomEditor {
   private showPropertyPanel(element: HTMLElement): void {
     this.propertyPanel.classList.add('active');
 
+    // 디버깅용 로그
+    this.updateDebug(`Property panel shown for: ${element.tagName.toLowerCase()}`);
+    console.log('Property panel element:', this.propertyPanel);
+    console.log('Property panel classes:', this.propertyPanel.className);
+
     const title = this.propertyPanel.querySelector('#selectedElementTitle') as HTMLElement;
-    title.innerHTML = `🎯 <${element.tagName.toLowerCase()}> ${element.id ? `#${element.id}` : ''}`;
+    if (title) {
+      title.innerHTML = `🎯 <${element.tagName.toLowerCase()}> ${element.id ? `#${element.id}` : ''}`;
+    }
 
     const tagNameInput = this.propertyPanel.querySelector('#tagNameInput') as HTMLInputElement;
-    tagNameInput.value = element.tagName.toLowerCase();
+    if (tagNameInput) {
+      tagNameInput.value = element.tagName.toLowerCase();
+    }
 
     this.updateAttributesList(element);
+    this.updateChildrenList(element);
+  }
+
+  private updateChildrenList(element: HTMLElement): void {
+    const attributesList = this.propertyPanel.querySelector('#attributesList') as HTMLElement;
+
+
+
+    // 자식 요소 섹션 추가
+    const childrenSection = document.createElement('div');
+    childrenSection.style.cssText = 'margin-top: 15px; padding-top: 15px; border-top: 1px solid #dee2e6;';
+
+    const childrenTitle = document.createElement('h5');
+    childrenTitle.textContent = '👶 자식 요소';
+    childrenTitle.style.cssText = 'margin: 0 0 10px 0; color: #495057; font-size: 14px;';
+    childrenSection.appendChild(childrenTitle);
+
+    // 자식 요소 찾기 (editor UI 요소 제외)
+    const children = Array.from(element.children).filter(child =>
+      !(child as HTMLElement).hasAttribute('data-editor-ignore')
+    ) as HTMLElement[];
+
+    // 텍스트 노드 찾기 (직접 자식만)
+    const textNodes: Text[] = [];
+    for (let i = 0; i < element.childNodes.length; i++) {
+      const node = element.childNodes[i];
+      if (node.nodeType === Node.TEXT_NODE && node.textContent?.trim()) {
+        textNodes.push(node as Text);
+      }
+    }
+
+    if (children.length === 0 && textNodes.length === 0) {
+      const emptyDiv = document.createElement('div');
+      emptyDiv.style.cssText = 'text-align: center; color: #6c757d; padding: 10px; font-style: italic;';
+      emptyDiv.textContent = '자식 요소가 없습니다';
+      childrenSection.appendChild(emptyDiv);
+    } else {
+      // 자식 요소들 표시
+      children.forEach((child, index) => {
+        const childItem = document.createElement('div');
+        childItem.style.cssText = 'background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 4px; padding: 8px; margin-bottom: 8px;';
+
+        const childInfo = document.createElement('div');
+        childInfo.style.cssText = 'display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;';
+
+        const childLabel = document.createElement('div');
+        childLabel.style.cssText = 'font-size: 12px; color: #495057; flex: 1;';
+        childLabel.innerHTML = `🏷️ &lt;${child.tagName.toLowerCase()}&gt; ${child.id ? `#${child.id}` : ''} ${child.className ? `.${child.className.split(' ').join('.')}` : ''}`;
+
+        const selectButton = document.createElement('button');
+        selectButton.style.cssText = 'background: #007bff; color: white; border: none; border-radius: 3px; padding: 3px 8px; font-size: 11px; cursor: pointer;';
+        selectButton.textContent = '선택';
+        selectButton.onclick = () => {
+          this.selectElement(child);
+        };
+
+        childInfo.appendChild(childLabel);
+        childInfo.appendChild(selectButton);
+
+        // 이동 버튼들
+        const moveButtons = document.createElement('div');
+        moveButtons.style.cssText = 'display: flex; gap: 4px;';
+
+        const moveUpBtn = document.createElement('button');
+        moveUpBtn.style.cssText = 'background: #28a745; color: white; border: none; border-radius: 3px; padding: 2px 6px; font-size: 10px; cursor: pointer;';
+        moveUpBtn.textContent = '⬆️';
+        moveUpBtn.title = '위로 이동';
+        moveUpBtn.disabled = index === 0;
+        if (moveUpBtn.disabled) {
+          moveUpBtn.style.background = '#6c757d';
+          moveUpBtn.style.cursor = 'not-allowed';
+        }
+        moveUpBtn.onclick = () => {
+          this.moveChildUp(element, child);
+        };
+
+        const moveDownBtn = document.createElement('button');
+        moveDownBtn.style.cssText = 'background: #28a745; color: white; border: none; border-radius: 3px; padding: 2px 6px; font-size: 10px; cursor: pointer;';
+        moveDownBtn.textContent = '⬇️';
+        moveDownBtn.title = '아래로 이동';
+        moveDownBtn.disabled = index === children.length - 1;
+        if (moveDownBtn.disabled) {
+          moveDownBtn.style.background = '#6c757d';
+          moveDownBtn.style.cursor = 'not-allowed';
+        }
+        moveDownBtn.onclick = () => {
+          this.moveChildDown(element, child);
+        };
+
+        moveButtons.appendChild(moveUpBtn);
+        moveButtons.appendChild(moveDownBtn);
+
+        childItem.appendChild(childInfo);
+        childItem.appendChild(moveButtons);
+        childrenSection.appendChild(childItem);
+      });
+
+      // 텍스트 노드들 표시
+      textNodes.forEach((textNode, index) => {
+        const textItem = document.createElement('div');
+        textItem.style.cssText = 'background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 4px; padding: 8px; margin-bottom: 8px;';
+
+        const textInfo = document.createElement('div');
+        textInfo.style.cssText = 'display: flex; justify-content: space-between; align-items: center;';
+
+        const textLabel = document.createElement('div');
+        textLabel.style.cssText = 'font-size: 12px; color: #856404; flex: 1; margin-right: 8px;';
+        const preview = textNode.textContent?.substring(0, 30) || '';
+        textLabel.innerHTML = `📝 "${preview}${textNode.textContent && textNode.textContent.length > 30 ? '...' : ''}"`;
+
+        const editButton = document.createElement('button');
+        editButton.style.cssText = 'background: #ffc107; color: #212529; border: none; border-radius: 3px; padding: 3px 8px; font-size: 11px; cursor: pointer;';
+        editButton.textContent = '편집';
+        editButton.onclick = () => {
+          this.selectedTextNode = textNode;
+          this.showTextNodeEditor(element, textNode);
+        };
+
+        textInfo.appendChild(textLabel);
+        textInfo.appendChild(editButton);
+        textItem.appendChild(textInfo);
+        childrenSection.appendChild(textItem);
+      });
+    }
+
+    attributesList.appendChild(childrenSection);
+  }
+
+  private moveChildUp(parent: HTMLElement, child: HTMLElement): void {
+    const siblings = Array.from(parent.children).filter(sibling =>
+      !(sibling as HTMLElement).hasAttribute('data-editor-ignore')
+    );
+    const currentIndex = siblings.indexOf(child);
+
+    if (currentIndex > 0) {
+      const previousSibling = siblings[currentIndex - 1];
+      parent.insertBefore(child, previousSibling);
+      this.updateDebug(`Moved child up: ${child.tagName.toLowerCase()}`);
+      // 부모 요소의 패널 새로고침 (자식 목록 업데이트)
+      this.showPropertyPanel(parent);
+    }
+  }
+
+  private moveChildDown(parent: HTMLElement, child: HTMLElement): void {
+    const siblings = Array.from(parent.children).filter(sibling =>
+      !(sibling as HTMLElement).hasAttribute('data-editor-ignore')
+    );
+    const currentIndex = siblings.indexOf(child);
+
+    if (currentIndex < siblings.length - 1) {
+      const nextSibling = siblings[currentIndex + 1];
+      parent.insertBefore(child, nextSibling.nextSibling);
+      this.updateDebug(`Moved child down: ${child.tagName.toLowerCase()}`);
+      // 부모 요소의 패널 새로고침 (자식 목록 업데이트)
+      this.showPropertyPanel(parent);
+    }
   }
 
   private hidePropertyPanel(): void {
@@ -959,7 +1363,6 @@ export class DomEditor {
   private addNewItem(): void {
     const newId = `item-${this.itemCounter++}`;
     const newItem = document.createElement('div');
-    newItem.className = 'draggable';
     newItem.id = newId;
     newItem.textContent = `📄 새 아이템 ${this.itemCounter - 1000}`;
 
@@ -973,13 +1376,163 @@ export class DomEditor {
 
     const newId = `child-${this.itemCounter++}`;
     const newChild = document.createElement('div');
-    newChild.className = 'draggable';
     newChild.id = newId;
     newChild.textContent = `📄 새 자식 ${this.itemCounter - 1000}`;
 
     this.selectedElement.appendChild(newChild);
     this.reinitializeDragAndDrop();
     this.updateDebug(`Added child: ${newId}`);
+  }
+
+  private startElementDrag(element: HTMLElement, e: MouseEvent | TouchEvent): void {
+    e.preventDefault();
+
+    this.draggedElement = element;
+    this.isDragReady = true;
+    this.isDragging = true;
+
+    // 드래그 중 시각적 효과
+    element.classList.add('dragging');
+
+    // 마우스/터치 이벤트에 따른 처리
+    if (e instanceof MouseEvent) {
+      document.addEventListener('mousemove', this.handleDragMove.bind(this));
+      document.addEventListener('mouseup', this.handleElementDragEnd.bind(this));
+    } else {
+      document.addEventListener('touchmove', this.handleDragMove.bind(this));
+      document.addEventListener('touchend', this.handleElementDragEnd.bind(this));
+    }
+
+    this.updateDebug(`Started dragging: ${element.id || 'unnamed'}`);
+  }
+
+  private handleDragMove(e: MouseEvent | TouchEvent): void {
+    if (!this.isDragging || !this.draggedElement) return;
+
+    e.preventDefault();
+
+    // 마우스/터치 위치 가져오기
+    const clientX = e instanceof MouseEvent ? e.clientX : e.touches[0].clientX;
+    const clientY = e instanceof MouseEvent ? e.clientY : e.touches[0].clientY;
+
+    // 현재 위치의 요소 찾기
+    const elementBelow = document.elementFromPoint(clientX, clientY) as HTMLElement;
+    if (!elementBelow) return;
+
+    // 드래그 오버 효과 적용 (editor UI 요소가 아닌 경우)
+    let target = elementBelow;
+    while (target && target.hasAttribute('data-editor-ignore')) {
+      target = target.parentElement;
+    }
+    if (!target) target = elementBelow;
+    if (target && target !== this.draggedElement && this.canDrop(this.draggedElement, target)) {
+      this.clearHighlights();
+      this.applyDragOverEffect(target, clientY);
+    }
+  }
+
+  private handleElementDragEnd(e: MouseEvent | TouchEvent): void {
+    if (!this.isDragging || !this.draggedElement) return;
+
+    // 이벤트 리스너 제거
+    document.removeEventListener('mousemove', this.handleDragMove.bind(this));
+    document.removeEventListener('mouseup', this.handleElementDragEnd.bind(this));
+    document.removeEventListener('touchmove', this.handleDragMove.bind(this));
+    document.removeEventListener('touchend', this.handleElementDragEnd.bind(this));
+
+    // 드롭 위치 확인
+    const clientX = e instanceof MouseEvent ? e.clientX : e.changedTouches[0].clientX;
+    const clientY = e instanceof MouseEvent ? e.clientY : e.changedTouches[0].clientY;
+
+    const elementBelow = document.elementFromPoint(clientX, clientY) as HTMLElement;
+    if (elementBelow) {
+      let dropTarget = elementBelow;
+      while (dropTarget && dropTarget.hasAttribute('data-editor-ignore')) {
+        dropTarget = dropTarget.parentElement;
+      }
+      if (!dropTarget) dropTarget = elementBelow;
+      if (dropTarget && this.canDrop(this.draggedElement, dropTarget)) {
+        this.performDrop(dropTarget);
+      }
+    }
+
+    // 정리
+    this.draggedElement.classList.remove('dragging');
+    this.clearHighlights();
+    this.isDragging = false;
+    this.isDragReady = false;
+
+    const droppedElement = this.draggedElement;
+    this.draggedElement = null;
+
+    this.reinitializeDragAndDrop();
+
+    // 드래그된 요소 다시 선택
+    if (droppedElement) {
+      this.selectElement(droppedElement);
+    }
+  }
+
+  private applyDragOverEffect(target: HTMLElement, mouseY: number): void {
+    if (target !== this.container && !target.hasAttribute('data-editor-ignore')) {
+      const rect = target.getBoundingClientRect();
+      const elementTop = rect.top;
+      const elementBottom = rect.bottom;
+      const elementHeight = rect.height;
+
+      // 요소의 상단 1/3 영역
+      if (mouseY < elementTop + elementHeight / 3) {
+        target.classList.add('drag-over-before');
+      }
+      // 요소의 하단 1/3 영역
+      else if (mouseY > elementBottom - elementHeight / 3) {
+        target.classList.add('drag-over-after');
+      }
+      // 요소의 중간 영역 (자식으로 삽입)
+      else {
+        target.classList.add('drag-over-child');
+      }
+    } else if (target === this.container) {
+      target.classList.add('drag-over');
+    }
+  }
+
+  private performDrop(dropTarget: HTMLElement): void {
+    if (!this.draggedElement) return;
+
+    // 드래그 오버 클래스 확인 후 삽입 위치 결정
+    let insertionType = 'child'; // 기본값
+    if (dropTarget.classList.contains('drag-over-before')) {
+      insertionType = 'before';
+    } else if (dropTarget.classList.contains('drag-over-after')) {
+      insertionType = 'after';
+    }
+
+    if (dropTarget !== this.container && !dropTarget.hasAttribute('data-editor-ignore')) {
+      if (insertionType === 'before') {
+        // 앞에 삽입
+        dropTarget.parentNode?.insertBefore(this.draggedElement, dropTarget);
+        this.updateDebug(`Dropped before: ${dropTarget.id || 'unnamed'}`);
+      } else if (insertionType === 'after') {
+        // 뒤에 삽입
+        const parent = dropTarget.parentNode;
+        if (parent) {
+          if (dropTarget.nextSibling) {
+            parent.insertBefore(this.draggedElement, dropTarget.nextSibling);
+          } else {
+            parent.appendChild(this.draggedElement);
+          }
+        }
+        this.updateDebug(`Dropped after: ${dropTarget.id || 'unnamed'}`);
+      } else {
+        // 자식으로 삽입
+        dropTarget.appendChild(this.draggedElement);
+        this.updateDebug(`Dropped into: ${dropTarget.id || 'unnamed'}`);
+      }
+    } else if (dropTarget === this.container) {
+      dropTarget.appendChild(this.draggedElement);
+      this.updateDebug('Dropped into container');
+    }
   }
 
   private updateAttribute(element: HTMLElement, oldName: string, newName: string, newValue: string): void {
@@ -1099,7 +1652,7 @@ export class DomEditor {
         this.container.innerHTML = '';
         // debug element와 property panel 다시 추가
         this.container.appendChild(this.debugElement);
-        document.body.appendChild(this.propertyPanel);
+        this.container.appendChild(this.propertyPanel);
       } else {
         this.selectedElement.remove();
       }
@@ -1113,9 +1666,9 @@ export class DomEditor {
 
   private clearAll(): void {
     if (confirm('모든 요소를 삭제하시겠습니까?')) {
-      // container 내부의 편집 가능한 요소들만 제거 (debug element 제외)
+      // container 내부의 편집 가능한 요소들만 제거 (editor UI 요소 제외)
       const elementsToRemove = Array.from(this.container.children).filter(
-        child => !child.classList.contains('debug')
+        child => !(child as HTMLElement).hasAttribute('data-editor-ignore')
       );
       elementsToRemove.forEach(el => el.remove());
       this.deselectElement();
@@ -1132,7 +1685,6 @@ export class DomEditor {
 
     sampleItems.forEach(item => {
       const element = document.createElement('div');
-      element.className = 'draggable';
       element.id = item.id;
       element.textContent = item.text;
       this.container.appendChild(element);
@@ -1150,10 +1702,10 @@ export class DomEditor {
   }
 
   // Public API methods
-  public loadContent(content: string | ElementData): void {
-    // debug element를 제외한 모든 요소 제거
+  public loadContent(content: string | NodeData): void {
+    // editor UI 요소를 제외한 모든 요소 제거
     const elementsToRemove = Array.from(this.container.children).filter(
-      child => !child.classList.contains('debug')
+      child => !(child as HTMLElement).hasAttribute('data-editor-ignore')
     );
     elementsToRemove.forEach(el => el.remove());
 
@@ -1161,8 +1713,8 @@ export class DomEditor {
       // HTML 문자열을 임시 div에 파싱한 후 요소들을 추가
       const tempDiv = document.createElement('div');
       tempDiv.innerHTML = content;
-      Array.from(tempDiv.children).forEach(child => {
-        this.container.appendChild(child);
+      Array.from(tempDiv.childNodes).forEach(node => {
+        this.container.appendChild(node.cloneNode(true));
       });
       this.updateDebug('HTML content loaded');
     } else {
@@ -1175,31 +1727,37 @@ export class DomEditor {
   }
 
   public getContent(): string {
-    // container의 편집 가능한 내용만 반환 (debug element 제외)
+    // container의 편집 가능한 내용만 반환 (editor UI 요소 제외)
     const tempDiv = document.createElement('div');
     Array.from(this.container.children).forEach(child => {
-      if (!child.classList.contains('debug')) {
+      const element = child as HTMLElement;
+      if (!element.hasAttribute('data-editor-ignore')) {
         tempDiv.appendChild(child.cloneNode(true));
       }
     });
     return tempDiv.innerHTML;
   }
 
-  public exportData(): ElementData {
+  public exportData(): ElementNodeData {
     // container 자체를 export (debug element 제외)
     const containerData = this.elementToData(this.container);
 
     // children에서 debug element 제거
     if (containerData.children) {
       containerData.children = containerData.children.filter(child =>
-        child.className !== 'debug'
+        child.nodeType !== 'element' || child.className !== 'debug'
       );
     }
 
     return containerData;
   }
 
-  public importData(data: ElementData): void {
+  public importData(data: NodeData): void {
+    // NodeData가 ElementNodeData인지 확인
+    if (data.nodeType !== 'element') {
+      throw new Error('Root data must be an element node');
+    }
+
     // debug element 백업
     const debugElement = this.container.querySelector('.debug');
 
@@ -1209,8 +1767,8 @@ export class DomEditor {
     // 새로운 내용 추가
     if (data.children) {
       data.children.forEach(childData => {
-        const element = this.dataToElement(childData);
-        this.container.appendChild(element);
+        const node = this.dataToNode(childData);
+        this.container.appendChild(node);
       });
     }
 
@@ -1232,12 +1790,12 @@ export class DomEditor {
     this.updateDebug('Data imported');
   }
 
-  private elementToData(element: HTMLElement): ElementData {
-    const data: ElementData = {
+  private elementToData(element: HTMLElement): ElementNodeData {
+    const data: ElementNodeData = {
+      nodeType: 'element',
       tagName: element.tagName.toLowerCase(),
       id: element.id || undefined,
       className: element.className || undefined,
-      textContent: element.textContent || undefined,
       attributes: {},
       children: []
     };
@@ -1249,19 +1807,54 @@ export class DomEditor {
       }
     }
 
-    // Get children
-    const children = Array.from(element.children) as HTMLElement[];
-    data.children = children.map(child => this.elementToData(child));
+    // Get all child nodes (elements and text nodes)
+    const childNodes = Array.from(element.childNodes);
+    data.children = childNodes
+      .filter(node => {
+        // editor UI 요소 제외
+        if (node.nodeType === Node.ELEMENT_NODE) {
+          const el = node as HTMLElement;
+          return !el.hasAttribute('data-editor-ignore');
+        }
+        // 의미있는 텍스트 노드만 포함
+        if (node.nodeType === Node.TEXT_NODE) {
+          return node.textContent && node.textContent.trim().length > 0;
+        }
+        return false;
+      })
+      .map(node => this.nodeToData(node));
 
     return data;
   }
 
-  private dataToElement(data: ElementData): HTMLElement {
+  private nodeToData(node: Node): NodeData {
+    if (node.nodeType === Node.ELEMENT_NODE) {
+      return this.elementToData(node as HTMLElement);
+    } else if (node.nodeType === Node.TEXT_NODE) {
+      return {
+        nodeType: 'text',
+        textContent: node.textContent || ''
+      };
+    } else {
+      throw new Error(`Unsupported node type: ${node.nodeType}`);
+    }
+  }
+
+  private dataToNode(data: NodeData): Node {
+    if (data.nodeType === 'element') {
+      return this.dataToElement(data);
+    } else if (data.nodeType === 'text') {
+      return document.createTextNode(data.textContent);
+    } else {
+      throw new Error(`Unsupported node type: ${(data as any).nodeType}`);
+    }
+  }
+
+  private dataToElement(data: ElementNodeData): HTMLElement {
     const element = document.createElement(data.tagName);
 
     if (data.id) element.id = data.id;
     if (data.className) element.className = data.className;
-    if (data.textContent) element.textContent = data.textContent;
 
     // Set attributes
     if (data.attributes) {
@@ -1273,8 +1866,8 @@ export class DomEditor {
     // Add children
     if (data.children) {
       data.children.forEach(childData => {
-        const childElement = this.dataToElement(childData);
-        element.appendChild(childElement);
+        const childNode = this.dataToNode(childData);
+        element.appendChild(childNode);
       });
     }
 
@@ -1299,6 +1892,84 @@ export class DomEditor {
       .forEach(el => {
         el.classList.remove('drag-over', 'drag-over-before', 'drag-over-after', 'drag-over-child');
       });
+  }
+
+  private exportToFile(): void {
+    try {
+      const data = this.exportData();
+      const jsonString = JSON.stringify(data, null, 2);
+      
+      // Create blob and download
+      const blob = new Blob([jsonString], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `dom-editor-export-${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.json`;
+      a.style.display = 'none';
+      
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      
+      URL.revokeObjectURL(url);
+      
+      this.updateDebug('Data exported to file');
+    } catch (error) {
+      console.error('Export failed:', error);
+      alert('데이터 내보내기에 실패했습니다.');
+    }
+  }
+
+  private importFromFile(): void {
+    // Create file input
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.accept = '.json';
+    fileInput.style.display = 'none';
+    
+    fileInput.onchange = (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (!file) return;
+      
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        try {
+          const jsonString = event.target?.result as string;
+          const data = JSON.parse(jsonString) as NodeData;
+          
+          // Validate data structure
+          if (!data.nodeType) {
+            throw new Error('Invalid data format: missing nodeType');
+          }
+          
+          if (data.nodeType === 'element' && !data.tagName) {
+            throw new Error('Invalid data format: element node missing tagName');
+          }
+          
+          if (data.nodeType === 'text' && typeof data.textContent !== 'string') {
+            throw new Error('Invalid data format: text node missing textContent');
+          }
+          
+          this.importData(data);
+          this.updateDebug('Data imported from file');
+          alert('데이터를 성공적으로 가져왔습니다!');
+        } catch (error) {
+          console.error('Import failed:', error);
+          alert('파일을 읽는데 실패했습니다. 올바른 JSON 파일인지 확인해주세요.');
+        }
+      };
+      
+      reader.onerror = () => {
+        alert('파일을 읽는데 실패했습니다.');
+      };
+      
+      reader.readAsText(file);
+    };
+    
+    document.body.appendChild(fileInput);
+    fileInput.click();
+    document.body.removeChild(fileInput);
   }
 
   public destroy(): void {

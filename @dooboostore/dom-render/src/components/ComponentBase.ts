@@ -517,7 +517,20 @@ export class ComponentBase<T = any, C extends ComponentBaseConfig = ComponentBas
       }
     }
   }
-
+getAttributeNames(attribute = this._attribute): string[] {
+  const target = attribute as any;
+  if (!target) return [];
+  const keys = Object.keys(target);
+  const names = new Set<string>();
+  for (const k of keys) {
+    names.add(k);
+    // names.add(ConvertUtils.camelToSnakeCase(k));
+    // names.add(ConvertUtils.snakeToCamelCase(k));
+    // names.add(k.toLowerCase());
+    // names.add(k.toUpperCase());
+  }
+  return Array.from(names);
+}
   getAttribute<K extends keyof T>(name: K, attribute = this._attribute): T[K] | null {
     const target = attribute as any;
     if (!target) {
@@ -641,7 +654,7 @@ export class ComponentBase<T = any, C extends ComponentBaseConfig = ComponentBas
   }
 
   onChangeAttrRender(name: string, value: any, other: OtherData): void {
-    if (other.rawSet) {
+    if (other?.rawSet) {
       this.setRawSet(other.rawSet);
     }
 
