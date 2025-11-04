@@ -26,6 +26,9 @@ export namespace ConvertUtils {
       }, {}));
   };
 
+  // export const fixed = (num: number, fractionDigits: number): number => {
+  //   const factor = Math.pow(10, fractionDigits);
+  // }
   export const jsonToMap = (jsonStr: any): Map<string, string> => {
     return new Map(JSON.parse(jsonStr));
   };

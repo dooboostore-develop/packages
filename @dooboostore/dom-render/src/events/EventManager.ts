@@ -377,6 +377,7 @@ export class EventManager {
   }
 
   public findAttrElements(fragment: DocumentFragment | Element, config?: DomRenderConfig): Set<Element> {
+    // const t0 = performance.now();
     const elements = new Set<Element>();
     const addAttributes = config?.applyEvents?.map(it => it.attrName) ?? [];
    const attrs = addAttributes.concat([...EventManager.attrNames]).filter(Boolean);
@@ -384,6 +385,7 @@ export class EventManager {
      const selector = attrs.map(a => `[${a}]`).join(',');
      fragment?.querySelectorAll(selector).forEach(it => elements.add(it));
    }
+    // console.log('findAttrElements time', performance.now() - t0);
     return elements;
   }
 
@@ -394,51 +396,62 @@ export class EventManager {
       }
     });
 
+    // let t0 = performance.now();
     this.procAttr<HTMLInputElement>(childNodes, EventManager.valueAttrName, (it, attribute) => {
       const script = attribute;
       if (script) {
-        const data = ScriptUtils.evaluateReturn(script, obj);
+        const data = ObjectUtils.Script.evaluateReturn(script, obj);
         if (it.value !== data) {
           it.value = data;
         }
       }
     });
+    // console.log('applyEvent value time', performance.now() - t0);
+    // t0 = performance.now();
     this.procAttr<HTMLInputElement>(childNodes, EventManager.checkedAttrName, (it, attribute) => {
       const script = attribute;
       if (script) {
-        const data = ScriptUtils.evaluateReturn(script, obj);
+        const data = ObjectUtils.Script.evaluateReturn(script, obj);
         if (it.checked!== data) {
           it.checked = data;
         }
       }
     });
+    // console.log('applyEvent value time', performance.now() - t0);
+    // t0 = performance.now();
     this.procAttr<HTMLOptionElement>(childNodes, EventManager.selectedAttrName, (it, attribute) => {
       const script = attribute;
       if (script) {
-        const data = ScriptUtils.evaluateReturn(script, obj);
+        const data = ObjectUtils.Script.evaluateReturn(script, obj);
         if (it.selected!== data) {
           it.selected = data;
         }
       }
     });
+    // console.log('applyEvent value time', performance.now() - t0);
+    // t0 = performance.now();
     this.procAttr<HTMLInputElement>(childNodes, EventManager.readonlyAttrName, (it, attribute) => {
       const script = attribute;
       if (script) {
-        const data = ScriptUtils.evaluateReturn(script, obj);
+        const data = ObjectUtils.Script.evaluateReturn(script, obj);
         if (it.readOnly!== data) {
           it.readOnly = data;
         }
       }
     });
+    // console.log('applyEvent value time', performance.now() - t0);
+    // t0 = performance.now();
     this.procAttr<HTMLInputElement>(childNodes, EventManager.disabledAttrName, (it, attribute) => {
       const script = attribute;
       if (script) {
-        const data = ScriptUtils.evaluateReturn(script, obj);
+        const data = ObjectUtils.Script.evaluateReturn(script, obj);
         if (it.disabled!== data) {
           it.disabled = data;
         }
       }
     });
+    // console.log('applyEvent value time', performance.now() - t0);
+    // t0 = performance.now();
     this.procAttr<HTMLElement>(childNodes, EventManager.hiddenAttrName, (it, attribute) => {
       const script = attribute;
       if (script) {
@@ -448,6 +461,8 @@ export class EventManager {
         }
       }
     });
+    // console.log('applyEvent value time', performance.now() - t0);
+    // t0 = performance.now();
     this.procAttr<HTMLInputElement>(childNodes, EventManager.requiredAttrName, (it, attribute) => {
       const script = attribute;
       if (script) {
@@ -457,6 +472,8 @@ export class EventManager {
         }
       }
     });
+    // console.log('applyEvent value time', performance.now() - t0);
+    // t0 = performance.now();
     this.procAttr<HTMLDialogElement>(childNodes, EventManager.openAttrName, (it, attribute) => {
       const script = attribute;
       if (script) {
@@ -466,7 +483,8 @@ export class EventManager {
         }
       }
     });
-
+    // console.log('applyEvent value time', performance.now() - t0);
+    // t0 = performance.now();
     this.procAttr(childNodes, EventManager.normalAttrMapAttrName, (it, attribute) => {
       const map = new Map<string, NormalAttrDataType>(JSON.parse(attribute));
       map.forEach((v, k) => {
@@ -501,35 +519,36 @@ export class EventManager {
         }
       });
     });
+    // console.log('applyEvent value time', performance.now() - t0);
+    // t0 = performance.now();
 
     EventManager.WINDOW_EVENTS.forEach(it => {
       this.procAttr<HTMLInputElement>(childNodes, EventManager.attrPrefix + 'window-event-' + it, (it, attribute) => {
         (it as any).obj = obj;
       });
     });
-
+    // console.log('applyEvent value time', performance.now() - t0);
+    // t0 = performance.now();
     EventManager.linkAttrs.forEach(linkInfo => {
       this.procAttr<HTMLElement>(childNodes, linkInfo.name, (it, varName) => {
-
-        // console.log('ink??????????')
         if (varName) {
           const ownerVariablePathName = it.getAttribute(EventManager.ownerVariablePathAttrName);
           const mapScript = it.getAttribute(`${linkInfo.name}:map`);
           let bindObj = obj;
           if (ownerVariablePathName) {
-            bindObj = ScriptUtils.evaluateReturn(ownerVariablePathName, obj);
+            bindObj = ObjectUtils.Script.evaluateReturn(ownerVariablePathName, obj);
           }
           const getValue = this.getValue(obj, varName, bindObj);
           if (typeof getValue === 'function' && getValue) {
             let setValue = (it as any)[linkInfo.property];
             if (mapScript) {
-              setValue = ScriptUtils.evaluate(`${this.getBindScript(config)} return ${mapScript}`, Object.assign(bindObj, {__render: Object.freeze({element: it, target: bindObj, range: Range.range, value: setValue, scripts: EventManager.setBindProperty(config?.scripts, obj), ...config?.eventVariables})}));
+              setValue = ObjectUtils.Script.evaluate(`${this.getBindScript(config)} return ${mapScript}`, Object.assign(bindObj, {__render: Object.freeze({element: it, target: bindObj, range: Range.range, value: setValue, scripts: EventManager.setBindProperty(config?.scripts, obj), ...config?.eventVariables})}));
             }
             getValue(setValue);
           } else if (getValue) {
             let setValue = getValue;
             if (mapScript) {
-              setValue = ScriptUtils.evaluate(`${this.getBindScript(config)} return ${mapScript}`, Object.assign(bindObj, {__render: Object.freeze({element: it, target: bindObj, range: Range.range, value: setValue, scripts: EventManager.setBindProperty(config?.scripts, obj), ...config?.eventVariables})}));
+              setValue = ObjectUtils.Script.evaluate(`${this.getBindScript(config)} return ${mapScript}`, Object.assign(bindObj, {__render: Object.freeze({element: it, target: bindObj, range: Range.range, value: setValue, scripts: EventManager.setBindProperty(config?.scripts, obj), ...config?.eventVariables})}));
             }
             if (setValue === null) {
               it.removeAttribute(linkInfo.property);
@@ -542,7 +561,8 @@ export class EventManager {
         }
       });
     });
-
+    // console.log('applyEvent value time', performance.now() - t0);
+    // t0 = performance.now();
     this.directAttachEvents.forEach(eventName => {
       const attr = `${EventManager.attrPrefix}event-${eventName}`;
       this.procAttr<HTMLElement>(childNodes, attr, (element, script) => {
@@ -554,24 +574,25 @@ export class EventManager {
           const filterScript = element.getAttribute(`${attr}:filter`);
           let filter = true;
           if (filterScript) {
-            filter = ScriptUtils.evaluate<boolean>(`${this.getBindScript(config)} return ${filterScript}`, context) ?? false;
+            filter = ObjectUtils.Script.evaluate<boolean>(`${this.getBindScript(config)} return ${filterScript}`, context) ?? false;
           }
           if (filter) {
-            ScriptUtils.evaluate(`${this.getBindScript(config)} ${script}`, context);
+            ObjectUtils.Script.evaluate(`${this.getBindScript(config)} ${script}`, context);
           }
         };
         element.addEventListener(eventName, handler);
         // TODO: Add logic to remove this listener when the element is destroyed.
       });
     });
-
+    // console.log('applyEvent value time', performance.now() - t0);
+    // t0 = performance.now();
     this.procAttr<HTMLElement>(childNodes, EventManager.onInitAttrName, (it, attribute) => {
       let script = attribute;
       if (script) {
         script = 'return ' + script;
       }
       if (script) {
-        ScriptUtils.evaluate(`${this.getBindScript(config)}; ${script} `, Object.assign(obj, {
+        ObjectUtils.Script.evaluate(`${this.getBindScript(config)}; ${script} `, Object.assign(obj, {
           __render: Object.freeze({
             element: it,
             attribute: ElementUtils.getAttributeToObject(it),
@@ -580,7 +601,8 @@ export class EventManager {
         }));
       }
     });
-
+    // console.log('applyEvent value time', performance.now() - t0);
+    // t0 = performance.now();
     this.onRenderedEvent(obj, childNodes, config);
     this.changeVar(obj, childNodes, undefined, config);
     const elements = Array.from(childNodes).filter(it => it.nodeType === 1).map(it => it as Element);
@@ -599,7 +621,7 @@ export class EventManager {
         script = 'return ' + script;
       }
       if (script) {
-        ScriptUtils.evaluate(`${this.getBindScript(config)}; ${script} `, Object.assign(obj, {
+        ObjectUtils.Script.evaluate(`${this.getBindScript(config)}; ${script} `, Object.assign(obj, {
           __render: Object.freeze({
             element: it,
             attribute: ElementUtils.getAttributeToObject(it),

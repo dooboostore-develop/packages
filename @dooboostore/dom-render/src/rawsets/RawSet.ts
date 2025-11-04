@@ -280,6 +280,8 @@ export class RawSet {
   // }
   public async render(obj: any, config: DomRenderConfig): Promise<RenderResult> {
     // console.log('render!!!!!!!!!!!!!!')
+    // const t0 = performance.now();
+    // console.group('RawSet render', this);
     const genNode = config.window.document.importNode(this.dataSet.fragment, true);
     const raws: RawSet[] = [];
     const onAttrInitCallBacks: AttrInitCallBack[] = [];
@@ -423,17 +425,19 @@ export class RawSet {
       it.point.parentRawSet = this;
     });
 
+
     // console.log('pppppppppppppp', this);
 
     // replaceBody와 applyEvent 순서를 바꿨다 20250511
     const childrenNodes = Array.from(genNode.childNodes);
+    // console.log(`RawSet aa took ${performance.now() - t0} milliseconds.`, childrenNodes);
     this.applyEvent(obj, genNode, config);
+    // console.log(`RawSet xxxxxxxxxx took ${performance.now() - t0} milliseconds.`);
     this.replaceBody(genNode); // 중요 여기서 마지막에 연션된 값을 그려준다.
     // console.log('rawSEt!!!!!!!', obj, this.near)
     // console.log('rawSEt!!!!!!!', obj, this.findNearThis(obj),childrenNodes,config)
     // console.log('rawSEt!!!!!!!', obj, drAttrs)
     this.onRenderedEvent(obj, childrenNodes, config);
-
     drAttrs.forEach(it => {
       if (it.drCompleteOption) {
         // genNode.childNodes
@@ -511,6 +515,8 @@ export class RawSet {
       });
     }
     // console.log('-------raws',raws)
+    // console.log(`RawSet render took ${performance.now() - t0} milliseconds.`);
+    // console.groupEnd();
     return { raws: raws, executedOperators: executedOperators };
   }
 
@@ -599,11 +605,13 @@ export class RawSet {
   }
 
   public applyEvent(obj: any, fragment = this.dataSet.fragment, config?: DomRenderConfig) {
+    // const t0 = performance.now();
     this.dataSet.config.eventManager.applyEvent(
       obj,
       this.dataSet.config.eventManager.findAttrElements(fragment, config),
       config
     );
+    // console.log(`RawSet applyEvent took ${performance.now() - t0} milliseconds.`);
   }
 
   public onRenderedEvent(obj: any, nodes: Node[], config?: DomRenderConfig) {
