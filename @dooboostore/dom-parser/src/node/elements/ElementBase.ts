@@ -121,10 +121,9 @@ export abstract class ElementBase extends ParentNodeBase implements Element {
      */
     private generateChildElementHTML(element: any): string {
         const tagName = element.tagName.toLowerCase();
-        
         // Get attributes
         const attrs = Array.from(element._attributes?.entries() || [])
-            .map(([name, value]: [string, string]) => value === '' ? ` ${name}` : ` ${name}="${value.replace(/"/g, '&quot;')}"`)
+            .map(([name, value]: [string, string]) => value === '' ? ` ${name}` : ` ${name}="${String(value).replace(/"/g, '&quot;')}"`)
             .join('');
 
         // Check if it's a self-closing tag
