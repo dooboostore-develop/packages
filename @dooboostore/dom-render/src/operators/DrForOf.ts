@@ -20,8 +20,12 @@ export class DrForOf extends OperatorExecuterAttrRequire<string> {
     const variableName = this.elementSource.element.getAttribute(RawSet.DR_VARIABLE_NAME_OPTIONNAME);
     const itemVariableName = this.elementSource.element.getAttribute(RawSet.DR_ITEM_VARIABLE_NAME_OPTIONNAME);
     const itemIndexVariableName = this.elementSource.element.getAttribute(RawSet.DR_ITEM_INDEX_VARIABLE_NAME_OPTIONNAME);
+    const hasVariableName = this.elementSource.element.hasAttribute(RawSet.DR_VARIABLE_NAME_OPTIONNAME);
+    const hasItemVariableName = this.elementSource.element.hasAttribute(RawSet.DR_ITEM_VARIABLE_NAME_OPTIONNAME);
+    const hasItemIndexVariableName = this.elementSource.element.hasAttribute(RawSet.DR_ITEM_INDEX_VARIABLE_NAME_OPTIONNAME);
     // console.log('----!', this.elementSource.attrs)
     // ScriptUtils.evalReturn()
+    const t0 = performance.now();
     ObjectUtils.Script.evaluate(`
                     ${this.render.bindScript}
                     ${this.elementSource.attrs.drBeforeOption ?? ''}
@@ -29,6 +33,7 @@ export class DrForOf extends OperatorExecuterAttrRequire<string> {
                     const forOf = ${ObjectUtils.Path.toOptionalChainPath(attr)};
                     const forOfStr = \`${attr}\`.trim();
                     // console.log('forOf---',forOf);
+                    // debugger;
                     if (forOf) {
                         for(const it of forOf) {
                             i++;
@@ -47,14 +52,23 @@ export class DrForOf extends OperatorExecuterAttrRequire<string> {
                             const n = this.__render.element.cloneNode(true);
                             Object.entries(this.__render.drAttr).filter(([k,v]) => k !== 'drForOf' && k !== 'drNextOption' && v).forEach(([k, v]) => n.setAttribute(this.__render.drAttrsOriginName[k], v));
                             n.getAttributeNames().forEach(it => n.setAttribute(it, n.getAttribute(it).replace(/\\#it\\#/g, destIt).replace(/\\#nearForOfIt\\#/g, destIt).replace(/\\#it\\#/g, destIt).replace(/\\#nearForOfIndex\\#/g, i)))
-                            if ('${variableName}') {
+                            if (${hasVariableName} && '${variableName}') {
                               n.getAttributeNames().forEach(it => n.setAttribute(it, n.getAttribute(it).replaceAll('#${variableName}#', forOfStr)));
                             }
-                            if ('${itemVariableName}') {
+                            if (${hasItemVariableName} && '${itemVariableName}') {
                               n.getAttributeNames().forEach(it => n.setAttribute(it, n.getAttribute(it).replaceAll('#${itemVariableName}#', destIt)));
                             }
-                            if ('${itemIndexVariableName}') {
+                            if (${hasItemIndexVariableName} && '${itemIndexVariableName}') {
                               n.getAttributeNames().forEach(it => n.setAttribute(it, n.getAttribute(it).replaceAll('#${itemIndexVariableName}#', i)));
+                            }
+                            const hasDrOptionIf = n.hasAttribute('${RawSet.DR_IF_OPTIONNAME}');
+                            if (hasDrOptionIf) {
+                              const drOptionIf = n.getAttribute('${RawSet.DR_IF_OPTIONNAME}');
+                              const e = $scriptUtils.evaluateReturn(drOptionIf, this);
+                              if(!e) {
+                                continue;
+                              }
+                            
                             }
                             
                             const drOptionAttr = n.getAttribute('${RawSet.DR_DETECT_ATTR_OPTIONNAME}');
@@ -79,13 +93,13 @@ export class DrForOf extends OperatorExecuterAttrRequire<string> {
                             }
 
                             n.innerHTML = n.innerHTML.replace(/\\#it\\#/g, destIt).replace(/\\#index\\#/g, i);
-                            if ('${variableName}') {
+                            if (${hasVariableName} && '${variableName}') {
                               n.innerHTML = n.innerHTML.replaceAll('#${variableName}#', forOfStr);
                             }
-                            if ('${itemVariableName}') {
+                            if (${hasItemVariableName} && '${itemVariableName}') {
                               n.innerHTML = n.innerHTML.replaceAll('#${itemVariableName}#', destIt);
                             }
-                            if ('${itemIndexVariableName}') {
+                            if (${hasItemIndexVariableName} && '${itemIndexVariableName}') {
                               n.innerHTML = n.innerHTML.replaceAll('#${itemIndexVariableName}#', i);
                             }
                    
@@ -126,6 +140,7 @@ export class DrForOf extends OperatorExecuterAttrRequire<string> {
     this.elementSource.element.parentNode?.replaceChild(this.returnContainer.fag, this.elementSource.element);
     // const rrr = rr.flatMap(it => it.render(obj, config));// .flat();
     this.returnContainer.raws.push(...rr)
+    // console.log(`drForOf 호출에 걸린 시간은 ${performance.now() - t0} 밀리초.`);
     return ExecuteState.EXECUTE;
   }
 }
