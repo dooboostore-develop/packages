@@ -1,12 +1,12 @@
-import { ChildrenSet, ComponentBase } from '../ComponentBase';
-import { DomRenderRunConfig } from '../../DomRender';
-import { RawSet } from '../../rawsets/RawSet';
-import { isOnChangeAttrRender, OtherData } from '../../lifecycle/OnChangeAttrRender';
-import { OnInitRender } from '../../lifecycle/OnInitRender';
-import { ComponentSet } from '../../components/ComponentSet';
-import { OnDestroyRenderParams } from '../../lifecycle/OnDestroyRender';
-import { ComponentRouterBase, isOnCreatedOutletDebounce } from '../../components/ComponentRouterBase';
-import { OnCreateRenderDataParams } from '../../lifecycle';
+import {ChildrenSet, ComponentBase} from '../ComponentBase';
+import {DomRenderRunConfig} from '../../DomRender';
+import {RawSet} from '../../rawsets/RawSet';
+import {isOnChangeAttrRender, OtherData} from '../../lifecycle/OnChangeAttrRender';
+import {OnInitRender} from '../../lifecycle/OnInitRender';
+import {ComponentSet} from '../../components/ComponentSet';
+import {OnDestroyRenderParams} from '../../lifecycle/OnDestroyRender';
+import {ComponentRouterBase, isOnCreatedOutletDebounce} from '../../components/ComponentRouterBase';
+import {OnCreateRenderDataParams} from '../../lifecycle';
 
 export namespace RouterOutlet {
   export const selector = 'dr-router-outlet';
@@ -29,11 +29,11 @@ export namespace RouterOutlet {
 
     setValue(value: ComponentSet) {
       this.sw = false;
-      setTimeout(()=>{
+      setTimeout(() => {
         this.value = value;
       }, 0)
 
-      setTimeout(()=>{
+      setTimeout(() => {
         this.sw = true;
       }, 0)
       // console.log('sssssssssss');
@@ -71,7 +71,7 @@ export namespace RouterOutlet {
       }
 
       if (this.childObject && this.childRawSet && isOnChangeAttrRender(this.childObject)) {
-        this.childObject.onChangeAttrRender(name, value, { rawSet: this.childRawSet });
+        this.childObject.onChangeAttrRender(name, value, {rawSet: this.childRawSet});
       }
     }
 
@@ -103,10 +103,11 @@ export namespace RouterOutlet {
             .forEach(it => {
               const attrName = it.replace(/^attribute-/, '');
               const attrValue = this.getAttribute(it as any);
-              $component.onChangeAttrRender(attrName, attrValue, { rawSet: $rawSet });
+              $rawSet.dataSet.render.attribute ??= {};
+              $rawSet.dataSet.render.attribute[attrName] = attrValue;
+              $component.onChangeAttrRender(attrName, attrValue, {rawSet: $rawSet});
             });
         }
-        // console.log(' vv');
       }
     }
   }
@@ -124,7 +125,7 @@ export default {
         </dr-if>
         `,
       objFactory: (e, o, r2, counstructorParam) => {
-        return executer?.run({ rootObject: new RouterOutlet.RouterOutlet(...counstructorParam), config: config });
+        return executer?.run({rootObject: new RouterOutlet.RouterOutlet(...counstructorParam), config: config});
       }
     });
   }
