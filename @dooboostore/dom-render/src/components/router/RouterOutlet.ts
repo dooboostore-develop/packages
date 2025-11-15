@@ -25,9 +25,17 @@ export namespace RouterOutlet {
     private createArguments?: any[];
     private childObject?: any;
     private childRawSet?: RawSet;
+    private sw = false;
 
     setValue(value: ComponentSet) {
-      this.value = value;
+      this.sw = false;
+      setTimeout(()=>{
+        this.value = value;
+      }, 0)
+
+      setTimeout(()=>{
+        this.sw = true;
+      }, 0)
       // console.log('sssssssssss');
     }
 
@@ -36,11 +44,11 @@ export namespace RouterOutlet {
       const c = this.getParentThis<any>();
       const userValue = this.getAttribute('value');
       if (typeof userValue === 'string') {
-        this.value = c[userValue];
+        this.setValue(c[userValue]);
       } else if (userValue instanceof ComponentSet) {
-        this.value = userValue;
+        this.setValue(userValue);
       } else if (!userValue && c instanceof ComponentRouterBase) {
-        this.value = c.child;
+        this.setValue(c.child);
       }
       // console.log('------',c);
     }
@@ -51,9 +59,9 @@ export namespace RouterOutlet {
 
     onChangeAttrRender(name: string, value: any, other: OtherData) {
       super.onChangeAttrRender(name, value, other);
-      console.log('--------------', name, value);
+      // console.log('--------------', name, value);
       if (this.equalsAttributeName(name, 'value')) {
-        this.value = value;
+        this.setValue(value);
       }
       if (this.equalsAttributeName(name, 'if')) {
         this.if = value;
@@ -110,7 +118,11 @@ export default {
     return RawSet.createComponentTargetElement({
       name: RouterOutlet.selector,
       template:
-        '<div dr-this="@this@.value" dr-detect-option-if="@this@?.value && @this@?.if" dr-option-strip="true" dr-on-create:arguments="@this@.createArguments" dr-on-create:callback="@this@?.onCreateDrThis?.($component, $rawSet)">#innerHTML#</div>',
+        `
+        <dr-if value="\${@this@.sw}$">
+            <div dr-this="@this@.value" dr-detect-option-if="@this@?.value && @this@?.if" dr-option-strip="true" dr-on-create:arguments="@this@.createArguments" dr-on-create:callback="@this@?.onCreateDrThis?.($component, $rawSet)">#innerHTML#</div>
+        </dr-if>
+        `,
       objFactory: (e, o, r2, counstructorParam) => {
         return executer?.run({ rootObject: new RouterOutlet.RouterOutlet(...counstructorParam), config: config });
       }
