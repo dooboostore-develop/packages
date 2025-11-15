@@ -1,26 +1,26 @@
 import { Runnable } from '../runs/Runnable';
 
 export namespace Schedule {
-  export const TOKEN = Symbol('Schedule');
+  export const SYMBOL = Symbol('Schedule');
   export type State = 'INITIALIZE' | 'RUNNING' | 'DONE-AND-WAITING' | 'STOPPED' | 'ERROR' | 'SUCCESS';
 }
 
-export interface Schedule<T = void> extends Runnable<void, T> {
+export interface Schedule<T = void, R = void> extends Runnable<Promise<R>, T> {
   spec: string;
   name?: string;
   description?: string;
-  history?: { state: Schedule.State; date: Date; data: any }[];
+  history?: { state: Schedule.State; date: Date; input?: T }[];
   state: Schedule.State;
   isReady?: boolean;
   totalCount: number;
   successCount: number;
   errorCount: number;
 
-  run(data: T): Promise<void>;
-  execute(data: T): Promise<void>;
+  run(data: T): Promise<R>;
+  execute(data: T): Promise<R>;
 }
 
-export abstract class ScheduleBase<T = void> implements Schedule<T> {
+export abstract class ScheduleBase<T = void, R = void> implements Schedule<T, R> {
   /*
       *    *    *    *    *    *
       ┬    ┬    ┬    ┬    ┬    ┬
@@ -35,7 +35,7 @@ export abstract class ScheduleBase<T = void> implements Schedule<T> {
   abstract spec: string;
   abstract name?: string;
   abstract description?: string;
-  private _history?: { state: Schedule.State; date: Date; data: any }[];
+  private _history?: { state: Schedule.State; date: Date; input: T, result?: R }[];
   private _state: Schedule.State = 'INITIALIZE';
   private _totalCount = 0;
   private _successCount = 0;
@@ -59,29 +59,30 @@ export abstract class ScheduleBase<T = void> implements Schedule<T> {
   get isReady(): boolean {
     return !(this._state === 'RUNNING')
   }
-  private addStart(data?: any, date: Date = new Date()) {
+  private addStart(input?: T, date: Date = new Date()) {
     this._history ??= [];
-    this._history.push({ state: 'RUNNING', date, data });
+    this._history.push({ state: 'RUNNING', date, input });
   }
-  private addError(data?: any, date: Date = new Date()) {
+  private addError(input?: T, date: Date = new Date()) {
     this._history ??= [];
-    this._history.push({ state: 'ERROR', date, data });
+    this._history.push({ state: 'ERROR', date, input });
   }
-  private addSuccess(data?: any, date: Date = new Date()) {
+  private addSuccess(input?: T, result:R = undefined, date: Date = new Date()) {
     this._history ??= [];
-    this._history.push({ state: 'SUCCESS', date, data });
+    this._history.push({ state: 'SUCCESS', date, input, result });
   }
 
 
-  async run(data: T) {
+  async run(data: T): Promise<R> {
     this._state = 'RUNNING';
     this.addStart();
     const startDate = new Date();
+      let result: R;
     try {
       console.log('Running schedule', this.name, startDate);
-      await this.execute(data);
+      result = await this.execute(data);
       this._successCount++;
-      this.addSuccess();
+      this.addSuccess(data, result);
     } catch (e) {
       this.addError(e);
       this._errorCount++;
@@ -93,7 +94,8 @@ export abstract class ScheduleBase<T = void> implements Schedule<T> {
       console.log('Done schedule', this.name, endDate, endDate.getTime() - startDate.getTime());
     }
     this._state = 'DONE-AND-WAITING';
+    return result!;
   }
 
-  abstract execute(data: T): Promise<void>;
+  abstract execute(data: T): Promise<R>;
 }
