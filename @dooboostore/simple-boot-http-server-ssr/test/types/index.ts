@@ -22,6 +22,8 @@ declare module '*.json' {
     const content: any
     export default content
 }
+
+// @ts-ignore
 declare global {
   interface Window {
     HTMLMetaElement: typeof HTMLMetaElement;
