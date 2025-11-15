@@ -6,6 +6,7 @@ export type ErrorCallBack<E = any> = (e: E) => void;
 export type CompleteCallBack = () => void;
 export interface Subscribable<T, E> {
   subscribe(observer: Partial<Observer<T>>): Subscription;
+  subscribe(d: ObserverCallBack<T>):  Subscription;
   subscribe(d: ObserverCallBack<T>, e?: ErrorCallBack, c?: CompleteCallBack):  Subscription;
 
 }

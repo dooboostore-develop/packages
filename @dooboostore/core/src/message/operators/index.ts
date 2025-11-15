@@ -28,3 +28,5 @@ export * from './single';
 export * from './takeUntil';
 export * from './takeLast';
 export * from './skipWhile';
+export * from './throttle';
+export * from './interval';

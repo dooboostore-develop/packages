@@ -258,4 +258,9 @@ export abstract class Router<T = any> {
   abstract getHref(): string;
 
   abstract getPathName(): string;
+
+  reload(): void {
+    const currentUrl = this.getUrl();
+    this.replace(currentUrl);
+  }
 }

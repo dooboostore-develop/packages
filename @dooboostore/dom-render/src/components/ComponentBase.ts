@@ -17,6 +17,7 @@ import { Subject } from '@dooboostore/core/message/Subject';
 import { debounceTime } from '@dooboostore/core/message/operators/debounceTime';
 import type { Subscription } from '@dooboostore/core/message/Subscription';
 import { OnRawSetRendered, OnRawSetRenderedOtherData } from "../lifecycle/OnRawSetRendered";
+import {bufferTime} from "@dooboostore/core/message/operators/bufferTime";
 
 
 export const ATTRIBUTE_METADATA_KEY = Symbol('attribute');
@@ -131,7 +132,7 @@ export function event(options: { query: string, name: string, onDestroy?: (compo
 }
 
 
-export type ComponentBaseConfig = { onlyParentType?: ConstructorType<any>[] | ConstructorType<any>, createChildrenDebounce?: number };
+export type ComponentBaseConfig = { onlyParentType?: ConstructorType<any>[] | ConstructorType<any>, createChildrenDebounce?: number, onRawSetRenderedOtherDataDebounce?: number };
 
 export type ChildrenSet = { instance: any, data: OnCreateRenderDataParams };
 
@@ -157,6 +158,10 @@ export class ComponentBase<T = any, C extends ComponentBaseConfig = ComponentBas
   private childrenSetSubject = new Subject<ChildrenSet[]>();
   @DomRenderNoProxy
   private createChildrenDebounceSubscription?: Subscription | undefined;
+  @DomRenderNoProxy
+  private onRawSetRenderedOtherDataSubject = new Subject<OnRawSetRenderedOtherData>();
+  @DomRenderNoProxy
+  private onRawSetRenderedOtherDataSubjectSubscription?: Subscription | undefined;
 
   constructor(private _config?: C) {
   }
@@ -374,6 +379,11 @@ export class ComponentBase<T = any, C extends ComponentBaseConfig = ComponentBas
   }
 
   async onRawSetRendered(rawSet: RawSet, otherData: OnRawSetRenderedOtherData): Promise<void> {
+    this.onRawSetRenderedOtherDataSubject.next(otherData);
+    // this.onRawSetRenderedOtherDataSubjectSubscription = this.onRawSetRenderedOtherDataSubject.pipe(debounceTime(this.componentConfig?.onRawSetRenderedOtherDataDebounce??0)).subscribe(it => {
+    //   this.onRawSetRenderedDebounce(it);
+    // });
+
     const queries = ReflectUtils.getMetadata<QueryMetadata[]>(QUERY_METADATA_KEY, this.constructor);
     if (queries) {
       queries.filter(it => it.refreshRawSetRendered).forEach(queryInfo => {
@@ -637,7 +647,8 @@ getAttributeNames(attribute = this._attribute): string[] {
   }
 
   onCreatedThisChildDebounce(childrenSet: ChildrenSet[]) {
-
+  }
+  onRawSetRenderedDebounce(childrenSet: OnRawSetRenderedOtherData[]) {
   }
 
   onCreateRenderData(data: OnCreateRenderDataParams): void {
@@ -679,6 +690,11 @@ getAttributeNames(attribute = this._attribute): string[] {
   async onInitRender(param: any, rawSet: RawSet) {
     this.createChildrenDebounceSubscription = this.childrenSetSubject.pipe(debounceTime(this.componentConfig?.createChildrenDebounce??0)).subscribe(it => {
       this.onCreatedThisChildDebounce(it);
+    });
+    this.onRawSetRenderedOtherDataSubjectSubscription = this.onRawSetRenderedOtherDataSubject.pipe(
+      bufferTime(this.componentConfig?.onRawSetRenderedOtherDataDebounce??0)
+    ).subscribe(it => {
+      this.onRawSetRenderedDebounce(it);
     });
     if (rawSet) {
       this.setRawSet(rawSet);

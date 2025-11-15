@@ -1,4 +1,4 @@
-import { ComponentBase } from '../ComponentBase';
+import {attribute, ComponentBase} from '../ComponentBase';
 import { DomRender, DomRenderRunConfig } from '../../DomRender';
 import { RawSet } from '../../rawsets/RawSet';
 import { OtherData } from '../../lifecycle/OnChangeAttrRender';
@@ -25,7 +25,7 @@ export namespace Appender {
   // })
   export class Appender<D> extends ComponentBase<Attribute<D>> implements OnInitRender {
     private value?:DomRenderAppender
-
+    @attribute({ name: 'dr-option-item-variable-name', converter: v => v || null }) drOptionItemVariableName: string | null = null;
     // onCreateRender(...param: any) {
     //   console.log('--onCreateRender')
     // }
@@ -70,7 +70,7 @@ export default {
   appender: (config?: DomRenderRunConfig) => {
     return RawSet.createComponentTargetElement({
       name: Appender.selector,
-      template: '<div dr-appender="@this@.value" dr-option-strip="true">#innerHTML#</div>',
+      template: '<div dr-appender="@this@.value" dr-option-item-variable-name="${@this@.drOptionItemVariableName}$" dr-option-strip="true">#innerHTML#</div>',
       objFactory: (e,o,r2, counstructorParam) => {
         return DomRender.run({rootObject: new Appender.Appender(...counstructorParam), config: config});
       }

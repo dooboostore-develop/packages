@@ -1,6 +1,6 @@
 import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
-import { ObjectUtils } from '../../src/object/ObjectUtils'; // Assuming Path is still in ObjectUtils
+import { ObjectUtils } from '../../../src/object/ObjectUtils'; // Assuming Path is still in ObjectUtils
 
 describe('ObjectUtils.Path', () => {
 
@@ -681,6 +681,18 @@ describe('ObjectUtils.Path', () => {
     test('should not modify ternary operator expressions', () => { // Renamed test for clarity
       const path = "this.selected ? 'selected' : null";
       const expected = "this?.selected ? 'selected' : null"; // Should remain unchanged
+      assert.strictEqual(ObjectUtils.Path.toOptionalChainPath(path), expected);
+    });
+
+    test('should handle ternary operator with userInfo', () => {
+      const path = "this.userInfo? 'hidden' : null";
+      const expected = "this?.userInfo? 'hidden' : null";
+      assert.strictEqual(ObjectUtils.Path.toOptionalChainPath(path), expected);
+    });
+
+    test('should handle ternary operator with method call and array access', () => {
+      const path = "this.isImageSelected(this.asd[0]) ? 'checked' : null";
+      const expected = "this?.isImageSelected?.(this?.asd?.[0]) ? 'checked' : null";
       assert.strictEqual(ObjectUtils.Path.toOptionalChainPath(path), expected);
     });
 

@@ -14,7 +14,7 @@ export namespace AlertService {
 }
 
 @Sim
-export class AlertService<T> implements Store<AlertService.AlertActionContainer<T>>{
+export class AlertService<T = any> implements Store<AlertService.AlertActionContainer<T>>{
   public name = new Date().toUTCString();
   private subject = new ReplaySubject<AlertService.AlertActionContainer<T>>();
   private alertFactory?: AlertFactory<T>;
@@ -44,12 +44,12 @@ export class AlertService<T> implements Store<AlertService.AlertActionContainer<
     this.subject.next(data);
   }
 
-  create(factory: (alert: Alert<T>) => T, config?: AlertFactoryConfig<T>): Alert<T> {
+  create<T>(factory: (alert: Alert<T>) => T, config?: AlertFactoryConfig<T>): Alert<T> {
     return new (class extends Alert<T> {
       protected make(): T {
         return factory(this);
       }
-    })(this, config);
+    })(this as any, config);
   }
 
   createFromFactory(type: AlertType, config?: AlertFactoryConfig<T>) {

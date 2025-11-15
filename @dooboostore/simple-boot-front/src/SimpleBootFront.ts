@@ -205,9 +205,11 @@ export class SimpleBootFront extends SimpleApplication {
     routerProcess({ path: '', routers: [this.option.rootRouter] }, DomRenderRootObject);
     // 작업테스크 옮겨줘야 비동기적으로 처리됨에 깜빡임 없앨수있다.
     setTimeout(() => {
-      targetElement.hidden = false;
-      targetUserElement.replaceWith(targetElement);
-    }, 0);
+      setTimeout(() => {
+        targetElement.hidden = false;
+        targetUserElement.replaceWith(targetElement);
+      }, 0)
+    }, 1);
 
     // dom-render 라우팅 끝나면
     this.domRenderRouter.observable.pipe(filter(it=>it.triggerPoint==='end')).subscribe(it => {

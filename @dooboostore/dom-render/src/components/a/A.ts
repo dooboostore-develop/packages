@@ -1,6 +1,7 @@
 import { attribute, ComponentBase } from '../ComponentBase';
 import { DomRender, DomRenderRunConfig } from '../../DomRender';
 import { RawSet } from '../../rawsets/RawSet';
+import {OtherData} from "../../lifecycle";
 
 export namespace A {
   export const selector = 'dr-a';
@@ -23,6 +24,7 @@ export namespace A {
     style?: string | null;
     class?: string | null;
     click?: ((data: ClickCallbackData) => void) | null;
+    onInit?: (e: HTMLAnchorElement) => void;
     replace?: boolean | null;
     scrollToTop?: boolean | null;
   };
@@ -32,9 +34,11 @@ export namespace A {
     @attribute({ converter: v => v || null }) target: string | null = null;
     @attribute({ converter: v => v || null }) style: string | null = null;
     @attribute({ name: 'class', converter: v => v || null }) classAttr: string | null = null;
+    @attribute({ name: 'dr-class', converter: v => v || null }) drClass: string | null = null;
     @attribute() click?: ((data: ClickCallbackData) => void) | null = null;
     @attribute({ converter: v => v !== null && String(v) !== 'false' }) replace = false;
     @attribute({ converter: v => v !== null && String(v) !== 'false' }) scrollToTop = true;
+    private element?: HTMLElement;
 
     onClick(event: MouseEvent) {
       if (this.click) {
@@ -59,6 +63,25 @@ export namespace A {
         this.domRenderConfig?.router?.go({path: this.href, replace: this.replace, scrollToTop: this.scrollToTop });
       }
     }
+
+    onChangeAttrRender(name: string, value: any, other: OtherData) {
+      super.onChangeAttrRender(name, value, other);
+      if (this.element && name.startsWith('attribute-')) {
+        this.element.setAttribute(name, value);
+      }
+    }
+
+    onAElementInit($element: HTMLElement) {
+      this.element = $element;
+      this.getAttribute('onInit')?.($element as HTMLAnchorElement);
+      this.getAttributeNames()
+        .filter(it => it.startsWith('attribute-'))
+        .forEach(it => {
+          const attrName = it.replace(/^attribute-/, '');
+          const attrValue = this.getAttribute(it as any);
+          this.element.setAttribute(attrName, attrValue);
+        });
+    }
   }
 }
 
@@ -72,6 +95,8 @@ export default {
         style="\${@this@.style}$"
         class="\${@this@.classAttr}$"
         dr-event-click="@this@.onClick($event)"
+        dr-class="\${@this@.drClass}$"
+        dr-on-init="@this@.onAElementInit($element)"
       >#innerHTML#</a>`,
       objFactory: (e, o, r2, constructorParam) => {
         return DomRender.run({ rootObject: new A.A(...constructorParam), config });

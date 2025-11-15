@@ -28,6 +28,13 @@ export class Appender<T = any> implements Iterable<T> {
     }
   }
 
+  get(key: string): T[] | undefined {
+    const o = this.keyMap.get(key);
+    if (o !== undefined) {
+      return this[o];
+    }
+    return undefined;
+  }
   set(key: string, ...v:T[]) {
     const o = this.keyMap.get(key);
     // console.log('set!!', o);

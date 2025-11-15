@@ -15,6 +15,18 @@
       <div dr-for-of="@this@.users"  dr-option-item-index-variable-name="index" dr-option-item-variable-name="user">
           aa
       </div>
+    <button dr-event-click="@this@.changeData()">change</button>
+
+<!--    <div dr="@this@.users">-->
+    <div dr-detect="@this@.users">
+      ${@this@.name}$
+    </div>
+    <div dr="@this@.users">
+      ${@this@.name}$
+    </div>
+    <div>
+      ${@this@.name}$
+    </div>
 <!--      <div dr-for-of="@this@.users"  data-uuid="${#user#.name}$" dr-option-item-index-variable-name="index" dr-option-item-variable-name="user">-->
 <!--          <div dr-class="{active: #index# === @this@.selectedIndex }" dr-event-click="@this@.selectedIndex = #index#">${#user#.name}$</div>-->
 <!--      </div>-->

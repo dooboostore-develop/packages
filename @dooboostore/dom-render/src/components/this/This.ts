@@ -1,7 +1,7 @@
 import { ComponentBase } from '../ComponentBase';
 import { DomRender, DomRenderRunConfig } from '../../DomRender';
 import { RawSet } from '../../rawsets/RawSet';
-import { OtherData } from '../../lifecycle/OnChangeAttrRender';
+import { isOnChangeAttrRender, OtherData } from '../../lifecycle/OnChangeAttrRender';
 import { OnInitRender } from '../../lifecycle/OnInitRender';
 import { ComponentSet } from '../../components/ComponentSet';
 import { OnDestroyRenderParams } from '../../lifecycle/OnDestroyRender';
@@ -20,6 +20,20 @@ export namespace This {
     private value?: ComponentSet;
     private if?: boolean | null = null;
     private createArguments?: any[];
+    private childObject?: any;
+    private childRawSet?: RawSet;
+    private sw = false;
+
+    setValue(value: ComponentSet) {
+      this.sw = false;
+      setTimeout(() => {
+        this.value = value;
+      }, 0)
+
+      setTimeout(() => {
+        this.sw = true;
+      }, 0)
+    }
 
     async onInitRender(param: any, rawSet: RawSet) {
       await super.onInitRender(param, rawSet);
@@ -32,7 +46,7 @@ export namespace This {
     onChangeAttrRender(name: string, value: any, other: OtherData) {
       super.onChangeAttrRender(name, value, other);
       if (this.equalsAttributeName(name, 'value')) {
-        this.value = value;
+        this.setValue(value);
       }
       if (this.equalsAttributeName(name, 'if')) {
         this.if = value;
@@ -42,9 +56,26 @@ export namespace This {
       }
     }
 
-    created(component: any) {
-      component ??= this.value?.obj;
-      this.getAttribute('onCreated')?.(component);
+    created($component: any, $rawSet: RawSet) {
+      this.childObject = $component ??= this.value?.obj;
+      this.childRawSet = $rawSet;
+      
+      if ($component) {
+        this.getAttribute('onCreated')?.($component);
+        
+        // attribute 전달 처리
+        if (isOnChangeAttrRender($component)) {
+          this.getAttributeNames()
+            .filter(it => it.startsWith('attribute-'))
+            .forEach(it => {
+              const attrName = it.replace(/^attribute-/, '');
+              const attrValue = this.getAttribute(it as any);
+              $rawSet.dataSet.render.attribute ??= {};
+              $rawSet.dataSet.render.attribute[attrName] = attrValue;
+              $component.onChangeAttrRender(attrName, attrValue, {rawSet: $rawSet});
+            });
+        }
+      }
     }
   }
 }
@@ -54,7 +85,11 @@ export default {
     return RawSet.createComponentTargetElement({
       name: This.selector,
       template:
-        '<div dr-this="@this@.value" dr-detect-option-if="@this@?.value && @this@?.if" dr-option-strip="true" dr-on-create:arguments="@this@.createArguments" dr-on-create:callback="@this@?.created?.($component)">#innerHTML#</div>',
+        `
+        <dr-if value="\${@this@.sw}$">
+            <div dr-this="@this@.value" dr-detect-option-if="@this@?.value && @this@?.if" dr-option-strip="true" dr-on-create:arguments="@this@.createArguments" dr-on-create:callback="@this@?.created?.($component, $rawSet)">#innerHTML#</div>
+        </dr-if>
+        `,
       objFactory: (e, o, r2, counstructorParam) => {
         return DomRender.run({ rootObject: new This.This(...counstructorParam), config: config });
       }

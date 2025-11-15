@@ -1,9 +1,9 @@
 import { Subscription } from './Subscription';
 import { CompleteCallBack, ErrorCallBack, ObserverCallBack, Subscribable } from './Subscribable';
 import { Observer } from './Observer';
-import { Subscriber } from './Subscriber.';
+import { Subscriber } from './Subscriber';
 
-export type OperatorFunction<T, R> = (source: Observable<T, any>) => Observable<R, any>;
+export type OperatorFunction<T, R> = (source: Observable<T>) => Observable<R>;
 
 export class Observable<T, E = any> implements Subscribable<T, E> {
   private _producerFunction: ((subscriber: Subscriber<T, E>) => (Subscription | (() => void) | void)) | undefined;
@@ -12,10 +12,26 @@ export class Observable<T, E = any> implements Subscribable<T, E> {
     this._producerFunction = producerFunction;
   }
 
-  subscribe(observer: Partial<Observer<T, E>>): Subscription;
+  subscribe(d: ObserverCallBack<T>): Subscription;
   subscribe(d: ObserverCallBack<T>, e?: ErrorCallBack, c?: CompleteCallBack): Subscription;
+  subscribe(observer: Partial<Observer<T, E>>): Subscription;
   subscribe(observer: Partial<Observer<T, E>> | ObserverCallBack<T>, e?: ErrorCallBack, c?: CompleteCallBack): Subscription {
 
+    /*
+        const observer = observerOrNext;
+
+    const partialObserver: Partial<Observer<T, E>> = typeof observer === 'function'
+      ? {
+          next: observer,
+          error: error,
+          complete: complete
+        }
+      : {
+          next: observer.next,
+          error: observer.error,
+          complete: observer.complete
+        };
+     */
     const partialObserver: Partial<Observer<T, E>> = {
       next: typeof observer === 'object' ? observer.next : observer,
       error: typeof observer === 'object' ? observer.error : e,
@@ -24,16 +40,16 @@ export class Observable<T, E = any> implements Subscribable<T, E> {
 
     // Create a new internal subscriber for this specific subscription
     const internalSubscriber = new Subscriber({
-        next: (data: T) => {
-          partialObserver.next?.(data);
-        },
-        error: (e: E) => {
-          partialObserver.error?.(e);
-        },
-        complete: () => {
-          partialObserver.complete?.();
-        }
+      next: (data: T) => {
+        partialObserver.next?.(data);
+      },
+      error: (e: E) => {
+        partialObserver.error?.(e);
+      },
+      complete: () => {
+        partialObserver.complete?.();
       }
+    }
     );
 
     let teardownLogic: Subscription | (() => void) | void;

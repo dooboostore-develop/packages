@@ -16,7 +16,7 @@ export class ConsoleError<T = string> extends Alert<T> {
   //
   // deActive(): void {}
 
-  protected make(): T | void{
+  protected make(): T {
    return 'aa' as T;
   }
 }

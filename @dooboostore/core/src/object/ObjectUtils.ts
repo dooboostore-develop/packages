@@ -230,16 +230,16 @@ export namespace ObjectUtils {
       }
       
       // Check for ternary operator pattern (? :)
-      if (path.includes(' ? ') && path.includes(' : ')) {
+      // Match both "? " and "?" (with or without space) followed by ":" somewhere later
+      const ternaryMatch = path.match(/\?\s*[^?.[\]]+\s*:/);
+      if (ternaryMatch) {
         // Handle ternary operator - only convert property access parts, not the ternary operator itself
-        const parts = path.split(/(\s+\?\s+|\s+:\s+)/);
+        const parts = path.split(/(\s*\?\s*|\s*:\s*)/);
         const result = parts.map((part, index) => {
           // Only process the first part (before ?) for optional chaining
           if (index === 0) {
-            const tokens = part.match(/[^?.[\]]+|\[[^\]]*\]/g);
-            if (tokens && tokens.length > 1) {
-              return tokens.join('?.');
-            }
+            // Recursively process the part to handle function calls properly
+            return toOptionalChainPath(part);
           }
           return part;
         });
@@ -263,8 +263,10 @@ export namespace ObjectUtils {
           const funcArgs = match[2];
           const placeholder = `__FUNC_CALL_${counter}__`;
           
-          // Process function arguments recursively
-          const processedArgs = funcArgs ? toOptionalChainPath(funcArgs) : '';
+          // Process function arguments recursively, but don't add ?. at the end of closing parenthesis
+          let processedArgs = funcArgs ? toOptionalChainPath(funcArgs) : '';
+          // Remove trailing ?. before closing parenthesis if it exists
+          processedArgs = processedArgs.replace(/\?\.\s*$/, '');
           const processedFuncCall = `${funcName}?.(${processedArgs})`;
           
           functionCallMatches.push({
