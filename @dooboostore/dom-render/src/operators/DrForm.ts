@@ -6,6 +6,7 @@ import {ValidatorArray} from '../validators/ValidatorArray';
 import {Render} from '../rawsets/Render';
 import {OperatorExecuterAttrRequire} from './OperatorExecuterAttrRequire';
 import {AfterCallBack, ElementSource, ExecuteState, ReturnContainer, Source} from './OperatorExecuter';
+import {ObjectUtils} from "@dooboostore/core/object/ObjectUtils";
 
 export class DrForm extends OperatorExecuterAttrRequire<string> {
     constructor(rawSet: RawSet, render: Render, returnContainer: ReturnContainer, elementSource: ElementSource, source: Source, afterCallBack: AfterCallBack) {
@@ -14,11 +15,11 @@ export class DrForm extends OperatorExecuterAttrRequire<string> {
 
     async executeAttrRequire(attr: string): Promise<ExecuteState> {
         RawSet.drFormOtherMoveAttr(this.elementSource.element, 'name', 'temp-name', this.source.config);
-        const data = ScriptUtils.evaluateReturn(`${attr}`, this.source.obj);
+        const data = ObjectUtils.Script.evaluateReturn(`${attr}`, this.source.obj);
 
         const childs = Array.from(this.elementSource.element.querySelectorAll('[name]'));
 
-        const fromName = ScriptUtils.evaluateReturn(this.elementSource.element.getAttribute(`${RawSet.DR_FORM_NAME}:name`) ?? '', this.source.obj);
+        const fromName = ObjectUtils.Script.evaluateReturn(this.elementSource.element.getAttribute(`${RawSet.DR_FORM_NAME}:name`) ?? '', this.source.obj);
         const thisName = fromName ?? this.elementSource.element.getAttribute('name');
         // // 자기자신이 Input 대상일때
         if (childs.length <= 0 && thisName) {
@@ -32,10 +33,10 @@ export class DrForm extends OperatorExecuterAttrRequire<string> {
             const eventName = it.getAttribute(`${RawSet.DR_FORM_NAME}:event`) ?? 'change'
             const validatorName = it.getAttribute(`${RawSet.DR_FORM_NAME}:validator`);
             const attrEventName = EventManager.attrPrefix + 'event-' + eventName;
-            let varpath = ScriptUtils.evaluateReturn(this.elementSource.element.getAttribute(`${RawSet.DR_FORM_NAME}:name`) ?? '', this.source.obj) ?? it.getAttribute('name');
+            let varpath = ObjectUtils.Script.evaluateReturn(this.elementSource.element.getAttribute(`${RawSet.DR_FORM_NAME}:name`) ?? '', this.source.obj) ?? it.getAttribute('name');
             if (varpath != null) {
                 if (validatorName) {
-                    ScriptUtils.evaluate(`
+                    ObjectUtils.Script.evaluate(`
                                 ${this.render.bindScript}
                                 const validator = typeof ${validatorName} ==='function' ?  new  ${validatorName}() : ${validatorName};
                                 ${attr}['${varpath}'] = validator;
@@ -49,7 +50,7 @@ export class DrForm extends OperatorExecuterAttrRequire<string> {
                     ));
                 }
                 varpath = `${attr}['${varpath}']`;
-                const data = ScriptUtils.evaluateReturn(`${varpath}`, this.source.obj);
+                const data = ObjectUtils.Script.evaluateReturn(`${varpath}`, this.source.obj);
                 if (data instanceof ValidatorArray) {
                     it.setAttribute(attrEventName, `${varpath}.setArrayValue($target, $target.value, $event); ${it.getAttribute(attrEventName) ?? ''};`);
                     data.addValidator((it as any).value, it);

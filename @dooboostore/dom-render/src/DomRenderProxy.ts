@@ -366,7 +366,7 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
           .join('');
         const lastPropertyName = strings[strings.length - 1];
         const path = 'this' + front;
-        const data = ScriptUtils.evaluateReturn(ObjectUtils.Path.toOptionalChainPath(path), this._domRender_proxy);
+        const data = ObjectUtils.Script.evaluateReturn(ObjectUtils.Path.toOptionalChainPath(path), this._domRender_proxy);
         // console.log('root-->', this._rawSets, path, data );
         // console.log('--!!!!', fullPathStr, iterable, data, front, last);
         // 왜여기서 promise를 했을까를 생각해보면......훔.. 변수변경과 화면 뿌려주는걸 동기로하면 성능이 안나오고 비현실적이다.  그래서 promise
@@ -600,7 +600,7 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
     DocumentUtils.querySelectorAllByAttributeName(rootElement, EventManager.linkTargetMapAttrName)?.forEach(
       elementInfo => {
         // @ts-ignore
-        const targets = new Map<string, string>(ScriptUtils.evaluateReturn<[string, string][]>(elementInfo.value));
+        const targets = new Map<string, string>(ObjectUtils.Script.evaluateReturn<[string, string][]>(elementInfo.value));
 
         Array.from(targets.entries())
           .filter(([key, value]) => value.trim())
@@ -612,7 +612,7 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
               .flatMap(it => ({ key, valueScript: valueScript, pathInfo: it }));
           })
           .forEach(info => {
-            const value1 = ScriptUtils.evaluateReturn(info.valueScript, info.pathInfo.obj);
+            const value1 = ObjectUtils.Script.evaluateReturn(info.valueScript, info.pathInfo.obj);
             const applyAttributeName = EventManager.linkAttrs.find(it => it.name === info.key);
             if (applyAttributeName) {
               if (value1 === null) {

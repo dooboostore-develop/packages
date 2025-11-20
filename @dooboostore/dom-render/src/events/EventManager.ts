@@ -466,7 +466,7 @@ export class EventManager {
     this.procAttr<HTMLInputElement>(childNodes, EventManager.requiredAttrName, (it, attribute) => {
       const script = attribute;
       if (script) {
-        const data = ScriptUtils.evaluateReturn(script, obj);
+        const data = ObjectUtils.Script.evaluateReturn(script, obj);
         if (it.required!== data) {
           it.required = data;
         }
@@ -477,7 +477,7 @@ export class EventManager {
     this.procAttr<HTMLDialogElement>(childNodes, EventManager.openAttrName, (it, attribute) => {
       const script = attribute;
       if (script) {
-        const data = ScriptUtils.evaluateReturn(script, obj);
+        const data = ObjectUtils.Script.evaluateReturn(script, obj);
         if (it.open!== data) {
           it.open = data;
         }

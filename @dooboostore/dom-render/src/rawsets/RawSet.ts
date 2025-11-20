@@ -156,7 +156,7 @@ export class RawSet {
     RawSet.DR_INNERHTML_NAME,
     RawSet.DR_INNERTEXT_NAME,
     RawSet.DR_REPEAT_NAME,
-    RawSet.DR_DETECT_NAME,
+    // RawSet.DR_DETECT_NAME, // TODO: DrDetect 오퍼레이터 구현 필요
     RawSet.DR_STRIP_NAME
   ] as const;
 
@@ -782,8 +782,19 @@ export class RawSet {
 
               if (cval === null) {
                 element.removeAttribute(it);
-              } else {
-                element.setAttribute(it, cval);
+                /* TODO: 여기 더 추가되어야될듯
+                *
+    <select dr-event-change="@this@.onMarketChange($event)" class="market-select">
+        <option>마켓 선택 (${@this@.markets?.length??0}$개)</option>
+        <option dr-for-of="@this@.markets" dr-option-item-variable-name="market" value="${#market#.uuid}$" dr-attr="{selected: #market#.uuid === @this@.marketUUID ? 'selected' : null}">
+          ${#market#.name}$
+        </option>
+      </select>
+                 */
+              } else if (
+                !(element.hasAttribute(RawSet.DR_VARIABLE_NAME_OPTIONNAME) || element.hasAttribute(RawSet.DR_ITEM_VARIABLE_NAME_OPTIONNAME) || element.hasAttribute(RawSet.DR_ITEM_INDEX_VARIABLE_NAME_OPTIONNAME))
+              ) {
+                  element.setAttribute(it, cval);
               }
               normalAttrs.set(it, { originalAttrValue: value, variablePaths: variablePaths, isStringTemplate });
               // normalAttrs.set(it, originVariable);

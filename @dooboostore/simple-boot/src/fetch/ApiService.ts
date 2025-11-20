@@ -4,19 +4,20 @@ import { AlertService } from '../alert/AlertService';
 import { SimstanceManager } from '../simstance/SimstanceManager';
 import { isDefined } from '@dooboostore/core/types';
 import { Subject } from '@dooboostore/core/message/Subject';
-import { HttpFetcherTarget,HttpFetcherConfig, AfterProxyFetchParams,BeforeProxyFetchParams, FetchSet } from '@dooboostore/core/fetch/HttpFetcher';
+import { Observable } from '@dooboostore/core/message/Observable';
+import { HttpFetcherTarget, HttpFetcherConfig, AfterProxyFetchParams, BeforeProxyFetchParams, FetchSet } from '@dooboostore/core/fetch/HttpFetcher';
 import { FetcherRequest } from '@dooboostore/core/fetch/Fetcher';
 import { HttpJsonFetcher, HttpJsonFetcherConfig } from '@dooboostore/core/fetch/HttpJsonFetcher';
 
 export namespace ApiServiceInterceptor {
   export const TOKEN = Symbol('ApiServiceInterceptor');
-    export const resolveAll = (simstanceManager: SimstanceManager):ApiServiceInterceptor[] => {
-      try {
-        return (simstanceManager.findSims<ApiServiceInterceptor>(ApiServiceInterceptor.TOKEN) ?? []).map(it => it.getValue()).filter(isDefined);
-      } catch (e) {
-        return [];
-      }
-    };
+  export const resolveAll = (simstanceManager: SimstanceManager): ApiServiceInterceptor[] => {
+    try {
+      return (simstanceManager.findSims<ApiServiceInterceptor>(ApiServiceInterceptor.TOKEN) ?? []).map(it => it.getValue()).filter(isDefined);
+    } catch (e) {
+      return [];
+    }
+  };
 
   export type BeforeProxyExecuteParams = {
     target: HttpFetcherTarget;
@@ -103,13 +104,13 @@ export namespace ApiService {
 export const isStoreAfterFetch = (data: ApiService.StoreData): data is ApiService.StoreAfterFetch => {
   return data.type === 'afterFetch';
 }
-export const isStoreAfterFetchData = (data: ApiService.StoreData): data is ApiService.StoreAfterFetch => {
+export const isStoreAfterFetchData = (data: ApiService.StoreData): data is ApiService.StoreDataAfterFetch => {
   return data.type === 'afterFetchData';
 }
 export const isStoreBeforeFetch = (data: ApiService.StoreData): data is ApiService.StoreBeforeFetch => {
   return data.type === 'beforeFetch';
 }
-export const isStoreBeforeFetchData = (data: ApiService.StoreData): data is ApiService.StoreBeforeFetch => {
+export const isStoreBeforeFetchData = (data: ApiService.StoreData): data is ApiService.StoreDataBeforeFetch => {
   return data.type === 'beforeFetchData';
 }
 export const isStoreProgress = (data: ApiService.StoreData): data is ApiService.StoreDataProgress => {
@@ -140,7 +141,7 @@ export class ApiService extends HttpJsonFetcher<ApiService.ApiServiceConfig, Api
   //   this.alertService = alertService;
   // }
 
-  get observable() {
+  get observable(): Observable<ApiService.StoreData> {
     return this.subject.asObservable();
   }
 
@@ -151,50 +152,50 @@ export class ApiService extends HttpJsonFetcher<ApiService.ApiServiceConfig, Api
   }
 
   async beforeProxyFetch<T = RequestInfo | URL>(config: BeforeProxyFetchParams<T>) {
-  let interceptors = ApiServiceInterceptor.resolveAll(this.simstanceManager);
+    let interceptors = ApiServiceInterceptor.resolveAll(this.simstanceManager);
     for (const interceptor of interceptors) {
       if (interceptor.beforeProxyFetch) {
         config = await interceptor.beforeProxyFetch(config);
       }
     }
     // @ts-ignore
-    this.subject.next({ type: 'beforeFetchData', config: config as BeforeProxyFetchParams});
+    this.subject.next({ type: 'beforeFetchData', config: config as BeforeProxyFetchParams });
     return config;
   }
 
   async afterProxyFetch<T = RequestInfo | URL>(config: AfterProxyFetchParams<T>) {
-  // console.log('afterProxyFetch!!!!11', config);
-  let interceptors = ApiServiceInterceptor.resolveAll(this.simstanceManager);
-  let r = config.response;
-  for (const interceptor of interceptors) {
-    if (interceptor.afterProxyFetch) {
-      r = await interceptor.afterProxyFetch(config);
+    // console.log('afterProxyFetch!!!!11', config);
+    let interceptors = ApiServiceInterceptor.resolveAll(this.simstanceManager);
+    let r = config.response;
+    for (const interceptor of interceptors) {
+      if (interceptor.afterProxyFetch) {
+        r = await interceptor.afterProxyFetch(config);
+      }
     }
-  }
-  // console.log('afterProxyFetch!!!!22', r);
-  this.subject.next({ type: 'afterFetchData', response: r });
-  return r;
+    // console.log('afterProxyFetch!!!!22', r);
+    this.subject.next({ type: 'afterFetchData', response: r });
+    return r;
   }
 
   beforeFetch(fetch: FetchSet): void {
-    this.subject.next({type: 'beforeFetch', fetch});
+    this.subject.next({ type: 'beforeFetch', fetch });
   }
 
   afterFetch(fetch: FetchSet, response: Response): void {
-    this.subject.next({type: 'afterFetch', fetch, response});
+    this.subject.next({ type: 'afterFetch', fetch, response });
   }
 
   protected before(
     config: FetcherRequest<URL, any, HttpFetcherConfig<ApiService.ApiServiceConfig>>,
     pipe: ApiService.PIPE
   ) {
-    this.subject.next({type: 'progress', config, pipe});
+    this.subject.next({ type: 'progress', config, pipe });
     config.config?.config?.callBackProgress?.(config, pipe);
     if (config.config?.config?.alertProgress) {
-      const alert = this.alertService?.progress({title: config.config.config.title});
+      const alert = this.alertService?.progress({ title: config.config.config.title });
       if (alert) {
         pipe.progress = alert;
-        alert.active();
+        alert.activate();
       }
     }
   }
@@ -203,10 +204,10 @@ export class ApiService extends HttpJsonFetcher<ApiService.ApiServiceConfig, Api
     config: FetcherRequest<URL, any, HttpFetcherConfig<ApiService.ApiServiceConfig>>,
     pipe: ApiService.PIPE
   ) {
-    this.subject.next({type: 'success', config, pipe});
+    this.subject.next({ type: 'success', config, pipe });
     config.config?.config?.callBackSuccess?.(config, pipe);
     if (config.config?.config?.alertSuccessMsg) {
-      this.alertService?.success({ title: config.config.config.title })?.active();
+      this.alertService?.success({ title: config.config.config.title })?.activate();
     }
   }
 
@@ -220,9 +221,9 @@ export class ApiService extends HttpJsonFetcher<ApiService.ApiServiceConfig, Api
     config: FetcherRequest<URL, any, HttpFetcherConfig<ApiService.ApiServiceConfig>>,
     pipe: ApiService.PIPE
   ) {
-    this.subject.next({type: 'final', config, pipe});
+    this.subject.next({ type: 'final', config, pipe });
     config.config?.config?.callBackFinal?.(config, pipe);
-    pipe.progress?.inActive();
+    pipe.progress?.deActivate();
   }
 
   protected error(
@@ -231,13 +232,13 @@ export class ApiService extends HttpJsonFetcher<ApiService.ApiServiceConfig, Api
     e?: any
   ) {
     console.log('error', e);
-    this.subject.next({type: 'error', config, pipe, e});
+    this.subject.next({ type: 'error', config, pipe, e });
     config.config?.config?.callBackError?.(config, pipe, e);
     if (config.config?.config?.alertErrorMsg) {
       this.alertService?.danger({
         title: `${config.config.config.title ? config.config.config.title : ''}${e.message ? `(${e.message})` : ''}`
       })
-        ?.active();
+        ?.activate();
     }
     if (config.config?.config?.enableErrorConsole) {
       console.error(`apiService Error ${config?.config?.config?.title}`, e);
@@ -251,7 +252,7 @@ export class ApiService extends HttpJsonFetcher<ApiService.ApiServiceConfig, Api
   ): Promise<any> {
     const target = fetcherRequest.target;
     const config = fetcherRequest.config;
-    let r: ApiServiceInterceptor.BeforeProxyExecuteParams = {target, config};
+    let r: ApiServiceInterceptor.BeforeProxyExecuteParams = { target, config };
     const interceptor = ApiServiceInterceptor.resolveAll(this.simstanceManager) ?? [];
     for (const apiServiceInterceptor of interceptor) {
       if (apiServiceInterceptor.beforeProxyExecute) {

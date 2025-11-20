@@ -175,7 +175,7 @@ export class RequestResponse {
 
     for (const it of m) {
       if (it.isFile) {
-        formData[it.name] = await FileUtils.writeFile(it.value, {originalName: it.filename });
+        formData[it.name] = await FileUtils.writeFile(it.value, {originalName: it.filename, etcData: it });
       } else {
         const target = formData[it.name];
         if (Array.isArray(target)) {

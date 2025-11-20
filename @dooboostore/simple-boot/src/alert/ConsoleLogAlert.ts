@@ -10,7 +10,7 @@ export class ConsoleLog<T = string> extends Alert<T> {
     super(alertService, config);
   }
 
-  protected make(): T | void {
+  protected make(): T  {
     return '' as T;
   }
 }

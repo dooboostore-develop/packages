@@ -9,15 +9,17 @@ export namespace FileUtils {
   export type PathParamType = string | string[];
 
 
-  export class File {
+  export class File<E = any> {
     public size: number | undefined;
-
+    public etcData: E;
     constructor(private _data: {
       path: string,
       originalName?: string,
+      etcData?: E
     }) {
-
       this.updateStats();
+      this.etcData = _data.etcData as E;
+
     }
 
     get originalName(): string | undefined {
@@ -78,11 +80,11 @@ export namespace FileUtils {
     }
   }
 
-  export const writeFile = async (buffer: Buffer, config: { path?: string, originalName?: string }) => {
+  export const writeFile = async <E=any>(buffer: Buffer, config: { path?: string, originalName?: string, etcData?: E}) => {
     config.path ??= `${node_os.tmpdir()}/${RandomUtils.uuid4()}_${Date.now()}`;
     await node_fs.promises.mkdir(config.path.substring(0, config.path.lastIndexOf('/')), {recursive: true});
     await node_fs.promises.writeFile(config.path, buffer);
-    return new File({path: config.path, originalName: config.originalName});
+    return new File<E>({path: config.path, originalName: config.originalName, etcData: config.etcData});
     // console.log(`파일 저장 완료: ${tempFilePath}`);
   }
 

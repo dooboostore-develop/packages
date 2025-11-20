@@ -3,6 +3,7 @@ import {ScriptUtils} from '@dooboostore/core-web/script/ScriptUtils';
 import {RawSet} from '../rawsets/RawSet';
 import {Render} from '../rawsets/Render';
 import {AfterCallBack, ElementSource, ExecuteState, ReturnContainer, Source} from './OperatorExecuter';
+import {ObjectUtils} from "@dooboostore/core/object/ObjectUtils";
 
 export class DrInnerHTML extends OperatorExecuterAttrRequire<string> {
     constructor(rawSet: RawSet, render: Render, returnContainer: ReturnContainer, elementSource: ElementSource, source: Source, afterCallBack: AfterCallBack) {
@@ -11,7 +12,7 @@ export class DrInnerHTML extends OperatorExecuterAttrRequire<string> {
 
     async executeAttrRequire(attr: string): Promise<ExecuteState> {
         const newTemp = this.source.config.window.document.createElement('temp');
-        ScriptUtils.evaluate(`
+      ObjectUtils.Script.evaluate(`
                         ${this.render.bindScript}
                         const n = $element.cloneNode(true);
                         ${this.elementSource.attrs.drBeforeOption ?? ''}

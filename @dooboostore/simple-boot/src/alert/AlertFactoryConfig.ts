@@ -7,6 +7,6 @@ export type AlertFactoryConfig<T> = {
   data?: any;
   type?: string;
   uuid?: string;
-  active?: (result: T | void, alert: Alert<T>) => void;
-  deActive?: (result: T | void, alert: Alert<T>) => void;
+  activate?: (result: T, alert: Alert<T>) => void;
+  deActivate?: (result: T, alert: Alert<T>) => void;
 };

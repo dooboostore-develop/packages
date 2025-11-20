@@ -255,6 +255,68 @@ export namespace Promises {
     return results;
   };
 
+  /**
+   * Retry a promise with configurable delays
+   * @param factory Function that returns a promise to retry (receives attempt number and previous error as parameters)
+   * @param config Retry configuration
+   * @param config.retry Number of retries (0 = no retry, 1 = retry once if failed, etc.)
+   * @param config.delay.initialDelay Delay before first attempt (default: 0)
+   * @param config.delay.retryDelay Delay between retry attempts (default: 0)
+   * @param config.onRetry Callback called on each retry with error and attempt number
+   * @returns Promise that resolves with the result or rejects after all retries
+   * @example
+   * // Retry up to 3 times with 1 second delay between attempts
+   * await Promises.retry((attempt, error) => {
+   *   if (error) console.log('Previous error:', error);
+   *   return fetchData(attempt);
+   * }, { retry: 3, delay: { retryDelay: 1000 } })
+   */
+  export const retry = async <T>(
+    factory: (attempt: number, error?: any) => Promise<T>,
+    config: {
+      retry: number;
+      delay?: {
+        initialDelay?: number;
+        retryDelay?: number;
+      };
+      onRetry?: (error: any, attempt: number) => void;
+    }
+  ): Promise<T> => {
+    const initialDelay = config.delay?.initialDelay ?? 0;
+    const retryDelay = config.delay?.retryDelay ?? 0;
+    
+    // Initial delay before first attempt
+    if (initialDelay > 0) {
+      await sleep(initialDelay);
+    }
+    
+    let lastError: any;
+    
+    for (let attempt = 0; attempt <= config.retry; attempt++) {
+      try {
+        return await factory(attempt, lastError);
+      } catch (error) {
+        lastError = error;
+        
+        // Don't retry if this was the last attempt
+        if (attempt === config.retry) {
+          break;
+        }
+        
+        // Call onRetry callback if provided
+        config.onRetry?.(error, attempt + 1);
+        
+        // Wait before retrying
+        if (retryDelay > 0) {
+          await sleep(retryDelay);
+        }
+      }
+    }
+    
+    // All retries failed, throw the last error
+    throw lastError;
+  };
+
   export namespace Result {
     export type FulfilledType<T> = PromiseFulfilledResult<T>;
     export type RejectType<E = unknown> = Omit<PromiseRejectedResult, 'reason'> & { reason: E };

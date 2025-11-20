@@ -28,6 +28,7 @@ export class IntentSchemeFilter implements Filter {
         if (acceptType === Mimes.ApplicationJsonPostSimpleBootSsrIntentScheme && intentScheme) {
             let intent = new Intent(`${intentScheme}:/${url}`);
             intent.publishType = PublishType.INLINE_DATA_PARAMETERS;
+          // console.log('---------1--intent request', intentScheme, url, contentLength, contentType );
             // const responseHeader = {} as any;
             // responseHeader[HttpHeaders.ContentType] = Mimes.ApplicationJson;
             if (contentLength > 0) {
@@ -36,6 +37,7 @@ export class IntentSchemeFilter implements Filter {
                 } else if (contentType.includes(Mimes.MultipartFormData)) {
                     intent.data = [await rr.reqBodyMultipartFormDataObject(), rr];
                 }
+              // console.log('---------2--intent request',intent);
                 const rdatas = await this.intentManager.publish(intent);
                 const rdata = rdatas[0];
                 const wdata = rdata instanceof Promise ? await rdata : rdata;

@@ -3,6 +3,7 @@ import {ScriptUtils} from '@dooboostore/core-web/script/ScriptUtils';
 import {RawSet} from '../rawsets/RawSet';
 import {Render} from '../rawsets/Render';
 import {AfterCallBack, ElementSource, ExecuteState, ReturnContainer, Source} from './OperatorExecuter';
+import {ObjectUtils} from "@dooboostore/core/object/ObjectUtils";
 
 export class DrFor extends OperatorExecuterAttrRequire<string> {
     constructor(rawSet: RawSet, render: Render, returnContainer: ReturnContainer, elementSource: ElementSource, source: Source, afterCallBack: AfterCallBack) {
@@ -15,7 +16,7 @@ export class DrFor extends OperatorExecuterAttrRequire<string> {
         const vars = RawSet.drVarEncoding(this.elementSource.element, this.elementSource.attrs.drVarOption ?? '');
         const newTemp = this.source.config.window.document.createElement('temp');
         // console.log('-----asdad',attr , this.elementSource.attrs.drItOption);
-        ScriptUtils.evaluate(`
+      ObjectUtils.Script.evaluate(`
                     ${this.render.bindScript}
                     ${this.elementSource.attrs.drBeforeOption ?? ''}
                     for(${attr}) {

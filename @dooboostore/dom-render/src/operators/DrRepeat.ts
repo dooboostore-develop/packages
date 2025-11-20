@@ -4,6 +4,7 @@ import {RawSet} from '../rawsets/RawSet';
 import {EventManager} from '../events/EventManager';
 import {Render} from '../rawsets/Render';
 import {AfterCallBack, ElementSource, ExecuteState, ReturnContainer, Source} from './OperatorExecuter';
+import {ObjectUtils} from "@dooboostore/core/object/ObjectUtils";
 
 export class DrRepeat extends OperatorExecuterAttrRequire<string> {
     constructor(rawSet: RawSet, render: Render, returnContainer: ReturnContainer, elementSource: ElementSource, source: Source, afterCallBack: AfterCallBack) {
@@ -15,7 +16,7 @@ export class DrRepeat extends OperatorExecuterAttrRequire<string> {
         const itRandom = RawSet.drItOtherEncoding(this.elementSource.element);
         const vars = RawSet.drVarEncoding(this.elementSource.element, this.elementSource.attrs.drVarOption ?? '');
         const newTemp = this.source.config.window.document.createElement('temp');
-        ScriptUtils.evaluate(`
+      ObjectUtils.Script.evaluate(`
                     ${this.render.bindScript}
                     ${this.elementSource.attrs.drBeforeOption ?? ''}
                     var i = 0; 
