@@ -686,7 +686,7 @@ describe('ObjectUtils.Path', () => {
 
     test('should handle ternary operator with userInfo', () => {
       const path = "this.userInfo? 'hidden' : null";
-      const expected = "this?.userInfo? 'hidden' : null";
+      const expected = "this?.userInfo ? 'hidden' : null";
       assert.strictEqual(ObjectUtils.Path.toOptionalChainPath(path), expected);
     });
 
@@ -700,7 +700,25 @@ describe('ObjectUtils.Path', () => {
       const path = 'this.__domrender_components.JBthGucywhFGkkucxinSARMQXxfOdiTpTscIgVJe.value.obj.getPackagesByCategory(this.__domrender_components.JBthGucywhFGkkucxinSARMQXxfOdiTpTscIgVJe.value.obj.categories[0])';
       const expected = 'this?.__domrender_components?.JBthGucywhFGkkucxinSARMQXxfOdiTpTscIgVJe?.value?.obj?.getPackagesByCategory?.(this?.__domrender_components?.JBthGucywhFGkkucxinSARMQXxfOdiTpTscIgVJe?.value?.obj?.categories?.[0])';
       assert.strictEqual(ObjectUtils.Path.toOptionalChainPath(path), expected);
-    })
+    });
+
+    test('should handle Object.keys with nullish coalescing operator', () => {
+      const path = 'Object.keys(this.UserMarketImageGroupType??{})';
+      const expected = 'Object?.keys?.(this?.UserMarketImageGroupType??{})';
+      assert.strictEqual(ObjectUtils.Path.toOptionalChainPath(path), expected);
+    });
+
+    test('should handle Object.keys with nullish coalescing operator in template literal', () => {
+      const path = 'Object.keys(this.UserMarketImageGroupType??{})';
+      const expected = 'Object?.keys?.(this?.UserMarketImageGroupType??{})';
+      assert.strictEqual(ObjectUtils.Path.toOptionalChainPath(path), expected);
+    });
+
+    test('should handle ternary operator with property access', () => {
+      const path = "this.currentImageType === 'background' ? this.selectedBackgroundImages : this.selectedObjectImages";
+      const expected = "this?.currentImageType === 'background' ? this?.selectedBackgroundImages : this?.selectedObjectImages";
+      assert.strictEqual(ObjectUtils.Path.toOptionalChainPath(path), expected);
+    });
   });
 
   describe('Path.removeOptionalChainOperator', () => {

@@ -1,17 +1,17 @@
-import { attribute, ChildrenSet, ComponentBase } from '../ComponentBase';
-import { DomRender, DomRenderRunConfig } from '../../DomRender';
-import { RawSet } from '../../rawsets/RawSet';
-import { OnCreateRenderData } from '../../lifecycle/OnCreateRenderData';
-import { OnInitRender } from '../../lifecycle/OnInitRender';
-import { OnDestroyRender } from '../../lifecycle/OnDestroyRender';
-import { EventUtils } from '@dooboostore/core-web/event/EventUtils';
-import { type Subscription } from '@dooboostore/core/message/Subscription';
-import { ValidUtils } from '@dooboostore/core-web/valid/ValidUtils';
-import { DomRenderNoProxy } from '../../decorators/DomRenderNoProxy';
-import { OnCreateRender } from '../../lifecycle/OnCreateRender';
-import { DomRenderConfig } from '../../configs/DomRenderConfig';
-import { WindowUtils } from '@dooboostore/core-web/window/WindowUtils';
-import { OnRawSetRenderedOtherData } from '../../lifecycle';
+import {attribute, ChildrenSet, ComponentBase} from '../ComponentBase';
+import {DomRender, DomRenderRunConfig} from '../../DomRender';
+import {RawSet} from '../../rawsets/RawSet';
+import {OnCreateRenderData} from '../../lifecycle/OnCreateRenderData';
+import {OnInitRender} from '../../lifecycle/OnInitRender';
+import {OnDestroyRender} from '../../lifecycle/OnDestroyRender';
+import {EventUtils} from '@dooboostore/core-web/event/EventUtils';
+import {type Subscription} from '@dooboostore/core/message/Subscription';
+import {ValidUtils} from '@dooboostore/core-web/valid/ValidUtils';
+import {DomRenderNoProxy} from '../../decorators/DomRenderNoProxy';
+import {OnCreateRender} from '../../lifecycle/OnCreateRender';
+import {DomRenderConfig} from '../../configs/DomRenderConfig';
+import {WindowUtils} from '@dooboostore/core-web/window/WindowUtils';
+import {OnRawSetRenderedOtherData} from '../../lifecycle';
 
 /** 사용법
  <dr-select class="card-select-container" changeSelected="${(data) => @this@.changeSelected(data)}$">  <!-- multiple attribute optional-->
@@ -150,7 +150,7 @@ export namespace Select {
     toggleSelected(event: Event) {
       // console.log('isMultiple', this.isMultiple())
       if (!this.disabled) {
-        this.selected = this.isMultiple()? !this.selected : true;
+        this.selected = this.isMultiple() ? !this.selected : true;
         // this.selected =  !this.selected;
         this.updateStatus();
         this.getParentThis<SelectBody>().changeOptionState(this);
@@ -215,7 +215,7 @@ export namespace Select {
 
   // --- Summary Component ---
   export class Summary extends ComponentBase implements OnInitRender {
-    @attribute({ name: 'class', converter: v => (v === '' ? null : v) }) public classAttr: string | null = null;
+    @attribute({name: 'class', converter: v => (v === '' ? null : v)}) public classAttr: string | null = null;
     private options: Select.Option[] = [];
     private disabled: boolean = false;
     public element?: HTMLElement;
@@ -290,18 +290,18 @@ export namespace Select {
 
 
   export class SelectBody extends ComponentBase<SelectBodyAttribute> {
-    @attribute({ name: 'class', converter: v => (v === '' ? null : v) }) public classAttr: string | null = null;
-    @attribute({ name: 'float' }) public float: 'bottom-left' | 'bottom-right' | 'top-left' | 'top-right' | null = null;
+    @attribute({name: 'class', converter: v => (v === '' ? null : v)}) public classAttr: string | null = null;
+    @attribute({name: 'float'}) public float: 'bottom-left' | 'bottom-right' | 'top-left' | 'top-right' | null = null;
 
     constructor() {
-      super({ onlyParentType: Select });
+      super({onlyParentType: Select});
     }
 
     async onRawSetRendered(rawSet: RawSet, otherData: OnRawSetRenderedOtherData): Promise<void> {
       await super.onRawSetRendered(rawSet, otherData);
-    // }
-    // onCreatedThisChildDebounce(childrenSet: ChildrenSet[]) {
-    //   super.onCreatedThisChildDebounce(childrenSet);
+      // }
+      // onCreatedThisChildDebounce(childrenSet: ChildrenSet[]) {
+      //   super.onCreatedThisChildDebounce(childrenSet);
       this.changeOptionState();
     }
 
@@ -337,7 +337,8 @@ export namespace Select {
   // --- Main Select Component ---
   export type SelectAttribute = {
     multiple?: boolean | null; class?: string;
-    changeSelected?: (value: (string | null)[]) => void;
+    onchange?: (value?: string) => void;
+    onchangeValues?: (value: string[]) => void;
     name?: string;
     float?: 'bottom-left' | 'bottom-right' | 'top-left' | 'top-right';
     disableOtherClickClose?: boolean;
@@ -354,7 +355,7 @@ export namespace Select {
     // public isOpen = false;
     public selectedValues: (string | null)[] = [];
     public selectedOptions: Option[] = [];
-    public value: string | (string | null)[] | null | undefined;
+    private value: string | (string | null)[] | null | undefined;
 
     @DomRenderNoProxy private element?: HTMLDetailsElement;
     @DomRenderNoProxy private documentClickSubscription?: Subscription;
@@ -367,6 +368,14 @@ export namespace Select {
       super();
       // console.log('----Select constructor')
     }
+
+    // get value(): string | (string | null)[] | null | undefined {
+    //   return this._value;
+    // }
+    // set value(val: string | (string | null)[] | null | undefined) {
+    //   console.log('value set', val)
+    //   this._value = val;
+    // }
 
     get optionComponents(): Option[] {
       return this.getChildren(Option);
@@ -431,13 +440,17 @@ export namespace Select {
       this.options = options;
 
       const values = this.options.filter(it => it.selected && !it.disabled).map(it => it.value)
-      this.getAttribute('changeSelected')?.(values);
       summaries?.forEach(it => {
         it.setDisabled(this.disabled);
         if (!this.disabled) {
           it.setOptions(options);
         }
-      })
+      });
+      this.selectedValues = values;
+      this.selectedOptions = this.options.filter(it => it.selected && !it.disabled);
+      this.value = this.selectedValues[0];
+      this.getAttribute('onchange')?.(this.value);
+      this.getAttribute('onchangeValues')?.(values);
     }
 
     onInitDetailsElement(detailsElement: HTMLDetailsElement) {
@@ -456,6 +469,32 @@ export namespace Select {
       this.windowBlurSubscription?.unsubscribe();
     }
 
+    @attribute('value')
+    setValue(value: string | null | undefined) {
+      this.value = value;
+      if (this.options) {
+
+        // clear
+        this.options.forEach(it=> {
+          it.selected = false;
+          it.updateStatus();
+        });
+        for (let option of this.options) {
+          if (option.value === value) {
+            option.selected = true;
+            if (!this.multiple) {
+              // 하나만 선택
+              break;
+            }
+          } else {
+            option.selected = false;
+          }
+          option.updateStatus()
+        }
+      }
+      console.log('value set', value)
+    }
+
     test() {
       console.log('tttttttt')
     }
@@ -467,7 +506,7 @@ const stateComponentFactory = (name: string, type: any) => {
     RawSet.createComponentTargetElement({
       name,
       template: '<div dr-if="!@this@.hidden" dr-option-strip="true">#innerHTML#</div>\n',
-      objFactory: (e, o, r2, constructorParam) => DomRender.run({ rootObject: new type(), config })
+      objFactory: (e, o, r2, constructorParam) => DomRender.run({rootObject: new type(), config})
     });
 };
 
@@ -550,7 +589,7 @@ export default {
         '<select hidden="hidden" name="${@this@.name}$" disabled="${@this@.disabled ? \'disabled\' : null}$"  style="width: 1500px; height:500px"  multiple>\n' +
         '    <option dr-for-of="@this@.options" value="${#it#.value}$" selected="${#it#.selected ? \'selected\' : null}$">#it# ${#it#.value}$</option>\n' +
         '</select>',
-      objFactory: (e, o, r2, constructorParam) => DomRender.run({ rootObject: new Select.Select(config), config })
+      objFactory: (e, o, r2, constructorParam) => DomRender.run({rootObject: new Select.Select(config), config})
     });
   },
   selectSummary: (config?: DomRenderRunConfig) => {
@@ -563,7 +602,7 @@ export default {
         '>\n' +
         '#innerHTML#\n' +
         '</summary>',
-      objFactory: (e, o, r2, constructorParam) => DomRender.run({ rootObject: new Select.Summary(), config })
+      objFactory: (e, o, r2, constructorParam) => DomRender.run({rootObject: new Select.Summary(), config})
     });
   },
   selectSummaryPlaceholder: stateComponentFactory(`${Select.selector}-summary-placeholder`, Select.SummaryPlaceholder),
@@ -585,7 +624,7 @@ export default {
       name: `${Select.selector}-option`,
       template:
         '<a dr-class="{[@this@.classAttr]: @this@.classAttr}" dr-event-click="@this@.toggleSelected($event)">#innerHTML#</a>\n',
-      objFactory: (e, o, r2, constructorParam) => DomRender.run({ rootObject: new Select.Option(), config })
+      objFactory: (e, o, r2, constructorParam) => DomRender.run({rootObject: new Select.Option(), config})
     });
   },
   selectOptionSelected: stateComponentFactory(`${Select.selector}-option-selected`, Select.OptionSelected),

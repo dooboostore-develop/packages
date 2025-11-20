@@ -22,6 +22,14 @@ export namespace ValidUtils {
     return typeof fn === 'function' && typeof fn.prototype !== 'undefined';
   }
 
+  export const isUrl = (str: string): boolean => {
+    try {
+      new URL(str);
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
 
   export const isFrozen = (obj: any): boolean => {
     return Object.isFrozen(obj);

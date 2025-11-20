@@ -66,6 +66,7 @@ export class PathRouter extends Router {
 
   getUrl(): string {
     if (!this.config.window.document?.location?.href) {
+      //if ((!this.config.window.document?.location?.href) || (this.config.window.document?.location?.href === 'about:blank')) {
       return '/';
     }
     const url = new URL(this.config.window.document.location?.href);

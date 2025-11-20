@@ -12,48 +12,48 @@
 </head>
 <body>
   <div id="app">
-      <div dr-for-of="@this@.users"  dr-option-item-index-variable-name="index" dr-option-item-variable-name="user">
-          aa
+      <div dr-for-of="@this@.users"  dr-option-item-index-variable-name="index" dr-option-item-variable-name="user" >
+        <button  dr-event-click="@this@.changeData(#user#)">${#user#.imgUrl}$ change</button>
       </div>
-    <button dr-event-click="@this@.changeData()">change</button>
 
-<!--    <div dr="@this@.users">-->
-    <div dr-detect="@this@.users">
-      ${@this@.name}$
-    </div>
-    <div dr="@this@.users">
-      ${@this@.name}$
-    </div>
-    <div>
-      ${@this@.name}$
-    </div>
-<!--      <div dr-for-of="@this@.users"  data-uuid="${#user#.name}$" dr-option-item-index-variable-name="index" dr-option-item-variable-name="user">-->
-<!--          <div dr-class="{active: #index# === @this@.selectedIndex }" dr-event-click="@this@.selectedIndex = #index#">${#user#.name}$</div>-->
-<!--      </div>-->
 
-<!--      <div class="ww" style="color:red;" dr-class="['zz']" dr-style="{'backgroundColor':@this@.attrValue}" dr-attr="{ww:@this@.attrValue}">aaa</div>-->
-<!--      <img  dr-attr="{'src':@this@.imgSrc}" loading="lazy" />-->
-<!--      <button dr-event-click="@this@.changeAttr()">change attr</button>-->
-<!--      #{@this@.tag}#-->
+    <!--    <div dr="@this@.users">-->
+    <!--    <div dr-detect="@this@.users">-->
+    <!--      ${@this@.name}$-->
+    <!--    </div>-->
+    <!--    <div dr="@this@.users">-->
+    <!--      ${@this@.name}$-->
+    <!--    </div>-->
+    <!--    <div>-->
+    <!--      ${@this@.name}$-->
+    <!--    </div>-->
+    <!--      <div dr-for-of="@this@.users"  data-uuid="${#user#.name}$" dr-option-item-index-variable-name="index" dr-option-item-variable-name="user">-->
+    <!--          <div dr-class="{active: #index# === @this@.selectedIndex }" dr-event-click="@this@.selectedIndex = #index#">${#user#.name}$</div>-->
+    <!--      </div>-->
 
-<!--      <hr>-->
-<!--&lt;!&ndash;      <div dr-replace-target-element-is="dr-if" value="${true}$">azz</div>&ndash;&gt;-->
-<!--      <dr-target-element  dr-target-element:is="${@this@.t}$" value="${true}$">azz</dr-target-element>-->
-<!--      <hr>-->
-<!--      <dr-if value="${true}$">dddd</dr-if>-->
-<!--      ${@this@.name}$-->
-<!--      <div class="asdasd ${@this@.name}$&#45;&#45; ${`^^${@this@.age}^^`}$"> www</div>-->
+    <!--      <div class="ww" style="color:red;" dr-class="['zz']" dr-style="{'backgroundColor':@this@.attrValue}" dr-attr="{ww:@this@.attrValue}">aaa</div>-->
+    <!--      <img  dr-attr="{'src':@this@.imgSrc}" loading="lazy" />-->
+    <!--      <button dr-event-click="@this@.changeAttr()">change attr</button>-->
+    <!--      #{@this@.tag}#-->
 
-<!--      <button dr-event-click="@this@.changeName()">change name</button>-->
-<!--      <button dr-event-click="@this@.changeAge()">change age</button>-->
+    <!--      <hr>-->
+    <!--&lt;!&ndash;      <div dr-replace-target-element-is="dr-if" value="${true}$">azz</div>&ndash;&gt;-->
+    <!--      <dr-target-element  dr-target-element:is="${@this@.t}$" value="${true}$">azz</dr-target-element>-->
+    <!--      <hr>-->
+    <!--      <dr-if value="${true}$">dddd</dr-if>-->
+    <!--      ${@this@.name}$-->
+    <!--      <div class="asdasd ${@this@.name}$&#45;&#45; ${`^^${@this@.age}^^`}$"> www</div>-->
 
-<!--      <dr-if value="${@this@.sw}$">aa</dr-if>-->
-<!--      <div>-->
-<!--          <div dr-if="@this@.sw">avvva</div>-->
-<!--          <dr-if value="${@this@.sw}$">aa</dr-if>-->
-<!--      </div>-->
-<!--      <button dr-event-click="@this@.toggleSw()">toggle sw ${@this@.sw}$</button>-->
-<!--      <wow></wow>-->
+    <!--      <button dr-event-click="@this@.changeName()">change name</button>-->
+    <!--      <button dr-event-click="@this@.changeAge()">change age</button>-->
+
+    <!--      <dr-if value="${@this@.sw}$">aa</dr-if>-->
+    <!--      <div>-->
+    <!--          <div dr-if="@this@.sw">avvva</div>-->
+    <!--          <dr-if value="${@this@.sw}$">aa</dr-if>-->
+    <!--      </div>-->
+    <!--      <button dr-event-click="@this@.toggleSw()">toggle sw ${@this@.sw}$</button>-->
+    <!--      <wow></wow>-->
   </div>
 </body>
 </html>

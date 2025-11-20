@@ -80,7 +80,8 @@ export namespace FileUtils {
     }
   }
 
-  export const writeFile = async <E=any>(buffer: Buffer, config: { path?: string, originalName?: string, etcData?: E}) => {
+  export const writeFile = async <E=any>(buffer: Buffer, config?: { path?: string, originalName?: string, etcData?: E}) => {
+    config??= {};
     config.path ??= `${node_os.tmpdir()}/${RandomUtils.uuid4()}_${Date.now()}`;
     await node_fs.promises.mkdir(config.path.substring(0, config.path.lastIndexOf('/')), {recursive: true});
     await node_fs.promises.writeFile(config.path, buffer);

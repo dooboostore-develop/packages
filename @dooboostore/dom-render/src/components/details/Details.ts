@@ -16,6 +16,8 @@ export namespace Details {
     class?: string;
     toggle_form_reset?: boolean;
     disableOtherClickClose?: boolean;
+    onOpen?: () => void;
+    onClose?: () => void;
     toggle?: (open: boolean) => void;
   };
   export type BodyAttribute = {
@@ -100,6 +102,11 @@ export namespace Details {
       const toggleAttribute = this.getAttribute('toggle');
       if (toggleAttribute) {
         toggleAttribute?.(element.open);
+      }
+      if (element.open) {
+        this.getAttribute('onOpen')?.();
+      } else {
+        this.getAttribute('onClose')?.();
       }
     }
     async onInitRender(param: any, rawSet: RawSet) {

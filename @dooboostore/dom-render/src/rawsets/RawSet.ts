@@ -44,6 +44,7 @@ import { ConvertUtils } from '@dooboostore/core/convert/ConvertUtils';
 
 export type RenderResult = { raws: RawSet[]; executedOperators: OperatorExecuter[] };
 
+// let renderCnt = 0;
 export class RawSet {
   public static readonly DR_NAME = 'dr';
   public static readonly DR_IF_NAME = 'dr-if';
@@ -280,6 +281,7 @@ export class RawSet {
   // }
   public async render(obj: any, config: DomRenderConfig): Promise<RenderResult> {
     // console.log('render!!!!!!!!!!!!!!')
+    // renderCnt++;
     // const t0 = performance.now();
     // console.group('RawSet render', this);
     const genNode = config.window.document.importNode(this.dataSet.fragment, true);
@@ -430,14 +432,16 @@ export class RawSet {
 
     // replaceBody와 applyEvent 순서를 바꿨다 20250511
     const childrenNodes = Array.from(genNode.childNodes);
-    // console.log(`RawSet aa took ${performance.now() - t0} milliseconds.`, childrenNodes);
+    // console.log(`RawSet aa took ${performance.now() - t0} milliseconds. children`, childrenNodes);
     this.applyEvent(obj, genNode, config);
     // console.log(`RawSet xxxxxxxxxx took ${performance.now() - t0} milliseconds.`);
     this.replaceBody(genNode); // 중요 여기서 마지막에 연션된 값을 그려준다.
+    // console.log(`RawSet replaceBody took ${performance.now() - t0} milliseconds.`);
     // console.log('rawSEt!!!!!!!', obj, this.near)
     // console.log('rawSEt!!!!!!!', obj, this.findNearThis(obj),childrenNodes,config)
     // console.log('rawSEt!!!!!!!', obj, drAttrs)
     this.onRenderedEvent(obj, childrenNodes, config);
+    // console.log(`RawSet onRenderedEvent took ${performance.now() - t0} milliseconds.`);
     drAttrs.forEach(it => {
       if (it.drCompleteOption) {
         // genNode.childNodes
@@ -456,6 +460,7 @@ export class RawSet {
         );
       }
     });
+    // console.log(`RawSet drAttrs.forEach took ${performance.now() - t0} milliseconds.`);
 
     // 중요 style isolation 나중에 :scope로 대체 가능할듯.
     // 2023.9.4일 없앰  style 처음들어올때 처리하는걸로 바꿈
@@ -465,6 +470,9 @@ export class RawSet {
         await it.obj?.onInitRender?.({}, this);
       }
     }
+    // console.log(`RawSet const it of onThisComponentSetCallBacks took ${performance.now() - t0} milliseconds.`);
+
+
     for (const it of onElementInitCallBacks) {
       if (isOnInitRender(this.dataSet.render?.currentThis)) {
         // TODO: 나중에 파라미터 들어가야될듯. 지금은 리팩토링하느라 빠짐
@@ -496,11 +504,13 @@ export class RawSet {
 
       config?.onElementInit?.(it.name, obj, this, it.targetElement);
     }
+    // console.log(`RawSet for (const it of onElementInitCallBacks) { took ${performance.now() - t0} milliseconds.`);
 
     // TODO: 이부분도 위에 targetElement 처럼 해야될까?
     for (const it of onAttrInitCallBacks) {
       config?.onAttrInit?.(it.attrName, it.attrValue, obj, this);
     }
+    // console.log(`RawSet  for (const it of onAttrInitCallBacks) { took ${performance.now() - t0} milliseconds.`);
 
     // component destroy
     if (obj.__domrender_components) {
@@ -514,9 +524,10 @@ export class RawSet {
         }
       });
     }
+    // console.log(`RawSet  if (obj.__domrender_components) { took ${performance.now() - t0} milliseconds.`);
     // console.log('-------raws',raws)
-    // console.log(`RawSet render took ${performance.now() - t0} milliseconds.`);
-    // console.groupEnd();
+    // console.log(`RawSet render took ${performance.now() - t0} milliseconds. END!!`, renderCnt);
+    console.groupEnd();
     return { raws: raws, executedOperators: executedOperators };
   }
 
@@ -727,6 +738,7 @@ export class RawSet {
             key: match[1],
             value: match[2]
           }));
+
           (keyValuePairs ?? []).forEach(it => {
             element.setAttribute(it.key, '${' + it.value + '}$');
           });
@@ -783,6 +795,7 @@ export class RawSet {
               if (cval === null) {
                 element.removeAttribute(it);
                 /* TODO: 여기 더 추가되어야될듯
+                 TODO: 훔..... 없어도될듯?
                 *
     <select dr-event-change="@this@.onMarketChange($event)" class="market-select">
         <option>마켓 선택 (${@this@.markets?.length??0}$개)</option>
@@ -791,9 +804,11 @@ export class RawSet {
         </option>
       </select>
                  */
-              } else if (
-                !(element.hasAttribute(RawSet.DR_VARIABLE_NAME_OPTIONNAME) || element.hasAttribute(RawSet.DR_ITEM_VARIABLE_NAME_OPTIONNAME) || element.hasAttribute(RawSet.DR_ITEM_INDEX_VARIABLE_NAME_OPTIONNAME))
-              ) {
+              // } else if (
+              //   !(element.hasAttribute(RawSet.DR_VARIABLE_NAME_OPTIONNAME) || element.hasAttribute(RawSet.DR_ITEM_VARIABLE_NAME_OPTIONNAME) || element.hasAttribute(RawSet.DR_ITEM_INDEX_VARIABLE_NAME_OPTIONNAME))
+              // ) {
+              //     element.setAttribute(it, cval);
+              } else {
                   element.setAttribute(it, cval);
               }
               normalAttrs.set(it, { originalAttrValue: value, variablePaths: variablePaths, isStringTemplate });
@@ -1431,6 +1446,7 @@ export class RawSet {
     }
 
     // console.log('aa-asIs', targetElement.innerHTML);
+    const componentName = targetElement.getAttribute(RawSet.DR_VARIABLE_NAME_OPTIONNAME) ?? 'component';
     const optionThisName = targetElement.getAttribute(RawSet.DR_THIS_NAME_OPTIONNAME);
     // console.log('11111111111111', optionThisName)
     targetElement
@@ -1439,6 +1455,8 @@ export class RawSet {
     const thisRandom = this.drThisEncoding(targetElement, drThis, { asIs: /@this@/g });
     // console.log('@@@@@@@@@@@@@0', thisRandom);
     // let thisNameRandom: string | undefined = undefined;
+    targetElement.innerHTML = targetElement.innerHTML.replaceAll(`#${componentName}#`, drThis);
+
     if (optionThisName) {
       // console.log('-----0', element.innerHTML, '\n', targetElement.innerHTML)
       targetElement.innerHTML = targetElement.innerHTML.replaceAll(`@${optionThisName}@`, drThis);

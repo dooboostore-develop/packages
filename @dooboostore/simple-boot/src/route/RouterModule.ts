@@ -124,15 +124,42 @@ export class RouterModule<R = SimAtomic, M = any> {
     return this.lastRouteChainValue?.hasActivate(obj) === true;
   }
 
-  get queryParams(): { [key: string]: string } | undefined {
+
+  getQueryParamDecodeURI<T>():T;
+  getQueryParamDecodeURI(key: string): string | string[] | undefined;
+  getQueryParamDecodeURI<T>(key?: string): string | string[] | undefined | T {
+    if (this.intent) {
+      return this.intent.getQueryParamDecodeURI(key);
+    }
+  }
+  getQueryParamDecodeURIFirst(key: string): string  | undefined {
+    if (this.intent) {
+      return this.intent.getQueryParamDecodeURIFirst(key);
+    }
+  }
+
+  getQueryParam<T>():T;
+  getQueryParam(key: string): string | string[] | undefined;
+  getQueryParam<T>(key?: string): string | string[] | undefined {
+    if (this.intent) {
+      return this.intent.getQueryParam(key);
+    }
+  }
+  getQueryParamFirst(key: string): string  | undefined {
+    if (this.intent) {
+      return this.intent.getQueryParamFirst(key);
+    }
+  }
+
+  get queryParams(): { [key: string]: string|string[] } | undefined {
     if (this.intent) {
       return this.intent.queryParams;
     }
   }
 
-  get queryParamsAfterDecodeURI(): { [key: string]: string } | undefined {
+  get queryParamsAfterDecodeURI(): { [key: string]: string|string[] } | undefined {
     if (this.intent) {
-      return this.intent.queryParamsAfterDecodeURI;
+      return this.intent.queryParamsDecodeURI;
     }
   }
 }

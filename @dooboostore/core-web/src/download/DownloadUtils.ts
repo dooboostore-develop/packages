@@ -1,13 +1,19 @@
 export namespace DownloadUtils {
-  export const download = (window: Window, url: string, filename: string = 'download') => {
+  export const download = (window: Window, url: string | Blob, filename: string = 'download') => {
+    /*
+      const response = await fetch(imageUrl);
+      if (!response.ok) throw new Error('Failed to fetch image');
+      const blob = await response.blob();
+     */
     const a = window.document.createElement('a');
-    a.href = url;
+    const targetUrl = typeof url === 'string' ? url : URL.createObjectURL(url);
+    a.href = targetUrl;
     a.download = filename;
     a.style.display = 'none'; // Add this line to hide the element
     window.document.body.appendChild(a);
     a.click();
     window.document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    URL.revokeObjectURL(targetUrl);
   }
   export const csvDownload = <T>(window: Window, datas: T[], config: {includeHeader?: string, headers: (keyof T)[]}) => {
 

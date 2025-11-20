@@ -33,6 +33,15 @@ export namespace ConvertUtils {
     return new Map(JSON.parse(jsonStr));
   };
 
+  export const toUrl = (data: string) => {
+    try {
+      return new URL(data);
+    }
+    catch (e) {
+      throw new Error(`Invalid URL string: ${data}`);
+    }
+  }
+
 
   export const decodeURIString = (data: string) => {
     return decodeURIComponent(data);

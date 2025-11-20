@@ -67,23 +67,76 @@ export class Intent<T = any, E = any> {
 
   get query() {
     const paths = this.fullPath.split('?');
+    // console.log('fullPath', this.fullPath, paths)
     return paths[1] ?? '';
   }
 
-  get queryParams(): { [key: string]: string } {
-    const param = {} as { [key: string]: string };
+
+  getQueryParamDecodeURI<T>():T;
+  getQueryParamDecodeURI(key: string): string | string[] | undefined;
+  getQueryParamDecodeURI<T>(key?: string): string | string[] | undefined | T {
+    const p = this.queryParamsDecodeURI;
+    if (key) {
+      return p[key];
+    } else {
+      return p as T;
+    }
+  }
+  getQueryParamDecodeURIFirst(key: string): string  | undefined {
+    const param = this.getQueryParamDecodeURI(key);
+    if (Array.isArray(param)) {
+      return param[0];
+    } else {
+      return param;
+    }
+  };
+
+  getQueryParam<T>():T;
+  getQueryParam(key: string): string | string[] | undefined;
+  getQueryParam<T>(key?: string): string | string[] | undefined | T {
+    const p = this.queryParams;
+    if (key) {
+      return p[key];
+    } else {
+      return p as T;
+    }
+  }
+  getQueryParamFirst(key: string): string  | undefined {
+    const param = this.getQueryParam(key);
+    if (Array.isArray(param)) {
+      return param[0];
+    } else {
+      return param;
+    }
+  }
+
+  get queryParams(): { [key: string]: string | string[] } {
+    const param = {} as { [key: string]: string | string[] };
     this.query.split('&')?.forEach(it => {
       const a = it.split('=')
-      param[a[0]] = a[1];
+      if (param[a[0]]) {
+        if (Array.isArray(param[a[0]])) {
+          (param[a[0]] as string[]).push(a[1]);
+        } else {
+          param[a[0]] = [param[a[0]] as string, a[1]];
+        }
+      } else {
+        param[a[0]] = a[1];
+      }
     })
     return param;
   }
 
-  get queryParamsAfterDecodeURI(): { [key: string]: string } {
+  get queryParamsDecodeURI(): { [key: string]: string| string[] } {
     const params = this.queryParams;
     for (const key in params) {
       if (params.hasOwnProperty(key)) {
-        params[key] = decodeURIComponent(params[key]);
+        const param = params[key];
+        if (Array.isArray(param)) {
+          params[key] = param.map(p => decodeURIComponent(p));
+        } else {
+          params[key] = decodeURIComponent(param);
+        }
       }
     }
     return params;

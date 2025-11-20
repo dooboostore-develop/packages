@@ -489,15 +489,17 @@ export class WindowBase {
     HTMLCaptionElement = HTMLCaptionElement;
     HTMLTbodyElement = HTMLTbodyElement;
 
-    constructor(document?: Document, initialUrl?: string) {
-        this.document = document || new DocumentBase();
-        
+    constructor(config?: {initialUrl?: string}) {
+      const documentBase = new DocumentBase();
+
         // Set window reference in document for load event
         if (this.document && (this.document as any).setWindow) {
             (this.document as any).setWindow(this);
         }
-        
-        this._location = new LocationBase(initialUrl);
+
+        this._location = new LocationBase(config?.initialUrl);
+        documentBase.setLocation(this._location);
+        this.document = documentBase;
         this.history = new HistoryBase(this);
         this.navigator = new NavigatorBase();
         this.clientInformation = this.navigator;

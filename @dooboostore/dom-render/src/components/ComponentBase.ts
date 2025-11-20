@@ -18,6 +18,7 @@ import { debounceTime } from '@dooboostore/core/message/operators/debounceTime';
 import type { Subscription } from '@dooboostore/core/message/Subscription';
 import { OnRawSetRendered, OnRawSetRenderedOtherData } from "../lifecycle/OnRawSetRendered";
 import {bufferTime} from "@dooboostore/core/message/operators/bufferTime";
+import {OnChildRawSetRendered} from "../lifecycle/OnChildRawSetRendered";
 
 
 export const ATTRIBUTE_METADATA_KEY = Symbol('attribute');
@@ -132,11 +133,15 @@ export function event(options: { query: string, name: string, onDestroy?: (compo
 }
 
 
-export type ComponentBaseConfig = { onlyParentType?: ConstructorType<any>[] | ConstructorType<any>, createChildrenDebounce?: number, onRawSetRenderedOtherDataDebounce?: number };
+export type ComponentBaseConfig = { onlyParentType?: ConstructorType<any>[] | ConstructorType<any>,
+  createChildrenDebounce?: number,
+  onRawSetRenderedOtherDataDebounce?: number
+  onChildRawSetRenderedOtherDataDebounce?: number
+};
 
 export type ChildrenSet = { instance: any, data: OnCreateRenderDataParams };
 
-export class ComponentBase<T = any, C extends ComponentBaseConfig = ComponentBaseConfig> implements OnChangeAttrRender, OnCreateRenderData, OnCreatedThisChild, OnDrThisBind, OnDrThisUnBind, OnInitRender, OnDestroyRender, OnRawSetRendered {
+export class ComponentBase<T = any, C extends ComponentBaseConfig = ComponentBaseConfig> implements OnChangeAttrRender, OnCreateRenderData, OnCreatedThisChild, OnDrThisBind, OnDrThisUnBind, OnInitRender, OnDestroyRender, OnRawSetRendered, OnChildRawSetRendered {
   @DomRenderNoProxy
   private _rawSet?: RawSet;
   @DomRenderNoProxy
@@ -161,7 +166,11 @@ export class ComponentBase<T = any, C extends ComponentBaseConfig = ComponentBas
   @DomRenderNoProxy
   private onRawSetRenderedOtherDataSubject = new Subject<OnRawSetRenderedOtherData>();
   @DomRenderNoProxy
+  private onChildRawSetRenderedOtherDataSubject = new Subject<void>();
+  @DomRenderNoProxy
   private onRawSetRenderedOtherDataSubjectSubscription?: Subscription | undefined;
+  @DomRenderNoProxy
+  private onChildRawSetRenderedOtherDataSubjectSubscription?: Subscription | undefined;
 
   constructor(private _config?: C) {
   }
@@ -398,6 +407,11 @@ export class ComponentBase<T = any, C extends ComponentBaseConfig = ComponentBas
       });
     }
   }
+
+  async onChildRawSetRendered(): Promise<void> {
+    this.onChildRawSetRenderedOtherDataSubject.next();
+  }
+
   /**
    * Manually refresh all query and event decorators
    * Useful when DOM elements are dynamically added/removed and you want to update bindings
@@ -650,6 +664,9 @@ getAttributeNames(attribute = this._attribute): string[] {
   }
   onRawSetRenderedDebounce(childrenSet: OnRawSetRenderedOtherData[]) {
   }
+  onChildRawSetRenderedDebounce(){
+
+  }
 
   onCreateRenderData(data: OnCreateRenderDataParams): void {
     this._render = data.render;
@@ -688,13 +705,21 @@ getAttributeNames(attribute = this._attribute): string[] {
   }
 
   async onInitRender(param: any, rawSet: RawSet) {
-    this.createChildrenDebounceSubscription = this.childrenSetSubject.pipe(debounceTime(this.componentConfig?.createChildrenDebounce??0)).subscribe(it => {
+    this.createChildrenDebounceSubscription = this.childrenSetSubject.pipe(
+      debounceTime(this.componentConfig?.createChildrenDebounce??0)
+    ).subscribe(it => {
+      // console.log('call onCreatedThisChildDebounce', it);
       this.onCreatedThisChildDebounce(it);
     });
     this.onRawSetRenderedOtherDataSubjectSubscription = this.onRawSetRenderedOtherDataSubject.pipe(
       bufferTime(this.componentConfig?.onRawSetRenderedOtherDataDebounce??0)
     ).subscribe(it => {
       this.onRawSetRenderedDebounce(it);
+    });
+    this.onChildRawSetRenderedOtherDataSubjectSubscription = this.onChildRawSetRenderedOtherDataSubject.pipe(
+      debounceTime(this.componentConfig?.onChildRawSetRenderedOtherDataDebounce??0)
+    ).subscribe(it => {
+      this.onChildRawSetRenderedDebounce();
     });
     if (rawSet) {
       this.setRawSet(rawSet);
@@ -728,6 +753,8 @@ getAttributeNames(attribute = this._attribute): string[] {
     this._cleanupEventBindings();
     this._clearAllRefreshTimers();
     this.createChildrenDebounceSubscription?.unsubscribe();
+    this.onRawSetRenderedOtherDataSubjectSubscription?.unsubscribe();
+    this.onChildRawSetRenderedOtherDataSubjectSubscription?.unsubscribe();
   }
 
 }

@@ -1,20 +1,22 @@
-import { ConvertUtils } from '@dooboostore/core/convert/ConvertUtils';
-import { Observable } from '@dooboostore/core/message/Observable';
-import { BehaviorSubject } from '@dooboostore/core/message/BehaviorSubject';
-import { Expression } from '@dooboostore/core/expression/Expression';
+import {ConvertUtils} from '@dooboostore/core/convert/ConvertUtils';
+import {Observable} from '@dooboostore/core/message/Observable';
+import {BehaviorSubject} from '@dooboostore/core/message/BehaviorSubject';
+import {Expression} from '@dooboostore/core/expression/Expression';
 import ToURLSearchParamsParams = ConvertUtils.ToURLSearchParamsParams;
+import {ValidUtils} from "@dooboostore/core/valid/ValidUtils";
 
 export type RouteData = {
   path: string;
   url: string;
   data?: any;
+  search: string;
   searchParams: URLSearchParams;
   pathData?: any;
   router: Router;
 }
 
-export type RouterConfig<T = any> = { rootObject?: T, window: Window, firstUrl?: string};
-export type ChangeStateResult = {data?: any}
+export type RouterConfig<T = any> = { rootObject?: T, window: Window, firstUrl?: string };
+export type ChangeStateResult = { data?: any }
 export type RouteAction = string | { path?: string, searchParams?: ToURLSearchParamsParams };
 
 type RouterEventType = RouteData & { triggerPoint: 'start' | 'end' };
@@ -29,11 +31,13 @@ export abstract class Router<T = any> {
     let routeData: RouterEventType;
     if (config?.firstUrl) {
       const path = config.firstUrl.split('?');
+      const urlSearchParams = new URLSearchParams(path[1] ?? '');
       routeData = {
         url: config.firstUrl,
         path: path[0],
-        searchParams: new URLSearchParams(path[1]??''),
+        searchParams: urlSearchParams,
         router: this,
+        search: urlSearchParams.size > 0 ? `?${urlSearchParams.toString()}` : '',
         triggerPoint: 'end'
       }
       this.behaviorSubject = new BehaviorSubject<RouterEventType>(routeData);
@@ -86,7 +90,7 @@ export abstract class Router<T = any> {
     if (regexp) {
       const b = RegExp(regexp).test(this.getPathName());
       return b;
-    }else {
+    } else {
       return false;
     }
   }
@@ -99,34 +103,46 @@ export abstract class Router<T = any> {
     }
   }
 
-  getRouteData(config?: {pathOrUrl?: string, urlExpression?: string}): RouteData {
+  getRouteData(config?: { pathOrUrl?: string, urlExpression?: string }): RouteData {
 
     let path = '';
-    let url ='';
+    let url = '';
+    let searchParams: URLSearchParams;
     if (config?.pathOrUrl) {
-      let isUrl = false;
-      try {
-        new URL(config.pathOrUrl);
-        isUrl = true;
-      } catch {
-        isUrl = false;
-      }
-      if(isUrl){
-        const u = new URL(config.pathOrUrl);
-        path = u.pathname;
-        url = u.pathname + u.search;
+      // try {
+      //   new URL(config.pathOrUrl);
+      //   isUrl = true;
+      // } catch {
+      //   isUrl = false;
+      // }
+      // if(isUrl){
+      //   const u = new URL(config.pathOrUrl);
+      //   path = u.pathname;
+      //   url = u.pathname + u.search;
+      // } else {
+      const paths = config.pathOrUrl.split('?');
+      searchParams = new URLSearchParams(paths[1]);
+      const firstUrl = paths[0];
+      if (ValidUtils.isUrl(firstUrl)) {
+        path = new URL(firstUrl).pathname;
       } else {
-        path = config.pathOrUrl.split('?')[0];
+        path = firstUrl;
       }
+      url = config.pathOrUrl;
+      // }
     } else {
       path = this.getPathName();
       url = this.getUrl();
+      searchParams = this.getSearchParams();
     }
-    const newVar = {
+    // console.log('url', url);
+    const newVar: RouteData = {
       path: path,
       url: url,
-      searchParams: this.getSearchParams()
-    } as RouteData;
+      searchParams: searchParams,
+      search: searchParams.size > 0 ? `?${searchParams.toString()}` : '',
+      router: this
+    };
 
     const data = this.getData();
     if (data) {
@@ -138,26 +154,26 @@ export abstract class Router<T = any> {
         newVar.pathData = data;
       }
     }
-    newVar.router = this;
+    // newVar.router = this;
     // newVar.currentTarget = config?.currentTarget;
     return Object.freeze(newVar);
   }
 
-  pushState(data: any, title: string | undefined, path: string):ChangeStateResult {
+  pushState(data: any, title: string | undefined, path: string): ChangeStateResult {
     // data = this.config.changeStateConvertDate?this.config.changeStateConvertDate(data): data;
     // console.log('--->pushState', data);
-    this.behaviorSubject.next({ ...this.getRouteData({pathOrUrl:path}), triggerPoint: 'start' });
+    this.behaviorSubject.next({...this.getRouteData({pathOrUrl: path}), triggerPoint: 'start'});
     this.config.window.history?.pushState(data, title ?? '', path);
-    this.behaviorSubject.next({ ...this.getRouteData({pathOrUrl:path}), triggerPoint: 'end' });
+    this.behaviorSubject.next({...this.getRouteData({pathOrUrl: path}), triggerPoint: 'end'});
     return {data};
   }
 
-  replaceState(data: any, title: string | undefined, path: string):ChangeStateResult {
+  replaceState(data: any, title: string | undefined, path: string): ChangeStateResult {
     // data = this.config.changeStateConvertDate?this.config.changeStateConvertDate(data): data;
     // console.log('--->replaceState', data);
-    this.behaviorSubject.next({ ...this.getRouteData({pathOrUrl:path}), triggerPoint: 'start' });
+    this.behaviorSubject.next({...this.getRouteData({pathOrUrl: path}), triggerPoint: 'start'});
     this.config.window.history?.replaceState(data, title ?? '', path);
-    this.behaviorSubject.next({ ...this.getRouteData({pathOrUrl:path}), triggerPoint: 'end' });
+    this.behaviorSubject.next({...this.getRouteData({pathOrUrl: path}), triggerPoint: 'end'});
     return {data};
   }
 
@@ -170,29 +186,30 @@ export abstract class Router<T = any> {
   }
 
   back(): void {
-    this.behaviorSubject.next({...this.getRouteData(),triggerPoint:'start'});
+    this.behaviorSubject.next({...this.getRouteData(), triggerPoint: 'start'});
     this.config.window.history.back();
     //en부분은 constructo의  this.config.window.addEventListener('popstate'   에서 받아서 처리된다 호출된다.
   }
 
   forward(): void {
-    this.behaviorSubject.next({...this.getRouteData(),triggerPoint:'start'});
+    this.behaviorSubject.next({...this.getRouteData(), triggerPoint: 'start'});
     this.config.window.history?.forward();
     //end부분은 constructor의  this.config.window.addEventListener('popstate'   에서 받아서 처리된다 호출된다.
   }
 
   go(i: number): void;
-  async go(config:  string | { path: RouteAction, data?: any, replace?: boolean, title?: string, scrollToTop?: boolean } | string): Promise<void> ;
+  async go(config: string | { path: RouteAction, data?: any, replace?: boolean, title?: string, scrollToTop?: boolean } | string): Promise<void> ;
   go(config: number | string | { path: RouteAction, data?: any, replace?: boolean, title?: string, scrollToTop?: boolean } | string): Promise<void> | void {
+    // console.log('Router go', config);
     if (typeof config === 'number') {
-      this.behaviorSubject.next({...this.getRouteData(),triggerPoint:'start'});
+      this.behaviorSubject.next({...this.getRouteData(), triggerPoint: 'start'});
       this.config.window.history?.go(config);
       //end부분은 constructor의  this.config.window.addEventListener('popstate'   에서 받아서 처리된다 호출된다.
       return;
     }
 
     if (typeof config === 'string') {
-      config = { path: config };
+      config = {path: config};
     }
 
     // let data: ChangeStateResult | undefined = undefined;
@@ -209,7 +226,8 @@ export abstract class Router<T = any> {
     if (config.scrollToTop !== false) {
       try {
         this._config.window?.scrollTo?.(0, 0);
-      }catch (e){}
+      } catch (e) {
+      }
     }
 
     // console.log('----------', data, config)
@@ -241,17 +259,17 @@ export abstract class Router<T = any> {
 
   abstract pushDeleteHashSearchParam(name: string | string[], data?: any, title?: string): void;
 
-  abstract pushAddSearchParam(params:[[string, string]], data?: any, title?: string): void;
+  abstract pushAddSearchParam(params: [[string, string]], data?: any, title?: string): void;
 
   abstract replaceDeleteSearchParam(name: string | string[], data?: any, title?: string): void;
 
   abstract replaceDeleteHashSearchParam(name: string | string[], data?: any, title?: string): void;
 
-  abstract replaceAddSearchParam(params:[[string, string]], data?: any, title?: string): void;
+  abstract replaceAddSearchParam(params: [[string, string]], data?: any, title?: string): void;
 
-  abstract getSearchParams(data?:{delete?:string[], append?:[[string, string]]}): URLSearchParams;
+  abstract getSearchParams(data?: { delete?: string[], append?: [[string, string]] }): URLSearchParams;
 
-  abstract getHashSearchParams(data?:{delete?:string[], append?:[[string, string]]}): URLSearchParams;
+  abstract getHashSearchParams(data?: { delete?: string[], append?: [[string, string]] }): URLSearchParams;
 
   abstract getUrl(): string;
 

@@ -1,11 +1,29 @@
 import { Element } from './Element';
 
 /**
+ * [MDN Reference](https://developer.mozilla.org/docs/Web/API/ElementCSSInlineStyle)
+ */
+export interface ElementCSSInlineStyle {
+    /** [MDN Reference](https://developer.mozilla.org/docs/Web/API/HTMLElement/attributeStyleMap) */
+    readonly attributeStyleMap: StylePropertyMap;
+    /** [MDN Reference](https://developer.mozilla.org/docs/Web/API/HTMLElement/style) */
+    style: CSSStyleDeclaration | string;
+}
+
+export interface StylePropertyMap {
+    append(property: string, ...values: (string | any)[]): void;
+    clear(): void;
+    delete(property: string): void;
+    set(property: string, ...values: (string | any)[]): void;
+    [key: string]: any;
+}
+
+/**
  * The **`HTMLElement`** interface represents any HTML element.
  * 
  * [MDN Reference](https://developer.mozilla.org/docs/Web/API/HTMLElement)
  */
-export interface HTMLElement extends Element {
+export interface HTMLElement extends Element, ElementCSSInlineStyle {
     /**
      * Returns the value of element's title content attribute. Can be set to change it.
      * 
@@ -102,4 +120,21 @@ export interface HTMLElement extends Element {
 // 기본 타입들
 export interface FocusOptions {
     preventScroll?: boolean;
+}
+
+export interface CSSStyleDeclaration {
+    cssText: string;
+    length: number;
+    parentRule: any;
+    getPropertyPriority(property: string): string;
+    getPropertyValue(property: string): string;
+    item(index: number): string;
+    removeProperty(property: string): string;
+    setProperty(property: string, value: string | null, priority?: string): void;
+    [index: number]: string;
+    [key: string]: any;
+}
+
+export interface DOMStringMap {
+    [key: string]: string | undefined;
 }

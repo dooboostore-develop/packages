@@ -1,6 +1,7 @@
 import {ParentNodeBase} from './ParentNodeBase';
 import {DOCUMENT_NODE, Node} from './Node';
 import {Document, ElementCreationOptions, DocumentReadyState, DocumentVisibilityState, ImportNodeOptions, CaretPositionFromPointOptions, StartViewTransitionOptions, ViewTransitionUpdateCallback} from './Document';
+import {Location} from '../window/Window';
 import {Comment} from './Comment';
 import {Text} from './Text';
 import {DocumentFragment} from './DocumentFragment';
@@ -65,7 +66,7 @@ export class DocumentBase extends ParentNodeBase implements Document {
     readonly links: HTMLCollectionOf<any> = new HTMLCollectionOf([]);
     
     // Location property - simple implementation for Document
-    private _location: any = {
+    private _location: Location = {
         href: 'about:blank',
         protocol: 'about:',
         host: '',
@@ -78,9 +79,13 @@ export class DocumentBase extends ParentNodeBase implements Document {
         assign: (url: string) => { this._location.href = url; },
         replace: (url: string) => { this._location.href = url; },
         reload: () => {},
+        // @ts-ignore
         toString: () => this._location.href
     };
-    
+
+    setLocation(location: Location): void {
+      this._location = location;
+    }
     get location(): any {
         return this._location;
     }

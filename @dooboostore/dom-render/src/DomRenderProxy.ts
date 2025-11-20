@@ -20,6 +20,7 @@ import { ObjectUtils } from '@dooboostore/core/object/ObjectUtils';
 import { ValidUtils } from '@dooboostore/core/valid/ValidUtils';
 import { isOnProxyDomRender } from './lifecycle/OnProxyDomRender';
 import { isOnRawSetRendered } from './lifecycle/OnRawSetRendered';
+import {isOnChildRawSetRendered} from "./lifecycle/OnChildRawSetRendered";
 
 const excludeGetSetPropertys = [
   'onBeforeReturnGet',
@@ -62,8 +63,8 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
   public _domRender_ref = new Map<object, Set<string>>();
   public _rawSets = new Map<string, Set<RawSet>>();
   public _domRender_proxy?: T;
-  // public _firstTarget: Node;
   public _targets = new Set<Node>();
+  // public name = Math.random();
 
   constructor(
     public _domRender_origin: T,
@@ -195,7 +196,7 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
       const onInit = (target as any).getAttribute?.(RawSet.DR_ON_INIT_ARGUMENTS_OPTIONNAME);
       let initParam: any;
       if (onCreate) {
-        initParam = ScriptUtils.evaluateReturn(onCreate, this._domRender_proxy);
+        initParam = ObjectUtils.Script.evaluateReturn(onCreate, this._domRender_proxy);
       }
       if (isOnInitRender(this._domRender_proxy)) {
         await this._domRender_proxy.onInitRender(
@@ -290,6 +291,10 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
         await t.onRawSetRendered(it, { path: fullPathStr, value: ObjectUtils.Script.evaluateReturn(`this.${fullPathStr}`, this._domRender_proxy), root: this._domRender_proxy, renderResult });
       }
       // console.log('----', it);
+    }
+
+    if (isOnChildRawSetRendered(this._domRender_proxy)) {
+      await this._domRender_proxy.onChildRawSetRendered();
     }
 
     if (removeRawSets.length > 0) {
@@ -520,10 +525,13 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
     //     return true;
     // }
     // console.log('set--?', p, target, value);
-
+    let start = performance.now()
     if (typeof p === 'string') {
       value = this.proxy(receiver, value, p);
     }
+    // console.log('set proxy time', performance.now() - start, p);
+    // start = performance.now();
+
 
     // console.log('set typeChecked',  (target as any)[p] instanceof ComponentSet, value instanceof ComponentSet);
     // if ((target as any)[p] instanceof ComponentSet) {
@@ -539,6 +547,9 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
       fullPathInfo = this.root([[{ path: p, obj: this._domRender_proxy }]], value);
     }
 
+    // console.log('set proxy root time', performance.now() - start, p);
+    // start = performance.now();
+    //
     // console.log('setRooot', fullPathInfo);
 
     //normal attribute 또한 링크랑 같은 증세라서 이렇게 해줘야한다!!
@@ -596,6 +607,11 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
       }
     );
 
+    // console.log('set proxy normalAttrMapAttrName time', performance.now() - start, p);
+    // start = performance.now();
+
+
+
     //여기서 링크 같은거 해줘야함  *-link로 변수값이 변경되면 그걸 참고하고있는 다른것들에도 해줘야한다.
     DocumentUtils.querySelectorAllByAttributeName(rootElement, EventManager.linkTargetMapAttrName)?.forEach(
       elementInfo => {
@@ -642,6 +658,9 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
       }
     );
 
+    // console.log('set proxy linkTargetMapAttrName time', performance.now() - start, p);
+    // start = performance.now();
+
     // console.log('---end',receiver);
     if (
       'onBeforeReturnSet' in receiver &&
@@ -656,6 +675,8 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
         );
       }
     }
+
+    // console.log('done!!')
     return true;
   }
 

@@ -1,5 +1,11 @@
 import { Observable, OperatorFunction } from '../Observable';
-import { EmptyError } from './first'; // Reusing EmptyError from first
+
+export class EmptyError extends Error {
+  constructor(message: string = 'No elements in single') {
+    super(message);
+    this.name = 'EmptyError';
+  }
+}
 
 export class SequenceError extends Error {
   constructor(message: string) {

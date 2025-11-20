@@ -229,35 +229,59 @@ export namespace ObjectUtils {
         return path;
       }
       
+      // Protect nullish coalescing operator (??) by replacing it with a placeholder
+      const nullishCoalescingPlaceholder = '__NULLISH_COALESCING__';
+      const hasNullishCoalescing = path.includes('??');
+      let tempPath = path;
+      if (hasNullishCoalescing) {
+        tempPath = tempPath.replace(/\?\?/g, nullishCoalescingPlaceholder);
+      }
+      
       // Check for ternary operator pattern (? :)
-      // Match both "? " and "?" (with or without space) followed by ":" somewhere later
-      const ternaryMatch = path.match(/\?\s*[^?.[\]]+\s*:/);
+      // Match "? " (with space after ?) followed by ":" somewhere later - this indicates a ternary operator
+      // The space after ? is crucial to distinguish from optional chaining (?.)
+      const ternaryMatch = tempPath.match(/\?\s+[^:]*:/);
       if (ternaryMatch) {
-        // Handle ternary operator - only convert property access parts, not the ternary operator itself
-        const parts = path.split(/(\s*\?\s*|\s*:\s*)/);
-        const result = parts.map((part, index) => {
-          // Only process the first part (before ?) for optional chaining
-          if (index === 0) {
-            // Recursively process the part to handle function calls properly
-            return toOptionalChainPath(part);
+        // Handle ternary operator - split by the ternary operator parts
+        // We need to split carefully to preserve the ? and : operators
+        const questionMarkIndex = tempPath.indexOf('?');
+        const colonIndex = tempPath.indexOf(':', questionMarkIndex);
+        
+        if (questionMarkIndex !== -1 && colonIndex !== -1) {
+          // Check if there's a space after the ?
+          const charAfterQuestion = tempPath.charAt(questionMarkIndex + 1);
+          if (charAfterQuestion === ' ' || charAfterQuestion === '\t' || charAfterQuestion === '\n') {
+            // Split into three parts: condition, true branch, false branch
+            const condition = tempPath.substring(0, questionMarkIndex).trim();
+            const trueBranch = tempPath.substring(questionMarkIndex + 1, colonIndex).trim();
+            const falseBranch = tempPath.substring(colonIndex + 1).trim();
+            
+            // Process each part recursively
+            const processedCondition = toOptionalChainPath(condition);
+            const processedTrueBranch = toOptionalChainPath(trueBranch);
+            const processedFalseBranch = toOptionalChainPath(falseBranch);
+            
+            // Reconstruct with original spacing around ? and :
+            const finalResult = `${processedCondition} ? ${processedTrueBranch} : ${processedFalseBranch}`;
+            
+            // Restore nullish coalescing operator
+            return hasNullishCoalescing ? finalResult.replace(new RegExp(nullishCoalescingPlaceholder, 'g'), '??') : finalResult;
           }
-          return part;
-        });
-        return result.join('');
+        }
       }
       
       // Handle function calls by processing the entire path with regex replacement
-      if (path.includes('(')) {
+      if (tempPath.includes('(')) {
         // Replace function calls with a placeholder, process the path, then restore function calls
         const functionCallMatches: Array<{original: string, processed: string, placeholder: string}> = [];
-        let tempPath = path;
+        let workingPath = tempPath;
         let counter = 0;
         
         // Find and process function calls with their arguments
         const functionCallRegex = /(\w+)\(([^()]*(?:\([^()]*\)[^()]*)*)\)/g;
         let match;
         
-        while ((match = functionCallRegex.exec(path)) !== null) {
+        while ((match = functionCallRegex.exec(tempPath)) !== null) {
           const fullMatch = match[0];
           const funcName = match[1];
           const funcArgs = match[2];
@@ -275,17 +299,17 @@ export namespace ObjectUtils {
             placeholder: placeholder
           });
           
-          tempPath = tempPath.replace(fullMatch, placeholder);
+          workingPath = workingPath.replace(fullMatch, placeholder);
           counter++;
         }
         
         // Process the path without function calls
-        const tokens = tempPath.match(/[^?.[\]]+|\[[^\]]*\]/g);
+        const tokens = workingPath.match(/[^?.[\]]+|\[[^\]]*\]/g);
         let processedPath = '';
         if (tokens && tokens.length > 1) {
           processedPath = tokens.join('?.');
         } else {
-          processedPath = tempPath;
+          processedPath = workingPath;
         }
         
         // Restore function calls
@@ -293,16 +317,19 @@ export namespace ObjectUtils {
           processedPath = processedPath.replace(funcMatch.placeholder, funcMatch.processed);
         }
         
-        return processedPath;
+        // Restore nullish coalescing operator
+        return hasNullishCoalescing ? processedPath.replace(new RegExp(nullishCoalescingPlaceholder, 'g'), '??') : processedPath;
       }
       
       // Tokenize the path by '.', '[', ']', and '?' to handle property access and existing optional chaining.
-      const tokens = path.match(/[^?.[\]]+|\[[^\]]*\]/g);
+      const tokens = tempPath.match(/[^?.[\]]+|\[[^\]]*\]/g);
       if (!tokens) {
-        return path; // Return original path if no tokens are found (e.g., path is just '.')
+        return hasNullishCoalescing ? path : path; // Return original path if no tokens are found (e.g., path is just '.')
       }
       // Join tokens with '?.', effectively creating the optional chain path.
-      return tokens.join('?.');
+      const result = tokens.join('?.');
+      // Restore nullish coalescing operator
+      return hasNullishCoalescing ? result.replace(new RegExp(nullishCoalescingPlaceholder, 'g'), '??') : result;
     };
 
     export const removeOptionalChainOperator = (path: string): string => {

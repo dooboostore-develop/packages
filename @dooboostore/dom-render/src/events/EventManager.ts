@@ -15,7 +15,7 @@ type HandlerInfo = {
 export type NormalAttrDataType = {
   originalAttrValue: string;
   isStringTemplate: boolean;
-  variablePaths: {origin: string, inner: string}[];
+  variablePaths: { origin: string, inner: string }[];
 }
 export class EventManager {
   public static readonly attrPrefix = 'dr-';
@@ -49,11 +49,11 @@ export class EventManager {
 
   // link는 쓰지 않는걸 추천한다 라이프 사이클 꼬인다 다른 프레임워크에서도 양방향은 지양 한다
   public static linkAttrs = [
-    {name: EventManager.attrPrefix + 'value-link', property: 'value', event: 'input'},
-    {name: EventManager.attrPrefix + 'hidden-link', property: 'value', event: 'input'},
-    {name: EventManager.attrPrefix + 'required-link', property: 'value', event: 'input'},
-    {name: EventManager.attrPrefix + 'checked-link', property: 'checked', event: 'change'},
-    {name: EventManager.attrPrefix + 'open-link', property: 'open', event: 'toggle'},
+    { name: EventManager.attrPrefix + 'value-link', property: 'value', event: 'input' },
+    { name: EventManager.attrPrefix + 'hidden-link', property: 'value', event: 'input' },
+    { name: EventManager.attrPrefix + 'required-link', property: 'value', event: 'input' },
+    { name: EventManager.attrPrefix + 'checked-link', property: 'checked', event: 'change' },
+    { name: EventManager.attrPrefix + 'open-link', property: 'open', event: 'toggle' },
   ]
   // @ts-ignore  합성이벤트(Synthetic) 처리하면서 의미가 없어졌다
   public static readonly linkTargetMapAttrName = EventManager.attrPrefix + 'link-variables';
@@ -147,19 +147,19 @@ export class EventManager {
       });
 
       const rootElement = this.window.document;
-        const listeningEvents = new Set<string>();
-        this.eventNames.forEach(eventName => {
-          if (this.directAttachEvents.has(eventName)) {
-            return;
-          }
-          const delegatedEventName = this.delegatableEventMap[eventName] || eventName;
+      const listeningEvents = new Set<string>();
+      this.eventNames.forEach(eventName => {
+        if (this.directAttachEvents.has(eventName)) {
+          return;
+        }
+        const delegatedEventName = this.delegatableEventMap[eventName] || eventName;
 
-          if (listeningEvents.has(delegatedEventName)) {
-            return;
-          }
-          listeningEvents.add(delegatedEventName);
-          rootElement.addEventListener(delegatedEventName, this.handleEvent.bind(this), true);
-        });
+        if (listeningEvents.has(delegatedEventName)) {
+          return;
+        }
+        listeningEvents.add(delegatedEventName);
+        rootElement.addEventListener(delegatedEventName, this.handleEvent.bind(this), true);
+      });
     }
   }
 
@@ -182,7 +182,7 @@ export class EventManager {
 
   private collectHandlers(event: Event): HandlerInfo[] {
     const handlers: HandlerInfo[] = [];
-    const root =  this.window.document;
+    const root = this.window.document;
     if (!root) return handlers;
 
     const initialTarget = event.target as Node;
@@ -255,7 +255,7 @@ export class EventManager {
 
   private findComponentInstance(element: HTMLElement | null): any {
     let current = element;
-    const root =  this.window.document;
+    const root = this.window.document;
     while (current) {
       if ((current as any).obj) {
         return (current as any).obj;
@@ -286,7 +286,7 @@ export class EventManager {
   }
 
   private executeHandler(event: Event, handler: HandlerInfo, componentInstance: any) {
-    const {element, type, attr} = handler;
+    const { element, type, attr } = handler;
     const config = getDomRenderConfig(componentInstance);
 
     switch (type) {
@@ -311,7 +311,7 @@ export class EventManager {
         let value = (element as any)[handler.property];
 
         if (mapScript) {
-          const context = this.createExecutionContext(event, element, bindObj, config, {value});
+          const context = this.createExecutionContext(event, element, bindObj, config, { value });
           value = ScriptUtils.evaluate(`return ${mapScript}`, context);
         }
 
@@ -370,7 +370,7 @@ export class EventManager {
           params[k.slice(prefix.length)] = v;
         });
 
-        const paramContext = this.createExecutionContext(event, element, componentInstance, config, {params});
+        const paramContext = this.createExecutionContext(event, element, componentInstance, config, { params });
         ScriptUtils.evaluate(`${this.getBindScript(config)} ${paramScript}`, paramContext);
         break;
     }
@@ -380,11 +380,11 @@ export class EventManager {
     // const t0 = performance.now();
     const elements = new Set<Element>();
     const addAttributes = config?.applyEvents?.map(it => it.attrName) ?? [];
-   const attrs = addAttributes.concat([...EventManager.attrNames]).filter(Boolean);
-   if (attrs.length) {
-     const selector = attrs.map(a => `[${a}]`).join(',');
-     fragment?.querySelectorAll(selector).forEach(it => elements.add(it));
-   }
+    const attrs = addAttributes.concat([...EventManager.attrNames]).filter(Boolean);
+    if (attrs.length) {
+      const selector = attrs.map(a => `[${a}]`).join(',');
+      fragment?.querySelectorAll(selector).forEach(it => elements.add(it));
+    }
     // console.log('findAttrElements time', performance.now() - t0);
     return elements;
   }
@@ -412,7 +412,7 @@ export class EventManager {
       const script = attribute;
       if (script) {
         const data = ObjectUtils.Script.evaluateReturn(script, obj);
-        if (it.checked!== data) {
+        if (it.checked !== data) {
           it.checked = data;
         }
       }
@@ -423,7 +423,7 @@ export class EventManager {
       const script = attribute;
       if (script) {
         const data = ObjectUtils.Script.evaluateReturn(script, obj);
-        if (it.selected!== data) {
+        if (it.selected !== data) {
           it.selected = data;
         }
       }
@@ -434,7 +434,7 @@ export class EventManager {
       const script = attribute;
       if (script) {
         const data = ObjectUtils.Script.evaluateReturn(script, obj);
-        if (it.readOnly!== data) {
+        if (it.readOnly !== data) {
           it.readOnly = data;
         }
       }
@@ -445,7 +445,7 @@ export class EventManager {
       const script = attribute;
       if (script) {
         const data = ObjectUtils.Script.evaluateReturn(script, obj);
-        if (it.disabled!== data) {
+        if (it.disabled !== data) {
           it.disabled = data;
         }
       }
@@ -455,8 +455,8 @@ export class EventManager {
     this.procAttr<HTMLElement>(childNodes, EventManager.hiddenAttrName, (it, attribute) => {
       const script = attribute;
       if (script) {
-        const data = ScriptUtils.evaluateReturn(script, obj);
-        if (it.hidden!== data) {
+        const data = ObjectUtils.Script.evaluateReturn(script, obj);
+        if (it.hidden !== data) {
           it.hidden = data;
         }
       }
@@ -467,7 +467,7 @@ export class EventManager {
       const script = attribute;
       if (script) {
         const data = ObjectUtils.Script.evaluateReturn(script, obj);
-        if (it.required!== data) {
+        if (it.required !== data) {
           it.required = data;
         }
       }
@@ -478,7 +478,7 @@ export class EventManager {
       const script = attribute;
       if (script) {
         const data = ObjectUtils.Script.evaluateReturn(script, obj);
-        if (it.open!== data) {
+        if (it.open !== data) {
           it.open = data;
         }
       }
@@ -491,27 +491,27 @@ export class EventManager {
 
         const variablePaths = v.variablePaths;
         let targetScript = v.originalAttrValue;//typeof v.originalAttrValue === 'string' ? JSON.parse(v.originalAttrValue) : v.originalAttrValue;
-          let script: string;
-          if (v.isStringTemplate) {
-              variablePaths.forEach(it => {
-                  let r = ObjectUtils.Path.toOptionalChainPath(it.inner);
-                  targetScript = targetScript.replaceAll(it.origin, `\${${r}}`);
-              })
-                script = '`' + targetScript + '`';
-          } else {
-              variablePaths.forEach(it => {
-                  let r = ObjectUtils.Path.toOptionalChainPath(it.inner);
-                  targetScript = targetScript.replaceAll(it.origin, `${r}`);
-              })
-              script = targetScript;
-          }
+        let script: string;
+        if (v.isStringTemplate) {
+          variablePaths.forEach(it => {
+            let r = ObjectUtils.Path.toOptionalChainPath(it.inner);
+            targetScript = targetScript.replaceAll(it.origin, `\${${r}}`);
+          })
+          script = '`' + targetScript + '`';
+        } else {
+          variablePaths.forEach(it => {
+            let r = ObjectUtils.Path.toOptionalChainPath(it.inner);
+            targetScript = targetScript.replaceAll(it.origin, `${r}`);
+          })
+          script = targetScript;
+        }
         const data = ObjectUtils.Script.evaluate(`const $element = this.element;  return ${script}`, Object.assign(obj, {
           __render: Object.freeze({
             element: it,
             attribute: ElementUtils.getAttributeToObject(it)
           })
         }));
-          // console.log('!!!!!!!!!!!', k, data, script, variablePaths, v)
+        // console.log('!!!!!!!!!!!', k, data, script, variablePaths, v)
         if (data === null || data === undefined) {
           it.removeAttribute(k);
         } else {
@@ -542,13 +542,13 @@ export class EventManager {
           if (typeof getValue === 'function' && getValue) {
             let setValue = (it as any)[linkInfo.property];
             if (mapScript) {
-              setValue = ObjectUtils.Script.evaluate(`${this.getBindScript(config)} return ${mapScript}`, Object.assign(bindObj, {__render: Object.freeze({element: it, target: bindObj, range: Range.range, value: setValue, scripts: EventManager.setBindProperty(config?.scripts, obj), ...config?.eventVariables})}));
+              setValue = ObjectUtils.Script.evaluate(`${this.getBindScript(config)} return ${mapScript}`, Object.assign(bindObj, { __render: Object.freeze({ element: it, target: bindObj, range: Range.range, value: setValue, scripts: EventManager.setBindProperty(config?.scripts, obj), ...config?.eventVariables }) }));
             }
             getValue(setValue);
           } else if (getValue) {
             let setValue = getValue;
             if (mapScript) {
-              setValue = ObjectUtils.Script.evaluate(`${this.getBindScript(config)} return ${mapScript}`, Object.assign(bindObj, {__render: Object.freeze({element: it, target: bindObj, range: Range.range, value: setValue, scripts: EventManager.setBindProperty(config?.scripts, obj), ...config?.eventVariables})}));
+              setValue = ObjectUtils.Script.evaluate(`${this.getBindScript(config)} return ${mapScript}`, Object.assign(bindObj, { __render: Object.freeze({ element: it, target: bindObj, range: Range.range, value: setValue, scripts: EventManager.setBindProperty(config?.scripts, obj), ...config?.eventVariables }) }));
             }
             if (setValue === null) {
               it.removeAttribute(linkInfo.property);
@@ -647,26 +647,26 @@ export class EventManager {
           })
         }));
         if (typeof data === 'string') {
-            data.split(';').forEach(sit => {
-                const [key, value] = sit.split(':').map(s => s.trim());
-                if (key && value) {
-                    (it.style as any)[key] = value;
-                }
-            })
+          data.split(';').forEach(sit => {
+            const [key, value] = sit.split(':').map(s => s.trim());
+            if (key && value) {
+              (it.style as any)[key] = value;
+            }
+          })
           // it.setAttribute('style', data);
         } else if (Array.isArray(data)) {
-            data.forEach(sit => {
-                const [key, value] = sit.split(':').map(s => s.trim());
-                if (key && value) {
-                    (it.style as any)[key] = value;
-                }
-            })
+          data.forEach(sit => {
+            const [key, value] = sit.split(':').map(s => s.trim());
+            if (key && value) {
+              (it.style as any)[key] = value;
+            }
+          })
 
           // it.setAttribute('style', data.join(';'));
         } else {
           for (const [key, value] of Object.entries(data)) {
             // if (it instanceof HTMLElement) {
-              (it.style as any)[key] = value === null ? null :String(value);
+            (it.style as any)[key] = value === null ? null : String(value);
             // }
           }
         }
@@ -688,9 +688,9 @@ export class EventManager {
 
         // alert(1)
         if (typeof data === 'string') {
-            data.split(' ').forEach(cit => it.classList.add(cit.trim()));
+          data.split(' ').forEach(cit => it.classList.add(cit.trim()));
         } else if (Array.isArray(data)) {
-            data.forEach(cit => it.classList.add(cit.trim()));
+          data.forEach(cit => it.classList.add(cit.trim()));
         } else {
           for (const [key, value] of Object.entries(data)) {
             if (it instanceof HTMLElement) {
@@ -755,7 +755,7 @@ export class EventManager {
         // raws = raws!.replace(RegExp(it.replace('$', '\\$'), 'g'), `this?.___${it}`);
         raws = raws!.replace(RegExp(it.replace('$', '\\$'), 'g'), `this.___${it}`);
       });
-      const variablePaths = ObjectUtils.Path.detectPathFromScript(raws ?? '', {excludeThis: true});
+      const variablePaths = ObjectUtils.Path.detectPathFromScript(raws ?? '', { excludeThis: true });
       return variablePaths.has(varName);
     }
     return false;
