@@ -19,6 +19,7 @@ export class DrForOf extends OperatorExecuterAttrRequire<string> {
 
     const variableName = this.elementSource.element.getAttribute(RawSet.DR_VARIABLE_NAME_OPTIONNAME);
     const itemVariableName = this.elementSource.element.getAttribute(RawSet.DR_ITEM_VARIABLE_NAME_OPTIONNAME);
+    // const drAttrOption = this.elementSource.element.getAttribute(RawSet.DR_ATTR_OPTIONNAME);
     const itemIndexVariableName = this.elementSource.element.getAttribute(RawSet.DR_ITEM_INDEX_VARIABLE_NAME_OPTIONNAME);
     const hasVariableName = this.elementSource.element.hasAttribute(RawSet.DR_VARIABLE_NAME_OPTIONNAME);
     const hasItemVariableName = this.elementSource.element.hasAttribute(RawSet.DR_ITEM_VARIABLE_NAME_OPTIONNAME);
@@ -60,6 +61,20 @@ export class DrForOf extends OperatorExecuterAttrRequire<string> {
                             }
                             if (${hasItemIndexVariableName} && '${itemIndexVariableName}') {
                               n.getAttributeNames().forEach(it => n.setAttribute(it, n.getAttribute(it).replaceAll('#${itemIndexVariableName}#', i)));
+                            }
+                            
+                            const hasDrOptionAttr = n.hasAttribute('${RawSet.DR_ATTR_OPTIONNAME}');
+                            if (hasDrOptionAttr) {
+                              const drOptionAttr = n.getAttribute('${RawSet.DR_ATTR_OPTIONNAME}');
+                              const drOptionAttrResult = $scriptUtils.evaluateReturn(drOptionAttr, this);
+                              Array.from(Object.entries(drOptionAttrResult??{})).forEach(([k,v])=>{
+                                if (v === null) {
+                                  n.removeAttribute(k);
+                                } else {
+                                  n.setAttribute(k,v);
+                                }
+                              })
+                            
                             }
                             const hasDrOptionIf = n.hasAttribute('${RawSet.DR_IF_OPTIONNAME}');
                             if (hasDrOptionIf) {

@@ -1,54 +1,54 @@
 import { Observable, OperatorFunction } from '../Observable';
 
-export class EmptyError extends Error {
-  constructor() {
-    super('no elements in sequence');
-    this.name = 'EmptyError';
-  }
-}
-
 /**
- * Emits only the first value (or the first value that meets a condition)
- * emitted by the source Observable.
+ * Emits only the first value (or the first value that meets some condition) emitted by the source Observable.
  *
- * If no value meets the condition, it will emit an EmptyError.
- *
- * @param predicate An optional function to test each source value for a condition.
- * @return An Observable that emits only the first value from the source, or the
- * first value that meets the condition.
+ * @param predicate An optional function to test each item emitted by the source Observable.
+ * @param defaultValue The default value emitted in case no valid value was found on the source.
+ * @return An Observable that emits only the first value from the source Observable, or a default value if no value is emitted.
  */
 export function first<T>(
-  predicate?: (value: T, index: number) => boolean
+  predicate?: (value: T, index: number) => boolean,
+  defaultValue?: T
 ): OperatorFunction<T, T> {
   return (source: Observable<T, any>): Observable<T, any> => {
     return new Observable<T>(subscriber => {
       let index = 0;
-      let found = false;
+      let hasValue = false;
 
-      const sourceSubscription = source.subscribe({
+      const subscription = source.subscribe({
         next: (value) => {
-          if (found) return;
-          const passed = predicate ? predicate(value, index++) : true;
-          if (passed) {
-            found = true;
+          if (hasValue) {
+            return; // Already found first value
+          }
+
+          const shouldEmit = predicate ? predicate(value, index++) : true;
+
+          if (shouldEmit) {
+            hasValue = true;
             subscriber.next(value);
             subscriber.complete();
-            sourceSubscription.unsubscribe();
+            subscription.unsubscribe();
           }
         },
         error: (err) => {
-          subscriber.error(err);
+          if (!hasValue) {
+            subscriber.error(err);
+          }
         },
         complete: () => {
-          if (!found) {
-            subscriber.error(new EmptyError());
+          if (!hasValue) {
+            if (defaultValue !== undefined) {
+              subscriber.next(defaultValue);
+              subscriber.complete();
+            } else {
+              subscriber.error(new Error('no elements in sequence'));
+            }
           }
         }
       });
 
-      return () => {
-        sourceSubscription.unsubscribe();
-      };
+      return subscription;
     });
   };
 }

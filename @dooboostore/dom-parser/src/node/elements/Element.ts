@@ -1,11 +1,11 @@
 import { Node } from '../Node';
 import { ChildNode } from '../ChildNode';
 import { ParentNode } from '../ParentNode';
-import {HTMLCollectionOf} from '../collection/HTMLCollectionOf';
-import {HTMLElement} from './HTMLElement';
-import {SVGElement} from './SVGElement';
-import {MathMLElement} from './MathMLElement';
-import {HTMLElementTagNameMap, SVGElementTagNameMap, MathMLElementTagNameMap} from '../index';
+import { HTMLCollectionOf } from '../collection/HTMLCollectionOf';
+import { HTMLElement } from './HTMLElement';
+import { SVGElement } from './SVGElement';
+import { MathMLElement } from './MathMLElement';
+import { HTMLElementTagNameMap, SVGElementTagNameMap, MathMLElementTagNameMap } from '../index';
 // Forward declarations for types that will be implemented later
 export interface NamedNodeMap {
     readonly length: number;
@@ -38,6 +38,7 @@ export interface DOMRect {
     readonly width: number;
     readonly x: number;
     readonly y: number;
+    toJSON(): any;
 }
 
 export interface DOMRectList {
@@ -235,24 +236,24 @@ export interface Event {
     stopImmediatePropagation(): void;
 }
 
-export interface UIEvent extends Event {}
-export interface MouseEvent extends UIEvent {}
-export interface KeyboardEvent extends UIEvent {}
-export interface FocusEvent extends UIEvent {}
-export interface InputEvent extends UIEvent {}
-export interface WheelEvent extends MouseEvent {}
-export interface PointerEvent extends MouseEvent {}
-export interface TouchEvent extends UIEvent {}
-export interface DragEvent extends MouseEvent {}
-export interface ClipboardEvent extends Event {}
-export interface AnimationEvent extends Event {}
-export interface TransitionEvent extends Event {}
-export interface CompositionEvent extends UIEvent {}
-export interface FormDataEvent extends Event {}
-export interface ProgressEvent extends Event {}
-export interface SecurityPolicyViolationEvent extends Event {}
-export interface SubmitEvent extends Event {}
-export interface ErrorEvent extends Event {}
+export interface UIEvent extends Event { }
+export interface MouseEvent extends UIEvent { }
+export interface KeyboardEvent extends UIEvent { }
+export interface FocusEvent extends UIEvent { }
+export interface InputEvent extends UIEvent { }
+export interface WheelEvent extends MouseEvent { }
+export interface PointerEvent extends MouseEvent { }
+export interface TouchEvent extends UIEvent { }
+export interface DragEvent extends MouseEvent { }
+export interface ClipboardEvent extends Event { }
+export interface AnimationEvent extends Event { }
+export interface TransitionEvent extends Event { }
+export interface CompositionEvent extends UIEvent { }
+export interface FormDataEvent extends Event { }
+export interface ProgressEvent extends Event { }
+export interface SecurityPolicyViolationEvent extends Event { }
+export interface SubmitEvent extends Event { }
+export interface ErrorEvent extends Event { }
 
 export interface EventTarget {
     addEventListener(type: string, listener: EventListenerOrEventListenerObject | null, options?: boolean | AddEventListenerOptions): void;

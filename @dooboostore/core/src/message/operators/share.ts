@@ -13,30 +13,51 @@ export function share<T>(): OperatorFunction<T, T> {
     let subject: Subject<T> | null = null;
     let sourceSubscription: any = null;
     let refCount = 0;
+    let hasCompleted = false;
+    let hasErrored = false;
+
+    const reset = () => {
+      subject = null;
+      sourceSubscription = null;
+      hasCompleted = false;
+      hasErrored = false;
+    };
 
     return new Observable<T>(subscriber => {
       refCount++;
 
-      if (!subject) {
+      // 이미 완료되었거나 에러가 발생한 경우, 새로운 구독 시작
+      if (!subject || hasCompleted || hasErrored) {
         subject = new Subject<T>();
+        hasCompleted = false;
+        hasErrored = false;
+        
         sourceSubscription = source.subscribe({
-          next: (value) => subject!.next(value),
+          next: (value) => {
+            if (subject) {
+              subject.next(value);
+            }
+          },
           error: (err) => {
+            hasErrored = true;
             const s = subject;
-            subject = null;
-            sourceSubscription = null;
-            refCount = 0;
             if (s) {
               s.error(err);
             }
+            // 에러 후에도 refCount가 0이 되면 정리
+            if (refCount === 0) {
+              reset();
+            }
           },
           complete: () => {
+            hasCompleted = true;
             const s = subject;
-            subject = null;
-            sourceSubscription = null;
-            refCount = 0;
             if (s) {
               s.complete();
+            }
+            // 완료 후에도 refCount가 0이 되면 정리
+            if (refCount === 0) {
+              reset();
             }
           }
         });
@@ -52,10 +73,11 @@ export function share<T>(): OperatorFunction<T, T> {
         refCount--;
         subscription.unsubscribe();
         
-        if (refCount === 0 && sourceSubscription) {
-          sourceSubscription.unsubscribe();
-          sourceSubscription = null;
-          subject = null;
+        if (refCount === 0) {
+          if (sourceSubscription) {
+            sourceSubscription.unsubscribe();
+          }
+          reset();
         }
       };
     });

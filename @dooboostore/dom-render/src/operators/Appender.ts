@@ -50,7 +50,7 @@ export class Appender<T = any> implements Iterable<T> {
   delete(key: string) {
     const o = this.keyMap.get(key);
     if (o !== undefined) {
-      this[o] = [];
+      this[o] = this[o].map(it=> undefined);
       this.keyMap.delete(key);
       // this.length--;
     }

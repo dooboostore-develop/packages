@@ -7,6 +7,7 @@ import {HttpStatus} from '@dooboostore/simple-boot-http-server/codes/HttpStatus'
 import {RequestResponse} from '@dooboostore/simple-boot-http-server/models/RequestResponse';
 import {SimpleBootHttpServer} from '@dooboostore/simple-boot-http-server/SimpleBootHttpServer';
 import { Mimes } from '../codes/Mimes';
+import {Promises} from "@dooboostore/core/promise/Promises";
 
 @Sim
 export class IntentSchemeFilter implements Filter {

@@ -20,6 +20,7 @@ import { ObjectUtils } from '@dooboostore/core/object/ObjectUtils';
 import { ValidUtils } from '@dooboostore/core/valid/ValidUtils';
 import { isOnProxyDomRender } from './lifecycle/OnProxyDomRender';
 import { isOnRawSetRendered } from './lifecycle/OnRawSetRendered';
+import {isOnChildRawSetRendered} from "./lifecycle/OnChildRawSetRendered";
 
 const excludeGetSetPropertys = [
   'onBeforeReturnGet',
@@ -195,7 +196,7 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
       const onInit = (target as any).getAttribute?.(RawSet.DR_ON_INIT_ARGUMENTS_OPTIONNAME);
       let initParam: any;
       if (onCreate) {
-        initParam = ScriptUtils.evaluateReturn(onCreate, this._domRender_proxy);
+        initParam = ObjectUtils.Script.evaluateReturn(onCreate, this._domRender_proxy);
       }
       if (isOnInitRender(this._domRender_proxy)) {
         await this._domRender_proxy.onInitRender(
@@ -290,6 +291,10 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
         await t.onRawSetRendered(it, { path: fullPathStr, value: ObjectUtils.Script.evaluateReturn(`this.${fullPathStr}`, this._domRender_proxy), root: this._domRender_proxy, renderResult });
       }
       // console.log('----', it);
+    }
+
+    if (isOnChildRawSetRendered(this._domRender_proxy)) {
+      await this._domRender_proxy.onChildRawSetRendered();
     }
 
     if (removeRawSets.length > 0) {

@@ -727,6 +727,7 @@ export class RawSet {
             key: match[1],
             value: match[2]
           }));
+
           (keyValuePairs ?? []).forEach(it => {
             element.setAttribute(it.key, '${' + it.value + '}$');
           });
@@ -783,6 +784,7 @@ export class RawSet {
               if (cval === null) {
                 element.removeAttribute(it);
                 /* TODO: 여기 더 추가되어야될듯
+                 TODO: 훔..... 없어도될듯?
                 *
     <select dr-event-change="@this@.onMarketChange($event)" class="market-select">
         <option>마켓 선택 (${@this@.markets?.length??0}$개)</option>
@@ -791,9 +793,11 @@ export class RawSet {
         </option>
       </select>
                  */
-              } else if (
-                !(element.hasAttribute(RawSet.DR_VARIABLE_NAME_OPTIONNAME) || element.hasAttribute(RawSet.DR_ITEM_VARIABLE_NAME_OPTIONNAME) || element.hasAttribute(RawSet.DR_ITEM_INDEX_VARIABLE_NAME_OPTIONNAME))
-              ) {
+              // } else if (
+              //   !(element.hasAttribute(RawSet.DR_VARIABLE_NAME_OPTIONNAME) || element.hasAttribute(RawSet.DR_ITEM_VARIABLE_NAME_OPTIONNAME) || element.hasAttribute(RawSet.DR_ITEM_INDEX_VARIABLE_NAME_OPTIONNAME))
+              // ) {
+              //     element.setAttribute(it, cval);
+              } else {
                   element.setAttribute(it, cval);
               }
               normalAttrs.set(it, { originalAttrValue: value, variablePaths: variablePaths, isStringTemplate });

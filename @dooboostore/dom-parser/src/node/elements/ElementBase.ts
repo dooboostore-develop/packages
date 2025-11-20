@@ -3,7 +3,7 @@ import { ChildNodeBase } from '../ChildNodeBase';
 import { HTMLCollection } from "../collection";
 import { Text } from "../Text";
 import { ElementFactory } from "../../factory/ElementFactory";
-import { Element, DOMTokenList, Attr, NamedNodeMap } from './Element';
+import { Element, DOMTokenList, Attr, NamedNodeMap, DOMRect } from './Element';
 import { ELEMENT_NODE, TEXT_NODE, ATTRIBUTE_NODE } from '../Node';
 import { CSSSelector } from '../../utils/CSSSelector';
 import { HTMLElementTagNameMap } from "./index";
@@ -153,13 +153,13 @@ export abstract class ElementBase extends ParentNodeBase implements Element {
      */
     private parseAndAppendHTML(html: string): void {
         const ElementFactory = require('../../factory/ElementFactory').ElementFactory;
-        
+
         let i = 0;
         const length = html.length;
-        
+
         while (i < length) {
             const nextTagStart = html.indexOf('<', i);
-            
+
             // Handle text content before next tag
             if (nextTagStart === -1) {
                 // No more tags, rest is text
@@ -183,15 +183,15 @@ export abstract class ElementBase extends ParentNodeBase implements Element {
                     this.appendChild(textNode);
                 }
             }
-            
+
             i = nextTagStart;
-            
+
             // Parse the tag - find the real tag end, considering quoted attributes
             const tagEnd = this.findTagEnd(html, i);
             if (tagEnd === -1) break;
-            
+
             const tagContent = html.substring(i + 1, tagEnd);
-            
+
             // Handle comments
             if (tagContent.startsWith('!--')) {
                 const commentEnd = html.indexOf('-->', i);
@@ -204,20 +204,20 @@ export abstract class ElementBase extends ParentNodeBase implements Element {
                     continue;
                 }
             }
-            
+
             // Handle self-closing tags
             if (tagContent.endsWith('/')) {
                 const parts = tagContent.slice(0, -1).trim().split(/\s+/);
                 const tagName = parts[0];
                 const attributeString = tagContent.slice(tagName.length, -1).trim();
-                
+
                 const element = ElementFactory.createElement(tagName, this._ownerDocument);
                 this.parseAttributes(element, attributeString);
                 this.appendChild(element);
                 i = tagEnd + 1;
                 continue;
             }
-            
+
             // Handle closing tags - if they don't have matching opening tags, treat as text
             if (tagContent.startsWith('/')) {
                 // For now, treat unmatched closing tags as text content
@@ -228,47 +228,47 @@ export abstract class ElementBase extends ParentNodeBase implements Element {
                 i = tagEnd + 1;
                 continue;
             }
-            
+
             // Handle opening tags
             const parts = tagContent.split(/\s+/);
             const tagName = parts[0];
             const attributeString = tagContent.slice(tagName.length).trim();
-            
+
             // Special handling for style and script tags
             if (tagName === 'style' || tagName === 'script') {
                 const closingTag = `</${tagName}>`;
                 const closingTagIndex = html.indexOf(closingTag, tagEnd + 1);
-                
+
                 if (closingTagIndex !== -1) {
                     const element = ElementFactory.createElement(tagName, this._ownerDocument);
                     this.parseAttributes(element, attributeString);
-                    
+
                     const content = html.substring(tagEnd + 1, closingTagIndex);
                     if (content) {
                         const { TextBase } = require('../TextBase');
                         const textNode = new TextBase(content, this._ownerDocument);
                         element.appendChild(textNode);
                     }
-                    
+
                     this.appendChild(element);
                     i = closingTagIndex + closingTag.length;
                     continue;
                 }
             }
-            
+
             // Handle regular opening tags with content
             const closingTag = `</${tagName}>`;
             const closingTagIndex = this.findMatchingClosingTag(html, tagName, tagEnd + 1);
-            
+
             if (closingTagIndex !== -1) {
                 const element = ElementFactory.createElement(tagName, this._ownerDocument);
                 this.parseAttributes(element, attributeString);
-                
+
                 const content = html.substring(tagEnd + 1, closingTagIndex);
                 if (content.trim()) {
                     element.innerHTML = content;
                 }
-                
+
                 this.appendChild(element);
                 i = closingTagIndex + closingTag.length;
             } else {
@@ -280,7 +280,7 @@ export abstract class ElementBase extends ParentNodeBase implements Element {
             }
         }
     }
-    
+
     /**
      * Find the real end of a tag, considering quoted attributes
      */
@@ -288,10 +288,10 @@ export abstract class ElementBase extends ParentNodeBase implements Element {
         let i = startIndex + 1; // Skip the '<'
         let inQuotes = false;
         let quoteChar = '';
-        
+
         while (i < html.length) {
             const char = html[i];
-            
+
             if (!inQuotes) {
                 if (char === '"' || char === "'") {
                     inQuotes = true;
@@ -305,10 +305,10 @@ export abstract class ElementBase extends ParentNodeBase implements Element {
                     quoteChar = '';
                 }
             }
-            
+
             i++;
         }
-        
+
         return -1; // No closing '>' found
     }
 
@@ -329,15 +329,15 @@ export abstract class ElementBase extends ParentNodeBase implements Element {
         const closeTag = `</${tagName}>`;
         let depth = 1;
         let i = startIndex;
-        
+
         while (i < html.length && depth > 0) {
             const nextOpen = html.indexOf(openTag, i);
             const nextClose = html.indexOf(closeTag, i);
-            
+
             if (nextClose === -1) {
                 return -1; // No closing tag found
             }
-            
+
             if (nextOpen !== -1 && nextOpen < nextClose) {
                 // Found another opening tag before the closing tag
                 // Make sure it's a complete tag (not just a substring)
@@ -355,7 +355,7 @@ export abstract class ElementBase extends ParentNodeBase implements Element {
                 i = nextClose + closeTag.length;
             }
         }
-        
+
         return -1;
     }
 
@@ -407,18 +407,18 @@ export abstract class ElementBase extends ParentNodeBase implements Element {
 
                 if (position < length) {
                     const quote = attributeString[position];
-                    
+
                     if (quote === '"' || quote === "'") {
                         // Quoted value - find matching closing quote
                         position++; // Skip opening quote
                         const valueStart = position;
-                        
+
                         while (position < length && attributeString[position] !== quote) {
                             position++;
                         }
-                        
+
                         value = attributeString.substring(valueStart, position);
-                        
+
                         if (position < length && attributeString[position] === quote) {
                             position++; // Skip closing quote
                         }
@@ -435,7 +435,7 @@ export abstract class ElementBase extends ParentNodeBase implements Element {
 
             // Decode HTML entities in attribute values
             value = this.decodeHTMLEntities(value);
-            
+
             element.setAttribute(name, value);
         }
     }
@@ -487,7 +487,7 @@ export abstract class ElementBase extends ParentNodeBase implements Element {
             if (entityMap[entity]) {
                 return entityMap[entity];
             }
-            
+
             // Handle numeric entities like &#39; &#34;
             if (entity.startsWith('&#') && entity.endsWith(';')) {
                 const numStr = entity.slice(2, -1);
@@ -496,7 +496,7 @@ export abstract class ElementBase extends ParentNodeBase implements Element {
                     return String.fromCharCode(num);
                 }
             }
-            
+
             // Handle hex entities like &#x27;
             if (entity.startsWith('&#x') && entity.endsWith(';')) {
                 const hexStr = entity.slice(3, -1);
@@ -505,7 +505,7 @@ export abstract class ElementBase extends ParentNodeBase implements Element {
                     return String.fromCharCode(num);
                 }
             }
-            
+
             // Return original if not recognized
             return entity;
         });
@@ -707,8 +707,18 @@ export abstract class ElementBase extends ParentNodeBase implements Element {
         return this.getAttributeNode(localName);
     }
 
-    getBoundingClientRect(): any {
-        throw new Error('Element.getBoundingClientRect() is not implemented yet');
+    getBoundingClientRect(): DOMRect {
+        return {
+            bottom: 0,
+            height: 0,
+            left: 0,
+            right: 0,
+            top: 0,
+            width: 0,
+            x: 0,
+            y: 0,
+            toJSON: () => ({})
+        };
     }
 
     getClientRects(): any {

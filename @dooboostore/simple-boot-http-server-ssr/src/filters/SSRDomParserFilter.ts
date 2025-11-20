@@ -163,6 +163,7 @@ export class SSRDomParserFilter implements Filter {
         );
         // console.log('???????done');
         const html = this.makeHTML(simpleBootFront);
+        console.log('html---->', html)
         await this.writeOkHtmlAndEnd({ rr }, html);
       } finally {
         (simpleBootFront.option.window as any).ssrUse = false;
