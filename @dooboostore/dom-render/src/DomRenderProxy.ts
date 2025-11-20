@@ -585,9 +585,9 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
             // })
             const value1 = ObjectUtils.Script.evaluateReturn(script, it.pathInfo.obj);
             // console.log('proxy set!Attribut======', it.key, value1)
-            if (value1 === null) {
+            if (value1 === null || value1 === undefined) {
               elementInfo.element.removeAttribute(it.key);
-              elementInfo.element[it.key] = null;
+              // elementInfo.element[it.key] = null;
             } else {
               elementInfo.element.setAttribute(it.key, value1);
               elementInfo.element[it.key] = value1;

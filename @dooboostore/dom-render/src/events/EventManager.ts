@@ -512,7 +512,7 @@ export class EventManager {
           })
         }));
           // console.log('!!!!!!!!!!!', k, data, script, variablePaths, v)
-        if (data === null) {
+        if (data === null || data === undefined) {
           it.removeAttribute(k);
         } else {
           it.setAttribute(k, data);
