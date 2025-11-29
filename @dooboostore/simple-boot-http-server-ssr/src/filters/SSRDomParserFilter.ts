@@ -15,8 +15,10 @@ import { NotFoundError } from '@dooboostore/simple-boot-http-server/errors/NotFo
 import { DomRenderProxy } from '@dooboostore/dom-render/DomRenderProxy';
 import { filter } from '@dooboostore/core/message/operators/filter';
 import { first } from '@dooboostore/core/message/operators/first';
+import { delay } from '@dooboostore/core/message/operators/delay';
 import { firstValueFrom } from '@dooboostore/core/message/internal/firstValueFrom';
 import { parseHTML } from 'linkedom';
+import {Promises} from '@dooboostore/core/promise/Promises';
 import { DomParserInitializer } from '../initializers/DomParserInitializer';
 
 export type FactoryAndParams = {
@@ -162,7 +164,9 @@ export class SSRDomParserFilter implements Filter {
           )
         );
         // console.log('???????done');
+        await Promises.sleep(0)
         const html = this.makeHTML(simpleBootFront);
+        // console.log('---------',html);
         await this.writeOkHtmlAndEnd({ rr }, html);
       } finally {
         (simpleBootFront.option.window as any).ssrUse = false;
