@@ -21,7 +21,9 @@ export type ChangePickArrayElementMix<T, M, K extends keyof T> = Omit<T, K> & Pi
 export interface ConstructorType<T> {
   new (...args: any[]): T;
 }
-export type Method = (...args: any[]) => any;
+export type Method = (...args: any[]) => any; // Function
+export type MethodKeys<T> = { [K in keyof T]: T[K] extends Function ? K : never }[keyof T];
+export type NonMethodKeys<T> = { [K in keyof T]: T[K] extends Function ? never : K }[keyof T];
 export type GenericClassDecorator<T> = (target: T) => void;
 // declare type ClassDecorator = <TFunction extends Function>(target: TFunction) => TFunction | void;
 // export type ReflectField = PropertyDecorator

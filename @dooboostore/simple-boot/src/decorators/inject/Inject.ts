@@ -1,4 +1,4 @@
-import {ConstructorType} from '@dooboostore/core/types';
+import {ConstructorType, MethodKeys} from '@dooboostore/core/types';
 import {MethodParameter} from '../../types/Types'
 import {ReflectUtils} from '@dooboostore/core/reflect/ReflectUtils';
 import {ExceptionHandlerSituationType} from '../exception/ExceptionDecorator';
@@ -43,17 +43,13 @@ export class SituationTypeContainers {
   }
 }
 
-export interface InjectFactory {
-  injectFactory(parameters: any[], config: SaveInjectConfig): Promise<any>;
-}
-export const isInjectFactory = (obj: any): obj is InjectFactory => {
-  return typeof obj?.injectFactory === 'function';
-}
 
 export type InjectConfig<T = any> = {
   scheme?: string;
   symbol?: Symbol;
   type?: ConstructorType<T>;
+  // type?: T;
+  returnFactory?: ((caller: {instance: any, methodName: string, parameter: any[]}, injectInstance: T)=> any) |  MethodKeys<T>;
   // returnValueAutoRunnableOrMethodName?: keyof T | boolean;
   situationType?: SituationType;
   argument?: any;
@@ -87,8 +83,8 @@ const injectProcess = (config: InjectConfig, target: Object, propertyKey: string
 }
 
 export function Inject(target: Object, propertyKey: string | symbol | undefined, parameterIndex: number): void;
-export function Inject(config: InjectConfig): ParameterDecorator;
-export function Inject(configOrTarget: Object | InjectConfig, propertyKey?: string | symbol | undefined, parameterIndex?: number): void | ParameterDecorator {
+export function Inject<T = any>(config: InjectConfig<T>): ParameterDecorator;
+export function Inject<T = any>(configOrTarget: Object | InjectConfig<T>, propertyKey?: string | symbol | undefined, parameterIndex?: number): void | ParameterDecorator {
   if (propertyKey && parameterIndex !== undefined) {
     injectProcess({}, configOrTarget, propertyKey, parameterIndex);
   } else {

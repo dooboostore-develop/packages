@@ -27,6 +27,7 @@ import { URLSearchParams } from 'url';
 import { HttpMethod } from './codes/HttpMethod';
 import { SessionManager } from './session/SessionManager';
 import { InjectSituationType } from './inject/InjectSituationType';
+import {ReqSearchParamsObj} from "./models/datas/search/ReqSearchParamsObj";
 
 export class SimpleBootHttpServer extends SimpleApplication {
     public server?: HttpServer | HttpsServer;
@@ -190,6 +191,7 @@ export class SimpleBootHttpServer extends SimpleApplication {
                             const validIndexs = getValidIndex(moduleInstance, it.propertyKey);
                             if (injects) {
                                 const isJson = injects.find(it => it.config?.situationType === UrlMappingSituationType.REQ_JSON_BODY);
+                                const isSearchParamsObj = injects.find(it => it.config?.situationType === UrlMappingSituationType.REQ_URL_SEARCH_PARAMS_OBJ);
                                 const isFormUrl = injects.find(it => it.config?.situationType === UrlMappingSituationType.REQ_FORM_URL_BODY);
                                 const isTransactionManager = injects.find(it => it.config?.situationType === InjectSituationType.TransactionManager);
                                 const siturationContainers = new SituationTypeContainers();
@@ -206,6 +208,19 @@ export class SimpleBootHttpServer extends SimpleApplication {
                                     }
                                     siturationContainers.push(new SituationTypeContainer({
                                         situationType: UrlMappingSituationType.REQ_JSON_BODY,
+                                        data
+                                    }));
+                                }
+                                if (isSearchParamsObj) {
+                                    let data = rr.reqUrlSearchParamsObj
+                                    if (validIndexs.includes(isSearchParamsObj.index)) {
+                                        const inValid = execValidationInValid(data);
+                                        if ((inValid?.length ?? 0) > 0) {
+                                            throw new ValidException(inValid);
+                                        }
+                                    }
+                                    siturationContainers.push(new SituationTypeContainer({
+                                        situationType: UrlMappingSituationType.REQ_URL_SEARCH_PARAMS_OBJ,
                                         data
                                     }));
                                 }
@@ -240,7 +255,9 @@ export class SimpleBootHttpServer extends SimpleApplication {
                                     otherStorage.set(ReqFormUrlBody, await rr.reqBodyReqFormUrlBody())
                                 } else if (paramType === ReqJsonBody) {
                                     otherStorage.set(ReqJsonBody, await rr.reqBodyReqJsonBody())
-                                } else if (paramType === URLSearchParams) {
+                                } else if (paramType === ReqSearchParamsObj) {
+                                  otherStorage.set(ReqSearchParamsObj, rr.reqUrlSearchParamsObj)
+                                }else if (paramType === URLSearchParams) {
                                     otherStorage.set(URLSearchParams, rr.reqUrlSearchParams)
                                 } else if (paramType === ReqMultipartFormBody) {
                                     otherStorage.set(ReqMultipartFormBody, rr.reqBodyMultipartFormData())

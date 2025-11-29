@@ -10,7 +10,7 @@ import {SimOption} from '../SimOption';
 import {isIntentSubscribe} from "./IntentSubscribe";
 import {ReflectUtils} from "@dooboostore/core/reflect/ReflectUtils";
 import {getInject } from "../decorators";
-import {isInjectFactory} from "../decorators/inject/Inject";
+// import {isInjectFactory} from "../decorators/inject/Inject";
 
 export type RouterPublishType = { router: `Router(${string}):${string}`; rootRouter: ConstructorType<any> };
 export const isRouterPublishType = (it: any): it is RouterPublishType =>
@@ -97,8 +97,10 @@ export class IntentManager {
             if (injects) {
               for (const inject of injects) {
                 let v = this.simstanceManager.findLastSim(inject.config).getValue();
-                if (isInjectFactory(v)) {
-                  v = await v.injectFactory(intent.data, inject);
+                if (typeof inject.config.returnFactory === "function") {
+                  v = await inject.config.returnFactory({instance: callthis, methodName: orNewSim.name, parameter: intent.data}, v);
+                } else if (typeof inject.config.returnFactory === "string") {
+                  v = await v[inject.config.returnFactory]({instance: callthis, methodName: orNewSim.name, parameter: intent.data}, v);
                 }
                 intent.data[inject.index] = v
               }
