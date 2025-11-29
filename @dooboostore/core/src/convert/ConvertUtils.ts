@@ -544,6 +544,29 @@ export namespace ConvertUtils {
    return Array.from(stringJson.matchAll(/(\w+):\s*([^,}]+)/g)).map(match => ({key: match[1], value: match[2]}))
   }
 
+  export const stringToBase64 = (str: string): string => {
+    return btoa(str);
+  }
+  export const uint8ArrayToBase64 = (bytes: Uint8Array): string => {
+    let binary = '';
+    const len = bytes.byteLength;
+    for (let i = 0; i < len; i++) {
+      binary += String.fromCharCode(bytes[i]);
+    }
+    return btoa(binary);
+  }
+  export const base64ToString = (base64: string): string => {
+    return atob(base64);
+  }
+  export const base64ToUint8Array = (base64: string): Uint8Array => {
+    const binaryString = atob(base64);
+    const len = binaryString.length;
+    const bytes = new Uint8Array(len);
+    for (let i = 0; i < len; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
+    }
+    return bytes;
+  }
   // const formDataToFormDataEntryValueObj = <T = { [key: string]: FormDataEntryValue | FormDataEntryValue[] }>(
   //   data: FormData | HTMLFormElement
   // ): T => {

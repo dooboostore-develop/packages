@@ -19,7 +19,6 @@ export class AlertService<T = any> implements Store<AlertService.AlertActionCont
   private subject = new ReplaySubject<AlertService.AlertActionContainer<T>>();
   private alertFactory?: AlertFactory<T>;
   constructor(
-    // @ts-ignore
     @Inject({symbol: AlertFactory.SYMBOL}) alertFactory: AlertFactory<T>
   ) {
     this.alertFactory = alertFactory;

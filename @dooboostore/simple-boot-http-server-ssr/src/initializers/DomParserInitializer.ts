@@ -31,14 +31,14 @@ export class DomParserInitializer {
     }
     // console.log('!!!!!!!!!!!', html, w.document);
     // @ts-ignore
-    global.document = w.document;
+    // global.document = w.document;
     // @ts-ignore
-    global.window = w as unknown as Window & typeof globalThis;
+    // global.window = w as unknown as Window & typeof globalThis;
     // @ts-ignore
-    global.window.requestAnimationFrame = () => {};
-    global.window.scrollTo = () => {};
+    // global.window.requestAnimationFrame = () => {};
+    // global.window.scrollTo = () => {};
     // @ts-ignore
-    global.history = w.history;
+    // global.history = w.history;
     global.Event = w.Event;
     // @ts-ignore
     global.PopStateEvent = w.Event;

@@ -22,7 +22,7 @@ export namespace NodeUtils {
     return targetNode.parentNode?.replaceChild(newNode, targetNode);
   };
 
-  export const addNode = (targetNode: Node, newNode: Node) => {
+  export const insertAfter = (targetNode: Node, newNode: Node) => {
     return targetNode.parentNode?.insertBefore(newNode, targetNode.nextSibling);
   };
   export const cloneNode = <N extends Node>(element: N, deep?: boolean) => {

@@ -27,6 +27,8 @@ import {Observable} from '@dooboostore/core/message/Observable';
 import {filter} from '@dooboostore/core/message/operators/filter';
 import {first} from "@dooboostore/core/message/operators/first";
 import {ValidUtils} from "@dooboostore/core-web/valid/ValidUtils";
+import {ElementUtils} from "@dooboostore/core-web/element/ElementUtils";
+import {NodeUtils} from "@dooboostore/core-web/node/NodeUtils";
 
 export type PopStateType = { type: 'popstateData'; router: any; noSimpleBootFrontRouting?: boolean };
 const isPopStateDataType = (state: any): state is PopStateType => {
@@ -227,8 +229,9 @@ export class SimpleBootFront extends SimpleApplication {
       targetElement.style.width = `${rect.width}px`;
       targetElement.style.height = `${rect.height}px`;
       targetElement.style.zIndex = '999999';
-      targetElement.setAttribute('random', Math.random().toString())
-      this.option.window.document.body.appendChild(targetElement);
+      targetElement.setAttribute('random', Math.random().toString());
+      // NodeUtils.insertAfter
+      targetUserElement.parentNode.insertBefore(targetElement, targetUserElement.nextSibling);
     } else {
       targetElement.setAttribute('dom-render-side', 'server');
       targetElement.innerHTML = DomRenderRootDefaultTemplate;

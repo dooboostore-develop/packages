@@ -31,6 +31,12 @@ export type HttpJsonFetcherRequest<RESPONSE = any, CONFIG = any, T = RESPONSE> =
   HttpJsonFetcherConfig<CONFIG, RESPONSE>,
   T
 >;
+export type HttpJsonFetcherBodyAnyRequest<RESPONSE = any, CONFIG = any, T = RESPONSE> = FetcherRequest<
+  HttpFetcherTarget,
+  RESPONSE,
+  HttpAnyBodyFetcherConfig<CONFIG, RESPONSE>,
+  T
+>;
 
 export class HttpJsonFetcher<CONFIG, PIPE extends { responseData?: any }> extends HttpFetcher<CONFIG, any, PIPE> {
   private updateJsonFetchConfigAndData<RESPONSE, T = RESPONSE>(
@@ -74,15 +80,15 @@ export class HttpJsonFetcher<CONFIG, PIPE extends { responseData?: any }> extend
     return super.head(config);
   }
 
-  postJson<RESPONSE, T = RESPONSE>(config: HttpJsonFetcherRequest<RESPONSE, CONFIG, T>): Promise<T> {
+  postJson<RESPONSE, T = RESPONSE>(config: HttpJsonFetcherBodyAnyRequest<RESPONSE, CONFIG, T>): Promise<T> {
     return super.post(this.updateJsonFetchConfigAndData(config));
   }
 
-  patchJson<RESPONSE, T = RESPONSE>(config: HttpJsonFetcherRequest<RESPONSE, CONFIG, T>): Promise<T> {
+  patchJson<RESPONSE, T = RESPONSE>(config: HttpJsonFetcherBodyAnyRequest<RESPONSE, CONFIG, T>): Promise<T> {
     return super.patch(this.updateJsonFetchConfigAndData(config));
   }
 
-  putJson<RESPONSE, T = RESPONSE>(config: HttpJsonFetcherRequest<RESPONSE, CONFIG, T>): Promise<T> {
+  putJson<RESPONSE, T = RESPONSE>(config: HttpJsonFetcherBodyAnyRequest<RESPONSE, CONFIG, T>): Promise<T> {
     return super.put(this.updateJsonFetchConfigAndData(config));
   }
 

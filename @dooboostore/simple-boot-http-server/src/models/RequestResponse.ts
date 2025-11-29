@@ -640,6 +640,11 @@ export class RequestResponse {
   //     return this.createRequestResponseChain();
   // }
 
+  resRedirect(statusCode: number, location: string) {
+    this.res.statusCode = statusCode;
+    this.res.setHeader(HttpHeaders.Location, location);
+    this.res.end();
+  }
   resWriteHead(statusCode: number, headers?: OutgoingHttpHeaders | OutgoingHttpHeader[] | { [key: string]: string | string[] }) {
     return this.createRequestResponseChain(this.res.writeHead(statusCode, headers));
   }
