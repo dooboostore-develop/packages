@@ -229,7 +229,7 @@ export abstract class Router<T = any> {
   }
 
   toUrl(data: RouteAction) {
-    console.log('toUrl', data);
+    // console.log('toUrl', data);
     let targetPath: string;
     if (typeof data === 'string') {
       targetPath = data;
