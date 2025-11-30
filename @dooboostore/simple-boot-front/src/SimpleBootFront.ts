@@ -271,14 +271,14 @@ export class SimpleBootFront extends SimpleApplication {
 
     // dom-render 라우팅 끝나면
     this.domRenderRouter.observable.pipe(filter(it => it.triggerPoint === 'end')).subscribe(it => {
-      // console.log('this.domRenderRouter.observable.subscribe---------------', it, this.domRenderRouter)
+      // console.log('this.domRenderRouter.observable.subscribe---------------', it)
       //   console.log('this.domRenderRouter.observable', it)
       // const intent = new Intent(it.path || '/');
       const targetPath = (it.path || '/') + (it.search);
       const intent = new Intent(targetPath);
       //   // TODO: 왜 canActivate가 두번 호출되는지 확인 필요!! 그래서 setTimeout으로 처리함 원인 모르겠음 아 씨발
       this.routing<SimAtomic, any>(intent, {router: this.domRenderRootObject}).then(async it => {
-        // console.log('-------->', it)
+        // console.log('simplebootfront simpleboot routing-------->', it)
         // dom-render 라우팅 끝나면 -> simple-boot-front routing start!
         this.routingSubject.next({triggerPoint: 'start', routerModule: it});
         let findFirstRouter = it.firstRouteChainValue;
@@ -288,6 +288,7 @@ export class SimpleBootFront extends SimpleApplication {
           await this.domRenderRootObject.canActivate(undefined, findRouter);
           await this.domRenderRootObject.onRouting({intent, routerModule: it, routerManager: this.routerManager});
         }
+        // console.log('----> simplebootfront simpleboot routing done-------->', it, it.intent.uri)
         this.routingSubject.next({triggerPoint: 'end', routerModule: it});
         //       }, 0);
       });

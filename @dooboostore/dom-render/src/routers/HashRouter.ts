@@ -89,6 +89,10 @@ export class HashRouter extends Router {
     return LocationUtils.hashPath(this.config.window) || '/';
   }
 
+  getSearch(): string {
+    return LocationUtils.hashSearch(this.config.window);
+  }
+
   getHashSearchParams(data?:{delete?:string[], append?:[[string, string]]}): URLSearchParams {
     const hash = this.config.window.location.hash;
     const queryIndex = hash.indexOf('?');

@@ -1,43 +1,50 @@
-export class LocationUtils {
-    static hash(window: Window): string {
+export namespace LocationUtils {
+    export const hash = (window: Window): string => {
         return window.location.hash.replace('#', '')
     }
 
-    static hashPath(window: Window): string {
+    export const hashPath = (window: Window): string => {
         return window.location.hash.replace('#', '').split('?')[0]
     }
 
-    static hashSearch(window: Window): string {
-        return window.location.hash.replace('#', '').split('?')[1]
+    // search는 앞에 ? 붙어있다 브라우저에서도 location.search
+    export const hashSearch = (window: Window): string => {
+      const string = window.location.hash.replace('#', '').split('?')[1];
+      return string ? `?${string}` : '';
     }
 
-    static hashQueryParams(window: Window): Map<string, string> {
+    export const hashQueryParams = (window: Window): Map<string, string> => {
         const s = window.location.hash.replace('#', '').split('?')[1] || '';
-        return this.queryStringToMap(s);
+        return LocationUtils.queryStringToMap(s);
     }
 
-    static path(window: Window): string {
+    export const path = (window: Window): string => {
         return window.location.pathname;
     }
 
-    static pathQueryParamsObject(window: Window): { [key:string]: string } {
-        return this.queryStringToObject(window.location.search.substring(1));
+    export const search = (window: Window): string => {
+        return window.location.search || '';
     }
 
-    static hashQueryParamsObject(window: Window): { [key:string]: string } {
+
+    export const pathQueryParamsObject = (window: Window): { [key:string]: string } => {
+        return LocationUtils.queryStringToObject(window.location.search.substring(1));
+    }
+
+    export const hashQueryParamsObject = (window: Window): { [key:string]: string } => {
         const s = window.location.hash.split('?').pop() ?? '';
         if (s.startsWith('#')) {
             return {};
         } else {
-            return this.queryStringToObject(s);
+            return LocationUtils.queryStringToObject(s);
         }
     }
 
-    static pathQueryParams(window: Window): Map<string, string> {
-        return this.queryStringToMap(window.location.search.substring(1));
+    export const pathQueryParams = (window: Window): Map<string, string> => {
+        return LocationUtils.queryStringToMap(window.location.search.substring(1));
     }
 
-    private static queryStringToMap(s: string) {
+    export const queryStringToMap = (s: string) => {
         const params = new Map<string, string>();
         const vars = s.split('&') || [];
         vars.forEach(it => {
@@ -49,7 +56,7 @@ export class LocationUtils {
         return params;
     }
 
-    private static queryStringToObject(s: string): { [key:string]: string } {
+    export const queryStringToObject = (s: string): { [key:string]: string } => {
         const params = {} as { [key:string]: string };
         const vars = s.split('&') || [];
         vars.forEach(it => {

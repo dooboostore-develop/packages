@@ -105,23 +105,17 @@ export abstract class Router<T = any> {
 
   getRouteData(config?: { pathOrUrl?: string, urlExpression?: string }): RouteData {
 
-    let path = '';
-    let url = '';
-    let searchParams: URLSearchParams;
+    let path =  this.getPathName();
+    let url = this.getUrl();
+    let searchParams = this.getSearchParams();
+    let search = this.getSearch();
+
+    // console.log('pppppppppppppp', path,url,searchParams,search);
+    // 요청 URL이 있을경우 해당 URL로 파싱
     if (config?.pathOrUrl) {
-      // try {
-      //   new URL(config.pathOrUrl);
-      //   isUrl = true;
-      // } catch {
-      //   isUrl = false;
-      // }
-      // if(isUrl){
-      //   const u = new URL(config.pathOrUrl);
-      //   path = u.pathname;
-      //   url = u.pathname + u.search;
-      // } else {
       const paths = config.pathOrUrl.split('?');
-      searchParams = new URLSearchParams(paths[1]);
+      search = paths[1] ? `?${paths[1]}`: '';
+      searchParams = new URLSearchParams(search);
       const firstUrl = paths[0];
       if (ValidUtils.isUrl(firstUrl)) {
         path = new URL(firstUrl).pathname;
@@ -130,17 +124,15 @@ export abstract class Router<T = any> {
       }
       url = config.pathOrUrl;
       // }
-    } else {
-      path = this.getPathName();
-      url = this.getUrl();
-      searchParams = this.getSearchParams();
     }
     // console.log('url', url);
     const newVar: RouteData = {
       path: path,
       url: url,
       searchParams: searchParams,
-      search: searchParams.size > 0 ? `?${searchParams.toString()}` : '',
+      // 이렇게 하면 진짜 문자열이 변형이 될수 있다 따라서 그냥 문자열 자른 원본을넣어줘야한다
+      // search: searchParams.size > 0 ? `?${searchParams.toString()}` : '',
+      search: search,
       router: this
     };
 
@@ -276,6 +268,8 @@ export abstract class Router<T = any> {
   abstract getHref(): string;
 
   abstract getPathName(): string;
+
+  abstract getSearch(): string;
 
   reload(): void {
     const currentUrl = this.getUrl();

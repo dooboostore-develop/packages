@@ -81,6 +81,10 @@ export class PathRouter extends Router {
     return this.config.window.location?.pathname??'/';
   }
 
+  getSearch(): string {
+    return this.config.window.location?.search??'';
+  }
+
   getHashSearchParams(data?:{delete?:string[], append?:[[string, string]]}): URLSearchParams {
     // http://local.com/#wow=222&wow=bb&z=2
     const searchParams =  new URLSearchParams(this.config.window.location?.hash.slice(1)??'');

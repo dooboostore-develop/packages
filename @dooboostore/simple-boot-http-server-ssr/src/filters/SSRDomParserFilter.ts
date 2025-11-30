@@ -138,9 +138,11 @@ export class SSRDomParserFilter implements Filter {
 
         // runRouting!!
         const targetUrl = url.toString();
+        // console.log('runRoutingrunRouting', targetUrl);
         await simpleBootFront.goRouting(targetUrl);
-        await new Promise(r => setTimeout(r, 0)); // <--중요: 이거 넣어야지 두번불러지는게 없어지는듯? 뭐지 event loop 변경된건가?
+        await Promises.sleep(0); // <--중요: 이거 넣어야지 두번불러지는게 없어지는듯? 뭐지 event loop 변경된건가?
 
+        // console.log('runRout22222ingrunRouting', targetUrl);
 
         // simpleBootFront.routingSubjectObservable.subscribe(it=>{
         //   console.log('zzzzzzzzzzzzzzzzzzz', it);
@@ -150,9 +152,7 @@ export class SSRDomParserFilter implements Filter {
         // })
 
         const data = await firstValueFrom(
-          // @ts-ignore
           simpleBootFront.routingSubjectObservable.pipe(
-          // @ts-ignore
             filter(
               (it) =>
                 it.triggerPoint === 'end' &&
@@ -163,10 +163,10 @@ export class SSRDomParserFilter implements Filter {
             first()
           )
         );
-        // console.log('???????done');
+        console.log('???????done');
         await Promises.sleep(0)
         const html = this.makeHTML(simpleBootFront);
-        // console.log('---------',html);
+        console.log('---------',html);
         await this.writeOkHtmlAndEnd({ rr }, html);
       } finally {
         (simpleBootFront.option.window as any).ssrUse = false;
