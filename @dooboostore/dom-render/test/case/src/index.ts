@@ -20,14 +20,14 @@ class Root implements OnInitRender {
   }
 
   async onInitRender(param: any, rawSet: RawSet): Promise<void> {
-    setTimeout(() => {
+    // setTimeout(() => {
       const start = performance.now()
       console.group('start ', start)
       this.users = Array.from({length: 9999}, (_, i) => ({id: i, imgUrl: 'https://storage.googleapis.com/genview-test/generator%2Fimages%2F1%2F1763840814778-6p7gssb4utt.jpeg', name: `user${i}`}));
       console.groupEnd();
       console.log('users set', performance.now() - start);
 
-    }, 5000)
+    // }, 5000)
   }
 
   changeAge() {

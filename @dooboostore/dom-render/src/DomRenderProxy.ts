@@ -20,7 +20,7 @@ import { ObjectUtils } from '@dooboostore/core/object/ObjectUtils';
 import { ValidUtils } from '@dooboostore/core/valid/ValidUtils';
 import { isOnProxyDomRender } from './lifecycle/OnProxyDomRender';
 import { isOnRawSetRendered } from './lifecycle/OnRawSetRendered';
-import {isOnChildRawSetRendered} from "./lifecycle/OnChildRawSetRendered";
+import { isOnChildRawSetRendered } from "./lifecycle/OnChildRawSetRendered";
 
 const excludeGetSetPropertys = [
   'onBeforeReturnGet',
@@ -229,68 +229,82 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
     const rawSets = raws ?? this.getRawSets();
 
     // console.log('----', rawSets);
-    for (const it of rawSets as RawSet[]) {
-      it.getUsingTriggerVariables(this._domRender_config).forEach(path => {
-        // console.log('getUsingTriggerVariables->', path);
-        this.addRawSet(path, it);
-      });
+    // console.log('----', rawSets);
+    const CHUNK_SIZE = 50;
+    const chunks = [];
+    const rawSetsArray = Array.from(rawSets as RawSet[]);
+    for (let i = 0; i < rawSetsArray.length; i += CHUNK_SIZE) {
+      chunks.push(rawSetsArray.slice(i, i + CHUNK_SIZE));
+    }
 
-      let renderResult: RenderResult | undefined;
-      if (it.isConnected) {
-        // 중요 render될때 targetAttribute 체크 해야함.
-        const targetAttrMap = (it.point.node as Element)?.getAttribute?.(EventManager.normalAttrMapAttrName);
-        // console.log('sssssssssSSS?',it, targetAttrMap)
-        // console.log('----2', it, fullPathStr, targetAttrMap, (it.fragment as any).render, it.isConnected, this.getRawSets());
-        if (it.detect?.action) {
-          it.detect.action();
-          // } else if (it.type === RawSetType.TARGET_ELEMENT && it.data && fullPathStr && targetAttrMap && (it.fragment as any).render) {
-        } else if (
-          it.type === RawSetType.TARGET_ELEMENT &&
-          it.dataSet?.render?.currentThis &&
-          fullPathStr &&
-          targetAttrMap
-        ) {
-          new Map<string, NormalAttrDataType>(JSON.parse(targetAttrMap)).forEach((v, k) => {
-            // it?.data.onChangeAttrRender(k, null, v);
-            // console.log('------->?',v,k);
-            const isUsing = v.variablePaths.some(it => EventManager.isUsingThisVar(it.inner, `this.${fullPathStr}`))
-            // console.log('------->?',v,k, isUsing);
-            if (isUsing) {
-              const targetAttrObject = RawSet.getAttributeObject(it.point.node as Element, {
-                script: it.dataSet?.render?.renderScript ?? '',
-                obj: Object.assign(this._domRender_proxy ?? {}, { __render: it.dataSet?.render })
-              });
-              it.dataSet.render ??= {};
-              it.dataSet.render.attribute = targetAttrObject;
-              // const render = it.dataSet?.render;
-              // console.log('render-->!!!!!', it.dataSet.render);
-              // const script = `${render.renderScript} return ${v} `;
-              // const cval = ScriptUtils.eval(script, Object.assign(this._domRender_proxy ?? {}, { __render: render }));
-              if (isOnChangeAttrRender(it.dataSet?.render?.currentThis)) {
-                it.dataSet?.render?.currentThis?.onChangeAttrRender?.(k, targetAttrObject[k], { rawSet: it });
+    for (const chunk of chunks) {
+      const promises = chunk.map(async (it) => {
+        it.getUsingTriggerVariables(this._domRender_config).forEach(path => {
+          // console.log('getUsingTriggerVariables->', path);
+          this.addRawSet(path, it);
+        });
+
+        let renderResult: RenderResult | undefined;
+        if (it.isConnected) {
+          // 중요 render될때 targetAttribute 체크 해야함.
+          const targetAttrMap = (it.point.node as Element)?.getAttribute?.(EventManager.normalAttrMapAttrName);
+          // console.log('sssssssssSSS?',it, targetAttrMap)
+          // console.log('----2', it, fullPathStr, targetAttrMap, (it.fragment as any).render, it.isConnected, this.getRawSets());
+          if (it.detect?.action) {
+            it.detect.action();
+            // } else if (it.type === RawSetType.TARGET_ELEMENT && it.data && fullPathStr && targetAttrMap && (it.fragment as any).render) {
+          } else if (
+            it.type === RawSetType.TARGET_ELEMENT &&
+            it.dataSet?.render?.currentThis &&
+            fullPathStr &&
+            targetAttrMap
+          ) {
+            new Map<string, NormalAttrDataType>(JSON.parse(targetAttrMap)).forEach((v, k) => {
+              // it?.data.onChangeAttrRender(k, null, v);
+              // console.log('------->?',v,k);
+              const isUsing = v.variablePaths.some(it => EventManager.isUsingThisVar(it.inner, `this.${fullPathStr}`))
+              // console.log('------->?',v,k, isUsing);
+              if (isUsing) {
+                const targetAttrObject = RawSet.getAttributeObject(it.point.node as Element, {
+                  script: it.dataSet?.render?.renderScript ?? '',
+                  obj: Object.assign(this._domRender_proxy ?? {}, { __render: it.dataSet?.render })
+                });
+                it.dataSet.render ??= {};
+                it.dataSet.render.attribute = targetAttrObject;
+                // const render = it.dataSet?.render;
+                // console.log('render-->!!!!!', it.dataSet.render);
+                // const script = `${render.renderScript} return ${v} `;
+                // const cval = ScriptUtils.eval(script, Object.assign(this._domRender_proxy ?? {}, { __render: render }));
+                if (isOnChangeAttrRender(it.dataSet?.render?.currentThis)) {
+                  it.dataSet?.render?.currentThis?.onChangeAttrRender?.(k, targetAttrObject[k], { rawSet: it });
+                }
               }
+              // console.log('---?', v, fullPathStr, isUsing);
+            });
+            // ------------------->
+          } else {
+            const rawSets = await it.render(this._domRender_proxy, this._domRender_config);
+            renderResult = rawSets;
+            // 그외 자식들 render
+            if (rawSets && rawSets.raws.length > 0) {
+              await this.render(rawSets.raws);
             }
-            // console.log('---?', v, fullPathStr, isUsing);
-          });
-          // ------------------->
-        } else {
-          const rawSets = await it.render(this._domRender_proxy, this._domRender_config);
-          renderResult = rawSets;
-          // 그외 자식들 render
-          if (rawSets && rawSets.raws.length > 0) {
-            await this.render(rawSets.raws);
           }
+        } else {
+          removeRawSets.push(it);
         }
-      } else {
-        removeRawSets.push(it);
-      }
 
-      const t = it.findNearThis(this._domRender_proxy);
-      // TODO: 호출된곳에서 또 변수를 수정하게되면 무한루프니깐 왠만하면 사용못하게 해야한다.
-      if (isOnRawSetRendered(t)) {
-        await t.onRawSetRendered(it, { path: fullPathStr, value: ObjectUtils.Script.evaluateReturn(`this.${fullPathStr}`, this._domRender_proxy), root: this._domRender_proxy, renderResult });
+        const t = it.findNearThis(this._domRender_proxy);
+        // TODO: 호출된곳에서 또 변수를 수정하게되면 무한루프니깐 왠만하면 사용못하게 해야한다.
+        if (isOnRawSetRendered(t)) {
+          await t.onRawSetRendered(it, { path: fullPathStr, value: ObjectUtils.Script.evaluateReturn(`this.${fullPathStr}`, this._domRender_proxy), root: this._domRender_proxy, renderResult });
+        }
+        // console.log('----', it);
+      });
+      await Promise.all(promises);
+      if (chunks.length > 1) {
+        await new Promise(resolve => requestAnimationFrame(resolve));
       }
-      // console.log('----', it);
     }
 
     if (isOnChildRawSetRendered(this._domRender_proxy)) {
@@ -537,6 +551,7 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
     // if ((target as any)[p] instanceof ComponentSet) {
     //   (target as any)[p]?.obj?.onDrThisUnBind?.();
     // }
+    console.log('---', this._domRender_ref, p, this._domRender_proxy)
     // is ComponentSet
     if (value instanceof ComponentSet && (target as any)[p] instanceof ComponentSet) {
       value.config.beforeComponentSet = (target as any)[p];
@@ -546,6 +561,7 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
     if (typeof p === 'string') {
       fullPathInfo = this.root([[{ path: p, obj: this._domRender_proxy }]], value);
     }
+
 
     // console.log('set proxy root time', performance.now() - start, p);
     // start = performance.now();

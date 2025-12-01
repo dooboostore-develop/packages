@@ -704,6 +704,62 @@ export class EventManager {
         }
       }
     });
+
+    this.procAttr<HTMLInputElement>(elements, EventManager.valueAttrName, (it, attribute) => {
+      if (EventManager.isUsingThisVar(attribute, varName) || varName === undefined) {
+        const data = ObjectUtils.Script.evaluateReturn(attribute, obj);
+        if (it.value !== data) it.value = data;
+      }
+    });
+
+    this.procAttr<HTMLInputElement>(elements, EventManager.checkedAttrName, (it, attribute) => {
+      if (EventManager.isUsingThisVar(attribute, varName) || varName === undefined) {
+        const data = ObjectUtils.Script.evaluateReturn(attribute, obj);
+        if (it.checked !== data) it.checked = data;
+      }
+    });
+
+    this.procAttr<HTMLOptionElement>(elements, EventManager.selectedAttrName, (it, attribute) => {
+      if (EventManager.isUsingThisVar(attribute, varName) || varName === undefined) {
+        const data = ObjectUtils.Script.evaluateReturn(attribute, obj);
+        if (it.selected !== data) it.selected = data;
+      }
+    });
+
+    this.procAttr<HTMLInputElement>(elements, EventManager.readonlyAttrName, (it, attribute) => {
+      if (EventManager.isUsingThisVar(attribute, varName) || varName === undefined) {
+        const data = ObjectUtils.Script.evaluateReturn(attribute, obj);
+        if (it.readOnly !== data) it.readOnly = data;
+      }
+    });
+
+    this.procAttr<HTMLInputElement>(elements, EventManager.disabledAttrName, (it, attribute) => {
+      if (EventManager.isUsingThisVar(attribute, varName) || varName === undefined) {
+        const data = ObjectUtils.Script.evaluateReturn(attribute, obj);
+        if (it.disabled !== data) it.disabled = data;
+      }
+    });
+
+    this.procAttr<HTMLElement>(elements, EventManager.hiddenAttrName, (it, attribute) => {
+      if (EventManager.isUsingThisVar(attribute, varName) || varName === undefined) {
+        const data = ObjectUtils.Script.evaluateReturn(attribute, obj);
+        if (it.hidden !== data) it.hidden = data;
+      }
+    });
+
+    this.procAttr<HTMLInputElement>(elements, EventManager.requiredAttrName, (it, attribute) => {
+      if (EventManager.isUsingThisVar(attribute, varName) || varName === undefined) {
+        const data = ObjectUtils.Script.evaluateReturn(attribute, obj);
+        if (it.required !== data) it.required = data;
+      }
+    });
+
+    this.procAttr<HTMLDialogElement>(elements, EventManager.openAttrName, (it, attribute) => {
+      if (EventManager.isUsingThisVar(attribute, varName) || varName === undefined) {
+        const data = ObjectUtils.Script.evaluateReturn(attribute, obj);
+        if (it.open !== data) it.open = data;
+      }
+    });
   }
 
   public procAttr<T extends Element = Element>(elements: Set<Element> | Set<ChildNode> | Node[] = new Set(), attrName: string, callBack: (h: T, value: string, attributes: any) => void) {
