@@ -227,6 +227,7 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
     }
     const removeRawSets: RawSet[] = [];
     const rawSets = raws ?? this.getRawSets();
+    // console.log('Total RawSets to render:', Array.isArray(rawSets) ? rawSets.length : 0);
 
     // console.log('----', rawSets);
     // console.log('----', rawSets);
@@ -259,6 +260,7 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
             fullPathStr &&
             targetAttrMap
           ) {
+            const attrStart = performance.now();
             new Map<string, NormalAttrDataType>(JSON.parse(targetAttrMap)).forEach((v, k) => {
               // it?.data.onChangeAttrRender(k, null, v);
               // console.log('------->?',v,k);
@@ -281,9 +283,18 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
               }
               // console.log('---?', v, fullPathStr, isUsing);
             });
+            const attrEnd = performance.now();
+            // if (attrEnd - attrStart > 10) {
+              // console.log('Slow Attr Update:', attrEnd - attrStart, it);
+            // }
             // ------------------->
           } else {
+            const renderStart = performance.now();
             const rawSets = await it.render(this._domRender_proxy, this._domRender_config);
+            const renderEnd = performance.now();
+            // if (renderEnd - renderStart > 10) {
+            //   console.log('Slow RawSet Render:', renderEnd - renderStart, it);
+            // }
             renderResult = rawSets;
             // 그외 자식들 render
             if (rawSets && rawSets.raws.length > 0) {
@@ -331,6 +342,7 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
     value?: any,
     lastDoneExecute = true
   ): { path: string; obj: any }[][] {
+    // console.time('root_total');
     const rootStartTime = Date.now();
     const pathKey = pathInfos.flat().map(i => i.path).join('.');
 
@@ -363,6 +375,7 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
         }
       });
     } else {
+      // console.time('root_recursive');
       const pathProcessStartTime = Date.now();
       // const firstPathStr = paths.slice(1).reverse().join('.');
       const strings = pathInfos.reverse().map(it => it.map(it => it.path).join(','));
@@ -390,6 +403,8 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
         // console.log('--!!!!', fullPathStr, iterable, data, front, last);
         // 왜여기서 promise를 했을까를 생각해보면......훔.. 변수변경과 화면 뿌려주는걸 동기로하면 성능이 안나오고 비현실적이다.  그래서 promise
         const promiseStartTime = Date.now();
+        // console.timeEnd('root_recursive');
+        // console.time('root_render_wait');
         new Promise<RawSet[]>(async resolve => {
           const promiseInnerStartTime = Date.now();
           let rData: RawSet[] = [];
@@ -501,6 +516,8 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
           resolve(rData);
         }).then(it => {
           // console.log('DonrenderProxy root RenderDone')
+          // console.timeEnd('root_render_wait');
+          // console.timeEnd('root_total');
         });
       }
       fullPaths.push([{ path: fullPathStr, obj: this._domRender_proxy }]);
@@ -551,7 +568,7 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
     // if ((target as any)[p] instanceof ComponentSet) {
     //   (target as any)[p]?.obj?.onDrThisUnBind?.();
     // }
-    console.log('---', this._domRender_ref, p, this._domRender_proxy)
+    // console.log('---', this._domRender_ref, p, this._domRender_proxy)
     // is ComponentSet
     if (value instanceof ComponentSet && (target as any)[p] instanceof ComponentSet) {
       value.config.beforeComponentSet = (target as any)[p];

@@ -45,6 +45,9 @@ class Root implements OnInitRender {
   changeData(data: any) {
     data.imgUrl = new Date().toISOString()
   }
+  changeDataFix(data: any) {
+    data.imgUrl = data.imgUrl;
+  }
 
   // changeData() {
   //   this.users  = Array.from({length: 2}, (_, i) => ({id: i, name: `user11${i}`})) as any;

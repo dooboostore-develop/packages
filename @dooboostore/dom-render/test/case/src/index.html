@@ -14,6 +14,7 @@
   <div id="app">
       <div dr-for-of="@this@.users"  dr-option-item-index-variable-name="index" dr-option-item-variable-name="user" >
         <button  dr-event-click="@this@.changeData(#user#)">${#user#.imgUrl}$ change</button>
+<!--        <button  dr-event-click="@this@.changeDataFix(#user#)">${#user#.imgUrl}$ change</button>-->
 <!--        <input type="checkbox" dr-disabled="#user#.imgUrl.length < 30">-->
       </div>
 

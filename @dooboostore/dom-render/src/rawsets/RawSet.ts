@@ -321,13 +321,18 @@ export class RawSet {
             returnScript: runText
           }, Object.assign(obj, { __render }));
 
-          if (this.lastRenderedValue === String(newValue)) {
-            // console.log('Skipping render: Value unchanged', newValue);
+          const newValueStr = String(newValue);
+          if (this.lastRenderedValue === newValueStr) {
+            // console.log('✓ Skipping render: Value unchanged', newValue);
             return { raws: [], executedOperators: [] };
           }
-          this.lastRenderedValue = String(newValue);
+          // console.log('✗ Rendering: Value changed', this.lastRenderedValue, '->', newValue);
+          // Update lastRenderedValue BEFORE proceeding with render
+          // This ensures the value is cached even if render fails partway through
+          this.lastRenderedValue = newValueStr;
         } catch (e) {
           // Evaluation failed, proceed with normal render
+          // console.log('⚠ Dirty check failed, proceeding with render', e);
         }
       }
     }
