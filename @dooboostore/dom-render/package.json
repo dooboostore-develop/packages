@@ -1,6 +1,6 @@
 {
   "name": "@dooboostore/dom-render",
-  "version": "1.0.111",
+  "version": "1.0.112",
   "license": "MIT",
   "type": "module",
   "main": "./dist/cjs/index.js",

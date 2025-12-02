@@ -20,6 +20,7 @@ import { ObjectUtils } from '@dooboostore/core/object/ObjectUtils';
 import { ValidUtils } from '@dooboostore/core/valid/ValidUtils';
 import { isOnProxyDomRender } from './lifecycle/OnProxyDomRender';
 import { isOnRawSetRendered } from './lifecycle/OnRawSetRendered';
+import { isOnChildRawSetRendered } from "./lifecycle/OnChildRawSetRendered";
 
 const excludeGetSetPropertys = [
   'onBeforeReturnGet',
@@ -62,21 +63,8 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
   public _domRender_ref = new Map<object, Set<string>>();
   public _rawSets = new Map<string, Set<RawSet>>();
   public _domRender_proxy?: T;
-  // public _firstTarget: Node;
   public _targets = new Set<Node>();
-  
-  // 중복 호출 방지를 위한 전역 캐시
-  private static _processingPaths = new Set<string>();
-  private static _lastProcessTime = new Map<string, number>();
-  
-  // DOM 요소 캐싱
-  private _elementCache = new WeakMap<Element, { elements: any, timestamp: number }>();
-  private static _globalElementCache = new WeakMap<Element, { elements: any, timestamp: number }>();
-  
-  // 배치 처리를 위한 필드들
-  private static _pendingUpdates = new Map<string, { value: any, timestamp: number, proxies: Set<DomRenderProxy<any>> }>();
-  private static _batchUpdateScheduled = false;
-  private static _batchTimeout: any = null;
+  // public name = Math.random();
 
   constructor(
     public _domRender_origin: T,
@@ -187,26 +175,9 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
     const rawSets = RawSet.checkPointCreates(target, this._domRender_proxy, this._domRender_config);
     // console.log('initRender -------rawSet', rawSets)
     // 중요 초기에 한번 튕겨줘야함.
-    let attrElements;
-    if (target instanceof Element) {
-      const cached = DomRenderProxy._globalElementCache.get(target);
-      const now = Date.now();
-      
-      if (cached && (now - cached.timestamp) < 100) { // 100ms 캐시
-        attrElements = cached.elements;
-        console.log(`💾 initRender: Using cached findAttrElements`);
-      } else {
-        attrElements = this._domRender_config.eventManager.findAttrElements(target, this._domRender_config);
-        DomRenderProxy._globalElementCache.set(target, { elements: attrElements, timestamp: now });
-        console.log(`🔍 initRender: Fresh findAttrElements`);
-      }
-    } else {
-      attrElements = this._domRender_config.eventManager.findAttrElements(target as Element, this._domRender_config);
-    }
-    
     this._domRender_config.eventManager.applyEvent(
       this._domRender_proxy,
-      attrElements,
+      this._domRender_config.eventManager.findAttrElements(target as Element, this._domRender_config),
       this._domRender_config
     );
     rawSets.forEach(it => {
@@ -225,7 +196,7 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
       const onInit = (target as any).getAttribute?.(RawSet.DR_ON_INIT_ARGUMENTS_OPTIONNAME);
       let initParam: any;
       if (onCreate) {
-        initParam = ScriptUtils.evaluateReturn(onCreate, this._domRender_proxy);
+        initParam = ObjectUtils.Script.evaluateReturn(onCreate, this._domRender_proxy);
       }
       if (isOnInitRender(this._domRender_proxy)) {
         await this._domRender_proxy.onInitRender(
@@ -256,70 +227,99 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
     }
     const removeRawSets: RawSet[] = [];
     const rawSets = raws ?? this.getRawSets();
+    // console.log('Total RawSets to render:', Array.isArray(rawSets) ? rawSets.length : 0);
 
     // console.log('----', rawSets);
-    for (const it of rawSets as RawSet[]) {
-      it.getUsingTriggerVariables(this._domRender_config).forEach(path => {
-        // console.log('getUsingTriggerVariables->', path);
-        this.addRawSet(path, it);
-      });
+    // console.log('----', rawSets);
+    const CHUNK_SIZE = 50;
+    const chunks = [];
+    const rawSetsArray = Array.from(rawSets as RawSet[]);
+    for (let i = 0; i < rawSetsArray.length; i += CHUNK_SIZE) {
+      chunks.push(rawSetsArray.slice(i, i + CHUNK_SIZE));
+    }
 
-      let renderResult: RenderResult | undefined;
-      if (it.isConnected) {
-        // 중요 render될때 targetAttribute 체크 해야함.
-        const targetAttrMap = (it.point.node as Element)?.getAttribute?.(EventManager.normalAttrMapAttrName);
-        // console.log('sssssssssSSS?',it, targetAttrMap)
-        // console.log('----2', it, fullPathStr, targetAttrMap, (it.fragment as any).render, it.isConnected, this.getRawSets());
-        if (it.detect?.action) {
-          it.detect.action();
-          // } else if (it.type === RawSetType.TARGET_ELEMENT && it.data && fullPathStr && targetAttrMap && (it.fragment as any).render) {
-        } else if (
-          it.type === RawSetType.TARGET_ELEMENT &&
-          it.dataSet?.render?.currentThis &&
-          fullPathStr &&
-          targetAttrMap
-        ) {
-          new Map<string, NormalAttrDataType>(JSON.parse(targetAttrMap)).forEach((v, k) => {
-            // it?.data.onChangeAttrRender(k, null, v);
-            // console.log('------->?',v,k);
-            const isUsing = v.variablePaths.some(it => EventManager.isUsingThisVar(it.inner, `this.${fullPathStr}`))
-            // console.log('------->?',v,k, isUsing);
-            if (isUsing) {
-              const targetAttrObject = RawSet.getAttributeObject(it.point.node as Element, {
-                script: it.dataSet?.render?.renderScript ?? '',
-                obj: Object.assign(this._domRender_proxy ?? {}, { __render: it.dataSet?.render })
-              });
-              it.dataSet.render ??= {};
-              it.dataSet.render.attribute = targetAttrObject;
-              // const render = it.dataSet?.render;
-              // console.log('render-->!!!!!', it.dataSet.render);
-              // const script = `${render.renderScript} return ${v} `;
-              // const cval = ScriptUtils.eval(script, Object.assign(this._domRender_proxy ?? {}, { __render: render }));
-              if (isOnChangeAttrRender(it.dataSet?.render?.currentThis)) {
-                it.dataSet?.render?.currentThis?.onChangeAttrRender?.(k, targetAttrObject[k], { rawSet: it });
+    for (const chunk of chunks) {
+      const promises = chunk.map(async (it) => {
+        it.getUsingTriggerVariables(this._domRender_config).forEach(path => {
+          // console.log('getUsingTriggerVariables->', path);
+          this.addRawSet(path, it);
+        });
+
+        let renderResult: RenderResult | undefined;
+        if (it.isConnected) {
+          // 중요 render될때 targetAttribute 체크 해야함.
+          const targetAttrMap = (it.point.node as Element)?.getAttribute?.(EventManager.normalAttrMapAttrName);
+          // console.log('sssssssssSSS?',it, targetAttrMap)
+          // console.log('----2', it, fullPathStr, targetAttrMap, (it.fragment as any).render, it.isConnected, this.getRawSets());
+          if (it.detect?.action) {
+            it.detect.action();
+            // } else if (it.type === RawSetType.TARGET_ELEMENT && it.data && fullPathStr && targetAttrMap && (it.fragment as any).render) {
+          } else if (
+            it.type === RawSetType.TARGET_ELEMENT &&
+            it.dataSet?.render?.currentThis &&
+            fullPathStr &&
+            targetAttrMap
+          ) {
+            const attrStart = performance.now();
+            new Map<string, NormalAttrDataType>(JSON.parse(targetAttrMap)).forEach((v, k) => {
+              // it?.data.onChangeAttrRender(k, null, v);
+              // console.log('------->?',v,k);
+              const isUsing = v.variablePaths.some(it => EventManager.isUsingThisVar(it.inner, `this.${fullPathStr}`))
+              // console.log('------->?',v,k, isUsing);
+              if (isUsing) {
+                const targetAttrObject = RawSet.getAttributeObject(it.point.node as Element, {
+                  script: it.dataSet?.render?.renderScript ?? '',
+                  obj: Object.assign(this._domRender_proxy ?? {}, { __render: it.dataSet?.render })
+                });
+                it.dataSet.render ??= {};
+                it.dataSet.render.attribute = targetAttrObject;
+                // const render = it.dataSet?.render;
+                // console.log('render-->!!!!!', it.dataSet.render);
+                // const script = `${render.renderScript} return ${v} `;
+                // const cval = ScriptUtils.eval(script, Object.assign(this._domRender_proxy ?? {}, { __render: render }));
+                if (isOnChangeAttrRender(it.dataSet?.render?.currentThis)) {
+                  it.dataSet?.render?.currentThis?.onChangeAttrRender?.(k, targetAttrObject[k], { rawSet: it });
+                }
               }
+              // console.log('---?', v, fullPathStr, isUsing);
+            });
+            const attrEnd = performance.now();
+            // if (attrEnd - attrStart > 10) {
+              // console.log('Slow Attr Update:', attrEnd - attrStart, it);
+            // }
+            // ------------------->
+          } else {
+            const renderStart = performance.now();
+            const rawSets = await it.render(this._domRender_proxy, this._domRender_config);
+            const renderEnd = performance.now();
+            // if (renderEnd - renderStart > 10) {
+            //   console.log('Slow RawSet Render:', renderEnd - renderStart, it);
+            // }
+            renderResult = rawSets;
+            // 그외 자식들 render
+            if (rawSets && rawSets.raws.length > 0) {
+              await this.render(rawSets.raws);
             }
-            // console.log('---?', v, fullPathStr, isUsing);
-          });
-          // ------------------->
-        } else {
-          const rawSets = await it.render(this._domRender_proxy, this._domRender_config);
-          renderResult = rawSets;
-          // 그외 자식들 render
-          if (rawSets && rawSets.raws.length > 0) {
-            await this.render(rawSets.raws);
           }
+        } else {
+          removeRawSets.push(it);
         }
-      } else {
-        removeRawSets.push(it);
-      }
 
-      const t = it.findNearThis(this._domRender_proxy);
-      // TODO: 호출된곳에서 또 변수를 수정하게되면 무한루프니깐 왠만하면 사용못하게 해야한다.
-      if (isOnRawSetRendered(t)) {
-        await t.onRawSetRendered(it, { path: fullPathStr, value: ObjectUtils.Script.evaluateReturn(`this.${fullPathStr}`, this._domRender_proxy), root: this._domRender_proxy, renderResult });
+        const t = it.findNearThis(this._domRender_proxy);
+        // TODO: 호출된곳에서 또 변수를 수정하게되면 무한루프니깐 왠만하면 사용못하게 해야한다.
+        if (isOnRawSetRendered(t)) {
+          await t.onRawSetRendered(it, { path: fullPathStr, value: ObjectUtils.Script.evaluateReturn(`this.${fullPathStr}`, this._domRender_proxy), root: this._domRender_proxy, renderResult });
+        }
+        // console.log('----', it);
+      });
+      await Promise.all(promises);
+      if (chunks.length > 1) {
+        await new Promise(resolve => requestAnimationFrame(resolve));
       }
-      // console.log('----', it);
+    }
+
+    if (isOnChildRawSetRendered(this._domRender_proxy)) {
+      await this._domRender_proxy.onChildRawSetRendered();
     }
 
     if (removeRawSets.length > 0) {
@@ -342,40 +342,12 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
     value?: any,
     lastDoneExecute = true
   ): { path: string; obj: any }[][] {
+    // console.time('root_total');
     const rootStartTime = Date.now();
     const pathKey = pathInfos.flat().map(i => i.path).join('.');
 
-    console.group(`🌳 DomRenderProxy root: ${pathKey}`);
-    
-    // 중복 호출 방지 체크
-    const now = Date.now();
-    const lastProcessTime = DomRenderProxy._lastProcessTime.get(pathKey);
-    
-    if (DomRenderProxy._processingPaths.has(pathKey)) {
-      console.log(`🚫 Already processing path: ${pathKey}`);
-      console.groupEnd();
-      return [];
-    }
-    
-    // 배치 처리 중인 경우 체크
-    const pendingBatch = DomRenderProxy._pendingUpdates.get(pathKey);
-    if (pendingBatch && (now - pendingBatch.timestamp) < 5) { // 5ms 내 배치 처리 대기 중
-      console.log(`📦 Batch processing pending for: ${pathKey} (${now - pendingBatch.timestamp}ms ago)`);
-      console.groupEnd();
-      return [];
-    }
-    
-    if (lastProcessTime && (now - lastProcessTime) < 10) { // 10ms 내 중복 방지
-      console.log(`🚫 Duplicate call prevented for: ${pathKey} (${now - lastProcessTime}ms ago)`);
-      console.groupEnd();
-      return [];
-    }
-    
-    // 처리 시작 마킹
-    DomRenderProxy._processingPaths.add(pathKey);
-    DomRenderProxy._lastProcessTime.set(pathKey, now);
-    
-    console.log('root--->', pathInfos, value, this._domRender_ref, this._domRender_origin);
+    // console.group(`🌳 DomRenderProxy root: ${pathKey}`);
+    // console.log('root--->', pathInfos, value, this._domRender_ref, this._domRender_origin);
     const fullPaths: { path: string; obj: any }[][] = [];
     if (this._domRender_ref.size > 0) {
       this._domRender_ref.forEach((it, key) => {
@@ -389,7 +361,7 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
                 value,
                 lastDoneExecute
               );
-              console.log(`🔄 Recursive root call for ${sit}: ${Date.now() - recursiveStartTime}ms`);
+              // console.log(`🔄 Recursive root call for ${sit}: ${Date.now() - recursiveStartTime}ms`);
 
               fullPaths.push(items.flat());
               // fullPaths.push({path: items.map(it=>it.path).join(','), obj: this._domRender_proxy});
@@ -403,6 +375,7 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
         }
       });
     } else {
+      // console.time('root_recursive');
       const pathProcessStartTime = Date.now();
       // const firstPathStr = paths.slice(1).reverse().join('.');
       const strings = pathInfos.reverse().map(it => it.map(it => it.path).join(','));
@@ -411,7 +384,7 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
         .map(it => (isNaN(Number(it)) ? '.' + it : `[${it}]`))
         .join('')
         .slice(1);
-      console.log(`🛤️ Path processing time: ${Date.now() - pathProcessStartTime}ms for path: ${fullPathStr}`);
+      // console.log(`🛤️ Path processing time: ${Date.now() - pathProcessStartTime}ms for path: ${fullPathStr}`);
       if (lastDoneExecute) {
         // const firstData = ScriptUtils.evalReturn('this.' + firstPathStr, this._domRender_proxy);
         // console.log('-------', firstPathStr, firstData);
@@ -425,11 +398,13 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
           .join('');
         const lastPropertyName = strings[strings.length - 1];
         const path = 'this' + front;
-        const data = ScriptUtils.evaluateReturn(ObjectUtils.Path.toOptionalChainPath(path), this._domRender_proxy);
+        const data = ObjectUtils.Script.evaluateReturn(ObjectUtils.Path.toOptionalChainPath(path), this._domRender_proxy);
         // console.log('root-->', this._rawSets, path, data );
         // console.log('--!!!!', fullPathStr, iterable, data, front, last);
         // 왜여기서 promise를 했을까를 생각해보면......훔.. 변수변경과 화면 뿌려주는걸 동기로하면 성능이 안나오고 비현실적이다.  그래서 promise
         const promiseStartTime = Date.now();
+        // console.timeEnd('root_recursive');
+        // console.time('root_render_wait');
         new Promise<RawSet[]>(async resolve => {
           const promiseInnerStartTime = Date.now();
           let rData: RawSet[] = [];
@@ -447,7 +422,7 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
               firstTargetDictionary.push(it);
             }
           });
-          console.log(`📚 Dictionary check time: ${Date.now() - dictionaryCheckStartTime}ms (${firstTargetDictionary.length} found)`);
+          // console.log(`📚 Dictionary check time: ${Date.now() - dictionaryCheckStartTime}ms (${firstTargetDictionary.length} found)`);
 
           if (firstTargetDictionary.length > 0) {
             // console.log('ddddddddddd', firstTargetDictionary);
@@ -494,7 +469,7 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
             // console.log('------------',iterable, fullPaths)
             rData = await this.render(Array.from(iterable), fullPathStr);
           }
-          console.log(`🎨 Render time: ${Date.now() - renderStartTime}ms (${rData?.length || 0} rawSets)`);
+          // console.log(`🎨 Render time: ${Date.now() - renderStartTime}ms (${rData?.length || 0} rawSets)`);
 
           // console.log('-----------', this, lastPropertyName );
           // this._targets.forEach(it => {
@@ -510,35 +485,13 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
           this._targets.forEach(it => {
             // return;
             if (it.nodeType === Node.DOCUMENT_FRAGMENT_NODE || it.nodeType === Node.ELEMENT_NODE) {
-              const element = it as DocumentFragment | Element;
               const findAttrStartTime = Date.now();
-              
-              let targets;
-              let fromCache = false;
-              
-              // 캐시 확인 (Element만 캐시 가능, DocumentFragment는 제외)
-              if (element instanceof Element) {
-                const cached = DomRenderProxy._globalElementCache.get(element);
-                const now = Date.now();
-                
-                if (cached && (now - cached.timestamp) < 100) { // 100ms 캐시
-                  targets = cached.elements;
-                  fromCache = true;
-                  const targetCount = (targets as any)?.size || (targets as any)?.length || 0;
-                  console.log(`💾 Using cached findAttrElements (${targetCount} elements)`);
-                } else {
-                  targets = this._domRender_config.eventManager.findAttrElements(element, this._domRender_config);
-                  DomRenderProxy._globalElementCache.set(element, { elements: targets, timestamp: now });
-                }
-              } else {
-                // DocumentFragment는 캐시하지 않음
-                targets = this._domRender_config.eventManager.findAttrElements(element, this._domRender_config);
-              }
-              
+              const targets = this._domRender_config.eventManager.findAttrElements(
+                it as DocumentFragment | Element,
+                this._domRender_config
+              );
               const targetCount = (targets as any)?.size || (targets as any)?.length || 0;
-              if (!fromCache) {
-                console.log(`🔍 Fresh findAttrElements time: ${Date.now() - findAttrStartTime}ms (${targetCount} elements)`);
-              }
+              // console.log(`🔍 findAttrElements time: ${Date.now() - findAttrStartTime}ms (${targetCount} elements)`, it);
 
               const changeVarStartTime = Date.now();
               this._domRender_config.eventManager.changeVar(
@@ -547,12 +500,12 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
                 `this.${fullPathStr}`,
                 this._domRender_config
               );
-              console.log(`🔄 changeVar time: ${Date.now() - changeVarStartTime}ms`);
+              // console.log(`🔄 changeVar time: ${Date.now() - changeVarStartTime}ms`);
             }
           });
-          console.log(`⚡ Event processing time: ${Date.now() - eventProcessStartTime}ms (${this._targets.size} targets)`);
+          // console.log(`⚡ Event processing time: ${Date.now() - eventProcessStartTime}ms (${this._targets.size} targets)`);
 
-          console.log(`🔄 Promise inner total time: ${Date.now() - promiseInnerStartTime}ms`);
+          // console.log(`🔄 Promise inner total time: ${Date.now() - promiseInnerStartTime}ms`);
 
           //랜더대상된게있으면
           if (rData?.length > 0 && isOnChildRenderedByProperty(data)) {
@@ -563,17 +516,16 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
           resolve(rData);
         }).then(it => {
           // console.log('DonrenderProxy root RenderDone')
+          // console.timeEnd('root_render_wait');
+          // console.timeEnd('root_total');
         });
       }
       fullPaths.push([{ path: fullPathStr, obj: this._domRender_proxy }]);
     }
 
-    // 처리 완료 마킹
-    DomRenderProxy._processingPaths.delete(pathKey);
-    
-    console.log(`🏁 Root method total time: ${Date.now() - rootStartTime}ms`);
-    console.log('dddddd', fullPaths.flatMap(it => it).map(it => it.path))
-    console.groupEnd();
+    // console.log(`🏁 Root method total time: ${Date.now() - rootStartTime}ms`);
+    // console.log('dddddd', fullPaths.flatMap(it => it).map(it => it.path))
+    // console.groupEnd();
     return fullPaths;
   }
 
@@ -604,15 +556,19 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
     //     return true;
     // }
     // console.log('set--?', p, target, value);
-
+    let start = performance.now()
     if (typeof p === 'string') {
       value = this.proxy(receiver, value, p);
     }
+    // console.log('set proxy time', performance.now() - start, p);
+    // start = performance.now();
+
 
     // console.log('set typeChecked',  (target as any)[p] instanceof ComponentSet, value instanceof ComponentSet);
     // if ((target as any)[p] instanceof ComponentSet) {
     //   (target as any)[p]?.obj?.onDrThisUnBind?.();
     // }
+    // console.log('---', this._domRender_ref, p, this._domRender_proxy)
     // is ComponentSet
     if (value instanceof ComponentSet && (target as any)[p] instanceof ComponentSet) {
       value.config.beforeComponentSet = (target as any)[p];
@@ -620,12 +576,13 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
     (target as any)[p] = value;
     let fullPathInfo: { path: string; obj: any }[][] = [];
     if (typeof p === 'string') {
-      // 배치 처리로 변경
-      this.scheduleBatchUpdate(p, value);
-      // 즉시 처리가 필요한 경우를 위해 기본 root 호출도 유지 (하지만 배치에서 중복 제거됨)
       fullPathInfo = this.root([[{ path: p, obj: this._domRender_proxy }]], value);
     }
 
+
+    // console.log('set proxy root time', performance.now() - start, p);
+    // start = performance.now();
+    //
     // console.log('setRooot', fullPathInfo);
 
     //normal attribute 또한 링크랑 같은 증세라서 이렇게 해줘야한다!!
@@ -672,9 +629,9 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
             // })
             const value1 = ObjectUtils.Script.evaluateReturn(script, it.pathInfo.obj);
             // console.log('proxy set!Attribut======', it.key, value1)
-            if (value1 === null) {
+            if (value1 === null || value1 === undefined) {
               elementInfo.element.removeAttribute(it.key);
-              elementInfo.element[it.key] = null;
+              // elementInfo.element[it.key] = null;
             } else {
               elementInfo.element.setAttribute(it.key, value1);
               elementInfo.element[it.key] = value1;
@@ -683,11 +640,16 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
       }
     );
 
+    // console.log('set proxy normalAttrMapAttrName time', performance.now() - start, p);
+    // start = performance.now();
+
+
+
     //여기서 링크 같은거 해줘야함  *-link로 변수값이 변경되면 그걸 참고하고있는 다른것들에도 해줘야한다.
     DocumentUtils.querySelectorAllByAttributeName(rootElement, EventManager.linkTargetMapAttrName)?.forEach(
       elementInfo => {
         // @ts-ignore
-        const targets = new Map<string, string>(ScriptUtils.evaluateReturn<[string, string][]>(elementInfo.value));
+        const targets = new Map<string, string>(ObjectUtils.Script.evaluateReturn<[string, string][]>(elementInfo.value));
 
         Array.from(targets.entries())
           .filter(([key, value]) => value.trim())
@@ -699,7 +661,7 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
               .flatMap(it => ({ key, valueScript: valueScript, pathInfo: it }));
           })
           .forEach(info => {
-            const value1 = ScriptUtils.evaluateReturn(info.valueScript, info.pathInfo.obj);
+            const value1 = ObjectUtils.Script.evaluateReturn(info.valueScript, info.pathInfo.obj);
             const applyAttributeName = EventManager.linkAttrs.find(it => it.name === info.key);
             if (applyAttributeName) {
               if (value1 === null) {
@@ -729,6 +691,9 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
       }
     );
 
+    // console.log('set proxy linkTargetMapAttrName time', performance.now() - start, p);
+    // start = performance.now();
+
     // console.log('---end',receiver);
     if (
       'onBeforeReturnSet' in receiver &&
@@ -743,6 +708,8 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
         );
       }
     }
+
+    // console.log('done!!')
     return true;
   }
 
@@ -913,87 +880,6 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
     });
   }
 
-  // 배치 처리 메서드들
-  private scheduleBatchUpdate(path: string, value: any) {
-    const now = Date.now();
-    const existing = DomRenderProxy._pendingUpdates.get(path);
-    
-    if (existing) {
-      // 기존 업데이트가 있으면 값과 프록시 목록 업데이트
-      existing.value = value;
-      existing.timestamp = now;
-      existing.proxies.add(this);
-      console.log(`📦 Batch: Updated pending update for ${path} (${existing.proxies.size} proxies)`);
-    } else {
-      // 새로운 업데이트 추가
-      DomRenderProxy._pendingUpdates.set(path, {
-        value,
-        timestamp: now,
-        proxies: new Set([this])
-      });
-      console.log(`📦 Batch: Added new pending update for ${path}`);
-    }
-    
-    // 배치 처리 스케줄링
-    this.scheduleBatchProcessing();
-  }
-
-  private scheduleBatchProcessing() {
-    if (DomRenderProxy._batchUpdateScheduled) {
-      return; // 이미 스케줄됨
-    }
-    
-    DomRenderProxy._batchUpdateScheduled = true;
-    
-    // 기존 타임아웃 클리어
-    if (DomRenderProxy._batchTimeout) {
-      clearTimeout(DomRenderProxy._batchTimeout);
-    }
-    
-    // 짧은 지연 후 배치 처리 (마이크로태스크 큐 사용)
-    DomRenderProxy._batchTimeout = setTimeout(() => {
-      this.processBatchUpdates();
-    }, 0);
-    
-    console.log(`⏰ Batch processing scheduled (${DomRenderProxy._pendingUpdates.size} pending)`);
-  }
-
-  private processBatchUpdates() {
-    const batchStartTime = Date.now();
-    const updateCount = DomRenderProxy._pendingUpdates.size;
-    
-    console.group(`🚀 Processing batch updates (${updateCount} items)`);
-    
-    try {
-      // 모든 대기 중인 업데이트 처리
-      DomRenderProxy._pendingUpdates.forEach((updateInfo, path) => {
-        const updateStartTime = Date.now();
-        
-        // 각 프록시에서 root 호출 (중복 방지 로직이 적용됨)
-        updateInfo.proxies.forEach(proxy => {
-          try {
-            proxy.root([[{ path, obj: proxy._domRender_proxy }]], updateInfo.value);
-          } catch (error) {
-            console.error(`❌ Batch update error for ${path}:`, error);
-          }
-        });
-        
-        console.log(`✅ Batch processed ${path}: ${Date.now() - updateStartTime}ms (${updateInfo.proxies.size} proxies)`);
-      });
-      
-      // 대기 목록 클리어
-      DomRenderProxy._pendingUpdates.clear();
-      
-    } finally {
-      // 스케줄링 플래그 리셋
-      DomRenderProxy._batchUpdateScheduled = false;
-      DomRenderProxy._batchTimeout = null;
-      
-      console.log(`🏁 Batch processing completed: ${Date.now() - batchStartTime}ms`);
-      console.groupEnd();
-    }
-  }
-
   private garbageRawSet() {
     this._targets.forEach(it => {
       if (!it.isConnected) {
@@ -1008,24 +894,5 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
         }
       });
     });
-    
-    // 캐시 정리: 5초 이상 된 항목 제거
-    const now = Date.now();
-    DomRenderProxy._lastProcessTime.forEach((time, key) => {
-      if (now - time > 5000) {
-        DomRenderProxy._lastProcessTime.delete(key);
-      }
-    });
-    
-    // 배치 처리 정리: 10초 이상 된 대기 업데이트 제거
-    DomRenderProxy._pendingUpdates.forEach((updateInfo, key) => {
-      if (now - updateInfo.timestamp > 10000) {
-        console.log(`🧹 Cleaning old batch update: ${key}`);
-        DomRenderProxy._pendingUpdates.delete(key);
-      }
-    });
-    
-    // DOM 캐시 정리는 WeakMap이므로 자동으로 가비지 컬렉션됨
-    // 하지만 명시적으로 오래된 캐시 정리 (WeakMap은 직접 순회 불가능하므로 별도 관리 필요시에만)
   }
 }

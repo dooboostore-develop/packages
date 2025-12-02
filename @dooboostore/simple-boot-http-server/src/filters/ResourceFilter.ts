@@ -47,7 +47,9 @@ export class ResourceFilter implements Filter {
       // console.log('resource filter!!**-------', url);
         let sw = true;
         const regExps = this.resources?.filter(it => {
+          // console.log('---it', it, it instanceof RegExp, typeof it)
             if (it instanceof RegExp) {
+              // console.log('--------', it.test(url))
                 return it.test(url);
             }
 
@@ -62,8 +64,11 @@ export class ResourceFilter implements Filter {
             if (typeof it === 'object' && 'request' in it) {
                 if (typeof it.request === 'function') {
                     return it.request(rr, app);
+                } else if (it .request instanceof RegExp) {
+                    return it.request.test(url);
+                } else {
+                  return RegExp(it.request).test(url);
                 }
-                return RegExp(it.request).test(url);
             }
         })??[]
         // console.log('regExps', regExps, url);
