@@ -229,10 +229,31 @@ export namespace ObjectUtils {
         return path;
       }
       
+      // Protect string literals and template literals by replacing them with placeholders
+      const stringLiterals: string[] = [];
+      
+      // First, handle template literals (backticks) with embedded expressions
+      let tempPath = path.replace(/`(?:[^`$\\]|\\.|\\$|\$(?!\{)|\$\{[^}]*\})*`/g, (match) => {
+        // Process embedded expressions ${...} within the template literal
+        const processed = match.replace(/\$\{([^}]+)\}/g, (exprMatch, expr) => {
+          const processedExpr = toOptionalChainPath(expr);
+          return `\${${processedExpr}}`;
+        });
+        const placeholder = `__STRING_LITERAL_${stringLiterals.length}__`;
+        stringLiterals.push(processed);
+        return placeholder;
+      });
+      
+      // Then handle regular string literals (single and double quotes)
+      tempPath = tempPath.replace(/(["'])(?:(?=(\\?))\2.)*?\1/g, (match) => {
+        const placeholder = `__STRING_LITERAL_${stringLiterals.length}__`;
+        stringLiterals.push(match);
+        return placeholder;
+      });
+      
       // Protect nullish coalescing operator (??) by replacing it with a placeholder
       const nullishCoalescingPlaceholder = '__NULLISH_COALESCING__';
-      const hasNullishCoalescing = path.includes('??');
-      let tempPath = path;
+      const hasNullishCoalescing = tempPath.includes('??');
       if (hasNullishCoalescing) {
         tempPath = tempPath.replace(/\?\?/g, nullishCoalescingPlaceholder);
       }
@@ -262,10 +283,17 @@ export namespace ObjectUtils {
             const processedFalseBranch = toOptionalChainPath(falseBranch);
             
             // Reconstruct with original spacing around ? and :
-            const finalResult = `${processedCondition} ? ${processedTrueBranch} : ${processedFalseBranch}`;
+            let finalResult = `${processedCondition} ? ${processedTrueBranch} : ${processedFalseBranch}`;
             
             // Restore nullish coalescing operator
-            return hasNullishCoalescing ? finalResult.replace(new RegExp(nullishCoalescingPlaceholder, 'g'), '??') : finalResult;
+            if (hasNullishCoalescing) {
+              finalResult = finalResult.replace(new RegExp(nullishCoalescingPlaceholder, 'g'), '??');
+            }
+            // Restore string literals
+            stringLiterals.forEach((literal, index) => {
+              finalResult = finalResult.replace(`__STRING_LITERAL_${index}__`, literal);
+            });
+            return finalResult;
           }
         }
       }
@@ -318,7 +346,14 @@ export namespace ObjectUtils {
         }
         
         // Restore nullish coalescing operator
-        return hasNullishCoalescing ? processedPath.replace(new RegExp(nullishCoalescingPlaceholder, 'g'), '??') : processedPath;
+        if (hasNullishCoalescing) {
+          processedPath = processedPath.replace(new RegExp(nullishCoalescingPlaceholder, 'g'), '??');
+        }
+        // Restore string literals
+        stringLiterals.forEach((literal, index) => {
+          processedPath = processedPath.replace(`__STRING_LITERAL_${index}__`, literal);
+        });
+        return processedPath;
       }
       
       // Tokenize the path by '.', '[', ']', and '?' to handle property access and existing optional chaining.
@@ -327,9 +362,16 @@ export namespace ObjectUtils {
         return hasNullishCoalescing ? path : path; // Return original path if no tokens are found (e.g., path is just '.')
       }
       // Join tokens with '?.', effectively creating the optional chain path.
-      const result = tokens.join('?.');
+      let result = tokens.join('?.');
       // Restore nullish coalescing operator
-      return hasNullishCoalescing ? result.replace(new RegExp(nullishCoalescingPlaceholder, 'g'), '??') : result;
+      if (hasNullishCoalescing) {
+        result = result.replace(new RegExp(nullishCoalescingPlaceholder, 'g'), '??');
+      }
+      // Restore string literals
+      stringLiterals.forEach((literal, index) => {
+        result = result.replace(`__STRING_LITERAL_${index}__`, literal);
+      });
+      return result;
     };
 
     export const removeOptionalChainOperator = (path: string): string => {

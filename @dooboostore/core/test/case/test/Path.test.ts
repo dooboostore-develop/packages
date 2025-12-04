@@ -719,6 +719,24 @@ describe('ObjectUtils.Path', () => {
       const expected = "this?.currentImageType === 'background' ? this?.selectedBackgroundImages : this?.selectedObjectImages";
       assert.strictEqual(ObjectUtils.Path.toOptionalChainPath(path), expected);
     });
+
+    test('should handle URL concatenation with property access', () => {
+      const path = "'https://map.naver.com/p/smart-around/place/' + this.market.uuid";
+      const expected = "'https://map.naver.com/p/smart-around/place/' + this?.market?.uuid";
+      assert.strictEqual(ObjectUtils.Path.toOptionalChainPath(path), expected);
+    });
+
+    test('should handle URL concatenation with double quotes', () => {
+      const path = '"https://map.naver.com/p/smart-around/place/" + this.market.uuid';
+      const expected = '"https://map.naver.com/p/smart-around/place/" + this?.market?.uuid';
+      assert.strictEqual(ObjectUtils.Path.toOptionalChainPath(path), expected);
+    });
+
+    test('should handle template literal with embedded expression', () => {
+      const path = '`https://map.naver.com/${this.wow}/smart-around/place/` + this.market.uuid';
+      const expected = '`https://map.naver.com/${this?.wow}/smart-around/place/` + this?.market?.uuid';
+      assert.strictEqual(ObjectUtils.Path.toOptionalChainPath(path), expected);
+    });
   });
 
   describe('Path.removeOptionalChainOperator', () => {
