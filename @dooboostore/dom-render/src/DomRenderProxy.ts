@@ -20,7 +20,8 @@ import { ObjectUtils } from '@dooboostore/core/object/ObjectUtils';
 import { ValidUtils } from '@dooboostore/core/valid/ValidUtils';
 import { isOnProxyDomRender } from './lifecycle/OnProxyDomRender';
 import { isOnRawSetRendered } from './lifecycle/OnRawSetRendered';
-import {isOnChildRawSetRendered} from "./lifecycle/OnChildRawSetRendered";
+import { isOnChildRawSetRendered } from "./lifecycle/OnChildRawSetRendered";
+import {Promises} from "@dooboostore/core/promise/Promises";
 
 const excludeGetSetPropertys = [
   'onBeforeReturnGet',
@@ -227,70 +228,35 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
     }
     const removeRawSets: RawSet[] = [];
     const rawSets = raws ?? this.getRawSets();
+    // console.log('Total RawSets to render:', Array.isArray(rawSets) ? rawSets.length : 0);
 
     // console.log('----', rawSets);
-    for (const it of rawSets as RawSet[]) {
-      it.getUsingTriggerVariables(this._domRender_config).forEach(path => {
-        // console.log('getUsingTriggerVariables->', path);
-        this.addRawSet(path, it);
+    // console.log('----', rawSets);
+    const CHUNK_SIZE = 50;
+    const chunks:RawSet[][] = [];
+    const rawSetsArray = Array.from(rawSets as RawSet[]);
+    const firstRawSet = rawSetsArray.shift();
+    // 이렇게 청크단위로 처리할때  await Promises.sleep(0); 을 넣어줘도 처음에 dr-for-of가 먼저 돌고 그러면 참고하고있는 rawSet들이 isConnect가 false되니깐 처리안되고
+    // 나중에 처리되면서 오류가 난다. 그래서 청크내에서 첫번째꺼는 바로처리하고 그다음꺼부터는 await를 넣어줘서 브라우저가 중간에 처리할 시간을 주도록 한다.
+    // 항상 먼저 등록된 path들에 의해 뒤에게 생성되는경우가 무조건이기떄문에 먼저거 한번 돌려주면 잘된다.
+    // 아니면 renderExecute  안쪽에서 매번 sleep을 줘도되는데.. 그렇게되면 부하가 너무 갈수 있어서.. 우선 첫번쨰것만 처리하도록해본다.
+    if (firstRawSet) {
+      await this.renderExecute(firstRawSet, fullPathStr, removeRawSets);
+    }
+    for (let i = 0; i < rawSetsArray.length; i += (CHUNK_SIZE)) {
+      chunks.push(rawSetsArray.slice(i, i + CHUNK_SIZE));
+    }
+
+    for (const chunk of chunks) {
+      const promises = chunk.map(async (it, index) => {
+        await this.renderExecute(it, fullPathStr, removeRawSets);
+        // console.log('----', it);
       });
-
-      let renderResult: RenderResult | undefined;
-      if (it.isConnected) {
-        // 중요 render될때 targetAttribute 체크 해야함.
-        const targetAttrMap = (it.point.node as Element)?.getAttribute?.(EventManager.normalAttrMapAttrName);
-        // console.log('sssssssssSSS?',it, targetAttrMap)
-        // console.log('----2', it, fullPathStr, targetAttrMap, (it.fragment as any).render, it.isConnected, this.getRawSets());
-        if (it.detect?.action) {
-          it.detect.action();
-          // } else if (it.type === RawSetType.TARGET_ELEMENT && it.data && fullPathStr && targetAttrMap && (it.fragment as any).render) {
-        } else if (
-          it.type === RawSetType.TARGET_ELEMENT &&
-          it.dataSet?.render?.currentThis &&
-          fullPathStr &&
-          targetAttrMap
-        ) {
-          new Map<string, NormalAttrDataType>(JSON.parse(targetAttrMap)).forEach((v, k) => {
-            // it?.data.onChangeAttrRender(k, null, v);
-            // console.log('------->?',v,k);
-            const isUsing = v.variablePaths.some(it => EventManager.isUsingThisVar(it.inner, `this.${fullPathStr}`))
-            // console.log('------->?',v,k, isUsing);
-            if (isUsing) {
-              const targetAttrObject = RawSet.getAttributeObject(it.point.node as Element, {
-                script: it.dataSet?.render?.renderScript ?? '',
-                obj: Object.assign(this._domRender_proxy ?? {}, { __render: it.dataSet?.render })
-              });
-              it.dataSet.render ??= {};
-              it.dataSet.render.attribute = targetAttrObject;
-              // const render = it.dataSet?.render;
-              // console.log('render-->!!!!!', it.dataSet.render);
-              // const script = `${render.renderScript} return ${v} `;
-              // const cval = ScriptUtils.eval(script, Object.assign(this._domRender_proxy ?? {}, { __render: render }));
-              if (isOnChangeAttrRender(it.dataSet?.render?.currentThis)) {
-                it.dataSet?.render?.currentThis?.onChangeAttrRender?.(k, targetAttrObject[k], { rawSet: it });
-              }
-            }
-            // console.log('---?', v, fullPathStr, isUsing);
-          });
-          // ------------------->
-        } else {
-          const rawSets = await it.render(this._domRender_proxy, this._domRender_config);
-          renderResult = rawSets;
-          // 그외 자식들 render
-          if (rawSets && rawSets.raws.length > 0) {
-            await this.render(rawSets.raws);
-          }
-        }
-      } else {
-        removeRawSets.push(it);
+      // console.log('실행.!')
+      await Promise.all(promises);
+      if (chunks.length > 1) {
+        await new Promise(resolve => requestAnimationFrame(resolve));
       }
-
-      const t = it.findNearThis(this._domRender_proxy);
-      // TODO: 호출된곳에서 또 변수를 수정하게되면 무한루프니깐 왠만하면 사용못하게 해야한다.
-      if (isOnRawSetRendered(t)) {
-        await t.onRawSetRendered(it, { path: fullPathStr, value: ObjectUtils.Script.evaluateReturn(`this.${fullPathStr}`, this._domRender_proxy), root: this._domRender_proxy, renderResult });
-      }
-      // console.log('----', it);
     }
 
     if (isOnChildRawSetRendered(this._domRender_proxy)) {
@@ -303,7 +269,84 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
     return this.getRawSets();
   }
 
-  // domrender_ref로 찾는걸로 바꿈
+  private async renderExecute(it: RawSet, fullPathStr: string, removeRawSets: RawSet[]) {
+    // console.log('실행?')
+    // await Promises.sleep(0);
+    it.getUsingTriggerVariables(this._domRender_config).forEach(path => {
+      // console.log('getUsingTriggerVariables->', path);
+      this.addRawSet(path, it);
+    });
+
+    let renderResult: RenderResult | undefined;
+    // console.log('isConnected?', it, it.isConnected);
+    if (it.isConnected) {
+      // 중요 render될때 targetAttribute 체크 해야함.
+      const targetAttrMap = (it.point.node as Element)?.getAttribute?.(EventManager.normalAttrMapAttrName);
+      // console.log('sssssssssSSS?',it, targetAttrMap)
+      // console.log('----2', it, fullPathStr, targetAttrMap, (it.fragment as any).render, it.isConnected, this.getRawSets());
+      if (it.detect?.action) {
+        it.detect.action();
+        // } else if (it.type === RawSetType.TARGET_ELEMENT && it.data && fullPathStr && targetAttrMap && (it.fragment as any).render) {
+      } else if (
+        it.type === RawSetType.TARGET_ELEMENT &&
+        it.dataSet?.render?.currentThis &&
+        fullPathStr &&
+        targetAttrMap
+      ) {
+        const attrStart = performance.now();
+        new Map<string, NormalAttrDataType>(JSON.parse(targetAttrMap)).forEach((v, k) => {
+          // it?.data.onChangeAttrRender(k, null, v);
+          // console.log('------->?',v,k);
+          const isUsing = v.variablePaths.some(it => EventManager.isUsingThisVar(it.inner, `this.${fullPathStr}`))
+          // console.log('------->?',v,k, isUsing);
+          if (isUsing) {
+            const targetAttrObject = RawSet.getAttributeObject(it.point.node as Element, {
+              script: it.dataSet?.render?.renderScript ?? '',
+              obj: Object.assign(this._domRender_proxy ?? {}, {__render: it.dataSet?.render})
+            });
+            it.dataSet.render ??= {};
+            it.dataSet.render.attribute = targetAttrObject;
+            // const render = it.dataSet?.render;
+            // console.log('render-->!!!!!', it.dataSet.render);
+            // const script = `${render.renderScript} return ${v} `;
+            // const cval = ScriptUtils.eval(script, Object.assign(this._domRender_proxy ?? {}, { __render: render }));
+            if (isOnChangeAttrRender(it.dataSet?.render?.currentThis)) {
+              it.dataSet?.render?.currentThis?.onChangeAttrRender?.(k, targetAttrObject[k], {rawSet: it});
+            }
+          }
+          // console.log('---?', v, fullPathStr, isUsing);
+        });
+        const attrEnd = performance.now();
+        // if (attrEnd - attrStart > 10) {
+        // console.log('Slow Attr Update:', attrEnd - attrStart, it);
+        // }
+        // ------------------->
+      } else {
+        const renderStart = performance.now();
+        const rawSets = await it.render(this._domRender_proxy, this._domRender_config);
+        // console.log('!!!!!!!!!', rawSets)
+        const renderEnd = performance.now();
+        // if (renderEnd - renderStart > 10) {
+        //   console.log('Slow RawSet Render:', renderEnd - renderStart, it);
+        // }
+        renderResult = rawSets;
+        // 그외 자식들 render
+        if (rawSets && rawSets.raws.length > 0) {
+          await this.render(rawSets.raws);
+        }
+      }
+    } else {
+      removeRawSets.push(it);
+    }
+
+    const t = it.findNearThis(this._domRender_proxy);
+    // TODO: 호출된곳에서 또 변수를 수정하게되면 무한루프니깐 왠만하면 사용못하게 해야한다.
+    if (isOnRawSetRendered(t)) {
+      await t.onRawSetRendered(it, {path: fullPathStr, value: ObjectUtils.Script.evaluateReturn(`this.${fullPathStr}`, this._domRender_proxy), root: this._domRender_proxy, renderResult});
+    }
+  }
+
+// domrender_ref로 찾는걸로 바꿈
   // public findRootDomRenderProxy(): DomRenderProxy<any> {
   //   let current:DomRenderProxy<any>  = this;
   //   while (current.parentProxy) {
@@ -317,6 +360,7 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
     value?: any,
     lastDoneExecute = true
   ): { path: string; obj: any }[][] {
+    // console.time('root_total');
     const rootStartTime = Date.now();
     const pathKey = pathInfos.flat().map(i => i.path).join('.');
 
@@ -349,15 +393,16 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
         }
       });
     } else {
+      // console.time('root_recursive');
       const pathProcessStartTime = Date.now();
       // const firstPathStr = paths.slice(1).reverse().join('.');
-      const strings = pathInfos.reverse().map(it => it.map(it => it.path).join(','));
+      const shortPaths = pathInfos.reverse().map(it => it.map(it => it.path).join(','));
       // array같은경우도 키값으로 접근하기때문에 특정 인덱스를 찾아서 그부분만 바꿔줄수 있다.
-      const fullPathStr = strings
+      const fullPathStr = shortPaths
         .map(it => (isNaN(Number(it)) ? '.' + it : `[${it}]`))
         .join('')
         .slice(1);
-      // console.log(`🛤️ Path processing time: ${Date.now() - pathProcessStartTime}ms for path: ${fullPathStr}`);
+      // console.log(`🛤️ Path processing time: ${Date.now() - pathProcessStartTime}ms for path: ${fullPathStr}`, lastDoneExecute);
       if (lastDoneExecute) {
         // const firstData = ScriptUtils.evalReturn('this.' + firstPathStr, this._domRender_proxy);
         // console.log('-------', firstPathStr, firstData);
@@ -365,17 +410,25 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
         // }
         const iterable = this._rawSets.get(fullPathStr);
         // array check
-        const front = strings
-          .slice(0, strings.length - 1)
+        const front = shortPaths
+          .slice(0, shortPaths.length - 1)
           .map(it => (isNaN(Number(it)) ? '.' + it : `[${it}]`))
           .join('');
-        const lastPropertyName = strings[strings.length - 1];
+        const lastPropertyName = shortPaths[shortPaths.length - 1];
         const path = 'this' + front;
         const data = ObjectUtils.Script.evaluateReturn(ObjectUtils.Path.toOptionalChainPath(path), this._domRender_proxy);
-        // console.log('root-->', this._rawSets, path, data );
+        // console.log('root-sub-->', this._rawSets, iterable, path, data );
+        
+        // 중요: 값이 undefined/null이 되면 해당 경로로 시작하는 모든 child RawSet들을 정리
+        // 예: users가 undefined가 되면 users[0].imgUrl, users[1].office.name 등의 RawSet들도 제거
+        // if (value === undefined || value === null) {
+        //   this.removeChildRawSetsByPath(fullPathStr);
+        // }
         // console.log('--!!!!', fullPathStr, iterable, data, front, last);
         // 왜여기서 promise를 했을까를 생각해보면......훔.. 변수변경과 화면 뿌려주는걸 동기로하면 성능이 안나오고 비현실적이다.  그래서 promise
         const promiseStartTime = Date.now();
+        // console.timeEnd('root_recursive');
+        // console.time('root_render_wait');
         new Promise<RawSet[]>(async resolve => {
           const promiseInnerStartTime = Date.now();
           let rData: RawSet[] = [];
@@ -487,6 +540,8 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
           resolve(rData);
         }).then(it => {
           // console.log('DonrenderProxy root RenderDone')
+          // console.timeEnd('root_render_wait');
+          // console.timeEnd('root_total');
         });
       }
       fullPaths.push([{ path: fullPathStr, obj: this._domRender_proxy }]);
@@ -537,6 +592,7 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
     // if ((target as any)[p] instanceof ComponentSet) {
     //   (target as any)[p]?.obj?.onDrThisUnBind?.();
     // }
+    // console.log('---', this._domRender_ref, p, this._domRender_proxy)
     // is ComponentSet
     if (value instanceof ComponentSet && (target as any)[p] instanceof ComponentSet) {
       value.config.beforeComponentSet = (target as any)[p];
@@ -546,6 +602,7 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
     if (typeof p === 'string') {
       fullPathInfo = this.root([[{ path: p, obj: this._domRender_proxy }]], value);
     }
+
 
     // console.log('set proxy root time', performance.now() - start, p);
     // start = performance.now();
@@ -827,6 +884,7 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
   // }
 
   public removeRawSet(...raws: RawSet[]) {
+    // console.log('Before removeRawSet, total rawSets:', this.getRawSets().length);
     this._rawSets.forEach(it => {
       it.forEach(sit => {
         if (!sit.isConnected) {
@@ -837,6 +895,33 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
       });
     });
     this.targetGarbageRawSet();
+    // console.log('After removeRawSet, total rawSets:', this.getRawSets().length);
+  }
+
+  // 특정 경로로 시작하는 모든 child RawSet들을 제거
+  // 예: path가 'users'이면 'users[0]', 'users[0].imgUrl', 'users.length' 등 모두 제거
+  public removeChildRawSetsByPath(parentPath: string) {
+    const pathsToRemove: string[] = [];
+    this._rawSets.forEach((rawSetSet, path) => {
+      // 정확히 일치하거나, 배열 인덱스 접근(users[), 또는 속성 접근(users.)으로 시작하는 경우
+      if (path === parentPath || path.startsWith(parentPath + '[') || path.startsWith(parentPath + '.')) {
+        pathsToRemove.push(path);
+      }
+    });
+    
+    if (pathsToRemove.length > 0) {
+      console.log(`🧹 Removing child RawSets for path '${parentPath}':`, pathsToRemove);
+      pathsToRemove.forEach(path => {
+        const rawSetSet = this._rawSets.get(path);
+        if (rawSetSet) {
+          rawSetSet.forEach(rawSet => {
+            // DOM에서 제거
+            rawSet.remove?.();
+          });
+          this._rawSets.delete(path);
+        }
+      });
+    }
   }
 
   private targetGarbageRawSet() {

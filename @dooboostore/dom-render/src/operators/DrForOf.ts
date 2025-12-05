@@ -32,11 +32,12 @@ export class DrForOf extends OperatorExecuterAttrRequire<string> {
                     ${this.elementSource.attrs.drBeforeOption ?? ''}
                     var i = -1; 
                     const forOf = ${ObjectUtils.Path.toOptionalChainPath(attr)};
-                    const forOfStr = \`${attr}\`.trim();
+                    const forOfStr = '('+\`${attr}\`.trim() + ')';
                     // console.log('forOf---',forOf);
                     // debugger;
                     if (forOf) {
                         for(const it of forOf) {
+                          // console.log('forOf---it',it);
                             i++;
                             var destIt = it;
                             if (/\\[(.*,?)\\],/g.test(forOfStr)) {
@@ -50,6 +51,8 @@ export class DrForOf extends OperatorExecuterAttrRequire<string> {
                             } else {
                                 destIt = forOfStr + '[' + i +']'
                             }
+                            destIt = '(' + destIt + ')';
+                            
                             const n = this.__render.element.cloneNode(true);
                             Object.entries(this.__render.drAttr).filter(([k,v]) => k !== 'drForOf' && k !== 'drNextOption' && v).forEach(([k, v]) => n.setAttribute(this.__render.drAttrsOriginName[k], v));
                             n.getAttributeNames().forEach(it => n.setAttribute(it, n.getAttribute(it).replace(/\\#it\\#/g, destIt).replace(/\\#nearForOfIt\\#/g, destIt).replace(/\\#it\\#/g, destIt).replace(/\\#nearForOfIndex\\#/g, i)))

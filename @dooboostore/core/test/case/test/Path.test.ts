@@ -737,6 +737,23 @@ describe('ObjectUtils.Path', () => {
       const expected = '`https://map.naver.com/${this?.wow}/smart-around/place/` + this?.market?.uuid';
       assert.strictEqual(ObjectUtils.Path.toOptionalChainPath(path), expected);
     });
+
+    test('should handle nullish coalescing with array containing object', () => {
+      const path = "this.users?? [{imgUrl:'z', office:{name:'zzz'}}]";
+      const expected = "this?.users??[{imgUrl:'z', office:{name:'zzz'}}]";
+      assert.strictEqual(ObjectUtils.Path.toOptionalChainPath(path), expected);
+    });
+
+    test('should handle complex OR expression with nested property access', () => {
+      const path = '(this.__domrender_components.UUmWtNxysVkZJIDOhytwTJNYstRVGDidIkTVhYeB.value.obj.pointsInfo.points[1]).availableStartDate || (this.__domrender_components.UUmWtNxysVkZJIDOhytwTJNYstRVGDidIkTVhYeB.value.obj.pointsInfo.points[1]).availableEndDate';
+      const expected = '(this?.__domrender_components?.UUmWtNxysVkZJIDOhytwTJNYstRVGDidIkTVhYeB?.value?.obj?.pointsInfo?.points?.[1])?.availableStartDate || (this?.__domrender_components?.UUmWtNxysVkZJIDOhytwTJNYstRVGDidIkTVhYeB?.value?.obj?.pointsInfo?.points?.[1])?.availableEndDate';
+      assert.strictEqual(ObjectUtils.Path.toOptionalChainPath(path), expected);
+    });
+    test('should handle complex OR expression with nested property access2', () => {
+      const path = '(((this.__domrender_components.UUmWtNxysVkZJIDOhytwTJNYstRVGDidIkTVhYeB.value.obj.pointsInfo).points)[1]).availableStartDate || (this.__domrender_components.UUmWtNxysVkZJIDOhytwTJNYstRVGDidIkTVhYeB.value.obj.pointsInfo.points[1]).availableEndDate';
+      const expected = '(((this?.__domrender_components?.UUmWtNxysVkZJIDOhytwTJNYstRVGDidIkTVhYeB?.value?.obj?.pointsInfo)?.points)?.[1])?.availableStartDate || (this?.__domrender_components?.UUmWtNxysVkZJIDOhytwTJNYstRVGDidIkTVhYeB?.value?.obj?.pointsInfo?.points?.[1])?.availableEndDate';
+      assert.strictEqual(ObjectUtils.Path.toOptionalChainPath(path), expected);
+    });
   });
 
   describe('Path.removeOptionalChainOperator', () => {

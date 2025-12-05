@@ -12,11 +12,14 @@
 </head>
 <body>
   <div id="app">
+    <div class="data-container" style="max-height: 500px; overflow-y: scroll">
       <div dr-for-of="@this@.users"  dr-option-item-index-variable-name="index" dr-option-item-variable-name="user" >
-        <button  dr-event-click="@this@.changeData(#user#)">${#user#.imgUrl}$ change</button>
-<!--        <button  dr-event-click="@this@.changeDataFix(#user#)">${#user#.imgUrl}$ change</button>-->
-<!--        <input type="checkbox" dr-disabled="#user#.imgUrl.length < 30">-->
+                <button  dr-event-click="@this@.changeData(#user#)">${#user#.imgUrl}$  ${#user#.office?.name}$ change</button>
       </div>
+    </div>
+    ${@this@.users?.[0]?.imgUrl ? 'okok':'nono'}$
+
+    <button dr-event-click="@this@.clear()">clear</button>
 
 
     <!--    <div dr="@this@.users">-->
