@@ -9,7 +9,7 @@ import {ConstructorType} from '@dooboostore/core/types';
 import {SimOption} from '../SimOption';
 import {isIntentSubscribe} from "./IntentSubscribe";
 import {ReflectUtils} from "@dooboostore/core/reflect/ReflectUtils";
-import {getInject } from "../decorators";
+import {getInject} from "../decorators";
 // import {isInjectFactory} from "../decorators/inject/Inject";
 
 export type RouterPublishType = { router: `Router(${string}):${string}`; rootRouter: ConstructorType<any> };
@@ -33,10 +33,7 @@ export class IntentManager {
     return this.subject.asObservable();
   }
 
-  public async publish(it: string, data?: any): Promise<any[]>;
-  public async publish(it: RouterPublishType, data?: any): Promise<any[]>;
-  public async publish(it: Intent): Promise<any[]>;
-  public async publish(it: Intent | string | RouterPublishType, data?: any): Promise<any[]> {
+  private async makeIntentData(it: Intent | string | RouterPublishType, data?: any) {
     const target: SimAtomic<any> | any[] = [];
     const rootRouter = isRouterPublishType(it) ? it.rootRouter : this.simOption.rootRouter;
     it = isRouterPublishType(it) ? it.router : it;
@@ -56,7 +53,6 @@ export class IntentManager {
     }
 
     const intent = it as Intent;
-    const r: any[] = [];
 
     if (!routerMatch) {
       if (intent.symbols) {
@@ -67,6 +63,18 @@ export class IntentManager {
         target.push(...this.simstanceManager.getSimAtomics());
       }
     }
+
+    return {intent, target};
+  }
+
+
+  public async publishMeta(it: string, data?: any): Promise<{return:any[], target:any[]}>;
+  public async publishMeta(it: RouterPublishType, data?: any): Promise<{return:any[], target:any[]}>;
+  public async publishMeta(it: Intent): Promise<{return:any[], target:any[]}>;
+  public async publishMeta(it: Intent | string | RouterPublishType, data?: any): Promise<{return:any[], target:any[]}>;
+  public async publishMeta(it: Intent | string | RouterPublishType, data?: any): Promise<{return:any[], target:any[]}> {
+    const {intent, target} = await this.makeIntentData(it, data);
+    const r: any[] = [];
     const targetInstances = target.map(it => {
       if (it instanceof SimAtomic) {
         return it.getValue();
@@ -75,7 +83,7 @@ export class IntentManager {
       }
     });
 
-    this.subject.next(it);
+    this.subject.next(intent);
 
     for (let data of targetInstances) {
       let orNewSim = data;
@@ -134,7 +142,15 @@ export class IntentManager {
         }
       }
     }
-    ;
-    return r;
+    return {return: r, target};
+  }
+
+  public async publish(it: string, data?: any): Promise<any[]>;
+  public async publish(it: RouterPublishType, data?: any): Promise<any[]>;
+  public async publish(it: Intent): Promise<any[]>;
+  public async publish(it: Intent | string | RouterPublishType, data?: any): Promise<any[]>;
+  public async publish(it: Intent | string | RouterPublishType, data?: any): Promise<any[]> {
+    const rdata = await this.publishMeta(it, data)
+    return rdata.return;
   }
 }

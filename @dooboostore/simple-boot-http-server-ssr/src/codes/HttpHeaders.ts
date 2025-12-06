@@ -7,7 +7,7 @@ export const HttpHeaders = {
 };
 export type HttpHeadersType = typeof HttpHeaders;
 
-export const makeIntentHeaderBySymbol = (symbol: Symbol): HeadersInit => {
+export const makeIntentHeaderBySymbolFor = (symbol: Symbol): HeadersInit => {
   return {
     [HttpHeaders.Accept]: Mimes.ApplicationJsonPostSimpleBootSsrIntentScheme,
     [HttpHeaders.XSimpleBootSsrIntentScheme]: `Symbol.for(${symbol.description})`

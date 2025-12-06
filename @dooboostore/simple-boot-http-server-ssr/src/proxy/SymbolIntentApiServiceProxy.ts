@@ -1,5 +1,5 @@
 import {getSim, Sim} from '@dooboostore/simple-boot/decorators/SimDecorator';
-import {makeIntentHeaderBySymbol} from '../codes/HttpHeaders';
+import {makeIntentHeaderBySymbolFor} from '../codes/HttpHeaders';
 import {ConvertUtils} from '@dooboostore/core/convert/ConvertUtils';
 import {ApiService} from '@dooboostore/simple-boot/fetch/ApiService';
 
@@ -31,7 +31,7 @@ export class SymbolIntentApiServiceProxy<T extends object> implements ProxyHandl
           return function (...args: any[]) {
             const f = value as Function;
             const p = (userConfig: Config) => {
-              const headers = {...(userConfig?.headers ?? {}), ...makeIntentHeaderBySymbol(simConfig.symbol as Symbol)};
+              const headers = {...(userConfig?.headers ?? {}), ...makeIntentHeaderBySymbolFor(simConfig.symbol as Symbol)};
               const method = userConfig?.method ?? 'post';
               if (method === 'post' && userConfig?.multipartFormData) {
                 return apiService.post({

@@ -1,6 +1,7 @@
 // import './test/run-all-tests.ts';
 // import './test/cssParser.test';
 import './test/Path.test';
+import './test/ObjectPath.test';
 // import './test/OpenApiTest.test';
 // import './test/Subject.test';
 // import './test/RxJSComparison.test';

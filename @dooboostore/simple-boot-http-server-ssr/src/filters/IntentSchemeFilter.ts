@@ -8,6 +8,7 @@ import {RequestResponse} from '@dooboostore/simple-boot-http-server/models/Reque
 import {SimpleBootHttpServer} from '@dooboostore/simple-boot-http-server/SimpleBootHttpServer';
 import {Mimes} from '../codes/Mimes';
 import {Promises} from "@dooboostore/core/promise/Promises";
+import {NotFoundError} from "@dooboostore/simple-boot-http-server/errors/NotFoundError";
 
 @Sim
 export class IntentSchemeFilter implements Filter {
@@ -39,7 +40,10 @@ export class IntentSchemeFilter implements Filter {
           intent.data = [await rr.reqBodyMultipartFormDataObject(), rr];
         }
         // console.log('---------2--intent request',intent);
-        const rdatas = await this.intentManager.publish(intent);
+        const {return:rdatas, target} = await this.intentManager.publishMeta(intent);
+        if(target.length <=0) {
+          throw new NotFoundError({message: 'Not found intent target'});
+        }
         const rdata = rdatas[0];
         const wdata = rdata instanceof Promise ? await rdata : rdata;
         rr.resStatusCode(HttpStatus.Ok);
@@ -47,7 +51,10 @@ export class IntentSchemeFilter implements Filter {
         await rr.resEnd(wdata ? JSON.stringify(wdata) : undefined);
       } else {
         intent.data = rr.reqUrlSearchParamTuples.length > 0 ? [rr.reqUrlSearchParamsObj, rr] : [rr];
-        const rdatas = await this.intentManager.publish(intent);
+        const {return:rdatas, target} = await this.intentManager.publishMeta(intent);
+        if(target.length <=0) {
+          throw new NotFoundError({message: 'Not found intent target'});
+        }
         const rdata = rdatas[0];
         const wdata = rdata instanceof Promise ? await rdata : rdata;
         // const wdata =undefined;

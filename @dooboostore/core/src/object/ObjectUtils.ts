@@ -1,6 +1,7 @@
 import { ValidUtils } from '../valid/ValidUtils';
 import type { ConstructorType } from '../types';
 import { isDefined } from '../types';
+import { ObjectPathParser } from '../parser/path/ObjectPathParser';
 
 export namespace ObjectUtils {
 
@@ -210,238 +211,27 @@ export namespace ObjectUtils {
 
   export namespace Path {
     export const isFunctionScript = (script: string): boolean => {
-      return script.trim().startsWith('function');
+      return ObjectPathParser.isFunctionScript(script);
     }
 
     export const isArrowFunctionScript = (script: string): boolean => {
-      return /^\s*\([^)]*\)\s*=>/.test(script);
+      return ObjectPathParser.isArrowFunctionScript(script);
     }
 
     export const toOptionalChainPath = (path: string): string => {
       if (!path) {
         return '';
       }
-      // Add this check for object literals
-      if (path.trim().startsWith('{') && path.trim().endsWith('}')) {
-        return path;
-      }
-      if (isFunctionScript(path) || isArrowFunctionScript(path)) {
-        return path;
-      }
-      
-      // Protect string literals and template literals by replacing them with placeholders
-      const stringLiterals: string[] = [];
-      
-      // First, handle template literals (backticks) with embedded expressions
-      let tempPath = path.replace(/`(?:[^`$\\]|\\.|\\$|\$(?!\{)|\$\{[^}]*\})*`/g, (match) => {
-        // Process embedded expressions ${...} within the template literal
-        const processed = match.replace(/\$\{([^}]+)\}/g, (exprMatch, expr) => {
-          const processedExpr = toOptionalChainPath(expr);
-          return `\${${processedExpr}}`;
-        });
-        const placeholder = `__STRING_LITERAL_${stringLiterals.length}__`;
-        stringLiterals.push(processed);
-        return placeholder;
-      });
-      
-      // Then handle regular string literals (single and double quotes)
-      tempPath = tempPath.replace(/(["'])(?:(?=(\\?))\2.)*?\1/g, (match) => {
-        const placeholder = `__STRING_LITERAL_${stringLiterals.length}__`;
-        stringLiterals.push(match);
-        return placeholder;
-      });
-      
-      // Check for ternary operator pattern (? :)
-      // Match "? " (with space after ?) followed by ":" somewhere later - this indicates a ternary operator
-      // The space after ? is crucial to distinguish from optional chaining (?.)
-      const ternaryMatch = tempPath.match(/\?\s+[^:]*:/);
-      if (ternaryMatch) {
-        // Handle ternary operator - split by the ternary operator parts
-        // We need to split carefully to preserve the ? and : operators
-        const questionMarkIndex = tempPath.indexOf('?');
-        const colonIndex = tempPath.indexOf(':', questionMarkIndex);
-        
-        if (questionMarkIndex !== -1 && colonIndex !== -1) {
-          // Check if there's a space after the ?
-          const charAfterQuestion = tempPath.charAt(questionMarkIndex + 1);
-          if (charAfterQuestion === ' ' || charAfterQuestion === '\t' || charAfterQuestion === '\n') {
-            // Split into three parts: condition, true branch, false branch
-            const condition = tempPath.substring(0, questionMarkIndex).trim();
-            const trueBranch = tempPath.substring(questionMarkIndex + 1, colonIndex).trim();
-            const falseBranch = tempPath.substring(colonIndex + 1).trim();
-            
-            // Process each part recursively
-            const processedCondition = toOptionalChainPath(condition);
-            const processedTrueBranch = toOptionalChainPath(trueBranch);
-            const processedFalseBranch = toOptionalChainPath(falseBranch);
-            
-            // Reconstruct with original spacing around ? and :
-            let finalResult = `${processedCondition} ? ${processedTrueBranch} : ${processedFalseBranch}`;
-            
-            // Restore string literals
-            stringLiterals.forEach((literal, index) => {
-              finalResult = finalResult.replace(`__STRING_LITERAL_${index}__`, literal);
-            });
-            return finalResult;
-          }
-        }
-      }
-      
-      // Handle parentheses and function calls
-      if (tempPath.includes('(') && tempPath.includes(')')) {
-        // First, handle parenthesized expressions that are NOT function calls
-        // We need to handle nested parentheses, so we'll use a different approach
-        const parenMatches: Array<{original: string, processed: string, placeholder: string}> = [];
-        let workingPath = tempPath;
-        let parenCounter = 0;
-        
-        // Function to find matching closing parenthesis
-        const findMatchingParen = (str: string, startIdx: number): number => {
-          let depth = 1;
-          for (let i = startIdx + 1; i < str.length; i++) {
-            if (str[i] === '(') depth++;
-            else if (str[i] === ')') {
-              depth--;
-              if (depth === 0) return i;
-            }
-          }
-          return -1;
-        };
-        
-        // Find all parenthesized expressions that are NOT function calls
-        // Process from innermost to outermost by repeatedly finding and replacing
-        let changed = true;
-        while (changed) {
-          changed = false;
-          
-          // Find parenthesized expressions that are NOT preceded by a word character
-          for (let i = 0; i < workingPath.length; i++) {
-            if (workingPath[i] === '(' && (i === 0 || !/\w/.test(workingPath[i - 1]))) {
-              const closeIdx = findMatchingParen(workingPath, i);
-              if (closeIdx !== -1) {
-                // Check what follows the closing paren
-                const nextChar = workingPath[closeIdx + 1];
-                if (nextChar === '.' || nextChar === '[' || nextChar === ' ' || nextChar === '|' || closeIdx === workingPath.length - 1 || nextChar === ')') {
-                  const fullMatch = workingPath.substring(i, closeIdx + 1);
-                  const innerContent = workingPath.substring(i + 1, closeIdx);
-                  const placeholder = `__PAREN_EXPR_${parenCounter}__`;
-                  
-                  // Process the content inside parentheses recursively
-                  const processedInner = toOptionalChainPath(innerContent);
-                  const processedParen = `(${processedInner})`;
-                  
-                  parenMatches.push({
-                    original: fullMatch,
-                    processed: processedParen,
-                    placeholder: placeholder
-                  });
-                  
-                  workingPath = workingPath.substring(0, i) + placeholder + workingPath.substring(closeIdx + 1);
-                  parenCounter++;
-                  changed = true;
-                  break; // Start over to handle nested cases
-                }
-              }
-            }
-          }
-        }
-        
-        // Then handle function calls
-        const functionCallMatches: Array<{original: string, processed: string, placeholder: string}> = [];
-        let funcCounter = 0;
-        
-        // Find and process function calls with their arguments
-        const functionCallRegex = /(\w+)\(([^()]*(?:\([^()]*\)[^()]*)*)\)/g;
-        let funcMatch;
-        
-        while ((funcMatch = functionCallRegex.exec(workingPath)) !== null) {
-          const fullMatch = funcMatch[0];
-          const funcName = funcMatch[1];
-          const funcArgs = funcMatch[2];
-          const placeholder = `__FUNC_CALL_${funcCounter}__`;
-          
-          // Process function arguments recursively, but don't add ?. at the end of closing parenthesis
-          let processedArgs = funcArgs ? toOptionalChainPath(funcArgs) : '';
-          // Remove trailing ?. before closing parenthesis if it exists
-          processedArgs = processedArgs.replace(/\?\.\s*$/, '');
-          const processedFuncCall = `${funcName}?.(${processedArgs})`;
-          
-          functionCallMatches.push({
-            original: fullMatch,
-            processed: processedFuncCall,
-            placeholder: placeholder
-          });
-          
-          workingPath = workingPath.replace(fullMatch, placeholder);
-          funcCounter++;
-        }
-        
-        // Process the path without parenthesized expressions and function calls
-        const tokens = workingPath.match(/[^?.[\]]+|\[[^\]]*\]/g);
-        let processedPath = '';
-        if (tokens && tokens.length > 1) {
-          processedPath = tokens.join('?.');
-        } else {
-          processedPath = workingPath;
-        }
-        
-        // Restore parenthesized expressions first
-        for (const parenMatch of parenMatches) {
-          processedPath = processedPath.replace(parenMatch.placeholder, parenMatch.processed);
-        }
-        
-        // Then restore function calls
-        for (const funcMatch of functionCallMatches) {
-          processedPath = processedPath.replace(funcMatch.placeholder, funcMatch.processed);
-        }
-        
-        // Restore string literals
-        stringLiterals.forEach((literal, index) => {
-          processedPath = processedPath.replace(`__STRING_LITERAL_${index}__`, literal);
-        });
-        return processedPath;
-      }
-      
-      // Handle nullish coalescing operator (??) at the top level (not inside function calls)
-      // Check if there's a ?? that's not inside parentheses
-      const nullishCoalescingMatch = tempPath.match(/^(.+?)\?\?(.+)$/);
-      if (nullishCoalescingMatch) {
-        const leftPart = nullishCoalescingMatch[1].trim();
-        const rightPart = nullishCoalescingMatch[2].trim();
-        
-        // Process only the left part (before ??)
-        const processedLeft = toOptionalChainPath(leftPart);
-        
-        // Right part should not be processed for optional chaining
-        // Restore string literals in right part
-        let restoredRight = rightPart;
-        stringLiterals.forEach((literal, index) => {
-          restoredRight = restoredRight.replace(`__STRING_LITERAL_${index}__`, literal);
-        });
-        
-        return `${processedLeft}??${restoredRight}`;
-      }
-      
-      // Tokenize the path by '.', '[', ']', and '?' to handle property access and existing optional chaining.
-      const tokens = tempPath.match(/[^?.[\]]+|\[[^\]]*\]/g);
-      if (!tokens) {
-        return path; // Return original path if no tokens are found (e.g., path is just '.')
-      }
-      // Join tokens with '?.', effectively creating the optional chain path.
-      let result = tokens.join('?.');
-      // Restore string literals
-      stringLiterals.forEach((literal, index) => {
-        result = result.replace(`__STRING_LITERAL_${index}__`, literal);
-      });
-      return result;
+      const parser = new ObjectPathParser(path);
+      return parser.toOptionalChainPath();
     };
 
     export const removeOptionalChainOperator = (path: string): string => {
       if (!path) {
         return '';
       }
-      // Replace all optional chaining operators with standard ones.
-      return path.replace(/\?\./g, '.').replace(/\.\[/g, '[');
+      const parser = new ObjectPathParser(path);
+      return parser.removeOptionalChainOperator();
     };
 
     const parsePath = (path: string): (string | number)[] => {

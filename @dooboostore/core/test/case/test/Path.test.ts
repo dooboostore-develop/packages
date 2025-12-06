@@ -740,7 +740,7 @@ describe('ObjectUtils.Path', () => {
 
     test('should handle nullish coalescing with array containing object', () => {
       const path = "this.users?? [{imgUrl:'z', office:{name:'zzz'}}]";
-      const expected = "this?.users??[{imgUrl:'z', office:{name:'zzz'}}]";
+      const expected = "this?.users?? [{imgUrl:'z', office:{name:'zzz'}}]";
       assert.strictEqual(ObjectUtils.Path.toOptionalChainPath(path), expected);
     });
 
@@ -752,6 +752,32 @@ describe('ObjectUtils.Path', () => {
     test('should handle complex OR expression with nested property access2', () => {
       const path = '(((this.__domrender_components.UUmWtNxysVkZJIDOhytwTJNYstRVGDidIkTVhYeB.value.obj.pointsInfo).points)[1]).availableStartDate || (this.__domrender_components.UUmWtNxysVkZJIDOhytwTJNYstRVGDidIkTVhYeB.value.obj.pointsInfo.points[1]).availableEndDate';
       const expected = '(((this?.__domrender_components?.UUmWtNxysVkZJIDOhytwTJNYstRVGDidIkTVhYeB?.value?.obj?.pointsInfo)?.points)?.[1])?.availableStartDate || (this?.__domrender_components?.UUmWtNxysVkZJIDOhytwTJNYstRVGDidIkTVhYeB?.value?.obj?.pointsInfo?.points?.[1])?.availableEndDate';
+      assert.strictEqual(ObjectUtils.Path.toOptionalChainPath(path), expected);
+    });
+    test('should handle complex OR expression with nested property access3', () => {
+      const path = '(((this.__domrender_components.UUmWtNxysVkZJIDOhytwTJNYstRVGDidIkTVhYeB.value.obj.pointsInfo).points)[1]).availableStartDate && (this.__domrender_components.UUmWtNxysVkZJIDOhytwTJNYstRVGDidIkTVhYeB.value.obj.pointsInfo.points[1]).availableEndDate';
+      const expected = '(((this?.__domrender_components?.UUmWtNxysVkZJIDOhytwTJNYstRVGDidIkTVhYeB?.value?.obj?.pointsInfo)?.points)?.[1])?.availableStartDate && (this?.__domrender_components?.UUmWtNxysVkZJIDOhytwTJNYstRVGDidIkTVhYeB?.value?.obj?.pointsInfo?.points?.[1])?.availableEndDate';
+      assert.strictEqual(ObjectUtils.Path.toOptionalChainPath(path), expected);
+    });
+    test('first not', () => {
+      const path = '!this.userInfo.isIdPasswordLogin && !this.userInfo.isNaverLogin && !this.userInfo.isKakaoLogin && !this.userInfo.isGoogleLogin';
+      const expected = '!this?.userInfo?.isIdPasswordLogin && !this?.userInfo?.isNaverLogin && !this?.userInfo?.isKakaoLogin && !this?.userInfo?.isGoogleLogin';
+      assert.strictEqual(ObjectUtils.Path.toOptionalChainPath(path), expected);
+    });
+    test('비교', () => {
+      const path = 'this.selectedImages.length > 0';
+      const expected = 'this?.selectedImages?.length > 0';
+      assert.strictEqual(ObjectUtils.Path.toOptionalChainPath(path), expected);
+    });
+    test('비교2', () => {
+      const path = 'this.selectedImages?.length>0';
+      const expected = 'this?.selectedImages?.length>0';
+      assert.strictEqual(ObjectUtils.Path.toOptionalChainPath(path), expected);
+    });
+    test('string 이터널', () => {
+      const path = '`${(this.value.obj.reviews[0]).images?.length>0}`';
+      const expected = '`${(this?.value?.obj?.reviews?.[0])?.images?.length>0}`';
+      console.log('vvv', ObjectUtils.Path.toOptionalChainPath(path))
       assert.strictEqual(ObjectUtils.Path.toOptionalChainPath(path), expected);
     });
   });
