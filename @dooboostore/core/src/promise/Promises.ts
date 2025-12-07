@@ -1,6 +1,7 @@
-import { Subscription } from '../message/Subscription';
-import { ConstructorType } from '../types';
-import { ValidUtils } from '../valid/ValidUtils';
+import {Subscription} from '../message/Subscription';
+import {ConstructorType} from '../types';
+import {ValidUtils} from '../valid/ValidUtils';
+import {AbortablePromise} from "./AbortablePromise";
 
 export namespace Promises {
   export const filterCatch = async (promise: Promise<any>, has: ConstructorType<any> | ((e: any) => boolean) | ((ConstructorType<any> | ((e: any) => void))[])) => {
@@ -39,8 +40,8 @@ export namespace Promises {
   export type LoopConfig = { age: number };
   export type ObservableLoop<T> = {
     subscribe: (callback: {
-      then?: (data: T, config: LoopConfig & {duration: number}) => void,
-      catch?: (e: any, config: LoopConfig & {duration: number}) => void,
+      then?: (data: T, config: LoopConfig & { duration: number }) => void,
+      catch?: (e: any, config: LoopConfig & { duration: number }) => void,
       delayThen?: (config: LoopConfig & { duration: number, isCatch: boolean, data?: T }) => void,
     }) => Subscription;
   }
@@ -105,53 +106,18 @@ export namespace Promises {
     });
   };
 
-  export const transaction = <T, B = unknown, A = unknown>(
-    promise: Promise<T> | (() => Promise<T>),
-    config?: {
-      delay?: number;
-      before?: () => B;
-      after?: () => A;
-      then?: (it: T, data: { before?: B }) => void;
-      catch?: (e: any, data: { before?: B; after?: A }) => void;
-      disabledCatchThrow?: boolean;
-      finally?: (data: { before?: B; after?: A; data?: T }) => void;
-    }
-  ) => {
-    const p = typeof promise === 'function' ? promise() : promise;
-    let after: A | undefined;
-    let before: B | undefined;
-    let promiseData: T | undefined;
-    new Promise<T>((resolve, reject) => {
-      const execute = () => {
-        before = config?.before?.();
-        p.then(data => {
-          resolve(data);
-        });
-        after = config?.after?.();
-      };
-      setTimeout(() => {
-        execute();
-      }, config?.delay ?? 0);
-      // if (config?.delay) {
-      // } else {
-      //   setTimeout(() => {
-      //     execute();
-      //   },1000);
-      // }
-    })
-      .then(data => {
-        promiseData = data;
-        config?.then?.(data, {before: before});
-      })
-      .catch(e => {
-        config?.catch?.(e, {before: before, after: after});
-        if (!config?.disabledCatchThrow) {
-          throw e;
-        }
-      })
-      .finally(() => {
-        config?.finally?.({before: before, after: after, data: promiseData});
-      });
+
+
+  /**
+   * Create an abortable promise chain
+   * @param executor Initial promise or promise factory
+   * @param signal Optional AbortSignal to cancel the execution
+   */
+  export const abortable = <T>(
+    executor: (() => Promise<T>) | Promise<T>,
+    signal?: AbortSignal
+  ): AbortablePromise<T> => {
+    return new AbortablePromise(executor, signal);
   };
 
   export const withResolvers = <T>() => {
@@ -177,18 +143,18 @@ export namespace Promises {
     chunkSize: number = 10
   ): Promise<T[]> => {
     const results: T[] = [];
-    
+
     for (let i = 0; i < promiseFactories.length; i += chunkSize) {
       const chunk = promiseFactories.slice(i, i + chunkSize);
       const chunkResults = await Promise.all(chunk.map(factory => factory()));
       results.push(...chunkResults);
-      
+
       // Add small delay between chunks to be extra safe
       if (i + chunkSize < promiseFactories.length) {
         await sleep(100);
       }
     }
-    
+
     return results;
   };
 
@@ -284,35 +250,35 @@ export namespace Promises {
   ): Promise<T> => {
     const initialDelay = config.delay?.initialDelay ?? 0;
     const retryDelay = config.delay?.retryDelay ?? 0;
-    
+
     // Initial delay before first attempt
     if (initialDelay > 0) {
       await sleep(initialDelay);
     }
-    
+
     let lastError: any;
-    
+
     for (let attempt = 0; attempt <= config.retry; attempt++) {
       try {
         return await factory(attempt, lastError);
       } catch (error) {
         lastError = error;
-        
+
         // Don't retry if this was the last attempt
         if (attempt === config.retry) {
           break;
         }
-        
+
         // Call onRetry callback if provided
         config.onRetry?.(error, attempt + 1);
-        
+
         // Wait before retrying
         if (retryDelay > 0) {
           await sleep(retryDelay);
         }
       }
     }
-    
+
     // All retries failed, throw the last error
     throw lastError;
   };
