@@ -865,18 +865,58 @@ export class ObjectPathParser {
     const savedPos = this.pos;
     const remaining = this.input.substring(this.pos);
     
-    // Simple check for ternary pattern
-    const ternaryMatch = remaining.match(/^(.+?)\?\s+(.+?)\s*:\s*(.+)$/);
-    if (!ternaryMatch) return null;
+    // Find ternary operator at depth 0, respecting string literals
+    let depth = 0;
+    let inString = false;
+    let stringChar = '';
+    let questionIdx = -1;
+    let colonIdx = -1;
     
-    // Verify it's not optional chaining
-    const questionIdx = remaining.indexOf('?');
-    if (questionIdx >= 0 && remaining[questionIdx + 1] === '.') return null;
-    if (questionIdx >= 0 && remaining[questionIdx + 1] === '?') return null;
+    for (let i = 0; i < remaining.length; i++) {
+      const char = remaining[i];
+      const prevChar = i > 0 ? remaining[i - 1] : '';
+      
+      // Track string state (handle escape characters)
+      if ((char === '"' || char === "'" || char === '`') && prevChar !== '\\') {
+        if (!inString) {
+          inString = true;
+          stringChar = char;
+        } else if (char === stringChar) {
+          inString = false;
+          stringChar = '';
+        }
+      }
+      
+      if (inString) continue;
+      
+      // Track depth for parentheses, brackets, braces
+      if (char === '(' || char === '[' || char === '{') depth++;
+      else if (char === ')' || char === ']' || char === '}') depth--;
+      
+      // Find ternary ? at depth 0
+      if (depth === 0 && char === '?') {
+        const nextChar = remaining[i + 1] || '';
+        // Skip optional chaining (?.) and nullish coalescing (??)
+        if (nextChar === '.' || nextChar === '?') continue;
+        // Ternary ? should be followed by whitespace or expression
+        questionIdx = i;
+      }
+      
+      // Find ternary : at depth 0 (only after finding ?)
+      if (depth === 0 && char === ':' && questionIdx >= 0 && colonIdx < 0) {
+        colonIdx = i;
+        break;
+      }
+    }
     
-    const condStr = ternaryMatch[1].trim();
-    const trueStr = ternaryMatch[2].trim();
-    const falseStr = ternaryMatch[3].trim();
+    // Not a ternary expression
+    if (questionIdx < 0 || colonIdx < 0) return null;
+    
+    const condStr = remaining.substring(0, questionIdx).trim();
+    const trueStr = remaining.substring(questionIdx + 1, colonIdx).trim();
+    const falseStr = remaining.substring(colonIdx + 1).trim();
+    
+    if (!condStr || !trueStr || !falseStr) return null;
     
     const ternary = new Token(TokenType.TERNARY, remaining, savedPos, savedPos + remaining.length);
     

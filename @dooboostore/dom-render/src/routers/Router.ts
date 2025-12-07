@@ -235,7 +235,7 @@ export abstract class Router<T = any> {
       targetPath = data;
     } else {
       const tpath = data.path ?? this.getPathName();
-      const s = data.searchParams ? ConvertUtils.toURLSearchParams(data.searchParams).toString() : '';
+      const s = data.searchParams ? ConvertUtils.toRawQueryString(data.searchParams, {valueEncodeURIComponent: true}) : '';
       // data.searchParams
       targetPath = `${tpath}${s.length > 0 ? '?' : ''}${s}`;
     }

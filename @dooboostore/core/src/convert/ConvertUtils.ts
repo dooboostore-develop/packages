@@ -501,6 +501,16 @@ export namespace ConvertUtils {
     }
     return searchParams;
   }
+  export const toRawQueryString = (data: ToURLSearchParamsParams, option?:{valueEncodeURIComponent?: boolean}): string => {
+    const params = ConvertUtils.toURLSearchParams(data);
+    const dataStr= Array.from(params.entries())
+      .map(([k, v]) => {
+        const j = `${k}=${option?.valueEncodeURIComponent? encodeURIComponent(v) : v}`;
+        return j;
+      })
+      .join('&');
+    return dataStr;
+  }
   // export const RelativeHumanReadableTimeLabels = {
   //   [IOS3166_1_Code.KOR]: {
   //     justNow: '방금 전',

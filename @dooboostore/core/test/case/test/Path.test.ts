@@ -774,9 +774,14 @@ describe('ObjectUtils.Path', () => {
       const expected = 'this?.selectedImages?.length>0';
       assert.strictEqual(ObjectUtils.Path.toOptionalChainPath(path), expected);
     });
-    test('string 이터널', () => {
+    test('string 리터널', () => {
       const path = '`${(this.value.obj.reviews[0]).images?.length>0}`';
       const expected = '`${(this?.value?.obj?.reviews?.[0])?.images?.length>0}`';
+      assert.strictEqual(ObjectUtils.Path.toOptionalChainPath(path), expected);
+    });
+    test('string 리터널2', () => {
+      const path = '`${(this.MarketType.MarketType === this.value.type) ? "https://map.naver.com/p/smart-around/place/" : "https://smartstore.naver.com/"}`';
+      const expected = '`${(this?.MarketType?.MarketType === this?.value?.type) ? "https://map.naver.com/p/smart-around/place/" : "https://smartstore.naver.com/"}`';
       console.log('vvv', ObjectUtils.Path.toOptionalChainPath(path))
       assert.strictEqual(ObjectUtils.Path.toOptionalChainPath(path), expected);
     });
