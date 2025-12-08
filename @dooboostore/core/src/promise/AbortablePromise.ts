@@ -9,32 +9,30 @@ export class AbortablePromise<T> implements PromiseLike<T> {
   private errorHandler?: (reason: any) => any;
 
   constructor(
-    executor: (() => Promise<any>) | Promise<any>,
-    signal?: AbortSignal,
-    steps: Array<(value: any) => any> = []
+    executor: (() => Promise<T>) | Promise<T>,
+    signal?: AbortSignal
   ) {
     this.initialExecutor = executor;
     this.signal = signal;
-    this.steps = steps;
   }
 
   then<TResult1 = T, TResult2 = never>(
     onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null,
     onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null
   ): AbortablePromise<TResult1 | TResult2> {
-    // Create new promise with copied steps
-    const newSteps = [...this.steps];
+    // Create new promise instance
+    const newPromise = new AbortablePromise<TResult1 | TResult2>(
+      this.initialExecutor,
+      this.signal
+    );
+
+    // Copy existing steps
+    newPromise.steps = [...this.steps];
 
     // Add new step if provided
     if (onfulfilled) {
-      newSteps.push(onfulfilled as any);
+      newPromise.steps.push(onfulfilled as any);
     }
-
-    const newPromise = new AbortablePromise<TResult1 | TResult2>(
-      this.initialExecutor,
-      this.signal,
-      newSteps
-    );
 
     // Set error handler if provided
     if (onrejected) {

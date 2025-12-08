@@ -782,9 +782,128 @@ describe('ObjectUtils.Path', () => {
     test('string 리터널2', () => {
       const path = '`${(this.MarketType.MarketType === this.value.type) ? "https://map.naver.com/p/smart-around/place/" : "https://smartstore.naver.com/"}`';
       const expected = '`${(this?.MarketType?.MarketType === this?.value?.type) ? "https://map.naver.com/p/smart-around/place/" : "https://smartstore.naver.com/"}`';
-      console.log('vvv', ObjectUtils.Path.toOptionalChainPath(path))
       assert.strictEqual(ObjectUtils.Path.toOptionalChainPath(path), expected);
     });
+    test('string 리터널3', () => {
+      const path = 'this.previewImageIndex < this.availableImages.length - 1';
+      const expected = 'this?.previewImageIndex < this?.availableImages?.length - 1';
+      assert.strictEqual(ObjectUtils.Path.toOptionalChainPath(path), expected);
+    });
+    
+    test('전위 증가 연산자 (++this.age)', () => {
+      const path = '++this.age';
+      const expected = '++this?.age';
+      assert.strictEqual(ObjectUtils.Path.toOptionalChainPath(path), expected);
+    });
+    
+    test('전위 감소 연산자 (--this.age)', () => {
+      const path = '--this.age';
+      const expected = '--this?.age';
+      assert.strictEqual(ObjectUtils.Path.toOptionalChainPath(path), expected);
+    });
+    
+    test('후위 증가 연산자 (this.age++)', () => {
+      const path = 'this.age++';
+      const expected = 'this?.age++';
+      assert.strictEqual(ObjectUtils.Path.toOptionalChainPath(path), expected);
+    });
+    
+    test('후위 감소 연산자 (this.age--)', () => {
+      const path = 'this.age--';
+      const expected = 'this?.age--';
+      assert.strictEqual(ObjectUtils.Path.toOptionalChainPath(path), expected);
+    });
+    
+    test('복잡한 표현식에서 증감 연산자 (this.count++ < this.max)', () => {
+      const path = 'this.count++ < this.max';
+      const expected = 'this?.count++ < this?.max';
+      assert.strictEqual(ObjectUtils.Path.toOptionalChainPath(path), expected);
+    });
+    
+    test('중첩된 증감 연산자 (++this.obj.value)', () => {
+      const path = '++this.obj.value';
+      const expected = '++this?.obj?.value';
+      assert.strictEqual(ObjectUtils.Path.toOptionalChainPath(path), expected);
+    });
+    
+    test('괄호 안의 전위 증가 연산자 ((++this.age))', () => {
+      const path = '(++this.age)';
+      const expected = '(++this?.age)';
+      assert.strictEqual(ObjectUtils.Path.toOptionalChainPath(path), expected);
+    });
+    
+    test('괄호 안의 후위 증가 연산자 ((this.age++))', () => {
+      const path = '(this.age++)';
+      const expected = '(this?.age++)';
+      assert.strictEqual(ObjectUtils.Path.toOptionalChainPath(path), expected);
+    });
+    
+    test('괄호와 산술 연산 ((this.count++) + this.offset)', () => {
+      const path = '(this.count++) + this.offset';
+      const expected = '(this?.count++) + this?.offset';
+      assert.strictEqual(ObjectUtils.Path.toOptionalChainPath(path), expected);
+    });
+    
+    test('중첩 괄호와 증감 연산자 (((++this.value)))', () => {
+      const path = '(((++this.value)))';
+      const expected = '(((++this?.value)))';
+      assert.strictEqual(ObjectUtils.Path.toOptionalChainPath(path), expected);
+    });
+    
+    test('괄호와 비교 연산 ((this.index++) < this.max)', () => {
+      const path = '(this.index++) < this.max';
+      const expected = '(this?.index++) < this?.max';
+      assert.strictEqual(ObjectUtils.Path.toOptionalChainPath(path), expected);
+    });
+    
+    test('복잡한 괄호 표현식 ((++this.a) * (this.b--))', () => {
+      const path = '(++this.a) * (this.b--)';
+      const expected = '(++this?.a) * (this?.b--)';
+      assert.strictEqual(ObjectUtils.Path.toOptionalChainPath(path), expected);
+    });
+    
+    test('NOT 연산자와 삼항 연산자 ((!this.userInfo) ? null : "hidden")', () => {
+      const path = '(!this.userInfo) ? null : "hidden"';
+      const expected = '(!this?.userInfo) ? null : "hidden"';
+      assert.strictEqual(ObjectUtils.Path.toOptionalChainPath(path), expected);
+    });
+    
+    test('NOT 연산자 단독 (!this.isActive)', () => {
+      const path = '!this.isActive';
+      const expected = '!this?.isActive';
+      assert.strictEqual(ObjectUtils.Path.toOptionalChainPath(path), expected);
+    });
+    
+    test('NOT 연산자와 비교 (!this.value > 0)', () => {
+      const path = '!this.value > 0';
+      const expected = '!this?.value > 0';
+      assert.strictEqual(ObjectUtils.Path.toOptionalChainPath(path), expected);
+    });
+    
+    test('이중 NOT 연산자 (!!this.data)', () => {
+      const path = '!!this.data';
+      const expected = '!!this?.data';
+      assert.strictEqual(ObjectUtils.Path.toOptionalChainPath(path), expected);
+    });
+    
+    test('NOT 연산자와 논리 연산 (!this.a && this.b)', () => {
+      const path = '!this.a && this.b';
+      const expected = '!this?.a && this?.b';
+      assert.strictEqual(ObjectUtils.Path.toOptionalChainPath(path), expected);
+    });
+    
+    test('복잡한 NOT 표현식 ((!this.x) ? this.y : !this.z)', () => {
+      const path = '(!this.x) ? this.y : !this.z';
+      const expected = '(!this?.x) ? this?.y : !this?.z';
+      assert.strictEqual(ObjectUtils.Path.toOptionalChainPath(path), expected);
+    });
+    
+    // test('string 리터널3', () => {
+    //   const path = '((this.__domrender_components.egUreEuiJUxqkUwDsQcUNdCjlEPtRwyCRgykTHDO.groups)[0]).name';
+    //   const expected = '((this.__domrender_components.egUreEuiJUxqkUwDsQcUNdCjlEPtRwyCRgykTHDO.groups)[0]).name ';
+    //   console.log('vvv', ObjectUtils.Path.toOptionalChainPath(path))
+    //   assert.strictEqual(ObjectUtils.Path.toOptionalChainPath(path), expected);
+    // });
   });
 
   describe('Path.removeOptionalChainOperator', () => {

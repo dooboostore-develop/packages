@@ -4,6 +4,7 @@ import { ElementUtils } from '@dooboostore/core-web/element/ElementUtils';
 import { Range } from '../iterators/Range';
 import { getDomRenderConfig } from '../DomRenderProxy';
 import { ObjectUtils } from '@dooboostore/core/object/ObjectUtils';
+import {isDefined} from "@dooboostore/core";
 
 type HandlerInfo = {
   element: HTMLElement;
@@ -688,16 +689,17 @@ export class EventManager {
 
         // alert(1)
         if (typeof data === 'string') {
-          data.split(' ').forEach(cit => it.classList.add(cit.trim()));
+          data.split(' ').map(it=>it.trim()).filter(it=>it.length>0).forEach(cit => it.classList.add(cit.trim()));
         } else if (Array.isArray(data)) {
-          data.forEach(cit => it.classList.add(cit.trim()));
+          data.map(it=>it.trim()).filter(it=>it.length>0).forEach(cit => it.classList.add(cit.trim()));
         } else {
           for (const [key, value] of Object.entries(data)) {
             if (it instanceof HTMLElement) {
-              if (value) {
-                it.classList.add(key.trim());
-              } else {
-                it.classList.remove(key.trim());
+              const v = key.trim();
+              if (value && v) {
+                it.classList.add(v);
+              } else if(v){
+                it.classList.remove(v);
               }
             }
           }

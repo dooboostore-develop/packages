@@ -937,38 +937,80 @@ export class ObjectPathParser {
     // Look for binary operators at top level
     const remaining = this.input.substring(this.pos);
     
-    // Check for || or && or ?? or + etc at top level (not inside parens/brackets)
-    const operators = ['||', '&&', '??', '+', '===', '!==', '==', '!=', '>=', '<=', '>', '<'];
+    // Check operators in order of precedence (lowest to highest)
+    // This ensures we parse correctly: a < b - c => a < (b - c), not (a < b) - c
+    const operatorGroups = [
+      ['||'],           // Logical OR (lowest precedence)
+      ['&&'],           // Logical AND
+      ['??'],           // Nullish coalescing
+      ['<', '>', '<=', '>='],      // Comparison
+      ['===', '!==', '==', '!='],  // Equality
+      ['+', '-'],       // Addition/Subtraction
+      ['*', '/', '%']   // Multiplication/Division (highest precedence)
+    ];
     
-    for (const op of operators) {
-      let depth = 0;
-      let inString = false;
-      let stringChar = '';
-      
-      for (let i = 0; i < remaining.length - op.length + 1; i++) {
-        const char = remaining[i];
+    // Search from lowest to highest precedence
+    for (const operators of operatorGroups) {
+      for (const op of operators) {
+        let depth = 0;
+        let inString = false;
+        let stringChar = '';
+        let lastMatchIndex = -1;
         
-        // Track string state
-        if ((char === '"' || char === "'" || char === '`') && (i === 0 || remaining[i-1] !== '\\')) {
-          if (!inString) {
-            inString = true;
-            stringChar = char;
-          } else if (char === stringChar) {
-            inString = false;
+        // Find the LAST occurrence of this operator at depth 0 (right-to-left for left-associative)
+        for (let i = 0; i < remaining.length - op.length + 1; i++) {
+          const char = remaining[i];
+          
+          // Track string state
+          if ((char === '"' || char === "'" || char === '`') && (i === 0 || remaining[i-1] !== '\\')) {
+            if (!inString) {
+              inString = true;
+              stringChar = char;
+            } else if (char === stringChar) {
+              inString = false;
+            }
+          }
+          
+          if (inString) continue;
+          
+          // Track depth
+          if (char === '(' || char === '[' || char === '{') depth++;
+          else if (char === ')' || char === ']' || char === '}') depth--;
+          
+          // Check for operator at depth 0
+          if (depth === 0 && remaining.substring(i, i + op.length) === op) {
+            // Make sure it's not part of optional chaining
+            if (op === '?' && remaining[i + 1] === '.') continue;
+            
+            // For - operator, make sure it's not a negative number
+            if (op === '-') {
+              // Look back to find the last non-whitespace character
+              let lastNonSpace = '';
+              for (let j = i - 1; j >= 0; j--) {
+                if (remaining[j].trim()) {
+                  lastNonSpace = remaining[j];
+                  break;
+                }
+              }
+              // Skip if it looks like a negative number (after operator, comma, or opening bracket/paren, or at start)
+              if (!lastNonSpace || /[+\-*\/%=<>!&|,(\[]/.test(lastNonSpace)) {
+                continue;
+              }
+            }
+            
+            // For comparison/equality operators, make sure we're not matching part of a longer operator
+            if (['<', '>', '=', '!'].includes(op)) {
+              const nextChar = remaining[i + op.length] || '';
+              if (nextChar === '=') continue; // Skip < if it's part of <=
+            }
+            
+            lastMatchIndex = i;
           }
         }
         
-        if (inString) continue;
-        
-        // Track depth
-        if (char === '(' || char === '[' || char === '{') depth++;
-        else if (char === ')' || char === ']' || char === '}') depth--;
-        
-        // Check for operator at depth 0
-        if (depth === 0 && remaining.substring(i, i + op.length) === op) {
-          // Make sure it's not part of optional chaining
-          if (op === '?' && remaining[i + 1] === '.') continue;
-          
+        // If we found a match, split there
+        if (lastMatchIndex >= 0) {
+          const i = lastMatchIndex;
           const leftRaw = remaining.substring(0, i);
           const rightRaw = remaining.substring(i + op.length);
           const leftStr = leftRaw.trim();
@@ -986,8 +1028,15 @@ export class ObjectPathParser {
             const leftParser = new ObjectPathParser(leftStr);
             const rightParser = new ObjectPathParser(rightStr);
             
-            for (const child of leftParser.getTokens()) binary.addChild(child);
-            for (const child of rightParser.getTokens()) binary.addChild(child);
+            // Binary token should have exactly 2 children: left and right
+            // Wrap the parsed results in containers that preserve the original structure
+            const leftContainer = new Token(TokenType.ROOT, leftStr, 0, leftStr.length);
+            for (const child of leftParser.getTokens()) leftContainer.addChild(child);
+            binary.addChild(leftContainer);
+            
+            const rightContainer = new Token(TokenType.ROOT, rightStr, 0, rightStr.length);
+            for (const child of rightParser.getTokens()) rightContainer.addChild(child);
+            binary.addChild(rightContainer);
             
             this.pos = this.input.length;
             return binary;

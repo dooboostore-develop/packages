@@ -234,30 +234,40 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
     // console.log('----', rawSets);
     const CHUNK_SIZE = 50;
     const chunks:RawSet[][] = [];
-    const rawSetsArray = Array.from(rawSets as RawSet[]);
-    const firstRawSet = rawSetsArray.shift();
+    let rawSetsArray = Array.from(rawSets as RawSet[]);
+    // console.log('--->1', JSON.stringify(rawSetsArray.map(it=>it.type)));
+    // rawSetsArray = rawSetsArray.sort((a, b) => {
+    //   const order = { [RawSetType.TARGET_ELEMENT]: 0, [RawSetType.TARGET_ATTR]: 1, [RawSetType.TEXT]: 2 };
+    //   return (order[a.type] ?? 999) - (order[b.type] ?? 999);
+    // });
+    // console.log('--->2', JSON.stringify(rawSetsArray.map(it=>it.type)));
+    for (const rawSet of rawSetsArray) {
+      await this.renderExecute(rawSet, fullPathStr, removeRawSets);
+    }
+    // 훔....아래 벌크..잘동작이 안되네..아... 위에처럼 하나씩 처리하면 되긴하는데..흠..
+    // const firstRawSet = rawSetsArray.shift();
     // 이렇게 청크단위로 처리할때  await Promises.sleep(0); 을 넣어줘도 처음에 dr-for-of가 먼저 돌고 그러면 참고하고있는 rawSet들이 isConnect가 false되니깐 처리안되고
     // 나중에 처리되면서 오류가 난다. 그래서 청크내에서 첫번째꺼는 바로처리하고 그다음꺼부터는 await를 넣어줘서 브라우저가 중간에 처리할 시간을 주도록 한다.
     // 항상 먼저 등록된 path들에 의해 뒤에게 생성되는경우가 무조건이기떄문에 먼저거 한번 돌려주면 잘된다.
     // 아니면 renderExecute  안쪽에서 매번 sleep을 줘도되는데.. 그렇게되면 부하가 너무 갈수 있어서.. 우선 첫번쨰것만 처리하도록해본다.
-    if (firstRawSet) {
-      await this.renderExecute(firstRawSet, fullPathStr, removeRawSets);
-    }
-    for (let i = 0; i < rawSetsArray.length; i += (CHUNK_SIZE)) {
-      chunks.push(rawSetsArray.slice(i, i + CHUNK_SIZE));
-    }
-
-    for (const chunk of chunks) {
-      const promises = chunk.map(async (it, index) => {
-        await this.renderExecute(it, fullPathStr, removeRawSets);
-        // console.log('----', it);
-      });
-      // console.log('실행.!')
-      await Promise.all(promises);
-      if (chunks.length > 1) {
-        await new Promise(resolve => requestAnimationFrame(resolve));
-      }
-    }
+    // if (firstRawSet) {
+    //   await this.renderExecute(firstRawSet, fullPathStr, removeRawSets);
+    // }
+    // for (let i = 0; i < rawSetsArray.length; i += (CHUNK_SIZE)) {
+    //   chunks.push(rawSetsArray.slice(i, i + CHUNK_SIZE));
+    // }
+    //
+    // for (const chunk of chunks) {
+    //   const promises = chunk.map(async (it, index) => {
+    //     await this.renderExecute(it, fullPathStr, removeRawSets);
+    //     // console.log('----', it);
+    //   });
+    //   // console.log('실행.!')
+    //   await Promise.all(promises);
+    //   if (chunks.length > 1) {
+    //     await new Promise(resolve => requestAnimationFrame(resolve));
+    //   }
+    // }
 
     if (isOnChildRawSetRendered(this._domRender_proxy)) {
       await this._domRender_proxy.onChildRawSetRendered();
