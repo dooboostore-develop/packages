@@ -241,6 +241,7 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
     //   return (order[a.type] ?? 999) - (order[b.type] ?? 999);
     // });
     // console.log('--->2', JSON.stringify(rawSetsArray.map(it=>it.type)));
+    // await Promise.all(rawSetsArray.map(rawSet => this.renderExecute(rawSet, fullPathStr, removeRawSets)));
     for (const rawSet of rawSetsArray) {
       await this.renderExecute(rawSet, fullPathStr, removeRawSets);
     }

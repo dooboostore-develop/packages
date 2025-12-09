@@ -4,7 +4,6 @@ import { ElementUtils } from '@dooboostore/core-web/element/ElementUtils';
 import { Range } from '../iterators/Range';
 import { getDomRenderConfig } from '../DomRenderProxy';
 import { ObjectUtils } from '@dooboostore/core/object/ObjectUtils';
-import {isDefined} from "@dooboostore/core";
 
 type HandlerInfo = {
   element: HTMLElement;
@@ -18,6 +17,7 @@ export type NormalAttrDataType = {
   isStringTemplate: boolean;
   variablePaths: { origin: string, inner: string }[];
 }
+
 export class EventManager {
   public static readonly attrPrefix = 'dr-';
   public readonly eventNames = [
@@ -31,7 +31,7 @@ export class EventManager {
     mouseleave: 'mouseout',
     mouseenter: 'mouseover',
     focus: 'focusin',
-    blur: 'focusout',
+    blur: 'focusout'
   };
   private readonly directAttachEvents = new Set(['close']);
 
@@ -54,8 +54,8 @@ export class EventManager {
     { name: EventManager.attrPrefix + 'hidden-link', property: 'value', event: 'input' },
     { name: EventManager.attrPrefix + 'required-link', property: 'value', event: 'input' },
     { name: EventManager.attrPrefix + 'checked-link', property: 'checked', event: 'change' },
-    { name: EventManager.attrPrefix + 'open-link', property: 'open', event: 'toggle' },
-  ]
+    { name: EventManager.attrPrefix + 'open-link', property: 'open', event: 'toggle' }
+  ];
   // @ts-ignore  합성이벤트(Synthetic) 처리하면서 의미가 없어졌다
   public static readonly linkTargetMapAttrName = EventManager.attrPrefix + 'link-variables';
 
@@ -94,7 +94,7 @@ export class EventManager {
   public static readonly WINDOW_EVENT_POPSTATE = 'popstate';
   public static readonly WINDOW_EVENT_RESIZE = 'resize';
   public static readonly WINDOW_EVENTS = [EventManager.WINDOW_EVENT_POPSTATE, EventManager.WINDOW_EVENT_RESIZE];
-  public static readonly noDetectAttr = [EventManager.normalAttrMapAttrName]
+  public static readonly noDetectAttr = [EventManager.normalAttrMapAttrName];
   public static readonly attrNames = [
     EventManager.valueAttrName,
     EventManager.checkedAttrName,
@@ -497,13 +497,13 @@ export class EventManager {
           variablePaths.forEach(it => {
             let r = ObjectUtils.Path.toOptionalChainPath(it.inner);
             targetScript = targetScript.replaceAll(it.origin, `\${${r}}`);
-          })
+          });
           script = '`' + targetScript + '`';
         } else {
           variablePaths.forEach(it => {
             let r = ObjectUtils.Path.toOptionalChainPath(it.inner);
             targetScript = targetScript.replaceAll(it.origin, `${r}`);
-          })
+          });
           script = targetScript;
         }
         const data = ObjectUtils.Script.evaluate(`const $element = this.element;  return ${script}`, Object.assign(obj, {
@@ -634,6 +634,8 @@ export class EventManager {
   }
 
   public changeVar(obj: any, elements: Set<Element> | Set<ChildNode>, varName?: string, config?: DomRenderConfig) {
+    // 아래 이부분을 적용해야될지 말아야될지....성능이슈가.. 그래서 우선 timeout으로 테스크큐로.. 우선..
+
     // console.log('changeVar', obj, elements, varName)
     this.procAttr(elements, EventManager.styleAttrName, (it: HTMLElement, attribute) => {
       let script = attribute;
@@ -653,7 +655,7 @@ export class EventManager {
             if (key && value) {
               (it.style as any)[key] = value;
             }
-          })
+          });
           // it.setAttribute('style', data);
         } else if (Array.isArray(data)) {
           data.forEach(sit => {
@@ -661,10 +663,10 @@ export class EventManager {
             if (key && value) {
               (it.style as any)[key] = value;
             }
-          })
+          });
 
           // it.setAttribute('style', data.join(';'));
-        } else {
+        } else if (data){
           for (const [key, value] of Object.entries(data)) {
             // if (it instanceof HTMLElement) {
             (it.style as any)[key] = value === null ? null : String(value);
@@ -689,16 +691,16 @@ export class EventManager {
 
         // alert(1)
         if (typeof data === 'string') {
-          data.split(' ').map(it=>it.trim()).filter(it=>it.length>0).forEach(cit => it.classList.add(cit.trim()));
+          data.split(' ').map(it => it.trim()).filter(it => it.length > 0).forEach(cit => it.classList.add(cit.trim()));
         } else if (Array.isArray(data)) {
-          data.map(it=>it.trim()).filter(it=>it.length>0).forEach(cit => it.classList.add(cit.trim()));
-        } else {
+          data.map(it => it.trim()).filter(it => it.length > 0).forEach(cit => it.classList.add(cit.trim()));
+        } else if(data) {
           for (const [key, value] of Object.entries(data)) {
             if (it instanceof HTMLElement) {
               const v = key.trim();
               if (value && v) {
                 it.classList.add(v);
-              } else if(v){
+              } else if (v) {
                 it.classList.remove(v);
               }
             }
@@ -707,64 +709,65 @@ export class EventManager {
       }
     });
 
-    this.procAttr<HTMLInputElement>(elements, EventManager.valueAttrName, (it, attribute) => {
-      if (EventManager.isUsingThisVar(attribute, varName) || varName === undefined) {
-        const data = ObjectUtils.Script.evaluateReturn(attribute, obj);
-        if (it.value !== data) it.value = data;
-      }
-    });
 
-    this.procAttr<HTMLInputElement>(elements, EventManager.checkedAttrName, (it, attribute) => {
-      if (EventManager.isUsingThisVar(attribute, varName) || varName === undefined) {
-        const data = ObjectUtils.Script.evaluateReturn(attribute, obj);
-        if (it.checked !== data) it.checked = data;
-      }
-    });
+      this.procAttr<HTMLInputElement>(elements, EventManager.valueAttrName, (it, attribute) => {
+        if (EventManager.isUsingThisVar(attribute, varName) || varName === undefined) {
+          const data = ObjectUtils.Script.evaluateReturn(attribute, obj);
+          if (it.value !== data) it.value = data;
+        }
+      });
 
-    this.procAttr<HTMLOptionElement>(elements, EventManager.selectedAttrName, (it, attribute) => {
-      if (EventManager.isUsingThisVar(attribute, varName) || varName === undefined) {
-        const data = ObjectUtils.Script.evaluateReturn(attribute, obj);
-        if (it.selected !== data) it.selected = data;
-      }
-    });
+      this.procAttr<HTMLInputElement>(elements, EventManager.checkedAttrName, (it, attribute) => {
+        if (EventManager.isUsingThisVar(attribute, varName) || varName === undefined) {
+          const data = ObjectUtils.Script.evaluateReturn(attribute, obj);
+          if (it.checked !== data) it.checked = data;
+        }
+      });
 
-    this.procAttr<HTMLInputElement>(elements, EventManager.readonlyAttrName, (it, attribute) => {
-      if (EventManager.isUsingThisVar(attribute, varName) || varName === undefined) {
-        const data = ObjectUtils.Script.evaluateReturn(attribute, obj);
-        if (it.readOnly !== data) it.readOnly = data;
-      }
-    });
+      this.procAttr<HTMLOptionElement>(elements, EventManager.selectedAttrName, (it, attribute) => {
+        if (EventManager.isUsingThisVar(attribute, varName) || varName === undefined) {
+          const data = ObjectUtils.Script.evaluateReturn(attribute, obj);
+          if (it.selected !== data) it.selected = data;
+        }
+      });
 
-    this.procAttr<HTMLInputElement>(elements, EventManager.disabledAttrName, (it, attribute) => {
-      if (EventManager.isUsingThisVar(attribute, varName) || varName === undefined) {
-        const data = ObjectUtils.Script.evaluateReturn(attribute, obj);
-        if (it.disabled !== data) it.disabled = data;
-      }
-    });
+      this.procAttr<HTMLInputElement>(elements, EventManager.readonlyAttrName, (it, attribute) => {
+        if (EventManager.isUsingThisVar(attribute, varName) || varName === undefined) {
+          const data = ObjectUtils.Script.evaluateReturn(attribute, obj);
+          if (it.readOnly !== data) it.readOnly = data;
+        }
+      });
 
-    this.procAttr<HTMLElement>(elements, EventManager.hiddenAttrName, (it, attribute) => {
-      if (EventManager.isUsingThisVar(attribute, varName) || varName === undefined) {
-        const data = ObjectUtils.Script.evaluateReturn(attribute, obj);
-        if (it.hidden !== data) it.hidden = data;
-      }
-    });
+      this.procAttr<HTMLInputElement>(elements, EventManager.disabledAttrName, (it, attribute) => {
+        if (EventManager.isUsingThisVar(attribute, varName) || varName === undefined) {
+          const data = ObjectUtils.Script.evaluateReturn(attribute, obj);
+          if (it.disabled !== data) it.disabled = data;
+        }
+      });
 
-    this.procAttr<HTMLInputElement>(elements, EventManager.requiredAttrName, (it, attribute) => {
-      if (EventManager.isUsingThisVar(attribute, varName) || varName === undefined) {
-        const data = ObjectUtils.Script.evaluateReturn(attribute, obj);
-        if (it.required !== data) it.required = data;
-      }
-    });
+      this.procAttr<HTMLElement>(elements, EventManager.hiddenAttrName, (it, attribute) => {
+        if (EventManager.isUsingThisVar(attribute, varName) || varName === undefined) {
+          const data = ObjectUtils.Script.evaluateReturn(attribute, obj);
+          if (it.hidden !== data) it.hidden = data;
+        }
+      });
 
-    this.procAttr<HTMLDialogElement>(elements, EventManager.openAttrName, (it, attribute) => {
-      if (EventManager.isUsingThisVar(attribute, varName) || varName === undefined) {
-        const data = ObjectUtils.Script.evaluateReturn(attribute, obj);
-        if (it.open !== data) it.open = data;
-      }
-    });
+      this.procAttr<HTMLInputElement>(elements, EventManager.requiredAttrName, (it, attribute) => {
+        if (EventManager.isUsingThisVar(attribute, varName) || varName === undefined) {
+          const data = ObjectUtils.Script.evaluateReturn(attribute, obj);
+          if (it.required !== data) it.required = data;
+        }
+      });
+
+      this.procAttr<HTMLDialogElement>(elements, EventManager.openAttrName, (it, attribute) => {
+        if (EventManager.isUsingThisVar(attribute, varName) || varName === undefined) {
+          const data = ObjectUtils.Script.evaluateReturn(attribute, obj);
+          if (it.open !== data) it.open = data;
+        }
+      });
   }
 
-  public procAttr<T extends Element = Element>(elements: Set<Element> | Set<ChildNode> | Node[] = new Set(), attrName: string, callBack: (h: T, value: string, attributes: any) => void) {
+  public deepAttributeElements(elements: Set<Element> | Set<ChildNode> | Node[] = new Set(), attrName: string): Set<Element> {
     const sets = new Set<Element>();
     elements.forEach(it => {
       if (!it) {
@@ -772,17 +775,26 @@ export class EventManager {
       }
       if (it.nodeType === 1) {
         const e = it as Element;
-        sets.add(e);
-        e.querySelectorAll<T>(`[${attrName}]`).forEach(it => {
+        if (e.hasAttribute(attrName)) {
+          sets.add(e);
+        }
+        e.querySelectorAll<Element>(`[${attrName}]`).forEach(it => {
           sets.add(it);
         });
       }
     });
+    return sets;
+  }
+
+  public procAttr<T extends Element = Element>(elements: Set<Element> | Set<ChildNode> | Node[] = new Set(), attrName: string, callBack: (h: T, value: string, attributes: any) => void) {
+    const sets = this.deepAttributeElements(elements, attrName);
     sets.forEach(it => {
       const attr = it.getAttribute(attrName);
       const attrs = ElementUtils.getAttributeToObject(it);
       if (attr) {
-        callBack(it as T, attr, attrs);
+        // setTimeout(() => {
+          callBack(it as T, attr, attrs);
+        // }, 0)
       }
     });
   }
@@ -797,23 +809,31 @@ export class EventManager {
 
   public setValue(obj: any, name: string, value?: any) {
     name = name.replaceAll('this.', 'this.this.');
-    ScriptUtils.evaluate(`${name} = this.value;`, {
+    ObjectUtils.Script.evaluate(`${name} = this.value;`, {
       this: obj,
       value: value
     });
   }
 
-  public static isUsingThisVar(raws: string | null | undefined, varName: string | null | undefined): boolean {
-    if (varName && raws) {
-      if (varName.startsWith('this.')) {
-        varName = varName.replace(/this\./, '');
-      }
+  public static decodeScriptVar(raws: string | null | undefined): string | undefined {
+    if (raws) {
       // TODO: 훔.. 꼭필요한가..?  트리거될때 스크립트변수 까지 감지해야될까?
       EventManager.VARNAMES.forEach(it => {
         // raws = raws!.replace(RegExp(it.replace('$', '\\$'), 'g'), `this?.___${it}`);
         raws = raws!.replace(RegExp(it.replace('$', '\\$'), 'g'), `this.___${it}`);
       });
-      const variablePaths = ObjectUtils.Path.detectPathFromScript(raws ?? '', { excludeThis: true });
+      return raws;
+    }
+    return undefined;
+  }
+
+  public static isUsingThisVar(raws: string | null | undefined, varName: string | null | undefined): boolean {
+    raws = EventManager.decodeScriptVar(raws);
+    if (varName && raws) {
+      if (varName.startsWith('this.')) {
+        varName = varName.replace(/this\./, '');
+      }
+      const variablePaths = ObjectUtils.Path.detectPathFromScript(raws, { excludeThis: true });
       return variablePaths.has(varName);
     }
     return false;
