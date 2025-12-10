@@ -3,6 +3,9 @@ import {OnRawSetRenderedOtherData} from "@dooboostore/dom-render/lifecycle/OnRaw
 import {ChildrenSet} from "@dooboostore/dom-render/components/ComponentBase";
 import {RawSet} from "@dooboostore/dom-render/rawsets/RawSet";
 import {OnChildRawSetRendered} from "@dooboostore/dom-render/lifecycle/OnChildRawSetRendered";
+import {Subject} from "@dooboostore/core/message/Subject";
+import {RoutingDataSet} from "@dooboostore/simple-boot/route/RouterManager";
+import * as url from "node:url";
 // export const DomRenderRootDefaultTemplate = '${@this@.name}$ <button dr-event-click="$router.go(\'/\')">aa</button><button dr-event-click="console.log(@this@.name); @this@.name = 22">aa</button>  ${@this@.rootRouter}$<dr-this value="${@this@.rootRouter}$"></dr-this>'
 export const DomRenderRootDefaultTemplate = '<dr-this value="${@this@.child}$"></dr-this>'
 // export const DomRenderRootDefaultTemplate = '<div>zz${@this@.name}$z</div>'
@@ -20,8 +23,13 @@ export class DomRenderRootObject extends ComponentRouterBase  {
   onInitCallbacks: Array<() => Promise<void>> = [];
   onChildRawSetRenderedDebounceCallbacks: Array<() => Promise<void>> = [];
 
+  private  lifeCycleSubject= new Subject<{type: 'end'}>();
   constructor() {
-    super({sameRouteNoApply: true});
+    super({sameRouteNoApply: true, onChildRawSetRenderedOtherDataDebounce: 5});
+  }
+
+  lifecycleObservable() {
+    return this.lifeCycleSubject.asObservable();
   }
 
   addOnInitCallback(cb: (() => Promise<void>) | (() => void)): void {
@@ -49,11 +57,26 @@ export class DomRenderRootObject extends ComponentRouterBase  {
 
   }
 
+  async canActivate(url: RoutingDataSet, data?: any): Promise<void> {
+    await super.canActivate(url, data);
+    // console.log('canActivate DomRenderRootObject', );
+  }
+
+  async onRouting(r: RoutingDataSet): Promise<void> {
+    await super.onRouting(r);
+    // console.log('onRouting DomRenderRootObject', );
+  }
+
+  onCreatedThisChildDebounce(childrenSet: ChildrenSet[]): void {
+    super.onCreatedThisChildDebounce(childrenSet);
+    // console.log('dddddddddddddddddo');
+  }
 
   async onChildRawSetRenderedDebounce(): Promise<void> {
     for (let onChildRawSetRenderedDebounceCallback of this.onChildRawSetRenderedDebounceCallbacks) {
       await onChildRawSetRenderedDebounceCallback();
     }
+    this.lifeCycleSubject.next({type: 'end'});
     // console.log('-------bbbbbbbbbbbcccccb')
 
   }

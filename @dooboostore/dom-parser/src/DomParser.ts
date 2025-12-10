@@ -8,8 +8,8 @@ export interface DomParserOptions {
 }
 
 export class DomParser {
-  private _window: Window;
-  private _document: Document;
+  private _window: Window | null;
+  private _document: Document | null;
 
   constructor(html: string, option?: DomParserOptions) {
     // Create WindowBase instance with the document
@@ -30,17 +30,39 @@ export class DomParser {
   }
 
   get window(): Window {
+    if (!this._window) {
+      throw new Error('DomParser has been destroyed');
+    }
     return this._window;
   }
 
   get document(): Document {
+    if (!this._document) {
+      throw new Error('DomParser has been destroyed');
+    }
     return this._document;
+  }
+
+  /**
+   * Destroy the DomParser instance and free memory
+   */
+  destroy(): void {
+    if (this._window) {
+      this._window.close();
+      this._window = null;
+    }
+    
+    this._document = null;
   }
 
   /**
    * Load new HTML content and replace the current document
    */
   loadHTML(html: string): void {
+    if (!this._document) {
+      throw new Error('DomParser has been destroyed');
+    }
+    
     // Clear current document content
     this.clearDocument();
 
@@ -52,21 +74,26 @@ export class DomParser {
   }
 
   private clearDocument(): void {
+    if (!this._document) return;
+    
     // Clear document body and head content while preserving structure
-    if (this.document.head) {
-      while (this.document.head.firstChild) {
-        this.document.head.removeChild(this.document.head.firstChild);
+    if (this._document.head) {
+      while (this._document.head.firstChild) {
+        this._document.head.removeChild(this._document.head.firstChild);
       }
     }
 
-    if (this.document.body) {
-      while (this.document.body.firstChild) {
-        this.document.body.removeChild(this.document.body.firstChild);
+    if (this._document.body) {
+      while (this._document.body.firstChild) {
+        this._document.body.removeChild(this._document.body.firstChild);
       }
     }
   }
 
   parseHTML(html: string): void {
+    if (!this._document) {
+      throw new Error('DomParser has been destroyed');
+    }
     // Simple HTML parsing implementation
     if (!html.trim()) {
       return;

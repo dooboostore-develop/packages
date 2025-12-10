@@ -380,9 +380,17 @@ export class WindowBase {
 
     // Event system
     private _eventListeners: EventListener[] = [];
+    // Timers and intervals tracking
+    private _timers: Set<number> = new Set();
+    private _intervals: Set<number> = new Set();
+    private _animationFrames: Set<number> = new Set();
     // Properties
     readonly clientInformation: Navigator;
-    readonly closed: boolean = false;
+    private _closed: boolean = false;
+    
+    get closed(): boolean {
+        return this._closed;
+    }
     readonly cookieStore: CookieStore = {} as CookieStore;
     readonly customElements: CustomElementRegistry = {} as CustomElementRegistry;
     readonly devicePixelRatio: number = 1;
@@ -568,7 +576,118 @@ export class WindowBase {
 
     captureEvents(): void { }
 
-    close(): void { }
+    close(): void {
+        if (this._closed) return;
+
+        this._closed = true;
+
+        // Clear all timers
+        this._timers.forEach(id => clearTimeout(id));
+        this._timers.clear();
+
+        // Clear all intervals
+        this._intervals.forEach(id => clearInterval(id));
+        this._intervals.clear();
+
+        // Clear all animation frames
+        this._animationFrames.forEach(id => clearTimeout(id));
+        this._animationFrames.clear();
+
+        // Remove all event listeners (clear references to prevent memory leaks)
+        this._eventListeners.forEach(listener => {
+            // Explicitly null out the listener function reference
+            (listener as any).listener = null;
+        });
+        this._eventListeners.length = 0;
+
+        // Clear all on* event handler properties
+        this.onload = null;
+        this.onunload = null;
+        this.onbeforeunload = null;
+        this.onpopstate = null;
+        this.onerror = null;
+        this.onmessage = null;
+        this.onhashchange = null;
+
+        // Clear document references
+        if (this.document) {
+            const doc = this.document as any;
+
+            // Clear document content recursively
+            if (doc.body) {
+                this.clearNodeRecursively(doc.body);
+            }
+
+            if (doc.head) {
+                this.clearNodeRecursively(doc.head);
+            }
+
+            if (doc.documentElement) {
+                this.clearNodeRecursively(doc.documentElement);
+            }
+
+            // Break circular references
+            if (doc.setWindow) {
+                doc.setWindow(null);
+            }
+
+            // Clear document event listeners
+            if (doc._eventListeners) {
+                doc._eventListeners.forEach((listener: any) => {
+                    listener.listener = null;
+                });
+                doc._eventListeners.length = 0;
+            }
+        }
+
+        // Clear history
+        if (this.history) {
+            const hist = this.history as any;
+            if (hist.historyStack) {
+                hist.historyStack.forEach((entry: any) => {
+                    entry.state = null;
+                });
+                hist.historyStack.length = 0;
+            }
+            hist.state = null;
+            hist.window = null;
+        }
+
+        // Clear location callback
+        if (this._location) {
+            (this._location as any).urlChangeCallback = null;
+        }
+    }
+    
+    /**
+     * Recursively clear a node and its children to prevent memory leaks
+     */
+    private clearNodeRecursively(node: any): void {
+        if (!node) return;
+        
+        // Clear children first
+        while (node.firstChild) {
+            const child = node.firstChild;
+            node.removeChild(child);
+            this.clearNodeRecursively(child);
+        }
+        
+        // Clear event listeners on the node
+        if (node._eventListeners) {
+            node._eventListeners.forEach((listener: any) => {
+                listener.listener = null;
+            });
+            node._eventListeners.length = 0;
+        }
+        
+        // Clear node properties that might hold references
+        if (node.parentNode) {
+            node.parentNode = null;
+        }
+        if (node.ownerDocument) {
+            node.ownerDocument = null;
+        }
+    }
 
     confirm(message?: string): boolean {
         return false;
@@ -632,28 +751,47 @@ export class WindowBase {
 
     // Timer methods
     setTimeout(callback: Function, delay?: number, ...args: any[]): number {
-        return setTimeout(callback, delay, ...args) as any;
+        if (this._closed) return 0;
+        
+        const id = setTimeout(() => {
+            this._timers.delete(id);
+            callback(...args);
+        }, delay) as any;
+        
+        this._timers.add(id);
+        return id;
     }
 
     clearTimeout(id: number): void {
         clearTimeout(id);
+        this._timers.delete(id);
     }
 
     setInterval(callback: Function, delay?: number, ...args: any[]): number {
-        return setInterval(callback, delay, ...args) as any;
+        if (this._closed) return 0;
+        
+        const id = setInterval(callback, delay, ...args) as any;
+        this._intervals.add(id);
+        return id;
     }
 
     clearInterval(id: number): void {
         clearInterval(id);
+        this._intervals.delete(id);
     }
 
     // Animation methods
     requestAnimationFrame(callback: FrameRequestCallback): number {
-        return this.setTimeout(callback, 16) as number;
+        if (this._closed) return 0;
+        
+        const id = this.setTimeout(callback, 16) as number;
+        this._animationFrames.add(id);
+        return id;
     }
 
     cancelAnimationFrame(id: number): void {
         this.clearTimeout(id);
+        this._animationFrames.delete(id);
     }
 
     // Event methods
