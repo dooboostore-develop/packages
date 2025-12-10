@@ -1,8 +1,9 @@
 import fs from 'fs';
 import path from 'path';
-import { parseHTML } from '@dooboostore/dom-parser';
+import { DomParser } from '@dooboostore/dom-parser';
 
 export class DomParserInitializer {
+  private domParser: DomParser;
   constructor(
     private frontDistPath: string,
     private frontDistIndexFileName: string,
@@ -20,7 +21,8 @@ export class DomParserInitializer {
 
     const html = fs.readFileSync(pathStr,'utf8');
 
-    const w = parseHTML(html, {href: this.reconfigureSettings.url}) as unknown as Window & typeof globalThis; ;
+    this.domParser = new DomParser(html, {href: this.reconfigureSettings?.url});
+    const w = this.domParser.window as unknown as Window & typeof globalThis;
 
     // @ts-ignore
     w.location ??= { href: 'about:blank'};
@@ -65,6 +67,11 @@ export class DomParserInitializer {
     // console.log('cvvvvvvvvvvvvvv', w.Node.DOCUMENT_FRAGMENT_NODE);
     return w;
   }
+
+  destroy(): void {
+    this.domParser?.destroy();
+  }
+
 }
 //
 // export default new JsdomInitializer();

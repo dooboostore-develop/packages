@@ -75,6 +75,7 @@ export class Observable<T, E = any> implements Subscribable<T, E> {
     }
   }
 
+  // complete 되야지만 마지막 처리된다!
   toPromise(): Promise<T | undefined> {
     return new Promise((resolve, reject) => {
       let lastValue: T | undefined;

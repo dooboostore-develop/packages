@@ -269,6 +269,14 @@ export class SimpleBootFront extends SimpleApplication {
       }
     });
 
+    // console.log('-----------aaaaaa', aaa);
+    // this.domRenderRootObject.lifecycleObservable().pipe(first()).toPromise().then(() => {
+    //   console.log('-----------lifecycleObservable toPromise done');
+    // })
+    // this.domRenderRootObject.lifecycleObservable().subscribe(it => {
+    //   console.log('-----------lifecycleObservable', it);
+    // })
+
     // dom-render 라우팅 끝나면
     this.domRenderRouter.observable.pipe(filter(it => it.triggerPoint === 'end')).subscribe(it => {
       // console.log('this.domRenderRouter.observable.subscribe---------------', it)
@@ -285,11 +293,23 @@ export class SimpleBootFront extends SimpleApplication {
         if (findFirstRouter && findFirstRouter.constructor === this.option.rootRouter) {
           const rootRouter = getDomRenderOriginObject(this.rootRouter?.obj);
           const findRouter = getDomRenderOriginObject(findFirstRouter);
-          await this.domRenderRootObject.canActivate(undefined, findRouter);
+
+          await this.domRenderRootObject.canActivate(undefined, findRouter)
+          // const aaa = await this.domRenderRootObject.lifecycleObservable().toPromise();
+
           await this.domRenderRootObject.onRouting({intent, routerModule: it, routerManager: this.routerManager});
+          // console.log('-----> simplebootfront rootRouter onRouting done-------->', it, it.intent.uri)
         }
         // console.log('----> simplebootfront simpleboot routing done-------->', it, it.intent.uri)
-        this.routingSubject.next({triggerPoint: 'end', routerModule: it});
+
+
+        // console.log('-----> simplebootfront before wait domRenderRootObject rendered-------->', it, it.intent.uri)
+        // if (ValidUtils.isBrowser()) {
+        //   this.routingSubject.next({triggerPoint: 'end', routerModule: it});
+        // } else {
+          await this.domRenderRootObject.lifecycleObservable().pipe(first()).toPromise();
+          this.routingSubject.next({triggerPoint: 'end', routerModule: it});
+        // }
         //       }, 0);
       });
     });
@@ -297,6 +317,7 @@ export class SimpleBootFront extends SimpleApplication {
   }
 
   async goRouting(url: string) {
+    // console.log('simplebootfront goRouting-------->', url);
     await this.domRenderRouter?.go({path: url});
     // this.afterSetting();
   }
