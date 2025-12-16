@@ -8,7 +8,8 @@
     "start": "npm run build && node dist/index.js",
     "ts-node": "ts-node --project tsconfig.json -r tsconfig-paths/register index.ts",
     "ts-node:watch": "ts-node-dev --respawn index.ts",
-    "start:watch": "ts-node-dev --respawn index.ts"
+    "start:watch": "ts-node-dev --respawn index.ts",
+    "maneal:test": "webpack --config webpack.maneal.config.js && node dist/manealTest.js"
   },
   "dependencies": {
     "reflect-metadata": "^0.2.2"

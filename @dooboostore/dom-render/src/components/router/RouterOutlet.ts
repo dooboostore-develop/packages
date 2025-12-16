@@ -57,6 +57,10 @@ export namespace RouterOutlet {
       super.onDestroyRender(data);
     }
 
+    onDestroy() {
+      super.onDestroy();
+    }
+
     onChangeAttrRender(name: string, value: any, other: OtherData) {
       super.onChangeAttrRender(name, value, other);
       // console.log('--------------', name, value);

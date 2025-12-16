@@ -104,6 +104,7 @@ export class RawSet {
   public static readonly DR_ON_INIT_ARGUMENTS_OPTIONNAME = 'dr-on-init:arguments';
   public static readonly DR_ON_CONSTRUCTOR_ARGUMENTS_OPTIONNAME = 'dr-on-constructor:arguments';
 
+  public static readonly DOMRENDER_COMPONENTS_KEY = '__domrender_components';
 
   public static readonly drAttrsOriginName: Attrs = {
     dr: RawSet.DR_NAME,
@@ -566,14 +567,14 @@ export class RawSet {
     // console.log(`RawSet  for (const it of onAttrInitCallBacks) { took ${performance.now() - t0} milliseconds.`);
 
     // component destroy
-    if (obj.__domrender_components) {
-      Object.entries(obj.__domrender_components).forEach(([key, value]) => {
+    if (obj[RawSet.DOMRENDER_COMPONENTS_KEY]) {
+      Object.entries(obj[RawSet.DOMRENDER_COMPONENTS_KEY]).forEach(([key, value]) => {
         const rawSet = (value as any).__rawSet as RawSet;
         const drAttrs: Attrs | undefined = rawSet?.dataSet.render?.attribute;
         if (rawSet && !rawSet.isConnected) {
           const destroyOptions = drAttrs?.drDestroyOption?.split(',') ?? [];
-          RawSet.destroy(obj.__domrender_components[key], { rawSet: rawSet }, config, destroyOptions);
-          delete obj.__domrender_components[key];
+          RawSet.destroy(obj[RawSet.DOMRENDER_COMPONENTS_KEY][key], { rawSet: rawSet }, config, destroyOptions);
+          delete obj[RawSet.DOMRENDER_COMPONENTS_KEY][key];
         }
       });
     }
@@ -1638,8 +1639,9 @@ export class RawSet {
         const templateStyle = await RawSet.fetchTemplateStyle({ template: this.template, styles: this.styles });
         this.template = templateStyle.template;
         this.styles = templateStyle.styles;
-        obj.__domrender_components ??= {};
-        const domrenderComponents = obj.__domrender_components;
+        obj[RawSet.DOMRENDER_COMPONENTS_KEY] ??= {};
+        const domrenderComponents = obj[RawSet.DOMRENDER_COMPONENTS_KEY];
+
         // debugger;
         const renderScript = ` /*createComponentTargetElement*/
             var ${EventManager.RAWSET_VARNAME} = this.__render.rawSet; 
@@ -1768,7 +1770,7 @@ export class RawSet {
         let data = await RawSet.drThisCreate(
           rawSet,
           element,
-          `this.__domrender_components.${rawSet.uuid}`,
+          `this.${RawSet.DOMRENDER_COMPONENTS_KEY}.${rawSet.uuid}`,
           '',
           !noStrip,
           obj,
@@ -1832,6 +1834,11 @@ export class RawSet {
           config.messenger.deleteChannelFromObj(obj);
         }
       }
+
+      if (obj && obj.onDestroy === 'function') {
+        obj.onDestroy();
+      }
+
       // console.log('------------destroy', obj);
       if (isOnDestroyRender(obj)) {
         obj.onDestroyRender?.(parameter);

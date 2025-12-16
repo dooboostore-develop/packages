@@ -191,6 +191,8 @@ export class SSRDomParserFilter implements Filter {
           const jsdom = (simpleBootFront as any).jsdom as JSDOM.JSDOM | undefined;
           jsdom?.window.close();
           window.close();
+          simpleBootFront.onDestroy();
+
           // window.close()만 호출하면 WindowBase.close()가 실행되어 메모리 정리됨
           (simpleBootFront.option.window as any)?.close?.();
           domParserInitializer.destroy();
