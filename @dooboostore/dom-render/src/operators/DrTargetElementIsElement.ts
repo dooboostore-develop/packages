@@ -20,8 +20,8 @@ export class DrTargetElementIsElement extends OperatorExecuter<string | null> {
     // console.log('--------------tar', targetElement)
     if (targetElement) {
       if (this.rawSet.point.start instanceof this.source.config.window.HTMLMetaElement && this.rawSet.point.end instanceof this.source.config.window.HTMLMetaElement) {
-        this.rawSet.point.start.setAttribute('this-path', `this.__domrender_components.${this.rawSet.uuid}`)
-        this.rawSet.point.end.setAttribute('this-path', `this.__domrender_components.${this.rawSet.uuid}`)
+        this.rawSet.point.start.setAttribute('this-path', `this.${RawSet.DOMRENDER_COMPONENTS_KEY}.${this.rawSet.uuid}`)
+        this.rawSet.point.end.setAttribute('this-path', `this.${RawSet.DOMRENDER_COMPONENTS_KEY}.${this.rawSet.uuid}`)
       }
 
 

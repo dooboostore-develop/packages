@@ -173,6 +173,10 @@ export class ComponentBase<T = any, C extends ComponentBaseConfig = ComponentBas
   private onChildRawSetRenderedOtherDataSubjectSubscription?: Subscription | undefined;
 
   constructor(private _config?: C) {
+    // console.log('ComponentBase created', this);
+    // setTimeout(()=>{
+    //   console.log('ComponentBase created', this.constructor.name, this._rawSet?.uuid);
+    // }, 1000)
   }
   get componentConfig(): C | undefined {
     return this._config;
@@ -705,19 +709,34 @@ getAttributeNames(attribute = this._attribute): string[] {
   }
 
   async onInitRender(param: any, rawSet: RawSet) {
+
+    // console.log('onInitRender ComponentBase', this.constructor.name, rawSet?.uuid);
+    const window = rawSet.dataSet?.config?.window;
     this.createChildrenDebounceSubscription = this.childrenSetSubject.pipe(
-      debounceTime(this.componentConfig?.createChildrenDebounce??0)
+      debounceTime(this.componentConfig?.createChildrenDebounce??10, {
+        setTimeout: window ? window.setTimeout.bind(window) : undefined,
+        clearTimeout: window ? window.clearTimeout.bind(window) : undefined,
+      })
     ).subscribe(it => {
       // console.log('call onCreatedThisChildDebounce', it);
       this.onCreatedThisChildDebounce(it);
     });
     this.onRawSetRenderedOtherDataSubjectSubscription = this.onRawSetRenderedOtherDataSubject.pipe(
-      bufferTime(this.componentConfig?.onRawSetRenderedOtherDataDebounce??0)
+      bufferTime(this.componentConfig?.onRawSetRenderedOtherDataDebounce??10, {
+        skipEmpty: true,
+        setInterval: window ? window.setInterval.bind(window) : undefined,
+        clearInterval: window ? window.clearInterval.bind(window) : undefined,
+        setTimeout: window ? window.setTimeout.bind(window) : undefined,
+        clearTimeout: window ? window.clearTimeout.bind(window) : undefined,
+      })
     ).subscribe(it => {
       this.onRawSetRenderedDebounce(it);
     });
     this.onChildRawSetRenderedOtherDataSubjectSubscription = this.onChildRawSetRenderedOtherDataSubject.pipe(
-      debounceTime(this.componentConfig?.onChildRawSetRenderedOtherDataDebounce??0)
+      debounceTime(this.componentConfig?.onChildRawSetRenderedOtherDataDebounce??10, {
+        setTimeout: window ? window.setTimeout.bind(window) : undefined,
+        clearTimeout: window ? window.clearTimeout.bind(window) : undefined,
+      })
     ).subscribe(it => {
       this.onChildRawSetRenderedDebounce();
     });
@@ -755,6 +774,7 @@ getAttributeNames(attribute = this._attribute): string[] {
     this.createChildrenDebounceSubscription?.unsubscribe();
     this.onRawSetRenderedOtherDataSubjectSubscription?.unsubscribe();
     this.onChildRawSetRenderedOtherDataSubjectSubscription?.unsubscribe();
+    // console.log('ComponentBase onDestroy', this.constructor.name, this.onRawSetRenderedOtherDataSubjectSubscription.closed);
   }
 
 }

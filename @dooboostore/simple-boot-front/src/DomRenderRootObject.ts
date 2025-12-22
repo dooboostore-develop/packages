@@ -81,5 +81,24 @@ export class DomRenderRootObject extends ComponentRouterBase  {
 
   }
 
+  onDestroy() {
+    super.onDestroy();
+    // console.log('DomRenderRootObject onDestroy');
+    this.child = undefined;
+    const componentObjet = this[RawSet.DOMRENDER_COMPONENTS_KEY];
+    if (componentObjet) {
+      for (const key of Object.keys(componentObjet)) {
+        const comp = componentObjet[key];
+        if (comp && typeof comp.onDestroy === 'function') {
+          try {
+            // console.log('Calling onDestroy for component:', key);
+            comp.onDestroy();
+          } catch (e) {
+            // console.error('Error during component onDestroy:', e);
+          }
+        }
+      }
+    }
+  }
 
 }

@@ -7,23 +7,32 @@ export class TimeoutError extends Error {
   }
 }
 
+export interface TimeoutConfig {
+  setTimeout?: (callback: () => void, ms: number) => any;
+  clearTimeout?: (id: any) => void;
+}
+
 /**
  * Errors if Observable does not emit a value in given time span.
  *
  * @param due Number of milliseconds within which Observable must emit values.
+ * @param config Configuration object with optional custom timer functions
  * @return An Observable that errors if the source Observable does not emit a value within the timeout period.
  */
-export function timeout<T>(due: number): OperatorFunction<T, T> {
+export function timeout<T>(due: number, config?: TimeoutConfig): OperatorFunction<T, T> {
   return (source: Observable<T, any>): Observable<T, any> => {
     return new Observable<T>(subscriber => {
-      let timeoutId: NodeJS.Timeout;
+      const setTimeoutFn = config?.setTimeout || setTimeout;
+      const clearTimeoutFn = config?.clearTimeout || clearTimeout;
+
+      let timeoutId: any;
       let hasEmitted = false;
 
       const resetTimeout = () => {
         if (timeoutId) {
-          clearTimeout(timeoutId);
+          clearTimeoutFn(timeoutId);
         }
-        timeoutId = setTimeout(() => {
+        timeoutId = setTimeoutFn(() => {
           if (!hasEmitted) {
             subscriber.error(new TimeoutError());
           }
@@ -35,22 +44,22 @@ export function timeout<T>(due: number): OperatorFunction<T, T> {
       const subscription = source.subscribe({
         next: (value) => {
           hasEmitted = true;
-          clearTimeout(timeoutId);
+          clearTimeoutFn(timeoutId);
           subscriber.next(value);
           resetTimeout();
         },
         error: (err) => {
-          clearTimeout(timeoutId);
+          clearTimeoutFn(timeoutId);
           subscriber.error(err);
         },
         complete: () => {
-          clearTimeout(timeoutId);
+          clearTimeoutFn(timeoutId);
           subscriber.complete();
         }
       });
 
       return () => {
-        clearTimeout(timeoutId);
+        clearTimeoutFn(timeoutId);
         subscription.unsubscribe();
       };
     });

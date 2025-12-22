@@ -42,6 +42,9 @@ export namespace This {
     onDestroyRender(data: OnDestroyRenderParams) {
       super.onDestroyRender(data);
     }
+    onDestroy() {
+      super.onDestroy();
+    }
 
     onChangeAttrRender(name: string, value: any, other: OtherData) {
       super.onChangeAttrRender(name, value, other);
