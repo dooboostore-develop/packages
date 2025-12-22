@@ -152,7 +152,7 @@ export class SSRDomParserFilter implements Filter {
         const targetUrl = url.toString();
         // console.log('runRoutingrunRouting', targetUrl);
         await simpleBootFront.goRouting(targetUrl);
-        await Promises.sleep(0); // <--중요: 이거 넣어야지 두번불러지는게 없어지는듯? 뭐지 event loop 변경된건가?
+        // await Promises.sleep(0); // <--중요: 이거 넣어야지 두번불러지는게 없어지는듯? 뭐지 event loop 변경된건가?
 
         // console.log('runRout22222ingrunRouting', targetUrl);
 
@@ -178,21 +178,27 @@ export class SSRDomParserFilter implements Filter {
             first()
           )
         );
-        await Promises.sleep(0)
+        // await Promises.sleep(0)
         // console.log('???????done');
         const html = this.makeHTML(simpleBootFront);
         // console.log('---------',html);
         await this.writeOkHtmlAndEnd({rr}, html);
       } finally {
-        (simpleBootFront.option.window as any).ssrUse = false;
-        delete (simpleBootFront.option.window as any).server_side_data;
-        // Stale instance, destroy it
-        const jsdom = (simpleBootFront as any).jsdom as JSDOM.JSDOM | undefined;
-        jsdom?.window.close();
-        window.close();
-        // window.close()만 호출하면 WindowBase.close()가 실행되어 메모리 정리됨
-        (simpleBootFront.option.window as any)?.close?.();
-        domParserInitializer.destroy();
+        try {
+          (simpleBootFront.option.window as any).ssrUse = false;
+          delete (simpleBootFront.option.window as any).server_side_data;
+          // Stale instance, destroy it
+          const jsdom = (simpleBootFront as any).jsdom as JSDOM.JSDOM | undefined;
+          jsdom?.window.close();
+          window.close();
+          simpleBootFront.onDestroy();
+
+          // window.close()만 호출하면 WindowBase.close()가 실행되어 메모리 정리됨
+          (simpleBootFront.option.window as any)?.close?.();
+          domParserInitializer.destroy();
+        } catch (e) {
+          console.log('eeeeee', e);
+        }
 
         // const index = this.simpleBootFrontPool.indexOf(simpleBootFront);
         // if (index > -1) {

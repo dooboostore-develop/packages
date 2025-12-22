@@ -9,26 +9,34 @@ export * from './Subscription';
 // Internal utilities
 export * from './internal';
 
-export const debounce = <T>(fn: (data: T) => void, delay: number) => {
-  // @ts-ignore
-  let timer: NodeJS.Timeout | null = null;
+export interface TimerConfig {
+  setTimeout?: (callback: () => void, ms: number) => any;
+  clearTimeout?: (id: any) => void;
+}
+
+export const debounce = <T>(fn: (data: T) => void, delay: number, config?: TimerConfig) => {
+  const setTimeoutFn = config?.setTimeout || setTimeout;
+  const clearTimeoutFn = config?.clearTimeout || clearTimeout;
+  
+  let timer: any = null;
   return (data: T) => {
     if (timer) {
-      clearTimeout(timer);
+      clearTimeoutFn(timer);
     }
-    timer = setTimeout(() => {
+    timer = setTimeoutFn(() => {
       fn(data);
       timer = null;
     }, delay);
   };
 };
 
-export const throttleTime = <Args extends [...unknown[]]>(fn: (...args: Args) => void, delay: number) => {
-  // @ts-ignore
-  let timer: NodeJS.Timeout | null = null;
+export const throttleTime = <Args extends [...unknown[]]>(fn: (...args: Args) => void, delay: number, config?: TimerConfig) => {
+  const setTimeoutFn = config?.setTimeout || setTimeout;
+  
+  let timer: any = null;
   return (...args: Args) => {
     if (!timer) {
-      timer = setTimeout(() => {
+      timer = setTimeoutFn(() => {
         fn(...args);
         timer = null;
       }, delay);

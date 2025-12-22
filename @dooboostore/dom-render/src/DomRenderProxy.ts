@@ -26,7 +26,7 @@ import {Promises} from "@dooboostore/core/promise/Promises";
 const excludeGetSetPropertys = [
   'onBeforeReturnGet',
   'onBeforeReturnSet',
-  '__domrender_components',
+  RawSet.DOMRENDER_COMPONENTS_KEY,
   '__render',
   '_DomRender_isFinal',
   '_domRender_ref',
@@ -578,7 +578,7 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
     // console.log('set-->', p, value, target, receiver, Reflect.getMetadata(DomRenderNoProxyKey, target, p) );
 
     if (
-      (typeof p === 'string' && p !== '__domrender_components' && excludeGetSetPropertys.includes(p)) ||
+      (typeof p === 'string' && p !== RawSet.DOMRENDER_COMPONENTS_KEY && excludeGetSetPropertys.includes(p)) ||
       Reflect.getMetadata(DomRenderNoProxyKey, target, p)
     ) {
       (target as any)[p] = value;

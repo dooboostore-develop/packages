@@ -439,6 +439,11 @@ export class SimpleBootFront extends SimpleApplication {
     return this.simstanceManager;
   }
 
+  onDestroy() {
+    // console.log('SimpleBootFront onDestroy');
+    this.domRenderRootObject.onDestroy();
+  }
+
   // public go(url: string) {
   //     this.getSimstanceManager().getOrNewSim({target:Navigation})?.go({path:url});
   // }
