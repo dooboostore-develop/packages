@@ -12,6 +12,7 @@ import {
 import { Render } from '../rawsets/Render';
 import { ElementUtils } from '@dooboostore/core-web/element/ElementUtils';
 import { TargetElement } from '../configs';
+import { DomRenderComponentMetaKey } from '../rawsets';
 
 declare global {
   interface Window {
@@ -53,8 +54,8 @@ export class DrTargetElement extends OperatorExecuter<void> {
         this.rawSet.point.start instanceof this.source.config.window.HTMLMetaElement &&
         this.rawSet.point.end instanceof this.source.config.window.HTMLMetaElement
       ) {
-        this.rawSet.point.start.setAttribute('this-path', `this.${RawSet.DOMRENDER_COMPONENTS_KEY}.${this.rawSet.uuid}`);
-        this.rawSet.point.end.setAttribute('this-path', `this.${RawSet.DOMRENDER_COMPONENTS_KEY}.${this.rawSet.uuid}`);
+        this.rawSet.point.start.setAttribute('this-path', `this.${DomRenderComponentMetaKey.DOMRENDER_COMPONENTS_KEY}.${this.rawSet.uuid}`);
+        this.rawSet.point.end.setAttribute('this-path', `this.${DomRenderComponentMetaKey.DOMRENDER_COMPONENTS_KEY}.${this.rawSet.uuid}`);
       }
 
       const documentFragment = await targetElement.callBack(

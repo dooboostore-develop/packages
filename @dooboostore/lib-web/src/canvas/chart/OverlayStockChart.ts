@@ -14,13 +14,13 @@ export type ChartKeyData = {
   datas: ChartData[];
   events?: EventMarker[];
   lineMode?: LineType;
+  movingAverageXwidth?: number[]; // 차트 키별 이동평균선 xWidth 배열 (예: [432000000 (5일), 864000000 (10일)])
 };
 
 // 티커 데이터 타입 (단일 또는 다중 차트 키 지원)
 export type TickerData = {
   color?: string;
   lineMode?: LineType;
-  movingAverageXwidth?: number[]; // 티커별 이동평균선 xWidth 배열 (예: [432000000 (5일), 864000000 (10일)])
   data: ChartKeyData | {
     [key: string]: ChartKeyData;
   };
@@ -166,6 +166,9 @@ interface ChartConfig {
   eventTooltipLabelFormat?: (event: EventMarker) => FormatReturn; // 이벤트 툴팁 레이블 포맷 (XY 포인트 마커 툴팁)
   eventMarkerTextFormat?: (event: EventMarker) => FormatReturn; // 이벤트 마커 내부 텍스트 포맷 (XY 포인트 마커 안의 글자)
   
+  // 테마 설정
+  theme?: 'light' | 'dark' | 'auto'; // 테마 모드 ('auto'는 브라우저 설정 따름, 기본값: 'auto')
+  
   // 스타일 설정
   lineStrokeStyle?: string | ((symbol: string, chartKey: string) => string); // 라인 그래프 색상
   lineWidth?: number | ((symbol: string, chartKey: string) => number); // 라인 두께
@@ -199,17 +202,30 @@ interface ChartConfig {
   eventRangeLabelFillStyle?: string | ((event: EventMarker) => string); // 범위 이벤트 라벨 색상
   eventRangeLabelBackgroundStyle?: string | ((event: EventMarker) => string); // 범위 이벤트 라벨 배경 색상
   
+  // 배경 색상 설정
+  backgroundColor?: string; // 전체 배경 색상 (기본값: 테마에 따라 자동 설정)
+  
   // 레이아웃 설정
   paddingLeft?: number; // 왼쪽 여백 (Y축 레이블 영역)
   paddingRight?: number; // 오른쪽 여백
   paddingTop?: number; // 위쪽 여백
   paddingBottom?: number; // 아래쪽 여백 (X축 레이블 영역)
   
+  // 레이블 개수 설정
+  xLabelCount?: number; // X축 최대 레이블 개수 (기본값: 12)
+  yLabelCount?: number; // Y축 레이블 개수 (기본값: 6)
+  
+  // UI 표시 설정
+  showZoomButtons?: boolean; // 줌 버튼 표시 여부 (기본값: false)
+  hideLegend?: boolean; // 범례 숨기기 여부 (기본값: false, 즉 기본적으로 표시)
+  hideXAxisLabels?: boolean; // X축 레이블 숨기기 여부 (기본값: false, 즉 기본적으로 표시)
+  hideYAxisLabels?: boolean; // Y축 레이블 숨기기 여부 (기본값: false, 즉 기본적으로 표시)
+  
   // 축 범위 설정
-  xMin?: number | ((chartKey: string) => number); // X축 최소값 (timestamp)
-  xMax?: number | ((chartKey: string) => number); // X축 최대값 (timestamp)
-  yMin?: number | ((chartKey: string) => number); // Y축 최소값
-  yMax?: number | ((chartKey: string) => number); // Y축 최대값
+  xMin?: number | ((chartKey: string) => undefined | number); // X축 최소값 (timestamp)
+  xMax?: number | ((chartKey: string) => undefined | number); // X축 최대값 (timestamp)
+  yMin?: number | ((chartKey: string) => undefined | number); // Y축 최소값
+  yMax?: number | ((chartKey: string) => undefined | number); // Y축 최대값
   
   // 콜백
   onLegendClick?: (symbol: string, isVisible: boolean) => void; // 범례 클릭 콜백
@@ -230,6 +246,9 @@ export type ShowAverageItem =
 
 export type ShowAverageType = ShowAverageItem[]; // 여러 평균선을 배열로 지원
 
+// 정규화 타입 정의
+export type NormalizeType = 'none' | 'rangeNormalize' | 'normalize';
+
 interface RenderState {
   enabledTickers: Set<string>;
   visibleTickers: Set<string>;
@@ -243,9 +262,9 @@ interface RenderState {
   hideLines: boolean;
   showGrid: boolean;
   showPoints: boolean;
-  normalize: boolean;
-  rangeMin: number;
-  rangeMax: number;
+  normalize: NormalizeType; // 'none': 정규화 안함, 'rangeNormalize': 현재 범위 정규화, 'normalize': 전체 데이터 정규화
+  rangeMin?: number; // timestamp 또는 퍼센트 (0-100), undefined면 전체 범위
+  rangeMax?: number; // timestamp 또는 퍼센트 (0-100), undefined면 전체 범위
 }
 
 // OverlayStockChart 옵션 인터페이스
@@ -270,7 +289,9 @@ export class OverlayStockChart {
   private paddingBottom = 50;
   private chartAreaWidth = 0; // 실제 차트 그리는 영역의 고정 너비
   private chartAreaLeft = 50; // 차트 영역 시작 X 좌표
-  private colors = [
+  
+  // 라이트 모드 색상 팔레트
+  private lightColors = [
     '#0000FF', // Blue
     '#FF0000', // Red
     '#00AA00', // Green
@@ -292,11 +313,38 @@ export class OverlayStockChart {
     '#FF6347', // Tomato
     '#48D1CC'  // Medium Turquoise
   ];
-  private chartMargin = 0.1;
+  
+  // 다크 모드 색상 팔레트 (더 밝고 선명한 색상)
+  private darkColors = [
+    '#5C9EFF', // Bright Blue
+    '#FF5C5C', // Bright Red
+    '#5CFF5C', // Bright Green
+    '#FF5CFF', // Bright Magenta
+    '#FFB85C', // Bright Orange
+    '#B85CFF', // Bright Violet
+    '#5CFFFF', // Bright Cyan
+    '#FF5CB8', // Bright Pink
+    '#B8FF5C', // Bright Lime
+    '#FFE55C', // Bright Yellow
+    '#5CB8FF', // Sky Blue
+    '#FF5C85', // Bright Crimson
+    '#5CFFB8', // Bright Spring Green
+    '#FFB8FF', // Light Pink
+    '#5CE5FF', // Light Blue
+    '#FF855C', // Bright Coral
+    '#B8B8FF', // Light Purple
+    '#5CDBFF', // Bright Sky Blue
+    '#FF9C5C', // Light Tomato
+    '#85FFFF'  // Bright Turquoise
+  ];
+  
+  private colors = this.lightColors; // 기본값
+  
+  private chartMarginTop = 0.05;
+  private chartMarginBottom = 0.05;
   private dataMap: Map<string, { 
     color?: string;
     lineMode?: LineType;
-    movingAverageXwidth?: number[];
     data: { 
       [key: string]: ChartKeyData;
     }
@@ -304,11 +352,13 @@ export class OverlayStockChart {
   private originalDataMap: Map<string, { 
     color?: string;
     lineMode?: LineType;
-    movingAverageXwidth?: number[];
     data: { 
       [key: string]: ChartKeyData;
     }
   }>; // 확대/축소와 무관한 원본 데이터
+  
+  // 전체 데이터의 min/max 캐시 (chartKey별, symbol별)
+  private globalMinMaxCache: Map<string, Map<string, { min: number; max: number }>> = new Map();
   private commonEvents: CommonEvents;
   private tickerColors: Map<string, string> = new Map();
   private config: ChartConfig;
@@ -389,23 +439,41 @@ export class OverlayStockChart {
       hideLines: false,
       showGrid: false,
       showPoints: false,
-      normalize: false,
-      rangeMin: 0,
-      rangeMax: 100
+      normalize: 'none',
+      rangeMin: undefined, // undefined면 전체 범위 사용
+      rangeMax: undefined  // undefined면 전체 범위 사용
     };
     
     this.state = { ...defaultState, ...initialState };
-    this.config = config;
     
-    // padding 설정
-    this.paddingLeft = this.config.paddingLeft ?? 50;
-    this.paddingRight = this.config.paddingRight ?? 50;
-    this.paddingTop = this.config.paddingTop ?? 50;
-    this.paddingBottom = this.config.paddingBottom ?? 50;
+    // 테마 감지 및 기본 색상 설정
+    const isDarkMode = this.detectDarkMode(config.theme);
+    
+    // 테마에 따라 색상 팔레트 선택
+    this.colors = isDarkMode ? this.darkColors : this.lightColors;
+    
+    // config 기본값 설정 (테마에 따라)
+    // 사용자 config를 먼저 적용하고, 없는 값만 기본값으로 채움
+    this.config = {
+      ...config,
+      theme: config.theme ?? 'auto',
+      backgroundColor: config.backgroundColor ?? (isDarkMode ? '#1E1E1E' : '#FFFFFF'),
+      gridStrokeStyle: config.gridStrokeStyle ?? (isDarkMode ? '#444444' : '#CCCCCC'),
+      crosshairStrokeStyle: config.crosshairStrokeStyle ?? (isDarkMode ? '#888888' : '#666666')
+    };
+    
+    // config 설정 후 전체 min/max 계산 (config.xMin/xMax를 참조하므로)
+    this.calculateGlobalMinMax();
+    
+    // padding 설정 - hide 옵션이 true면 명시적 padding 값도 무시하고 10으로 설정
+    this.paddingLeft = this.config.hideYAxisLabels ? 10 : (this.config.paddingLeft ?? 50);
+    this.paddingRight = this.config.hideYAxisLabels ? 10 : (this.config.paddingRight ?? 50);
+    this.paddingTop = this.config.hideLegend ? 10 : (this.config.paddingTop ?? 50);
+    this.paddingBottom = this.config.hideXAxisLabels ? 10 : (this.config.paddingBottom ?? 50);
     this.padding = 50; // 기본 padding (차트 영역 계산용)
     
-    // 차트 영역은 기본 padding 기준으로 고정
-    this.chartAreaLeft = this.padding;
+    // 차트 영역은 paddingLeft 기준으로 설정
+    this.chartAreaLeft = this.paddingLeft;
     this.chartAreaWidth = 0; // render에서 계산됨
     
     // visibleChartKeys가 비어있으면 첫 번째 티커의 첫 번째 키를 기본값으로
@@ -437,7 +505,6 @@ export class OverlayStockChart {
   ): Map<string, { 
     color?: string;
     lineMode?: LineType;
-    movingAverageXwidth?: number[];
     data: { 
       [key: string]: ChartKeyData;
     }
@@ -445,7 +512,6 @@ export class OverlayStockChart {
     const normalizedMap = new Map<string, { 
       color?: string;
       lineMode?: LineType;
-      movingAverageXwidth?: number[];
       data: { 
         [key: string]: ChartKeyData;
       }
@@ -460,12 +526,12 @@ export class OverlayStockChart {
         normalizedMap.set(symbol, {
           color: value.color,
           lineMode: value.lineMode,
-          movingAverageXwidth: value.movingAverageXwidth,
           data: { 
             'default': {
               datas: data.datas,
               events: data.events,
-              lineMode: data.lineMode
+              lineMode: data.lineMode,
+              movingAverageXwidth: data.movingAverageXwidth
             }
           }
         });
@@ -474,13 +540,89 @@ export class OverlayStockChart {
         normalizedMap.set(symbol, {
           color: value.color,
           lineMode: value.lineMode,
-          movingAverageXwidth: value.movingAverageXwidth,
           data: data
         });
       }
     });
     
     return normalizedMap;
+  }
+  
+  // 전체 데이터의 min/max 계산 및 캐싱
+  private calculateGlobalMinMax(): void {
+    this.globalMinMaxCache.clear();
+    
+    // config.xMin/xMax가 설정되어 있으면 해당 범위의 데이터만 사용
+    let filterMinTime: number | undefined = undefined;
+    let filterMaxTime: number | undefined = undefined;
+    
+    if (this.config.xMin !== undefined) {
+      filterMinTime = typeof this.config.xMin === 'function' ? this.config.xMin('default') : this.config.xMin;
+    }
+    if (this.config.xMax !== undefined) {
+      filterMaxTime = typeof this.config.xMax === 'function' ? this.config.xMax('default') : this.config.xMax;
+    }
+    
+    this.originalDataMap.forEach((value, symbol) => {
+      Object.keys(value.data).forEach(chartKey => {
+        const chartDataObj = value.data[chartKey];
+        if (!chartDataObj) return;
+        
+        // config.yMin/yMax 가져오기 (chartKey별로 다를 수 있음)
+        let filterMinY: number | undefined = undefined;
+        let filterMaxY: number | undefined = undefined;
+        
+        if (this.config.yMin !== undefined) {
+          filterMinY = typeof this.config.yMin === 'function' ? this.config.yMin(chartKey) : this.config.yMin;
+        }
+        if (this.config.yMax !== undefined) {
+          filterMaxY = typeof this.config.yMax === 'function' ? this.config.yMax(chartKey) : this.config.yMax;
+        }
+        
+        // xMin/xMax 범위로 필터링
+        let filteredDatas = chartDataObj.datas;
+        if (filterMinTime !== undefined || filterMaxTime !== undefined) {
+          filteredDatas = chartDataObj.datas.filter(d => {
+            if (filterMinTime !== undefined && d.x < filterMinTime) return false;
+            if (filterMaxTime !== undefined && d.x > filterMaxTime) return false;
+            return true;
+          });
+        }
+        
+        // yMin/yMax 범위로 필터링 (값이 있는 경우만)
+        if (filterMinY !== undefined || filterMaxY !== undefined) {
+          filteredDatas = filteredDatas.filter(d => {
+            if (d.y === null || d.y === undefined) return false;
+            if (filterMinY !== undefined && d.y < filterMinY) return false;
+            if (filterMaxY !== undefined && d.y > filterMaxY) return false;
+            return true;
+          });
+        }
+        
+        const allValues = filteredDatas
+          .filter(d => d.y !== null && d.y !== undefined)
+          .map(d => d.y);
+        
+        if (allValues.length > 0) {
+          // yMin/yMax가 설정되어 있으면 그 값을 min/max로 사용
+          let min = Math.min(...allValues);
+          let max = Math.max(...allValues);
+          
+          if (filterMinY !== undefined) {
+            min = Math.max(min, filterMinY); // 실제 데이터 min과 설정된 yMin 중 큰 값
+          }
+          if (filterMaxY !== undefined) {
+            max = Math.min(max, filterMaxY); // 실제 데이터 max와 설정된 yMax 중 작은 값
+          }
+          
+          if (!this.globalMinMaxCache.has(chartKey)) {
+            this.globalMinMaxCache.set(chartKey, new Map());
+          }
+          
+          this.globalMinMaxCache.get(chartKey)!.set(symbol, { min, max });
+        }
+      });
+    });
   }
 
   // commonEvents를 내부 형식으로 변환
@@ -491,15 +633,63 @@ export class OverlayStockChart {
     return input;
   }
 
+  // 다크모드 감지
+  private detectDarkMode(theme?: 'light' | 'dark' | 'auto'): boolean {
+    if (theme === 'dark') return true;
+    if (theme === 'light') return false;
+    
+    // 'auto' 또는 undefined: 브라우저 설정 확인
+    if (typeof window !== 'undefined' && window.matchMedia) {
+      return window.matchMedia('(prefers-color-scheme: dark)').matches;
+    }
+    
+    return false; // 기본값: 라이트 모드
+  }
+
+  // 테마에 따른 텍스트/축 색상 가져오기
+  private getTextColor(): string {
+    const isDarkMode = this.detectDarkMode(this.config.theme);
+    return isDarkMode ? '#E0E0E0' : '#000000';
+  }
+
+  // 테마에 따른 축 색상 가져오기
+  private getAxisColor(): string {
+    const isDarkMode = this.detectDarkMode(this.config.theme);
+    return isDarkMode ? '#666666' : '#000000';
+  }
+
+  // 테마에 따른 이벤트 기본 색상 가져오기
+  private getDefaultEventColor(transparent: boolean = false): string {
+    const isDarkMode = this.detectDarkMode(this.config.theme);
+    if (transparent) {
+      return isDarkMode ? 'rgba(255, 180, 92, 0.3)' : 'rgba(255, 102, 0, 0.2)';
+    }
+    return isDarkMode ? '#FFB85C' : '#FF6600';
+  }
+
   destroy() {
     // 리소스 정리
     if (this.resizeObserver) {
       this.resizeObserver.disconnect();
       this.resizeObserver = null;
     }
+    
+    // 캔버스 이벤트 리스너 제거
+    // 서버사이드 환경에서는 이벤트 리스너가 없으므로 스킵
+    if (typeof window !== 'undefined' && this.canvas.removeEventListener) {
+      // 모든 이벤트 리스너를 제거하기 위해 canvas를 복제하여 교체
+      // (개별 리스너 참조를 저장하지 않았으므로 이 방법이 가장 확실함)
+      const newCanvas = this.canvas.cloneNode(true) as HTMLCanvasElement;
+      this.canvas.parentNode?.replaceChild(newCanvas, this.canvas);
+    }
   }
 
   private setupResizeObserver() {
+    // 서버사이드 환경에서는 ResizeObserver가 없으므로 스킵
+    if (typeof ResizeObserver === 'undefined') {
+      return;
+    }
+    
     this.resizeObserver = new ResizeObserver(() => {
       this.render();
     });
@@ -509,6 +699,7 @@ export class OverlayStockChart {
   setData(dataMap: Map<string, TickerData>, commonEvents: CommonEvents = {}) {
     this.dataMap = this.normalizeDataMap(dataMap);
     this.originalDataMap = this.dataMap; // 원본 데이터 저장
+    this.calculateGlobalMinMax(); // 전체 min/max 계산
     this.commonEvents = this.normalizeCommonEvents(commonEvents);
     
     // 평균선 캐시 초기화
@@ -531,6 +722,33 @@ export class OverlayStockChart {
     if (partialState.visibleTickers || partialState.showAverage) {
       this.averageLineCache.clear();
     }
+    this.render();
+  }
+
+  updateTickerMovingAverages(widths: number[]) {
+    console.log('[updateTickerMovingAverages] called with widths:', widths);
+    console.log('[updateTickerMovingAverages] dataMap size:', this.dataMap.size);
+    
+    // 각 티커의 모든 chartKey에 movingAverageXwidth 업데이트
+    this.dataMap.forEach((tickerData, symbol) => {
+      console.log(`[updateTickerMovingAverages] Processing symbol: ${symbol}`);
+      
+      if (isChartKeyData(tickerData.data)) {
+        // 단일 차트 키
+        tickerData.data.movingAverageXwidth = widths.length > 0 ? widths : undefined;
+        console.log(`  Single chart key, set movingAverageXwidth:`, tickerData.data.movingAverageXwidth);
+      } else {
+        // 다중 차트 키
+        Object.keys(tickerData.data).forEach((chartKey) => {
+          const chartKeyData = tickerData.data[chartKey];
+          chartKeyData.movingAverageXwidth = widths.length > 0 ? widths : undefined;
+          console.log(`  Chart key: ${chartKey}, set movingAverageXwidth:`, chartKeyData.movingAverageXwidth);
+        });
+      }
+    });
+    
+    // 캐시 초기화 및 재렌더링
+    this.averageLineCache.clear();
     this.render();
   }
 
@@ -578,7 +796,9 @@ export class OverlayStockChart {
   private getY(value: number, minVal: number, maxVal: number, topY: number, height: number): number {
     const range = maxVal - minVal || 1;
     const normalizedValue = (value - minVal) / range;
-    const scaledValue = this.chartMargin + normalizedValue * (1 - this.chartMargin * 2);
+    // 위 11%, 아래 5% 여백
+    const totalMargin = this.chartMarginTop + this.chartMarginBottom;
+    const scaledValue = this.chartMarginBottom + normalizedValue * (1 - totalMargin);
     return topY + (1 - scaledValue) * height;
   }
 
@@ -607,21 +827,21 @@ export class OverlayStockChart {
     const chartTopY = area.y;
     const chartHeight = area.height;
     
-    // 데이터 준비
+    // 데이터 준비 - 항상 originalDataMap 사용 (시간 필터링은 displayMinTime/displayMaxTime으로 처리)
     const dataBySymbol = new Map<string, { time: number; open: number; high: number; low: number; close: number }[]>();
     
-    // 티커별 movingAverageXwidth 수집 (각 티커마다 다를 수 있음)
+    // 차트 키별 movingAverageXwidth 수집 (각 티커의 차트 키마다 다를 수 있음)
     const tickerMovingAverages = new Map<string, number[]>();
     
-    this.dataMap.forEach((value, symbol) => {
+    this.originalDataMap.forEach((value, symbol) => {
       const points: { time: number; open: number; high: number; low: number; close: number }[] = [];
       const chartDataObj = value.data[chartKey];
       if (!chartDataObj) return;
       
-      // 티커의 movingAverageXwidth 저장 (TickerData 타입으로 캐스팅)
-      const tickerData = value as TickerData;
-      if (tickerData.movingAverageXwidth && tickerData.movingAverageXwidth.length > 0) {
-        tickerMovingAverages.set(symbol, tickerData.movingAverageXwidth);
+      // 차트 키의 movingAverageXwidth 저장 (ChartKeyData에서 읽기)
+      if (chartDataObj.movingAverageXwidth && chartDataObj.movingAverageXwidth.length > 0) {
+        tickerMovingAverages.set(symbol, chartDataObj.movingAverageXwidth);
+        console.log(`[drawChartKey] ${symbol} - ${chartKey}: movingAverageXwidth =`, chartDataObj.movingAverageXwidth);
       }
       
       const chartData = chartDataObj.datas || [];
@@ -645,30 +865,42 @@ export class OverlayStockChart {
       dataBySymbol.set(symbol, points);
     });
 
-    // X축 범위 설정 (config 우선, 없으면 displayMinTime/displayMaxTime, 없으면 전체 데이터)
+    // X축 범위 설정
+    // displayMinTime/displayMaxTime이 있으면 우선 사용 (zoom 적용된 범위)
+    // 없으면 config.xMin/xMax 사용 (초기 범위)
+    // 둘 다 없으면 전체 데이터 범위 사용
     let minTime: number;
     let maxTime: number;
     
-    if (this.config.xMin !== undefined) {
+    if (displayMinTime !== undefined && displayMaxTime !== undefined) {
+      // zoom이 적용된 경우 displayMinTime/displayMaxTime 사용
+      minTime = displayMinTime;
+      maxTime = displayMaxTime;
+    } else if (this.config.xMin !== undefined && this.config.xMax !== undefined) {
+      // zoom이 없고 config에 설정이 있으면 config 사용
       minTime = typeof this.config.xMin === 'function' ? this.config.xMin(chartKey) : this.config.xMin;
-    } else {
-      minTime = displayMinTime ?? sortedTimes[0];
-    }
-    
-    if (this.config.xMax !== undefined) {
       maxTime = typeof this.config.xMax === 'function' ? this.config.xMax(chartKey) : this.config.xMax;
     } else {
-      maxTime = displayMaxTime ?? sortedTimes[sortedTimes.length - 1];
+      // 둘 다 없으면 전체 데이터 범위 사용
+      minTime = sortedTimes[0];
+      maxTime = sortedTimes[sortedTimes.length - 1];
     }
     
     const timeRange = maxTime - minTime || 1;
 
     const minMaxBySymbol = new Map<string, { min: number; max: number }>();
     
-    if (this.state.normalize) {
-      // 정규화: 각 티커별로 min/max 계산 (0~100%)
+    if (this.state.normalize === 'rangeNormalize') {
+      // 범위 정규화: 현재 보이는 시간 범위(displayMinTime~displayMaxTime)의 데이터만 사용
+      // 확대하면 Y축이 변함
       dataBySymbol.forEach((points, symbol) => {
-        const closes = points.map(p => p.close);
+        // 현재 보이는 시간 범위의 데이터만 필터링
+        const visiblePoints = points.filter(p => 
+          p.time >= (displayMinTime ?? minTime) && 
+          p.time <= (displayMaxTime ?? maxTime)
+        );
+        
+        const closes = visiblePoints.map(p => p.close);
         if (closes.length > 0) {
           let min = Math.min(...closes);
           let max = Math.max(...closes);
@@ -676,23 +908,62 @@ export class OverlayStockChart {
           // config에서 yMin/yMax 설정이 있으면 적용
           if (this.config.yMin !== undefined) {
             const configMin = typeof this.config.yMin === 'function' ? this.config.yMin(chartKey) : this.config.yMin;
-            min = configMin;
+            if (configMin !== undefined) {
+              min = configMin;
+            }
           }
           if (this.config.yMax !== undefined) {
             const configMax = typeof this.config.yMax === 'function' ? this.config.yMax(chartKey) : this.config.yMax;
-            max = configMax;
+            if (configMax !== undefined) {
+              max = configMax;
+            }
           }
           
           minMaxBySymbol.set(symbol, { min, max });
         }
       });
+    } else if (this.state.normalize === 'normalize') {
+      // 전체 데이터 정규화: 캐시된 전체 데이터의 min/max 사용
+      // 확대해도 Y축이 고정됨
+      const chartMinMaxCache = this.globalMinMaxCache.get(chartKey);
+      if (chartMinMaxCache) {
+        dataBySymbol.forEach((points, symbol) => {
+          const cachedMinMax = chartMinMaxCache.get(symbol);
+          if (cachedMinMax) {
+            let min = cachedMinMax.min;
+            let max = cachedMinMax.max;
+            
+            // config에서 yMin/yMax 설정이 있으면 적용
+            if (this.config.yMin !== undefined) {
+              const configMin = typeof this.config.yMin === 'function' ? this.config.yMin(chartKey) : this.config.yMin;
+              if (configMin !== undefined) {
+                min = configMin;
+              }
+            }
+            if (this.config.yMax !== undefined) {
+              const configMax = typeof this.config.yMax === 'function' ? this.config.yMax(chartKey) : this.config.yMax;
+              if (configMax !== undefined) {
+                max = configMax;
+              }
+            }
+            
+            minMaxBySymbol.set(symbol, { min, max });
+          }
+        });
+      }
     } else {
-      // 정규화 안함: 모든 티커의 전체 min/max 사용
+      // 정규화 안함 ('none'): 현재 보이는 시간 범위의 실제 값 범위 사용
       let globalMin = Infinity;
       let globalMax = -Infinity;
       
       dataBySymbol.forEach((points) => {
-        const closes = points.map(p => p.close);
+        // 현재 보이는 시간 범위의 데이터만 필터링
+        const visiblePoints = points.filter(p => 
+          p.time >= (displayMinTime ?? minTime) && 
+          p.time <= (displayMaxTime ?? maxTime)
+        );
+        
+        const closes = visiblePoints.map(p => p.close);
         if (closes.length > 0) {
           globalMin = Math.min(globalMin, ...closes);
           globalMax = Math.max(globalMax, ...closes);
@@ -702,11 +973,15 @@ export class OverlayStockChart {
       // config에서 yMin/yMax 설정이 있으면 적용
       if (this.config.yMin !== undefined) {
         const configMin = typeof this.config.yMin === 'function' ? this.config.yMin(chartKey) : this.config.yMin;
-        globalMin = configMin;
+        if (configMin !== undefined) {
+          globalMin = configMin;
+        }
       }
       if (this.config.yMax !== undefined) {
         const configMax = typeof this.config.yMax === 'function' ? this.config.yMax(chartKey) : this.config.yMax;
-        globalMax = configMax;
+        if (configMax !== undefined) {
+          globalMax = configMax;
+        }
       }
       
       // 모든 티커에 동일한 min/max 적용
@@ -723,7 +998,7 @@ export class OverlayStockChart {
     const graphHeight = chartHeight;
 
     // 배경
-    this.ctx.fillStyle = '#FFFFFF';
+    this.ctx.fillStyle = this.config.backgroundColor || '#FFFFFF';
     this.ctx.fillRect(0, chartTopY, this.width, chartHeight);
 
     // 그리드
@@ -735,7 +1010,7 @@ export class OverlayStockChart {
     this.drawYAxis(graphTop, graphBottom);
 
     // Y축 레이블
-    if (!hideValues) {
+    if (!hideValues && !this.config.hideYAxisLabels) {
       // 전체 min/max 계산 (비정규화 모드용)
       let globalMin = Infinity;
       let globalMax = -Infinity;
@@ -747,9 +1022,11 @@ export class OverlayStockChart {
     }
 
     // Y축 타이틀
-    const labelFormatted = this.config.labelFormat ? this.config.labelFormat(chartKey) : chartKey;
-    const yAxisLabel = this.applyFormatResult(labelFormatted);
-    this.drawYAxisTitle(yAxisLabel, graphTop, graphBottom);
+    if (!this.config.hideYAxisLabels) {
+      const labelFormatted = this.config.labelFormat ? this.config.labelFormat(chartKey) : chartKey;
+      const yAxisLabel = this.applyFormatResult(labelFormatted);
+      this.drawYAxisTitle(yAxisLabel, graphTop, graphBottom);
+    }
 
     // 심볼별 렌더링
     dataBySymbol.forEach((points, symbol) => {
@@ -785,58 +1062,101 @@ export class OverlayStockChart {
     });
 
     // 평균선들 - 전역 showAverage와 티커별 movingAverageXwidth 모두 지원
-    // 1. 전역 showAverage 그리기 (모든 티커의 평균)
+    // 1. 전역 평균선/이동평균선 그리기 (평균선 체크박스가 켜져있을 때만)
     if (showAverage && showAverage.length > 0 && dataBySymbol.size > 0) {
-      showAverage.forEach(avgConfig => {
-        // visible이 false면 그리지 않음
-        if (avgConfig.visible === false) {
-          return;
-        }
-        this.drawAverageLine(dataBySymbol, minMaxBySymbol, sortedTimes, minTime, maxTime, graphTop, graphHeight, lineMode, avgConfig, chartKey);
-      });
+      // 평균선 체크박스가 켜져있는지 확인
+      const hasAverageEnabled = showAverage.some(cfg => cfg.type === 'average' && cfg.visible !== false);
+      
+      if (hasAverageEnabled) {
+        // 평균선이 켜져있으면 전역 평균선과 이동평균선 모두 그림
+        showAverage.forEach(avgConfig => {
+          // visible이 false면 그리지 않음
+          if (avgConfig.visible === false) {
+            return;
+          }
+          this.drawAverageLine(dataBySymbol, minMaxBySymbol, sortedTimes, minTime, maxTime, graphTop, graphHeight, lineMode, avgConfig, chartKey);
+        });
+      }
     }
     
     // 2. 티커별 movingAverageXwidth 그리기 (각 티커마다 독립적)
+    // tickerMovingAverages에 있는 xWidth만 그림
+    console.log(`[drawChartKey] tickerMovingAverages size: ${tickerMovingAverages.size}`);
+    
     if (tickerMovingAverages.size > 0) {
-      tickerMovingAverages.forEach((xWidths, symbol) => {
-        // 해당 티커의 데이터만 사용
-        const tickerDataBySymbol = new Map<string, { time: number; close: number }[]>();
-        const tickerData = dataBySymbol.get(symbol);
-        if (!tickerData) {
-          return;
-        }
-        
-        tickerDataBySymbol.set(symbol, tickerData.map(p => ({ time: p.time, close: p.close })));
-        
-        const tickerMinMax = minMaxBySymbol.get(symbol);
-        if (!tickerMinMax) {
-          return;
-        }
-        
-        const tickerMinMaxBySymbol = new Map<string, { min: number; max: number }>();
-        tickerMinMaxBySymbol.set(symbol, tickerMinMax);
-        
-        // 티커 색상 가져오기
-        const tickerColor = this.getTickerColor(symbol);
-        
-        // 각 xWidth에 대해 이동평균선 그리기 (progressive opacity)
-        const totalLines = xWidths.length;
-        xWidths.forEach((xWidth, index) => {
-          // 첫 번째 선은 불투명(1.0), 마지막 선은 투명(0.3)
-          const opacity = totalLines === 1 ? 1.0 : 1.0 - (index / (totalLines - 1)) * 0.7;
-          
-          const avgConfig: ShowAverageItem = {
-            type: 'moving',
-            xWidth,
-            label: `${symbol}-MA${Math.round(xWidth / (60 * 1000 * 60 * 24))}`,
-            color: tickerColor, // 티커 색상 사용
-            visible: true,
-            opacity // opacity 추가
-          };
-          this.drawAverageLine(tickerDataBySymbol, tickerMinMaxBySymbol, sortedTimes, minTime, maxTime, graphTop, graphHeight, lineMode, avgConfig, chartKey);
+      // showAverage에서 활성화된 xWidth 목록 추출 (평균선 체크박스가 켜져있을 때만)
+      const activeXWidths = new Set<number>();
+      
+      if (showAverage && showAverage.length > 0) {
+        showAverage.forEach(avgConfig => {
+          if (avgConfig.type === 'moving' && avgConfig.visible !== false) {
+            activeXWidths.add(avgConfig.xWidth);
+          }
         });
-
+      }
+      
+      // tickerMovingAverages의 모든 xWidth를 activeXWidths에 추가
+      tickerMovingAverages.forEach((xWidths) => {
+        xWidths.forEach(xWidth => {
+          activeXWidths.add(xWidth);
+        });
       });
+      
+      console.log(`[drawChartKey] activeXWidths:`, Array.from(activeXWidths));
+      
+      // 활성화된 xWidth가 있을 때만 그림
+      if (activeXWidths.size > 0) {
+        console.log(`[drawChartKey] Drawing ticker moving averages...`);
+        
+        tickerMovingAverages.forEach((xWidths, symbol) => {
+          console.log(`[drawChartKey] Processing ticker: ${symbol}, xWidths:`, xWidths);
+          
+          // 해당 티커의 데이터만 사용
+          const tickerDataBySymbol = new Map<string, { time: number; close: number }[]>();
+          const tickerData = dataBySymbol.get(symbol);
+          if (!tickerData) {
+            console.log(`[drawChartKey] No data for ${symbol}`);
+            return;
+          }
+          
+          tickerDataBySymbol.set(symbol, tickerData.map(p => ({ time: p.time, close: p.close })));
+          
+          const tickerMinMax = minMaxBySymbol.get(symbol);
+          if (!tickerMinMax) {
+            console.log(`[drawChartKey] No minMax for ${symbol}`);
+            return;
+          }
+          
+          const tickerMinMaxBySymbol = new Map<string, { min: number; max: number }>();
+          tickerMinMaxBySymbol.set(symbol, tickerMinMax);
+          
+          // 티커 색상 가져오기
+          const tickerColor = this.getTickerColor(symbol);
+          
+          // activeXWidths에 포함된 xWidth만 그리기
+          const filteredXWidths = xWidths.filter(xWidth => activeXWidths.has(xWidth));
+          const totalLines = filteredXWidths.length;
+          
+          console.log(`[drawChartKey] ${symbol} filteredXWidths:`, filteredXWidths);
+          
+          filteredXWidths.forEach((xWidth, index) => {
+            // 첫 번째 선은 불투명(1.0), 마지막 선은 투명(0.3)
+            const opacity = totalLines === 1 ? 1.0 : 1.0 - (index / (totalLines - 1)) * 0.7;
+            
+            console.log(`[drawChartKey] Drawing MA for ${symbol}, xWidth: ${xWidth}, opacity: ${opacity}`);
+            
+            const avgConfig: ShowAverageItem = {
+              type: 'moving',
+              xWidth,
+              label: `${symbol}-MA${Math.round(xWidth / (60 * 1000 * 60 * 24))}`,
+              color: tickerColor, // 티커 색상 사용
+              visible: true,
+              opacity // opacity 추가
+            };
+            this.drawAverageLine(tickerDataBySymbol, tickerMinMaxBySymbol, sortedTimes, minTime, maxTime, graphTop, graphHeight, lineMode, avgConfig, chartKey, symbol);
+          });
+        });
+      }
     }
 
     return { dataBySymbol, minMaxBySymbol, sortedTimes };
@@ -869,7 +1189,7 @@ export class OverlayStockChart {
   }
 
   private drawYAxis(topY: number, bottomY: number) {
-    this.ctx.strokeStyle = '#000000';
+    this.ctx.strokeStyle = this.getAxisColor();
     this.ctx.lineWidth = 2;
     this.ctx.beginPath();
     this.ctx.moveTo(this.paddingLeft, topY);
@@ -878,27 +1198,37 @@ export class OverlayStockChart {
   }
 
   private drawYAxisLabels(topY: number, height: number, bottomY: number, minValue?: number, maxValue?: number, chartKey?: string) {
-    this.ctx.fillStyle = '#000000';
+    const yLabelCount = this.config.yLabelCount ?? 6;
+    
+    // yLabelCount가 0이면 레이블을 그리지 않음
+    if (yLabelCount === 0) {
+      return;
+    }
+    
+    this.ctx.fillStyle = this.getTextColor();
     this.ctx.font = '12px Arial';
     this.ctx.textAlign = 'right';
     this.ctx.textBaseline = 'middle';
-    this.ctx.strokeStyle = '#000000';
+    this.ctx.strokeStyle = this.getAxisColor();
     this.ctx.lineWidth = 1;
     
-    const totalLabels = 6; // 0부터 5까지 총 6개
+    const labelCount = Math.max(2, yLabelCount); // 최소 2개 (시작과 끝)
+    const totalLabels = labelCount;
+    const step = 100 / (labelCount - 1); // 0부터 100까지를 labelCount-1 구간으로 나눔
     
-    for (let i = 0; i <= 5; i++) {
-      const normalizedValue = (100 - i * 20) / 100;
-      const scaledValue = this.chartMargin + normalizedValue * (1 - this.chartMargin * 2);
+    for (let i = 0; i < labelCount; i++) {
+      const normalizedValue = (100 - i * step) / 100;
+      const totalMargin = this.chartMarginTop + this.chartMarginBottom;
+      const scaledValue = this.chartMarginBottom + normalizedValue * (1 - totalMargin);
       const y = bottomY - scaledValue * height;
       
       let labelText: string;
-      if (this.state.normalize || minValue === undefined || maxValue === undefined) {
-        // 정규화 모드: % 표시
-        const value = 100 - i * 20;
-        labelText = `${value}%`;
+      if (this.state.normalize !== 'none' || minValue === undefined || maxValue === undefined) {
+        // 정규화 모드 (rangeNormalize 또는 normalize): % 표시
+        const value = 100 - i * step;
+        labelText = `${Math.round(value)}%`;
       } else {
-        // 비정규화 모드: 실제 값 표시
+        // 비정규화 모드 (none): 실제 값 표시
         const actualValue = minValue + normalizedValue * (maxValue - minValue);
         const formatted = this.config.yFormat ? this.config.yFormat(actualValue, i, totalLabels, chartKey) : actualValue.toLocaleString(undefined, { maximumFractionDigits: 2 });
         labelText = this.applyFormatResult(formatted);
@@ -920,7 +1250,7 @@ export class OverlayStockChart {
     const titleX = Math.min(this.paddingLeft / 2, 8);
     this.ctx.translate(titleX, labelY);
     this.ctx.rotate(-Math.PI / 2);
-    this.ctx.fillStyle = '#000000';
+    this.ctx.fillStyle = this.getTextColor();
     this.ctx.font = 'bold 14px Arial';
     this.ctx.textAlign = 'center';
     this.ctx.textBaseline = 'middle';
@@ -1173,17 +1503,35 @@ export class OverlayStockChart {
     height: number,
     lineMode: string,
     averageConfig: ShowAverageItem,
-    chartKey: string
+    chartKey: string,
+    filterSymbol?: string // 특정 티커만 처리 (티커별 이동평균선용)
   ) {
     
-    // 캐시 키 생성 (visibleTickers, chartKey, averageConfig로 구분)
+    // 캐시 키 생성 (visibleTickers, chartKey, averageConfig, normalize 모드로 구분)
     const visibleTickersKey = Array.from(this.state.visibleTickers).sort().join(',');
-    const cacheKey = `${chartKey}-${averageConfig.type}-${averageConfig.type === 'moving' ? averageConfig.xWidth : 'full'}-${averageConfig.label}-${visibleTickersKey}`;
+    
+    // 범위 정규화 모드에서는 현재 화면 범위도 캐시 키에 포함
+    let cacheKey = `${chartKey}-${averageConfig.type}-${averageConfig.type === 'moving' ? averageConfig.xWidth : 'full'}-${averageConfig.label}-${visibleTickersKey}-${this.state.normalize}`;
+    
+    if (this.state.normalize === 'rangeNormalize') {
+      // 범위 정규화 모드: 현재 화면 범위를 캐시 키에 포함
+      cacheKey += `-${minTime}-${maxTime}`;
+    }
     
     // 평균선 계산을 위해 원본 데이터(this.originalDataMap) 사용 - 확대와 무관하게 전체 데이터 사용
     const fullDataBySymbol = new Map<string, { time: number; close: number }[]>();
     
+    // 정규화를 위한 min/max 결정
+    // rangeNormalize: 현재 화면 범위의 min/max 사용
+    // normalize: 전체 데이터의 min/max 사용 (globalMinMaxCache)
+    const normalizationMinMaxBySymbol = new Map<string, { min: number; max: number }>();
+    
     this.originalDataMap.forEach((value, symbol) => {
+      // filterSymbol이 있으면 해당 티커만 처리
+      if (filterSymbol && symbol !== filterSymbol) {
+        return;
+      }
+      
       // visibleTickers에 있는 티커만 사용
       if (!this.state.visibleTickers.has(symbol)) return;
       
@@ -1205,8 +1553,41 @@ export class OverlayStockChart {
       
       if (points.length > 0) {
         fullDataBySymbol.set(symbol, points);
+        
+        // 정규화용 min/max 설정
+        if (this.state.normalize === 'normalize') {
+          // 전체 정규화: globalMinMaxCache 사용
+          const globalMinMax = this.globalMinMaxCache.get(chartKey)?.get(symbol);
+          if (globalMinMax) {
+            normalizationMinMaxBySymbol.set(symbol, globalMinMax);
+          }
+        } else if (this.state.normalize === 'rangeNormalize') {
+          // 범위 정규화: 현재 화면 범위의 min/max 사용
+          const rangeMinMax = minMaxBySymbol.get(symbol);
+          if (rangeMinMax) {
+            normalizationMinMaxBySymbol.set(symbol, rangeMinMax);
+          }
+        } else {
+          // 정규화 안함: 전체 데이터의 min/max 사용
+          const globalMinMax = this.globalMinMaxCache.get(chartKey)?.get(symbol);
+          if (globalMinMax) {
+            normalizationMinMaxBySymbol.set(symbol, globalMinMax);
+          }
+        }
       }
     });
+    
+    // 디버깅: normalizationMinMaxBySymbol 확인
+    console.log(`[drawAverageLine] chartKey: ${chartKey}, normalize: ${this.state.normalize}`);
+    console.log(`[drawAverageLine] fullDataBySymbol size: ${fullDataBySymbol.size}`);
+    console.log(`[drawAverageLine] normalizationMinMaxBySymbol size: ${normalizationMinMaxBySymbol.size}`);
+    
+    if (normalizationMinMaxBySymbol.size === 0) {
+      console.warn(`[drawAverageLine] normalizationMinMaxBySymbol is empty for chartKey: ${chartKey}, normalize: ${this.state.normalize}`);
+      console.warn(`globalMinMaxCache has chartKey:`, this.globalMinMaxCache.has(chartKey));
+      console.warn(`minMaxBySymbol size:`, minMaxBySymbol.size);
+      return; // 데이터가 없으면 그리지 않음
+    }
     
     // 전체 데이터의 모든 시간 포인트 수집
     const allTimesSet = new Set<number>();
@@ -1226,11 +1607,14 @@ export class OverlayStockChart {
       } else {
         // 전체 평균선: 모든 티커의 평균을 하나의 선으로
         
-        // 전체 시간에 대해 평균 계산 (실제 값으로)
+        // 전체 시간에 대해 평균 계산
         allTimes.forEach(time => {
-          const closeValues: number[] = [];
+          const normalizedValues: number[] = [];
           
           fullDataBySymbol.forEach((sortedPoints, symbol) => {
+            const minMax = normalizationMinMaxBySymbol.get(symbol);
+            if (!minMax) return;
+            
             let closeValue: number | null = null;
             const exactPoint = sortedPoints.find(p => p.time === time);
             
@@ -1260,12 +1644,19 @@ export class OverlayStockChart {
           }
           
           if (closeValue !== null) {
-            closeValues.push(closeValue);
+            // 정규화 모드에서는 각 심볼의 값을 정규화한 후 평균
+            if (this.state.normalize === 'rangeNormalize' || this.state.normalize === 'normalize') {
+              const normalizedValue = ((closeValue - minMax.min) / (minMax.max - minMax.min || 1)) * 100;
+              normalizedValues.push(normalizedValue);
+            } else {
+              // 비정규화 모드에서는 원본 값 사용
+              normalizedValues.push(closeValue);
+            }
           }
         });
         
-        if (closeValues.length > 0) {
-          const avgValue = closeValues.reduce((sum, v) => sum + v, 0) / closeValues.length;
+        if (normalizedValues.length > 0) {
+          const avgValue = normalizedValues.reduce((sum, v) => sum + v, 0) / normalizedValues.length;
           avgPoints.push({ time, avgValue });
         }
       });
@@ -1274,16 +1665,11 @@ export class OverlayStockChart {
         this.averageLineCache.set(cacheKey, avgPoints);
       }
       
-      // 평균값의 min/max 계산
-      const avgValues = avgPoints.map(p => p.avgValue);
-      const minAvgValue = Math.min(...avgValues);
-      const maxAvgValue = Math.max(...avgValues);
-      
       // Y 좌표로 변환
       const avgPointsWithY = avgPoints.map(p => ({
         time: p.time,
-        avgY: this.state.normalize 
-          ? this.getY(p.avgValue, minAvgValue, maxAvgValue, topY, height)
+        avgY: (this.state.normalize === 'rangeNormalize' || this.state.normalize === 'normalize')
+          ? this.getY(p.avgValue, 0, 100, topY, height) // 정규화 모드: 0-100% 범위
           : (() => {
               // 비정규화 모드: 전체 데이터의 min/max 사용
               let globalMin = Infinity;
@@ -1332,12 +1718,9 @@ export class OverlayStockChart {
         // Y 좌표 계산 (정규화 고려)
         cachedAvgValues.forEach(item => {
           let yCoord: number;
-          if (this.state.normalize) {
-            // 정규화 모드: 전체 평균값의 min/max 계산
-            const allAvgValues = cachedAvgValues.map(v => v.avgValue);
-            const minAvg = Math.min(...allAvgValues);
-            const maxAvg = Math.max(...allAvgValues);
-            yCoord = this.getY(item.avgValue, minAvg, maxAvg, topY, height);
+          if (this.state.normalize === 'rangeNormalize' || this.state.normalize === 'normalize') {
+            // 정규화 모드: 0-100% 범위
+            yCoord = this.getY(item.avgValue, 0, 100, topY, height);
           } else {
             // 비정규화 모드: 전체 데이터의 min/max 사용
             let globalMin = Infinity;
@@ -1359,10 +1742,10 @@ export class OverlayStockChart {
         const avgValues: { time: number; avgValue: number }[] = [];
         
         allTimes.forEach(time => {
-        const yValues: number[] = [];
+        const normalizedValues: number[] = [];
         
         fullDataBySymbol.forEach((sortedPoints, symbol) => {
-          const minMax = minMaxBySymbol.get(symbol);
+          const minMax = normalizationMinMaxBySymbol.get(symbol);
           if (!minMax) return;
           
           let closeValue: number | null = null;
@@ -1394,12 +1777,19 @@ export class OverlayStockChart {
           }
           
           if (closeValue !== null) {
-            yValues.push(closeValue);
+            // 정규화 모드에서는 각 심볼의 값을 정규화한 후 평균
+            if (this.state.normalize === 'rangeNormalize' || this.state.normalize === 'normalize') {
+              const normalizedValue = ((closeValue - minMax.min) / (minMax.max - minMax.min || 1)) * 100;
+              normalizedValues.push(normalizedValue);
+            } else {
+              // 비정규화 모드에서는 원본 값 사용
+              normalizedValues.push(closeValue);
+            }
           }
         });
         
-        if (yValues.length > 0) {
-          const avgValue = yValues.reduce((sum, y) => sum + y, 0) / yValues.length;
+        if (normalizedValues.length > 0) {
+          const avgValue = normalizedValues.reduce((sum, y) => sum + y, 0) / normalizedValues.length;
           avgValues.push({ time, avgValue });
         }
       });
@@ -1441,12 +1831,9 @@ export class OverlayStockChart {
         // Y 좌표로 변환
         movingAvgPoints = movingAvgPointsTemp.map(item => {
           let yCoord: number;
-          if (this.state.normalize) {
-            // 정규화 모드: 전체 평균값의 min/max 계산
-            const allAvgValues = avgValues.map(v => v.avgValue);
-            const minAvg = Math.min(...allAvgValues);
-            const maxAvg = Math.max(...allAvgValues);
-            yCoord = this.getY(item.avgY, minAvg, maxAvg, topY, height);
+          if (this.state.normalize === 'rangeNormalize' || this.state.normalize === 'normalize') {
+            // 정규화 모드: 0-100% 범위
+            yCoord = this.getY(item.avgY, 0, 100, topY, height);
           } else {
             // 비정규화 모드: 전체 데이터의 min/max 사용
             let globalMin = Infinity;
@@ -1610,7 +1997,7 @@ export class OverlayStockChart {
       );
       
       // 텍스트 그리기
-      this.ctx.fillStyle = isVisible ? '#000000' : '#999999';
+      this.ctx.fillStyle = isVisible ? this.getTextColor() : (this.detectDarkMode(this.config.theme) ? '#666666' : '#999999');
       this.ctx.fillText(symbol, itemX + legendBoxSize + textMargin, currentY);
       this.ctx.globalAlpha = 1.0;
       
@@ -1664,7 +2051,7 @@ export class OverlayStockChart {
         );
         
         // 텍스트 그리기
-        this.ctx.fillStyle = isVisible ? '#000000' : '#999999';
+        this.ctx.fillStyle = isVisible ? this.getTextColor() : (this.detectDarkMode(this.config.theme) ? '#666666' : '#999999');
         this.ctx.fillText(label, itemX + legendBoxSize + textMargin, currentY);
         this.ctx.globalAlpha = 1.0;
         
@@ -1868,7 +2255,7 @@ export class OverlayStockChart {
         }
       }
       if (!eventColor) {
-        eventColor = 'rgba(255, 102, 0, 0.2)'; // 기본 색상 (반투명)
+        eventColor = this.getDefaultEventColor(true); // 기본 색상 (반투명)
       }
       
       // XY 범위 이벤트 (시간 + 가격 범위)
@@ -1944,7 +2331,7 @@ export class OverlayStockChart {
               let normalizedStartY = startY;
               let normalizedEndY = endY;
               
-              if (this.state.normalize) {
+              if (this.state.normalize === 'rangeNormalize' || this.state.normalize === 'normalize') {
                 // startY, endY를 globalMin~globalMax 범위에서 0~100 범위로 변환
                 normalizedStartY = ((startY - globalMin) / (globalMax - globalMin)) * 100;
                 normalizedEndY = ((endY - globalMin) / (globalMax - globalMin)) * 100;
@@ -2150,7 +2537,7 @@ export class OverlayStockChart {
             let normalizedStartY = startY;
             let normalizedEndY = endY;
             
-            if (this.state.normalize) {
+            if (this.state.normalize === 'rangeNormalize' || this.state.normalize === 'normalize') {
               // startY, endY를 globalMin~globalMax 범위에서 0~100 범위로 변환
               normalizedStartY = ((startY - globalMin) / (globalMax - globalMin)) * 100;
               normalizedEndY = ((endY - globalMin) / (globalMax - globalMin)) * 100;
@@ -2259,7 +2646,7 @@ export class OverlayStockChart {
         }
       }
       if (!eventColor) {
-        eventColor = '#FF6600';
+        eventColor = this.getDefaultEventColor();
       }
       
       const chartKey = event.chartKey || this.state.visibleChartKeys[0];
@@ -2326,7 +2713,7 @@ export class OverlayStockChart {
       const originalMin = globalMin;
       const originalMax = globalMax;
       
-      if (this.state.normalize) {
+      if (this.state.normalize === 'rangeNormalize' || this.state.normalize === 'normalize') {
         globalMin = 0;
         globalMax = 100;
       }
@@ -2354,7 +2741,7 @@ export class OverlayStockChart {
         
         // 정규화 모드에서는 Y 값을 변환
         let normalizedY = point.y;
-        if (this.state.normalize) {
+        if (this.state.normalize === 'rangeNormalize' || this.state.normalize === 'normalize') {
           normalizedY = ((point.y - originalMin) / (originalMax - originalMin)) * 100;
         }
         
@@ -2370,7 +2757,7 @@ export class OverlayStockChart {
             
             // 정규화 모드에서는 Y 값을 변환
             let prevNormalizedY = prevPoint.y;
-            if (this.state.normalize) {
+            if (this.state.normalize === 'rangeNormalize' || this.state.normalize === 'normalize') {
               prevNormalizedY = ((prevPoint.y - originalMin) / (originalMax - originalMin)) * 100;
             }
             
@@ -2409,7 +2796,7 @@ export class OverlayStockChart {
           
           // 정규화 모드에서는 Y 값을 변환
           let normalizedY = point.y;
-          if (this.state.normalize) {
+          if (this.state.normalize === 'rangeNormalize' || this.state.normalize === 'normalize') {
             normalizedY = ((point.y - originalMin) / (originalMax - originalMin)) * 100;
           }
           
@@ -2452,7 +2839,7 @@ export class OverlayStockChart {
         
         // 정규화 모드에서는 Y 값을 변환
         let normalizedY = point.y;
-        if (this.state.normalize) {
+        if (this.state.normalize === 'rangeNormalize' || this.state.normalize === 'normalize') {
           normalizedY = ((point.y - originalMin) / (originalMax - originalMin)) * 100;
         }
         
@@ -2556,7 +2943,7 @@ export class OverlayStockChart {
         
         // 정규화 모드에서는 Y 값을 변환
         let normalizedY = firstPoint.y;
-        if (this.state.normalize) {
+        if (this.state.normalize === 'rangeNormalize' || this.state.normalize === 'normalize') {
           normalizedY = ((firstPoint.y - originalMin) / (originalMax - originalMin)) * 100;
         }
         
@@ -2602,7 +2989,7 @@ export class OverlayStockChart {
         
         // 정규화 모드에서는 Y 값을 변환
         let normalizedY = firstPoint.y;
-        if (this.state.normalize) {
+        if (this.state.normalize === 'rangeNormalize' || this.state.normalize === 'normalize') {
           normalizedY = ((firstPoint.y - originalMin) / (originalMax - originalMin)) * 100;
         }
         
@@ -2635,7 +3022,7 @@ export class OverlayStockChart {
         }
       }
       if (!eventColor) {
-        eventColor = '#FF6600'; // 최종 기본 색상
+        eventColor = this.getDefaultEventColor(); // 최종 기본 색상
       }
 
       // X 값 계산
@@ -2819,7 +3206,7 @@ export class OverlayStockChart {
         }
       }
       if (!eventColor) {
-        eventColor = '#FF6600';
+        eventColor = this.getDefaultEventColor();
       }
 
       const yValue = event.y;
@@ -2882,7 +3269,7 @@ export class OverlayStockChart {
           if (globalMin !== Infinity && globalMax !== -Infinity) {
             // 정규화 모드에서는 Y 값을 0-100% 범위로 변환
             let normalizedYValue = yValue;
-            if (this.state.normalize) {
+            if (this.state.normalize === 'rangeNormalize' || this.state.normalize === 'normalize') {
               // yValue를 globalMin~globalMax 범위에서 0~100 범위로 변환
               normalizedYValue = ((yValue - globalMin) / (globalMax - globalMin)) * 100;
               // 변환된 값을 다시 0~100 범위의 min/max로 사용
@@ -2969,7 +3356,7 @@ export class OverlayStockChart {
         }
       }
       if (!eventColor) {
-        eventColor = '#FF6600';
+        eventColor = this.getDefaultEventColor();
       }
 
       const xTime = event.x;
@@ -3386,13 +3773,14 @@ export class OverlayStockChart {
     }
     
     // 툴팁 배경
-    this.ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
+    const isDarkMode = this.detectDarkMode(this.config.theme);
+    this.ctx.fillStyle = isDarkMode ? 'rgba(50, 50, 50, 0.95)' : 'rgba(0, 0, 0, 0.85)';
     this.ctx.beginPath();
     this.ctx.roundRect(tooltipX, tooltipY, tooltipWidth, tooltipHeight, 4);
     this.ctx.fill();
     
     // 메인 텍스트
-    this.ctx.fillStyle = '#FFFFFF';
+    this.ctx.fillStyle = isDarkMode ? '#FFFFFF' : '#FFFFFF';
     this.ctx.font = 'bold 11px Arial';
     this.ctx.textAlign = 'left';
     this.ctx.textBaseline = 'top';
@@ -3401,7 +3789,7 @@ export class OverlayStockChart {
     // 서브 텍스트
     if (subText) {
       this.ctx.font = '10px Arial';
-      this.ctx.fillStyle = '#AAAAAA';
+      this.ctx.fillStyle = isDarkMode ? '#CCCCCC' : '#AAAAAA';
       this.ctx.fillText(subText, tooltipX + 8, tooltipY + 20);
     }
     
@@ -3417,18 +3805,15 @@ export class OverlayStockChart {
   ) {
     if (sortedTimes.length === 0) return;
 
+    // X축 레이블 영역 배경색 그리기
+    // X축 레이블 영역 배경색은 전체 배경색으로 이미 채워져 있음 (별도 그리기 불필요)
+
     const minTime = displayMinTime ?? sortedTimes[0];
     const maxTime = displayMaxTime ?? sortedTimes[sortedTimes.length - 1];
 
     const baselineY = area.y;
-    this.ctx.strokeStyle = '#000000';
-    this.ctx.lineWidth = 1;
-    this.ctx.beginPath();
-    this.ctx.moveTo(area.x, baselineY);
-    this.ctx.lineTo(area.x + area.width, baselineY);
-    this.ctx.stroke();
-
-    this.ctx.fillStyle = '#000000';
+    
+    this.ctx.fillStyle = this.getTextColor();
     this.ctx.font = '12px Arial';
     
     const tickYStart = baselineY;
@@ -3454,17 +3839,35 @@ export class OverlayStockChart {
       }
     });
     
-    const maxLabels = 12;
-    const step = Math.max(1, Math.ceil(dayStartTimes.length / maxLabels));
+    if (dayStartTimes.length === 0) return;
     
-    // 실제로 그려질 레이블 개수 계산
+    const maxLabels = this.config.xLabelCount ?? 12;
+    
+    // 0이면 레이블을 그리지 않음
+    if (maxLabels === 0) return;
+    
+    // 실제로 그려질 레이블 선택 (정확히 maxLabels 개수만큼)
     const labelsToRender: number[] = [];
-    for (let i = 0; i < dayStartTimes.length; i += step) {
-      const time = dayStartTimes[i];
-      const x = this.getX(time, minTime, maxTime);
-      if (x >= this.padding && x <= this.width - this.padding) {
-        labelsToRender.push(time);
+    
+    if (dayStartTimes.length <= maxLabels) {
+      // 데이터가 적으면 모두 표시
+      labelsToRender.push(...dayStartTimes);
+    } else {
+      // 데이터가 많으면 균등하게 분배
+      // 첫 번째와 마지막은 무조건 포함, 나머지는 균등 간격으로
+      labelsToRender.push(dayStartTimes[0]); // 첫 번째
+      
+      // 중간 레이블들 (maxLabels - 2개)
+      const middleCount = maxLabels - 2;
+      if (middleCount > 0) {
+        const step = (dayStartTimes.length - 1) / (maxLabels - 1);
+        for (let i = 1; i < maxLabels - 1; i++) {
+          const index = Math.round(i * step);
+          labelsToRender.push(dayStartTimes[index]);
+        }
       }
+      
+      labelsToRender.push(dayStartTimes[dayStartTimes.length - 1]); // 마지막
     }
     
     const totalLabels = labelsToRender.length;
@@ -3650,6 +4053,7 @@ export class OverlayStockChart {
           : currentTime.toString());
       const dateStr = this.applyFormatResult(formatted);
       
+      this.ctx.fillStyle = this.getTextColor();
       this.ctx.fillText(dateStr, mouseX, this.height - this.padding + 35);
     }
 
@@ -3659,9 +4063,10 @@ export class OverlayStockChart {
     for (const area of chartAreas) {
       if (mouseY >= area.y && mouseY <= area.y + area.height) {
         const scaledValue = 1 - (mouseY - area.y) / area.height;
-        const normalizedValue = (scaledValue - this.chartMargin) / (1 - this.chartMargin * 2);
+        const totalMargin = this.chartMarginTop + this.chartMarginBottom;
+        const normalizedValue = (scaledValue - this.chartMarginBottom) / (1 - totalMargin);
         
-        if (this.state.normalize) {
+        if (this.state.normalize === 'rangeNormalize' || this.state.normalize === 'normalize') {
           // 정규화 모드: 퍼센트 표시
           const valuePercent = normalizedValue * 100;
           const formatted = this.config.crosshairYFormat
@@ -3700,7 +4105,7 @@ export class OverlayStockChart {
     }
     
     if (valueStr) {
-      this.ctx.fillStyle = '#333333';
+      this.ctx.fillStyle = this.getTextColor();
       this.ctx.font = 'bold 12px Arial';
       this.ctx.textAlign = 'left';
       this.ctx.textBaseline = 'middle';
@@ -3723,8 +4128,8 @@ export class OverlayStockChart {
     const maxTime = displayMaxTime ?? sortedTimes[sortedTimes.length - 1];
 
     const pointRadius = 3;
-    const clipLeft = this.padding;
-    const clipRight = this.width - this.padding;
+    const clipLeft = this.chartAreaLeft;
+    const clipRight = this.getChartRight();
 
     // 각 차트 레이아웃에 대해 포인트 그리기
     chartAreas.forEach(area => {
@@ -3735,17 +4140,30 @@ export class OverlayStockChart {
       // 각 티커별 min/max 계산
       const minMaxBySymbol = new Map<string, { min: number; max: number }>();
 
-      if (this.state.normalize) {
-        // 정규화: 각 티커별로 min/max 계산
+      if (this.state.normalize === 'rangeNormalize') {
+        // 범위 정규화: 현재 보이는 범위의 데이터로 min/max 계산
         this.dataMap.forEach((value, symbol) => {
           const chartDataObj = value.data[chartKey];
           if (chartDataObj) {
-            const values = chartDataObj.datas.map(d => d.y).filter(v => v !== null && v !== undefined);
-            if (values.length > 0) {
-              minMaxBySymbol.set(symbol, { min: Math.min(...values), max: Math.max(...values) });
+            const visibleValues = chartDataObj.datas
+              .filter(d => d.x >= minTime && d.x <= maxTime && d.y !== null && d.y !== undefined)
+              .map(d => d.y);
+            if (visibleValues.length > 0) {
+              minMaxBySymbol.set(symbol, { min: Math.min(...visibleValues), max: Math.max(...visibleValues) });
             }
           }
         });
+      } else if (this.state.normalize === 'normalize') {
+        // 전체 정규화: 캐시된 전체 데이터의 min/max 사용
+        const chartMinMaxCache = this.globalMinMaxCache.get(chartKey);
+        if (chartMinMaxCache) {
+          this.dataMap.forEach((value, symbol) => {
+            const cachedMinMax = chartMinMaxCache.get(symbol);
+            if (cachedMinMax) {
+              minMaxBySymbol.set(symbol, cachedMinMax);
+            }
+          });
+        }
       } else {
         // 정규화 안함: 모든 티커의 전체 min/max 사용
         let globalMin = Infinity, globalMax = -Infinity;
@@ -3787,7 +4205,8 @@ export class OverlayStockChart {
           if (x < clipLeft || x > clipRight) return;
           
           const normalizedValue = (d.y - minMax.min) / (minMax.max - minMax.min || 1);
-          const scaledValue = this.chartMargin + normalizedValue * (1 - this.chartMargin * 2);
+          const totalMargin = this.chartMarginTop + this.chartMarginBottom;
+          const scaledValue = this.chartMarginBottom + normalizedValue * (1 - totalMargin);
           const y = graphTop + (1 - scaledValue) * graphHeight;
 
           this.ctx.fillStyle = color;
@@ -3856,7 +4275,8 @@ export class OverlayStockChart {
       tooltipY = point.y + 10;
     }
     
-    this.ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
+    const isDarkMode = this.detectDarkMode(this.config.theme);
+    this.ctx.fillStyle = isDarkMode ? 'rgba(50, 50, 50, 0.95)' : 'rgba(0, 0, 0, 0.85)';
     this.ctx.beginPath();
     this.ctx.roundRect(tooltipX, tooltipY, tooltipWidth, tooltipHeight, 4);
     this.ctx.fill();
@@ -3866,7 +4286,7 @@ export class OverlayStockChart {
     this.ctx.textBaseline = 'top';
     this.ctx.fillText(text, tooltipX + 8, tooltipY + 6);
     this.ctx.font = '10px Arial';
-    this.ctx.fillStyle = '#AAAAAA';
+    this.ctx.fillStyle = isDarkMode ? '#CCCCCC' : '#AAAAAA';
     this.ctx.fillText(subText, tooltipX + 8, tooltipY + 20);
   }
 
@@ -3980,6 +4400,11 @@ export class OverlayStockChart {
   }
 
   private setupEventListeners() {
+    // 서버사이드 환경에서는 이벤트 리스너가 필요없으므로 스킵
+    if (typeof window === 'undefined' || !this.canvas.addEventListener) {
+      return;
+    }
+    
     // 마우스 이동
     this.canvas.addEventListener('mousemove', (e: MouseEvent) => {
       const rect = this.canvas.getBoundingClientRect();
@@ -4769,10 +5194,36 @@ export class OverlayStockChart {
   }
 
   render() {
-    const dpr = window.devicePixelRatio || 1;
-    const { width: cssW, height: cssH } = this.canvas.getBoundingClientRect();
+    const dpr = (typeof window !== 'undefined' && window.devicePixelRatio) || 1;
+    
+    // 서버사이드 환경에서는 canvas의 width/height 속성 사용
+    let cssW: number, cssH: number;
+    if (this.canvas.getBoundingClientRect) {
+      const rect = this.canvas.getBoundingClientRect();
+      cssW = rect.width;
+      cssH = rect.height;
+    } else {
+      // getBoundingClientRect가 없으면 canvas의 width/height 속성 사용
+      cssW = this.canvas.width;
+      cssH = this.canvas.height;
+    }
+    
     const width = Math.max(300, cssW);
     let totalHeight = Math.max(200, cssH);
+    
+    // 캔버스 크기 설정 전에 전체 배경색 먼저 그리기
+    this.canvas.width = width * dpr;
+    this.canvas.height = totalHeight * dpr;
+    this.width = width;
+    this.height = totalHeight;
+    this.canvasWidth = width;
+    this.canvasHeight = totalHeight;
+    this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    
+    // 전체 캔버스 배경색 그리기
+    const bgColor = this.config.backgroundColor || '#FFFFFF';
+    this.ctx.fillStyle = bgColor;
+    this.ctx.fillRect(0, 0, width, totalHeight);
     
     // 차트 영역 계산: 캔버스에서 padding을 뺀 영역
     // chartAreaLeft는 paddingLeft, chartAreaWidth는 전체에서 좌우 padding을 뺀 값
@@ -4800,14 +5251,6 @@ export class OverlayStockChart {
       });
     });
     
-    this.canvas.width = width * dpr;
-    this.canvas.height = totalHeight * dpr;
-    this.width = width;
-    this.height = totalHeight;
-    this.canvasWidth = width;
-    this.canvasHeight = totalHeight;
-    this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    
     // 활성화된 티커만 필터링
     let filteredDataMap = new Map<string, { color?: string; lineMode?: LineType; movingAverageXwidth?: number[]; data: { [key: string]: { datas: ChartData[]; events?: EventMarker[]; lineMode?: LineType } } }>();
     this.dataMap.forEach((value, symbol) => {
@@ -4816,9 +5259,11 @@ export class OverlayStockChart {
       }
     });
     
-    // 전체 시간 범위 계산
+    // 전체 시간 범위 계산 (실제 데이터에서 계산)
     let globalMinTime = Infinity;
     let globalMaxTime = -Infinity;
+    
+    // 실제 데이터에서 시간 범위 계산 (config.xMin/xMax는 여기서 사용하지 않음)
     filteredDataMap.forEach((value) => {
       Object.values(value.data).forEach(chartDataObj => {
         chartDataObj.datas.forEach(d => {
@@ -4828,15 +5273,48 @@ export class OverlayStockChart {
         });
       });
     });
+    
     const globalTimeRange = globalMaxTime - globalMinTime || 1;
     
     // rangeSlider로 시간 범위 계산
     let targetMinTime = globalMinTime;
     let targetMaxTime = globalMaxTime;
     
-    if (this.state.rangeMin > 0 || this.state.rangeMax < 100) {
-      targetMinTime = globalMinTime + globalTimeRange * this.state.rangeMin / 100;
-      targetMaxTime = globalMinTime + globalTimeRange * this.state.rangeMax / 100;
+    // 1. config.xMin/xMax 우선 적용 (초기 범위 설정)
+    if (this.config.xMin !== undefined || this.config.xMax !== undefined) {
+      if (this.config.xMin !== undefined) {
+        const configMin = typeof this.config.xMin === 'function' ? this.config.xMin('default') : this.config.xMin;
+        if (configMin !== undefined) {
+          targetMinTime = configMin;
+        }
+      }
+      if (this.config.xMax !== undefined) {
+        const configMax = typeof this.config.xMax === 'function' ? this.config.xMax('default') : this.config.xMax;
+        if (configMax !== undefined) {
+          targetMaxTime = configMax;
+        }
+      }
+    }
+    
+    // 2. rangeMin/rangeMax가 설정되어 있으면 추가 적용
+    if (this.state.rangeMin !== undefined && this.state.rangeMax !== undefined) {
+      // rangeMin/rangeMax가 timestamp인지 퍼센트인지 판단
+      // timestamp는 보통 매우 큰 값 (1000000000000 이상)
+      // 퍼센트는 0-100 범위
+      const isRangeTimestamp = this.state.rangeMin > 1000 || this.state.rangeMax > 1000;
+      
+      if (isRangeTimestamp) {
+        // timestamp로 직접 사용
+        targetMinTime = this.state.rangeMin;
+        targetMaxTime = this.state.rangeMax;
+      } else if (this.state.rangeMin > 0 || this.state.rangeMax < 100) {
+        // 퍼센트로 계산 (config.xMin/xMax 기준으로)
+        const baseMinTime = targetMinTime;
+        const baseMaxTime = targetMaxTime;
+        const baseTimeRange = baseMaxTime - baseMinTime || 1;
+        targetMinTime = baseMinTime + baseTimeRange * this.state.rangeMin / 100;
+        targetMaxTime = baseMinTime + baseTimeRange * this.state.rangeMax / 100;
+      }
     }
     
     // zoom 범위 적용
@@ -4849,7 +5327,15 @@ export class OverlayStockChart {
     }
     
     // 시간 기반으로 각 티커 필터링
-    if (this.state.rangeMin > 0 || this.state.rangeMax < 100 || this.zoomStart > 0 || this.zoomEnd < 100) {
+    const hasRangeSet = this.state.rangeMin !== undefined && this.state.rangeMax !== undefined;
+    const isRangeTimestamp = hasRangeSet && (this.state.rangeMin! > 1000 || this.state.rangeMax! > 1000);
+    const isRangePercent = hasRangeSet && !isRangeTimestamp && (this.state.rangeMin! > 0 || this.state.rangeMax! < 100);
+    const needsTimeFiltering = isRangeTimestamp || 
+                                isRangePercent ||
+                                this.zoomStart > 0 || 
+                                this.zoomEnd < 100;
+    
+    if (needsTimeFiltering) {
       const timeFilteredMap = new Map<string, { color?: string; lineMode?: LineType; movingAverageXwidth?: number[]; data: { [key: string]: { datas: ChartData[]; events?: EventMarker[]; lineMode?: LineType } } }>();
       filteredDataMap.forEach((value, symbol) => {
         const filteredData: { [key: string]: { datas: ChartData[]; events?: EventMarker[]; lineMode?: LineType } } = {};
@@ -4970,15 +5456,28 @@ export class OverlayStockChart {
       height: 60 // 최대 3줄 정도 표시 가능하도록 충분한 높이
     };
     
+    // 범례 영역 배경색 먼저 그리기 (Y축 타이틀 영역 제외)
+    // 범례 배경을 그리지 않음 - 차트 영역과 겹치는 문제 방지
+    /*
+    const legendBgColor = this.config.legendBackgroundColor || this.config.backgroundColor;
+    if (legendBgColor) {
+      this.ctx.fillStyle = legendBgColor;
+      // Y축 타이틀이 그려지는 영역(paddingLeft)을 제외하고 범례 배경 그리기
+      // legendArea.y부터 시작하여 Y축 레이블을 덮지 않도록 함
+      const legendBottomY = legendArea.y + legendArea.height;
+      this.ctx.fillRect(this.paddingLeft, legendArea.y, this.canvasWidth - this.paddingLeft, legendArea.height);
+    }
+    */
+    
     // Draw legend (DrawArea 전달)
-    if (firstChartResult) {
+    if (firstChartResult && !this.config.hideLegend) {
       this.legendItems = this.drawLegend(legendArea, firstChartResult.dataBySymbol, this.state.visibleTickers);
     }
 
     // 차트 간 구분선 그리기
     chartAreas.forEach((area, index) => {
       if (index > 0) {
-        this.ctx.strokeStyle = '#000000';
+        this.ctx.strokeStyle = this.getAxisColor();
         this.ctx.lineWidth = 2;
         this.ctx.beginPath();
         this.ctx.moveTo(area.x, area.y);
@@ -5000,8 +5499,19 @@ export class OverlayStockChart {
       height: xAxisLabelHeight
     };
     
+    // X축 선 (항상 그림)
+    const baselineY = xAxisArea.y;
+    this.ctx.strokeStyle = this.getAxisColor();
+    this.ctx.lineWidth = 1;
+    this.ctx.beginPath();
+    this.ctx.moveTo(xAxisArea.x, baselineY);
+    this.ctx.lineTo(xAxisArea.x + xAxisArea.width, baselineY);
+    this.ctx.stroke();
+    
     // X축 레이블 (DrawArea 전달)
-    this.drawXAxisLabels(xAxisArea, this.sortedTimes, displayMinTime, displayMaxTime);
+    if (!this.config.hideXAxisLabels) {
+      this.drawXAxisLabels(xAxisArea, this.sortedTimes, displayMinTime, displayMaxTime);
+    }
 
     // 포인트 그리기
     if (this.state.showPoints) {
@@ -5042,8 +5552,12 @@ export class OverlayStockChart {
       height: buttonSize
     };
 
-    // 줌 버튼 그리기 (DrawArea 전달)
-    this.zoomButtons = this.drawZoomButtons(zoomButtonArea, this.zoomStart, this.zoomEnd, displayMinTime, displayMaxTime);
+    // 줌 버튼 그리기 (showZoomButtons 옵션이 true일 때만)
+    if (this.config.showZoomButtons) {
+      this.zoomButtons = this.drawZoomButtons(zoomButtonArea, this.zoomStart, this.zoomEnd, displayMinTime, displayMaxTime);
+    } else {
+      this.zoomButtons = [];
+    }
 
     // 드래그 선택 영역 그리기
     this.drawDragSelection(this.isDragging, this.dragStartX, this.dragCurrentX, chartBottom);

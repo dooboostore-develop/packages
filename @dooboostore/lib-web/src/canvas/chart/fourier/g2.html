@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>Fourier Trend Forecast</title>
+  <style>
+    body { background-color: #0f0f0f; color: white; display: flex; flex-direction: column; align-items: center; font-family: sans-serif; margin: 0; padding: 20px; }
+    canvas { background: #161616; border: 1px solid #333; border-radius: 8px; }
+    .panel { background: #222; padding: 20px; border-radius: 12px; margin-top: 15px; width: 900px; border: 1px solid #3d3d3d; }
+    .control-row { display: flex; align-items: center; gap: 20px; margin-bottom: 15px; }
+    .btn-group { display: flex; gap: 8px; }
+    button { background: #3d3d3d; color: white; border: none; padding: 10px 15px; border-radius: 6px; cursor: pointer; font-weight: bold; }
+    button.active { background: #00ffcc; color: #000; }
+    .slider-group { flex-grow: 1; display: flex; flex-direction: column; gap: 5px; }
+    input[type=range] { width: 100%; cursor: pointer; accent-color: #00ffcc; }
+    .info { font-size: 0.85em; color: #aaa; line-height: 1.6; border-top: 1px solid #333; padding-top: 10px; }
+    .highlight { color: #00ffcc; font-weight: bold; }
+  </style>
+</head>
+<body>
+
+<h2 style="color: #eee;">추세(Trend) + 파동(Cycle) 결합 예측 모델</h2>
+
+<canvas id="canvas"></canvas>
+
+<div class="panel">
+  <div class="control-row">
+    <div class="btn-group">
+      <button onclick="stepPrev()">◀ Step</button>
+      <button id="playBtn" class="active" onclick="togglePlay()">정지</button>
+      <button onclick="stepNext()">Step ▶</button>
+      <button onclick="reset()">리셋</button>
+    </div>
+
+    <div class="slider-group">
+      <div style="display:flex; justify-content:space-between;">
+        <label>정형파 합성 개수: <span id="waveVal" class="highlight">3</span></label>
+        <span style="color:#888; font-size:0.8em;">(적을수록 큰 흐름에 집중)</span>
+      </div>
+      <input type="range" id="waveSlider" min="1" max="50" value="3" oninput="updateWaves(this.value)">
+    </div>
+  </div>
+
+  <div class="info">
+    1. <strong>선형 추세(Linear Trend)</strong>를 계산하여 미래로 연장합니다.<br>
+    2. 추세를 제외한 나머지 <strong>잔차(Residuals)</strong>만 푸리에로 분석합니다.<br>
+    3. 결과적으로 과거의 반복이 아니라, <span class="highlight">추세를 따라 이동하며 파동치는 미래</span>가 그려집니다.
+  </div>
+</div>
+
+<script>
+  const rawData = [
+    { "close": 3920.37 }, { "close": 3994.92 }, { "close": 4036.30 }, { "close": 4028.51 },
+    { "close": 4100.04 }, { "close": 4154.85 }, { "close": 4143.54 }, { "close": 4135.00 },
+    { "close": 4110.62 }, { "close": 4167.16 }, { "close": 4090.59 }, { "close": 3999.12 },
+    { "close": 4056.40 }, { "close": 3994.51 }, { "close": 4020.55 }, { "close": 4105.93 }
+  ];
+
+  const INTERP = 10;
+  let prices = [], fourier = [], path = [];
+  let trendSlope = 0, trendIntercept = 0;
+  let nWaves = 3;
+  let time = 0, isPlaying = true;
+
+  const canvas = document.getElementById('canvas');
+  const ctx = canvas.getContext('2d');
+  canvas.width = 1000; canvas.height = 450;
+  const margin = 70;
+
+  function init() {
+    // 1. 데이터 보간
+    prices = [];
+    for(let i=0; i<rawData.length-1; i++){
+      for(let j=0; j<INTERP; j++) prices.push(rawData[i].close + (rawData[i+1].close-rawData[i].close)*(j/INTERP));
+    }
+    prices.push(rawData[rawData.length-1].close);
+    const N = prices.length;
+
+    // 2. 선형 회귀 (추세 추출)
+    let sumX=0, sumY=0, sumXY=0, sumXX=0;
+    for(let i=0; i<N; i++) {
+      sumX += i; sumY += prices[i];
+      sumXY += i * prices[i]; sumXX += i * i;
+    }
+    trendSlope = (N * sumXY - sumX * sumY) / (N * sumXX - sumX * sumX);
+    trendIntercept = (sumY - trendSlope * sumX) / N;
+
+    // 3. 추세 제거 후 푸리에 변환
+    const detrended = prices.map((p, i) => p - (trendSlope * i + trendIntercept));
+    fourier = dft(detrended).sort((a,b) => b.amp - a.amp);
+
+    document.getElementById('waveSlider').max = fourier.length;
+  }
+
+  function dft(x) {
+    const X = []; const N = x.length;
+    for (let k = 0; k < N; k++) {
+      let re = 0, im = 0;
+      for (let n = 0; n < N; n++) {
+        let phi = (2 * Math.PI * k * n) / N;
+        re += x[n] * Math.cos(phi); im -= x[n] * Math.sin(phi);
+      }
+      X[k] = { freq: k, amp: Math.sqrt(re*re + im*im)/N, phase: Math.atan2(im, re) };
+    }
+    return X;
+  }
+
+  function draw() {
+    ctx.clearRect(0,0,canvas.width, canvas.height);
+    const N = prices.length;
+    const totalPoints = N * 3; // 미래를 2배 더 길게
+
+    const mapX = (i) => margin + (i/(totalPoints-1))*(canvas.width-margin*2);
+    const mapY = (v) => canvas.height-margin - ((v-3800)/450)*(canvas.height-margin*2);
+
+    const midX = mapX(N-1);
+    ctx.fillStyle = '#151515'; ctx.fillRect(margin, margin, midX-margin, canvas.height-margin*2);
+    ctx.fillStyle = '#1a1812'; ctx.fillRect(midX, margin, canvas.width-margin-midX, canvas.height-margin*2);
+
+    // 1. 원본 데이터 배경
+    ctx.beginPath(); ctx.strokeStyle='#333'; ctx.lineWidth=4;
+    prices.forEach((p, i) => { if(i==0) ctx.moveTo(mapX(i), mapY(p)); else ctx.lineTo(mapX(i), mapY(p)); });
+    ctx.stroke();
+
+    // 2. 추세선 (점선)
+    ctx.beginPath(); ctx.strokeStyle='rgba(255,255,255,0.1)'; ctx.setLineDash([5,5]);
+    for(let i=0; i<totalPoints; i++) {
+      let ty = trendSlope * i + trendIntercept;
+      if(i==0) ctx.moveTo(mapX(i), mapY(ty)); else ctx.lineTo(mapX(i), mapY(ty));
+    }
+    ctx.stroke(); ctx.setLineDash([]);
+
+    // 3. 현재 지점 계산 (추세 + 푸리에합)
+    let curIdx = (time/(2*Math.PI))*N;
+    let fY = 0;
+    for(let i=0; i<nWaves; i++) fY += fourier[i].amp * Math.cos(fourier[i].freq * time + fourier[i].phase);
+    let finalY = (trendSlope * curIdx + trendIntercept) + fY;
+
+    if(path.length==0 || curIdx > path[path.length-1].idx) path.push({x:mapX(curIdx), y:mapY(finalY), idx:curIdx});
+
+    // 4. 경로 그리기
+    for(let i=1; i<path.length; i++) {
+      ctx.beginPath(); ctx.lineWidth=2.5;
+      ctx.strokeStyle = path[i].idx < N ? '#00ffcc' : '#ffa502';
+      if(path[i].idx >= N) ctx.setLineDash([4,4]);
+      ctx.moveTo(path[i-1].x, path[i-1].y); ctx.lineTo(path[i].x, path[i].y);
+      ctx.stroke();
+    }
+    ctx.setLineDash([]);
+
+    // 포인터
+    ctx.fillStyle = curIdx < N ? '#00ffcc' : '#ffa502';
+    ctx.beginPath(); ctx.arc(mapX(curIdx), mapY(finalY), 5, 0, Math.PI*2); ctx.fill();
+
+    if(isPlaying) {
+      time += (2*Math.PI)/N;
+      if(curIdx >= totalPoints-1) isPlaying = false;
+    }
+    requestAnimationFrame(draw);
+  }
+
+  function updateWaves(v) { nWaves=v; document.getElementById('waveVal').innerText=v; path=[]; }
+  function togglePlay() { isPlaying=!isPlaying; document.getElementById('playBtn').innerText=isPlaying?"정지":"재생"; }
+  function stepNext() { time += (2*Math.PI)/N; }
+  function stepPrev() { time -= (2*Math.PI)/N; path = path.filter(p=>p.idx <= (time/(2*Math.PI))*prices.length); }
+  function reset() { time=0; path=[]; isPlaying=true; }
+
+  init(); draw();
+</script>
+</body>
+</html>

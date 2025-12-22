@@ -41,6 +41,7 @@ import { DrTargetElementIsElement } from '../operators/DrTargetElementIsElement'
 import { ObjectUtils } from '@dooboostore/core/object/ObjectUtils';
 import { NodeUtils } from '@dooboostore/core-web/node/NodeUtils';
 import { ConvertUtils } from '@dooboostore/core/convert/ConvertUtils';
+import { DomRenderComponentMetaKey } from './index';
 
 export type RenderResult = { raws: RawSet[]; executedOperators: OperatorExecuter[] };
 
@@ -98,13 +99,7 @@ export class RawSet {
 
   public static readonly DR_ON_CREATE_ARGUMENTS_OPTIONNAME = 'dr-on-create:arguments';
   public static readonly DR_ON_CREATED_CALLBACK_OPTIONNAME = 'dr-on-create:callback';
-  /**  우선 쓰는곳이 없어서 deprecated를 걸어놨음
-  @deprecated
-  */
-  public static readonly DR_ON_INIT_ARGUMENTS_OPTIONNAME = 'dr-on-init:arguments';
   public static readonly DR_ON_CONSTRUCTOR_ARGUMENTS_OPTIONNAME = 'dr-on-constructor:arguments';
-
-  public static readonly DOMRENDER_COMPONENTS_KEY = '__domrender_components';
 
   public static readonly drAttrsOriginName: Attrs = {
     dr: RawSet.DR_NAME,
@@ -567,14 +562,14 @@ export class RawSet {
     // console.log(`RawSet  for (const it of onAttrInitCallBacks) { took ${performance.now() - t0} milliseconds.`);
 
     // component destroy
-    if (obj[RawSet.DOMRENDER_COMPONENTS_KEY]) {
-      Object.entries(obj[RawSet.DOMRENDER_COMPONENTS_KEY]).forEach(([key, value]) => {
+    if (obj[DomRenderComponentMetaKey.DOMRENDER_COMPONENTS_KEY]) {
+      Object.entries(obj[DomRenderComponentMetaKey.DOMRENDER_COMPONENTS_KEY]).forEach(([key, value]) => {
         const rawSet = (value as any).__rawSet as RawSet;
         const drAttrs: Attrs | undefined = rawSet?.dataSet.render?.attribute;
         if (rawSet && !rawSet.isConnected) {
           const destroyOptions = drAttrs?.drDestroyOption?.split(',') ?? [];
-          RawSet.destroy(obj[RawSet.DOMRENDER_COMPONENTS_KEY][key], { rawSet: rawSet }, config, destroyOptions);
-          delete obj[RawSet.DOMRENDER_COMPONENTS_KEY][key];
+          RawSet.destroy(obj[DomRenderComponentMetaKey.DOMRENDER_COMPONENTS_KEY][key], { rawSet: rawSet }, config, destroyOptions);
+          delete obj[DomRenderComponentMetaKey.DOMRENDER_COMPONENTS_KEY][key];
         }
       });
     }
@@ -1639,8 +1634,8 @@ export class RawSet {
         const templateStyle = await RawSet.fetchTemplateStyle({ template: this.template, styles: this.styles });
         this.template = templateStyle.template;
         this.styles = templateStyle.styles;
-        obj[RawSet.DOMRENDER_COMPONENTS_KEY] ??= {};
-        const domrenderComponents = obj[RawSet.DOMRENDER_COMPONENTS_KEY];
+        obj[DomRenderComponentMetaKey.DOMRENDER_COMPONENTS_KEY] ??= {};
+        const domrenderComponents = obj[DomRenderComponentMetaKey.DOMRENDER_COMPONENTS_KEY];
 
         // debugger;
         const renderScript = ` /*createComponentTargetElement*/
@@ -1770,7 +1765,7 @@ export class RawSet {
         let data = await RawSet.drThisCreate(
           rawSet,
           element,
-          `this.${RawSet.DOMRENDER_COMPONENTS_KEY}.${rawSet.uuid}`,
+          `this.${DomRenderComponentMetaKey.DOMRENDER_COMPONENTS_KEY}.${rawSet.uuid}`,
           '',
           !noStrip,
           obj,

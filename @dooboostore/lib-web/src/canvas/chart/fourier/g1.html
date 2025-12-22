@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <style>
+    body { margin:0; background:#0e0e11; }
+    canvas { display:block; }
+  </style>
+</head>
+<body>
+<canvas id="c"></canvas>
+
+<script>
+  const canvas = document.getElementById("c");
+  const ctx = canvas.getContext("2d");
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+
+  // ===== close 데이터 =====
+  const data = [
+    3920.37,3994.93,4036.30,4028.51,
+    4100.05,4154.85,4143.55,4135.00,
+    4110.62,4167.16,4090.59,3999.13,
+    4056.41,3994.51,4020.55,4105.93
+  ];
+
+  // ===== 평균 제거 =====
+  const mean = data.reduce((a,b)=>a+b,0)/data.length;
+  const signal = data.map(v => v - mean);
+
+  // ===== DFT =====
+  function dft(signal) {
+    const N = signal.length;
+    const out = [];
+    for (let k = 0; k < N; k++) {
+      let re = 0, im = 0;
+      for (let n = 0; n < N; n++) {
+        const phi = 2 * Math.PI * k * n / N;
+        re += signal[n] * Math.cos(phi);
+        im -= signal[n] * Math.sin(phi);
+      }
+      re /= N; im /= N;
+      out.push({
+        freq: k,
+        amp: Math.hypot(re, im),
+        phase: Math.atan2(im, re)
+      });
+    }
+    return out;
+  }
+
+  let waves = dft(signal)
+    .slice(1)
+    .sort((a,b)=>b.amp-a.amp)
+    .slice(0,6);
+
+  // ===== 애니메이션 =====
+  let t = 0;
+  const path = [];
+
+  function draw() {
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+
+    let x = canvas.width * 0.3;
+    let y = canvas.height * 0.5;
+
+    for (const w of waves) {
+      ctx.beginPath();
+      ctx.arc(x,y,w.amp,0,Math.PI*2);
+      ctx.strokeStyle="rgba(255,255,255,0.15)";
+      ctx.stroke();
+
+      const px = x;
+      const py = y;
+
+      const angle = w.freq * t + w.phase;
+      x += w.amp * Math.cos(angle);
+      y += w.amp * Math.sin(angle);
+
+      ctx.beginPath();
+      ctx.moveTo(px,py);
+      ctx.lineTo(x,y);
+      ctx.strokeStyle="#ff4d4d";
+      ctx.stroke();
+    }
+
+    path.unshift(y);
+    if (path.length > canvas.width * 0.4) path.pop();
+
+    ctx.beginPath();
+    ctx.moveTo(canvas.width*0.55, path[0]);
+    for (let i=1;i<path.length;i++){
+      ctx.lineTo(canvas.width*0.55+i, path[i]);
+    }
+    ctx.strokeStyle="#ff4d4d";
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(x,y);
+    ctx.lineTo(canvas.width*0.55,path[0]);
+    ctx.strokeStyle="rgba(255,255,255,0.2)";
+    ctx.stroke();
+
+    t += (2*Math.PI)/signal.length * 0.02;
+    requestAnimationFrame(draw);
+  }
+
+  draw();
+</script>
+</body>
+</html>

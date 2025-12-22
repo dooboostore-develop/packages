@@ -713,7 +713,7 @@ getAttributeNames(attribute = this._attribute): string[] {
     // console.log('onInitRender ComponentBase', this.constructor.name, rawSet?.uuid);
     const window = rawSet.dataSet?.config?.window;
     this.createChildrenDebounceSubscription = this.childrenSetSubject.pipe(
-      debounceTime(this.componentConfig?.createChildrenDebounce??10, {
+      debounceTime(this.componentConfig?.createChildrenDebounce??1, {
         setTimeout: window ? window.setTimeout.bind(window) : undefined,
         clearTimeout: window ? window.clearTimeout.bind(window) : undefined,
       })
@@ -722,7 +722,7 @@ getAttributeNames(attribute = this._attribute): string[] {
       this.onCreatedThisChildDebounce(it);
     });
     this.onRawSetRenderedOtherDataSubjectSubscription = this.onRawSetRenderedOtherDataSubject.pipe(
-      bufferTime(this.componentConfig?.onRawSetRenderedOtherDataDebounce??10, {
+      bufferTime(this.componentConfig?.onRawSetRenderedOtherDataDebounce??1, {
         skipEmpty: true,
         setInterval: window ? window.setInterval.bind(window) : undefined,
         clearInterval: window ? window.clearInterval.bind(window) : undefined,

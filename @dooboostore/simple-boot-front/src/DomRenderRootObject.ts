@@ -5,6 +5,7 @@ import {RawSet} from "@dooboostore/dom-render/rawsets/RawSet";
 import {OnChildRawSetRendered} from "@dooboostore/dom-render/lifecycle/OnChildRawSetRendered";
 import {Subject} from "@dooboostore/core/message/Subject";
 import {RoutingDataSet} from "@dooboostore/simple-boot/route/RouterManager";
+import {DomRenderComponentMetaKey} from "@dooboostore/dom-render/rawsets/index";
 import * as url from "node:url";
 // export const DomRenderRootDefaultTemplate = '${@this@.name}$ <button dr-event-click="$router.go(\'/\')">aa</button><button dr-event-click="console.log(@this@.name); @this@.name = 22">aa</button>  ${@this@.rootRouter}$<dr-this value="${@this@.rootRouter}$"></dr-this>'
 export const DomRenderRootDefaultTemplate = '<dr-this value="${@this@.child}$"></dr-this>'
@@ -85,7 +86,7 @@ export class DomRenderRootObject extends ComponentRouterBase  {
     super.onDestroy();
     // console.log('DomRenderRootObject onDestroy');
     this.child = undefined;
-    const componentObjet = this[RawSet.DOMRENDER_COMPONENTS_KEY];
+    const componentObjet = this[DomRenderComponentMetaKey.DOMRENDER_COMPONENTS_KEY];
     if (componentObjet) {
       for (const key of Object.keys(componentObjet)) {
         const comp = componentObjet[key];

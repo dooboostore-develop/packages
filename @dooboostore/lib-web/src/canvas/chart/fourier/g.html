@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>Epicycle Wave Decomposition</title>
+  <style>
+    body {
+      margin: 0;
+      background: #0e0e11;
+      overflow: hidden;
+    }
+    canvas {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+<canvas id="c"></canvas>
+
+<script>
+  const canvas = document.getElementById("c");
+  const ctx = canvas.getContext("2d");
+
+  function resize() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+  }
+  resize();
+  window.addEventListener("resize", resize);
+
+  // ===== 정형파 설정 =====
+  const waves = [
+    { amp: 80, freq: 1, phase: 0 },
+    { amp: 40, freq: 2, phase: Math.PI / 4 },
+    { amp: 20, freq: 3, phase: Math.PI / 2 },
+    { amp: 12, freq: 5, phase: Math.PI / 3 },
+  ];
+
+  let t = 0;
+  const dt = 0.02;
+  const history = [];
+
+  function drawCircle(x, y, r) {
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.strokeStyle = "rgba(255,255,255,0.15)";
+    ctx.stroke();
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    let x = canvas.width * 0.25;
+    let y = canvas.height * 0.5;
+
+    // === 에피사이클 ===
+    for (const w of waves) {
+      drawCircle(x, y, w.amp);
+
+      const prevX = x;
+      const prevY = y;
+
+      const angle = w.freq * t + w.phase;
+      x += w.amp * Math.cos(angle);
+      y += w.amp * Math.sin(angle);
+
+      ctx.beginPath();
+      ctx.moveTo(prevX, prevY);
+      ctx.lineTo(x, y);
+      ctx.strokeStyle = "#ff4d4d";
+      ctx.stroke();
+    }
+
+    // === 파형 기록 ===
+    history.unshift(y);
+    if (history.length > canvas.width * 0.5) {
+      history.pop();
+    }
+
+    // === 시계열 파형 ===
+    ctx.beginPath();
+    ctx.moveTo(canvas.width * 0.5, history[0]);
+
+    for (let i = 1; i < history.length; i++) {
+      ctx.lineTo(canvas.width * 0.5 + i, history[i]);
+    }
+
+    ctx.strokeStyle = "#ff4d4d";
+    ctx.stroke();
+
+    // 연결선
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.lineTo(canvas.width * 0.5, history[0]);
+    ctx.strokeStyle = "rgba(255,255,255,0.2)";
+    ctx.stroke();
+
+    t += dt;
+    requestAnimationFrame(draw);
+  }
+
+  draw();
+</script>
+</body>
+</html>

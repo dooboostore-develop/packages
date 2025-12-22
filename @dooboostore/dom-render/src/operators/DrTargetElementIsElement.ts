@@ -3,6 +3,7 @@ import { CreatorMetaData } from '../rawsets/CreatorMetaData';
 import { AfterCallBack, ElementSource, ExecuteState, OperatorExecuter, ReturnContainer, Source } from './OperatorExecuter';
 import { Render } from '../rawsets/Render';
 import { ObjectUtils } from '@dooboostore/core/object/ObjectUtils';
+import { DomRenderComponentMetaKey } from '../rawsets';
 
 
 // 여기서 사용자가 등록한 TargetElement가 들어간다.
@@ -20,8 +21,8 @@ export class DrTargetElementIsElement extends OperatorExecuter<string | null> {
     // console.log('--------------tar', targetElement)
     if (targetElement) {
       if (this.rawSet.point.start instanceof this.source.config.window.HTMLMetaElement && this.rawSet.point.end instanceof this.source.config.window.HTMLMetaElement) {
-        this.rawSet.point.start.setAttribute('this-path', `this.${RawSet.DOMRENDER_COMPONENTS_KEY}.${this.rawSet.uuid}`)
-        this.rawSet.point.end.setAttribute('this-path', `this.${RawSet.DOMRENDER_COMPONENTS_KEY}.${this.rawSet.uuid}`)
+        this.rawSet.point.start.setAttribute('this-path', `this.${DomRenderComponentMetaKey.DOMRENDER_COMPONENTS_KEY}.${this.rawSet.uuid}`)
+        this.rawSet.point.end.setAttribute('this-path', `this.${DomRenderComponentMetaKey.DOMRENDER_COMPONENTS_KEY}.${this.rawSet.uuid}`)
       }
 
 

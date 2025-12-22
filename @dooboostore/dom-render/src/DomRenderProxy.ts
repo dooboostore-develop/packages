@@ -1,7 +1,6 @@
 import { RawSet, RenderResult } from './rawsets/RawSet';
 import { EventManager, NormalAttrDataType } from './events/EventManager';
 import { DomRenderConfig } from './configs/DomRenderConfig';
-import { ScriptUtils } from '@dooboostore/core-web/script/ScriptUtils';
 import { DomRenderFinalProxy, Shield } from './types/Types';
 import { RawSetType } from './rawsets/RawSetType';
 import { DrThisProperty } from './operators/DrThisProperty';
@@ -21,21 +20,22 @@ import { ValidUtils } from '@dooboostore/core/valid/ValidUtils';
 import { isOnProxyDomRender } from './lifecycle/OnProxyDomRender';
 import { isOnRawSetRendered } from './lifecycle/OnRawSetRendered';
 import { isOnChildRawSetRendered } from "./lifecycle/OnChildRawSetRendered";
-import {Promises} from "@dooboostore/core/promise/Promises";
+import { DomRenderComponentMetaKey, DomRenderProxyMetaKey } from './rawsets';
 
-const excludeGetSetPropertys = [
-  'onBeforeReturnGet',
-  'onBeforeReturnSet',
-  RawSet.DOMRENDER_COMPONENTS_KEY,
-  '__render',
-  '_DomRender_isFinal',
-  '_domRender_ref',
-  '_rawSets',
-  '_domRender_proxy',
-  '_targets',
-  '_DomRender_origin',
-  '_DomRender_ref',
-  '_DomRender_proxy'
+const excludeGetSetPropertys: string[] = [
+  // '__domrender_components',
+  DomRenderComponentMetaKey.DOMRENDER_COMPONENTS_KEY,
+  DomRenderProxyMetaKey.onBeforeReturnGet,
+  DomRenderProxyMetaKey.onBeforeReturnSet,
+  DomRenderProxyMetaKey.__render,
+  DomRenderProxyMetaKey._rawSets,
+  DomRenderProxyMetaKey._targets,
+  DomRenderProxyMetaKey._domRender_proxy,
+  DomRenderProxyMetaKey._DomRender_isFinal,
+  DomRenderProxyMetaKey._domRender_ref,
+  DomRenderProxyMetaKey._DomRender_origin,
+  DomRenderProxyMetaKey._DomRender_ref,
+  DomRenderProxyMetaKey._DomRender_proxy
 ];
 export const isWrapProxyDomRenderProxy = <T>(obj: T): boolean => {
   return obj && typeof obj === 'object' && '_DomRender_isProxy' in obj;
@@ -194,7 +194,6 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
 
     const targetRawSets = await this.render(this.getRawSets());
     for (let targetRawSet of targetRawSets) {
-      const onInit = (target as any).getAttribute?.(RawSet.DR_ON_INIT_ARGUMENTS_OPTIONNAME);
       let initParam: any;
       if (onCreate) {
         initParam = ObjectUtils.Script.evaluateReturn(onCreate, this._domRender_proxy);
@@ -380,7 +379,7 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
     const fullPaths: { path: string; obj: any }[][] = [];
     if (this._domRender_ref.size > 0) {
       this._domRender_ref.forEach((it, key) => {
-        if ('_DomRender_isProxy' in key) {
+        if (DomRenderProxyMetaKey._DomRender_isProxy in key) {
           it.forEach(sit => {
             try {
               const recursiveStartTime = Date.now();
@@ -578,7 +577,7 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
     // console.log('set-->', p, value, target, receiver, Reflect.getMetadata(DomRenderNoProxyKey, target, p) );
 
     if (
-      (typeof p === 'string' && p !== RawSet.DOMRENDER_COMPONENTS_KEY && excludeGetSetPropertys.includes(p)) ||
+      (typeof p === 'string' && p !== DomRenderComponentMetaKey.DOMRENDER_COMPONENTS_KEY && excludeGetSetPropertys.includes(p)) ||
       Reflect.getMetadata(DomRenderNoProxyKey, target, p)
     ) {
       (target as any)[p] = value;
@@ -731,7 +730,7 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
 
     // console.log('---end',receiver);
     if (
-      'onBeforeReturnSet' in receiver &&
+      DomRenderProxyMetaKey.onBeforeReturnSet in receiver &&
       typeof p === 'string' &&
       !(this._domRender_config.proxyExcludeOnBeforeReturnSets ?? []).concat(excludeGetSetPropertys).includes(p)
     ) {
@@ -750,13 +749,13 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
 
   get(target: T, p: string | symbol, receiver: any): any {
     // console.log('get-->', target, p, receiver);
-    if (p === '_DomRender_origin' || p === '_domRender_origin') {
+    if (p === DomRenderProxyMetaKey._DomRender_origin || p === DomRenderProxyMetaKey._domRender_origin) {
       return this._domRender_origin;
-    } else if (p === '_DomRender_ref' || p === '_domRender_ref') {
+    } else if (p === DomRenderProxyMetaKey._DomRender_ref || p === DomRenderProxyMetaKey._domRender_ref) {
       return this._domRender_ref;
-    } else if (p === '_DomRender_config' || p === '_domRender_config') {
+    } else if (p === DomRenderProxyMetaKey._DomRender_config || p === DomRenderProxyMetaKey._domRender_config) {
       return this._domRender_config;
-    } else if (p === '_DomRender_proxy' || p === '_domRender_proxy') {
+    } else if (p === DomRenderProxyMetaKey._DomRender_proxy || p === DomRenderProxyMetaKey._domRender_proxy) {
       return this;
     } else {
       // Date라던지 이런놈들은-_-프록시가 이상하게 동작해서
@@ -777,14 +776,14 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
       if (
         it &&
         typeof it === 'object' &&
-        '_DomRender_isProxy' in it &&
+        DomRenderProxyMetaKey._DomRender_isProxy in it &&
         Object.prototype.toString.call(it._DomRender_origin) === '[object Date]'
       ) {
         it = it._DomRender_origin;
       }
 
       if (
-        'onBeforeReturnGet' in receiver &&
+        DomRenderProxyMetaKey.onBeforeReturnGet in receiver &&
         typeof p === 'string' &&
         !(this._domRender_config.proxyExcludeOnBeforeReturnGets ?? []).concat(excludeGetSetPropertys).includes(p)
       ) {
@@ -807,7 +806,7 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
   }
 
   has(target: T, p: string | symbol): boolean {
-    return p === '_DomRender_isProxy' || p in target;
+    return p === DomRenderProxyMetaKey._DomRender_isProxy || p in target;
   }
 
   proxy(parentProxy: T, obj: T | any, p: string) {
@@ -921,7 +920,7 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
     });
     
     if (pathsToRemove.length > 0) {
-      console.log(`🧹 Removing child RawSets for path '${parentPath}':`, pathsToRemove);
+      // console.log(`🧹 Removing child RawSets for path '${parentPath}':`, pathsToRemove);
       pathsToRemove.forEach(path => {
         const rawSetSet = this._rawSets.get(path);
         if (rawSetSet) {
