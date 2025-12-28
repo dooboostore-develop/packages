@@ -30,7 +30,7 @@ export type Carrier = { newInstances: any[]; depth: number };
 export class SimstanceManager implements Runnable<void, Map<ConstructorType<any> | Function, any>> {
   private _storage = new Map<ConstructorType<any> | Function, Map<ConstructorType<any> | Function, undefined | any>>();
   private simProxyHandler: SimProxyHandler;
-  private name='simstanceManager-'+RandomUtils.uuid4()
+  private name = 'simstanceManager-' + RandomUtils.uuid4();
   // private otherInstanceSim?: Map<ConstructorType<any> | Function, any>;
 
   constructor(
@@ -154,6 +154,15 @@ export class SimstanceManager implements Runnable<void, Map<ConstructorType<any>
     // console.log('getStoreSet', targetKey, target, find)
     if (!find?.instance) {
       const type = target ?? targetKey;
+
+      // 외부에서 넣어준 인스턴스트일때에는 키값이 그 instance이다.
+      if (typeof type === 'object') {
+        const find = this.storage.get(type);
+        if (find) {
+          return { type: type as ConstructorType<T> | Function, instance: type as T };
+        }
+      }
+
       const flatStoreSets = this.flatStoreSets();
       const data = flatStoreSets.get(type);
       // console.log('--->target?', target, targetKey, type, data);
@@ -258,7 +267,7 @@ export class SimstanceManager implements Runnable<void, Map<ConstructorType<any>
       // console.groupEnd();
       return newSim;
     }
-    console.log('simstanceManager', this._storage, this.name)
+    console.log('simstanceManager', this._storage, this.name);
     const simNoSuch = new SimNoSuch(
       'SimNoSuch: no simple instance(resolve) ' + 'name:' + targetKey?.prototype?.constructor?.name + ',' + targetKey
     );
@@ -477,7 +486,13 @@ export class SimstanceManager implements Runnable<void, Map<ConstructorType<any>
   public proxy<T = any>(target: T): T {
     try {
       const noProxy = isSimNoProxy(target);
-      if (!noProxy && target !== null && getSim(target) && typeof target === 'object' && !('_SimpleBoot_isProxy' in target)) {
+      if (
+        !noProxy &&
+        target !== null &&
+        getSim(target) &&
+        typeof target === 'object' &&
+        !('_SimpleBoot_isProxy' in target)
+      ) {
         for (const key in target) {
           if (!isSimNoProxy(target, key)) {
             target[key] = this.proxy(target[key]);
@@ -509,12 +524,14 @@ export class SimstanceManager implements Runnable<void, Map<ConstructorType<any>
     }
   }
 
-  run(otherInstanceSim: Map<ConstructorType<any> | Function | SimConfig, any> = new Map()) {
+  run(otherInstanceSim: Map<ConstructorType<any> | Function | SimConfig | Symbol, any> = new Map()) {
     // this.otherInstanceSim = new Map();
     for (const [k, v] of Array.from(otherInstanceSim.entries())) {
-      if (typeof k === 'object') {
+      if (typeof k === 'symbol') {
+        simProcess({ symbol: k }, v);
+      } else if (typeof k === 'object') {
         // 명확하게 instance를 넘긴거니 타입으로 처리안하기 위해 임의 타입으로 처리한다.
-        simProcess(k, v);
+        simProcess(k as SimConfig, v);
       } else {
         simProcess({ type: k }, v);
       }

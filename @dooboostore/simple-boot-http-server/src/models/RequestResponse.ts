@@ -418,6 +418,12 @@ export class RequestResponse {
 
   async reqBodyJsonData<T>(): Promise<T> {
     return JSON.parse(await this.reqBodyStringData());
+    // const text = await this.reqBodyStringData();
+    // if (text?.length <= 0) {
+    //   return null;
+    // } else {
+    //   return JSON.parse(text);
+    // }
   }
 
   async reqBodyFormUrlData<T>(): Promise<T> {

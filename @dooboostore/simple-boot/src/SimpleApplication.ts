@@ -50,7 +50,7 @@ export class SimpleApplication {
     return this.routerManager;
   }
 
-  public run(otherInstanceSim?: Map<ConstructorType<any> | Function | SimConfig, any>) {
+  public run(otherInstanceSim?: Map<ConstructorType<any> | Function | SimConfig | Symbol, any>) {
     this.simstanceManager.run(otherInstanceSim);
     return this;
     // return this.simstanceManager;
@@ -86,7 +86,7 @@ export class SimpleApplication {
   public sim<T>(type: ConstructorType<T> | Function | Symbol): T | undefined {
     return this.simAtomic<T>(type)?.getValue();
   }
-  public sims<T>(type: ConstructorType<T> | Function | Symbol) {
+  public sims<T>(type: ConstructorType<T> | Function | Symbol): T[] {
     return this.simAtomics(type).map(it => it.getValue())
   }
 

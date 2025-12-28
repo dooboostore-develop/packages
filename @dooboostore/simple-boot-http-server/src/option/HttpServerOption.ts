@@ -15,6 +15,23 @@ export interface ListenData extends Listen {
   hostname: string;
 }
 
+export type SessionOption = {
+  key: string;
+  expiredTime: number;
+  httpOnly?: boolean;
+  secure?: boolean;
+  maxAge?: number;
+  sameSite?: boolean | 'lax' | 'strict' | 'none';
+  domain?: string;
+  path?: string;
+  provider?: {
+    uuids: () => Promise<string[]>;
+    delete: (uuid: string) => Promise<void>;
+    get: (uuid: string) => Promise<{ access: number; data?: any }>;
+    set: (uuid: string, data: { access: number; data?: any }) => Promise<void>;
+  };
+};
+
 export class HttpServerOption extends SimOption {
   public static readonly DEFAULT_PORT = 8081;
   public static readonly DEFAULT_HOSTNAME = '127.0.0.1';
@@ -25,34 +42,64 @@ export class HttpServerOption extends SimOption {
   public requestEndPoints?: (EndPoint | ConstructorType<EndPoint>)[];
   public closeEndPoints?: (EndPoint | ConstructorType<EndPoint>)[];
   public errorEndPoints?: (EndPoint | ConstructorType<EndPoint>)[];
-  public sessionOption: { key: string, expiredTime: number, provider?: { uuids: () => Promise<string[]>, delete: (uuid: string) => Promise<void>, get: (uuid: string) => Promise<{ access: number, data?: any }>, set: (uuid: string, data: { access: number, data?: any }) => Promise<void> } };
+  public sessionOption: SessionOption;
   public globalAdvice?: any | ConstructorType<any>;
   public noSuchRouteEndPointMappingThrow?: (rr: RequestResponse) => any;
   public transactionManagerFactory?: () => TransactionManager;
 
-  constructor({serverOption, listen, filters, requestEndPoints, closeEndPoints, errorEndPoints, sessionOption, globalAdvice, fileUploadTempPath,noSuchRouteEndPointMappingThrow, transactionManagerFactory}: {
-    serverOption?: ServerOptions | HttpsServerOption,
-    listen?: Listen,
-    filters?: (Filter | ConstructorType<Filter>)[],
-    requestEndPoints?: (EndPoint | ConstructorType<EndPoint>)[],
-    closeEndPoints?: (EndPoint | ConstructorType<EndPoint>)[],
-    errorEndPoints?: (EndPoint | ConstructorType<EndPoint>)[],
-    sessionOption?: { key?: string, expiredTime?: number, provider?: { uuids: () => Promise<string[]>, delete: (uuid: string) => Promise<void>, get: (uuid: string) => Promise<{ access: number, data?: any }>, set: (uuid: string, data: { access: number, data?: any }) => Promise<void> } },
-    globalAdvice?: any | ConstructorType<any>,
-    fileUploadTempPath?: string,
-    noSuchRouteEndPointMappingThrow?: (rr: RequestResponse) => any,
-    transactionManagerFactory?: () => TransactionManager
-  } = {}, initSimOption?: InitOptionType) {
+  constructor(
+    {
+      serverOption,
+      listen,
+      filters,
+      requestEndPoints,
+      closeEndPoints,
+      errorEndPoints,
+      sessionOption,
+      globalAdvice,
+      fileUploadTempPath,
+      noSuchRouteEndPointMappingThrow,
+      transactionManagerFactory
+    }: {
+      serverOption?: ServerOptions | HttpsServerOption;
+      listen?: Listen;
+      filters?: (Filter | ConstructorType<Filter>)[];
+      requestEndPoints?: (EndPoint | ConstructorType<EndPoint>)[];
+      closeEndPoints?: (EndPoint | ConstructorType<EndPoint>)[];
+      errorEndPoints?: (EndPoint | ConstructorType<EndPoint>)[];
+      sessionOption?: {
+        key?: string;
+        expiredTime?: number;
+        provider?: {
+          uuids: () => Promise<string[]>;
+          delete: (uuid: string) => Promise<void>;
+          get: (uuid: string) => Promise<{ access: number; data?: any }>;
+          set: (uuid: string, data: { access: number; data?: any }) => Promise<void>;
+        };
+      };
+      globalAdvice?: any | ConstructorType<any>;
+      fileUploadTempPath?: string;
+      noSuchRouteEndPointMappingThrow?: (rr: RequestResponse) => any;
+      transactionManagerFactory?: () => TransactionManager;
+    } = {},
+    initSimOption?: InitOptionType
+  ) {
     super(initSimOption);
     this.serverOption = serverOption;
-    this.listen = Object.assign({port: HttpServerOption.DEFAULT_PORT, hostname: HttpServerOption.DEFAULT_HOSTNAME}, listen);
+    this.listen = Object.assign(
+      { port: HttpServerOption.DEFAULT_PORT, hostname: HttpServerOption.DEFAULT_HOSTNAME },
+      listen
+    );
     this.filters = filters;
     this.requestEndPoints = requestEndPoints;
     this.closeEndPoints = closeEndPoints;
     this.errorEndPoints = errorEndPoints;
-    this.sessionOption = Object.assign({key: 'SBSESSIONID', expiredTime: 1000 * 60 * 30}, sessionOption);
+    this.sessionOption = Object.assign(
+      { key: 'SBSESSIONID', path: '/', httpOnly: true, expiredTime: 1000 * 60 * 30 },
+      sessionOption
+    );
     this.globalAdvice = globalAdvice;
-    this.fileUploadTempPath=fileUploadTempPath;
+    this.fileUploadTempPath = fileUploadTempPath;
     this.noSuchRouteEndPointMappingThrow = noSuchRouteEndPointMappingThrow;
     this.transactionManagerFactory = transactionManagerFactory;
   }
@@ -74,8 +121,6 @@ export class HttpServerOption extends SimOption {
   }
 
   get isSecure() {
-    return this.serverOption &&  'key' in this.serverOption && 'cert' in this.serverOption;
+    return this.serverOption && 'key' in this.serverOption && 'cert' in this.serverOption;
   }
-  
-  
 }

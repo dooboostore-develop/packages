@@ -28,6 +28,8 @@ import { HttpMethod } from './codes/HttpMethod';
 import { SessionManager } from './session/SessionManager';
 import { InjectSituationType } from './inject/InjectSituationType';
 import {ReqSearchParamsObj} from "./models/datas/search/ReqSearchParamsObj";
+import { SimConfig } from '@dooboostore/simple-boot/decorators/SimDecorator';
+import { ReqPathData } from './models/datas/body/ReqPathData';
 
 export class SimpleBootHttpServer extends SimpleApplication {
     public server?: HttpServer | HttpsServer;
@@ -38,7 +40,7 @@ export class SimpleBootHttpServer extends SimpleApplication {
     }
 
 
-    public run(otherInstanceSim?: Map<ConstructorType<any>, any>) {
+    public run(otherInstanceSim?: Map<ConstructorType<any> | Function | SimConfig | Symbol, any>) {
         super.run(otherInstanceSim);
         const targets = [...this.option.closeEndPoints ?? [], ...this.option.errorEndPoints ?? [], ...this.option.requestEndPoints ?? [], ...this.option.filters ?? []];
         Promise.all(targets.map(it => (typeof it === 'function' ? this.simstanceManager.getOrNewSim({target:it as ConstructorType<any>}) : it) as OnInit).map(it => it.onInit(this))).then(it => {
@@ -116,7 +118,16 @@ export class SimpleBootHttpServer extends SimpleApplication {
             const cookie = rr.reqCookieGet(this.option.sessionOption.key);
             if (!cookie) {
                 const session = await this.sessionManager.session();
-                rr.resSetHeader(HttpHeaders.SetCookie, `${this.option.sessionOption.key}=${session.uuid}; Path=/; HttpOnly`);
+
+                const cookieParts: string[] = [];
+                cookieParts.push(`${this.option.sessionOption.key}=${session.uuid}`);
+                cookieParts.push(`Path=${this.option.sessionOption.path}`);
+                if (this.option.sessionOption.httpOnly) cookieParts.push('HttpOnly');
+                if (this.option.sessionOption.secure) cookieParts.push('Secure');
+                if (this.option.sessionOption.sameSite != null && this.option.sessionOption.sameSite) cookieParts.push(`SameSite=${this.option.sessionOption.sameSite}`);
+                const maxAge = (this.option.sessionOption as any).maxAge ?? (this.sessionManager.sessionOption)?.maxAge;
+                if (maxAge != null) cookieParts.push(`Max-Age=${maxAge}`);
+                rr.resSetHeader(HttpHeaders.SetCookie, cookieParts.join('; '));
             }
 
             const otherStorage = new Map<ConstructorType<any>, any>();
@@ -190,14 +201,31 @@ export class SimpleBootHttpServer extends SimpleApplication {
                             const injects = getInject(moduleInstance, it.propertyKey);
                             const validIndexs = getValidIndex(moduleInstance, it.propertyKey);
                             if (injects) {
+                                const isPathData = injects.find(it => it.config?.situationType === UrlMappingSituationType.REQ_PATH_DATA);
                                 const isJson = injects.find(it => it.config?.situationType === UrlMappingSituationType.REQ_JSON_BODY);
                                 const isSearchParamsObj = injects.find(it => it.config?.situationType === UrlMappingSituationType.REQ_URL_SEARCH_PARAMS_OBJ);
                                 const isFormUrl = injects.find(it => it.config?.situationType === UrlMappingSituationType.REQ_FORM_URL_BODY);
                                 const isTransactionManager = injects.find(it => it.config?.situationType === InjectSituationType.TransactionManager);
                                 const siturationContainers = new SituationTypeContainers();
+                                if (isPathData) {
+                                    let data = await routerModule.pathData
+                                    if (isPathData.type) {
+                                        data = Object.assign(new isPathData.type(), data);
+                                    }
+                                    if (validIndexs.includes(isPathData.index)) {
+                                        const inValid = execValidationInValid(data);
+                                        if ((inValid?.length ?? 0) > 0) {
+                                            throw new ValidException(inValid);
+                                        }
+                                    }
+                                    siturationContainers.push(new SituationTypeContainer({
+                                        situationType: UrlMappingSituationType.REQ_PATH_DATA,
+                                        data
+                                    }));
+                                }
                                 if (isJson) {
-                                    let data = await rr.reqBodyJsonData()
-                                    if (isJson.type) {
+                                    let data = await rr.reqBodyJsonData();
+                                    if (data!==null && isJson.type) {
                                         data = Object.assign(new isJson.type(), data);
                                     }
                                     if (validIndexs.includes(isJson.index)) {
@@ -253,8 +281,10 @@ export class SimpleBootHttpServer extends SimpleApplication {
                             for (const paramType of paramTypes) {
                                 if (paramType === ReqFormUrlBody) {
                                     otherStorage.set(ReqFormUrlBody, await rr.reqBodyReqFormUrlBody())
+                                } else if (paramType === ReqPathData) {
+                                  otherStorage.set(ReqPathData, routerModule.pathData)
                                 } else if (paramType === ReqJsonBody) {
-                                    otherStorage.set(ReqJsonBody, await rr.reqBodyReqJsonBody())
+                                  otherStorage.set(ReqJsonBody, await rr.reqBodyReqJsonBody())
                                 } else if (paramType === ReqSearchParamsObj) {
                                   otherStorage.set(ReqSearchParamsObj, rr.reqUrlSearchParamsObj)
                                 }else if (paramType === URLSearchParams) {
@@ -307,6 +337,7 @@ export class SimpleBootHttpServer extends SimpleApplication {
                     }
                 }
             } catch (e) {
+                console.error('request error:', e);
                 transactionManager?.catch(e);
                 rr.resStatusCode(e instanceof HttpError ? e.status : HttpStatus.InternalServerError)
                 const execute = typeof this.option.globalAdvice === 'function' ? this.simstanceManager.getOrNewSim(this.option.globalAdvice) : this.option.globalAdvice;

@@ -9,10 +9,7 @@ import {
 import { FetcherRequest } from './Fetcher';
 
 export type HttpJsonFetcherConfig<CONFIG, RESPONSE> = HttpFetcherConfig<CONFIG> & {
-  bypassTransform?: boolean;
-  transformText?: boolean;
-  // parsingExceptionDefault?: (e: any) => any;
-  executeTransform?: (response: Response) => Promise<RESPONSE>;
+  responseTransform?: 'text' | 'response' | ((response: Response) => Promise<RESPONSE>);
 };
 export type RequestJsonInit = Omit<RequestInitType, 'body'> & { body?: any | null };
 // type RequestJsonInit = Omit<RequestInitType, 'body'>;
@@ -56,38 +53,65 @@ export class HttpJsonFetcher<CONFIG, PIPE extends { responseData?: any }> extend
     return config;
   }
 
+  get(config: HttpJsonFetcherRequest<any, CONFIG, Response> & { config: { responseTransform: 'response' } }): Promise<Response>;
+  get(config: HttpJsonFetcherRequest<any, CONFIG, string> & { config: { responseTransform: 'text' } }): Promise<string>;
+  get<RESPONSE, T = RESPONSE>(config: HttpJsonFetcherRequest<RESPONSE, CONFIG, T>): Promise<T>;
   get<RESPONSE, T = RESPONSE>(config: HttpJsonFetcherRequest<RESPONSE, CONFIG, T>): Promise<T> {
     return super.get(config);
   }
 
+  delete(config: HttpJsonFetcherRequest<any, CONFIG, Response> & { config: { responseTransform: 'response' } }): Promise<Response>;
+  delete(config: HttpJsonFetcherRequest<any, CONFIG, string> & { config: { responseTransform: 'text' } }): Promise<string>;
+  delete<RESPONSE, T = RESPONSE>(config: HttpJsonFetcherRequest<RESPONSE, CONFIG, T>): Promise<T>;
   delete<RESPONSE, T = RESPONSE>(config: HttpJsonFetcherRequest<RESPONSE, CONFIG, T>): Promise<T> {
     return super.delete(config);
   }
 
+  post(config: HttpJsonFetcherRequest<any, CONFIG, Response> & { config: { responseTransform: 'response' } }): Promise<Response>;
+  post(config: HttpJsonFetcherRequest<any, CONFIG, string> & { config: { responseTransform: 'text' } }): Promise<string>;
+  post<RESPONSE, T = RESPONSE>(config: HttpJsonFetcherRequest<RESPONSE, CONFIG, T>): Promise<T>;
   post<RESPONSE, T = RESPONSE>(config: HttpJsonFetcherRequest<RESPONSE, CONFIG, T>): Promise<T> {
     return super.post(config);
   }
 
+  patch(config: HttpJsonFetcherRequest<any, CONFIG, Response> & { config: { responseTransform: 'response' } }): Promise<Response>;
+  patch(config: HttpJsonFetcherRequest<any, CONFIG, string> & { config: { responseTransform: 'text' } }): Promise<string>;
+  patch<RESPONSE, T = RESPONSE>(config: HttpJsonFetcherRequest<RESPONSE, CONFIG, T>): Promise<T>;
   patch<RESPONSE, T = RESPONSE>(config: HttpJsonFetcherRequest<RESPONSE, CONFIG, T>): Promise<T> {
     return super.patch(config);
   }
 
+  put(config: HttpJsonFetcherRequest<any, CONFIG, Response> & { config: { responseTransform: 'response' } }): Promise<Response>;
+  put(config: HttpJsonFetcherRequest<any, CONFIG, string> & { config: { responseTransform: 'text' } }): Promise<string>;
+  put<RESPONSE, T = RESPONSE>(config: HttpJsonFetcherRequest<RESPONSE, CONFIG, T>): Promise<T>;
   put<RESPONSE, T = RESPONSE>(config: HttpJsonFetcherRequest<RESPONSE, CONFIG, T>): Promise<T> {
     return super.put(config);
   }
 
+  head(config: HttpJsonFetcherRequest<any, CONFIG, Response> & { config: { responseTransform: 'response' } }): Promise<Response>;
+  head(config: HttpJsonFetcherRequest<any, CONFIG, string> & { config: { responseTransform: 'text' } }): Promise<string>;
+  head<RESPONSE, T = RESPONSE>(config: HttpJsonFetcherRequest<RESPONSE, CONFIG, T>): Promise<T>;
   head<RESPONSE, T = RESPONSE>(config: HttpJsonFetcherRequest<RESPONSE, CONFIG, T>): Promise<T> {
     return super.head(config);
   }
 
+  postJson(config: HttpJsonFetcherBodyAnyRequest<any, CONFIG, Response> & { config: { responseTransform: 'response' } }): Promise<Response>;
+  postJson(config: HttpJsonFetcherBodyAnyRequest<any, CONFIG, string> & { config: { responseTransform: 'text' } }): Promise<string>;
+  postJson<RESPONSE, T = RESPONSE>(config: HttpJsonFetcherBodyAnyRequest<RESPONSE, CONFIG, T>): Promise<T>;
   postJson<RESPONSE, T = RESPONSE>(config: HttpJsonFetcherBodyAnyRequest<RESPONSE, CONFIG, T>): Promise<T> {
     return super.post(this.updateJsonFetchConfigAndData(config));
   }
 
+  patchJson(config: HttpJsonFetcherBodyAnyRequest<any, CONFIG, Response> & { config: { responseTransform: 'response' } }): Promise<Response>;
+  patchJson(config: HttpJsonFetcherBodyAnyRequest<any, CONFIG, string> & { config: { responseTransform: 'text' } }): Promise<string>;
+  patchJson<RESPONSE, T = RESPONSE>(config: HttpJsonFetcherBodyAnyRequest<RESPONSE, CONFIG, T>): Promise<T>;
   patchJson<RESPONSE, T = RESPONSE>(config: HttpJsonFetcherBodyAnyRequest<RESPONSE, CONFIG, T>): Promise<T> {
     return super.patch(this.updateJsonFetchConfigAndData(config));
   }
 
+  putJson(config: HttpJsonFetcherBodyAnyRequest<any, CONFIG, Response> & { config: { responseTransform: 'response' } }): Promise<Response>;
+  putJson(config: HttpJsonFetcherBodyAnyRequest<any, CONFIG, string> & { config: { responseTransform: 'text' } }): Promise<string>;
+  putJson<RESPONSE, T = RESPONSE>(config: HttpJsonFetcherBodyAnyRequest<RESPONSE, CONFIG, T>): Promise<T>;
   putJson<RESPONSE, T = RESPONSE>(config: HttpJsonFetcherBodyAnyRequest<RESPONSE, CONFIG, T>): Promise<T> {
     return super.put(this.updateJsonFetchConfigAndData(config));
   }
@@ -119,30 +143,22 @@ export class HttpJsonFetcher<CONFIG, PIPE extends { responseData?: any }> extend
       // const contentLength = response.headers.get('Content-Length');
       // const hasBody = contentLength && parseInt(contentLength, 10) > 0;
       // console.log('hgasbody', hasBody)
-      const config = fetcherRequest.config;
-      if (config?.bypassTransform) {
+      const config = fetcherRequest.config as any;
+      const transform = config?.responseTransform ?? (config?.bypassTransform ? 'response' : (config?.transformText ? 'text' : undefined));
+
+      if (transform === 'response') {
         return response;
-      }
-      if (config?.executeTransform) {
-        return config.executeTransform(response);
+      } else if (transform === 'text') {
+        return response?.text();
+      } else if (typeof transform === 'function') {
+        return transform(response);
       } else {
-        if (config?.transformText) {
-          return response?.text();
-        } else {
-          return response?.text().then(it => {
-            if ((it ?? '').length > 0) {
-              return JSON.parse(it);
-            }
-          })
-        }
+        return response?.text().then(it => {
+          if ((it ?? '').length > 0) {
+            return JSON.parse(it);
+          }
+        })
       }
     });
-    // .catch(e => {
-    //   if (config?.parsingExceptionDefault) {
-    //     return config.parsingExceptionDefault(e);
-    //   } else {
-    //     throw e;
-    //   }
-    // });
   }
 }

@@ -1,10 +1,10 @@
 import {RandomUtils} from '@dooboostore/core/random/RandomUtils'
-import {HttpServerOption} from '../option/HttpServerOption';
+import { HttpServerOption, SessionOption } from '../option/HttpServerOption';
 import {RequestResponse} from '../models/RequestResponse';
 
 export class SessionManager {
     private sessions = new Map<string, { access: number, data?: any }>();
-    public sessionOption: { key: string; expiredTime: number, provider?: {uuids: () => Promise<string[]>, delete: (uuid: string) => Promise<void>, get: (uuid: string) => Promise<{ access: number, data?: any }>, set: (uuid: string, data: { access: number, data?: any }) => Promise<void>} };
+    public sessionOption: SessionOption;
 
     constructor(private option: HttpServerOption) {
         this.sessionOption = option.sessionOption;
