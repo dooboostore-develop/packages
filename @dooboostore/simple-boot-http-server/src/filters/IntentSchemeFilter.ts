@@ -1,20 +1,17 @@
-import {Filter} from '@dooboostore/simple-boot-http-server/filters/Filter';
+import {Filter} from './Filter';
 import {HttpHeaders} from '../codes/HttpHeaders';
 import {Intent, PublishType} from '@dooboostore/simple-boot/intent/Intent';
 import {IntentManager} from '@dooboostore/simple-boot/intent/IntentManager';
 import {Sim} from '@dooboostore/simple-boot/decorators/SimDecorator';
-import {HttpStatus} from '@dooboostore/simple-boot-http-server/codes/HttpStatus';
-import {RequestResponse} from '@dooboostore/simple-boot-http-server/models/RequestResponse';
-import {SimpleBootHttpServer} from '@dooboostore/simple-boot-http-server/SimpleBootHttpServer';
+import {HttpStatus} from '../codes/HttpStatus';
+import {RequestResponse} from '../models/RequestResponse';
+import {SimpleBootHttpServer} from '../SimpleBootHttpServer';
 import {Mimes} from '../codes/Mimes';
-import {Promises} from "@dooboostore/core/promise/Promises";
-import {NotFoundError} from "@dooboostore/simple-boot-http-server/errors/NotFoundError";
+import {NotFoundError} from "../errors/NotFoundError";
 
 @Sim
 export class IntentSchemeFilter implements Filter {
   constructor(private intentManager: IntentManager) {
-    // (IntentManager as any).
-    // console.log('intent constructor', this.intentManager);
   }
 
   async onInit(app: SimpleBootHttpServer) {

@@ -7,6 +7,7 @@
     "declarationMap": true,
     "stripInternal": true,
     "target": "es2020",
+    "noEmit": true,
     "lib": ["dom", "dom.iterable", "esnext"],
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,

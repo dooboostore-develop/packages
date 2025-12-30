@@ -1,5 +1,5 @@
 import {getSim, Sim} from '@dooboostore/simple-boot/decorators/SimDecorator';
-import {makeIntentHeaderBySymbolFor} from '../codes/HttpHeaders';
+import {makeIntentHeaderBySymbolFor} from '@dooboostore/simple-boot-http-server/codes/HttpHeaders';
 import {ConvertUtils} from '@dooboostore/core/convert/ConvertUtils';
 import {ApiService} from '@dooboostore/simple-boot/fetch/ApiService';
 
@@ -34,10 +34,11 @@ export class SymbolIntentApiServiceProxy<T extends object> implements ProxyHandl
               const headers = {...(userConfig?.headers ?? {}), ...makeIntentHeaderBySymbolFor(simConfig.symbol as Symbol)};
               const method = userConfig?.method ?? 'post';
               if (method === 'post' && userConfig?.multipartFormData) {
+                //@ts-ignore
                 return apiService.post({
                   target: `/${String(prop)}`,
                   config: {
-                    bypassTransform: userConfig?.bypassTransform,
+                    responseTransform: userConfig?.bypassTransform ? 'response' : undefined,
                     transformText: userConfig?.transformText,
                     config: userConfig?.config,
                     fetch: {
@@ -48,10 +49,11 @@ export class SymbolIntentApiServiceProxy<T extends object> implements ProxyHandl
                   }
                 });
               } else if (method === 'post') {
+                //@ts-ignore
                 return apiService.postJson({
                   target: `/${String(prop)}`,
                   config: {
-                    bypassTransform: userConfig?.bypassTransform,
+                    responseTransform: userConfig?.bypassTransform ? 'response' : undefined,
                     transformText: userConfig?.transformText,
                     config: userConfig?.config,
                     fetch: {
@@ -62,10 +64,11 @@ export class SymbolIntentApiServiceProxy<T extends object> implements ProxyHandl
                   }
                 });
               } else if (method === 'petch') {
+                //@ts-ignore
                 return apiService.patchJson({
                   target: `/${String(prop)}`,
                   config: {
-                    bypassTransform: userConfig?.bypassTransform,
+                    responseTransform: userConfig?.bypassTransform ? 'response' : undefined,
                     transformText: userConfig?.transformText,
                     config: userConfig?.config,
                     fetch: {
@@ -76,10 +79,11 @@ export class SymbolIntentApiServiceProxy<T extends object> implements ProxyHandl
                   }
                 });
               } else {
+                //@ts-ignore
                 return apiService[method]({
                   target: {url: `/${String(prop)}`, searchParams: userConfig?.body},
                   config: {
-                    bypassTransform: userConfig?.bypassTransform,
+                    responseTransform: userConfig?.bypassTransform ? 'response' : undefined,
                     transformText: userConfig?.transformText,
                     config: userConfig?.config,
                     fetch: {

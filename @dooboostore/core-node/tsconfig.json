@@ -8,6 +8,7 @@
     "stripInternal": true,
     "target": "es2020",
     "lib": ["esnext", "dom"],
+    "noEmit": true,
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
     "esModuleInterop": true,

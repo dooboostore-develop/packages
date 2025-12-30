@@ -4,6 +4,13 @@ import {ValidUtils} from '../valid/ValidUtils';
 import {AbortablePromise} from "./AbortablePromise";
 
 export namespace Promises {
+  export const isFulfilled = <T>(result: PromiseSettledResult<T>): result is PromiseFulfilledResult<T> => {
+    return result.status === 'fulfilled';
+  }
+  export const isRejected = <T>(result: PromiseSettledResult<T>): result is PromiseRejectedResult => {
+    return result.status === 'rejected';
+  }
+
   export const filterCatch = async (promise: Promise<any>, has: ConstructorType<any> | ((e: any) => boolean) | ((ConstructorType<any> | ((e: any) => void))[])) => {
     try {
       await promise;

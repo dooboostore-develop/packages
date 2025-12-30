@@ -1,9 +1,8 @@
 import { getSim, Sim } from '@dooboostore/simple-boot/decorators/SimDecorator';
 import { HttpHeaders } from '@dooboostore/simple-boot-http-server/codes/HttpHeaders';
-import { HttpHeaders as SSRHttpHeaders } from '../codes/HttpHeaders';
-import { Mimes as SSRMimes } from '../codes/Mimes';
 import { ReflectUtils } from '@dooboostore/core/reflect/ReflectUtils';
 import { ConvertUtils } from '@dooboostore/core/convert/ConvertUtils';
+import { Mimes } from '@dooboostore/simple-boot-http-server/codes/Mimes';
 
 @Sim
 export class IntentSchemeFrontProxy implements ProxyHandler<any> {
@@ -35,7 +34,7 @@ export class IntentSchemeFrontProxy implements ProxyHandler<any> {
          return fetch(`/${prop.toString()}`,
             {
               method: 'POST',
-              headers: {[HttpHeaders.ContentType]: SSRMimes.ApplicationJsonPostSimpleBootSsrIntentScheme, [SSRHttpHeaders.XSimpleBootSsrIntentScheme]: firstScheme ?? ''},
+              headers: {[HttpHeaders.ContentType]: Mimes.ApplicationJsonPostSimpleBootSsrIntentScheme, [HttpHeaders.XSimpleBootSsrIntentScheme]: firstScheme ?? ''},
               body: JSON.stringify(args[0])
             }
           ).then(async (res) => {

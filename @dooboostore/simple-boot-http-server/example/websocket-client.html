@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Title</title>
+</head>
+<body>
+<div class="display"></div>
+<button id="send-btn">send</button>
+<button id="unsubscribe-btn">unsubscribe</button>
+<script src="./node_modules/@dooboostore/simple-boot-http-server/dist/umd-bundle/websocket-client.umd.js"></script>
+<script>
+  const {WebSocketClient} = dooboostoreSimpleBootHttpServerWebSocketClient;
+  console.log('-->', WebSocketClient)
+  const display = document.querySelector('.display')
+  const sendButton = document.querySelector('#send-btn')
+  const unSubscribeButton = document.querySelector('#unsubscribe-btn')
+
+
+  const ws = new WebSocketClient('http://localhost:8080');
+  // const subject = ws.subject('Symbol.for(UserService)://say',  'intent');
+  const subject = ws.subject('/api/test',  'router');
+  // const subject = ws.subject('/aaapi/test',  'router');
+  const subscription = subject.subscribe({
+      next: (data) => {
+        console.log('Received data:', data);
+        display.innerHTML += `<p>received: ${JSON.stringify(data)}</p>`;
+      },
+      error: (err) => {
+        console.error('WebSocket error:', err);
+      },
+    }
+  )
+  sendButton.addEventListener('click', () => {
+    subject.send({ww: 'zz'});
+  })
+  unSubscribeButton.addEventListener('click', () => {
+    subscription.unsubscribe();
+  })
+
+  //
+  // const ws = new WebSocket('ws://localhost:8080', ['zz', 'zzzzz'])
+  //
+  // ws.addEventListener('open', () => {
+  //   display.innerHTML += '<p>connected</p>'
+  // })
+  //
+  // ws.addEventListener('message', (event) => {
+  //   display.innerHTML += `<p>received: ${event.data}</p>`
+  // })
+  //
+  // button.addEventListener('click', () => {
+  //   const data = {}
+  //   ws.send('hello server')
+  //   display.innerHTML += '<p>sent: hello server</p>'
+  // })
+</script>
+</body>
+</html>

@@ -6,6 +6,7 @@ import { ApiRouter } from './routers/ApiRouter';
 import { CloseLogEndPoint } from './endpoints/CloseLogEndPoint';
 import { ErrorLogEndPoint } from './endpoints/ErrorLogEndPoint';
 import { GlobalAdvice } from './advices/GlobalAdvice';
+import { WebSocketManager } from '@dooboostore/simple-boot-http-server/websocket/WebSocketManager';
 
 // HTTP 서버 옵션 설정
 const option = new HttpServerOption(
@@ -13,6 +14,7 @@ const option = new HttpServerOption(
     globalAdvice: new GlobalAdvice(),
     closeEndPoints: [new CloseLogEndPoint()],
     errorEndPoints: [new ErrorLogEndPoint()],
+    webSocketEndPoints: [WebSocketManager],
     listen: { port: 8080 },
   },
   {

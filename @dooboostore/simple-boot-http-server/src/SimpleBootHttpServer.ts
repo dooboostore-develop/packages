@@ -3,6 +3,7 @@ import { HttpServerOption } from './option/HttpServerOption';
 import { ConstructorType } from '@dooboostore/core/types';
 import { IncomingMessage, Server as HttpServer, ServerResponse } from 'http'
 import { Server as HttpsServer } from 'https'; // Add HTTPS support
+import { WebSocketServer, WebSocket } from 'ws';
 import { RequestResponse } from './models/RequestResponse';
 import { getUrlMapping, getUrlMappings, SaveMappingConfig, UrlMappingSituationType } from './decorators/MethodMapping';
 import { HttpStatus } from './codes/HttpStatus';
@@ -30,10 +31,12 @@ import { InjectSituationType } from './inject/InjectSituationType';
 import {ReqSearchParamsObj} from "./models/datas/search/ReqSearchParamsObj";
 import { SimConfig } from '@dooboostore/simple-boot/decorators/SimDecorator';
 import { ReqPathData } from './models/datas/body/ReqPathData';
+import { WebSocketEndPoint } from './endpoints/WebSocketEndPoint';
 
 export class SimpleBootHttpServer extends SimpleApplication {
     public server?: HttpServer | HttpsServer;
     private sessionManager: SessionManager;
+    private webSocketClients = new Map<WebSocket, {request: IncomingMessage}>();
     constructor(public option: HttpServerOption = new HttpServerOption()) {
         super(option);
         this.sessionManager = new SessionManager(this.option);
@@ -320,7 +323,7 @@ export class SimpleBootHttpServer extends SimpleApplication {
                                 data = JSON.stringify(data);
                             }
                             rr.resSetHeaders(headers)
-                            rr.resSetStatusCode(status); 
+                            rr.resSetStatusCode(status);
                             rr.resWrite(data);
                         }
                     }
@@ -370,6 +373,22 @@ export class SimpleBootHttpServer extends SimpleApplication {
             }
         });
 
+        if (this.option.webSocketEndPoints) {
+          const webSocketServer = new WebSocketServer({ server: this.server });
+          const execute = this.option.webSocketEndPoints.map(it => typeof it === 'function' ? this.simstanceManager.getOrNewSim({target:it}) : it);
+          webSocketServer.on('connection', async (ws, request) => {
+            this.webSocketClients.set(ws, {request});
+            const wsSet = {socket: ws, request};
+            execute.forEach(it => it.connect?.(wsSet));
+            ws.on('error', err => execute.forEach(it => it.error?.(wsSet, err)));
+            ws.on('message', (data, isBinary) => execute.forEach(it => it.message(wsSet, { data, isBinary })));
+            ws.on('ping', () => execute.forEach(it => it.ping?.(wsSet)));
+            ws.on('close', () => {
+              this.webSocketClients.delete(ws);
+              execute.forEach(it => it.close?.(wsSet));
+            });
+          });
+        }
         this.server.listen(this.option.listen.port, this.option.listen.hostname, this.option.listen.backlog, () => {
             this.option.listen.listeningListener?.(this, this.server);
         });

@@ -1,0 +1,32 @@
+{
+  "compilerOptions": {
+    "target": "ES2019",
+    "module": "CommonJS",
+    "lib": ["ES2019"],
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "moduleResolution": "node",
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "paths": {
+      "@dooboostore/simple-boot": ["../../simple-boot/src/*"],
+      "@dooboostore/simple-boot-http-server": ["../../simple-boot-http-server/src/*"],
+      "@dooboostore/simple-boot-http-server-ssr": ["../../simple-boot-http-server-ssr/src/*"],
+      "@dooboostore/simple-boot-front": ["../../simple-boot-front/src/*"],
+      "@dooboostore/core": ["../../core/src/*"],
+      "@dooboostore/core-node": ["../../core-node/src/*"],
+      "@dooboostore/core-web": ["../../core-web/src/*"],
+      "@dooboostore/dom-render": ["../../dom-render/src/*"],
+    }
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist"]
+}

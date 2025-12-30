@@ -1507,11 +1507,18 @@ export class OverlayStockChart {
     filterSymbol?: string // 특정 티커만 처리 (티커별 이동평균선용)
   ) {
     
+    console.log(`[drawAverageLine] chartKey: ${chartKey}, filterSymbol: ${filterSymbol}, type: ${averageConfig.type}`);
+    
     // 캐시 키 생성 (visibleTickers, chartKey, averageConfig, normalize 모드로 구분)
     const visibleTickersKey = Array.from(this.state.visibleTickers).sort().join(',');
     
     // 범위 정규화 모드에서는 현재 화면 범위도 캐시 키에 포함
+    // filterSymbol이 있으면 캐시 키에 포함 (티커별 이동평균선)
     let cacheKey = `${chartKey}-${averageConfig.type}-${averageConfig.type === 'moving' ? averageConfig.xWidth : 'full'}-${averageConfig.label}-${visibleTickersKey}-${this.state.normalize}`;
+    
+    if (filterSymbol) {
+      cacheKey += `-ticker-${filterSymbol}`;
+    }
     
     if (this.state.normalize === 'rangeNormalize') {
       // 범위 정규화 모드: 현재 화면 범위를 캐시 키에 포함
@@ -1580,6 +1587,7 @@ export class OverlayStockChart {
     // 디버깅: normalizationMinMaxBySymbol 확인
     console.log(`[drawAverageLine] chartKey: ${chartKey}, normalize: ${this.state.normalize}`);
     console.log(`[drawAverageLine] fullDataBySymbol size: ${fullDataBySymbol.size}`);
+    console.log(`[drawAverageLine] fullDataBySymbol symbols:`, Array.from(fullDataBySymbol.keys()));
     console.log(`[drawAverageLine] normalizationMinMaxBySymbol size: ${normalizationMinMaxBySymbol.size}`);
     
     if (normalizationMinMaxBySymbol.size === 0) {

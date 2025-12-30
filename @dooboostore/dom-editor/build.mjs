@@ -40,7 +40,7 @@ const declarationGeneratorPlugin = {
             if (result.errors.length === 0) {
                 console.log('Build successful, generating declarations...');
                 try {
-                    execSync('pnpm exec tsc -p tsconfig.json --emitDeclarationOnly', { stdio: 'inherit' });
+                    execSync('pnpm exec tsc -p tsconfig.json --noEmit false --emitDeclarationOnly', { stdio: 'inherit' });
                 } catch (e) {
                     console.error('Declaration generation failed:', e);
                 }

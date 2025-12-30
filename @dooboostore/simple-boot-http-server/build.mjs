@@ -189,7 +189,7 @@ const declarationGeneratorPlugin = {
             if (result.errors.length === 0) {
                 console.log('Build successful, generating declarations...');
                 try {
-                    execSync('pnpm exec tsc -p tsconfig.json --emitDeclarationOnly', { stdio: 'inherit' });
+                    execSync('pnpm exec tsc -p tsconfig.json --noEmit false --emitDeclarationOnly', { stdio: 'inherit' });
                     // generateExportsInPackageJson();
                 } catch (e) {
                     console.error('Declaration generation failed:', e);
@@ -367,6 +367,21 @@ async function buildTarget(target, watch = false) {
       }, watch);
       console.log('ESM bundle build complete.');
       break;
+    case 'client-umd-bundle':
+      console.log('Starting WebSocket Client bundle build (browser UMD-style)...');
+      await performBuild({
+        sourcemap: true,
+        target: 'es2020',
+        platform: 'browser',
+        bundle: true,
+        entryPoints: [path.resolve(srcDir, 'websocket', 'WebSocketClient.ts')],
+        outfile: path.resolve(__dirname, 'dist', 'umd-bundle', 'websocket-client.umd.js'),
+        format: 'iife',
+        globalName: 'dooboostoreSimpleBootHttpServerWebSocketClient',
+        plugins: [esbuildPluginTsc({tsconfigPath:'tsconfig.umd.json'})],
+      }, watch);
+      console.log('WebSocket Client bundle build complete.');
+      break;
     case 'all':
       if (!watch) {
         fs.rmSync(path.resolve(__dirname, 'dist'), { recursive: true, force: true });
@@ -375,6 +390,7 @@ async function buildTarget(target, watch = false) {
       await buildTarget('cjs', watch);
       await buildTarget('umd-bundle', watch);
       await buildTarget('esm-bundle', watch);
+      await buildTarget('client-umd-bundle', watch);
       break;
     default:
       console.error('Invalid build target specified.');

@@ -18,8 +18,14 @@ export type RouteData = {
 export type RouterConfig<T = any> = { rootObject?: T, window: Window, firstUrl?: string };
 export type ChangeStateResult = { data?: any }
 export type RouteAction = string | { path?: string, searchParams?: ToURLSearchParamsParams };
+export type ChangeStateConfig = { noEventAndPublish?: boolean };
+export type StateOptions = { data?: any, title?: string, config?: ChangeStateConfig };
+export type RouterMethodOptions = { data?: any, title?: string, config?: ChangeStateConfig };
 
 type RouterEventType = RouteData & { triggerPoint: 'start' | 'end' };
+
+// popstate 이벤트 무시를 위한 마커
+const ROUTER_NO_EVENT_MARKER = '__ROUTER_NO_EVENT__';
 
 export abstract class Router<T = any> {
   private behaviorSubject: BehaviorSubject<RouterEventType>;
@@ -47,11 +53,12 @@ export abstract class Router<T = any> {
       this.behaviorSubject = new BehaviorSubject<RouterEventType>(routeData);
     }
     this.config.window.addEventListener('popstate', (event: PopStateEvent) => {
-      // domrender에서 발생하지 않은 즉 back, previous 일떄에도 이벤트가도록 처리
-      // if(!isPopStateCurrentTargetDomrenderRouter(event.state)) {
-      // console.log('-------');
-      const routeData: RouterEventType = {...this.getRouteData(), triggerPoint: 'end'};
-      this.behaviorSubject.next(routeData);
+      // console.log('----->', event.state)
+      // noEventAndPublish 마커가 있으면 이벤트 발행하지 않음
+      // if (event.state && event.state[ROUTER_NO_EVENT_MARKER]) {
+      // } else {
+        const routeData: RouterEventType = {...this.getRouteData(), triggerPoint: 'end'};
+        this.behaviorSubject.next(routeData);
       // }
     })
   }
@@ -63,6 +70,10 @@ export abstract class Router<T = any> {
 
   get searchParamObject() {
     return ConvertUtils.toObject(this.getSearchParams());
+  }
+
+  getSearchParamObject<T>() {
+    return this.searchParamObject as unknown as T;
   }
 
   get config() {
@@ -151,22 +162,43 @@ export abstract class Router<T = any> {
     return Object.freeze(newVar);
   }
 
-  pushState(data: any, title: string | undefined, path: string): ChangeStateResult {
-    // data = this.config.changeStateConvertDate?this.config.changeStateConvertDate(data): data;
-    // console.log('--->pushState', data);
-    this.behaviorSubject.next({...this.getRouteData({pathOrUrl: path}), triggerPoint: 'start'});
-    this.config.window.history?.pushState(data, title ?? '', path);
-    this.behaviorSubject.next({...this.getRouteData({pathOrUrl: path}), triggerPoint: 'end'});
-    return {data};
+  pushState(data: any, title: string | undefined, path: string, config?: ChangeStateConfig): ChangeStateResult {
+    // noEventAndPublish가 true이면 마커 추가
+    const stateData = config?.noEventAndPublish 
+      ? { ...data, [ROUTER_NO_EVENT_MARKER]: true }
+      : data;
+    
+    if (!config?.noEventAndPublish) {
+      this.behaviorSubject.next({...this.getRouteData({pathOrUrl: path}), triggerPoint: 'start'});
+    }
+    
+    this.config.window.history?.pushState(stateData, title ?? '', path);
+    
+    if (!config?.noEventAndPublish) {
+      this.behaviorSubject.next({...this.getRouteData({pathOrUrl: path}), triggerPoint: 'end'});
+    }
+    
+    return {data: stateData};
   }
 
-  replaceState(data: any, title: string | undefined, path: string): ChangeStateResult {
-    // data = this.config.changeStateConvertDate?this.config.changeStateConvertDate(data): data;
-    // console.log('--->replaceState', data);
-    this.behaviorSubject.next({...this.getRouteData({pathOrUrl: path}), triggerPoint: 'start'});
-    this.config.window.history?.replaceState(data, title ?? '', path);
-    this.behaviorSubject.next({...this.getRouteData({pathOrUrl: path}), triggerPoint: 'end'});
-    return {data};
+  replaceState(data: any, title: string | undefined, path: string, config?: ChangeStateConfig): ChangeStateResult {
+    // console.log('-re?->', data, title, path, config);
+    // noEventAndPublish가 true이면 마커 추가
+    const stateData = config?.noEventAndPublish 
+      ? { ...data, [ROUTER_NO_EVENT_MARKER]: true }
+      : data;
+    
+    if (!config?.noEventAndPublish) {
+      this.behaviorSubject.next({...this.getRouteData({pathOrUrl: path}), triggerPoint: 'start'});
+    }
+    
+    this.config.window.history?.replaceState(stateData, title ?? '', path);
+    
+    if (!config?.noEventAndPublish) {
+      this.behaviorSubject.next({...this.getRouteData({pathOrUrl: path}), triggerPoint: 'end'});
+    }
+    
+    return {data: stateData};
   }
 
   getData(): any {
@@ -177,26 +209,31 @@ export abstract class Router<T = any> {
     return Expression.Path.pathNameData(currentUrl, urlExpression);
   }
 
-  back(): void {
-    this.behaviorSubject.next({...this.getRouteData(), triggerPoint: 'start'});
-    this.config.window.history.back();
-    //en부분은 constructo의  this.config.window.addEventListener('popstate'   에서 받아서 처리된다 호출된다.
-  }
-
-  forward(): void {
-    this.behaviorSubject.next({...this.getRouteData(), triggerPoint: 'start'});
-    this.config.window.history?.forward();
-    //end부분은 constructor의  this.config.window.addEventListener('popstate'   에서 받아서 처리된다 호출된다.
-  }
-
-  go(i: number): void;
-  async go(config: string | { path: RouteAction, data?: any, replace?: boolean, title?: string, scrollToTop?: boolean } | string): Promise<void> ;
-  go(config: number | string | { path: RouteAction, data?: any, replace?: boolean, title?: string, scrollToTop?: boolean } | string): Promise<void> | void {
-    // console.log('Router go', config);
-    if (typeof config === 'number') {
+  back(config?: ChangeStateConfig): void {
+    if (!config?.noEventAndPublish) {
       this.behaviorSubject.next({...this.getRouteData(), triggerPoint: 'start'});
+    }
+    this.config.window.history.back();
+    // end부분은 constructor의 this.config.window.addEventListener('popstate')에서 받아서 처리된다
+  }
+
+  forward(config?: ChangeStateConfig): void {
+    if (!config?.noEventAndPublish) {
+      this.behaviorSubject.next({...this.getRouteData(), triggerPoint: 'start'});
+    }
+    this.config.window.history?.forward();
+    // end부분은 constructor의 this.config.window.addEventListener('popstate')에서 받아서 처리된다
+  }
+
+  go(i: number, config?: ChangeStateConfig): void;
+  async go(config: string | { path: RouteAction, state?: RouterMethodOptions, replace?: boolean, scrollToTop?: boolean }): Promise<void>;
+  go(config: number | string | { path: RouteAction, state?: RouterMethodOptions, replace?: boolean, scrollToTop?: boolean }, changeStateConfig?: ChangeStateConfig): Promise<void> | void {
+    if (typeof config === 'number') {
+      if (!changeStateConfig?.noEventAndPublish) {
+        this.behaviorSubject.next({...this.getRouteData(), triggerPoint: 'start'});
+      }
       this.config.window.history?.go(config);
-      //end부분은 constructor의  this.config.window.addEventListener('popstate'   에서 받아서 처리된다 호출된다.
+      // end부분은 constructor의 this.config.window.addEventListener('popstate')에서 받아서 처리된다
       return;
     }
 
@@ -204,15 +241,11 @@ export abstract class Router<T = any> {
       config = {path: config};
     }
 
-    // let data: ChangeStateResult | undefined = undefined;
     if (config?.replace) {
-      this.replace(config.path, config.data, config.title);
+      this.replace(config.path, config.state);
     } else {
-      this.push(config.path, config.data, config.title);
+      this.push(config.path, config.state);
     }
-    // if (!this.config.disableAttach) {
-    //   await this.attach();
-    // }
 
     // 스크롤 제어 (기본값: true - 맨 위로 스크롤)
     if (config.scrollToTop !== false) {
@@ -221,11 +254,6 @@ export abstract class Router<T = any> {
       } catch (e) {
       }
     }
-
-    // console.log('----------', data, config)
-    // if (!config.disabledPopEvent) {
-    //   this.dispatchPopStateEvent(config?.data);
-    // }
   }
 
   toUrl(data: RouteAction) {
@@ -243,21 +271,25 @@ export abstract class Router<T = any> {
   }
 
 
-  abstract push(path: RouteAction, data?: any, title?: string): void;
+  abstract push(path: RouteAction, state?: RouterMethodOptions): void;
 
-  abstract replace(path: RouteAction, data?: any, title?: string): void;
+  abstract replace(path: RouteAction, state?: RouterMethodOptions): void;
 
-  abstract pushDeleteSearchParam(name: string | string[], data?: any, title?: string): void;
+  abstract pushDeleteSearchParam(name: string | string[], state?: RouterMethodOptions): void;
 
-  abstract pushDeleteHashSearchParam(name: string | string[], data?: any, title?: string): void;
+  abstract pushDeleteHashSearchParam(name: string | string[], state?: RouterMethodOptions): void;
 
-  abstract pushAddSearchParam(params: [[string, string]], data?: any, title?: string): void;
+  abstract pushAddSearchParam(params: [[string, string]], state?: RouterMethodOptions): void;
 
-  abstract replaceDeleteSearchParam(name: string | string[], data?: any, title?: string): void;
+  abstract pushUpsertSearchParam(params: Record<string, string | string[]>, state?: RouterMethodOptions): void;
 
-  abstract replaceDeleteHashSearchParam(name: string | string[], data?: any, title?: string): void;
+  abstract replaceDeleteSearchParam(name: string | string[], state?: RouterMethodOptions): void;
 
-  abstract replaceAddSearchParam(params: [[string, string]], data?: any, title?: string): void;
+  abstract replaceDeleteHashSearchParam(name: string | string[], state?: RouterMethodOptions): void;
+
+  abstract replaceAddSearchParam(params: [[string, string]], state?: RouterMethodOptions): void;
+
+  abstract replaceUpsertSearchParam(params: Record<string, string | string[]>, state?: RouterMethodOptions): void;
 
   abstract getSearchParams(data?: { delete?: string[], append?: [[string, string]] }): URLSearchParams;
 

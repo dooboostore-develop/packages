@@ -7,6 +7,7 @@ import { EndPoint } from '../endpoints/EndPoint';
 import { RequestResponse } from '../models/RequestResponse';
 import { SimpleBootHttpServer } from '../SimpleBootHttpServer';
 import { TransactionManager } from '@dooboostore/core/transaction/TransactionManager';
+import { WebSocketEndPoint } from '../endpoints/WebSocketEndPoint';
 
 export type Listen = { port?: number, hostname?: string, backlog?: number, listeningListener?: (server: SimpleBootHttpServer, httpServer: HttpServer | HttpsServer) => void };
 
@@ -40,6 +41,7 @@ export class HttpServerOption extends SimOption {
   public filters?: (Filter | ConstructorType<Filter>)[];
   public fileUploadTempPath?: string;
   public requestEndPoints?: (EndPoint | ConstructorType<EndPoint>)[];
+  public webSocketEndPoints?: (WebSocketEndPoint | ConstructorType<WebSocketEndPoint>)[];
   public closeEndPoints?: (EndPoint | ConstructorType<EndPoint>)[];
   public errorEndPoints?: (EndPoint | ConstructorType<EndPoint>)[];
   public sessionOption: SessionOption;
@@ -55,6 +57,7 @@ export class HttpServerOption extends SimOption {
       requestEndPoints,
       closeEndPoints,
       errorEndPoints,
+      webSocketEndPoints,
       sessionOption,
       globalAdvice,
       fileUploadTempPath,
@@ -67,6 +70,7 @@ export class HttpServerOption extends SimOption {
       requestEndPoints?: (EndPoint | ConstructorType<EndPoint>)[];
       closeEndPoints?: (EndPoint | ConstructorType<EndPoint>)[];
       errorEndPoints?: (EndPoint | ConstructorType<EndPoint>)[];
+      webSocketEndPoints?: (WebSocketEndPoint | ConstructorType<WebSocketEndPoint>)[];
       sessionOption?: {
         key?: string;
         expiredTime?: number;
@@ -94,6 +98,7 @@ export class HttpServerOption extends SimOption {
     this.requestEndPoints = requestEndPoints;
     this.closeEndPoints = closeEndPoints;
     this.errorEndPoints = errorEndPoints;
+    this.webSocketEndPoints = webSocketEndPoints;
     this.sessionOption = Object.assign(
       { key: 'SBSESSIONID', path: '/', httpOnly: true, expiredTime: 1000 * 60 * 30 },
       sessionOption

@@ -4,6 +4,15 @@ export namespace ConvertUtils {
   export const coreConvertUtils = CoreConverUtils;
 
 
+  export function toObject<T>(data: HTMLFormElement): T {
+    const formData = new FormData(data);
+    const obj: any = {};
+    formData.forEach((value, key) => {
+      // @ts-ignore
+      obj[key] = value;
+    });
+    return obj as T;
+  }
   export function toObjectUrl(data: File | Blob): string {
     return URL.createObjectURL(data);
   }

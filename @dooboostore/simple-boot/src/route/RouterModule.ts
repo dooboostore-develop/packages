@@ -49,6 +49,9 @@ export class RouterModule<R = SimAtomic, M = any> {
   public get pathData(): Expression.Path.PathNameData | undefined {
     return this._pathData;
   }
+  public getPathData<T>() {
+    return this._pathData as T;
+  }
 
   public set pathData(value: Expression.Path.PathNameData | undefined) {
     this._pathData = value;

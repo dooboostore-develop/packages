@@ -554,6 +554,10 @@ export namespace ConvertUtils {
    return Array.from(stringJson.matchAll(/(\w+):\s*([^,}]+)/g)).map(match => ({key: match[1], value: match[2]}))
   }
 
+  export const entriesToKeyPairs = <T>(o: T) => {
+    return Object.entries(o).map(([key, value]) => ({key, value})) as {key: keyof T, value: T[keyof T]}[];
+  }
+
   export const stringToBase64 = (str: string): string => {
     return btoa(str);
   }

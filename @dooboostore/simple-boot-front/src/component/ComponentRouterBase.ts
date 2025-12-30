@@ -4,7 +4,8 @@ import { RouterAction } from '@dooboostore/simple-boot/route/RouterAction';
 import { ChildrenSet, ComponentBaseConfig } from '@dooboostore/dom-render/components/ComponentBase';
 import { getDomRenderOriginObject } from '@dooboostore/dom-render/DomRenderProxy';
 import { RouterOutlet } from '@dooboostore/dom-render/components/router/RouterOutlet';
-import { RoutingDataSet } from '@dooboostore/simple-boot/route/RouterManager';
+import type { RoutingDataSet } from '@dooboostore/simple-boot/route/RouterManager';
+import {DomRenderNoProxy} from "@dooboostore/dom-render/decorators/DomRenderNoProxy";
 
 export type ComponentRouterBaseConfig = ComponentBaseConfig & { sameRouteNoApply?: boolean };
 
@@ -12,6 +13,8 @@ export abstract class ComponentRouterBase<T = any>
   extends DomRenderComponentRouterBase<T>
   implements RouterAction.CanActivate, RouterAction.OnRouting
 {
+  @DomRenderNoProxy
+  private _routingDataSet?: RoutingDataSet;
   constructor(_config?: ComponentRouterBaseConfig) {
     super(_config);
   }
@@ -58,7 +61,12 @@ export abstract class ComponentRouterBase<T = any>
     }
   }
 
+  getPathData<T>(): T | undefined {
+    return this._routingDataSet?.routerModule.getPathData<T>();
+  }
+
   async onRouting(r: RoutingDataSet): Promise<void> {
+    this._routingDataSet = r;
     // if (RouterAction.isOnRouting(this.child?.obj)){
     //   await this.child.obj.onRouting(r);
     // }

@@ -1,3 +1,5 @@
+import { Mimes } from './Mimes';
+
 export const HttpHeaders = {
     ContentLength : 'Content-Length',
     ContentType : 'Content-Type',
@@ -38,6 +40,14 @@ export const HttpHeaders = {
     IfNoneMatch : 'If-None-Match',
     IfRange : 'If-Range',
     Allow : 'Allow',
-    Server : 'Server'
+    Server : 'Server',
+  XSimpleBootSsrIntentScheme: 'x-simple-boot-ssr-intent-scheme'
 }
 export type HttpHeadersType = keyof typeof HttpHeaders;
+
+export const makeIntentHeaderBySymbolFor = (symbol: Symbol): HeadersInit => {
+  return {
+    [HttpHeaders.Accept]: Mimes.ApplicationJsonPostSimpleBootSsrIntentScheme,
+    [HttpHeaders.XSimpleBootSsrIntentScheme]: `Symbol.for(${symbol.description})`
+  }
+};

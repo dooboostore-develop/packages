@@ -424,6 +424,11 @@ export class EventManager {
       const script = attribute;
       if (script) {
         const data = ObjectUtils.Script.evaluateReturn(script, obj);
+        if (data) {
+          it.setAttribute('selected', 'selected');
+        } else {
+          it.removeAttribute('selected');
+        }
         if (it.selected !== data) {
           it.selected = data;
         }
@@ -435,6 +440,11 @@ export class EventManager {
       const script = attribute;
       if (script) {
         const data = ObjectUtils.Script.evaluateReturn(script, obj);
+        if (data) {
+          it.setAttribute('readonly', 'readonly');
+        } else {
+          it.removeAttribute('readonly');
+        }
         if (it.readOnly !== data) {
           it.readOnly = data;
         }
@@ -446,6 +456,11 @@ export class EventManager {
       const script = attribute;
       if (script) {
         const data = ObjectUtils.Script.evaluateReturn(script, obj);
+        if (data) {
+          it.setAttribute('disabled', 'disabled');
+        } else {
+          it.removeAttribute('disabled');
+        }
         if (it.disabled !== data) {
           it.disabled = data;
         }
@@ -457,6 +472,11 @@ export class EventManager {
       const script = attribute;
       if (script) {
         const data = ObjectUtils.Script.evaluateReturn(script, obj);
+        if (data) {
+          it.setAttribute('hidden', 'hidden');
+        } else {
+          it.removeAttribute('hidden');
+        }
         if (it.hidden !== data) {
           it.hidden = data;
         }
@@ -468,6 +488,11 @@ export class EventManager {
       const script = attribute;
       if (script) {
         const data = ObjectUtils.Script.evaluateReturn(script, obj);
+        if (data) {
+          it.setAttribute('required', 'required');
+        } else {
+          it.removeAttribute('required');
+        }
         if (it.required !== data) {
           it.required = data;
         }
@@ -479,6 +504,11 @@ export class EventManager {
       const script = attribute;
       if (script) {
         const data = ObjectUtils.Script.evaluateReturn(script, obj);
+        if (data) {
+          it.setAttribute('open', 'open');
+        } else {
+          it.removeAttribute('open');
+        }
         if (it.open !== data) {
           it.open = data;
         }
