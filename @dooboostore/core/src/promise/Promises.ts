@@ -139,31 +139,46 @@ export namespace Promises {
     return {promise, resolve, reject};
   }
 
-  /**
-   * Execute promises in chunks with concurrency limit to prevent network overload
-   * @param promiseFactories Array of promise factories (functions that return promises)
-   * @param chunkSize Number of promises to execute concurrently
-   * @returns Promise that resolves with all results
-   */
+
   export const executeInChunks = async <T>(
     promiseFactories: (() => Promise<T>)[],
-    chunkSize: number = 10
+    config:{chunkSize: number, sleepBetweenChunks: number}
   ): Promise<T[]> => {
     const results: T[] = [];
+    const chunkSize = config.chunkSize;
+    const sleepBetweenChunks = config.sleepBetweenChunks ;
 
     for (let i = 0; i < promiseFactories.length; i += chunkSize) {
       const chunk = promiseFactories.slice(i, i + chunkSize);
       const chunkResults = await Promise.all(chunk.map(factory => factory()));
       results.push(...chunkResults);
-
       // Add small delay between chunks to be extra safe
       if (i + chunkSize < promiseFactories.length) {
-        await sleep(100);
+        await sleep(sleepBetweenChunks);
       }
     }
-
     return results;
   };
+
+  export const executeSettledInChunks = async <T, E = unknown>(
+    promiseFactories: (() => Promise<T>)[],
+    config:{chunkSize: number, sleepBetweenChunks: number}
+  ): Promise<Promises.SettledResult<T, E>[]> => {
+    const results: Promises.SettledResult<T, E>[] = [];
+    const chunkSize = config.chunkSize;
+    const sleepBetweenChunks = config.sleepBetweenChunks ;
+
+    for (let i = 0; i < promiseFactories.length; i += chunkSize) {
+      const chunk = promiseFactories.slice(i, i + chunkSize);
+      const chunkResults = await Promise.allSettled(chunk.map(factory => factory())) as Promises.SettledResult<T, E>[];
+      results.push(...chunkResults);
+      // Add small delay between chunks to be extra safe
+      if (i + chunkSize < promiseFactories.length) {
+        await sleep(sleepBetweenChunks);
+      }
+    }
+    return results;
+  }
 
   /**
    * Execute promises with concurrency limit using a pool pattern
