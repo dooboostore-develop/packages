@@ -2,7 +2,7 @@ import { ReplaySubject } from './ReplaySubject';
 import { Subject } from './Subject';
 import { Subscription } from './Subscription';
 
-class ReplayForwardSubject<T> extends ReplaySubject<T> {
+export class ReplayForwardSubject<T> extends ReplaySubject<T> {
   private forward = new Subject<T>();
   private internalSub: Subscription;  // 내부 구독 저장
 

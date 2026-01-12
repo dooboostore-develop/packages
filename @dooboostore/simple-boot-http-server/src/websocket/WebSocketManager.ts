@@ -14,6 +14,7 @@ export type UnsubscribeType = 'unsubscribe';
 export type TopicRequest<T = any> = {
   type?: TopicType;
   uuid: string;
+  requestUUID: string;
   body?: T;
 };
 export type TopicSubscribeRequest<T = any> = {
@@ -32,6 +33,7 @@ export type TopicResponse<T = any> = {
   // type: TopicType | SubscribeType | UnsubscribeType;
   target: string;
   uuid: string;
+  requestUUID?: string;
   body: T;
 };
 
@@ -454,6 +456,7 @@ export class WebSocketManager implements WebSocketEndPoint {
                 // type: topic.type,
                 target: clientTopics.target,
                 uuid: topic.uuid,
+                requestUUID: topic.requestUUID,
                 body: { message: 'Not found intent target' }
               };
               wsSet.socket.send(JSON.stringify(responseTopic), { binary: false });
@@ -462,7 +465,8 @@ export class WebSocketManager implements WebSocketEndPoint {
               const wdata = rdata instanceof Promise ? await rdata : rdata;
               const responseTopic: TopicResponse = {
                 state: 'success',
-                /*type: topic.type,*/ uuid: topic.uuid,
+                uuid: topic.uuid,
+                requestUUID: topic.requestUUID,
                 target: clientTopics.target,
                 body: wdata
               };
@@ -479,7 +483,7 @@ export class WebSocketManager implements WebSocketEndPoint {
                   r = r instanceof Promise ? await r : r;
                   const responseTopic: TopicResponse = {
                     state: 'success',
-                    // type: topic.type,
+                    requestUUID: topic.requestUUID,
                     uuid: topic.uuid,
                     target: clientTopics.target,
                     body: r
@@ -489,8 +493,8 @@ export class WebSocketManager implements WebSocketEndPoint {
               } else {
                 const responseTopic: TopicResponse = {
                   state: 'error',
-                  // type: topic.type,
                   uuid: topic.uuid,
+                  requestUUID: topic.requestUUID,
                   target: clientTopics.target,
                   body: { message: 'Not found router target' }
                 };
@@ -499,8 +503,8 @@ export class WebSocketManager implements WebSocketEndPoint {
             } else {
               const responseTopic: TopicResponse = {
                 state: 'error',
-                // type: topic.type,
                 uuid: topic.uuid,
+                requestUUID: topic.requestUUID,
                 target: clientTopics.target,
                 body: { message: 'Not found router target' }
               };
