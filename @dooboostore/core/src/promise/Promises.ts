@@ -1,22 +1,22 @@
-import {Subscription} from '../message/Subscription';
-import {ConstructorType} from '../types';
-import {ValidUtils} from '../valid/ValidUtils';
-import {AbortablePromise} from "./AbortablePromise";
+import { Subscription } from '../message/Subscription';
+import { ConstructorType } from '../types';
+import { ValidUtils } from '../valid/ValidUtils';
+import { AbortablePromise } from './AbortablePromise';
 
 export namespace Promises {
   export const isFulfilled = <T>(result: PromiseSettledResult<T>): result is PromiseFulfilledResult<T> => {
     return result.status === 'fulfilled';
-  }
+  };
   export const isRejected = <T>(result: PromiseSettledResult<T>): result is PromiseRejectedResult => {
     return result.status === 'rejected';
-  }
+  };
 
-  export const filterCatch = async (promise: Promise<any>, has: ConstructorType<any> | ((e: any) => boolean) | ((ConstructorType<any> | ((e: any) => void))[])) => {
+  export const filterCatch = async (promise: Promise<any>, has: ConstructorType<any> | ((e: any) => boolean) | (ConstructorType<any> | ((e: any) => void))[]) => {
     try {
       await promise;
       return undefined;
     } catch (e) {
-      const targetHas = Array.isArray(has) ? has : [has]
+      const targetHas = Array.isArray(has) ? has : [has];
       for (let ha of targetHas) {
         if (ValidUtils.isConstructor(ha)) {
           if (e instanceof ha) {
@@ -31,7 +31,7 @@ export namespace Promises {
       throw e;
     }
     return undefined;
-  }
+  };
   export const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
   export const sleepReject = (ms: number) => new Promise((resolve, reject) => setTimeout(reject, ms));
   export const settle = async <T, E = unknown>(promise: Promise<T>): Promise<Promises.SettledResult<T, E>> => {
@@ -40,70 +40,49 @@ export namespace Promises {
   export const settles = async <T, E = unknown>(...promises: Promise<T>[]): Promise<Promises.SettledResult<T, E>[]> => {
     return Promise.allSettled(promises);
   };
-  export type SettledResult<T, E = unknown> =
-    | PromiseFulfilledResult<T>
-    | (Omit<PromiseRejectedResult, 'reason'> & { reason: E });
+  export type SettledResult<T, E = unknown> = PromiseFulfilledResult<T> | (Omit<PromiseRejectedResult, 'reason'> & { reason: E });
 
   export type LoopConfig = { age: number };
   export type ObservableLoop<T> = {
-    subscribe: (callback: {
-      then?: (data: T, config: LoopConfig & { duration: number }) => void,
-      catch?: (e: any, config: LoopConfig & { duration: number }) => void,
-      delayThen?: (config: LoopConfig & { duration: number, isCatch: boolean, data?: T }) => void,
-    }) => Subscription;
-  }
-  export const loop = <T>(config: {
-                            factory: (config: LoopConfig) => Promise<T>,
-                            delay?: number,
-                            loopDelay?: number
-                          }
-  ): ObservableLoop<T> => {
-
+    subscribe: (callback: { then?: (data: T, config: LoopConfig & { duration: number }) => void; catch?: (e: any, config: LoopConfig & { duration: number }) => void; delayThen?: (config: LoopConfig & { duration: number; isCatch: boolean; data?: T }) => void }) => Subscription;
+  };
+  export const loop = <T>(config: { factory: (config: LoopConfig) => Promise<T>; delay?: number; loopDelay?: number }): ObservableLoop<T> => {
     return {
-      subscribe: (callback) => {
-
+      subscribe: callback => {
         let stop = false;
         let age = 0;
         const loopExecute = async () => {
           const start = Date.now();
           let end = start;
           age++;
-          const executeConfig = {age: age};
+          const executeConfig = { age: age };
           let t: T;
           let isCatch = false;
           try {
             t = await config.factory(executeConfig);
             end = Date.now();
-            callback.then?.(t, {...executeConfig, duration: end - start});
+            callback.then?.(t, { ...executeConfig, duration: end - start });
           } catch (e) {
             isCatch = true;
             end = Date.now();
-            callback.catch?.(e, {...executeConfig, duration: end - start});
+            callback.catch?.(e, { ...executeConfig, duration: end - start });
           }
           await sleep(config.loopDelay ?? 0);
           // @ts-ignore
-          callback.delayThen?.({...executeConfig, duration: end - start, isCatch: isCatch, data: t});
-          if (!stop)
-            return loopExecute();
+          callback.delayThen?.({ ...executeConfig, duration: end - start, isCatch: isCatch, data: t });
+          if (!stop) return loopExecute();
         };
 
         setTimeout(() => {
           loopExecute();
         }, config.delay ?? 0);
 
-        return {
-          get closed() {
-            return stop;
-          },
-          unsubscribe: () => {
-            stop = true;
-          }
-        }
-
-
+        return new Subscription(() => {
+          stop = true;
+        });
       }
-    }
-  }
+    };
+  };
   export const delayExecute = <T>(value: (() => T) | (() => Promise<T>), delay = 0): Promise<T> => {
     return new Promise<T>(resolve => {
       setTimeout(async () => {
@@ -113,17 +92,12 @@ export namespace Promises {
     });
   };
 
-
-
   /**
    * Create an abortable promise chain
    * @param executor Initial promise or promise factory
    * @param signal Optional AbortSignal to cancel the execution
    */
-  export const abortable = <T>(
-    executor: (() => Promise<T>) | Promise<T>,
-    signal?: AbortSignal
-  ): AbortablePromise<T> => {
+  export const abortable = <T>(executor: (() => Promise<T>) | Promise<T>, signal?: AbortSignal): AbortablePromise<T> => {
     return new AbortablePromise(executor, signal);
   };
 
@@ -136,17 +110,13 @@ export namespace Promises {
       reject = rej;
     });
 
-    return {promise, resolve, reject};
-  }
+    return { promise, resolve, reject };
+  };
 
-
-  export const executeInChunks = async <T>(
-    promiseFactories: (() => Promise<T>)[],
-    config:{chunkSize: number, sleepBetweenChunks: number}
-  ): Promise<T[]> => {
+  export const executeInChunks = async <T>(promiseFactories: (() => Promise<T>)[], config: { chunkSize: number; sleepBetweenChunks: number }): Promise<T[]> => {
     const results: T[] = [];
     const chunkSize = config.chunkSize;
-    const sleepBetweenChunks = config.sleepBetweenChunks ;
+    const sleepBetweenChunks = config.sleepBetweenChunks;
 
     for (let i = 0; i < promiseFactories.length; i += chunkSize) {
       const chunk = promiseFactories.slice(i, i + chunkSize);
@@ -160,17 +130,14 @@ export namespace Promises {
     return results;
   };
 
-  export const executeSettledInChunks = async <T, E = unknown>(
-    promiseFactories: (() => Promise<T>)[],
-    config:{chunkSize: number, sleepBetweenChunks: number}
-  ): Promise<Promises.SettledResult<T, E>[]> => {
+  export const executeSettledInChunks = async <T, E = unknown>(promiseFactories: (() => Promise<T>)[], config: { chunkSize: number; sleepBetweenChunks: number }): Promise<Promises.SettledResult<T, E>[]> => {
     const results: Promises.SettledResult<T, E>[] = [];
     const chunkSize = config.chunkSize;
-    const sleepBetweenChunks = config.sleepBetweenChunks ;
+    const sleepBetweenChunks = config.sleepBetweenChunks;
 
     for (let i = 0; i < promiseFactories.length; i += chunkSize) {
       const chunk = promiseFactories.slice(i, i + chunkSize);
-      const chunkResults = await Promise.allSettled(chunk.map(factory => factory())) as Promises.SettledResult<T, E>[];
+      const chunkResults = (await Promise.allSettled(chunk.map(factory => factory()))) as Promises.SettledResult<T, E>[];
       results.push(...chunkResults);
       // Add small delay between chunks to be extra safe
       if (i + chunkSize < promiseFactories.length) {
@@ -178,7 +145,7 @@ export namespace Promises {
       }
     }
     return results;
-  }
+  };
 
   /**
    * Execute promises with concurrency limit using a pool pattern
@@ -186,10 +153,7 @@ export namespace Promises {
    * @param concurrency Maximum number of concurrent executions
    * @returns Promise that resolves with all results
    */
-  export const executeWithConcurrency = async <T>(
-    promiseFactories: (() => Promise<T>)[],
-    concurrency: number = 10
-  ): Promise<T[]> => {
+  export const executeWithConcurrency = async <T>(promiseFactories: (() => Promise<T>)[], concurrency: number = 10): Promise<T[]> => {
     const results: T[] = new Array(promiseFactories.length);
     let currentIndex = 0;
 
@@ -216,10 +180,7 @@ export namespace Promises {
    * @param limit Maximum number of concurrent executions (default: 5)
    * @returns Promise that resolves with all results
    */
-  export const executeWithLimit = async <T>(
-    promiseFactories: (() => Promise<T>)[],
-    limit: number = 5
-  ): Promise<T[]> => {
+  export const executeWithLimit = async <T>(promiseFactories: (() => Promise<T>)[], limit: number = 5): Promise<T[]> => {
     const results: T[] = new Array(promiseFactories.length);
     const executing: Promise<void>[] = [];
 
@@ -321,7 +282,6 @@ export namespace Promises {
     export type PromiseState<T, E = unknown> = State<T, E> & Promise<T>;
     export type PromiseStateFactory<T, E = unknown> = PromiseState<T, E> & { factory: () => PromiseStateFactory<T, E> };
 
-
     export async function awaitWrap<T, E = unknown>(promise: Promise<T>): Promise<State<T, E>>;
     export async function awaitWrap<T, E = unknown>(promise: () => Promise<T>): Promise<StateFactory<T, E>>;
     export async function awaitWrap<T, E = unknown>(promise: Promise<T> | (() => Promise<T>)): Promise<State<T, E> | StateFactory<T, E>> {
@@ -330,8 +290,7 @@ export namespace Promises {
 
       try {
         await data;
-      } catch (e) {
-      }
+      } catch (e) {}
 
       const rData = {
         status: (data as any).status,
@@ -339,12 +298,12 @@ export namespace Promises {
         isRejected: (data as any).isRejected,
         isPending: (data as any).isPending,
         value: (data as any).value,
-        reason: (data as any).reason,
+        reason: (data as any).reason
       } as any;
       if (typeof promise === 'function') {
         rData.factory = () => {
           return awaitWrap(promise);
-        }
+        };
         return rData;
       } else {
         return rData;
@@ -353,13 +312,13 @@ export namespace Promises {
 
     export function wrap<T, E = unknown>(promise: Promise<T>): PromiseState<T, E>;
     export function wrap<T, E = unknown>(promise: () => Promise<T>): PromiseStateFactory<T, E>;
-    export function wrap<T, E = unknown>(promise: Promise<T> | (() => Promise<T>)): (PromiseState<T, E>) | PromiseStateFactory<T, E> {
+    export function wrap<T, E = unknown>(promise: Promise<T> | (() => Promise<T>)): PromiseState<T, E> | PromiseStateFactory<T, E> {
       const promiseResult = (typeof promise === 'function' ? promise() : promise) as State<T, E> & Promise<T>;
       if (typeof promise === 'function') {
         const p = promiseResult as unknown as PromiseStateFactory<T, E> & Promise<T>;
         p.factory = () => {
           return wrap(promise);
-        }
+        };
       }
       if (promiseResult.status === undefined) {
         const p = promiseResult as unknown as PendingState & Promise<T>;
@@ -369,7 +328,7 @@ export namespace Promises {
         p.isRejected = false;
         p.then(
           result => {
-            console.log('result??', result)
+            console.log('result??', result);
             const p = promiseResult as unknown as FulfilledState<T>;
             p.status = 'fulfilled';
             p.isFulfilled = true;
@@ -378,7 +337,7 @@ export namespace Promises {
             p.value = result;
           },
           reason => {
-            console.log('rejet??', reason)
+            console.log('rejet??', reason);
             const p = promiseResult as unknown as RejectState<E>;
             p.status = 'rejected';
             p.isFulfilled = false;

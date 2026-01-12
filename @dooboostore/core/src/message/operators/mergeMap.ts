@@ -8,9 +8,7 @@ import { Observable, OperatorFunction } from '../Observable';
  * @return An Observable that emits the result of applying the projection function to each item
  * emitted by the source Observable and merging the results of the Observables obtained from this transformation.
  */
-export function mergeMap<T, R>(
-  project: (value: T, index: number) => Observable<R> | Promise<R>
-): OperatorFunction<T, R> {
+export function mergeMap<T, R>(project: (value: T, index: number) => Observable<R> | Promise<R>): OperatorFunction<T, R> {
   return (source: Observable<T, any>): Observable<R, any> => {
     return new Observable<R>(subscriber => {
       let index = 0;
@@ -25,7 +23,7 @@ export function mergeMap<T, R>(
       };
 
       const sourceSubscription = source.subscribe({
-        next: (value) => {
+        next: value => {
           activeCount++;
           const currentIndex = index++;
 
@@ -33,29 +31,34 @@ export function mergeMap<T, R>(
             const projected = project(value, currentIndex);
 
             // Promise를 Observable로 변환
-            const innerObservable = projected instanceof Promise
-              ? new Observable<R>(innerSubscriber => {
-                  projected
-                    .then(result => {
-                      innerSubscriber.next(result);
-                      innerSubscriber.complete();
-                    })
-                    .catch(err => {
-                      innerSubscriber.error(err);
-                    });
-                })
-              : projected;
+            const innerObservable =
+              projected instanceof Promise
+                ? new Observable<R>(innerSubscriber => {
+                    projected
+                      .then(result => {
+                        innerSubscriber.next(result);
+                        innerSubscriber.complete();
+                      })
+                      .catch(err => {
+                        innerSubscriber.error(err);
+                      });
+                  })
+                : projected;
 
             const innerSubscription = innerObservable.subscribe({
-              next: (innerValue) => {
+              next: innerValue => {
                 subscriber.next(innerValue);
               },
-              error: (err) => {
+              error: err => {
                 activeCount--;
                 subscriber.error(err);
               },
               complete: () => {
                 activeCount--;
+                const idx = innerSubscriptions.indexOf(innerSubscription);
+                if (idx >= 0) {
+                  innerSubscriptions.splice(idx, 1);
+                }
                 checkComplete();
               }
             });
@@ -66,7 +69,7 @@ export function mergeMap<T, R>(
             subscriber.error(err);
           }
         },
-        error: (err) => {
+        error: err => {
           subscriber.error(err);
         },
         complete: () => {

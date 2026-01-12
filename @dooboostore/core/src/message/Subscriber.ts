@@ -1,9 +1,9 @@
 import { Subscription } from './Subscription';
 import { Observer } from './Observer';
 
-export class Subscriber<T, E = any> implements Subscription, Observer<T, E>{
-  closed = false;
+export class Subscriber<T, E = any> extends Subscription implements Observer<T, E> {
   constructor(private destination: Observer<T, E>) {
+    super();
   }
   next(value: T): void {
     if (this.closed) {
@@ -27,8 +27,4 @@ export class Subscriber<T, E = any> implements Subscription, Observer<T, E>{
     this.destination.complete();
     this.unsubscribe();
   }
-  unsubscribe(): void {
-    this.closed = true;
-  }
-
 }

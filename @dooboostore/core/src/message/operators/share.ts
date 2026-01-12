@@ -28,17 +28,20 @@ export function share<T>(): OperatorFunction<T, T> {
 
       // 이미 완료되었거나 에러가 발생한 경우, 새로운 구독 시작
       if (!subject || hasCompleted || hasErrored) {
+        if (sourceSubscription) {
+          sourceSubscription.unsubscribe();
+        }
         subject = new Subject<T>();
         hasCompleted = false;
         hasErrored = false;
-        
+
         sourceSubscription = source.subscribe({
-          next: (value) => {
+          next: value => {
             if (subject) {
               subject.next(value);
             }
           },
-          error: (err) => {
+          error: err => {
             hasErrored = true;
             const s = subject;
             if (s) {
@@ -64,15 +67,15 @@ export function share<T>(): OperatorFunction<T, T> {
       }
 
       const subscription = subject.subscribe({
-        next: (value) => subscriber.next(value),
-        error: (err) => subscriber.error(err),
+        next: value => subscriber.next(value),
+        error: err => subscriber.error(err),
         complete: () => subscriber.complete()
       });
 
       return () => {
         refCount--;
         subscription.unsubscribe();
-        
+
         if (refCount === 0) {
           if (sourceSubscription) {
             sourceSubscription.unsubscribe();

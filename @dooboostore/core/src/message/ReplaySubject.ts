@@ -46,7 +46,7 @@ export class ReplaySubject<T, E = any> extends Subject<T, E> {
       } else {
         subscriber.complete();
       }
-      return { closed: true, unsubscribe: () => {} }; // Return dummy subscription as it's already done
+      return Subscription.EMPTY;
     }
 
     // Then, call super._subscribeToSubject to add the observer for future values

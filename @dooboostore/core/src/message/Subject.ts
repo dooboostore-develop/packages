@@ -11,7 +11,7 @@ export class Subject<T, E = any> extends Observable<T, E> implements Observer<T,
 
   constructor() {
     // Call parent Observable constructor with our own subscribe logic
-    super((subscriber) => {
+    super(subscriber => {
       return this._subscribeToSubject(subscriber);
     });
   }
@@ -29,22 +29,14 @@ export class Subject<T, E = any> extends Observable<T, E> implements Observer<T,
       } else {
         partialObserver.complete?.();
       }
-      return { closed: true, unsubscribe: () => {} }; // Already stopped, return dummy subscription
+      return Subscription.EMPTY;
     }
 
     this._observers.add(partialObserver);
 
-    let closed = false;
-
-    return {
-      get closed() {
-        return closed;
-      },
-      unsubscribe: () => {
-        this._observers.delete(partialObserver);
-        closed = true;
-      }
-    };
+    return new Subscription(() => {
+      this._observers.delete(partialObserver);
+    });
   }
 
   next(data: T): void {
@@ -52,7 +44,7 @@ export class Subject<T, E = any> extends Observable<T, E> implements Observer<T,
       return; // Subject is stopped, no more emissions
     }
     this._observers.forEach(observer => {
-      observer.next?.(data)
+      observer.next?.(data);
     });
   }
 
@@ -75,8 +67,6 @@ export class Subject<T, E = any> extends Observable<T, E> implements Observer<T,
     this._observers.forEach(observer => observer.complete?.());
     this._observers.clear(); // Clear observers after completion
   }
-
-
 
   asObservable(): Observable<T, E> {
     // Returns a new Observable that wraps this Subject's subscribe method.

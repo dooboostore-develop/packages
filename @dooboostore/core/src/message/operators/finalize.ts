@@ -10,20 +10,28 @@ import { Observable, OperatorFunction } from '../Observable';
 export function finalize<T>(callback: () => void): OperatorFunction<T, T> {
   return (source: Observable<T, any>): Observable<T, any> => {
     return new Observable<T>(subscriber => {
+      let executed = false;
+      const executeCallback = () => {
+        if (!executed) {
+          executed = true;
+          callback();
+        }
+      };
+
       const subscription = source.subscribe({
-        next: (value) => {
+        next: value => {
           subscriber.next(value);
         },
-        error: (err) => {
+        error: err => {
           try {
-            callback();
+            executeCallback();
           } finally {
             subscriber.error(err);
           }
         },
         complete: () => {
           try {
-            callback();
+            executeCallback();
           } finally {
             subscriber.complete();
           }
@@ -34,7 +42,7 @@ export function finalize<T>(callback: () => void): OperatorFunction<T, T> {
         try {
           subscription.unsubscribe();
         } finally {
-          callback();
+          executeCallback();
         }
       };
     });
