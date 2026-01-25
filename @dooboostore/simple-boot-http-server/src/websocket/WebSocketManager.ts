@@ -133,6 +133,7 @@ export class WebSocketManager implements WebSocketEndPoint {
     console.log('WebSocket connected:', wsSet.request.url);
   }
   close(wsSet: WebSocketSet) {
+    this.removeAllClientsByWebSocketSet(wsSet);
     this.clients.delete(wsSet);
     console.log('WebSocket disconnected:', wsSet.request.url);
   }
@@ -297,9 +298,6 @@ export class WebSocketManager implements WebSocketEndPoint {
       if (!success) {
         if (timeoutId) clearTimeout(timeoutId);
         reject(new Error('WebSocket client not found for UUID: ' + uuid));
-      } else if (config?.responseTimeout === undefined) {
-        // responseTimeout이 없으면 이벤트 전송 후 바로 resolve
-        resolve(undefined as R);
       }
     });
   }
@@ -383,8 +381,13 @@ export class WebSocketManager implements WebSocketEndPoint {
 
   message(wsSet: WebSocketSet, data: { data: RawData; isBinary: boolean }): void {
     if (!data.isBinary) {
-      const topic: TopicRequest | TopicUnsubscribeRequest | TopicSubscribeRequest | TopicServerEventResponse =
-        JSON.parse(data.data.toString());
+      let topic: TopicRequest | TopicUnsubscribeRequest | TopicSubscribeRequest | TopicServerEventResponse;
+      try {
+        topic = JSON.parse(data.data.toString());
+      } catch (error) {
+        console.warn('Invalid WebSocket payload:', error);
+        return;
+      }
 
       this.subject.next(topic);
       // console.log('WebSocket message received:', topic);
@@ -516,5 +519,16 @@ export class WebSocketManager implements WebSocketEndPoint {
     }
     // console.log('------h',wsSet.request.headers);
     // wsSet.socket.send(`Ecaho: ${data.data}`, { binary: data.isBinary });
+  }
+
+  private removeAllClientsByWebSocketSet(wsSet: WebSocketSet) {
+    const topics = this.clients.get(wsSet);
+    if (!topics) {
+      return;
+    }
+    for (const topic of topics) {
+      this.eventSubscriptions.delete(topic.uuid);
+    }
+    this.clients.set(wsSet, []);
   }
 }
