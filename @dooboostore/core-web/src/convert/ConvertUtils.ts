@@ -31,32 +31,38 @@ export namespace ConvertUtils {
   export const toFile =  async (imageBitmapOrCanvas: HTMLImageElement | ImageBitmap | HTMLCanvasElement | OffscreenCanvas, config: ImageConvertConfig & {filename: string;}): Promise<File> => {
     const fileName = config.filename;
     delete config['filename'];
-    return new File([await ConvertUtils.toBlob(imageBitmapOrCanvas, config)], fileName, {type: config.type});
+    return new File([await ConvertUtils.toBlob({data:imageBitmapOrCanvas, config})], fileName, {type: config.type});
   }
 
-  export const toBlob = async (imageBitmapOrCanvas: File | HTMLImageElement | ImageBitmap | HTMLCanvasElement | OffscreenCanvas, config: ImageConvertConfig): Promise<Blob> => {
+  export const toArrayBuffer = async (imageBitmapOrCanvas: File | {data:HTMLImageElement | ImageBitmap | HTMLCanvasElement | OffscreenCanvas,  config: ImageConvertConfig}): Promise<ArrayBuffer> => {
+    if (imageBitmapOrCanvas instanceof File) {
+      return imageBitmapOrCanvas.arrayBuffer();
+    }
+    return await (await ConvertUtils.toBlob({data:imageBitmapOrCanvas.data, config:imageBitmapOrCanvas.config})).arrayBuffer();
+  }
+  export const toBlob = async (imageBitmapOrCanvas: File | {data : HTMLImageElement | ImageBitmap | HTMLCanvasElement | OffscreenCanvas, config: ImageConvertConfig }): Promise<Blob> => {
     if (imageBitmapOrCanvas instanceof File) {
       return imageBitmapOrCanvas;
     }
     let canvas: HTMLCanvasElement | OffscreenCanvas;
-    if (imageBitmapOrCanvas instanceof ImageBitmap || imageBitmapOrCanvas instanceof HTMLImageElement) {
+    if (imageBitmapOrCanvas.data instanceof ImageBitmap || imageBitmapOrCanvas.data instanceof HTMLImageElement) {
       // 1. Canvas 생성 및 설정
       canvas = document.createElement('canvas');
-      canvas.width = imageBitmapOrCanvas.width;
-      canvas.height = imageBitmapOrCanvas.height;
+      canvas.width = imageBitmapOrCanvas.data.width;
+      canvas.height = imageBitmapOrCanvas.data.height;
       const context = canvas.getContext('2d');
       // 2. ImageBitmap을 Canvas에 그리기
-      context.drawImage(imageBitmapOrCanvas, 0, 0);
+      context.drawImage(imageBitmapOrCanvas.data, 0, 0);
     } else {
       // 1. OffscreenCanvas 또는 HTMLCanvasElement를 사용
-      canvas = imageBitmapOrCanvas;
+      canvas = imageBitmapOrCanvas.data;
     }
     // 3. Canvas를 Blob으로 변환 (Promise 사용)
     return new Promise((resolve, reject) => {
       try {
         if (canvas instanceof OffscreenCanvas) {
           // @ts-ignore
-          return canvas.convertToBlob({type: config.type, quality: config.quality})
+          return canvas.convertToBlob({type: imageBitmapOrCanvas.config.type, quality: imageBitmapOrCanvas.config.quality})
         } else {
           canvas.toBlob((blob) => {
             if (blob) {
@@ -64,7 +70,7 @@ export namespace ConvertUtils {
             } else {
               reject(new Error('Blob 생성 실패'));
             }
-          }, config.type, config.quality); // 'image/png' 또는 'image/jpeg' 선택 가능
+          }, imageBitmapOrCanvas.config.type, imageBitmapOrCanvas.config.quality); // 'image/png' 또는 'image/jpeg' 선택 가능
         }
       } catch (e) {
         reject(e);
@@ -131,8 +137,8 @@ export namespace ConvertUtils {
   }
 
   // 에러조심  CORS: SecurityError: Failed to execute 'convertToBlob' on 'OffscreenCanvas': Tainted "OffscreenCanvas" may not be exported.
-  export const toBlobURL = async (imageBitmapOrCanvas: ImageBitmap | HTMLCanvasElement | OffscreenCanvas, config: ImageConvertConfig): Promise<string> => {
-    const blob = await toBlob(imageBitmapOrCanvas, config);
+  export const toBlobURL = async (imageBitmapOrCanvas: File | {data: ImageBitmap | HTMLCanvasElement | OffscreenCanvas, config: ImageConvertConfig}): Promise<string> => {
+    const blob = await toBlob(imageBitmapOrCanvas);
     return ConvertUtils.toObjectUrl(blob)
   };
 
