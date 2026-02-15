@@ -18,8 +18,11 @@ A lightweight and powerful HTTP web server framework for Node.js, built on `@doo
 -   **Integrated Exception Handling**: Leverage `@simple-boot`'s AOP capabilities to create robust global error handlers.
 -   **Built-in Session Management**: Easily manage user sessions with a built-in session manager and customizable storage.
 -   **HTTPS and HTTP/2 Support**: Secure your server with HTTPS and HTTP/2 configuration.
+-   **WebSocket Topics + Events**: Topic-based subscribe/request/response with server events.
+-   **WebSocket Binary File Transfer**: Send/receive files inside regular message payloads (JSON + binary framing).
+-   **WebSocket Auto Reconnect**: Automatic reconnect and re-subscribe with configurable retry.
 
-## Quick Start
+## Quick Star``t
 
 ```bash
 npx @dooboostore/create-simple-boot-http-server my-server
@@ -30,6 +33,8 @@ npm start
 ## Learn More
 
 The detailed API documentation, including all decorators and usage examples, is available on our documentation website.
+
+- WebSocket Guide: [document/websocket/README.md](document/websocket/README.md)
 
 ## License
 

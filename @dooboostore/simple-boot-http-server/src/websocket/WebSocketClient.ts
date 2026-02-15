@@ -12,6 +12,8 @@ export type TopicObserverCallBack<T> = { next: TopicObserverNextCallBack<T>; eve
 export interface WebSocketClientConfig {
   retryConnectionCount?: number;
   retryConnectionDelay?: number;
+  maxPendingMessages?: number;
+  maxPendingBinaryMessages?: number;
 }
 
 type OnUnsubscribeCallback = (type: 'server' | 'manual') => void;
@@ -25,6 +27,7 @@ export class WebSocketClient {
   private topics = new Map<string, { observer: TopicObserverCallBack<any>; subscription: Subscription; onUnsubscribes: OnUnsubscribeCallback[]; target: string }>();
   private observer?: (data: TopicResponse | TopicServerEventRequest | TopicServerEventUnSubscribeRequest) => void;
   private pendingMessages: any[] = [];
+  private pendingBinaryMessages: Array<ArrayBuffer | Blob | Uint8Array> = [];
   private isConnected = false;
   private onOpenCallback: () => void;
   private onCloseCallback: () => void;
@@ -37,6 +40,9 @@ export class WebSocketClient {
   private currentRetryCount = 0;
   private reconnectTimeout?: number;
   private isManualClose = false;
+  private isConnecting = false;
+  private maxPendingMessages: number;
+  private maxPendingBinaryMessages: number;
 
   constructor(connection: { url: string | URL; protocols?: string | string[] }, config?: WebSocketClientConfig);
   constructor(connection: string, config?: WebSocketClientConfig);
@@ -53,6 +59,8 @@ export class WebSocketClient {
     // Set config with defaults
     this.retryConnectionCount = config?.retryConnectionCount ?? 0;
     this.retryConnectionDelay = config?.retryConnectionDelay ?? 1000;
+    this.maxPendingMessages = config?.maxPendingMessages ?? 1000;
+    this.maxPendingBinaryMessages = config?.maxPendingBinaryMessages ?? 100;
 
     this.connect();
   }
@@ -62,15 +70,29 @@ export class WebSocketClient {
   }
 
   private connect() {
+    if (this.isConnecting) {
+      return;
+    }
+    if (this.websocket && (this.websocket.readyState === WebSocket.OPEN || this.websocket.readyState === WebSocket.CONNECTING)) {
+      return;
+    }
+    this.isConnecting = true;
     if (this.connectionProtocols) {
       this.websocket = new WebSocket(this.connectionUrl, this.connectionProtocols);
     } else {
       this.websocket = new WebSocket(this.connectionUrl);
     }
 
+    this.websocket.binaryType = 'arraybuffer';
+
     this.websocket.addEventListener('open', () => {
+      this.isConnecting = false;
       this.isConnected = true;
       this.currentRetryCount = 0; // Reset retry count on successful connection
+      if (this.reconnectTimeout) {
+        clearTimeout(this.reconnectTimeout);
+        this.reconnectTimeout = undefined;
+      }
       console.log('WebSocket connected');
       this.onOpenCallback?.();
 
@@ -83,6 +105,7 @@ export class WebSocketClient {
             uuid,
             target: topicData.target
           };
+          // console.log('????')
           this.websocket.send(JSON.stringify(subscribeTopic));
         }
       });
@@ -92,9 +115,17 @@ export class WebSocketClient {
         const message = this.pendingMessages.shift();
         this.websocket.send(JSON.stringify(message));
       }
+
+      while (this.pendingBinaryMessages.length > 0) {
+        const message = this.pendingBinaryMessages.shift();
+        if (message) {
+          this.websocket.send(message);
+        }
+      }
     });
 
     this.websocket.addEventListener('close', event => {
+      this.isConnecting = false;
       this.isConnected = false;
       console.log('WebSocket closed', event.code, event.reason);
       this.onCloseCallback?.();
@@ -110,7 +141,10 @@ export class WebSocketClient {
     });
 
     this.websocket.addEventListener('message', async event => {
-      const topic: TopicResponse | TopicServerEventRequest | TopicServerEventUnSubscribeRequest = JSON.parse(event.data.toString());
+      const topic = await this.parseIncomingTopic(event.data);
+      if (!topic) {
+        return;
+      }
       this._subject.next(topic);
       this.observer?.(topic);
       if (topic.uuid) {
@@ -152,11 +186,15 @@ export class WebSocketClient {
       console.error(`WebSocket reconnection failed after ${this.retryConnectionCount} attempts`);
       return;
     }
+    if (this.reconnectTimeout) {
+      return;
+    }
 
     this.currentRetryCount++;
     console.log(`Attempting to reconnect... (${this.currentRetryCount}/${this.retryConnectionCount})`);
 
     this.reconnectTimeout = window.setTimeout(() => {
+      this.reconnectTimeout = undefined;
       this.connect();
       // Subscribe messages are already in pendingMessages and will be sent automatically
     }, this.retryConnectionDelay);
@@ -165,9 +203,252 @@ export class WebSocketClient {
   private sendMessage(message: TopicRequest | TopicUnsubscribeRequest | TopicSubscribeRequest) {
     if (this.isConnected && this.websocket.readyState === WebSocket.OPEN) {
       this.websocket.send(JSON.stringify(message));
-    } else {
-      this.pendingMessages.push(message);
+      return;
     }
+    if (message.type === 'subscribe' || message.type === 'unsubscribe') {
+      return;
+    }
+    if (this.maxPendingMessages <= 0) {
+      return;
+    }
+    if (this.pendingMessages.length >= this.maxPendingMessages) {
+      this.pendingMessages.shift();
+    }
+    this.pendingMessages.push(message);
+  }
+
+  sendBinary(data: ArrayBuffer | Blob | Uint8Array) {
+    if (this.isConnected && this.websocket.readyState === WebSocket.OPEN) {
+      this.websocket.send(data);
+      return;
+    }
+    if (this.maxPendingBinaryMessages <= 0) {
+      return;
+    }
+    if (this.pendingBinaryMessages.length >= this.maxPendingBinaryMessages) {
+      this.pendingBinaryMessages.shift();
+    }
+    this.pendingBinaryMessages.push(data);
+  }
+
+  private async parseIncomingTopic(data: any): Promise<TopicResponse | TopicServerEventRequest | TopicServerEventUnSubscribeRequest | undefined> {
+    if (typeof data === 'string') {
+      try {
+        return JSON.parse(data);
+      } catch (error) {
+        console.warn('Invalid WebSocket payload:', error);
+        return undefined;
+      }
+    }
+
+    if (data instanceof ArrayBuffer) {
+      return this.parseBinaryTopic(data);
+    }
+
+    if (typeof Blob !== 'undefined' && data instanceof Blob) {
+      const buffer = await data.arrayBuffer();
+      return this.parseBinaryTopic(buffer);
+    }
+
+    return undefined;
+  }
+
+  private parseBinaryTopic(data: ArrayBuffer): TopicResponse | TopicServerEventRequest | TopicServerEventUnSubscribeRequest | undefined {
+    if (data.byteLength < 4) {
+      return undefined;
+    }
+    const view = new DataView(data);
+    const jsonLength = view.getUint32(0, true);
+    const jsonStart = 4;
+    const jsonEnd = jsonStart + jsonLength;
+    if (data.byteLength < jsonEnd) {
+      return undefined;
+    }
+
+    const jsonBytes = new Uint8Array(data, jsonStart, jsonLength);
+    let meta: any;
+    try {
+      const decoder = new TextDecoder();
+      meta = JSON.parse(decoder.decode(jsonBytes));
+    } catch (error) {
+      console.warn('Invalid WebSocket binary payload:', error);
+      return undefined;
+    }
+
+    const filesMeta = Array.isArray(meta.files) ? meta.files : [];
+    const fileMap = new Map<string, any>();
+    filesMeta.forEach((file: any) => {
+      if (!file || typeof file.id !== 'string' || typeof file.size !== 'number' || typeof file.offset !== 'number') {
+        return;
+      }
+      const start = jsonEnd + file.offset;
+      const end = start + file.size;
+      if (start < jsonEnd || end > data.byteLength) {
+        return;
+      }
+      const slice = data.slice(start, end);
+      const mime = file.mime || 'application/octet-stream';
+      let fileValue: any;
+      if (typeof File !== 'undefined') {
+        fileValue = new File([slice], file.name || 'file', { type: mime });
+      } else {
+        fileValue = { name: file.name || 'file', mime, size: file.size, buffer: slice };
+      }
+      fileMap.set(file.id, fileValue);
+    });
+
+    const replaceFileRefs = (value: any): any => {
+      if (value && typeof value === 'object' && '$file' in value && typeof value.$file === 'string') {
+        const file = fileMap.get(value.$file);
+        if (file) {
+          return file;
+        }
+      }
+      if (Array.isArray(value)) {
+        return value.map(item => replaceFileRefs(item));
+      }
+      if (value && typeof value === 'object') {
+        const result: Record<string, any> = {};
+        Object.keys(value).forEach(key => {
+          result[key] = replaceFileRefs(value[key]);
+        });
+        return result;
+      }
+      return value;
+    };
+
+    meta.body = replaceFileRefs(meta.body);
+    return meta as TopicResponse | TopicServerEventRequest | TopicServerEventUnSubscribeRequest;
+  }
+
+  private isBinaryPayload(value: any) {
+    if (!value) {
+      return false;
+    }
+    if (typeof ArrayBuffer !== 'undefined' && value instanceof ArrayBuffer) {
+      return true;
+    }
+    if (typeof Uint8Array !== 'undefined' && value instanceof Uint8Array) {
+      return true;
+    }
+    if (typeof Blob !== 'undefined' && value instanceof Blob) {
+      return true;
+    }
+    return false;
+  }
+
+  private hasBinaryPayload(value: any): boolean {
+    if (this.isBinaryPayload(value)) {
+      return true;
+    }
+    if (Array.isArray(value)) {
+      return value.some(item => this.hasBinaryPayload(item));
+    }
+    if (value && typeof value === 'object') {
+      return Object.keys(value).some(key => this.hasBinaryPayload(value[key]));
+    }
+    return false;
+  }
+
+  private async buildBinaryMessage(body: any, meta: { type?: TopicType; uuid: string; requestUUID: string }) {
+    const fileRefs = new Map<any, string>();
+    const fileEntries: Array<{ id: string; name: string; mime: string; buffer: Promise<ArrayBuffer | SharedArrayBuffer> }> = [];
+    let fileIndex = 0;
+
+    const registerFile = (value: any) => {
+      const existing = fileRefs.get(value);
+      if (existing) {
+        return existing;
+      }
+      const id = `f${++fileIndex}`;
+      fileRefs.set(value, id);
+
+      let name = 'file';
+      let mime = 'application/octet-stream';
+      let buffer: Promise<ArrayBuffer | SharedArrayBuffer>;
+
+      if (typeof Blob !== 'undefined' && value instanceof Blob) {
+        const fileLike = value as File | Blob;
+        if ('name' in fileLike && typeof (fileLike as File).name === 'string') {
+          name = (fileLike as File).name || name;
+        }
+        mime = fileLike.type || mime;
+        buffer = fileLike.arrayBuffer();
+      } else if (typeof Uint8Array !== 'undefined' && value instanceof Uint8Array) {
+        const view = value as Uint8Array;
+        const sliced = view.buffer.slice(view.byteOffset, view.byteOffset + view.byteLength);
+        buffer = Promise.resolve(sliced instanceof ArrayBuffer ? sliced : new Uint8Array(sliced).buffer);
+      } else if (typeof ArrayBuffer !== 'undefined' && value instanceof ArrayBuffer) {
+        buffer = Promise.resolve(value as ArrayBuffer);
+      } else {
+        buffer = Promise.resolve(new ArrayBuffer(0));
+      }
+
+      fileEntries.push({ id, name, mime, buffer });
+      return id;
+    };
+
+    const replaceFiles = (value: any): any => {
+      if (this.isBinaryPayload(value)) {
+        const id = registerFile(value);
+        return { $file: id };
+      }
+      if (Array.isArray(value)) {
+        return value.map(item => replaceFiles(item));
+      }
+      if (value && typeof value === 'object') {
+        const result: Record<string, any> = {};
+        Object.keys(value).forEach(key => {
+          result[key] = replaceFiles(value[key]);
+        });
+        return result;
+      }
+      return value;
+    };
+
+    const payload = replaceFiles(body);
+    const buffers = await Promise.all(fileEntries.map(entry => entry.buffer));
+
+    let offset = 0;
+    const files = fileEntries.map((entry, index) => {
+      const size = buffers[index].byteLength;
+      const fileMeta = {
+        id: entry.id,
+        name: entry.name,
+        mime: entry.mime,
+        size,
+        offset
+      };
+      offset += size;
+      return fileMeta;
+    });
+
+    const json = JSON.stringify({
+      type: meta.type,
+      uuid: meta.uuid,
+      requestUUID: meta.requestUUID,
+      body: payload,
+      files
+    });
+
+    const encoder = new TextEncoder();
+    const jsonBytes = encoder.encode(json);
+    const header = new Uint8Array(4);
+    new DataView(header.buffer).setUint32(0, jsonBytes.byteLength, true);
+
+    const totalSize = header.byteLength + jsonBytes.byteLength + offset;
+    const combined = new Uint8Array(totalSize);
+    combined.set(header, 0);
+    combined.set(jsonBytes, header.byteLength);
+
+    let cursor = header.byteLength + jsonBytes.byteLength;
+    buffers.forEach(buffer => {
+      const view = buffer instanceof ArrayBuffer ? new Uint8Array(buffer) : new Uint8Array(buffer);
+      combined.set(view, cursor);
+      cursor += buffer.byteLength;
+    });
+
+    return combined.buffer;
   }
 
   subject(target: string, option?: { type?: TopicType; subScribeBody?: any; observer?: TopicObserverCallBack<any>; onUnsubscribe?: OnUnsubscribeCallback }) {
@@ -224,6 +505,7 @@ export class WebSocketClient {
       const subscribeTopic: TopicSubscribeRequest = { type: 'subscribe', uuid, target: target, body: option?.subScribeBody };
 
       self.sendMessage(subscribeTopic);
+      // console.log('----------')
       activeSubscription = subscription;
       return subscription;
     };
@@ -242,16 +524,24 @@ export class WebSocketClient {
           if (!activeSubscription && !isClosed) {
             doSubscribe();
           }
-          return topicSubject.subscribe(subscriber);
+          return topicSubject.subscribe({
+            next: value => subscriber.next(value),
+            error: err => subscriber.error(err),
+            complete: () => subscriber.complete()
+          });
         });
       },
       send: (body?: any) => {
-        if (!self.topics.has(uuid) && !isClosed) {
+        if (!activeSubscription && !self.topics.has(uuid) && !isClosed) {
           doSubscribe();
         }
         const requestUUID = RandomUtils.uuid4();
-        const value: TopicRequest = { type: option?.type, uuid, requestUUID, body: body };
-        self.sendMessage(value);
+        if (self.hasBinaryPayload(body)) {
+          self.buildBinaryMessage(body, { type: option?.type, uuid, requestUUID }).then(buffer => self.sendBinary(buffer));
+        } else {
+          const value: TopicRequest = { type: option?.type, uuid, requestUUID, body: body };
+          self.sendMessage(value);
+        }
         return topicSubject.pipe(filter(data => data && data.requestUUID === requestUUID));
       },
       onUnsubscribe: (callback: OnUnsubscribeCallback) => {
@@ -276,7 +566,16 @@ export class WebSocketClient {
     this.isManualClose = true;
     if (this.reconnectTimeout) {
       clearTimeout(this.reconnectTimeout);
+      this.reconnectTimeout = undefined;
     }
+    this.pendingMessages = [];
+    this.pendingBinaryMessages = [];
+    this.isConnecting = false;
+    this.topics.forEach(topicData => {
+      topicData.subscription.closed = true;
+      topicData.onUnsubscribes.forEach(it => it('manual'));
+    });
+    this.topics.clear();
     this.websocket.close();
   }
 
@@ -289,6 +588,7 @@ export class WebSocketClient {
 
     // close 이벤트 후에 재연결하도록 설정
     const reconnectAfterClose = () => {
+      console.log('close websocket');
       this.isManualClose = false;
       this.currentRetryCount = 0;
       this.connect();

@@ -1,5 +1,7 @@
 import { Sim } from '@dooboostore/simple-boot/decorators/SimDecorator';
 import { WebSocketManager } from '@dooboostore/simple-boot-http-server/websocket/WebSocketManager';
+import fs from 'fs';
+import path from 'path';
 
 export interface User {
   id: number;
@@ -10,7 +12,7 @@ export interface User {
 
 @Sim({
   symbol: Symbol.for('UserService'),
-  autoCreate: true,
+  autoCreate: true
 })
 export class UserService {
   private users: User[] = [
@@ -38,11 +40,10 @@ export class UserService {
 
   constructor(private webSocketManager: WebSocketManager) {
     console.log('👤 UserService initialized with', this.users.length, 'users');
-    setInterval(()=>{
-      const size = this.webSocketManager.sendAllDataByTarget('good', {date: new Date()})
+    setInterval(() => {
+      const size = this.webSocketManager.sendAllDataByTarget({ target: 'good', body: { date: new Date() } });
       console.log('ssssssssssss', size);
     }, 1000);
-
   }
 
   getAllUsers(): User[] {
@@ -63,13 +64,13 @@ export class UserService {
 
     this.users.push(newUser);
     console.log('✅ User created:', newUser);
-    
+
     return newUser;
   }
 
   updateUser(id: number, userData: Partial<User>): User | null {
     const index = this.users.findIndex(user => user.id === id);
-    
+
     if (index === -1) {
       return null;
     }
@@ -87,7 +88,7 @@ export class UserService {
 
   deleteUser(id: number): boolean {
     const index = this.users.findIndex(user => user.id === id);
-    
+
     if (index === -1) {
       return false;
     }
@@ -99,6 +100,18 @@ export class UserService {
 
   say(message: any) {
     console.log('UserService says:', message);
-    return {m:'zzzzzzz'};
+    const imagePath = path.resolve(__dirname, '/Users/hyunhakim/workspace/dooboostore/source/dooboostore/trade/temp/img.png');
+    const buffer = fs.readFileSync(imagePath);
+    return {
+      m: 'zzzzzzz',
+      office: {
+        photo: {
+          name: 'favicon.png',
+          mime: 'image/png',
+          size: buffer.length,
+          buffer
+        }
+      }
+    };
   }
 }

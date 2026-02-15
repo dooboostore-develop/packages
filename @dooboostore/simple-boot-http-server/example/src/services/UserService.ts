@@ -7,7 +7,7 @@ export interface User {
   createdAt: Date;
 }
 
-@Sim
+@Sim({symbol: Symbol.for('UserService')})
 export class UserService {
   private users: User[] = [
     {
@@ -86,5 +86,9 @@ export class UserService {
     this.users.splice(index, 1);
     console.log('🗑️  User deleted with id:', id);
     return true;
+  }
+
+  say() {
+    return 'zzzzzzzzzz'
   }
 }
