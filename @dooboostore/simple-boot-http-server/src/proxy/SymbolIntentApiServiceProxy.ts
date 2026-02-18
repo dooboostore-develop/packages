@@ -1,5 +1,5 @@
 import {getSim, Sim} from '@dooboostore/simple-boot/decorators/SimDecorator';
-import {makeIntentHeaderBySymbolFor} from '@dooboostore/simple-boot-http-server/codes/HttpHeaders';
+import {makeIntentHeaderBySymbolFor} from '../codes/HttpHeaders';
 import {ConvertUtils} from '@dooboostore/core/convert/ConvertUtils';
 import {ApiService} from '@dooboostore/simple-boot/fetch/ApiService';
 

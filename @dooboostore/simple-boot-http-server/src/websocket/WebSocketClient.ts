@@ -334,6 +334,10 @@ export class WebSocketClient {
     if (typeof Blob !== 'undefined' && value instanceof Blob) {
       return true;
     }
+    if (value && typeof value === 'object' && 'buffer' in value) {
+      const bufferValue = (value as any).buffer;
+      return this.isBinaryPayload(bufferValue);
+    }
     return false;
   }
 
@@ -374,6 +378,25 @@ export class WebSocketClient {
         }
         mime = fileLike.type || mime;
         buffer = fileLike.arrayBuffer();
+      } else if (value && typeof value === 'object' && 'buffer' in value) {
+        const fileLike = value as any;
+        if (typeof fileLike.name === 'string') {
+          name = fileLike.name || name;
+        }
+        if (typeof fileLike.mime === 'string') {
+          mime = fileLike.mime || mime;
+        }
+        const innerBuffer = fileLike.buffer;
+        if (typeof Blob !== 'undefined' && innerBuffer instanceof Blob) {
+          buffer = innerBuffer.arrayBuffer();
+        } else if (typeof Uint8Array !== 'undefined' && innerBuffer instanceof Uint8Array) {
+          const sliced = innerBuffer.buffer.slice(innerBuffer.byteOffset, innerBuffer.byteOffset + innerBuffer.byteLength);
+          buffer = Promise.resolve(sliced instanceof ArrayBuffer ? sliced : new Uint8Array(sliced).buffer);
+        } else if (typeof ArrayBuffer !== 'undefined' && innerBuffer instanceof ArrayBuffer) {
+          buffer = Promise.resolve(innerBuffer as ArrayBuffer);
+        } else {
+          buffer = Promise.resolve(new ArrayBuffer(0));
+        }
       } else if (typeof Uint8Array !== 'undefined' && value instanceof Uint8Array) {
         const view = value as Uint8Array;
         const sliced = view.buffer.slice(view.byteOffset, view.byteOffset + view.byteLength);

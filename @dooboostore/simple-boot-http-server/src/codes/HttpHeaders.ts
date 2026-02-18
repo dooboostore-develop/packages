@@ -41,7 +41,8 @@ export const HttpHeaders = {
     IfRange : 'If-Range',
     Allow : 'Allow',
     Server : 'Server',
-  XSimpleBootSsrIntentScheme: 'x-simple-boot-ssr-intent-scheme'
+  XSimpleBootSsrIntentScheme: 'x-simple-boot-ssr-intent-scheme',
+  XSimpleBootHttpTopicProtocol: 'x-simple-boot-http-topic-protocol'
 }
 export type HttpHeadersType = keyof typeof HttpHeaders;
 
