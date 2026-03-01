@@ -35,12 +35,13 @@ const isPopStateDataType = (state: any): state is PopStateType => {
   return state && state.type === 'popstateData' && 'router' in state;
 };
 
-type RoutingSubjectDataType =
-  | {
+export type RoutingStartEnd = {
   triggerPoint: 'start' | 'end' | 'error-end';
   domRenderRouter: Router<any>;
   routerModule: RouterModule<SimAtomic<any>>;
-}
+};
+type RoutingSubjectDataType =
+  | RoutingStartEnd
   | {
   triggerPoint: 'initial';
 };
@@ -140,6 +141,20 @@ export class SimpleBootFront extends SimpleApplication {
 
   get routingObservable() {
     return this.routingSubject.asObservable();
+  }
+
+  get routingStartObservable(): Observable<Omit<RoutingStartEnd, 'triggerPoint'> & {triggerPoint: 'start'}, any> {
+    const observable = this.routingSubject.asObservable().pipe(
+      filter<Omit<RoutingStartEnd, 'triggerPoint'> & {triggerPoint: 'start'}>(it => it.triggerPoint === 'start')
+    );
+    return observable;
+  }
+
+  get routingEndObservable(): Observable<Omit<RoutingStartEnd, 'triggerPoint'> & {triggerPoint: 'end' | 'error-end'}, any> {
+    const observable = this.routingSubject.asObservable().pipe(
+      filter<Omit<RoutingStartEnd, 'triggerPoint'> & {triggerPoint: 'end' | 'error-end'}>(it => it.triggerPoint === 'end' || it.triggerPoint === 'error-end')
+    );
+    return observable;
   }
 
   public async getComponentInnerHtml(targetObj: any, id: string) {
