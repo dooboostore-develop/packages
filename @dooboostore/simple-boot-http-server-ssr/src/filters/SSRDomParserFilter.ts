@@ -167,7 +167,7 @@ export class SSRDomParserFilter implements Filter {
         //   console.log('RRRRRRRRRRRRRRRRRRR', it);
         // })
         const data = await firstValueFrom(
-          simpleBootFront.routingSubjectObservable.pipe(
+          simpleBootFront.routingObservable.pipe(
             filter(
               (it) =>
                 it.triggerPoint === 'end' &&

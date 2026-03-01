@@ -136,9 +136,7 @@ export class RawSet {
   //   RawSet.DR_REPLACE_TARGET_ELEMENT_IS_NAME
   // ]
 
-  public static readonly DR_ELEMENTS = [
-    RawSet.DR_TARGET_ELEMENT_ELEMENTNAME
-  ];
+  public static readonly DR_ELEMENTS = [RawSet.DR_TARGET_ELEMENT_ELEMENTNAME];
 
   public static readonly DR_ATTRIBUTES = [
     RawSet.DR_NAME,
@@ -183,9 +181,7 @@ export class RawSet {
 
   get isConnected() {
     // console.log('isConnect???', this, this.point.start.isConnected, this.point.end.isConnected);
-    return (
-      this.point && this.point.start && this.point.end && this.point.start.isConnected && this.point.end.isConnected
-    );
+    return this.point && this.point.start && this.point.end && this.point.start.isConnected && this.point.end.isConnected;
   }
 
   // 중요
@@ -205,12 +201,7 @@ export class RawSet {
         // console.log('--', expressionGroups, script)
       } else if (cNode.nodeType === Node.ELEMENT_NODE) {
         const element = cNode as Element;
-        const targetAttrNames = (config?.targetAttrs?.map(it => it.name) ?? []).concat(
-          RawSet.DR_ATTRIBUTES,
-          RawSet.DR_DETECT_FILTER_OPTIONNAME,
-          RawSet.DR_DETECT_IF_OPTIONNAME,
-          RawSet.DR_DETECT_ATTR_OPTIONNAME
-        ); // .concat(EventManager.normalAttrMapAttrName);
+        const targetAttrNames = (config?.targetAttrs?.map(it => it.name) ?? []).concat(RawSet.DR_ATTRIBUTES, RawSet.DR_DETECT_FILTER_OPTIONNAME, RawSet.DR_DETECT_IF_OPTIONNAME, RawSet.DR_DETECT_ATTR_OPTIONNAME); // .concat(EventManager.normalAttrMapAttrName);
         const targetScripts = targetAttrNames
           .map(it => element.getAttribute(it))
           .filter(it => it)
@@ -312,10 +303,13 @@ export class RawSet {
         };
 
         try {
-          const newValue = ObjectUtils.Script.evaluateReturn({
-            bodyScript: __render.bindScript,
-            returnScript: runText
-          }, Object.assign(obj, { __render }));
+          const newValue = ObjectUtils.Script.evaluateReturn(
+            {
+              bodyScript: __render.bindScript,
+              returnScript: runText
+            },
+            Object.assign(obj, { __render })
+          );
 
           const newValueStr = String(newValue);
           if (this.lastRenderedValue === newValueStr) {
@@ -391,8 +385,7 @@ export class RawSet {
         // console.log('--->', RawSet.exporesionGrouops(textContent), textContent,runText, runText[0][1])
         let newNode: Node;
         if (textContent?.startsWith('#')) {
-          const r = ObjectUtils.Script.evaluateReturn({ bodyScript: __render.bindScript, returnScript: runText }, Object.assign(obj, { __render })
-          );
+          const r = ObjectUtils.Script.evaluateReturn({ bodyScript: __render.bindScript, returnScript: runText }, Object.assign(obj, { __render }));
           const template = config.window.document.createElement('template') as HTMLTemplateElement;
           template.innerHTML = r;
           newNode = template.content;
@@ -476,7 +469,6 @@ export class RawSet {
       it.point.parentRawSet = this;
     });
 
-
     // console.log('pppppppppppppp', this);
 
     // replaceBody와 applyEvent 순서를 바꿨다 20250511
@@ -520,7 +512,6 @@ export class RawSet {
       }
     }
     // console.log(`RawSet const it of onThisComponentSetCallBacks took ${performance.now() - t0} milliseconds.`);
-
 
     for (const it of onElementInitCallBacks) {
       if (isOnInitRender(this.dataSet.render?.currentThis)) {
@@ -605,6 +596,8 @@ export class RawSet {
       styleBody = styleBody.join('\n');
     }
     styleBody = styleBody.replaceAll('#uuid#', componentKey);
+    const { cleanedCss, importRules } = RawSet.extractCssImports(styleBody);
+    styleBody = cleanedCss;
     const start = `#${componentKey}-start`;
     const end = `#${componentKey}-end`;
     // 이거뭐하는지 까먹었네 뭐였지??..
@@ -628,9 +621,7 @@ export class RawSet {
         }
       } else if (isAtRule(rule)) {
         if (rule.name === 'media') {
-          const hasRoot = rule.children.some(
-            childRule => isStyleRule(childRule) && childRule.selector.includes(':root')
-          );
+          const hasRoot = rule.children.some(childRule => isStyleRule(childRule) && childRule.selector.includes(':root'));
           if (!hasRoot) {
             rule.children.forEach(childRule => {
               if (isStyleRule(childRule)) {
@@ -656,6 +647,10 @@ export class RawSet {
     after = after.replaceAll('/*$', '${');
     after = after.replaceAll('$*/', '}$');
 
+    if (importRules.length) {
+      after = `${importRules.join('\n')}\n${after}`;
+    }
+
     if (styleTagWrap) {
       styleBody = `<style id='${componentKey}-style' domstyle>${after}</style>`;
     }
@@ -664,13 +659,56 @@ export class RawSet {
     return styleBody;
   }
 
+  private static extractCssImports(styleBody: string) {
+    const importRules: string[] = [];
+    let result = '';
+    let i = 0;
+    while (i < styleBody.length) {
+      const importIndex = styleBody.indexOf('@import', i);
+      if (importIndex === -1) {
+        result += styleBody.slice(i);
+        break;
+      }
+      result += styleBody.slice(i, importIndex);
+
+      let j = importIndex + '@import'.length;
+      let inSingleQuote = false;
+      let inDoubleQuote = false;
+      let parenDepth = 0;
+      while (j < styleBody.length) {
+        const ch = styleBody[j];
+        if (ch === '\\') {
+          j += 2;
+          continue;
+        }
+        if (!inDoubleQuote && ch === "'") {
+          inSingleQuote = !inSingleQuote;
+        } else if (!inSingleQuote && ch === '"') {
+          inDoubleQuote = !inDoubleQuote;
+        } else if (!inSingleQuote && !inDoubleQuote) {
+          if (ch === '(') {
+            parenDepth += 1;
+          } else if (ch === ')' && parenDepth > 0) {
+            parenDepth -= 1;
+          } else if (ch === ';' && parenDepth === 0) {
+            j += 1;
+            break;
+          }
+        }
+        j += 1;
+      }
+      const importRule = styleBody.slice(importIndex, j).trim();
+      if (importRule) {
+        importRules.push(importRule);
+      }
+      i = j;
+    }
+    return { cleanedCss: result, importRules };
+  }
+
   public applyEvent(obj: any, fragment = this.dataSet.fragment, config?: DomRenderConfig) {
     // const t0 = performance.now();
-    this.dataSet.config.eventManager.applyEvent(
-      obj,
-      this.dataSet.config.eventManager.findAttrElements(fragment, config),
-      config
-    );
+    this.dataSet.config.eventManager.applyEvent(obj, this.dataSet.config.eventManager.findAttrElements(fragment, config), config);
     // console.log(`RawSet applyEvent took ${performance.now() - t0} milliseconds.`);
   }
 
@@ -696,10 +734,7 @@ export class RawSet {
     let data = element.getAttribute(RawSet.DR_APPENDER_NAME);
     // if (data && !/\[[0-9]+\]/g.test(data)) {
     if (data && !/\[.+\]/g.test(data)) {
-      const currentIndex = ObjectUtils.Script.evaluateReturn(
-        `${ObjectUtils.Path.toOptionalChainPath(data)}?.length -1`,
-        obj
-      );
+      const currentIndex = ObjectUtils.Script.evaluateReturn(`${ObjectUtils.Path.toOptionalChainPath(data)}?.length -1`, obj);
       // console.log('------?', currentIndex)
       // if (currentIndex === undefined || isNaN(currentIndex)) {
       //     return undefined;
@@ -758,10 +793,7 @@ export class RawSet {
         // const between = StringUtils.betweenRegexpStr('[$#]\\{', '\\}', StringUtils.deleteEnter((node as Text).data ?? ''))
         const between = RawSet.expressionGroups(StringUtils.deleteEnter((node as Text).data ?? ''));
         // console.log('bbbb', between)
-        const r =
-          between?.length > 0
-            ? NodeUtils.FindNodesFilterResult.MATCH_AND_SKIP_CHILDREN
-            : NodeUtils.FindNodesFilterResult.NO_MATCH_AND_SKIP_CHILDREN;
+        const r = between?.length > 0 ? NodeUtils.FindNodesFilterResult.MATCH_AND_SKIP_CHILDREN : NodeUtils.FindNodesFilterResult.NO_MATCH_AND_SKIP_CHILDREN;
         // console.log('acceptNodeReturn node', r);
         return r;
         // return /\$\{.*?\}/g.test(StringUtils.deleteEnter((node as Text).data ?? '')) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
@@ -782,11 +814,10 @@ export class RawSet {
           const script = element.getAttribute(EventManager.attrAttrName) ?? '';
           // console.log('scriptscriptscriptscriptscriptscript,', script)
           // const keyValuePairs = Array.from(script.matchAll(/['"]?(\w+)['"]?:\s*([^,}]+)/g))
-          const keyValuePairs = Array.from(script.matchAll(/['"]?([\w-_]+)['"]?:\s*([^,}]+)/g))
-            .map(match => ({
-              key: match[1],
-              value: match[2]
-            }));
+          const keyValuePairs = Array.from(script.matchAll(/['"]?([\w-_]+)['"]?:\s*([^,}]+)/g)).map(match => ({
+            key: match[1],
+            value: match[2]
+          }));
 
           (keyValuePairs ?? []).forEach(it => {
             element.setAttribute(it.key, '${' + it.value + '}$');
@@ -795,10 +826,8 @@ export class RawSet {
         // element.setAttribute('dr-event-click', 'console.log(11)');
         const targetElementIs = element.getAttribute(RawSet.DR_REPLACE_TARGET_ELEMENT_IS_NAME);
         const targetElementNames = config.targetElements?.map(it => it.name.toLowerCase()) ?? [];
-        targetElementNames.push(...RawSet.DR_ELEMENTS)
-        const isElement =
-          targetElementNames.includes(element.tagName.toLowerCase()) ||
-          targetElementNames.includes(targetElementIs?.toLowerCase() as any);
+        targetElementNames.push(...RawSet.DR_ELEMENTS);
+        const isElement = targetElementNames.includes(element.tagName.toLowerCase()) || targetElementNames.includes(targetElementIs?.toLowerCase() as any);
         // if (isElement) {
         //   (element as HTMLElement).style.display = 'none';
         //   (element as HTMLElement).style.width = '100px';
@@ -812,38 +841,41 @@ export class RawSet {
         const linkVariables = new Map<string, string>();
         const linkNames = EventManager.linkAttrs.map(it => it.name);
         const isAttr =
-          element.getAttributeNames().filter(it => !EventManager.noDetectAttr.includes(it)).filter(it => {
-            const value = element.getAttribute(it)?.trim();
+          element
+            .getAttributeNames()
+            .filter(it => !EventManager.noDetectAttr.includes(it))
+            .filter(it => {
+              const value = element.getAttribute(it)?.trim();
 
-            // link일때
-            if (value && linkNames.includes(it)) {
-              linkVariables.set(it, value);
-            } else if (value && RawSet.isExpression(value)) {
-              // 표현식있을떄
-              const variablePaths: { origin: string; inner: string }[] = RawSet.expressionGroups(value).map(it => ({
-                origin: it[0].trim(),
-                inner: it[1].trim()
-              }));
-              const isStringTemplate = variablePaths.length > 1 || (variablePaths[0] && variablePaths[0].origin !== value);
-              // normal Attribute 초반에 셋팅해주기.
-              // TODO: 이거 하긴했는데 사이드 이팩트?
-              // let variablePath: string = RawSet.expressionGroups(value)[0][1];
-              // const originVariable = variablePath;
-              // variablePath = variablePath.replace(/#[^#]*#/g, '({})');
-              // const optionalChainPath = ObjectUtils.Path.toOptionalChainPath(variablePath);
-              // const cval = ObjectUtils.Script.evaluateReturn(optionalChainPath, Object.assign(obj));
+              // link일때
+              if (value && linkNames.includes(it)) {
+                linkVariables.set(it, value);
+              } else if (value && RawSet.isExpression(value)) {
+                // 표현식있을떄
+                const variablePaths: { origin: string; inner: string }[] = RawSet.expressionGroups(value).map(it => ({
+                  origin: it[0].trim(),
+                  inner: it[1].trim()
+                }));
+                const isStringTemplate = variablePaths.length > 1 || (variablePaths[0] && variablePaths[0].origin !== value);
+                // normal Attribute 초반에 셋팅해주기.
+                // TODO: 이거 하긴했는데 사이드 이팩트?
+                // let variablePath: string = RawSet.expressionGroups(value)[0][1];
+                // const originVariable = variablePath;
+                // variablePath = variablePath.replace(/#[^#]*#/g, '({})');
+                // const optionalChainPath = ObjectUtils.Path.toOptionalChainPath(variablePath);
+                // const cval = ObjectUtils.Script.evaluateReturn(optionalChainPath, Object.assign(obj));
 
-              let targetScript = value;
-              variablePaths.forEach(it => {
-                let r = it.inner.replace(/#[^#]*#/g, '({})');
-                r = ObjectUtils.Path.toOptionalChainPath(r);
-                targetScript = targetScript.replaceAll(it.origin, `\${${r}}`);
-              });
-              const cval = ObjectUtils.Script.evaluateReturn('`' + targetScript + '`', Object.assign(obj));
+                let targetScript = value;
+                variablePaths.forEach(it => {
+                  let r = it.inner.replace(/#[^#]*#/g, '({})');
+                  r = ObjectUtils.Path.toOptionalChainPath(r);
+                  targetScript = targetScript.replaceAll(it.origin, `\${${r}}`);
+                });
+                const cval = ObjectUtils.Script.evaluateReturn('`' + targetScript + '`', Object.assign(obj));
 
-              if (cval === null) {
-                element.removeAttribute(it);
-                /* TODO: 여기 더 추가되어야될듯
+                if (cval === null) {
+                  element.removeAttribute(it);
+                  /* TODO: 여기 더 추가되어야될듯
                  TODO: 훔..... 없어도될듯?
                 *
     <select dr-event-change="@this@.onMarketChange($event)" class="market-select">
@@ -853,27 +885,24 @@ export class RawSet {
         </option>
       </select>
                  */
-                // } else if (
-                //   !(element.hasAttribute(RawSet.DR_VARIABLE_NAME_OPTIONNAME) || element.hasAttribute(RawSet.DR_ITEM_VARIABLE_NAME_OPTIONNAME) || element.hasAttribute(RawSet.DR_ITEM_INDEX_VARIABLE_NAME_OPTIONNAME))
-                // ) {
-                //     element.setAttribute(it, cval);
-              } else {
-                element.setAttribute(it, cval);
+                  // } else if (
+                  //   !(element.hasAttribute(RawSet.DR_VARIABLE_NAME_OPTIONNAME) || element.hasAttribute(RawSet.DR_ITEM_VARIABLE_NAME_OPTIONNAME) || element.hasAttribute(RawSet.DR_ITEM_INDEX_VARIABLE_NAME_OPTIONNAME))
+                  // ) {
+                  //     element.setAttribute(it, cval);
+                } else {
+                  element.setAttribute(it, cval);
+                }
+                normalAttrs.set(it, { originalAttrValue: value, variablePaths: variablePaths, isStringTemplate });
+                // normalAttrs.set(it, originVariable);
+                // console.log('normalAttribute', it, variablePath);
               }
-              normalAttrs.set(it, { originalAttrValue: value, variablePaths: variablePaths, isStringTemplate });
-              // normalAttrs.set(it, originVariable);
-              // console.log('normalAttribute', it, variablePath);
-            }
-            // console.log(element.getAttribute(it), attrExpresion);
-            const isTargetAttr = targetAttrNames.includes(it.toLowerCase());
-            return isTargetAttr;
-          }).length > 0;
+              // console.log(element.getAttribute(it), attrExpresion);
+              const isTargetAttr = targetAttrNames.includes(it.toLowerCase());
+              return isTargetAttr;
+            }).length > 0;
 
         if (linkVariables.size) {
-          element.setAttribute(
-            EventManager.linkTargetMapAttrName,
-            JSON.stringify(Array.from(linkVariables.entries()))
-          );
+          element.setAttribute(EventManager.linkTargetMapAttrName, JSON.stringify(Array.from(linkVariables.entries())));
         }
         // 기본 attribute를 처리하기위해
         if (normalAttrs.size) {
@@ -889,8 +918,7 @@ export class RawSet {
       const r = NodeUtils.FindNodesFilterResult.NO_MATCH_AND_CONTINUE;
       // console.log('acceptNodeReturn  nothing', r);
       return r;
-    }
-    )
+    });
 
     const pars: RawSet[] = [];
     let currentNode: Node | null;
@@ -977,10 +1005,8 @@ export class RawSet {
         // 여기서 등록한 component 추가한다.
         const targetElementIs = element.getAttribute(RawSet.DR_REPLACE_TARGET_ELEMENT_IS_NAME);
         const targetElementNames = config.targetElements?.map(it => it.name.toLowerCase()) ?? [];
-        targetElementNames.push(...RawSet.DR_ELEMENTS)
-        const isElement =
-          targetElementNames.includes(element.tagName.toLowerCase()) ||
-          targetElementNames.includes(targetElementIs?.toLowerCase() as any);
+        targetElementNames.push(...RawSet.DR_ELEMENTS);
+        const isElement = targetElementNames.includes(element.tagName.toLowerCase()) || targetElementNames.includes(targetElementIs?.toLowerCase() as any);
         // if (isElement) {
         //   (element as HTMLElement).style.display = 'none'
         // }
@@ -1115,30 +1141,19 @@ export class RawSet {
   public static drItOtherEncoding(element: Element | DocumentFragment, postFix?: string) {
     const random = RandomUtils.uuid() + postFix;
     const regex = /#it#/g;
-    element
-      .querySelectorAll(
-        `[${RawSet.DR_IT_OPTIONNAME}], [${RawSet.DR_FOR_OF_NAME}], [${RawSet.DR_REPEAT_NAME}], [${RawSet.DR_APPENDER_NAME}]`
-      )
-      .forEach(it => {
-        it.innerHTML = it.innerHTML.replace(regex, random);
-      });
+    element.querySelectorAll(`[${RawSet.DR_IT_OPTIONNAME}], [${RawSet.DR_FOR_OF_NAME}], [${RawSet.DR_REPEAT_NAME}], [${RawSet.DR_APPENDER_NAME}]`).forEach(it => {
+      it.innerHTML = it.innerHTML.replace(regex, random);
+    });
     return random;
   }
 
   public static drItOtherDecoding(element: Element | DocumentFragment, random: string) {
-    element
-      .querySelectorAll(
-        `[${RawSet.DR_IT_OPTIONNAME}], [${RawSet.DR_FOR_OF_NAME}], [${RawSet.DR_REPEAT_NAME}], [${RawSet.DR_APPENDER_NAME}]`
-      )
-      .forEach(it => {
-        it.innerHTML = it.innerHTML.replace(RegExp(random, 'g'), '#it#');
-      });
+    element.querySelectorAll(`[${RawSet.DR_IT_OPTIONNAME}], [${RawSet.DR_FOR_OF_NAME}], [${RawSet.DR_REPEAT_NAME}], [${RawSet.DR_APPENDER_NAME}]`).forEach(it => {
+      it.innerHTML = it.innerHTML.replace(RegExp(random, 'g'), '#it#');
+    });
   }
 
-  public static drVarDecoding(
-    element: Element,
-    vars: { name: string; value: string; regex: RegExp; random: string }[]
-  ) {
+  public static drVarDecoding(element: Element, vars: { name: string; value: string; regex: RegExp; random: string }[]) {
     element.querySelectorAll(`[${RawSet.DR_THIS_NAME}]`).forEach(it => {
       vars
         .filter(vit => vit.value && vit.name)
@@ -1195,28 +1210,20 @@ export class RawSet {
     return thisRandom;
   }
 
-  public static drThisBindEncoding(
-    element: Element,
-    variable: RegExp,
-    config: { config: DomRenderConfig; otherReplaceVariablePath?: string }
-  ) {
+  public static drThisBindEncoding(element: Element, variable: RegExp, config: { config: DomRenderConfig; otherReplaceVariablePath?: string }) {
     element.querySelectorAll(`[${RawSet.DR_THIS_NAME}]`).forEach(eIt => {
       let message = eIt.innerHTML;
       // StringUtils.regexExec(/([^(dr\-)])?this(?=.?)/g, message).reverse().forEach(it => {
       StringUtils.regexExec(variable, message)
         .reverse()
         .forEach(it => {
-          message =
-            message.substr(0, it.index) +
-            message.substr(it.index).replace(it[0], `${it[1] ?? ''}${eIt.getAttribute(RawSet.DR_THIS_NAME)}`);
+          message = message.substr(0, it.index) + message.substr(it.index).replace(it[0], `${it[1] ?? ''}${eIt.getAttribute(RawSet.DR_THIS_NAME)}`);
         });
       eIt.innerHTML = message;
     });
 
     const targetElements = config.config.targetElements ?? [];
-    const targetElementNames = targetElements
-      .map(it => it.name.replaceAll('.', '\\.').replaceAll(':', '\\:'))
-      .join(',');
+    const targetElementNames = targetElements.map(it => it.name.replaceAll('.', '\\.').replaceAll(':', '\\:')).join(',');
     const thisRandom = RandomUtils.uuid();
     // console.log('thisRandom', thisRandom, variable);
     element.querySelectorAll(targetElementNames).forEach(it => {
@@ -1232,9 +1239,7 @@ export class RawSet {
       StringUtils.regexExec(variable, message)
         .reverse()
         .forEach(it => {
-          message =
-            message.substr(0, it.index) +
-            message.substr(it.index).replace(it[0], `${it[1] ?? ''}${config.otherReplaceVariablePath}`);
+          message = message.substr(0, it.index) + message.substr(it.index).replace(it[0], `${it[1] ?? ''}${config.otherReplaceVariablePath}`);
         });
       element.innerHTML = message;
     }
@@ -1243,9 +1248,7 @@ export class RawSet {
 
   public static drThisBindDecoding(element: Element, config: { asIs: string; toBe: string; config: DomRenderConfig }) {
     const targetElements = config.config.targetElements ?? [];
-    const targetElementNames = targetElements
-      .map(it => it.name.replaceAll('.', '\\.').replaceAll(':', '\\:'))
-      .join(',');
+    const targetElementNames = targetElements.map(it => it.name.replaceAll('.', '\\.').replaceAll(':', '\\:')).join(',');
     element.querySelectorAll(targetElementNames).forEach(it => {
       it.innerHTML = it.innerHTML.replace(RegExp(config.asIs, 'g'), config.toBe);
     });
@@ -1316,16 +1319,7 @@ export class RawSet {
     return vars;
   }
 
-  public static async drThisCreate(
-    rawSet: RawSet,
-    element: Element,
-    drThis: string,
-    drVarOption: string,
-    drStripOption: boolean | string | null,
-    obj: any,
-    config: DomRenderConfig,
-    set?: ComponentSet
-  ): Promise<DocumentFragment | undefined> {
+  public static async drThisCreate(rawSet: RawSet, element: Element, drThis: string, drVarOption: string, drStripOption: boolean | string | null, obj: any, config: DomRenderConfig, set?: ComponentSet): Promise<DocumentFragment | undefined> {
     // console.log('ttttttttttttttttttttt',element.innerHTML, drThis, set, obj);
     const fag = config.window.document?.createDocumentFragment();
     if (!fag) {
@@ -1335,7 +1329,7 @@ export class RawSet {
     let targetObj = obj;
     if (set) {
       targetObj = set.obj;
-      set.setTemplateStyle(await RawSet.fetchTemplateStyle(set));
+      set.setTemplateStyle(await RawSet.fetchTemplateStyle(set, targetObj));
       const style = RawSet.generateStyleTransform(set.styles ?? [], rawSet.uuid, true);
       targetElement.innerHTML = style + (set.template ?? '');
     } else {
@@ -1390,10 +1384,7 @@ export class RawSet {
 
     // dr-on-create data onCreateRender
     const onCreateDataScript = `return {rootParent: this, render: this.__render}`;
-    const onCreateDataParam = ObjectUtils.Script.evaluate<OnCreateRenderDataParams>(
-      onCreateDataScript,
-      Object.assign(obj, { __render: render })
-    );
+    const onCreateDataParam = ObjectUtils.Script.evaluate<OnCreateRenderDataParams>(onCreateDataScript, Object.assign(obj, { __render: render }));
     if (isOnCreateRenderData(targetObj)) {
       targetObj?.onCreateRenderData(onCreateDataParam as OnCreateRenderDataParams);
     }
@@ -1406,10 +1397,7 @@ export class RawSet {
     const onCreate = element.getAttribute(RawSet.DR_ON_CREATE_ARGUMENTS_OPTIONNAME);
     let createParam: any[] = [];
     if (onCreate) {
-      createParam = ObjectUtils.Script.evaluateReturn<any[]>(
-        { bodyScript: renderScript, returnScript: ObjectUtils.Path.toOptionalChainPath(onCreate) },
-        obj
-      );
+      createParam = ObjectUtils.Script.evaluateReturn<any[]>({ bodyScript: renderScript, returnScript: ObjectUtils.Path.toOptionalChainPath(onCreate) }, obj);
       if (!Array.isArray(createParam)) {
         createParam = [createParam];
       }
@@ -1498,9 +1486,7 @@ export class RawSet {
     const componentName = targetElement.getAttribute(RawSet.DR_VARIABLE_NAME_OPTIONNAME) ?? 'component';
     const optionThisName = targetElement.getAttribute(RawSet.DR_THIS_NAME_OPTIONNAME);
     // console.log('11111111111111', optionThisName)
-    targetElement
-      .getAttributeNames()
-      .forEach(it => targetElement.setAttribute(it, targetElement.getAttribute(it)!.replace(/#this#/g, drThis)));
+    targetElement.getAttributeNames().forEach(it => targetElement.setAttribute(it, targetElement.getAttribute(it)!.replace(/#this#/g, drThis)));
     const thisRandom = this.drThisEncoding(targetElement, drThis, { asIs: /@this@/g });
     // console.log('@@@@@@@@@@@@@0', thisRandom);
     // let thisNameRandom: string | undefined = undefined;
@@ -1557,21 +1543,31 @@ export class RawSet {
     return fag;
   }
 
-  private static async fetchTemplateStyle(set: { template?: string; styles?: string | string[] }) {
+  private static async fetchTemplateStyle<T>(set: { template?: string | ((instance: T) => Promise<string> | string); styles?: string | string[] | ((instance: T) => Promise<string | string[]> | string | string[]) }, obj?: T) {
     // const id = RandomUtils.getRandomString(20);
     const stylePromises: Promise<string>[] = [];
-    const templatePromise =
-      set.template && set.template.startsWith('lazy://')
-        ? (await fetch(set.template.substring(6))).text()
-        : Promise.resolve(set.template);
-    if (Array.isArray(set.styles)) {
-      for (let i = 0; set.styles && i < (set.styles.length ?? 0); i++) {
-        const it = set.styles[i];
-        stylePromises.push(it.startsWith('lazy://') ? (await fetch(it.substring(6))).text() : Promise.resolve(it));
+
+    const resolveLazy = async (value?: string) => {
+      if (!value) {
+        return value;
       }
-    } else if (set.styles) {
-      stylePromises.push(Promise.resolve(set.styles));
+      return value.startsWith('lazy://') ? (await fetch(value.substring(6))).text() : value;
+    };
+
+    const templateValue = typeof set.template === 'function' ? await set.template(obj as T) : set.template;
+    const templatePromise = typeof templateValue === 'string' ? resolveLazy(templateValue) : Promise.resolve(templateValue);
+
+    const stylesValue = typeof set.styles === 'function' ? await set.styles(obj as T) : set.styles;
+
+    if (Array.isArray(stylesValue)) {
+      for (let i = 0; i < stylesValue.length; i++) {
+        const it = stylesValue[i];
+        stylePromises.push(resolveLazy(it) as Promise<string>);
+      }
+    } else if (typeof stylesValue === 'string') {
+      stylePromises.push(resolveLazy(stylesValue) as Promise<string>);
     }
+
     // const tempTemplate = config.window.document.createElement('template');
     // tempTemplate.innerHTML = await templatePromise;
     // const tempContainer = config.window.document.createElement('div');
@@ -1581,11 +1577,7 @@ export class RawSet {
     };
   }
 
-  public static createComponentTargetAttribute(
-    name: string,
-    getThisObj: (element: Element, attrValue: string, obj: any, rawSet: RawSet) => any,
-    factory: (element: Element, attrValue: string, obj: any, rawSet: RawSet) => DocumentFragment
-  ) {
+  public static createComponentTargetAttribute(name: string, getThisObj: (element: Element, attrValue: string, obj: any, rawSet: RawSet) => any, factory: (element: Element, attrValue: string, obj: any, rawSet: RawSet) => DocumentFragment) {
     const targetAttribute: TargetAttr = {
       name,
       callBack(element: Element, attrValue: string, obj: any, rawSet: RawSet): DocumentFragment {
@@ -1606,34 +1598,13 @@ export class RawSet {
     return targetAttribute;
   }
 
-  public static createComponentTargetElement({
-    name,
-    objFactory,
-    template = '',
-    styles = [],
-    noStrip
-  }: {
-    name: string;
-    noStrip?: boolean;
-    objFactory: (element: Element, obj: any, rawSet: RawSet, counstructorParam: any[]) => any;
-    template?: string;
-    styles?: string | string[];
-  }): TargetElement {
-    const targetElement: TargetElement = {
+  public static createComponentTargetElement<T = any>({ name, objFactory, template = '', styles = [], noStrip }: { name: string; noStrip?: boolean; objFactory: (element: Element, obj: any, rawSet: RawSet, counstructorParam: any[]) => any; template?: string | ((instance: T) => Promise<string>); styles?: string | string[] | ((instance: T) => Promise<string>) }): TargetElement<T> {
+    const targetElement: TargetElement<T> = {
       name,
-      styles,
-      template,
+      styles: styles,
+      template: template,
       noStrip,
-      async callBack(
-        element: Element,
-        obj: any,
-        rawSet: RawSet,
-        attrs: Attrs,
-        config: DomRenderConfig
-      ): Promise<DocumentFragment | undefined> {
-        const templateStyle = await RawSet.fetchTemplateStyle({ template: this.template, styles: this.styles });
-        this.template = templateStyle.template;
-        this.styles = templateStyle.styles;
+      async callBack(element: Element, obj: any, rawSet: RawSet, attrs: Attrs, config: DomRenderConfig): Promise<DocumentFragment | undefined> {
         obj[DomRenderComponentMetaKey.DOMRENDER_COMPONENTS_KEY] ??= {};
         const domrenderComponents = obj[DomRenderComponentMetaKey.DOMRENDER_COMPONENTS_KEY];
 
@@ -1678,11 +1649,7 @@ export class RawSet {
         //
         // // dr-constructor
         if (constructor) {
-          let param =
-            ObjectUtils.Script.evaluateReturn(
-              { bodyScript: renderScript, returnScript: ObjectUtils.Path.toOptionalChainPath(constructor) },
-              Object.assign(obj, { __render: render })
-            ) ?? [];
+          let param = ObjectUtils.Script.evaluateReturn({ bodyScript: renderScript, returnScript: ObjectUtils.Path.toOptionalChainPath(constructor) }, Object.assign(obj, { __render: render })) ?? [];
           if (!Array.isArray(param)) {
             param = [param];
           }
@@ -1690,7 +1657,7 @@ export class RawSet {
         }
 
         // // console.log('------22', attrs);
-        const instance = (domrenderComponents[rawSet.uuid] = objFactory(element, obj, rawSet, constructorParam));
+        const instance = (domrenderComponents[rawSet.uuid] = await objFactory(element, obj, rawSet, constructorParam));
         render = {
           currentThis: instance,
           // creatorMetaData: i,
@@ -1699,6 +1666,10 @@ export class RawSet {
         rawSet.dataSet.render = render;
         // 추적 및 destroy 위해.
         instance.__rawSet = rawSet;
+
+        const templateStyle = await RawSet.fetchTemplateStyle({ template: this.template, styles: this.styles }, instance);
+        this.template = templateStyle.template;
+        this.styles = templateStyle.styles;
 
         let applayTemplate = element.innerHTML;
         let applayTemplateText = element.textContent?.trim() ?? '';
@@ -1733,7 +1704,7 @@ export class RawSet {
         // RawSet.replaceInnerHTML(
         // applayTemplate = StringUtils.regexExecArrayReplace(this.template, RegExp(`#${innerHTMLName}#`, 'g'), applayTemplate)
         // applayTemplate = StringUtils.regexExecArrayReplace(this.template, [RegExp(`#${innerHTMLName}#`, 'g')], applayTemplate)
-        applayTemplate = StringUtils.replaceSequentially((this.template ?? ''), [
+        applayTemplate = StringUtils.replaceSequentially(this.template ?? '', [
           {
             regex: new RegExp(`#${innerHTMLName}#`, 'g'),
             callback: () => applayTemplate
@@ -1762,15 +1733,7 @@ export class RawSet {
 
         // 여기서 targetElement의 옷을 벗긴다.
         // console.log('---createComponentTargetElement', element);
-        let data = await RawSet.drThisCreate(
-          rawSet,
-          element,
-          `this.${DomRenderComponentMetaKey.DOMRENDER_COMPONENTS_KEY}.${rawSet.uuid}`,
-          '',
-          !noStrip,
-          obj,
-          config
-        );
+        let data = await RawSet.drThisCreate(rawSet, element, `this.${DomRenderComponentMetaKey.DOMRENDER_COMPONENTS_KEY}.${rawSet.uuid}`, '', !noStrip, obj, config);
         // const tempDiv = document.createElement("div");
         // tempDiv.appendChild(data.cloneNode(true)); // 원본 보존
         // console.log('-------------ddddddddddddd', element.innerHTML, tempDiv.innerHTML);
@@ -1790,7 +1753,7 @@ export class RawSet {
           // console.log('-----XX', ElementUtils.toInnerHTML(data, {document: config.window.document}));
           // template.innerHTML = template.innerHTML.replace(RegExp(innerHTMLThisRandom, 'g'), 'this.');
           let s = ElementUtils.toInnerHTML(data, { document: config.window.document });
-          template.innerHTML = s.replace(RegExp(innerHTMLThisRandom, 'g'), 'this.');;
+          template.innerHTML = s.replace(RegExp(innerHTMLThisRandom, 'g'), 'this.');
           // console.log('ccc?', template.innerHTML);
           // template.innerHTML = '<div>zzzzzzz</div>'
           data = template.content;
@@ -1816,12 +1779,7 @@ export class RawSet {
     return StringUtils.regexExec(reg, data ?? '');
   }
 
-  public static destroy(
-    obj: any | undefined,
-    parameter: OnDestroyRenderParams,
-    config: DomRenderConfig,
-    destroyOptions: (DestroyOptionType | string)[] = []
-  ): void {
+  public static destroy(obj: any | undefined, parameter: OnDestroyRenderParams, config: DomRenderConfig, destroyOptions: (DestroyOptionType | string)[] = []): void {
     // console.log('destroy destroydestroydestroydestroy', obj, parameter, config, destroyOptions);
     if (!destroyOptions.some(it => it === DestroyOptionType.NO_DESTROY)) {
       if (!destroyOptions.some(it => it === DestroyOptionType.NO_MESSENGER_DESTROY)) {
@@ -1873,11 +1831,7 @@ export class RawSet {
     const findPath = (rawSet: RawSet) => {
       if (rawSet && rawSet.point) {
         // jsDom에서 instranceof HTMLMetaElement가 안먹히는것같아? 간혈적으로?
-        if (
-          rawSet.point?.start &&
-          'getAttribute' in rawSet.point.start &&
-          rawSet.point.start.getAttribute('this-path')
-        ) {
+        if (rawSet.point?.start && 'getAttribute' in rawSet.point.start && rawSet.point.start.getAttribute('this-path')) {
           paths.push(rawSet.point.start.getAttribute('this-path')!);
         }
         if (rawSet.point.parentRawSet) findPath(rawSet.point.parentRawSet);
@@ -1909,10 +1863,7 @@ export class RawSet {
           let r = ObjectUtils.Path.toOptionalChainPath(variablePaths[0].inner);
           targetScript = targetScript.replaceAll(variablePaths[0].origin, r);
         }
-        const cval = ObjectUtils.Script.evaluateReturn(
-          { bodyScript: config.script, returnScript: v.isStringTemplate ? '`' + targetScript + '`' : targetScript },
-          Object.assign(config.obj, config.renderData ? { __render: config.renderData } : undefined)
-        );
+        const cval = ObjectUtils.Script.evaluateReturn({ bodyScript: config.script, returnScript: v.isStringTemplate ? '`' + targetScript + '`' : targetScript }, Object.assign(config.obj, config.renderData ? { __render: config.renderData } : undefined));
         attribute[k] = cval;
       });
     }

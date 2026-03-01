@@ -3,11 +3,11 @@ import { ReflectUtils } from '@dooboostore/core/reflect/ReflectUtils';
 import { SimConfigProxy, SimConfigUsing } from '@dooboostore/simple-boot/decorators/SimDecorator';
 
 export const componentSelectors = new Map<string, ConstructorType<any>>();
-export interface ComponentConfig {
+export interface ComponentConfig<T = any> {
     selector?: string;
     noStrip?: boolean;
-    template?: string;
-    styles?: (string)[]  | string;
+    template?: string | (<T>(instance: T) => Promise<string>);
+    styles?: (string)[] | string | (<T>(instance: T) => Promise<string>);
     proxy?: SimConfigProxy;
     using?: SimConfigUsing;
 }

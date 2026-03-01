@@ -149,7 +149,7 @@ export class SSRLinkDomDomFilter implements Filter {
 
         const data = await firstValueFrom(
           // @ts-ignore
-          simpleBootFront.routingSubjectObservable.pipe(
+          simpleBootFront.routingObservable.pipe(
           // @ts-ignore
             filter(
               (it) =>

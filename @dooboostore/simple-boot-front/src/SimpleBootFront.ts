@@ -38,6 +38,7 @@ const isPopStateDataType = (state: any): state is PopStateType => {
 type RoutingSubjectDataType =
   | {
   triggerPoint: 'start' | 'end' | 'error-end';
+  domRenderRouter: Router<any>;
   routerModule: RouterModule<SimAtomic<any>>;
 }
   | {
@@ -98,6 +99,7 @@ export class SimpleBootFront extends SimpleApplication {
           // changeStateConvertDate:(data) =>({...data, type: 'popstateData', router: this.routerAndSettingData.routerAtomic.getValue()} as PopStateType)
         });
     this.simstanceManager.setStoreSet(Router, this.domRenderRouter);
+    this.simstanceManager.setStoreSet(SimpleBootFront, this);
     this.domRenderConfig = {
       window: option.window,
       targetElements: this.domRenderTargetElements,
@@ -136,14 +138,15 @@ export class SimpleBootFront extends SimpleApplication {
     };
   }
 
-  get routingSubjectObservable() {
+  get routingObservable() {
     return this.routingSubject.asObservable();
   }
 
-  public getComponentInnerHtml(targetObj: any, id: string) {
+  public async getComponentInnerHtml(targetObj: any, id: string) {
     const component = getComponent(targetObj);
-    const styles = RawSet.generateStyleTransform(component?.styles ?? '', id);
-    const template = component?.template ?? '';
+    const styleStr = typeof component?.styles === 'function' ? await component.styles(targetObj) : (Array.isArray(component?.styles) ? component.styles.join('') : component?.styles ?? '');
+    const styles = RawSet.generateStyleTransform(styleStr ?? '', id);
+    const template = typeof component?.template === 'function' ? await component.template(targetObj) : component?.template ?? '';
     return styles + template;
   }
 
@@ -288,7 +291,7 @@ export class SimpleBootFront extends SimpleApplication {
       this.routing<SimAtomic, any>(intent, {router: this.domRenderRootObject}).then(async it => {
         // console.log('simplebootfront simpleboot routing-------->', it)
         // dom-render 라우팅 끝나면 -> simple-boot-front routing start!
-        this.routingSubject.next({triggerPoint: 'start', routerModule: it});
+        this.routingSubject.next({triggerPoint: 'start', routerModule: it, domRenderRouter: this.domRenderRouter});
         let findFirstRouter = it.firstRouteChainValue;
         if (findFirstRouter && findFirstRouter.constructor === this.option.rootRouter) {
           const rootRouter = getDomRenderOriginObject(this.rootRouter?.obj);
@@ -308,7 +311,7 @@ export class SimpleBootFront extends SimpleApplication {
         //   this.routingSubject.next({triggerPoint: 'end', routerModule: it});
         // } else {
           await this.domRenderRootObject.lifecycleObservable().pipe(first()).toPromise();
-          this.routingSubject.next({triggerPoint: 'end', routerModule: it});
+          this.routingSubject.next({triggerPoint: 'end', routerModule: it, domRenderRouter: this.domRenderRouter});
         // }
         //       }, 0);
       });
@@ -399,7 +402,7 @@ export class SimpleBootFront extends SimpleApplication {
       const items = RawSet.createComponentTargetElement({
         name: name,
         noStrip: component?.noStrip === true,
-        objFactory: (e, obj, r, counstructorParam) => {
+        objFactory: async (e, obj, r, counstructorParam) => {
           let newSim;
           if (counstructorParam?.length) {
             newSim = new val(...counstructorParam);

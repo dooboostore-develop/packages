@@ -41,6 +41,7 @@ export namespace A {
     private element?: HTMLElement;
 
     onClick(event: MouseEvent) {
+      console.log('----22----click.!!!1')
       if (this.click) {
           const attributes = {
               href: this.href,
