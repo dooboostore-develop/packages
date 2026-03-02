@@ -738,7 +738,18 @@ export class WindowBase {
   }
 
   getComputedStyle(elt: Element, pseudoElt?: string | null): CSSStyleDeclaration {
-    return {} as CSSStyleDeclaration;
+    // Return empty CSSStyleDeclaration-like object with common properties
+    return {
+      length: 0,
+      cssText: '',
+      parentRule: null,
+      getPropertyValue: () => '',
+      getPropertyPriority: () => '',
+      setProperty: () => {},
+      removeProperty: () => '',
+      item: () => '',
+      [Symbol.iterator]: function* () {}
+    } as any;
   }
 
   getSelection(): Selection | null {
@@ -746,7 +757,17 @@ export class WindowBase {
   }
 
   matchMedia(query: string): MediaQueryList {
-    return {} as MediaQueryList;
+    // Return dummy MediaQueryList that always doesn't match
+    return {
+      matches: false,
+      media: query,
+      onchange: null,
+      addListener: () => {},
+      removeListener: () => {},
+      addEventListener: () => {},
+      removeEventListener: () => {},
+      dispatchEvent: () => true
+    } as any;
   }
 
   moveBy(x: number, y: number): void {
@@ -1035,11 +1056,19 @@ export class WindowBase {
   readonly performance: Performance = {} as Performance;
 
   atob(data: string): string {
-    return '';
+    // Decode base64 - basic implementation for server-side
+    if (typeof Buffer !== 'undefined') {
+      return Buffer.from(data, 'base64').toString('binary');
+    }
+    return data; // Fallback
   }
 
   btoa(data: string): string {
-    return '';
+    // Encode to base64 - basic implementation for server-side
+    if (typeof Buffer !== 'undefined') {
+      return Buffer.from(data, 'binary').toString('base64');
+    }
+    return data; // Fallback
   }
 
   createImageBitmap(image: ImageBitmapSource, options?: ImageBitmapOptions): Promise<ImageBitmap>;
@@ -1053,13 +1082,25 @@ export class WindowBase {
   }
 
   queueMicrotask(callback: VoidFunction): void {
+    // Use Promise.resolve().then() for microtask queue
+    Promise.resolve().then(callback).catch(err => {
+      console.error('Microtask error:', err);
+    });
   }
 
   reportError(e: any): void {
+    // Log error to console in server-side environment
+    console.error('Reported error:', e);
   }
 
   structuredClone(value: any, options?: StructuredSerializeOptions): any {
-    return value;
+    // Simple deep clone for server-side (not perfect but better than nothing)
+    try {
+      return JSON.parse(JSON.stringify(value));
+    } catch (e) {
+      // Fallback for non-JSON-serializable values
+      return value;
+    }
   }
 
   // WindowSessionStorage

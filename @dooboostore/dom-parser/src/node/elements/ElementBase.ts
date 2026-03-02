@@ -608,81 +608,103 @@ export abstract class ElementBase extends ParentNodeBase implements Element {
         return new NamedNodeMapImpl(this._attributes);
     }
 
+    // Dummy layout properties - return 0 for server-side rendering
     get clientHeight(): number {
-        throw new Error('Element.clientHeight is not implemented yet');
+        return 0;
     }
 
     get clientLeft(): number {
-        throw new Error('Element.clientLeft is not implemented yet');
+        return 0;
     }
 
     get clientTop(): number {
-        throw new Error('Element.clientTop is not implemented yet');
+        return 0;
     }
 
     get clientWidth(): number {
-        throw new Error('Element.clientWidth is not implemented yet');
+        return 0;
     }
 
     get currentCSSZoom(): number {
-        throw new Error('Element.currentCSSZoom is not implemented yet');
+        return 1; // Default zoom level
     }
 
     onfullscreenchange: ((this: Element, ev: Event) => any) | null = null;
     onfullscreenerror: ((this: Element, ev: Event) => any) | null = null;
 
     get part(): any {
-        throw new Error('Element.part is not implemented yet');
+        // Return empty DOMTokenList-like object
+        return {
+            length: 0,
+            value: '',
+            add: () => {},
+            remove: () => {},
+            contains: () => false,
+            toggle: () => false,
+            replace: () => false,
+            item: () => null
+        };
     }
 
     get scrollHeight(): number {
-        throw new Error('Element.scrollHeight is not implemented yet');
+        return 0;
     }
 
     get scrollLeft(): number {
-        throw new Error('Element.scrollLeft is not implemented yet');
+        return 0;
     }
 
     set scrollLeft(value: number) {
-        throw new Error('Element.scrollLeft setter is not implemented yet');
+        // No-op for dummy implementation
     }
 
     get scrollTop(): number {
-        throw new Error('Element.scrollTop is not implemented yet');
+        return 0;
     }
 
     set scrollTop(value: number) {
-        throw new Error('Element.scrollTop setter is not implemented yet');
+        // No-op for dummy implementation
     }
 
     get scrollWidth(): number {
-        throw new Error('Element.scrollWidth is not implemented yet');
+        return 0;
     }
 
     get shadowRoot(): any {
-        throw new Error('Element.shadowRoot is not implemented yet');
+        return null; // No shadow DOM in dummy implementation
     }
 
     get slot(): string {
-        throw new Error('Element.slot is not implemented yet');
+        return this.getAttribute('slot') || '';
     }
 
     set slot(value: string) {
-        throw new Error('Element.slot setter is not implemented yet');
+        this.setAttribute('slot', value);
     }
 
-    // Methods - Not implemented yet
+    // Methods - Dummy implementations
 
     attachShadow(init: any): any {
-        throw new Error('Element.attachShadow() is not implemented yet');
+        // Return a dummy shadow root object
+        return {
+            mode: init?.mode || 'open',
+            host: this,
+            innerHTML: '',
+            appendChild: () => {},
+            removeChild: () => {},
+            querySelector: () => null,
+            querySelectorAll: () => []
+        };
     }
 
     checkVisibility(options?: any): boolean {
-        throw new Error('Element.checkVisibility() is not implemented yet');
+        // Assume element is visible in dummy implementation
+        return true;
     }
 
     computedStyleMap(): any {
-        throw new Error('Element.computedStyleMap() is not implemented yet');
+        // Return empty style map
+        return new Map();
     }
 
     getAttributeNS(namespace: string | null, localName: string): string | null {
@@ -721,8 +743,13 @@ export abstract class ElementBase extends ParentNodeBase implements Element {
         };
     }
 
-    getClientRects(): any {
-        throw new Error('Element.getClientRects() is not implemented yet');
+    getClientRects(): DOMRectList {
+        // Return empty DOMRectList for dummy implementation
+        return {
+            length: 0,
+            item: () => null,
+            [Symbol.iterator]: function* () {}
+        } as any;
     }
 
     getElementsByClassName(classNames: string): HTMLCollection {
@@ -793,7 +820,8 @@ export abstract class ElementBase extends ParentNodeBase implements Element {
     }
 
     getHTML(options?: any): string {
-        throw new Error('Element.getHTML() is not implemented yet');
+        // Return outerHTML for dummy implementation
+        return this.outerHTML;
     }
 
     hasAttributeNS(namespace: string | null, localName: string): boolean {
@@ -806,7 +834,8 @@ export abstract class ElementBase extends ParentNodeBase implements Element {
     }
 
     hasPointerCapture(pointerId: number): boolean {
-        throw new Error('Element.hasPointerCapture() is not implemented yet');
+        // Always return false in dummy implementation
+        return false;
     }
 
     insertAdjacentElement(where: InsertPosition, element: Element): Element | null {
@@ -958,11 +987,13 @@ export abstract class ElementBase extends ParentNodeBase implements Element {
     }
 
     requestFullscreen(options?: any): Promise<void> {
-        throw new Error('Element.requestFullscreen() is not implemented yet');
+        // Return resolved promise for dummy implementation
+        return Promise.resolve();
     }
 
     requestPointerLock(options?: any): Promise<void> {
-        throw new Error('Element.requestPointerLock() is not implemented yet');
+        // Return resolved promise for dummy implementation
+        return Promise.resolve();
     }
 
     scroll(options?: any): void;
@@ -1004,7 +1035,8 @@ export abstract class ElementBase extends ParentNodeBase implements Element {
     }
 
     setHTMLUnsafe(html: string): void {
-        // throw new Error('Element.setHTMLUnsafe() is not implemented yet');
+        // Same as innerHTML for dummy implementation
+        this.innerHTML = html;
     }
 
     setPointerCapture(pointerId: number): void {
@@ -1026,21 +1058,21 @@ export abstract class ElementBase extends ParentNodeBase implements Element {
     }
 
     webkitMatchesSelector(selectors: string): boolean {
-        // throw new Error('Element.webkitMatchesSelector() is not implemented yet');
-        return false;
+        // Alias for matches() method
+        return this.matches(selectors);
     }
 
-    // EventTarget methods - Not implemented yet
+    // EventTarget methods - Dummy implementations (no-op for server-side)
     addEventListener(type: string, listener: any, options?: any): void {
-        // throw new Error('Element.addEventListener() is not implemented yet');
+        // No-op for dummy implementation
     }
 
     removeEventListener(type: string, listener: any, options?: any): void {
-        // throw new Error('Element.removeEventListener() is not implemented yet');
+        // No-op for dummy implementation
     }
 
     dispatchEvent(event: any): boolean {
-        // throw new Error('Element.dispatchEvent() is not implemented yet');
+        // Always return true for dummy implementation
         return true;
     }
 
