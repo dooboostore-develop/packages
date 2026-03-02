@@ -104,10 +104,16 @@ export class IntentManager {
             // console.log('-------params', injects);
             if (injects) {
               for (const inject of injects) {
-                let v = this.simstanceManager.findLastSim(inject.config).getValue();
+                let v: any = undefined;
+                if (inject.config.symbol) {
+                  v = this.simstanceManager.findLastSim(inject.config.symbol).getValue();
+                } else if (inject.config.scheme || inject.config.type) {
+                  v = this.simstanceManager.findLastSim(inject.config).getValue();
+                }
+
                 if (typeof inject.config.returnFactory === "function") {
                   v = await inject.config.returnFactory({instance: callthis, methodName: orNewSim.name, parameter: intent.data}, v);
-                } else if (typeof inject.config.returnFactory === "string") {
+                } else if (v && typeof inject.config.returnFactory === "string") {
                   v = await v[inject.config.returnFactory]({instance: callthis, methodName: orNewSim.name, parameter: intent.data}, v);
                 }
                 intent.data[inject.index] = v
