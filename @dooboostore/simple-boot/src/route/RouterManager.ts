@@ -11,7 +11,7 @@ import { RouterAction } from '../route/RouterAction';
 import { SimOption } from '../SimOption';
 import { Subject } from '@dooboostore/core/message/Subject';
 
-export type RoutingOption = { router?: ConstructorType<any> | any, find?: { router: 'last' | 'first' } };
+export type RoutingOption = { router?: ConstructorType<any> | any, noOnRouting?: boolean, find?: { router: 'last' | 'first' } };
 export type RoutingDataSet = {
   intent: Intent, routerModule: RouterModule, routerManager: RouterManager
 }
@@ -97,6 +97,7 @@ export class RouterManager {
       intent = new Intent(intent);
     }
     const targetRouter = option?.router ?? this.simOption.rootRouter;
+    const callCheckOnRouting = option?.noOnRouting !== true; // 기본값은 false, 즉 onRouting 호출
 
     if (!targetRouter) {
       throw new Error('no router');
@@ -126,7 +127,7 @@ export class RouterManager {
           if (RouterAction.isCanActivate(value) && next) {
               await value.canActivate(routingDataSet, next.getValue());
           }
-          if (RouterAction.isOnRouting(value) && next) {
+          if (callCheckOnRouting && RouterAction.isOnRouting(value) && next) {
             await value.onRouting(routingDataSet);
           }
         }
@@ -144,7 +145,7 @@ export class RouterManager {
         if (RouterAction.isCanActivate(value)) {
           await value.canActivate(routingDataSet, moduleInstance);
         }
-        if (RouterAction.isOnRouting(value)) {
+        if (callCheckOnRouting && RouterAction.isOnRouting(value)) {
           await value.onRouting(routingDataSet);
         }
       } 
@@ -156,11 +157,11 @@ export class RouterManager {
         if (RouterAction.isCanActivate(value)) {
           await value.canActivate(routingDataSet, moduleInstance);
         }
-        if (RouterAction.isOnRouting(value)) {
+        if (callCheckOnRouting && RouterAction.isOnRouting(value)) {
           await value.onRouting(routingDataSet);
         }
         // 가지고있는 선택된 Route도 isRouting이면
-        if (moduleInstance && RouterAction.isOnRouting(moduleInstance)) {
+        if (moduleInstance && callCheckOnRouting && RouterAction.isOnRouting(moduleInstance)) {
           await moduleInstance.onRouting(routingDataSet);
         }
       }

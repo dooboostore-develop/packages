@@ -51,6 +51,8 @@ export class SimpleApplication {
   }
 
   public run(otherInstanceSim?: Map<ConstructorType<any> | Function | SimConfig | Symbol, any>) {
+      otherInstanceSim ??= new Map<ConstructorType<any> | Function | SimConfig | Symbol, any>();
+    otherInstanceSim.set(SimpleApplication, this);
     this.simstanceManager.run(otherInstanceSim);
     return this;
     // return this.simstanceManager;

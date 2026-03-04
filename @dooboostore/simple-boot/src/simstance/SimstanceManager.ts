@@ -4,12 +4,7 @@ import { getPostConstructs, getSim, Lifecycle, SimConfig, simProcess, sims } fro
 import { ObjectUtils } from '@dooboostore/core/object/ObjectUtils';
 import { SimAtomic } from './SimAtomic';
 import { ReflectUtils } from '@dooboostore/core/reflect/ReflectUtils';
-import {
-  getInject,
-  SaveInjectConfig,
-  SituationTypeContainer,
-  SituationTypeContainers
-} from '../decorators/inject/Inject';
+import { getInject, SaveInjectConfig, SituationTypeContainer, SituationTypeContainers } from '../decorators/inject/Inject';
 import { SimOption } from '../SimOption';
 import { SimProxyHandler } from '../proxy/SimProxyHandler';
 import { ConvertUtils } from '@dooboostore/core/convert/ConvertUtils';
@@ -20,12 +15,7 @@ import { SimpleApplication } from '../SimpleApplication';
 import { isSimNoProxy } from '../decorators/SimNoProxy';
 import { RandomUtils } from '@dooboostore/core/random/RandomUtils';
 
-export type FirstCheckMaker = (
-  obj: { target: Object; targetKey?: string | symbol },
-  token: ConstructorType<any>,
-  idx: number,
-  saveInjectConfig?: SaveInjectConfig
-) => any | undefined;
+export type FirstCheckMaker = (obj: { target: Object; targetKey?: string | symbol }, token: ConstructorType<any>, idx: number, saveInjectConfig?: SaveInjectConfig) => any | undefined;
 export type Carrier = { newInstances: any[]; depth: number };
 export class SimstanceManager implements Runnable<void, Map<ConstructorType<any> | Function, any>> {
   private _storage = new Map<ConstructorType<any> | Function, Map<ConstructorType<any> | Function, undefined | any>>();
@@ -52,11 +42,7 @@ export class SimstanceManager implements Runnable<void, Map<ConstructorType<any>
     const r: SimAtomic[] = [];
     Array.from(this.storage.entries()).forEach(([targetKeyType, targetMap]) => {
       // Array.from(targetMap).forEach(it => {
-      r.push(
-        ...Array.from(Array.from(targetMap.keys())).map(
-          sit => new SimAtomic({ targetKeyType, originalType: sit }, this)
-        )
-      );
+      r.push(...Array.from(Array.from(targetMap.keys())).map(sit => new SimAtomic({ targetKeyType, originalType: sit }, this)));
       // });
     });
     return r;
@@ -112,9 +98,7 @@ export class SimstanceManager implements Runnable<void, Map<ConstructorType<any>
 
   findFirstSim<T = any>(symbol: Symbol): SimAtomic<T> | undefined;
   findFirstSim<T = any>(data: { scheme?: string; type?: ConstructorType<any> | Function }): SimAtomic<T> | undefined;
-  findFirstSim<T = any>(
-    data: { scheme?: string; type?: ConstructorType<any> | Function } | Symbol
-  ): SimAtomic<T> | undefined {
+  findFirstSim<T = any>(data: { scheme?: string; type?: ConstructorType<any> | Function } | Symbol): SimAtomic<T> | undefined {
     if (typeof data === 'symbol') {
       return this.findSims(data)[0];
     } else {
@@ -146,10 +130,7 @@ export class SimstanceManager implements Runnable<void, Map<ConstructorType<any>
     return datas.map(it => ({ type: it[0], instance: it[1] }));
   }
 
-  getStoreSet<T>(
-    targetKey: ConstructorType<T> | Function,
-    target?: ConstructorType<any> | Function
-  ): { type: ConstructorType<T> | Function; instance?: T } | undefined {
+  getStoreSet<T>(targetKey: ConstructorType<T> | Function, target?: ConstructorType<any> | Function): { type: ConstructorType<T> | Function; instance?: T } | undefined {
     const find = this.getStoreSets(targetKey).find(it => it.type === target);
     // console.log('getStoreSet', targetKey, target, find)
     if (!find?.instance) {
@@ -180,15 +161,7 @@ export class SimstanceManager implements Runnable<void, Map<ConstructorType<any>
     return this.getStoreSet(targetKey, target)?.instance;
   }
 
-  getOrNewSim<T>({
-    target,
-    originTypeTarget = target,
-    newInstanceCarrier
-  }: {
-    target?: ConstructorType<T> | Function;
-    newInstanceCarrier?: Carrier;
-    originTypeTarget?: ConstructorType<T> | Function;
-  }): T | undefined {
+  getOrNewSim<T>({ target, originTypeTarget = target, newInstanceCarrier }: { target?: ConstructorType<T> | Function; newInstanceCarrier?: Carrier; originTypeTarget?: ConstructorType<T> | Function }): T | undefined {
     if (target) {
       const registed = this.getStoreSet(target, originTypeTarget);
       if (registed?.type && !registed?.instance) {
@@ -198,11 +171,7 @@ export class SimstanceManager implements Runnable<void, Map<ConstructorType<any>
     }
   }
 
-  setStoreSet(
-    targetKey: ConstructorType<any> | Function,
-    obj: any,
-    target: ConstructorType<any> | Function = targetKey
-  ): void {
+  setStoreSet(targetKey: ConstructorType<any> | Function, obj: any, target: ConstructorType<any> | Function = targetKey): void {
     const itemMap = this.storage.get(targetKey) ?? new Map<ConstructorType<any> | Function, any>();
     itemMap.set(target, obj);
     this.storage.set(targetKey, itemMap);
@@ -211,9 +180,7 @@ export class SimstanceManager implements Runnable<void, Map<ConstructorType<any>
   registerStore(targetKey: ConstructorType<any> | Function, regTyps: Set<ConstructorType<any> | Function | any>): void {
     const itemMap = this.storage.get(targetKey) ?? new Map<ConstructorType<any> | Function, any>();
     regTyps.forEach(it => {
-      const { type, value } = (
-        typeof it === 'object' ? { type: it.constructor, value: it } : { type: it, value: undefined }
-      ) as { type: ConstructorType<any> | Function; value: any };
+      const { type, value } = (typeof it === 'object' ? { type: it.constructor, value: it } : { type: it, value: undefined }) as { type: ConstructorType<any> | Function; value: any };
       if (!itemMap.has(type)) {
         itemMap.set(type, value);
       }
@@ -222,15 +189,7 @@ export class SimstanceManager implements Runnable<void, Map<ConstructorType<any>
   }
 
   // 진입점
-  resolve<T>({
-    target,
-    targetKey,
-    newInstanceCarrier = { newInstances: [], depth: 0 }
-  }: {
-    targetKey: ConstructorType<any> | Function;
-    target?: ConstructorType<any> | Function;
-    newInstanceCarrier?: Carrier;
-  }): T {
+  resolve<T>({ target, targetKey, newInstanceCarrier = { newInstances: [], depth: 0 } }: { targetKey: ConstructorType<any> | Function; target?: ConstructorType<any> | Function; newInstanceCarrier?: Carrier }): T {
     // console.group('resolve')
     const registed = this.getStoreSet(targetKey, target);
     if (registed?.instance) {
@@ -268,29 +227,15 @@ export class SimstanceManager implements Runnable<void, Map<ConstructorType<any>
       return newSim;
     }
     console.log('simstanceManager', this._storage, this.name);
-    const simNoSuch = new SimNoSuch(
-      'SimNoSuch: no simple instance(resolve) ' + 'name:' + targetKey?.prototype?.constructor?.name + ',' + targetKey
-    );
+    const simNoSuch = new SimNoSuch('SimNoSuch: no simple instance(resolve) ' + 'name:' + targetKey?.prototype?.constructor?.name + ',' + targetKey);
     console.error(simNoSuch);
     // console.groupEnd();
     throw simNoSuch;
   }
 
-  public newSim<T = any>({
-    target,
-    simCreateAfter,
-    otherStorage,
-    newInstanceCarrier
-  }: {
-    target: ConstructorType<T> | Function;
-    simCreateAfter?: (data: T) => void;
-    newInstanceCarrier?: Carrier;
-    otherStorage?: Map<ConstructorType<any>, any>;
-  }): T {
+  public newSim<T = any>({ target, simCreateAfter, otherStorage, newInstanceCarrier }: { target: ConstructorType<T> | Function; simCreateAfter?: (data: T) => void; newInstanceCarrier?: Carrier; otherStorage?: Map<ConstructorType<any>, any> }): T {
     // @ts-ignore TODO: 여기서 생성
-    const r = new target(
-      ...this.getParameterSim({ target: target, otherStorage: otherStorage, newInstanceCarrier: newInstanceCarrier })
-    );
+    const r = new target(...this.getParameterSim({ target: target, otherStorage: otherStorage, newInstanceCarrier: newInstanceCarrier }));
     let p = this.proxy(r);
     const config = getSim(target);
     if (config?.proxy) {
@@ -331,14 +276,7 @@ export class SimstanceManager implements Runnable<void, Map<ConstructorType<any>
     });
   }
 
-  public async executeBindParameterSimPromise(
-    {
-      target,
-      targetKey,
-      firstCheckMaker
-    }: { target: Object; targetKey?: string | symbol; firstCheckMaker?: FirstCheckMaker[] },
-    otherStorage?: Map<ConstructorType<any>, any>
-  ) {
+  public async executeBindParameterSimPromise({ target, targetKey, firstCheckMaker }: { target: Object; targetKey?: string | symbol; firstCheckMaker?: FirstCheckMaker[] }, otherStorage?: Map<ConstructorType<any>, any>) {
     let value = this.executeBindParameterSim({ target, targetKey, firstCheckMaker }, otherStorage);
     if (value instanceof Promise) {
       value = await value;
@@ -346,14 +284,7 @@ export class SimstanceManager implements Runnable<void, Map<ConstructorType<any>
     return value;
   }
 
-  public executeBindParameterSim(
-    {
-      target,
-      targetKey,
-      firstCheckMaker
-    }: { target: Object; targetKey?: string | symbol; firstCheckMaker?: FirstCheckMaker[] },
-    otherStorage?: Map<ConstructorType<any>, any>
-  ) {
+  public executeBindParameterSim({ target, targetKey, firstCheckMaker }: { target: Object; targetKey?: string | symbol; firstCheckMaker?: FirstCheckMaker[] }, otherStorage?: Map<ConstructorType<any>, any>) {
     const binds = this.getParameterSim({ target, targetKey, firstCheckMaker, otherStorage });
     if (typeof target === 'object' && targetKey) {
       const targetMethod = (target as any)[targetKey];
@@ -363,19 +294,7 @@ export class SimstanceManager implements Runnable<void, Map<ConstructorType<any>
     }
   }
 
-  public getParameterSim({
-    target,
-    targetKey,
-    firstCheckMaker,
-    otherStorage,
-    newInstanceCarrier
-  }: {
-    target: Object;
-    targetKey?: string | symbol;
-    firstCheckMaker?: FirstCheckMaker[];
-    newInstanceCarrier?: Carrier;
-    otherStorage?: Map<ConstructorType<any>, any>;
-  }): any[] {
+  public getParameterSim({ target, targetKey, firstCheckMaker, otherStorage, newInstanceCarrier }: { target: Object; targetKey?: string | symbol; firstCheckMaker?: FirstCheckMaker[]; newInstanceCarrier?: Carrier; otherStorage?: Map<ConstructorType<any>, any> }): any[] {
     const paramTypes = ReflectUtils.getParameterTypes(target, targetKey);
     // const paramNames = FunctionUtils.getParameterNames(target, targetKey);
     // const a = ReflectUtils.getType(target, 'user');
@@ -404,21 +323,15 @@ export class SimstanceManager implements Runnable<void, Map<ConstructorType<any>
           if (inject.type) {
             p.push(
               ...this.getStoreSets(inject.type)
-                .map(it =>
-                  this.resolve({ targetKey: inject.type!, target: it.type, newInstanceCarrier: newInstanceCarrier })
-                )
+                .map(it => this.resolve({ targetKey: inject.type!, target: it.type, newInstanceCarrier: newInstanceCarrier }))
                 .reverse()
             );
           }
           if (inject.symbol) {
-            p.push(
-              ...this.getSimConfig(inject.symbol).map(it => it.getValue({ newInstanceCarrier: newInstanceCarrier }))
-            );
+            p.push(...this.getSimConfig(inject.symbol).map(it => it.getValue({ newInstanceCarrier: newInstanceCarrier })));
           }
           if (inject.scheme) {
-            p.push(
-              ...this.getSimConfig(inject.scheme).map(it => it.getValue({ newInstanceCarrier: newInstanceCarrier }))
-            );
+            p.push(...this.getSimConfig(inject.scheme).map(it => it.getValue({ newInstanceCarrier: newInstanceCarrier })));
           }
           return p;
         }
@@ -445,9 +358,7 @@ export class SimstanceManager implements Runnable<void, Map<ConstructorType<any>
         }
 
         if (!obj) {
-          const findLastSim = inject.symbol
-            ? this.findLastSim(inject.symbol)
-            : this.findLastSim({ scheme: inject.scheme, type: inject.type });
+          const findLastSim = inject.symbol ? this.findLastSim(inject.symbol) : this.findLastSim({ scheme: inject.scheme, type: inject.type });
           try {
             obj = findLastSim
               ? this.resolve<any>({
@@ -465,11 +376,18 @@ export class SimstanceManager implements Runnable<void, Map<ConstructorType<any>
           }
         }
 
-        if (inject.applyProxy && obj) {
-          if (inject.applyProxy.param) {
-            obj = new Proxy(obj, new inject.applyProxy.type(...inject.applyProxy.param));
+        if (inject.createProxy && obj) {
+          if (inject.createProxy.param) {
+            obj = new Proxy(obj, new inject.createProxy.type(...inject.createProxy.param));
           } else {
-            obj = new Proxy(obj, new inject.applyProxy.type());
+            obj = new Proxy(obj, new inject.createProxy.type());
+          }
+        }
+
+        if (inject.proxy && obj) {
+          const handler = this.getOrNewSim({ target: inject.proxy });
+          if (handler) {
+            obj = new Proxy(obj, handler);
           }
         }
         return obj;
@@ -486,13 +404,7 @@ export class SimstanceManager implements Runnable<void, Map<ConstructorType<any>
   public proxy<T = any>(target: T): T {
     try {
       const noProxy = isSimNoProxy(target);
-      if (
-        !noProxy &&
-        target !== null &&
-        getSim(target) &&
-        typeof target === 'object' &&
-        !('_SimpleBoot_isProxy' in target)
-      ) {
+      if (!noProxy && target !== null && getSim(target) && typeof target === 'object' && !('_SimpleBoot_isProxy' in target)) {
         for (const key in target) {
           if (!isSimNoProxy(target, key)) {
             target[key] = this.proxy(target[key]);

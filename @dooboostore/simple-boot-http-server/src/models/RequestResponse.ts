@@ -18,48 +18,42 @@ import * as fs from 'fs';
 import * as os from 'os';
 import { RandomUtils } from '@dooboostore/core/random/RandomUtils';
 import { FileUtils } from '@dooboostore/core-node/file/FileUtils';
-import { ConvertUtils as CoreConvertUtils} from '@dooboostore/core/convert/ConvertUtils';
+import { ConvertUtils as CoreConvertUtils } from '@dooboostore/core/convert/ConvertUtils';
 import { ConvertUtils } from '@dooboostore/core-node/convert/ConvertUtils';
-// https://masteringjs.io/tutorials/node/http-request
-type Config = { sessionManager?: SessionManager, option: HttpServerOption };
 
-// https://nodejs.org/ko/docs/guides/anatomy-of-an-http-transaction/
+type Config = { sessionManager?: SessionManager; option: HttpServerOption };
+
 export class RequestResponse {
   protected resWriteChunk: string | Buffer | undefined;
   protected reqBodyChunk?: Buffer;
   protected req: IncomingMessage;
   protected res: ServerResponse;
   protected config: Config;
-  // protected sessionManager?: SessionManager;
 
-  // constructor(req: IncomingMessage, res: ServerResponse);
-  // constructor(req: RequestResponse);
-  // constructor(req: IncomingMessage, res: ServerResponse, sessionManager?: SessionManager);
-  // constructor(req: IncomingMessage | RequestResponse, res?: ServerResponse, sessionManager?: SessionManager) {
-  //   // this.req = req;
-  //   // this.res = res;
-  //   if (req instanceof RequestResponse) {
-  //     this.req = req.req;
-  //     this.res = req.res;
-  //     this.sessionManager = req.sessionManager;
-  //   } else {
-  //     this.req = req;
-  //     this.res = res!;
-  //     this.sessionManager = sessionManager;
-  //   }
-  // }
+  // [아키텍트님의 정석] RequestResponse 객체 고유의 속성 저장소 (트랜잭션 생명주기)
+  protected attributes = new Map<string, any>();
+
   constructor(req: IncomingMessage | RequestResponse, res: ServerResponse, config: Config) {
-    // this.req = req;
-    // this.res = res;
     if (req instanceof RequestResponse) {
       this.req = req.req;
       this.res = req.res;
       this.config = config;
+      this.attributes = req.attributes;
     } else {
       this.req = req;
       this.res = res!;
       this.config = config;
     }
+  }
+
+  // --- RequestResponse Attributes (Transaction Life-cycle) ---
+
+  setAttribute(key: string, value: any): void {
+    this.attributes.set(key, value);
+  }
+
+  getAttribute<T = any>(key: string): T | undefined {
+    return this.attributes.get(key) as T;
   }
 
   get reqSocket() {
@@ -69,13 +63,16 @@ export class RequestResponse {
   get reqCookieMap() {
     let cookies = this.reqHeader(HttpHeaders.Cookie) ?? '';
     if (Array.isArray(cookies)) {
-      cookies = cookies.join(';')
+      cookies = cookies.join(';');
     }
 
     const map = new Map<string, string>();
-    cookies.split(';').map(it => it.trim().split('=')).forEach(it => {
-      map.set(it[0], it[1]);
-    });
+    cookies
+      .split(';')
+      .map(it => it.trim().split('='))
+      .forEach(it => {
+        if (it[0]) map.set(it[0], it[1]);
+      });
     return map;
   }
 
@@ -95,11 +92,10 @@ export class RequestResponse {
   }
 
   get reqUrlObject(): URL {
-    return new URL(this.reqUrl, `${this.reqSocket ? 'https://' : 'http'}${this.reqHost ?? 'localhost'}`);
+    return new URL(this.reqUrl, `${this.reqSocket ? 'https://' : 'http://'}${this.reqHost ?? 'localhost'}`);
   }
 
   get reqUrlPathName(): string {
-    // parse(rr.reqUrl ?? '', true)
     return this.reqUrlObj().pathname ?? '';
   }
 
@@ -107,8 +103,8 @@ export class RequestResponse {
     return this.req.url ?? '';
   }
 
-  reqUrlObj(config?:{scheme?: string, host?: string}): URL {
-    return new URL(`${config?.scheme??'http' }://${config?.host ? config?.host : (this.reqHeaderFirst(HttpHeaders.Host) ?? 'localhost')}${this.req.url ?? ''}`);
+  reqUrlObj(config?: { scheme?: string; host?: string }): URL {
+    return new URL(`${config?.scheme ?? 'http'}://${config?.host ? config?.host : (this.reqHeaderFirst(HttpHeaders.Host) ?? 'localhost')}${this.req.url ?? ''}`);
   }
 
   get reqUrlSearchParamTuples(): [string, string][] {
@@ -119,16 +115,14 @@ export class RequestResponse {
     return this.reqUrlObj().searchParams;
   }
 
-  get reqUrlSearchParamsObj(): {[p: string]: string | string[]} {
+  get reqUrlSearchParamsObj(): { [p: string]: string | string[] } {
     const entries = this.reqUrlObj().searchParams;
     return CoreConvertUtils.toObject(entries);
-    // return obj;
-    // return Object.fromEntries(entries as any)
   }
 
   get reqPathSearchParamUrl(): string {
     const reqUrlObj = this.reqUrlObj();
-    return reqUrlObj.pathname + (reqUrlObj.searchParams.toString() ? '?' + reqUrlObj.searchParams.toString() : '')
+    return reqUrlObj.pathname + (reqUrlObj.searchParams.toString() ? '?' + reqUrlObj.searchParams.toString() : '');
   }
 
   get reqReadable() {
@@ -151,7 +145,7 @@ export class RequestResponse {
     return new Promise<Buffer>((resolve, reject) => {
       if (this.reqReadable) {
         const data: Uint8Array[] = [];
-        this.req.on('data', (chunk) => data.push(chunk));
+        this.req.on('data', chunk => data.push(chunk));
         this.req.on('error', err => reject(err));
         this.req.on('end', () => {
           this.reqBodyChunk = Buffer.concat(data);
@@ -162,12 +156,10 @@ export class RequestResponse {
       }
     });
   }
-  
-  resBodyData(): string | Buffer | undefined{
+
+  resBodyData(): string | Buffer | undefined {
     return this.resWriteChunk;
   }
-
-
 
   async reqBodyMultipartFormDataObject<T>(): Promise<T> {
     const m = await this.reqBodyMultipartFormData();
@@ -175,18 +167,18 @@ export class RequestResponse {
 
     for (const it of m) {
       if (it.isFile) {
-        formData[it.name] = await FileUtils.writeFile(it.value, {originalName: it.filename, etcData: it });
+        formData[it.name] = await FileUtils.writeFile(it.value, { originalName: it.filename, etcData: it });
       } else {
         const target = formData[it.name];
         if (Array.isArray(target)) {
           target.push(it.value);
         } else if (typeof target === 'string') {
-          formData[it.name] = [target, it.value]
+          formData[it.name] = [target, it.value];
         } else {
           formData[it.name] = it.value;
         }
       }
-    };
+    }
     return formData;
   }
 
@@ -201,14 +193,14 @@ export class RequestResponse {
       if (!boundaryMatch) {
         return reject(new Error('Boundary not found in Content-Type header.'));
       }
-      const boundary = boundaryMatch[1] || boundaryMatch[2]; // 따옴표 유무 처리
+      const boundary = boundaryMatch[1] || boundaryMatch[2];
       if (!boundary) {
         return reject(new Error('Failed to extract boundary.'));
       }
 
       const boundaryBuffer = Buffer.from(`--${boundary}`);
       const crlfBuffer = Buffer.from('\r\n');
-      const doubleCrlfBuffer = Buffer.from('\r\n\r\n'); // 헤더와 바디 구분자
+      const doubleCrlfBuffer = Buffer.from('\r\n\r\n');
 
       const chunks: Buffer[] = [];
       let totalLength = 0;
@@ -218,65 +210,54 @@ export class RequestResponse {
         totalLength += chunk.length;
       });
 
-      this.req.on('error', (err) => {
+      this.req.on('error', err => {
         reject(err);
       });
 
       this.req.on('end', () => {
         if (totalLength === 0) {
-          return resolve([]); // 빈 요청 처리
+          return resolve([]);
         }
 
         const fullBuffer = Buffer.concat(chunks, totalLength);
         const parsedParts: MultipartData[] = [];
         let currentPosition = 0;
 
-        // 첫 번째 boundary 찾기 (보통 시작 부분에 있음)
         let boundaryStartIndex = fullBuffer.indexOf(boundaryBuffer, currentPosition);
         if (boundaryStartIndex === -1) {
           return reject(new Error('Initial boundary not found.'));
         }
-        // boundary 바로 다음 \r\n 건너뛰기
         currentPosition = boundaryStartIndex + boundaryBuffer.length;
         if (fullBuffer.slice(currentPosition, currentPosition + crlfBuffer.length).equals(crlfBuffer)) {
           currentPosition += crlfBuffer.length;
         }
 
-
         while (currentPosition < fullBuffer.length) {
-          // 다음 boundary 찾기 (파트의 끝)
           const nextBoundaryIndex = fullBuffer.indexOf(boundaryBuffer, currentPosition);
           if (nextBoundaryIndex === -1) {
-            // 마지막 boundary (--)인지 확인 필요하나, 여기서는 단순하게 처리
-            // console.warn('Next boundary not found, assuming end of data or malformed.');
             break;
           }
 
-          // 현재 파트 데이터 추출 (boundary 이전까지)
-          // 실제 파트 데이터는 다음 boundary 바로 앞의 \r\n을 제외해야 함
           let partEndIndex = nextBoundaryIndex;
           if (partEndIndex > crlfBuffer.length && fullBuffer.slice(partEndIndex - crlfBuffer.length, partEndIndex).equals(crlfBuffer)) {
             partEndIndex -= crlfBuffer.length;
           }
           const partBuffer = fullBuffer.slice(currentPosition, partEndIndex);
 
-          // 헤더와 바디 분리
           const headerBodySeparatorIndex = partBuffer.indexOf(doubleCrlfBuffer);
           if (headerBodySeparatorIndex === -1) {
-            console.warn('Skipping malformed part: no header/body separator found.');
             currentPosition = nextBoundaryIndex + boundaryBuffer.length;
             if (fullBuffer.slice(currentPosition, currentPosition + crlfBuffer.length).equals(crlfBuffer)) {
               currentPosition += crlfBuffer.length;
             }
-            if (fullBuffer.slice(currentPosition, currentPosition + 2).toString() === '--') break; // 마지막 boundary
+            if (fullBuffer.slice(currentPosition, currentPosition + 2).toString() === '--') break;
             continue;
           }
 
           const headerBuffer = partBuffer.slice(0, headerBodySeparatorIndex);
           const bodyBuffer = partBuffer.slice(headerBodySeparatorIndex + doubleCrlfBuffer.length);
-          const headersStr = headerBuffer.toString('utf-8'); // 헤더는 보통 ASCII/UTF-8
+          const headersStr = headerBuffer.toString('utf-8');
 
-          // 헤더 파싱
           const headers: { [key: string]: string } = {};
           headersStr.split('\r\n').forEach(line => {
             const colonIndex = line.indexOf(':');
@@ -289,7 +270,6 @@ export class RequestResponse {
 
           const contentDisposition = headers['content-disposition'];
           if (!contentDisposition) {
-            console.warn('Skipping part: no Content-Disposition header.');
             currentPosition = nextBoundaryIndex + boundaryBuffer.length;
             if (fullBuffer.slice(currentPosition, currentPosition + crlfBuffer.length).equals(crlfBuffer)) {
               currentPosition += crlfBuffer.length;
@@ -306,135 +286,55 @@ export class RequestResponse {
           const contentType = headers['content-type'] || null;
 
           if (name) {
-
-            const isFile = !!filename;
-            // @ts-ignore
-            const multipartData:MultipartData = {
-              name:name,
-              isFile: isFile, // filename이 있으면 파일로 간주
-              filename: filename,
-              contentType: contentType,
-              value: isFile ? bodyBuffer: bodyBuffer.toString('utf-8'),
+            if (filename) {
+              parsedParts.push({
+                isFile: true,
+                name: name,
+                filename: filename,
+                contentType: contentType ?? 'application/octet-stream',
+                value: bodyBuffer
+              });
+            } else {
+              parsedParts.push({
+                isFile: false,
+                name: name,
+                value: bodyBuffer.toString('utf-8')
+              });
             }
-            parsedParts.push(multipartData);
-          } else {
-            console.warn("Skipping part: 'name' not found in Content-Disposition.");
           }
 
-          // 다음 파트 시작 위치로 이동
           currentPosition = nextBoundaryIndex + boundaryBuffer.length;
-          // boundary 바로 다음 \r\n 건너뛰기
           if (fullBuffer.slice(currentPosition, currentPosition + crlfBuffer.length).equals(crlfBuffer)) {
             currentPosition += crlfBuffer.length;
           }
 
-          // 마지막 boundary (--)인지 확인하고 루프 종료
           if (fullBuffer.slice(currentPosition, currentPosition + 2).toString() === '--') {
             break;
           }
         }
         resolve(parsedParts);
       });
-    })
-    // const form = formidable({});
-    // return  new Promise((resolve, reject) => {
-    //   form.parse(this.req, (err, fields, files) => {
-    //     if (err) {
-    //       reject(err);
-    //       return;
-    //     }
-    //
-    //     console.log('----', files)
-    //     // this.res.set('Content-Type', 'application/json');
-    //     // ctx.status = 200;
-    //     // ctx.state = { fields, files };
-    //     // ctx.body = JSON.stringify(ctx.state, null, 2);
-    //     resolve(' ' as any);
-    //   });
-    // });
-
-    // return new Promise<MultipartData<any>[]>((resolve, reject) => {
-    //
-    //
-    //   const contentType = this.req.headers['content-type'];
-    //   const boundary = contentType.split('boundary=')[1];
-    //
-    //   let body: Uint8Array[] = [];
-    //   this.req.on('data', chunk => body.push(chunk));
-    //   this.req.on('end', async () => {
-    //     const buffer = Buffer.concat(body);
-    //     // Boundary로 파트 분리
-    //     const parts = buffer.toString().split(`--${boundary}`).slice(1, -1);
-    //     let jsonData = {};
-    //     let fileData = null;
-    //
-    //     for (let part of parts) {
-    //       const [headerPart, ...bodyParts] = part.split('\r\n\r\n');
-    //       const headers = headerPart.split('\r\n').reduce((acc, line) => {
-    //         const [key, value] = line.split(': ').map(s => s.trim().toLowerCase());
-    //         if (key) acc[key] = value;
-    //         return acc;
-    //       }, {});
-    //
-    //       const content = bodyParts.join('\r\n\r\n').trim();
-    //       const disposition = headers['content-disposition'];
-    //       const name = disposition?.match(/name="([^"]+)"/)?.[1];
-    //       const filename = disposition?.match(/filename="([^"]+)"/)?.[1];
-    //
-    //       if (filename) {
-    //         // 파일 데이터 (Blob)
-    //         fileData = { filename, contentType: headers['content-type'], data: Buffer.from(content, 'binary') };
-    //       } else if (name) {
-    //         // 텍스트 데이터
-    //         if (name === 'metadata') jsonData = JSON.parse(content);
-    //       }
-    //     }
-    //
-    //     // 파일 저장
-    //     if (fileData) {
-    //
-    //
-    //
-    //
-    //       const uploadPath = this.config.option.fileUploadTempPath || os.tmpdir();
-    //       fs.mkdirSync(uploadPath, { recursive: true }); // 폴더가 없으면 생성
-    //       const saveTempPath = `${uploadPath}/${RandomUtils.uuid4()}${fileData.filename}`;
-    //       console.log('saveTempPathsaveTempPath', saveTempPath)
-    //       await fs.promises.writeFile(saveTempPath, fileData.data);
-    //       this.res.writeHead(200, { 'Content-Type': 'application/json' });
-    //       this.res.end(JSON.stringify({ message: '업로드 성공', jsonData, filename: fileData?.filename }));
-    //       // const uploadPath = this.config.option.fileUploadTempPath ;
-    //       // fs.mkdirSync(uploadPath, { recursive: true }); // 폴더가 없으면 생성
-    //       // await fs.writeFile(`${uploadPath}/${fileData.filename}`, fileData.data);
-    //     }
-    //   });
-    // });
+    });
   }
 
   async reqBodyStringData(): Promise<string> {
-    const data = (await this.reqBodyData()).toString()
+    const data = (await this.reqBodyData()).toString();
     return data;
   }
 
   async reqBodyJsonData<T>(): Promise<T> {
     return JSON.parse(await this.reqBodyStringData());
-    // const text = await this.reqBodyStringData();
-    // if (text?.length <= 0) {
-    //   return null;
-    // } else {
-    //   return JSON.parse(text);
-    // }
   }
 
   async reqBodyFormUrlData<T>(): Promise<T> {
-    const data = (await this.reqBodyStringData())
+    const data = await this.reqBodyStringData();
     const formData = {} as any;
     Array.from(new URLSearchParams(data).entries()).forEach(([k, v]) => {
       const target = formData[k];
       if (Array.isArray(target)) {
         target.push(v);
       } else if (typeof target === 'string') {
-        formData[k] = [target, v]
+        formData[k] = [target, v];
       } else {
         formData[k] = v;
       }
@@ -443,20 +343,16 @@ export class RequestResponse {
   }
 
   async reqBodyReqFormUrlBody() {
-    const data = await this.reqBodyFormUrlData()
+    const data = await this.reqBodyFormUrlData();
     return Object.assign(new ReqFormUrlBody(), data);
   }
 
   async reqBodyReqJsonBody(): Promise<ReqJsonBody> {
-    const data = (await this.reqBodyStringData());
-    return Object.assign(new ReqJsonBody(), data ? JSON.parse(data) : {})
+    const data = await this.reqBodyStringData();
+    return Object.assign(new ReqJsonBody(), data ? JSON.parse(data) : {});
   }
 
-  // reqBodyReqMultipartFormBody(): Promise<ReqMultipartFormBody> {
-  //   return this.reqBodyMultipartFormData().then(it => new ReqMultipartFormBody(it))
-  // }
-
-  resBodyJsonData<T>(): (T | null) {
+  resBodyJsonData<T>(): T | null {
     const data = ConvertUtils.toString(this.resBodyData());
     return data ? JSON.parse(data) : null;
   }
@@ -470,11 +366,11 @@ export class RequestResponse {
   }
 
   reqHeader(key: keyof typeof HttpHeaders | string) {
-    return this.req.headers[key.toLowerCase()];
+    return this.req.headers[(key as string).toLowerCase()];
   }
 
   get reqHost() {
-    return this.reqHeaderFirst(HttpHeaders.Host)
+    return this.reqHeaderFirst(HttpHeaders.Host);
   }
 
   get reqHeaderObj(): ReqHeader {
@@ -486,7 +382,7 @@ export class RequestResponse {
   }
 
   reqHeaderFirst(key: HttpHeadersType | string, defaultValue?: string) {
-    const header = this.req.headers[key.toLowerCase()];
+    const header = this.req.headers[(key as string).toLowerCase()];
     if (header && Array.isArray(header)) {
       return header[0] ?? defaultValue;
     } else {
@@ -503,9 +399,7 @@ export class RequestResponse {
   }
 
   resStatusCode(code?: undefined): number;
-  // eslint-disable-next-line no-dupe-class-members
   resStatusCode(code: number | HttpStatus): RequestResponseChain<number>;
-  // eslint-disable-next-line no-dupe-class-members
   resStatusCode(code: number | undefined | HttpStatus): number | RequestResponseChain<number> {
     if (code) {
       this.res.statusCode = code;
@@ -516,11 +410,11 @@ export class RequestResponse {
   }
 
   resHeader(key: HttpHeadersType | string) {
-    return this.res.getHeader(key.toLowerCase());
+    return this.res.getHeader((key as string).toLowerCase());
   }
 
   resHeaderFirst(key: HttpHeadersType | string, defaultValue?: string) {
-    const header = this.res.getHeader(key.toLowerCase());
+    const header = this.res.getHeader((key as string).toLowerCase());
     if (header && Array.isArray(header)) {
       return header[0] ?? defaultValue;
     } else {
@@ -530,21 +424,22 @@ export class RequestResponse {
 
   async reqSession(): Promise<{ [key: string]: any }> {
     if (this.config.sessionManager) {
-      return (await this.config.sessionManager.session(this)).dataSet.data;
+      const session = await this.config.sessionManager.session(this);
+      session.dataSet.data ??= {};
+      return session.dataSet.data;
     } else {
       return Promise.reject(new Error('Not SessionManager'));
     }
   }
 
-  reqSessionSet(key: string, value: any): void {
-    (this.reqSession as any)[key] = value;
+  async reqSessionSet(key: string, value: any): Promise<void> {
+    const sessionData = await this.reqSession();
+    sessionData[key] = value;
   }
 
-  reqSessionGet<T = any>(key: string): T | undefined {
-    const session = this.reqSession as any;
-    if (session) {
-      return session[key] as T;
-    }
+  async reqSessionGet<T = any>(key: string): Promise<T | undefined> {
+    const sessionData = await this.reqSession();
+    return sessionData[key] as T;
   }
 
   resSetStatusCode(statusCode: number) {
@@ -552,33 +447,25 @@ export class RequestResponse {
     return this.createRequestResponseChain(this.res.statusCode);
   }
 
-  // resEnd() {
-  //     this.res.end();
-  // }
-
-  // eslint-disable-next-line no-undef
   resWrite(chunk: string | Buffer | any, encoding: BufferEncoding = 'utf8') {
     this.resWriteChunk = chunk;
     return this.createRequestResponseChain(this.resWriteChunk);
   }
 
-  // eslint-disable-next-line no-undef
   resWriteJson(chunk: any, encoding: BufferEncoding = 'utf8') {
     return this.resWrite(JSON.stringify(chunk), encoding);
   }
 
   resSetHeader(key: HttpHeadersType | string, value: string | string[]) {
-    return this.createRequestResponseChain(this.res.setHeader(key.toLowerCase(), value));
+    this.res.setHeader((key as string).toLowerCase(), value);
+    return this.createRequestResponseChain();
   }
 
   resAddHeader(key: HttpHeadersType | string, value: string | string[]) {
-    const existingValue = this.res.getHeader(key.toLowerCase());
-    const newValue = Array.isArray(existingValue)
-      ? existingValue.concat(value)
-      : existingValue
-        ? [existingValue.toString(), ...[].concat(value)]
-        : value;
-    return this.createRequestResponseChain(this.res.setHeader(key.toLowerCase(), newValue));
+    const existingValue = this.res.getHeader((key as string).toLowerCase());
+    const newValue = Array.isArray(existingValue) ? existingValue.concat(value) : existingValue ? [existingValue.toString(), ...[].concat(value as any)] : value;
+    this.res.setHeader((key as string).toLowerCase(), newValue as any);
+    return this.createRequestResponseChain();
   }
 
   resSetHeaders(headers: { [key: string]: string | string[] }) {
@@ -587,15 +474,14 @@ export class RequestResponse {
   }
 
   resAddHeaders(headers: { [key: string]: string | string[] }) {
-      Object.entries(headers).forEach(([key, value]) => this.resAddHeader(key, value));
-      return this.createRequestResponseChain();
+    Object.entries(headers).forEach(([key, value]) => this.resAddHeader(key, value));
+    return this.createRequestResponseChain();
   }
 
-  // 마지막 종료될때 타는거.
   private async resEndChunk() {
     const encoding = this.reqHeaderFirst(HttpHeaders.AcceptEncoding);
     let data = this.resWriteChunk;
-    if (encoding?.includes('gzip')) {
+    if (encoding?.includes('gzip') && data) {
       data = await gzip(data);
       this.resSetHeader(HttpHeaders.ContentEncoding, 'gzip');
     }
@@ -604,27 +490,24 @@ export class RequestResponse {
 
   async resEnd(chunk?: string | Buffer | Blob | ArrayBuffer | Response) {
     if (chunk instanceof Response) {
-      // 헤더를 직접 설정하여 체이닝 오버헤드 제거
       chunk.headers.forEach((value, key) => {
         this.res.setHeader(`ORIGIN-${key}`, value);
       });
       if (!this.resHeader(HttpHeaders.ContentType)) {
         const contentType = chunk.headers.get(HttpHeaders.ContentType);
-        if (contentType) {
-          this.res.setHeader(HttpHeaders.ContentType, contentType);
-        }
+        if (contentType) this.res.setHeader(HttpHeaders.ContentType, contentType);
       }
       this.res.statusCode = chunk.status;
       this.resWriteChunk = Buffer.from(await chunk.arrayBuffer());
     } else if (chunk instanceof Blob) {
-        this.resWriteChunk = Buffer.from(await chunk.arrayBuffer());
-        if (!this.resHeader(HttpHeaders.ContentType)) {
-            this.res.setHeader(HttpHeaders.ContentType, chunk.type);
-        }
+      this.resWriteChunk = Buffer.from(await chunk.arrayBuffer());
+      if (!this.resHeader(HttpHeaders.ContentType)) {
+        this.res.setHeader(HttpHeaders.ContentType, chunk.type);
+      }
     } else if (chunk instanceof ArrayBuffer) {
-        this.resWriteChunk = Buffer.from(chunk);
+      this.resWriteChunk = Buffer.from(chunk);
     } else {
-        this.resWriteChunk = chunk ?? this.resWriteChunk;
+      this.resWriteChunk = chunk ?? this.resWriteChunk;
     }
 
     if (this.req.readable) {
@@ -635,33 +518,21 @@ export class RequestResponse {
     }
   }
 
-  // writeContinue(callback?: () => void) {
-  //     this.res.writeContinue(callback);
-  //     return new RequestResponseChain(this.req, this.res);
-  // }
-
-  // reqWrite(chunk?: any) {
-  //     this.resWriteChunk = chunk;
-  //     // this.res.write(chunk);
-  //     return this.createRequestResponseChain();
-  // }
-
   resRedirect(statusCode: number, location: string) {
     this.res.statusCode = statusCode;
     this.res.setHeader(HttpHeaders.Location, location);
     this.res.end();
   }
   resWriteHead(statusCode: number, headers?: OutgoingHttpHeaders | OutgoingHttpHeader[] | { [key: string]: string | string[] }) {
-    return this.createRequestResponseChain(this.res.writeHead(statusCode, headers));
+    return this.createRequestResponseChain(this.res.writeHead(statusCode, headers as any));
   }
   resWriteHeadEnd(statusCode: number, headers?: OutgoingHttpHeaders | OutgoingHttpHeader[] | { [key: string]: string | string[] }) {
-    this.createRequestResponseChain(this.res.writeHead(statusCode, headers));
+    this.createRequestResponseChain(this.res.writeHead(statusCode, headers as any));
     this.res.end();
   }
 
   resIsDone() {
     return this.res.finished || this.res.writableEnded || this.res.headersSent;
-    // return new RequestResponseChain(this.req, this.res, this.res.finished || this.res.writableEnded);
   }
 
   createRequestResponseChain<T = any>(data?: T) {
@@ -670,24 +541,15 @@ export class RequestResponse {
     requestResponseChain.reqBodyChunk = this.reqBodyChunk;
     return requestResponseChain;
   }
-
-  // res.on("readable", () => {
-  //     console.log('readable???')
-  // });
-  // res.on('complete', function (details) {
-  //     var size = details.req.bytes;
-  //     console.log('complete-->', size)
-  // });
-  // res.on('finish', function() {
-  //     console.log('finish??');
-  // });
-  // res.on('end', () => {
-  //     console.log('end--?')
-  // });
 }
 
 export class RequestResponseChain<T> extends RequestResponse {
-  constructor(req: IncomingMessage, res: ServerResponse, config: Config, public result?: T) {
+  constructor(
+    req: IncomingMessage,
+    res: ServerResponse,
+    config: Config,
+    public result?: T
+  ) {
     super(req, res, config);
   }
 }

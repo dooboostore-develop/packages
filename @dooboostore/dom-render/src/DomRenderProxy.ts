@@ -98,6 +98,17 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
     return ValidUtils.isNull(obj) || DomRenderFinalProxy.isFinal(obj);
   }
 
+  public static isProxy<T = any>(obj: T) {
+    return ValidUtils.isNull(obj) || isWrapProxyDomRenderProxy(obj);
+  }
+
+  public static getOriginalObject (obj: any) {
+    if (isWrapProxyDomRenderProxy(obj)) {
+      return obj._domRender_origin;
+    }
+    return obj;
+  }
+
   public async run(objProxy: T) {
     this._domRender_proxy = objProxy;
     if (isOnProxyDomRender(objProxy)) {

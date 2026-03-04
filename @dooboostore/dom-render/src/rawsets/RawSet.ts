@@ -89,7 +89,13 @@ export class RawSet {
 
   public static readonly DR_VARIABLE_NAME_OPTIONNAME = 'dr-option-variable-name';
   public static readonly DR_ITEM_VARIABLE_NAME_OPTIONNAME = 'dr-option-item-variable-name';
+  public static readonly DR_ITEM_VARIABLE_NAME_OPTIONNAME_DEFAULT = 'it';
   public static readonly DR_ITEM_INDEX_VARIABLE_NAME_OPTIONNAME = 'dr-option-item-index-variable-name';
+  public static readonly DR_ITEM_OFFSET_INDEX_VARIABLE_NAME_OPTIONNAME = 'dr-option-item-offset-index-variable-name';
+  public static readonly DR_ITEM_INDEX_OFFSET_OPTIONNAME = 'dr-option-item-index-offset';
+  public static readonly DR_ITEM_INDEX_VARIABLE_NAME_OPTIONNAME_DEFAULT = 'index';
+  public static readonly DR_ITEM_OFFSET_INDEX_VARIABLE_NAME_OPTIONNAME_DEFAULT = 'offsetIndex';
+
   public static readonly DR_INNER_HTML_NAME_OPTIONNAME = 'dr-option-inner-html-name';
   public static readonly DR_INNER_TEXT_NAME_OPTIONNAME = 'dr-option-inner-text-name';
   public static readonly DR_INNER_HTML_ESCAPED_NAME_OPTIONNAME = 'dr-option-inner-html-escaped-name';
@@ -127,7 +133,12 @@ export class RawSet {
     drDetectIfOption: RawSet.DR_DETECT_IF_OPTIONNAME,
     drDestroyOption: RawSet.DR_DESTROY_OPTIONNAME,
     drHasKeysOption: RawSet.DR_HAS_KEYS_OPTIONNAME,
-    drKeyOption: RawSet.DR_KEY_OPTIONNAME
+    drKeyOption: RawSet.DR_KEY_OPTIONNAME,
+    drItemIndexOffsetOption: RawSet.DR_ITEM_INDEX_OFFSET_OPTIONNAME,
+    drVariableNameOption: RawSet.DR_VARIABLE_NAME_OPTIONNAME,
+    drItemVariableNameOption: RawSet.DR_ITEM_VARIABLE_NAME_OPTIONNAME,
+    drItemIndexVariableNameOption: RawSet.DR_ITEM_INDEX_VARIABLE_NAME_OPTIONNAME,
+    drItemOffsetIndexVariableNameOption: RawSet.DR_ITEM_OFFSET_INDEX_VARIABLE_NAME_OPTIONNAME
   };
 
   public static readonly DR_TAGS = [];
@@ -428,7 +439,12 @@ export class RawSet {
           drDestroyOption: this.getAttributeAndDelete(element, RawSet.DR_DESTROY_OPTIONNAME),
           drKeyOption: this.getAttributeAndDelete(element, RawSet.DR_KEY_OPTIONNAME),
           drDetectIfOption: this.getAttribute(element, RawSet.DR_DETECT_IF_OPTIONNAME),
-          drHasKeysOption: this.getAttribute(element, RawSet.DR_HAS_KEYS_OPTIONNAME)
+          drHasKeysOption: this.getAttribute(element, RawSet.DR_HAS_KEYS_OPTIONNAME),
+          drItemIndexOffsetOption: this.getAttributeAndDelete(element, RawSet.DR_ITEM_INDEX_OFFSET_OPTIONNAME),
+          drVariableNameOption: this.getAttributeAndDelete(element, RawSet.DR_VARIABLE_NAME_OPTIONNAME),
+          drItemVariableNameOption: this.getAttributeAndDelete(element, RawSet.DR_ITEM_VARIABLE_NAME_OPTIONNAME),
+          drItemIndexVariableNameOption: this.getAttributeAndDelete(element, RawSet.DR_ITEM_INDEX_VARIABLE_NAME_OPTIONNAME),
+          drItemOffsetIndexVariableNameOption: this.getAttributeAndDelete(element, RawSet.DR_ITEM_OFFSET_INDEX_VARIABLE_NAME_OPTIONNAME)
         };
         drAttrs.push(drAttr);
         // 아래 순서 중요

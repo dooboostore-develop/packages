@@ -140,7 +140,7 @@ export class SSRFilter implements Filter {
         const url = rr.reqUrlObj({ host: 'localhost' });
         if (this.config.simpleBootFront?.notFoundError) {
           // intent router check first
-          const intent = await simpleBootFront.getIntent(url.pathname);
+          const intent = await simpleBootFront.routingRouterModule(url.pathname);
           // route를 못찾은상태에서 router path까지 안맞으면 404 처리한다.  route랑 router랑 다르니깐 헛갈리지말도록
           if (intent.module === undefined && !intent.getRouterPathData(rr.reqUrlPathName)) {
             throw new NotFoundError({ message: `Not Found: ${rr.reqUrlPathName}` });

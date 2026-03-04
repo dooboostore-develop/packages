@@ -1,10 +1,10 @@
-import {ConstructorType, MethodKeys} from '@dooboostore/core/types';
-import {MethodParameter} from '../../types/Types'
-import {ReflectUtils} from '@dooboostore/core/reflect/ReflectUtils';
-import {ExceptionHandlerSituationType} from '../exception/ExceptionDecorator';
+import { ConstructorType, MethodKeys } from '@dooboostore/core/types';
+import { MethodParameter } from '../../types/Types';
+import { ReflectUtils } from '@dooboostore/core/reflect/ReflectUtils';
+import { ExceptionHandlerSituationType } from '../exception/ExceptionDecorator';
 
 export enum InjectSituationType {
-  INDEX = 'SIMPLE_BOOT_CORE://Inject/INDEX',
+  INDEX = 'SIMPLE_BOOT_CORE://Inject/INDEX'
 }
 
 export type SituationType = string | Symbol | ConstructorType<any> | InjectSituationType | ExceptionHandlerSituationType;
@@ -14,7 +14,7 @@ export class SituationTypeContainer {
   public data: any;
   public index?: number;
 
-  constructor({situationType, data, index}: { situationType: SituationType, data: any, index?: number }) {
+  constructor({ situationType, data, index }: { situationType: SituationType; data: any; index?: number }) {
     this.situationType = situationType;
     this.data = data;
     this.index = index;
@@ -31,7 +31,7 @@ export class SituationTypeContainers {
   }
 
   public push(...item: SituationTypeContainer[]) {
-    this.containers.push(...item)
+    this.containers.push(...item);
   }
 
   get length() {
@@ -43,44 +43,46 @@ export class SituationTypeContainers {
   }
 }
 
-
 export type InjectConfig<T = any> = {
   scheme?: string;
   symbol?: Symbol;
   type?: ConstructorType<T>;
   // type?: T;
-  returnFactory?: ((caller: {instance: any, methodName: string, parameter: any[]}, injectInstance: T)=> any) |  MethodKeys<T>;
+  returnFactory?: ((caller: { instance: any; methodName: string; parameter: any[] }, injectInstance: T) => any) | MethodKeys<T>;
   // returnValueAutoRunnableOrMethodName?: keyof T | boolean;
   situationType?: SituationType;
   argument?: any;
-  applyProxy?: { type: ConstructorType<ProxyHandler<any>>, param?: any[] };
+  createProxy?: { type: ConstructorType<ProxyHandler<any>>; param?: any[] };
+  proxy?: ConstructorType<ProxyHandler<any>>;
   optional?: boolean;
   disabled?: boolean;
-}
+};
 
 export type SaveInjectConfig = {
   index: number;
   type?: ConstructorType<any>;
   propertyKey?: string | symbol;
   config: InjectConfig;
-}
+};
 
 const InjectMetadataKey = Symbol('Inject');
 const injectProcess = (config: InjectConfig, target: Object, propertyKey: string | symbol | undefined, parameterIndex: number) => {
-  if (propertyKey && typeof target === 'object') { // <-- object: method
+  if (propertyKey && typeof target === 'object') {
+    // <-- object: method
     const otarget = target;
     target = target.constructor;
     const saves = (Reflect.getOwnMetadata(InjectMetadataKey, target, propertyKey) || []) as SaveInjectConfig[];
     const type = ReflectUtils.getParameterTypes(otarget, propertyKey)[parameterIndex];
-    saves.push({index: parameterIndex, config: config, propertyKey, type});
+    saves.push({ index: parameterIndex, config: config, propertyKey, type });
     ReflectUtils.defineMetadata(InjectMetadataKey, saves, target, propertyKey);
-  } else if (!propertyKey || typeof target === 'function') { // <-- function: constructor
-    const existingInjectdParameters = (ReflectUtils.getMetadata(InjectMetadataKey, target) || []) as SaveInjectConfig[]
+  } else if (!propertyKey || typeof target === 'function') {
+    // <-- function: constructor
+    const existingInjectdParameters = (ReflectUtils.getMetadata(InjectMetadataKey, target) || []) as SaveInjectConfig[];
     const type = ReflectUtils.getParameterTypes(target)[parameterIndex];
-    existingInjectdParameters.push({index: parameterIndex, config: config, type});
+    existingInjectdParameters.push({ index: parameterIndex, config: config, type });
     ReflectUtils.defineMetadata(InjectMetadataKey, existingInjectdParameters, target);
   }
-}
+};
 
 export function Inject(target: Object, propertyKey: string | symbol | undefined, parameterIndex: number): void;
 export function Inject<T = any>(config: InjectConfig<T>): ParameterDecorator;
@@ -90,7 +92,7 @@ export function Inject<T = any>(configOrTarget: Object | InjectConfig<T>, proper
   } else {
     return (target: Object, propertyKey: string | symbol | undefined, parameterIndex: number) => {
       injectProcess(configOrTarget, target, propertyKey, parameterIndex);
-    }
+    };
   }
 }
 
@@ -104,4 +106,4 @@ export const getInject = (target: ConstructorType<any> | Function | any, propert
   } else {
     return ReflectUtils.getMetadata(InjectMetadataKey, target) ?? [];
   }
-}
+};

@@ -4,15 +4,13 @@ import { isDefined } from '../types';
 import { ObjectPathParser } from '../parser/path/ObjectPathParser';
 
 export namespace ObjectUtils {
-
   export const constructorName = (target: any): string | undefined => {
     if (target && target.constructor && target.constructor.name) {
       return target.constructor.name;
     } else if (target && target.name) {
       return target.name;
     }
-
-  }
+  };
   export const deepCopy = <T = any>(obj: T): T => {
     if (obj instanceof Map) {
       return new Map<any, any>(JSON.parse(JSON.stringify(Array.from(obj.entries())))) as T;
@@ -42,7 +40,7 @@ export namespace ObjectUtils {
     return result;
   };
 
-  export const uniqueKeys = (obj: (object[]) | object) => {
+  export const uniqueKeys = (obj: object[] | object) => {
     const allKeys = Array.from(new Set((Array.isArray(obj) ? obj : [obj]).flatMap(item => Object.keys(item))));
     return allKeys;
   };
@@ -73,9 +71,11 @@ export namespace ObjectUtils {
     const data: Function[] = [];
     if (target) {
       const proto = Object.getPrototypeOf(target);
-      (Object.keys(proto) || []).filter(it => it !== 'constructor').forEach(it => {
-        data.push(proto[it]);
-      });
+      (Object.keys(proto) || [])
+        .filter(it => it !== 'constructor')
+        .forEach(it => {
+          data.push(proto[it]);
+        });
     }
     return data;
   };
@@ -137,9 +137,11 @@ export namespace ObjectUtils {
     const data = new Map<Function, string>();
     if (target) {
       const proto = Object.getPrototypeOf(target);
-      (Object.keys(proto) || []).filter(it => it !== 'constructor').forEach(it => {
-        data.set(proto[it], it);
-      });
+      (Object.keys(proto) || [])
+        .filter(it => it !== 'constructor')
+        .forEach(it => {
+          data.set(proto[it], it);
+        });
     }
     return data;
   };
@@ -148,9 +150,7 @@ export namespace ObjectUtils {
     return ObjectUtils.prototypeKeyMap(target).get(fnc);
   };
 
-
   export const pickRandomKey = <T>(target: T): keyof T => {
-
     const keys = Object.keys(target as any) as Array<keyof T>;
     return keys[Math.floor(Math.random() * keys.length)];
   };
@@ -160,33 +160,32 @@ export namespace ObjectUtils {
     return target[keys[Math.floor(Math.random() * keys.length)]];
   };
 
-  export const pickRandomKeyValue = <T>(target: T): { key: keyof T, value: T[keyof T] } => {
+  export const pickRandomKeyValue = <T>(target: T): { key: keyof T; value: T[keyof T] } => {
     const keys = Object.keys(target as any) as Array<keyof T>;
     const key = keys[Math.floor(Math.random() * keys.length)];
     return { key, value: target[key] };
   };
 
-  export const keyValues = <T>(target: T): { key: keyof T, value: T[keyof T] }[] => {
+  export const keyValues = <T>(target: T): { key: keyof T; value: T[keyof T] }[] => {
     const keys = Object.keys(target as any) as Array<keyof T>;
     return keys.map(key => ({ key, value: target[key] }));
   };
 
   export const entries = <T>(target: T): [keyof T, T[keyof T]][] => {
     return Object.entries(target as any) as [keyof T, T[keyof T]][];
-  }
+  };
 
-  export const values = <T>(target: T): (T[keyof T])[] => {
+  export const values = <T>(target: T): T[keyof T][] => {
     return Object.values(target as any);
-  }
+  };
 
   export const keys = <T>(target: T): (keyof T)[] => {
     return Object.keys(target as any) as (keyof T)[];
-  }
+  };
 
   export const keyLength = <T>(target: T): number => {
     return ObjectUtils.keys(target).length;
   };
-
 
   export const toDeleteUndefinedAndNull = <T>(target: T, config?: { deep?: boolean }): T => {
     const cleanValue = (value: any): any => {
@@ -194,12 +193,13 @@ export namespace ObjectUtils {
         return value.filter(item => item !== undefined && item !== null).map(cleanValue);
       } else if (value && typeof value === 'object') {
         if (config?.deep) {
-          return Object.fromEntries(Object.entries(value).filter(([_, v]) => v !== undefined && v !== null).map(([k, v]) => [k, cleanValue(v)])
+          return Object.fromEntries(
+            Object.entries(value)
+              .filter(([_, v]) => v !== undefined && v !== null)
+              .map(([k, v]) => [k, cleanValue(v)])
           );
         } else {
-          return Object.fromEntries(
-            Object.entries(value).filter(([_, v]) => v !== undefined && v !== null)
-          );
+          return Object.fromEntries(Object.entries(value).filter(([_, v]) => v !== undefined && v !== null));
         }
       }
       return value;
@@ -208,15 +208,14 @@ export namespace ObjectUtils {
     return cleanValue(target) as T;
   };
 
-
   export namespace Path {
     export const isFunctionScript = (script: string): boolean => {
       return ObjectPathParser.isFunctionScript(script);
-    }
+    };
 
     export const isArrowFunctionScript = (script: string): boolean => {
       return ObjectPathParser.isArrowFunctionScript(script);
-    }
+    };
 
     export const toOptionalChainPath = (path: string): string => {
       if (!path) {
@@ -241,7 +240,7 @@ export namespace ObjectUtils {
       let lastIndex = 0;
 
       const firstMatch = path.match(regex);
-      if (firstMatch && (firstMatch?.index??0) > 0) {
+      if (firstMatch && (firstMatch?.index ?? 0) > 0) {
         result.push(path.substring(0, firstMatch.index));
         lastIndex = firstMatch.index as number;
       } else if (!firstMatch && path.length > 0) {
@@ -303,7 +302,8 @@ export namespace ObjectUtils {
           // Ensure current[part] is of the correct type for the next part
           const nextPart = pathParts[i + 1];
 
-          if (typeof nextPart === 'number') { // Next part is an array index
+          if (typeof nextPart === 'number') {
+            // Next part is an array index
             if (!Array.isArray(current[part])) {
               current[part] = [];
             }
@@ -313,7 +313,8 @@ export namespace ObjectUtils {
                 current[part].push({}); // Fill with empty objects
               }
             }
-          } else { // Next part is a string (object property)
+          } else {
+            // Next part is a string (object property)
             if (typeof current[part] !== 'object' || current[part] === null) {
               current[part] = {};
             }
@@ -417,12 +418,12 @@ export namespace ObjectUtils {
           current.forEach((item: any, index: number) => {
             const formattedIndex = formatKey(index); // This will be [index]
             const newPath = currentPath ? `${currentPath}${formattedIndex}` : formattedIndex;
-            
+
             // Apply filter if provided
             if (!filter || filter(newPath, item)) {
               paths.push(newPath);
             }
-            
+
             traverse(item, newPath, visited);
           });
         } else {
@@ -441,7 +442,7 @@ export namespace ObjectUtils {
             if (!filter || filter(newPath, current[key])) {
               paths.push(newPath);
             }
-            
+
             traverse(current[key], newPath, visited);
           });
         }
@@ -454,7 +455,7 @@ export namespace ObjectUtils {
     /**
      * 스크립트에서 사용되는 변수 경로들을 감지합니다.
      * 프록시를 사용하여 스크립트 실행 중 접근되는 모든 속성 경로를 추적합니다.
-     * 
+     *
      * @param script 분석할 JavaScript 스크립트 문자열
      * @param options 감지 옵션
      * @param options.excludeThis true일 경우 'this' 키워드를 결과에서 제외
@@ -480,21 +481,21 @@ export namespace ObjectUtils {
 
           let items: string | undefined;
           const propStr = String(p);
-          
+
           // 숫자 인덱스 처리
           if (!isNaN(Number(propStr))) {
             items = this.prefix ? `${this.prefix}[${propStr}]` : propStr;
-          } 
+          }
           // 일반 속성 처리
           else {
             items = this.prefix ? `${this.prefix}.${propStr}` : propStr;
           }
-          
+
           // 유효한 변수 경로만 추가
           if (items) {
             this.usingVars.add(items);
           }
-          
+
           return this.createSafeProxy(items);
         }
 
@@ -503,12 +504,10 @@ export namespace ObjectUtils {
           return this.createSafeProxy(this.prefix);
         }
 
-
-
         private createSafeProxy(prefix?: string): any {
           const dummyFunction = () => {};
           const handler = new GetDetectProxy(prefix);
-          
+
           return new Proxy(dummyFunction, {
             get: (target, prop, receiver) => {
               if (prop === Symbol.toPrimitive) {
@@ -532,15 +531,18 @@ export namespace ObjectUtils {
       const globalContext = {
         window: new Proxy(() => {}, new GetDetectProxy('window')),
         document: new Proxy(() => {}, new GetDetectProxy('document')),
-        console: new Proxy(() => {}, new GetDetectProxy('console')),
+        console: new Proxy(() => {}, new GetDetectProxy('console'))
         // this는 destUser 자체가 됨
       };
 
       const destUser = new Proxy(() => {}, new GetDetectProxy('this'));
 
       try {
+        // [아키텍트님의 정석] #...# 형태의 템플릿 변수는 JS 문법 에러(Private Field)를 유발하므로
+        // 감지 단계에서는 안전한 문자열로 마스킹 처리합니다.
+        const maskedScript = script.replace(/#([^#]+)#/g, '__DOMRENDER_VAR_$1__');
         // 전역 컨텍스트와 함께 실행
-        const func = new Function('window', 'document', 'console', `"use strict"; ${script}; `);
+        const func = new Function('window', 'document', 'console', `"use strict"; ${maskedScript}; `);
         func.call(destUser, globalContext.window, globalContext.document, globalContext.console);
         // console.log('------->', script);
       } catch (e) {
@@ -564,7 +566,7 @@ export namespace ObjectUtils {
         });
         return filteredVars;
       }
-      
+
       return usingVars;
     };
   }
@@ -573,22 +575,24 @@ export namespace ObjectUtils {
     const target = { ...obj };
     ObjectUtils.deleteKey(target, keys);
     return target;
-  }
+  };
   export const deleteKey = (obj: any, keys: (null | string)[]) => {
-    keys.filter(it => isDefined(it)).forEach(it => {
-      delete obj[it];
-    })
-  }
+    keys
+      .filter(it => isDefined(it))
+      .forEach(it => {
+        delete obj[it];
+      });
+  };
 
   export namespace Script {
     /**
      * JavaScript 스크립트를 실행하고 결과를 반환합니다.
-     * 
+     *
      * @param script 실행할 스크립트 문자열 또는 {bodyScript, returnScript} 객체
      * @param thisTarget 스크립트 실행 시 this로 바인딩될 객체
      * @returns 스크립트 실행 결과
      */
-    export const evaluateReturn = <T = any>(script: string | { bodyScript: string, returnScript: string }, thisTarget: any = {}): T => {
+    export const evaluateReturn = <T = any>(script: string | { bodyScript: string; returnScript: string }, thisTarget: any = {}): T => {
       let bodyScript = '';
       let returnScript = '';
       if (typeof script === 'object') {
@@ -602,7 +606,7 @@ export namespace ObjectUtils {
 
     /**
      * JavaScript 스크립트를 안전하게 실행합니다.
-     * 
+     *
      * @param script 실행할 스크립트 문자열
      * @param thisTarget 스크립트 실행 시 this로 바인딩될 객체
      * @returns 스크립트 실행 결과 또는 undefined (에러 시)
@@ -618,5 +622,4 @@ export namespace ObjectUtils {
       }
     };
   }
-
 }

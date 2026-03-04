@@ -1,34 +1,35 @@
-import {SimFrontOption} from './option/SimFrontOption';
-import {ConstructorType, isDefined} from '@dooboostore/core/types';
-import {componentSelectors, getComponent} from './decorators/Component';
-import {scripts} from './decorators/Script';
-import {DomRender, DomRenderRunConfig} from '@dooboostore/dom-render/DomRender';
-import {SimAtomic} from '@dooboostore/simple-boot/simstance/SimAtomic';
-import {SimpleApplication} from '@dooboostore/simple-boot/SimpleApplication';
-import {Intent} from '@dooboostore/simple-boot/intent/Intent';
-import {SimstanceManager} from '@dooboostore/simple-boot/simstance/SimstanceManager';
-import {IntentManager} from '@dooboostore/simple-boot/intent/IntentManager';
-import {RouterManager} from '@dooboostore/simple-boot/route/RouterManager';
-import {getDomRenderOriginObject} from '@dooboostore/dom-render/DomRenderProxy';
-import {RawSet} from '@dooboostore/dom-render/rawsets/RawSet';
-import {Render} from '@dooboostore/dom-render/rawsets/Render';
-import {TargetAttr} from '@dooboostore/dom-render/configs/TargetAttr';
-import {TargetElement} from '@dooboostore/dom-render/configs/TargetElement';
-import {ScriptRunnable} from './script/ScriptRunnable';
-import {Router} from '@dooboostore/dom-render/routers/Router';
-import {HashRouter} from '@dooboostore/dom-render/routers/HashRouter';
-import {PathRouter} from '@dooboostore/dom-render/routers/PathRouter';
-import {ComponentSet} from './component/ComponentSet';
-import {DomRenderRootDefaultStyle, DomRenderRootDefaultTemplate, DomRenderRootObject} from './DomRenderRootObject';
-import {routerProcess} from '@dooboostore/simple-boot/decorators/route/Router';
-import {BehaviorSubject} from '@dooboostore/core/message/BehaviorSubject';
-import {RouterModule} from '@dooboostore/simple-boot/route/RouterModule';
-import {Observable} from '@dooboostore/core/message/Observable';
-import {filter} from '@dooboostore/core/message/operators/filter';
-import {first} from "@dooboostore/core/message/operators/first";
-import {ValidUtils} from "@dooboostore/core-web/valid/ValidUtils";
-import {ElementUtils} from "@dooboostore/core-web/element/ElementUtils";
-import {NodeUtils} from "@dooboostore/core-web/node/NodeUtils";
+import { SimFrontOption } from './option/SimFrontOption';
+import { ConstructorType, isDefined } from '@dooboostore/core/types';
+import { componentSelectors, getComponent } from './decorators/Component';
+import { scripts } from './decorators/Script';
+import { DomRender, DomRenderRunConfig } from '@dooboostore/dom-render/DomRender';
+import { SimAtomic } from '@dooboostore/simple-boot/simstance/SimAtomic';
+import { SimpleApplication } from '@dooboostore/simple-boot/SimpleApplication';
+import { Intent } from '@dooboostore/simple-boot/intent/Intent';
+import { SimstanceManager } from '@dooboostore/simple-boot/simstance/SimstanceManager';
+import { IntentManager } from '@dooboostore/simple-boot/intent/IntentManager';
+import { RouterManager } from '@dooboostore/simple-boot/route/RouterManager';
+import { getDomRenderOriginObject } from '@dooboostore/dom-render/DomRenderProxy';
+import { RawSet } from '@dooboostore/dom-render/rawsets/RawSet';
+import { Render } from '@dooboostore/dom-render/rawsets/Render';
+import { TargetAttr } from '@dooboostore/dom-render/configs/TargetAttr';
+import { TargetElement } from '@dooboostore/dom-render/configs/TargetElement';
+import { ScriptRunnable } from './script/ScriptRunnable';
+import { Router } from '@dooboostore/dom-render/routers/Router';
+import { HashRouter } from '@dooboostore/dom-render/routers/HashRouter';
+import { PathRouter } from '@dooboostore/dom-render/routers/PathRouter';
+import { ComponentSet } from './component/ComponentSet';
+import { DomRenderRootDefaultStyle, DomRenderRootDefaultTemplate, DomRenderRootObject } from './DomRenderRootObject';
+import { routerProcess } from '@dooboostore/simple-boot/decorators/route/Router';
+import { BehaviorSubject } from '@dooboostore/core/message/BehaviorSubject';
+import { RouterModule } from '@dooboostore/simple-boot/route/RouterModule';
+import { Observable } from '@dooboostore/core/message/Observable';
+import { filter } from '@dooboostore/core/message/operators/filter';
+import { first } from '@dooboostore/core/message/operators/first';
+import { ValidUtils } from '@dooboostore/core-web/valid/ValidUtils';
+import { ElementUtils } from '@dooboostore/core-web/element/ElementUtils';
+import { NodeUtils } from '@dooboostore/core-web/node/NodeUtils';
+import { SimConfig } from '@dooboostore/simple-boot/decorators/SimDecorator';
 
 export type PopStateType = { type: 'popstateData'; router: any; noSimpleBootFrontRouting?: boolean };
 const isPopStateDataType = (state: any): state is PopStateType => {
@@ -43,19 +44,11 @@ export type RoutingStartEnd = {
 type RoutingSubjectDataType =
   | RoutingStartEnd
   | {
-  triggerPoint: 'initial';
-};
+      triggerPoint: 'initial';
+    };
 
 export class SimpleBootFront extends SimpleApplication {
-  public domRendoerExcludeProxy: ConstructorType<any>[] = [
-    SimpleApplication,
-    IntentManager,
-    RouterManager,
-    SimstanceManager,
-    DomRenderRootObject,
-    SimFrontOption,
-    Router as ConstructorType<any>
-  ];
+  public domRendoerExcludeProxy: ConstructorType<any>[] = [SimpleApplication, IntentManager, RouterManager, SimstanceManager, DomRenderRootObject, SimFrontOption, Router as ConstructorType<any>];
   public domRenderTargetElements: TargetElement[] = [];
   public domRenderTargetAttrs: TargetAttr[] = [];
   public domRenderConfig: DomRenderRunConfig;
@@ -68,7 +61,7 @@ export class SimpleBootFront extends SimpleApplication {
   // private rootRouterTargetElement?: Element;
   private rootRouter?: ComponentSet<any>;
   private domRenderRootObject: DomRenderRootObject;
-  private routingSubject = new BehaviorSubject<RoutingSubjectDataType>({triggerPoint: 'initial'});
+  private routingSubject = new BehaviorSubject<RoutingSubjectDataType>({ triggerPoint: 'initial' });
 
   constructor(public option: SimFrontOption) {
     super(option);
@@ -92,23 +85,21 @@ export class SimpleBootFront extends SimpleApplication {
     this.domRenderRouter =
       option.urlType === 'path'
         ? new PathRouter({
-          window: option.window
-          // changeStateConvertDate:(data) =>({...data, type: 'popstateData', router: this.routerAndSettingData.routerAtomic.getValue()} as PopStateType)
-        })
+            window: option.window
+            // changeStateConvertDate:(data) =>({...data, type: 'popstateData', router: this.routerAndSettingData.routerAtomic.getValue()} as PopStateType)
+          })
         : new HashRouter({
-          window: option.window
-          // changeStateConvertDate:(data) =>({...data, type: 'popstateData', router: this.routerAndSettingData.routerAtomic.getValue()} as PopStateType)
-        });
+            window: option.window
+            // changeStateConvertDate:(data) =>({...data, type: 'popstateData', router: this.routerAndSettingData.routerAtomic.getValue()} as PopStateType)
+          });
     this.simstanceManager.setStoreSet(Router, this.domRenderRouter);
     this.simstanceManager.setStoreSet(SimpleBootFront, this);
     this.domRenderConfig = {
       window: option.window,
       targetElements: this.domRenderTargetElements,
       targetAttrs: this.domRenderTargetAttrs,
-      onElementInit: (name: string, obj: any, rawSet: RawSet, targetElement: TargetElement) => {
-      },
-      onAttrInit: (attrName: string, attrValue: string, obj: any, rawSet: RawSet) => {
-      },
+      onElementInit: (name: string, obj: any, rawSet: RawSet, targetElement: TargetElement) => {},
+      onAttrInit: (attrName: string, attrValue: string, obj: any, rawSet: RawSet) => {},
       // routerType: option.urlType,
       routerType: this.domRenderRouter,
       scripts: {
@@ -143,25 +134,21 @@ export class SimpleBootFront extends SimpleApplication {
     return this.routingSubject.asObservable();
   }
 
-  get routingStartObservable(): Observable<Omit<RoutingStartEnd, 'triggerPoint'> & {triggerPoint: 'start'}, any> {
-    const observable = this.routingSubject.asObservable().pipe(
-      filter<Omit<RoutingStartEnd, 'triggerPoint'> & {triggerPoint: 'start'}>(it => it.triggerPoint === 'start')
-    );
+  get routingStartObservable(): Observable<Omit<RoutingStartEnd, 'triggerPoint'> & { triggerPoint: 'start' }, any> {
+    const observable = this.routingSubject.asObservable().pipe(filter<Omit<RoutingStartEnd, 'triggerPoint'> & { triggerPoint: 'start' }>(it => it.triggerPoint === 'start'));
     return observable;
   }
 
-  get routingEndObservable(): Observable<Omit<RoutingStartEnd, 'triggerPoint'> & {triggerPoint: 'end' | 'error-end'}, any> {
-    const observable = this.routingSubject.asObservable().pipe(
-      filter<Omit<RoutingStartEnd, 'triggerPoint'> & {triggerPoint: 'end' | 'error-end'}>(it => it.triggerPoint === 'end' || it.triggerPoint === 'error-end')
-    );
+  get routingEndObservable(): Observable<Omit<RoutingStartEnd, 'triggerPoint'> & { triggerPoint: 'end' | 'error-end' }, any> {
+    const observable = this.routingSubject.asObservable().pipe(filter<Omit<RoutingStartEnd, 'triggerPoint'> & { triggerPoint: 'end' | 'error-end' }>(it => it.triggerPoint === 'end' || it.triggerPoint === 'error-end'));
     return observable;
   }
 
   public async getComponentInnerHtml(targetObj: any, id: string) {
     const component = getComponent(targetObj);
-    const styleStr = typeof component?.styles === 'function' ? await component.styles(targetObj) : (Array.isArray(component?.styles) ? component.styles.join('') : component?.styles ?? '');
+    const styleStr = typeof component?.styles === 'function' ? await component.styles(targetObj) : Array.isArray(component?.styles) ? component.styles.join('') : (component?.styles ?? '');
     const styles = RawSet.generateStyleTransform(styleStr ?? '', id);
-    const template = typeof component?.template === 'function' ? await component.template(targetObj) : component?.template ?? '';
+    const template = typeof component?.template === 'function' ? await component.template(targetObj) : (component?.template ?? '');
     return styles + template;
   }
 
@@ -186,7 +173,7 @@ export class SimpleBootFront extends SimpleApplication {
       //       // document.body.appendChild(this.targetElement);
       //     } else {
       // console.log('--DomRender.run({ rootObject: obj, config: this.domRenderConfig })---->',obj)
-      const result = DomRender.run({rootObject: obj, config: this.domRenderConfig});
+      const result = DomRender.run({ rootObject: obj, config: this.domRenderConfig });
       // console.log('proxy end', result);
       return result;
       //     }
@@ -198,18 +185,13 @@ export class SimpleBootFront extends SimpleApplication {
     return obj;
   }
 
-  private initRun(otherInstanceSim?: Map<ConstructorType<any>, any>) {
+  private initRun(otherInstanceSim?: Map<ConstructorType<any> | Function | SimConfig | Symbol, any>) {
     // console.log('!@!!', this.option.window.document.body.innerHTML);
-    const targetUserElement =
-      typeof this.option.selector === 'string'
-        ? this.option.window.document.querySelector(this.option.selector)
-        : this.option.selector;
+    const targetUserElement = typeof this.option.selector === 'string' ? this.option.window.document.querySelector(this.option.selector) : this.option.selector;
 
     if (!(targetUserElement instanceof HTMLElement)) {
       throw new Error('HTMLElement is not Element');
     }
-
-
 
     const simstanceManager = super.run(otherInstanceSim);
     this.initDomRenderConfigSetting();
@@ -217,7 +199,6 @@ export class SimpleBootFront extends SimpleApplication {
       const cevent = event as CustomEvent;
       this.publishIntent(new Intent(cevent.detail.uri, cevent.detail.data, event));
     });
-
 
     let targetElement = targetUserElement;
     const rect = targetUserElement.getBoundingClientRect();
@@ -239,8 +220,8 @@ export class SimpleBootFront extends SimpleApplication {
       targetElement.setAttribute('dom-render-side', 'client');
       targetElement.innerHTML = DomRenderRootDefaultTemplate;
       targetElement.removeAttribute('dom-render-done');
-     // targetElement = targetUserElement;
-     //  console.log('------???????', targetUserElement, this.option.selector)
+      // targetElement = targetUserElement;
+      //  console.log('------???????', targetUserElement, this.option.selector)
       targetElement.style.position = 'fixed';
       targetElement.style.top = `${rect.top}px`;
       targetElement.style.left = `${rect.left}px`;
@@ -256,7 +237,6 @@ export class SimpleBootFront extends SimpleApplication {
       // console.log('server side')
     }
 
-
     // const targetElement = this.option.window.document.querySelector(this.option.selector);
     // const {rootObject: domRenderRoot, config } = DomRender.runSet({rootObject: this.domRenderRootObject, target: targetElement, config: this.domRenderConfig});
     const domRender = new DomRender({
@@ -266,14 +246,14 @@ export class SimpleBootFront extends SimpleApplication {
     });
     this.simstanceManager.setStoreSet(DomRender, domRender);
     this.domRenderRootObject = domRender.rootObject;
-    routerProcess({path: '', routers: [this.option.rootRouter]}, DomRenderRootObject);
+    routerProcess({ path: '', routers: [this.option.rootRouter] }, DomRenderRootObject);
 
     // 작업테스크 옮겨줘야 비동기적으로 처리됨에 깜빡임 없앨수있다.
     this.domRenderRootObject.addOnChildRawSetRenderedDebounceCallback(() => {
       const hasDone = targetElement.hasAttribute('dom-render-done');
       // console.log('----domRenderRootObject rendered-----', hasDone);
       if (!hasDone) {
-          targetElement.setAttribute('dom-render-done', 'done');
+        targetElement.setAttribute('dom-render-done', 'done');
         if (ValidUtils.isBrowser()) {
           targetElement.style.position = originPosition;
           targetElement.style.top = originTop;
@@ -300,33 +280,32 @@ export class SimpleBootFront extends SimpleApplication {
       // console.log('this.domRenderRouter.observable.subscribe---------------', it)
       //   console.log('this.domRenderRouter.observable', it)
       // const intent = new Intent(it.path || '/');
-      const targetPath = (it.path || '/') + (it.search);
+      const targetPath = (it.path || '/') + it.search;
       const intent = new Intent(targetPath);
       //   // TODO: 왜 canActivate가 두번 호출되는지 확인 필요!! 그래서 setTimeout으로 처리함 원인 모르겠음 아 씨발
-      this.routing<SimAtomic, any>(intent, {router: this.domRenderRootObject}).then(async it => {
+      this.routing<SimAtomic, any>(intent, { router: this.domRenderRootObject }).then(async it => {
         // console.log('simplebootfront simpleboot routing-------->', it)
         // dom-render 라우팅 끝나면 -> simple-boot-front routing start!
-        this.routingSubject.next({triggerPoint: 'start', routerModule: it, domRenderRouter: this.domRenderRouter});
+        this.routingSubject.next({ triggerPoint: 'start', routerModule: it, domRenderRouter: this.domRenderRouter });
         let findFirstRouter = it.firstRouteChainValue;
         if (findFirstRouter && findFirstRouter.constructor === this.option.rootRouter) {
           const rootRouter = getDomRenderOriginObject(this.rootRouter?.obj);
           const findRouter = getDomRenderOriginObject(findFirstRouter);
 
-          await this.domRenderRootObject.canActivate(undefined, findRouter)
+          await this.domRenderRootObject.canActivate(undefined, findRouter);
           // const aaa = await this.domRenderRootObject.lifecycleObservable().toPromise();
 
-          await this.domRenderRootObject.onRouting({intent, routerModule: it, routerManager: this.routerManager});
+          await this.domRenderRootObject.onRouting({ intent, routerModule: it, routerManager: this.routerManager });
           // console.log('-----> simplebootfront rootRouter onRouting done-------->', it, it.intent.uri)
         }
         // console.log('----> simplebootfront simpleboot routing done-------->', it, it.intent.uri)
-
 
         // console.log('-----> simplebootfront before wait domRenderRootObject rendered-------->', it, it.intent.uri)
         // if (ValidUtils.isBrowser()) {
         //   this.routingSubject.next({triggerPoint: 'end', routerModule: it});
         // } else {
-          await this.domRenderRootObject.lifecycleObservable().pipe(first()).toPromise();
-          this.routingSubject.next({triggerPoint: 'end', routerModule: it, domRenderRouter: this.domRenderRouter});
+        await this.domRenderRootObject.lifecycleObservable().pipe(first()).toPromise();
+        this.routingSubject.next({ triggerPoint: 'end', routerModule: it, domRenderRouter: this.domRenderRouter });
         // }
         //       }, 0);
       });
@@ -336,17 +315,17 @@ export class SimpleBootFront extends SimpleApplication {
 
   async goRouting(url: string) {
     // console.log('simplebootfront goRouting-------->', url);
-    await this.domRenderRouter?.go({path: url});
+    await this.domRenderRouter?.go({ path: url });
     // this.afterSetting();
   }
 
-  async getIntent(url: string | Intent) {
+  async routingRouterModule(url: string | Intent) {
     const intent = typeof url === 'string' ? new Intent(url) : url;
-    const data = await this.routing<SimAtomic, any>(intent);
+    const data = await this.routing<SimAtomic, any>(intent, { noOnRouting: true });
     return data;
   }
 
-  public run(otherInstanceSim?: Map<ConstructorType<any>, any>, url?: string) {
+  public run(otherInstanceSim?: Map<ConstructorType<any> | Function | SimConfig | Symbol, any>, url?: string) {
     const simstanceManager = this.initRun(otherInstanceSim);
     // const currentUrl = UrlUtils.toUrl(this.option.window.location.href);
     // const origin = currentUrl.origin;
@@ -398,9 +377,9 @@ export class SimpleBootFront extends SimpleApplication {
       this.domRenderConfig.scripts![name] = function (...args: any) {
         let obj: any;
         try {
-          obj = simstanceManager.getOrNewSim({target: val});
+          obj = simstanceManager.getOrNewSim({ target: val });
         } catch (e) {
-          obj = simstanceManager.newSim({target: val});
+          obj = simstanceManager.newSim({ target: val });
         }
         const render = this.__render as Render;
         const scriptRunnable = obj as ScriptRunnable;
@@ -422,7 +401,7 @@ export class SimpleBootFront extends SimpleApplication {
           if (counstructorParam?.length) {
             newSim = new val(...counstructorParam);
           } else {
-            newSim = this.simstanceManager.newSim({target: val});
+            newSim = this.simstanceManager.newSim({ target: val });
           }
 
           if (component) {
@@ -431,7 +410,7 @@ export class SimpleBootFront extends SimpleApplication {
               if (typeof it === 'object') {
                 newSim = new Proxy(newSim, it);
               } else {
-                newSim = new Proxy(newSim, this.simstanceManager.newSim({target: it}));
+                newSim = new Proxy(newSim, this.simstanceManager.newSim({ target: it }));
               }
             });
           }
@@ -455,6 +434,56 @@ export class SimpleBootFront extends SimpleApplication {
 
   public getSimstanceManager() {
     return this.simstanceManager;
+  }
+
+  saveDataHydration(key: string, data: any): void {
+    const window = this.option.window as any;
+    window.__SIMPLE_BOOT_FRONT_DATA_HYDRATION__ ??= {};
+    if (window.__SIMPLE_BOOT_FRONT_DATA_HYDRATION__[key]) {
+      window.__SIMPLE_BOOT_FRONT_DATA_HYDRATION__[key].count++;
+    } else {
+      window.__SIMPLE_BOOT_FRONT_DATA_HYDRATION__[key] = { data, count: 1 };
+    }
+  }
+
+  getDataHydration<T = any>(key: string): T | undefined {
+    const window = this.option.window as any;
+    return window.__SIMPLE_BOOT_FRONT_DATA_HYDRATION__?.[key]?.data;
+  }
+
+  cutDataHydration<T = any>(key: string): T | undefined {
+    const window = this.option.window as any;
+    const item = window.__SIMPLE_BOOT_FRONT_DATA_HYDRATION__?.[key];
+    if (item) {
+      item.count--;
+      const data = item.data;
+      if (item.count <= 0) {
+        delete window.__SIMPLE_BOOT_FRONT_DATA_HYDRATION__[key];
+      }
+      return data;
+    }
+  }
+
+  deleteDataHydration(key: string): void {
+    const window = this.option.window as any;
+    if (window.__SIMPLE_BOOT_FRONT_DATA_HYDRATION__) {
+      delete window.__SIMPLE_BOOT_FRONT_DATA_HYDRATION__[key];
+    }
+  }
+
+  clearDataHydration(): void {
+    const window = this.option.window as any;
+    delete window.__SIMPLE_BOOT_FRONT_DATA_HYDRATION__;
+  }
+
+  writeDataHydration(): void {
+    const window = this.option.window as any;
+    const data = window.__SIMPLE_BOOT_FRONT_DATA_HYDRATION__;
+    if (data && Object.keys(data).length > 0) {
+      const script = window.document.createElement('script');
+      script.innerHTML = `window.__SIMPLE_BOOT_FRONT_DATA_HYDRATION__ = ${JSON.stringify(data)};`;
+      window.document.body.appendChild(script);
+    }
   }
 
   onDestroy() {

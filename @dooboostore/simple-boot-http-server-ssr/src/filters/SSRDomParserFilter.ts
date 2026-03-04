@@ -1,26 +1,27 @@
-import {RequestResponse} from '@dooboostore/simple-boot-http-server/models/RequestResponse';
-import {HttpHeaders} from '@dooboostore/simple-boot-http-server/codes/HttpHeaders';
-import {SimpleBootHttpSSRFactory} from '../SimpleBootHttpSSRFactory';
-import {ConstructorType} from '@dooboostore/core/types';
-import {Filter} from '@dooboostore/simple-boot-http-server/filters/Filter';
-import {Mimes} from '@dooboostore/simple-boot-http-server/codes/Mimes';
-import {HttpStatus} from '@dooboostore/simple-boot-http-server/codes/HttpStatus';
-import {SimpleBootHttpServer} from '@dooboostore/simple-boot-http-server/SimpleBootHttpServer';
-import {SimFrontOption} from '@dooboostore/simple-boot-front/option/SimFrontOption';
-import {SimpleBootFront} from '@dooboostore/simple-boot-front/SimpleBootFront';
-import {AsyncBlockingQueue} from '@dooboostore/core/queues/AsyncBlockingQueue';
-import {RandomUtils} from '@dooboostore/core/random/RandomUtils';
+import { RequestResponse } from '@dooboostore/simple-boot-http-server/models/RequestResponse';
+import { HttpHeaders } from '@dooboostore/simple-boot-http-server/codes/HttpHeaders';
+import { SimpleBootHttpSSRFactory } from '../SimpleBootHttpSSRFactory';
+import { ConstructorType } from '@dooboostore/core/types';
+import { Filter } from '@dooboostore/simple-boot-http-server/filters/Filter';
+import { Mimes } from '@dooboostore/simple-boot-http-server/codes/Mimes';
+import { HttpStatus } from '@dooboostore/simple-boot-http-server/codes/HttpStatus';
+import { SimpleBootHttpServer } from '@dooboostore/simple-boot-http-server/SimpleBootHttpServer';
+import { SimFrontOption } from '@dooboostore/simple-boot-front/option/SimFrontOption';
+import { SimpleBootFront } from '@dooboostore/simple-boot-front/SimpleBootFront';
+import { AsyncBlockingQueue } from '@dooboostore/core/queues/AsyncBlockingQueue';
+import { RandomUtils } from '@dooboostore/core/random/RandomUtils';
 import * as JSDOM from 'jsdom';
-import {NotFoundError} from '@dooboostore/simple-boot-http-server/errors/NotFoundError';
-import {DomRenderProxy} from '@dooboostore/dom-render/DomRenderProxy';
-import {filter} from '@dooboostore/core/message/operators/filter';
-import {first} from '@dooboostore/core/message/operators/first';
-import {delay} from '@dooboostore/core/message/operators/delay';
-import {firstValueFrom} from '@dooboostore/core/message/internal/firstValueFrom';
-import {parseHTML} from 'linkedom';
-import {Promises} from '@dooboostore/core/promise/Promises';
-import {DomParserInitializer} from '../initializers/DomParserInitializer';
-import {JsdomInitializer} from "../initializers";
+import { NotFoundError } from '@dooboostore/simple-boot-http-server/errors/NotFoundError';
+import { DomRenderProxy } from '@dooboostore/dom-render/DomRenderProxy';
+import { filter } from '@dooboostore/core/message/operators/filter';
+import { first } from '@dooboostore/core/message/operators/first';
+import { delay } from '@dooboostore/core/message/operators/delay';
+import { firstValueFrom } from '@dooboostore/core/message/internal/firstValueFrom';
+import { parseHTML } from 'linkedom';
+import { Promises } from '@dooboostore/core/promise/Promises';
+import { DomParserInitializer } from '../initializers/DomParserInitializer';
+import { JsdomInitializer } from '../initializers';
+import { SimConfig } from '@dooboostore/simple-boot/decorators/SimDecorator';
 
 export type FactoryAndParams = {
   frontDistPath: string;
@@ -50,7 +51,7 @@ export class SSRDomParserFilter implements Filter {
 
   constructor(
     public config: FactoryAndParams,
-    public otherInstanceSim?: Map<ConstructorType<any>, any>
+    public otherInstanceSim?: Map<ConstructorType<any> | Function | SimConfig | Symbol, any>
   ) {
     config.frontDistIndexFileName = config.frontDistIndexFileName || 'index.html';
     // this.indexHTML = JsdomInitializer.loadFile(this.config.frontDistPath, config.frontDistIndexFileName);
@@ -60,7 +61,6 @@ export class SSRDomParserFilter implements Filter {
     // for (let i = 0; i < this.config.poolOption.min; i++) {
     //   await this.pushQueue();
     // }
-
     // if (this.config.poolOption.clearIntervalTime && this.config.poolOption.clearIntervalTime > 0) {
     //   this.intervalId = setInterval(() => {
     //     this.poolGeneration++;
@@ -82,17 +82,13 @@ export class SSRDomParserFilter implements Filter {
     // this.simpleBootFrontPool = [];
   }
 
-  async makePage() {
-    const domParserInitializer = new DomParserInitializer(
-      this.config.frontDistPath,
-      this.config.frontDistIndexFileName || 'index.html',
-      {url: this.welcomUrl}
-    );
+  async makePage(url = this.welcomUrl) {
+    const domParserInitializer = new DomParserInitializer(this.config.frontDistPath, this.config.frontDistIndexFileName || 'index.html', { url: url });
     const window = await domParserInitializer.run();
     // window.document.querySelector('#app').setAttribute(('vvv'),'zzz')
     // console.log('vvv', window.document.querySelector('#app'))
     // console.log('------', window.document.documentElement.outerHTML);
-    return {window, domParserInitializer};
+    return { window, domParserInitializer };
     // const jsdom = await new JsdomInitializer(
     //   this.config.frontDistPath,
     //   this.config.frontDistIndexFileName || 'index.html',
@@ -102,12 +98,16 @@ export class SSRDomParserFilter implements Filter {
     // return jsdom;
   }
 
-  async makeFront(window: Window) {
+  async makeFront(window: Window, otherInstanceSim?: Map<Function | ConstructorType<any> | SimConfig | Symbol, any>) {
     const name = RandomUtils.uuid();
     (window as any).ssrUse = false;
     const option = this.config.factorySimFrontOption(DomRenderProxy.final(window));
-    const simpleBootFront = await this.config.factory.create(option, this.config.using, this.config.domExcludes);
-    simpleBootFront.run(this.otherInstanceSim);
+    const domExcludes = [RequestResponse, ...(this.config.domExcludes || [])];
+    const simpleBootFront = await this.config.factory.create(option, this.config.using, domExcludes);
+    otherInstanceSim ??= new Map<Function | ConstructorType<any> | SimConfig | Symbol, any>();
+    this.otherInstanceSim?.forEach((v, k) => otherInstanceSim!.set(k, v));
+
+    simpleBootFront.run(otherInstanceSim);
     // (simpleBootFront as any).generation = this.poolGeneration;
     return simpleBootFront;
   }
@@ -124,7 +124,7 @@ export class SSRDomParserFilter implements Filter {
   //   }
   // }
 
-  async proceedBefore({rr, app}: { rr: RequestResponse; app: SimpleBootHttpServer; carrier: Map<string, any> }) {
+  async proceedBefore({ rr, app }: { rr: RequestResponse; app: SimpleBootHttpServer; carrier: Map<string, any> }) {
     if (this.config.ssrExcludeFilter?.(rr)) {
       return false;
     }
@@ -133,63 +133,42 @@ export class SSRDomParserFilter implements Filter {
       //   await this.pushQueue();
       // }
       // const simpleBootFront = await this.simpleBootFrontQueue.dequeue();
-      const {window, domParserInitializer} = await this.makePage();
-      const simpleBootFront = await this.makeFront(window);
+      const url = rr.reqUrlObj({ host: 'localhost' });
+      const targetUrl = url.toString() ?? this.welcomUrl;
+      const { window, domParserInitializer } = await this.makePage(targetUrl);
+      const otherSim = new Map<Function | ConstructorType<any> | SimConfig | Symbol, any>();
+      otherSim.set(RequestResponse, rr);
+      const simpleBootFront = await this.makeFront(window, otherSim);
       try {
         (simpleBootFront.option.window as any).ssrUse = true;
-        delete (simpleBootFront.option.window as any).server_side_data;
-        const url = rr.reqUrlObj({host: 'localhost'});
+        // console.log(simpleBootFront.routing)
         if (this.config.simpleBootFront?.notFoundError) {
           // intent router check first
-          const intent = await simpleBootFront.getIntent(url.pathname);
+          const intent = await simpleBootFront.routingRouterModule(url.pathname);
           // route를 못찾은상태에서 router path까지 안맞으면 404 처리한다.  route랑 router랑 다르니깐 헛갈리지말도록
           if (intent.module === undefined && !intent.getRouterPathData(rr.reqUrlPathName)) {
-            throw new NotFoundError({message: `Not Found: ${rr.reqUrlPathName}`});
+            throw new NotFoundError({ message: `Not Found: ${rr.reqUrlPathName}` });
           }
         }
 
-        // runRouting!!
-        const targetUrl = url.toString();
-        // console.log('runRoutingrunRouting', targetUrl);
-        await simpleBootFront.goRouting(targetUrl);
-        // await Promises.sleep(0); // <--중요: 이거 넣어야지 두번불러지는게 없어지는듯? 뭐지 event loop 변경된건가?
-
-        // console.log('runRout22222ingrunRouting', targetUrl);
-
-        // simpleBootFront.routingSubjectObservable.subscribe(it=>{
-        //   console.log('zzzzzzzzzzzzzzzzzzz', it);
-        //   if (it.triggerPoint==='end') {
-        //     console.log('zzz@@', it.routerModule.intent);
-        //   }
-        // })
-
-        // simpleBootFront.routingSubjectObservable.subscribe(it => {
-        //   console.log('RRRRRRRRRRRRRRRRRRR', it);
-        // })
         const data = await firstValueFrom(
           simpleBootFront.routingObservable.pipe(
-            filter(
-              (it) =>
-                it.triggerPoint === 'end' &&
-                typeof it.routerModule.intent.uri === 'string' &&
-                targetUrl.endsWith(it.routerModule.intent.uri)
-            ),
+            filter(it => it.triggerPoint === 'end' && typeof it.routerModule.intent.uri === 'string' && targetUrl.endsWith(it.routerModule.intent.uri)),
             // delay(1000),
             first()
           )
         );
-        // await Promises.sleep(0)
-        // console.log('???????done');
+
+        // [아키텍트님의 정석] 하이드레이션 데이터를 가상 윈도우의 body에 script 태그로 박제
+        // @ts-ignore: writeDataHydration is part of the 정석
+        simpleBootFront.writeDataHydration();
+        simpleBootFront.clearDataHydration();
+
         const html = this.makeHTML(simpleBootFront);
-        // console.log('---------',html);
-        await this.writeOkHtmlAndEnd({rr}, html);
+        await this.writeOkHtmlAndEnd({ rr }, html);
       } finally {
         try {
           (simpleBootFront.option.window as any).ssrUse = false;
-          delete (simpleBootFront.option.window as any).server_side_data;
-          // Stale instance, destroy it
-          const jsdom = (simpleBootFront as any).jsdom as JSDOM.JSDOM | undefined;
-          jsdom?.window.close();
           window.close();
           simpleBootFront.onDestroy();
 
@@ -200,9 +179,9 @@ export class SSRDomParserFilter implements Filter {
           console.log('eeeeee', e);
         }
 
-        // const index = this.simpleBootFrontPool.indexOf(simpleBootFront);
+        // const index = this.simpleBootPool.indexOf(simpleBootFront);
         // if (index > -1) {
-        //   this.simpleBootFrontPool.splice(index, 1);
+        //   this.simpleBootPool.splice(index, 1);
         // }
         // this.pushQueue();
       }
@@ -225,31 +204,20 @@ export class SSRDomParserFilter implements Filter {
       html = '<!DOCTYPE html>' + html;
     }
     html = html.replace(/\$\{[\s\S]*?\}\$/g, '');
-    const serverSideData = (simpleBootFront.option.window as any).server_side_data;
-    if (serverSideData) {
-      const data = Object.entries(serverSideData)
-        .map(([k, v]) => {
-          if (typeof v === 'string') {
-            return `window.server_side_data.${k} = ${v}`;
-          } else {
-            return `window.server_side_data.${k} = ${JSON.stringify(v)}`;
-          }
-        })
-        .join(';');
-      if (data) {
-        html = html.replace('</head>', `<script> window.server_side_data={}; ${data}; </script></head>`);
-      }
-    }
+
+    // [아키텍트님의 정석]
+    // body에 직접 append된 script tag가 outerHTML에 이미 포함되어 있으므로 추가 조작은 불필요합니다.
+
     return html;
   }
 
-  async writeOkHtmlAndEnd({rr, status = HttpStatus.Ok}: { rr: RequestResponse; status?: HttpStatus }, html: string) {
+  async writeOkHtmlAndEnd({ rr, status = HttpStatus.Ok }: { rr: RequestResponse; status?: HttpStatus }, html: string) {
     rr.resStatusCode(status);
     rr.resSetHeader(HttpHeaders.ContentType, Mimes.TextHtml);
     await rr.resEnd(html);
   }
 
-  async proceedAfter({rr, app}: { rr: RequestResponse; app: SimpleBootHttpServer; carrier: Map<string, any> }) {
+  async proceedAfter({ rr, app }: { rr: RequestResponse; app: SimpleBootHttpServer; carrier: Map<string, any> }) {
     return true;
   }
 }
