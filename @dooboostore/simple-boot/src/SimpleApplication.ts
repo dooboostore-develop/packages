@@ -31,8 +31,10 @@ export class SimpleApplication {
     // this.simstanceManager.setStoreSet(SimpleApplication, this);
     this.simstanceManager.setStoreSet(SimstanceManager, this.simstanceManager);
     // cacheManager는 사용자가 불러다 사용할때 뜨도록. 미리 추가안해준다.
-    this.routerManager = this.simstanceManager.proxy(new RouterManager(this.simstanceManager, option));
-    this.intentManager = this.simstanceManager.proxy(new IntentManager(this.simstanceManager, this.routerManager,option));
+    // this.routerManager = this.simstanceManager.proxy(new RouterManager(this.simstanceManager, option));
+    // this.intentManager = this.simstanceManager.proxy(new IntentManager(this.simstanceManager, this.routerManager, option));
+    this.routerManager = new RouterManager(this, this.simstanceManager, option);
+    this.intentManager = new IntentManager(this, this.simstanceManager, this.routerManager, option);
     this.simstanceManager.setStoreSet(IntentManager, this.intentManager);
     this.simstanceManager.setStoreSet(RouterManager, this.routerManager);
     containers.add(this);
@@ -51,7 +53,7 @@ export class SimpleApplication {
   }
 
   public run(otherInstanceSim?: Map<ConstructorType<any> | Function | SimConfig | Symbol, any>) {
-      otherInstanceSim ??= new Map<ConstructorType<any> | Function | SimConfig | Symbol, any>();
+    otherInstanceSim ??= new Map<ConstructorType<any> | Function | SimConfig | Symbol, any>();
     otherInstanceSim.set(SimpleApplication, this);
     this.simstanceManager.run(otherInstanceSim);
     return this;
@@ -62,7 +64,7 @@ export class SimpleApplication {
     if (typeof type === 'symbol') {
       return this.simstanceManager.findFirstSim(type);
     } else if (typeof type === 'function') {
-      return this.simstanceManager.findFirstSim({type:type});
+      return this.simstanceManager.findFirstSim({ type: type });
       // return new SimAtomic<T>(type, this.simstanceManager);
     }
   }
@@ -70,7 +72,7 @@ export class SimpleApplication {
     if (typeof type === 'symbol') {
       return this.simstanceManager.findSims(type) ?? [];
     } else if (typeof type === 'function') {
-      return this.simstanceManager.findSims({type}) ?? [];
+      return this.simstanceManager.findSims({ type }) ?? [];
     } else {
       return [];
     }
@@ -81,7 +83,7 @@ export class SimpleApplication {
     if (i) {
       return i;
     } else {
-      throw new SimNoSuch('SimNoSuch: no simple instance(getInstance) ' + 'name:' + type?.prototype?.constructor?.name + ',' + type)
+      throw new SimNoSuch('SimNoSuch: no simple instance(getInstance) ' + 'name:' + type?.prototype?.constructor?.name + ',' + type);
     }
   }
 
@@ -89,7 +91,7 @@ export class SimpleApplication {
     return this.simAtomic<T>(type)?.getValue();
   }
   public sims<T>(type: ConstructorType<T> | Function | Symbol): T[] {
-    return this.simAtomics(type).map(it => it.getValue())
+    return this.simAtomics(type).map(it => it.getValue());
   }
 
   public addSim(target: ConstructorType<any> | Function): void;
@@ -100,7 +102,6 @@ export class SimpleApplication {
       r(target);
     }
   }
-
 
   public publishIntent(i: string, data?: any): Promise<any[]>;
   public publishIntent(i: RouterPublishType): Promise<any[]>;
@@ -116,9 +117,9 @@ export class SimpleApplication {
   }
 
   public routing<R = SimAtomic, M = any>(i: string, option?: RoutingOption): Promise<RouterModule<R, M>>;
-  public routing<R = SimAtomic, M = any>(i: { path: string, data?: any }, option?: RoutingOption): Promise<RouterModule<R, M>>;
+  public routing<R = SimAtomic, M = any>(i: { path: string; data?: any }, option?: RoutingOption): Promise<RouterModule<R, M>>;
   public routing<R = SimAtomic, M = any>(i: Intent, option?: RoutingOption): Promise<RouterModule<R, M>>;
-  public routing<R = SimAtomic, M = any>(i: { path: string, data?: any } | string | Intent, option?: RoutingOption): Promise<RouterModule<R, M>> {
+  public routing<R = SimAtomic, M = any>(i: { path: string; data?: any } | string | Intent, option?: RoutingOption): Promise<RouterModule<R, M>> {
     if (i instanceof Intent) {
       return this.routerManager.routing<R, M>(i, option);
     } else if (typeof i === 'string') {

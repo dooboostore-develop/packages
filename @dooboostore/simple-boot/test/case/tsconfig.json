@@ -8,6 +8,17 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "strict": false
+    "strict": false,
+    "sourceMap": true,
+    "baseUrl": ".",
+    "paths": {
+      "@dooboostore/core": ["../../../core/src/*"],
+      "@dooboostore/core-node": ["../../../core-node/src/*"],
+      "@dooboostore/simple-boot": ["../../../simple-boot/src/*"],
+      "@dooboostore/simple-boot-http-server": ["../../../simple-boot-http-server/src/*"],
+      "@dooboostore/simple-boot-http-server-ssr": ["../../../simple-boot-http-server-ssr/src/*"],
+      "@dooboostore/simple-boot-front": ["../../../simple-boot-front/src/*"],
+      "@dooboostore/dom-render": ["../../../dom-render/src/*"]
+    }
   }
 }

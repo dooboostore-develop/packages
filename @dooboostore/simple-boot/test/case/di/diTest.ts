@@ -120,17 +120,19 @@ export const diTest = async () => {
   simpleApplication.run(other);
   const user = simpleApplication.sim(UserA);
  assert(user.pa.length === 5, 'di Test')
-
+ //
   let tt = simpleApplication.sim(TTSymbol);
   console.log('tt', tt);
 
   let ttt = simpleApplication.sim(TTSymbol);
   console.log('tt', ttt)
-
+ //
   let tttt = simpleApplication.sim(TTSymbol);
   console.log('tt', tttt)
-
+ //
   console.log(tt === ttt)
- // assert(user.pa.length === 5, 'di Test')
+ assert(user.pa.length === 5, 'di Test')
 
 }
+
+console.log('vvvvv')

@@ -11,15 +11,16 @@ export class SSRDomParserFilterDataHydrationProxy implements ProxyHandler<any> {
     const value = Reflect.get(target, prop, receiver);
     let current: any = target;
     let simConfig = getSim(current);
-    while (!simConfig && current && typeof current === 'object') {
-      const origin = current._SimpleBoot_origin ?? current._domRender_origin ?? current._DomRender_origin ?? current.__target__;
-      if (origin && origin !== current) {
-        current = origin;
-        simConfig = getSim(current);
-      } else {
-        break;
-      }
-    }
+    console.log('SSRDomParserFilterDataHydrationProxy*****', simConfig);
+    // while (!simConfig && current && typeof current === 'object') {
+    //   const origin = current._SimpleBoot_origin ?? current._domRender_origin ?? current._DomRender_origin ?? current.__target__;
+    //   if (origin && origin !== current) {
+    //     current = origin;
+    //     simConfig = getSim(current);
+    //   } else {
+    //     break;
+    //   }
+    // }
 
     if (typeof value === 'function' && simConfig?.symbol) {
       const methodName = String(prop);
@@ -30,7 +31,7 @@ export class SSRDomParserFilterDataHydrationProxy implements ProxyHandler<any> {
         const key = `${symbolStr}.${methodName}(${JSON.stringify(pureArgs)})`;
 
         if (ValidUtils.isBrowser()) {
-          const hydratedData = (this.simpleBootFront as any).cutDataHydration(key);
+          const hydratedData = this.simpleBootFront.cutDataHydration(key);
           if (hydratedData !== undefined) {
             return Promise.resolve(hydratedData);
           }
@@ -40,7 +41,7 @@ export class SSRDomParserFilterDataHydrationProxy implements ProxyHandler<any> {
 
         if (!ValidUtils.isBrowser()) {
           const saveData = (data: any) => {
-            (this.simpleBootFront as any).saveDataHydration(key, data);
+            this.simpleBootFront.saveDataHydration(key, data);
           };
 
           if (result instanceof Promise) {

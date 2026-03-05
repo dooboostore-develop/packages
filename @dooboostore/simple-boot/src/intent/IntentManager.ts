@@ -1,33 +1,30 @@
-import {Intent, PublishType} from './Intent';
-import {SimstanceManager} from '../simstance/SimstanceManager';
-import {Sim} from '../decorators/SimDecorator';
-import {SimAtomic} from '../simstance/SimAtomic';
-import {Subject} from '@dooboostore/core/message/Subject';
-import {RouterManager} from '../route/RouterManager';
-import {RouterMetadataKey, RouterConfig} from '../decorators/route/Router';
-import {ConstructorType} from '@dooboostore/core/types';
-import {SimOption} from '../SimOption';
-import {isIntentSubscribe} from "./IntentSubscribe";
-import {ReflectUtils} from "@dooboostore/core/reflect/ReflectUtils";
-import {getInject} from "../decorators";
-// import {isInjectFactory} from "../decorators/inject/Inject";
+import { Intent, PublishType } from './Intent';
+import { SimstanceManager } from '../simstance/SimstanceManager';
+import { Sim } from '../decorators/SimDecorator';
+import { SimAtomic } from '../simstance/SimAtomic';
+import { Subject } from '@dooboostore/core/message/Subject';
+import { RouterManager } from '../route/RouterManager';
+import { RouterMetadataKey, RouterConfig } from '../decorators/route/Router';
+import { ConstructorType } from '@dooboostore/core/types';
+import { SimOption } from '../SimOption';
+import { isIntentSubscribe } from './IntentSubscribe';
+import { ReflectUtils } from '@dooboostore/core/reflect/ReflectUtils';
+import { getInject, isTargetFactory, isTargetScheme, isTargetSymbol, isTargetType } from '../decorators';
+import { SimpleApplication } from '../SimpleApplication';
 
 export type RouterPublishType = { router: `Router(${string}):${string}`; rootRouter: ConstructorType<any> };
-export const isRouterPublishType = (it: any): it is RouterPublishType =>
-  typeof it === 'object' &&
-  typeof it.router === 'string' &&
-  typeof it.rootRouter === 'function';
+export const isRouterPublishType = (it: any): it is RouterPublishType => typeof it === 'object' && typeof it.router === 'string' && typeof it.rootRouter === 'function';
 
-@Sim
+// @Sim
 export class IntentManager {
   private subject = new Subject<Intent>();
 
   constructor(
+    private simpleApplication: SimpleApplication,
     private simstanceManager: SimstanceManager,
     private routerManager: RouterManager,
     private simOption: SimOption
-  ) {
-  }
+  ) {}
 
   get observable() {
     return this.subject.asObservable();
@@ -42,7 +39,7 @@ export class IntentManager {
     if (routerMatch && typeof it === 'string') {
       const routerBasePath = routerMatch[1];
       const actualPath = routerMatch[2];
-      const routerModule = await this.routerManager.routing(routerBasePath, {router: rootRouter});
+      const routerModule = await this.routerManager.routing(routerBasePath, { router: rootRouter });
       const instance = routerModule.getModuleInstance();
       if (instance) {
         target.push(instance);
@@ -64,16 +61,15 @@ export class IntentManager {
       }
     }
 
-    return {intent, target};
+    return { intent, target };
   }
 
-
-  public async publishMeta(it: string, data?: any): Promise<{return:any[], target:any[]}>;
-  public async publishMeta(it: RouterPublishType, data?: any): Promise<{return:any[], target:any[]}>;
-  public async publishMeta(it: Intent): Promise<{return:any[], target:any[]}>;
-  public async publishMeta(it: Intent | string | RouterPublishType, data?: any): Promise<{return:any[], target:any[]}>;
-  public async publishMeta(it: Intent | string | RouterPublishType, data?: any): Promise<{return:any[], target:any[]}> {
-    const {intent, target} = await this.makeIntentData(it, data);
+  public async publishMeta(it: string, data?: any): Promise<{ return: any[]; target: any[] }>;
+  public async publishMeta(it: RouterPublishType, data?: any): Promise<{ return: any[]; target: any[] }>;
+  public async publishMeta(it: Intent): Promise<{ return: any[]; target: any[] }>;
+  public async publishMeta(it: Intent | string | RouterPublishType, data?: any): Promise<{ return: any[]; target: any[] }>;
+  public async publishMeta(it: Intent | string | RouterPublishType, data?: any): Promise<{ return: any[]; target: any[] }> {
+    const { intent, target } = await this.makeIntentData(it, data);
     const r: any[] = [];
     const targetInstances = target.map(it => {
       if (it instanceof SimAtomic) {
@@ -105,18 +101,29 @@ export class IntentManager {
             if (injects) {
               for (const inject of injects) {
                 let v: any = undefined;
-                if (inject.config.symbol) {
-                  v = this.simstanceManager.findLastSim(inject.config.symbol).getValue();
-                } else if (inject.config.scheme || inject.config.type) {
-                  v = this.simstanceManager.findLastSim(inject.config).getValue();
-                }
+                const cfg = inject.config;
 
-                if (typeof inject.config.returnFactory === "function") {
-                  v = await inject.config.returnFactory({instance: callthis, methodName: orNewSim.name, parameter: intent.data}, v);
-                } else if (v && typeof inject.config.returnFactory === "string") {
-                  v = await v[inject.config.returnFactory]({instance: callthis, methodName: orNewSim.name, parameter: intent.data}, v);
+                // [아키텍트님의 정석] 주입 3대 전략 (Factory / Symbol / Type)
+                if (isTargetFactory(cfg)) {
+                  // Choice 3: 순수 Factory 전략
+                  v = await cfg.factory({ instance: callthis, methodName: orNewSim.name, parameter: intent.data, application: this.simpleApplication });
+                } else {
+                  // Choice 1 & 2: Symbol 또는 Type/Scheme 전략
+                  const findLastSim = isTargetSymbol(cfg) ? this.simstanceManager.findLastSim(cfg.symbol) : isTargetScheme(cfg) || isTargetType(cfg) ? this.simstanceManager.findLastSim(cfg) : undefined;
+                  if (findLastSim) {
+                    v = findLastSim.getValue();
+                  }
+
+                  // Augmentation: 찾은 객체를 팩토리를 통해 가공
+                  if (cfg.factory && v !== undefined) {
+                    if (typeof cfg.factory === 'function') {
+                      v = await cfg.factory({ instance: callthis, methodName: orNewSim.name, parameter: intent.data, application: this.simpleApplication }, v);
+                    } else if (v && typeof cfg.factory === 'string' && v[cfg.factory]) {
+                      v = await v[cfg.factory]({ instance: callthis, methodName: orNewSim.name, parameter: intent.data, application: this.simpleApplication }, v);
+                    }
+                  }
                 }
-                intent.data[inject.index] = v
+                intent.data[inject.index] = v;
               }
             }
 
@@ -148,7 +155,7 @@ export class IntentManager {
         }
       }
     }
-    return {return: r, target};
+    return { return: r, target };
   }
 
   public async publish(it: string, data?: any): Promise<any[]>;
@@ -156,7 +163,7 @@ export class IntentManager {
   public async publish(it: Intent): Promise<any[]>;
   public async publish(it: Intent | string | RouterPublishType, data?: any): Promise<any[]>;
   public async publish(it: Intent | string | RouterPublishType, data?: any): Promise<any[]> {
-    const rdata = await this.publishMeta(it, data)
+    const rdata = await this.publishMeta(it, data);
     return rdata.return;
   }
 }

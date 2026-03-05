@@ -153,7 +153,11 @@ export class SSRDomParserFilter implements Filter {
 
         const data = await firstValueFrom(
           simpleBootFront.routingObservable.pipe(
-            filter(it => it.triggerPoint === 'end' && typeof it.routerModule.intent.uri === 'string' && targetUrl.endsWith(it.routerModule.intent.uri)),
+            filter(it => {
+
+              const sw = it.triggerPoint === 'end' && typeof it.routerModule.intent.uri === 'string' && targetUrl.endsWith(it.routerModule.intent.uri);
+              return sw;
+            }),
             // delay(1000),
             first()
           )

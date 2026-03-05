@@ -3,8 +3,7 @@
 // const data = Expression.bindExpression(`Hello $\{name} \${date:ffff}`, { name: 'World', date: (param: string) => new Date().toLocaleDateString() + param });
 // console.log(data);
 
-import { executeTest } from './execute/executeTest';
-import { diTest } from './di/diTest';
+import 'reflect-metadata';
+import test from './inject';
 
-// executeTest();
-diTest();
+test();

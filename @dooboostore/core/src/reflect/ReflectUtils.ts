@@ -29,6 +29,24 @@ export namespace  ReflectUtils {
         } else {
             return Reflect.getMetadata(metadataKey, target);
         }
+
+
+        //
+        // let tt = target;
+        // // proxy 걸린거는 오리지널 constructor에 들어가있을경우도있어서  reflect가 proxy의 constructor에서 찾는경우도있다,
+        // // 서버랑 프론트랑 다른듯.. 그래서 위로 찾아가면서
+        // while (tt) {
+        //     let meta: any = undefined;
+        //     if (propertyKey) {
+        //         meta = Reflect.getMetadata(metadataKey, tt, propertyKey);
+        //     } else {
+        //         meta = Reflect.getMetadata(metadataKey, tt);
+        //     }
+        //     if (meta) {
+        //         return meta;
+        //     }
+        //     tt = Reflect.getPrototypeOf(tt);
+        // }
     }
 
     export const getMetadataKeys = (target: any) => {

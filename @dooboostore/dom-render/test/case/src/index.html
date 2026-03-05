@@ -13,6 +13,11 @@
   <body>
     <div id="app">
       ${@this@.dataAppender.length}$
+
+      <div>
+      <input value="${@this@.name}$"/> ${@this@.name}$
+        <button dr-event-click="@this@.changeName()">change Name</button>
+      </div>
       <div dr-appender="@this@.dataAppender" dr-option-item-variable-name="item" dr-option-item-index-variable-name="i" dr-option-item-offset-index-variable-name="oi">
         <div>Item: #item#, Index: #i#, OffsetIndex: #oi# (Defaults: #index#, #offsetIndex#)</div>
       </div>

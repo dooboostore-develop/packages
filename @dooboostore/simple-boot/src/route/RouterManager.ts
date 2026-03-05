@@ -1,26 +1,28 @@
-import { Intent } from '../intent/Intent';
-import { ConstructorType } from '@dooboostore/core/types';
-import { RouterModule } from './RouterModule';
-import { Route, RouterConfig, RouterMetadataKey } from '../decorators/route/Router';
-import { SimAtomic } from '../simstance/SimAtomic';
-import { SimstanceManager } from '../simstance/SimstanceManager';
-import { RouteFilter } from './RouteFilter';
-import { Sim } from '../decorators/SimDecorator';
-import { Expression } from '@dooboostore/core/expression/Expression';
-import { RouterAction } from '../route/RouterAction';
-import { SimOption } from '../SimOption';
-import { Subject } from '@dooboostore/core/message/Subject';
+import {Intent} from '../intent/Intent';
+import {ConstructorType} from '@dooboostore/core/types';
+import {RouterModule} from './RouterModule';
+import {Route, RouterConfig, RouterMetadataKey} from '../decorators/route/Router';
+import {SimAtomic} from '../simstance/SimAtomic';
+import {SimstanceManager} from '../simstance/SimstanceManager';
+import {RouteFilter} from './RouteFilter';
+import {Sim} from '../decorators/SimDecorator';
+import {Expression} from '@dooboostore/core/expression/Expression';
+import {RouterAction} from '../route/RouterAction';
+import {SimOption} from '../SimOption';
+import {Subject} from '@dooboostore/core/message/Subject';
+import {SimpleApplication} from "../SimpleApplication";
 
 export type RoutingOption = { router?: ConstructorType<any> | any, noOnRouting?: boolean, find?: { router: 'last' | 'first' } };
 export type RoutingDataSet = {
   intent: Intent, routerModule: RouterModule, routerManager: RouterManager
 }
 
-@Sim
+// @Sim
 export class RouterManager {
   public activeRouterModule?: RouterModule<SimAtomic, any>;
   private subject = new Subject<RoutingDataSet>()
-  constructor(private simstanceManager: SimstanceManager, private simOption: SimOption) {
+
+  constructor(private simpleApplication: SimpleApplication, private simstanceManager: SimstanceManager, private simOption: SimOption) {
   }
 
   // @SimNoProxy
@@ -29,7 +31,7 @@ export class RouterManager {
     return this.subject.asObservable();
   }
 
-  public routingMap(option?: RoutingOption & {prefix?: string}): { [key: string]: string | any } {
+  public routingMap(option?: RoutingOption & { prefix?: string }): { [key: string]: string | any } {
     const targetRouter = option?.router ?? this.simOption.rootRouter;
     if (!targetRouter) {
       throw new Error('no router');
@@ -41,7 +43,7 @@ export class RouterManager {
       const routerAtomic = new SimAtomic({targetKeyType: targetType, originalType: targetType, value: targetValue}, this.simstanceManager);
       const routerData = routerAtomic.getConfig<RouterConfig>(RouterMetadataKey);
       if (routerData) {
-        const currentPrefix = (option?.prefix??'') + routerData.path;
+        const currentPrefix = (option?.prefix ?? '') + routerData.path;
         // Add the current router's path if it has a default route
         if (routerData.route && routerData.route['']) {
           map[currentPrefix] = routerData.route[''];
@@ -125,7 +127,7 @@ export class RouterManager {
           const next = routerChains[i + 1];
           const value = current.getValue()! as any;
           if (RouterAction.isCanActivate(value) && next) {
-              await value.canActivate(routingDataSet, next.getValue());
+            await value.canActivate(routingDataSet, next.getValue());
           }
           if (callCheckOnRouting && RouterAction.isOnRouting(value) && next) {
             await value.onRouting(routingDataSet);
@@ -148,9 +150,9 @@ export class RouterManager {
         if (callCheckOnRouting && RouterAction.isOnRouting(value)) {
           await value.onRouting(routingDataSet);
         }
-      } 
-      // --- Case 2: 완전 일치 (라우터와 특정 모듈을 모두 찾은 경우) ---
-      // 표준 성공 케이스입니다.
+      }
+        // --- Case 2: 완전 일치 (라우터와 특정 모듈을 모두 찾은 경우) ---
+        // 표준 성공 케이스입니다.
       // 모듈을 포함하는 라우터와 모듈 인스턴스 자체의 라이프사이클 훅을 호출합니다.
       else { // find page
         const value = executeModule.router?.getValue()! as any;
@@ -281,6 +283,7 @@ export class RouterManager {
       }
     }
   }
+
   // path: 지금 내 라우터의 path,  parentRoots: 부모router path들,  url: 사용자가 원하는 full intent url
   private isRootUrl(path: string | undefined, parentRoots: string[], url: string): boolean {
     const searchString = parentRoots.join('') + (path || '');//현재까지 경로 내포함
@@ -321,7 +324,7 @@ export class RouterManager {
         // Collect matches from child routers
         if (routerConfig.routers && routerConfig.routers.length > 0) {
           for (const child of routerConfig.routers) {
-            const routerAtomic = new SimAtomic({targetKeyType:child, originalType: child}, this.simstanceManager);
+            const routerAtomic = new SimAtomic({targetKeyType: child, originalType: child}, this.simstanceManager);
             matches.push(...this._collectAllMatchingModules(routerAtomic, intent, currentParentRouters));
           }
         }
@@ -380,8 +383,8 @@ export class RouterManager {
     }
   }
 
-  private findRouteProperty(route: Route, propertyName: string, intent: Intent): { child?: {targetKeyType? : ConstructorType<any> | Function, originalType: ConstructorType<any> | Function}, data?: any, propertyKeys?: (string | symbol)[] } {
-    let child: {targetKeyType? : ConstructorType<any> | Function, originalType: ConstructorType<any> | Function} | undefined;
+  private findRouteProperty(route: Route, propertyName: string, intent: Intent): { child?: { targetKeyType?: ConstructorType<any> | Function, originalType: ConstructorType<any> | Function }, data?: any, propertyKeys?: (string | symbol)[] } {
+    let child: { targetKeyType?: ConstructorType<any> | Function, originalType: ConstructorType<any> | Function } | undefined;
     let data: any;
     let propertyKeys: undefined | (string | symbol)[];
     const routeElement = route[propertyName];
@@ -405,7 +408,7 @@ export class RouterManager {
           child = {targetKeyType: r.target, originalType: r.target};
         }
       } else {
-        child = {targetKeyType: r, originalType:r};
+        child = {targetKeyType: r, originalType: r};
       }
       data = routeElement?.[1];
     } else if (typeof routeElement === 'object' && 'target' in routeElement && 'propertyKeys' in routeElement) { // RouteTargetMethod
@@ -423,7 +426,7 @@ export class RouterManager {
       }
       const noAccept = filters.some(it => (typeof it === 'function' ? this.simstanceManager.getOrNewSim({target: it}) : it)?.isAccept(intent) === false);
       if (!noAccept) {
-        child = {targetKeyType: routeElement.target, originalType:routeElement.target};
+        child = {targetKeyType: routeElement.target, originalType: routeElement.target};
       }
     }
     return {

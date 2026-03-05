@@ -110,7 +110,9 @@ export function Sim(configOrTarget: SimConfig | ConstructorType<any> | Function)
 
 export const getSim = (target: ConstructorType<any> | Function | any): SimConfig | undefined => {
   if (target != null && target !== undefined && typeof target === 'object') {
-    target = target.constructor;
+    // proxy 걸린거떄문에 이렇게 한다. 안걸린것도 잘된다.
+    target = Object.getPrototypeOf(target).constructor;
+    // target = target.constructor;
   }
   try {
     return ReflectUtils.getMetadata(SimMetadataKey, target);

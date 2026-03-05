@@ -211,7 +211,8 @@ export class SimpleBootHttpServer extends SimpleApplication {
                 const isJson = injects.find(it => it.config?.situationType === UrlMappingSituationType.REQ_JSON_BODY);
                 const isSearchParamsObj = injects.find(it => it.config?.situationType === UrlMappingSituationType.REQ_URL_SEARCH_PARAMS_OBJ);
                 const isFormUrl = injects.find(it => it.config?.situationType === UrlMappingSituationType.REQ_FORM_URL_BODY);
-                const isTransactionManager = injects.find(it => it.config?.situationType === InjectSituationType.TransactionManager);
+                // 우선 다시 제거한다.. 트랜젝션 어떻게 할지 다시 생각
+                // const isTransactionManager = injects.find(it => it.config?.situationType === InjectSituationType.TransactionManager);
                 const siturationContainers = new SituationTypeContainers();
                 if (isPathData) {
                   let data = await routerModule.pathData
@@ -271,14 +272,14 @@ export class SimpleBootHttpServer extends SimpleApplication {
                   }
                   siturationContainers.push(new SituationTypeContainer({situationType: UrlMappingSituationType.REQ_FORM_URL_BODY, data}));
                 }
-
-                if (isTransactionManager && isTransactionManager.type && transactionManager && transactionManager.hasTransaction(isTransactionManager.type)) {
-                  let data = await transactionManager.getTransaction(isTransactionManager.type);
-                  if (data) {
-                    data = await data.try(isTransactionManager.config.argument);
-                    siturationContainers.push(new SituationTypeContainer({situationType: InjectSituationType.TransactionManager, data, index: isTransactionManager.index}));
-                  }
-                }
+                // 트랜젝션 우선 제거 나중에 어떻게 구현할지 생각..
+                // if (isTransactionManager && isTransactionManager.type && transactionManager && transactionManager.hasTransaction(isTransactionManager.type)) {
+                //   let data = await transactionManager.getTransaction(isTransactionManager.type);
+                //   if (data) {
+                //     data = await data.try(isTransactionManager.config.argument);
+                //     siturationContainers.push(new SituationTypeContainer({situationType: InjectSituationType.TransactionManager, data, index: isTransactionManager.index}));
+                //   }
+                // }
                 if (siturationContainers.length) {
                   otherStorage.set(SituationTypeContainers, siturationContainers);
                 }

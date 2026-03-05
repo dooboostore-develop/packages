@@ -4,7 +4,7 @@ import { getPostConstructs, getSim, Lifecycle, SimConfig, simProcess, sims } fro
 import { ObjectUtils } from '@dooboostore/core/object/ObjectUtils';
 import { SimAtomic } from './SimAtomic';
 import { ReflectUtils } from '@dooboostore/core/reflect/ReflectUtils';
-import { getInject, SaveInjectConfig, SituationTypeContainer, SituationTypeContainers } from '../decorators/inject/Inject';
+import { getInject, isTargetFactory, isTargetNone, isTargetScheme, isTargetSymbol, isTargetType, SaveInjectConfig, SituationTypeContainer, SituationTypeContainers } from '../decorators/inject/Inject';
 import { SimOption } from '../SimOption';
 import { SimProxyHandler } from '../proxy/SimProxyHandler';
 import { ConvertUtils } from '@dooboostore/core/convert/ConvertUtils';
@@ -14,9 +14,11 @@ import { isOnSimCreateProxyCompleted } from '../lifecycle/OnSimCreateCompleted';
 import { SimpleApplication } from '../SimpleApplication';
 import { isSimNoProxy } from '../decorators/SimNoProxy';
 import { RandomUtils } from '@dooboostore/core/random/RandomUtils';
+import { ValidUtils } from '@dooboostore/core/valid/ValidUtils';
 
 export type FirstCheckMaker = (obj: { target: Object; targetKey?: string | symbol }, token: ConstructorType<any>, idx: number, saveInjectConfig?: SaveInjectConfig) => any | undefined;
 export type Carrier = { newInstances: any[]; depth: number };
+
 export class SimstanceManager implements Runnable<void, Map<ConstructorType<any> | Function, any>> {
   private _storage = new Map<ConstructorType<any> | Function, Map<ConstructorType<any> | Function, undefined | any>>();
   private simProxyHandler: SimProxyHandler;
@@ -24,7 +26,7 @@ export class SimstanceManager implements Runnable<void, Map<ConstructorType<any>
   // private otherInstanceSim?: Map<ConstructorType<any> | Function, any>;
 
   constructor(
-    private simpleApplication: SimpleApplication,
+    public simpleApplication: SimpleApplication,
     private option: SimOption
   ) {
     this.setStoreSet(SimpleApplication, this.simpleApplication);
@@ -42,7 +44,18 @@ export class SimstanceManager implements Runnable<void, Map<ConstructorType<any>
     const r: SimAtomic[] = [];
     Array.from(this.storage.entries()).forEach(([targetKeyType, targetMap]) => {
       // Array.from(targetMap).forEach(it => {
-      r.push(...Array.from(Array.from(targetMap.keys())).map(sit => new SimAtomic({ targetKeyType, originalType: sit }, this)));
+      r.push(
+        ...Array.from(Array.from(targetMap.keys())).map(
+          sit =>
+            new SimAtomic(
+              {
+                targetKeyType,
+                originalType: sit
+              },
+              this
+            )
+        )
+      );
       // });
     });
     return r;
@@ -67,7 +80,14 @@ export class SimstanceManager implements Runnable<void, Map<ConstructorType<any>
 
   findSims<T = any>(symbol: Symbol): SimAtomic<T>[];
   findSims<T = any>(data: { scheme?: string; type?: ConstructorType<any> | Function }): SimAtomic<T>[];
-  findSims<T = any>(data: { scheme?: string; type?: ConstructorType<any> | Function } | Symbol): SimAtomic<T>[] {
+  findSims<T = any>(
+    data:
+      | {
+          scheme?: string;
+          type?: ConstructorType<any> | Function;
+        }
+      | Symbol
+  ): SimAtomic<T>[] {
     let r: SimAtomic<T>[] = [];
     if (data) {
       const simAtomics = this.getSimAtomics();
@@ -108,7 +128,14 @@ export class SimstanceManager implements Runnable<void, Map<ConstructorType<any>
 
   findLastSim<T = any>(symbol: Symbol): SimAtomic<T> | undefined;
   findLastSim<T = any>(data: { scheme?: string; type?: ConstructorType<any> }): SimAtomic<T> | undefined;
-  findLastSim<T = any>(data: { scheme?: string; type?: ConstructorType<any> } | Symbol): SimAtomic<T> | undefined {
+  findLastSim<T = any>(
+    data:
+      | {
+          scheme?: string;
+          type?: ConstructorType<any>;
+        }
+      | Symbol
+  ): SimAtomic<T> | undefined {
     if (typeof data === 'symbol') {
       return this.findSims(data).reverse()[0];
     } else {
@@ -165,7 +192,11 @@ export class SimstanceManager implements Runnable<void, Map<ConstructorType<any>
     if (target) {
       const registed = this.getStoreSet(target, originTypeTarget);
       if (registed?.type && !registed?.instance) {
-        return this.resolve({ targetKey: target, target: originTypeTarget, newInstanceCarrier: newInstanceCarrier });
+        return this.resolve({
+          targetKey: target,
+          target: originTypeTarget,
+          newInstanceCarrier: newInstanceCarrier
+        });
       }
       return registed?.instance;
     }
@@ -235,7 +266,13 @@ export class SimstanceManager implements Runnable<void, Map<ConstructorType<any>
 
   public newSim<T = any>({ target, simCreateAfter, otherStorage, newInstanceCarrier }: { target: ConstructorType<T> | Function; simCreateAfter?: (data: T) => void; newInstanceCarrier?: Carrier; otherStorage?: Map<ConstructorType<any>, any> }): T {
     // @ts-ignore TODO: 여기서 생성
-    const r = new target(...this.getParameterSim({ target: target, otherStorage: otherStorage, newInstanceCarrier: newInstanceCarrier }));
+    const parameters = this.getParameterSim({
+      target: target,
+      otherStorage: otherStorage,
+      newInstanceCarrier: newInstanceCarrier
+    });
+    // @ts-ignore
+    const r = ValidUtils.isFunction(target) && !target.prototype ? (target as Function)(...parameters) : new (target as ConstructorType<any>)(...parameters);
     let p = this.proxy(r);
     const config = getSim(target);
     if (config?.proxy) {
@@ -305,32 +342,35 @@ export class SimstanceManager implements Runnable<void, Map<ConstructorType<any>
 
     injections = paramTypes.map((token: ConstructorType<any>, idx: number) => {
       const saveInject = injects?.find(it => it.index === idx);
-      if (saveInject?.config.disabled) {
-        return undefined;
-      }
-      for (const f of firstCheckMaker ?? []) {
-        const firstCheckObj = f({ target, targetKey }, token, idx, saveInject);
-        if (undefined !== firstCheckObj) {
-          return firstCheckObj;
-        }
-      }
       if (saveInject) {
         const inject = saveInject.config;
+        for (const f of firstCheckMaker ?? []) {
+          const firstCheckObj = f({ target, targetKey }, token, idx, saveInject);
+          if (undefined !== firstCheckObj) {
+            return firstCheckObj;
+          }
+        }
         let obj = otherStorage?.get(token);
         // console.log('vvvvv----->', obj, token, inject);
-        if (token === Array && (inject.type || inject.scheme || inject.symbol)) {
+        if (token === Array && (isTargetType(inject) || isTargetScheme(inject) || isTargetSymbol(inject))) {
           const p: any[] = [];
-          if (inject.type) {
+          if (isTargetType(inject) && inject.type) {
             p.push(
               ...this.getStoreSets(inject.type)
-                .map(it => this.resolve({ targetKey: inject.type!, target: it.type, newInstanceCarrier: newInstanceCarrier }))
+                .map(it =>
+                  this.resolve({
+                    targetKey: inject.type!,
+                    target: it.type,
+                    newInstanceCarrier: newInstanceCarrier
+                  })
+                )
                 .reverse()
             );
           }
-          if (inject.symbol) {
+          if (isTargetSymbol(inject)) {
             p.push(...this.getSimConfig(inject.symbol).map(it => it.getValue({ newInstanceCarrier: newInstanceCarrier })));
           }
-          if (inject.scheme) {
+          if (isTargetScheme(inject)) {
             p.push(...this.getSimConfig(inject.scheme).map(it => it.getValue({ newInstanceCarrier: newInstanceCarrier })));
           }
           return p;
@@ -358,42 +398,80 @@ export class SimstanceManager implements Runnable<void, Map<ConstructorType<any>
         }
 
         if (!obj) {
-          const findLastSim = inject.symbol ? this.findLastSim(inject.symbol) : this.findLastSim({ scheme: inject.scheme, type: inject.type });
-          try {
-            obj = findLastSim
-              ? this.resolve<any>({
-                  targetKey: findLastSim?.type.targetKeyType ?? token,
-                  newInstanceCarrier: newInstanceCarrier
-                })
-              : this.resolve<any>({ targetKey: token, newInstanceCarrier: newInstanceCarrier });
-          } catch (e) {
-            // Inject optional 처리
-            if (inject.optional) {
-              return undefined;
-            } else {
-              throw e;
+          // [아키텍트님의 정석] 주입 3대 전략 (Factory / Symbol / Type)
+          if (isTargetFactory(inject)) {
+            // Choice 3: 순수 Factory 전략
+            obj = inject.factory({
+              instance: undefined,
+              methodName: String(targetKey),
+              parameter: injections,
+              application: this.simpleApplication
+            });
+          } else {
+            // Choice 1 & 2: Symbol 또는 Type/Scheme 전략
+            let findLastSim;
+            if (isTargetSymbol(inject)) {
+              findLastSim = this.findLastSim(inject.symbol);
+            } else if (isTargetType(inject) || isTargetScheme(inject)) {
+              findLastSim = this.findLastSim(inject);
+            }
+            try {
+              obj = findLastSim
+                ? this.resolve<any>({
+                    targetKey: findLastSim?.type.targetKeyType ?? token,
+                    newInstanceCarrier: newInstanceCarrier
+                  })
+                : this.resolve<any>({ targetKey: token, newInstanceCarrier: newInstanceCarrier });
+
+              // Augmentation: 찾은 객체를 팩토리를 통해 가공
+              if (inject.factory && obj) {
+                if (typeof inject.factory === 'function') {
+                  obj = inject.factory(
+                    {
+                      instance: undefined,
+                      methodName: String(targetKey),
+                      parameter: injections,
+                      application: this.simpleApplication
+                    },
+                    obj
+                  );
+                }
+              }
+            } catch (e) {
+              // Inject optional 처리
+              if (inject.optional) {
+                return undefined;
+              } else {
+                throw e;
+              }
             }
           }
         }
 
-        if (inject.createProxy && obj) {
-          if (inject.createProxy.param) {
-            obj = new Proxy(obj, new inject.createProxy.type(...inject.createProxy.param));
-          } else {
-            obj = new Proxy(obj, new inject.createProxy.type());
-          }
-        }
-
         if (inject.proxy && obj) {
-          const handler = this.getOrNewSim({ target: inject.proxy });
-          if (handler) {
-            obj = new Proxy(obj, handler);
+          // [아키텍트님의 정석] 통합 프록시 전략 (클래스 또는 팩토리 함수)
+          if (ValidUtils.isConstructor(inject.proxy)) {
+            // Choice A: 클래스 프록시
+            const handler = getSim(inject.proxy) ? this.getOrNewSim({ target: inject.proxy as ConstructorType<any> }) : new (inject.proxy as any)();
+            if (handler) {
+              obj = new Proxy(obj, handler);
+            }
+          } else if (typeof inject.proxy === 'function') {
+            // Choice B: 즉석 팩토리 프록시
+            const handler = inject.proxy({ application: this.simpleApplication, instance: obj });
+            if (handler) {
+              obj = new Proxy(obj, handler);
+            }
           }
         }
         return obj;
       } else if (token) {
-        // TODO: 왜 other에서 가져오는걸까?  -> 와부에서 전달해주는걸 먼저 처리 해주기위해 추측
-        // console.log('oooooooooooooooo', token, otherStorage)
+        for (const f of firstCheckMaker ?? []) {
+          const firstCheckObj = f({ target, targetKey }, token, idx, saveInject);
+          if (undefined !== firstCheckObj) {
+            return firstCheckObj;
+          }
+        }
         return otherStorage?.get(token) ?? this.resolve<any>({ targetKey: token, newInstanceCarrier });
       }
       return undefined;

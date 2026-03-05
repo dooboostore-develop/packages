@@ -60,14 +60,14 @@ export namespace ValidUtils {
   return data == null || undefined === data;
 }
 
-  export const isConstructor = (obj: ConstructorType<any> | ((e: any) => void)): obj is ConstructorType<any> => {
+  export const isConstructor = (obj: ConstructorType<any> | Function | ((e: any) => void)): obj is ConstructorType<any> => {
     // 함수이면서 prototype 속성이 있고 prototype이 객체인지 확인
     return typeof obj === 'function'
       && obj.prototype !== undefined
       && obj.prototype.constructor === obj
       // && Object.getOwnPropertyNames(obj.prototype).length > 1; // constructor 외에 다른 속성이 있는지 확인
   }
-  export const isFunction = (obj: ConstructorType<any> | ((e: any) => void)): obj is ((e: any) => void) => {
+  export const isFunction = (obj: ConstructorType<any> | Function | ((e: any) => void)): obj is ((e: any) => void) => {
     return typeof obj === 'function' && !isConstructor(obj);
   }
   export const isNullish = <T = any>(data: T | null | undefined): data is null | undefined => {

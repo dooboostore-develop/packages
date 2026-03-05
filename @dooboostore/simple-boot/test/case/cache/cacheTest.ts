@@ -6,7 +6,7 @@ import { SimpleApplication } from '@dooboostore/simple-boot/SimpleApplication';
 import { SimOption } from '@dooboostore/simple-boot/SimOption';
 import { ConstructorType } from '@dooboostore/core/types';
 import { MemoryStorage } from '@dooboostore/core/storage/MemoryStorage';
-import { Promises } from '@dooboostore/core/promise';
+import { Promises } from '@dooboostore/core/promise/Promises';
 import { CacheManager } from '@dooboostore/simple-boot/cache/CacheManager';
 import { OnSimCreate } from '@dooboostore/simple-boot/lifecycle/OnSimCreate';
 

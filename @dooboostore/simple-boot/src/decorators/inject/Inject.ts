@@ -1,7 +1,7 @@
 import { ConstructorType, MethodKeys } from '@dooboostore/core/types';
-import { MethodParameter } from '../../types/Types';
 import { ReflectUtils } from '@dooboostore/core/reflect/ReflectUtils';
 import { ExceptionHandlerSituationType } from '../exception/ExceptionDecorator';
+import { SimpleApplication } from '../../SimpleApplication';
 
 export enum InjectSituationType {
   INDEX = 'SIMPLE_BOOT_CORE://Inject/INDEX'
@@ -43,19 +43,51 @@ export class SituationTypeContainers {
   }
 }
 
-export type InjectConfig<T = any> = {
-  scheme?: string;
-  symbol?: Symbol;
-  type?: ConstructorType<T>;
-  // type?: T;
-  returnFactory?: ((caller: { instance: any; methodName: string; parameter: any[] }, injectInstance: T) => any) | MethodKeys<T>;
-  // returnValueAutoRunnableOrMethodName?: keyof T | boolean;
+// [아키텍트님의 정석] 주입 공통 옵션
+type InjectOptions = {
   situationType?: SituationType;
-  argument?: any;
-  createProxy?: { type: ConstructorType<ProxyHandler<any>>; param?: any[] };
-  proxy?: ConstructorType<ProxyHandler<any>>;
+  // argument?: any; // 트랜젝션떄문에 사용했는데 어떻게 해야될지 나중에 다시 생각..
+  proxy?: ConstructorType<ProxyHandler<any>> | ((caller: { application: SimpleApplication; instance: any }) => ProxyHandler<any>);
   optional?: boolean;
-  disabled?: boolean;
+};
+
+// [아키텍트님의 정석] 3대 주입 전략
+export type InjectBySymbol = {
+  symbol: Symbol;
+  factory?: (caller: { instance?: any; methodName?: string | symbol; parameter: any[]; application: SimpleApplication }, injectInstance?: any) => any;
+};
+
+export type InjectByType<T> = {
+  type?: ConstructorType<T>;
+  scheme?: string;
+  factory?: (caller: { instance?: any; methodName?: string | symbol; parameter: any[]; application: SimpleApplication }, injectInstance?: T) => any;
+};
+
+export type InjectByFactory<T> = {
+  factory: (caller: { instance?: any; methodName?: string | symbol; parameter: any[]; application: SimpleApplication }) => T;
+};
+
+export type InjectConfig<T = any> = InjectOptions & (InjectBySymbol | InjectByType<T> | InjectByFactory<T>);
+
+// [아키텍트님의 정석] Type Guards for InjectConfig (High Precision)
+export const isTargetSymbol = (config: InjectConfig): config is InjectOptions & InjectBySymbol => {
+  return 'symbol' in config && config.symbol !== undefined;
+};
+
+export const isTargetType = (config: InjectConfig): config is InjectOptions & { type: ConstructorType<any> } & InjectByType<any> => {
+  return 'type' in config && config.type !== undefined;
+};
+
+export const isTargetScheme = (config: InjectConfig): config is InjectOptions & { scheme: string } & InjectByType<any> => {
+  return 'scheme' in config && config.scheme !== undefined;
+};
+
+export const isTargetFactory = (config: InjectConfig): config is InjectOptions & InjectByFactory<any> => {
+  return 'factory' in config && typeof config.factory === 'function' && !('symbol' in config) && !('type' in config) && !('scheme' in config);
+};
+
+export const isTargetNone = (config: InjectConfig): boolean => {
+  return !('symbol' in config) && !('type' in config) && !('scheme' in config) && !isTargetFactory(config);
 };
 
 export type SaveInjectConfig = {
@@ -88,10 +120,10 @@ export function Inject(target: Object, propertyKey: string | symbol | undefined,
 export function Inject<T = any>(config: InjectConfig<T>): ParameterDecorator;
 export function Inject<T = any>(configOrTarget: Object | InjectConfig<T>, propertyKey?: string | symbol | undefined, parameterIndex?: number): void | ParameterDecorator {
   if (propertyKey && parameterIndex !== undefined) {
-    injectProcess({}, configOrTarget, propertyKey, parameterIndex);
+    injectProcess({} as any, configOrTarget, propertyKey, parameterIndex);
   } else {
     return (target: Object, propertyKey: string | symbol | undefined, parameterIndex: number) => {
-      injectProcess(configOrTarget, target, propertyKey, parameterIndex);
+      injectProcess(configOrTarget as InjectConfig, target, propertyKey, parameterIndex);
     };
   }
 }
