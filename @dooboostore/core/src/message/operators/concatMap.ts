@@ -10,9 +10,7 @@ import { Observable, OperatorFunction } from '../Observable';
  * item emitted by the source Observable and concatenating the Observables obtained from
  * this transformation.
  */
-export function concatMap<T, R>(
-  project: (value: T, index: number) => Observable<R>
-): OperatorFunction<T, R> {
+export function concatMap<T, R>(project: (value: T, index: number) => Observable<R>): OperatorFunction<T, R> {
   return (source: Observable<T, any>): Observable<R, any> => {
     return new Observable<R>(subscriber => {
       let index = 0;
@@ -34,19 +32,27 @@ export function concatMap<T, R>(
         const next = buffer.shift()!;
         try {
           const innerObservable = project(next.value, next.index);
-          activeInnerSubscription = innerObservable.subscribe({
-            next: (innerValue) => {
+          let isInnerComplete = false;
+
+          const sub = innerObservable.subscribe({
+            next: innerValue => {
               subscriber.next(innerValue);
             },
-            error: (err) => {
+            error: err => {
+              activeInnerSubscription = null;
               subscriber.error(err);
             },
             complete: () => {
+              isInnerComplete = true;
               activeInnerSubscription = null;
               subscribeToNext(); // Process next item in buffer
               checkForComplete();
             }
           });
+
+          if (!isInnerComplete) {
+            activeInnerSubscription = sub;
+          }
         } catch (err) {
           activeInnerSubscription = null;
           subscriber.error(err);
@@ -54,11 +60,11 @@ export function concatMap<T, R>(
       };
 
       const outerSubscription = source.subscribe({
-        next: (value) => {
+        next: value => {
           buffer.push({ value, index: index++ });
           subscribeToNext();
         },
-        error: (err) => {
+        error: err => {
           subscriber.error(err);
         },
         complete: () => {

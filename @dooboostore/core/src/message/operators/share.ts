@@ -1,5 +1,6 @@
 import { Observable, OperatorFunction } from '../Observable';
 import { Subject } from '../Subject';
+import { Subscription } from '../Subscription';
 
 /**
  * Returns a new Observable that multicasts (shares) the original Observable. As long as there is
@@ -11,7 +12,7 @@ import { Subject } from '../Subject';
 export function share<T>(): OperatorFunction<T, T> {
   return (source: Observable<T, any>): Observable<T, any> => {
     let subject: Subject<T> | null = null;
-    let sourceSubscription: any = null;
+    let sourceSubscription: Subscription | null = null;
     let refCount = 0;
     let hasCompleted = false;
     let hasErrored = false;
@@ -25,6 +26,7 @@ export function share<T>(): OperatorFunction<T, T> {
 
     return new Observable<T>(subscriber => {
       refCount++;
+      let isFirst = false;
 
       // 이미 완료되었거나 에러가 발생한 경우, 새로운 구독 시작
       if (!subject || hasCompleted || hasErrored) {
@@ -34,8 +36,18 @@ export function share<T>(): OperatorFunction<T, T> {
         subject = new Subject<T>();
         hasCompleted = false;
         hasErrored = false;
+        isFirst = true;
+      }
 
-        sourceSubscription = source.subscribe({
+      // 구독을 먼저 해야 동기적인 방출을 잡을 수 있음.
+      const subscription = subject.subscribe({
+        next: value => subscriber.next(value),
+        error: err => subscriber.error(err),
+        complete: () => subscriber.complete()
+      });
+
+      if (isFirst) {
+        const sub = source.subscribe({
           next: value => {
             if (subject) {
               subject.next(value);
@@ -64,13 +76,14 @@ export function share<T>(): OperatorFunction<T, T> {
             }
           }
         });
-      }
 
-      const subscription = subject.subscribe({
-        next: value => subscriber.next(value),
-        error: err => subscriber.error(err),
-        complete: () => subscriber.complete()
-      });
+        // 동기적으로 완료/에러되어 이미 reset()이 호출된 경우
+        if (!subject) {
+          sub.unsubscribe();
+        } else {
+          sourceSubscription = sub;
+        }
+      }
 
       return () => {
         refCount--;

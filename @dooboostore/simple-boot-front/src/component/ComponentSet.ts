@@ -6,7 +6,6 @@ export class ComponentSet<T = any> extends DomRenderComponentSet<T> {
    if (component) {
      const styles = component?.styles ?? [];
      const template = component?.template ?? '';
-     // @ts-ignore
      super(data, {template, styles});
    } else {
      super(data, {});

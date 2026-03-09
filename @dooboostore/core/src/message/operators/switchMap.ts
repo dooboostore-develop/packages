@@ -10,9 +10,7 @@ import { Observable, OperatorFunction } from '../Observable';
  * item emitted by the source Observable and merging the results of the Observables obtained
  * from this transformation.
  */
-export function switchMap<T, R>(
-  project: (value: T, index: number) => Observable<R>
-): OperatorFunction<T, R> {
+export function switchMap<T, R>(project: (value: T, index: number) => Observable<R>): OperatorFunction<T, R> {
   return (source: Observable<T, any>): Observable<R, any> => {
     return new Observable<R>(subscriber => {
       let index = 0;
@@ -27,7 +25,7 @@ export function switchMap<T, R>(
       };
 
       const outerSubscription = source.subscribe({
-        next: (value) => {
+        next: value => {
           // Cancel previous inner subscription
           if (innerSubscription) {
             innerSubscription.unsubscribe();
@@ -36,23 +34,34 @@ export function switchMap<T, R>(
 
           try {
             const innerObservable = project(value, index++);
-            innerSubscription = innerObservable.subscribe({
-              next: (innerValue) => {
+            let isInnerComplete = false;
+            let currentInnerSub: any = null;
+
+            const sub = innerObservable.subscribe({
+              next: innerValue => {
                 subscriber.next(innerValue);
               },
-              error: (err) => {
+              error: err => {
                 subscriber.error(err);
               },
               complete: () => {
-                innerSubscription = null;
+                isInnerComplete = true;
+                if (innerSubscription === currentInnerSub) {
+                  innerSubscription = null;
+                }
                 checkForComplete();
               }
             });
+
+            if (!isInnerComplete) {
+              currentInnerSub = sub;
+              innerSubscription = sub;
+            }
           } catch (err) {
             subscriber.error(err);
           }
         },
-        error: (err) => {
+        error: err => {
           subscriber.error(err);
         },
         complete: () => {

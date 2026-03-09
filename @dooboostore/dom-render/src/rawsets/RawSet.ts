@@ -1345,9 +1345,10 @@ export class RawSet {
     let targetObj = obj;
     if (set) {
       targetObj = set.obj;
-      set.setTemplateStyle(await RawSet.fetchTemplateStyle(set, targetObj));
-      const style = RawSet.generateStyleTransform(set.styles ?? [], rawSet.uuid, true);
-      targetElement.innerHTML = style + (set.template ?? '');
+      const templateStringSet = await RawSet.fetchTemplateStyle(set, targetObj);
+      set.setTemplateStyle(templateStringSet);
+      const style = RawSet.generateStyleTransform(templateStringSet.styles ?? [], rawSet.uuid, true);
+      targetElement.innerHTML = style + (templateStringSet.template ?? '');
     } else {
       targetObj = ObjectUtils.Script.evaluateReturn(ObjectUtils.Path.toOptionalChainPath(drThis), obj);
     }
@@ -1399,8 +1400,8 @@ export class RawSet {
     render = Object.freeze(render);
 
     // dr-on-create data onCreateRender
-    const onCreateDataScript = `return {rootParent: this, render: this.__render}`;
-    const onCreateDataParam = ObjectUtils.Script.evaluate<OnCreateRenderDataParams>(onCreateDataScript, Object.assign(obj, { __render: render }));
+    const onCreateDataScript = `{rootParent: this, render: this.__render}`;
+    const onCreateDataParam = ObjectUtils.Script.evaluateReturn<OnCreateRenderDataParams>(onCreateDataScript, Object.assign(obj, { __render: render }));
     if (isOnCreateRenderData(targetObj)) {
       targetObj?.onCreateRenderData(onCreateDataParam as OnCreateRenderDataParams);
     }

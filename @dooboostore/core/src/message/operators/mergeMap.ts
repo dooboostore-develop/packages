@@ -45,7 +45,10 @@ export function mergeMap<T, R>(project: (value: T, index: number) => Observable<
                   })
                 : projected;
 
-            const innerSubscription = innerObservable.subscribe({
+            let isInnerComplete = false;
+            let innerSubscription: any = null;
+
+            const sub = innerObservable.subscribe({
               next: innerValue => {
                 subscriber.next(innerValue);
               },
@@ -55,15 +58,21 @@ export function mergeMap<T, R>(project: (value: T, index: number) => Observable<
               },
               complete: () => {
                 activeCount--;
-                const idx = innerSubscriptions.indexOf(innerSubscription);
-                if (idx >= 0) {
-                  innerSubscriptions.splice(idx, 1);
+                isInnerComplete = true;
+                if (innerSubscription) {
+                  const idx = innerSubscriptions.indexOf(innerSubscription);
+                  if (idx >= 0) {
+                    innerSubscriptions.splice(idx, 1);
+                  }
                 }
                 checkComplete();
               }
             });
 
-            innerSubscriptions.push(innerSubscription);
+            if (!isInnerComplete) {
+              innerSubscription = sub;
+              innerSubscriptions.push(innerSubscription);
+            }
           } catch (err) {
             activeCount--;
             subscriber.error(err);

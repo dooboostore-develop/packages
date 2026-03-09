@@ -9,32 +9,37 @@ import { Observable, OperatorFunction } from '../Observable';
  * @return An Observable that originates from either the source or the Observable returned by the
  * catch `selector` function.
  */
-export function catchError<T, R>(
-  selector: (err: any, caught: Observable<T>) => Observable<R>
-): OperatorFunction<T, T | R> {
+export function catchError<T, R>(selector: (err: any, caught: Observable<T>) => Observable<R>): OperatorFunction<T, T | R> {
   return (source: Observable<T, any>): Observable<T | R, any> => {
     return new Observable<T | R>(subscriber => {
       let subscription: any;
 
       const subscribeToSource = () => {
         subscription = source.subscribe({
-          next: (value) => {
+          next: value => {
             subscriber.next(value);
           },
-          error: (err) => {
+          error: err => {
             try {
               const result = selector(err, source);
-              subscription = result.subscribe({
-                next: (value) => {
+              let isInnerComplete = false;
+
+              const sub = result.subscribe({
+                next: value => {
                   subscriber.next(value);
                 },
-                error: (innerErr) => {
+                error: innerErr => {
                   subscriber.error(innerErr);
                 },
                 complete: () => {
+                  isInnerComplete = true;
                   subscriber.complete();
                 }
               });
+
+              if (!isInnerComplete) {
+                subscription = sub;
+              }
             } catch (selectorErr) {
               subscriber.error(selectorErr);
             }

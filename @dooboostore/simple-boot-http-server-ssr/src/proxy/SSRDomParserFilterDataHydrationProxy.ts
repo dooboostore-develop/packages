@@ -11,7 +11,7 @@ export class SSRDomParserFilterDataHydrationProxy implements ProxyHandler<any> {
     const value = Reflect.get(target, prop, receiver);
     let current: any = target;
     let simConfig = getSim(current);
-    console.log('SSRDomParserFilterDataHydrationProxy*****', simConfig);
+    // console.log('SSRDomParserFilterDataHydrationProxy*****', simConfig);
     // while (!simConfig && current && typeof current === 'object') {
     //   const origin = current._SimpleBoot_origin ?? current._domRender_origin ?? current._DomRender_origin ?? current.__target__;
     //   if (origin && origin !== current) {
