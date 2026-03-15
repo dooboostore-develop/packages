@@ -1,6 +1,6 @@
-import {Runnable} from "@dooboostore/core/runs/Runnable";
-import {SimpleApplication} from "../../../src/SimpleApplication";
-import {getSim, Inject, Sim} from "../../../src/decorators";
+import { Runnable } from '@dooboostore/core/runs/Runnable';
+import { SimpleApplication } from '../../../src/SimpleApplication';
+import { getSim, Inject, Sim } from '../../../src/decorators';
 
 class TTTProxy implements ProxyHandler<any> {
   constructor(private name: string) {
@@ -9,12 +9,10 @@ class TTTProxy implements ProxyHandler<any> {
   get = (target, property) => {
     console.log('get', target, property);
     return target[property];
-  }
+  };
 }
-@Sim({scheme:'TestTestClassScheme'})
-class TestTestClass {
-
-}
+@Sim({ scheme: 'TestTestClassScheme' })
+class TestTestClass {}
 @Sim
 class TestProxy implements ProxyHandler<any> {
   constructor(private name: TestTestClass) {
@@ -23,34 +21,37 @@ class TestProxy implements ProxyHandler<any> {
   get = (target, property) => {
     console.log('get', target, property);
     return target[property];
-  }
+  };
 }
 
 @Sim({
-  scheme: 'zzzzzz',
+  scheme: 'zzzzzz'
   // proxy: TestProxy
 })
 class Test {
   constructor() {
-    console.log('tt')
+    console.log('tt');
   }
-
 }
 
 @Sim
 class TestInject {
-
   name = Math.random();
-  constructor(@Inject({type: Test, factory: (caller, zz)=> {
-    return 'zzzzzzz';
-    }}) tt: TestTestClass) {
+  constructor(
+    @Inject({
+      type: Test,
+      factory: caller => {
+        return 'zzzzzzz';
+      }
+    })
+    tt: TestTestClass
+  ) {
     console.log('vvvvvvvvvvv', tt);
   }
   // constructor(@Inject({type: TestTestClass, proxy:TestProxy}) tt: TestTestClass) {
   //   const tc = getSim(tt)
   //   console.log('vvvvvvvvvvv', tt, tc);
   // }
-
 }
 
 export default () => {
@@ -66,8 +67,6 @@ export default () => {
   // const ctt = getSim(ttt);
   // console.log('cccc', c,ctt);
 
-
   const testInject = simpleApplication.sim(TestInject);
   console.log('testInject', testInject);
-
-}
+};

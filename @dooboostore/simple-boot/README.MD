@@ -23,7 +23,7 @@ A powerful and flexible framework for backend and service development, providing
 ## Quick Start
 
 ```bash
-npm install @dooboostore/simple-boot my-project
+npm install @dooboostore/simple-boot
 ```
 
 ## Learn More

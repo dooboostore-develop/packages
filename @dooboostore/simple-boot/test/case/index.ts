@@ -5,5 +5,6 @@
 
 import 'reflect-metadata';
 import test from './inject';
+import './intent/intent.test';
 
-test();
+// namespace InjectSituationType {

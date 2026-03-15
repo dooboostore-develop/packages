@@ -3,7 +3,7 @@ import { WebSocketEndPoint, WebSocketSet } from '../endpoints/WebSocketEndPoint'
 import { RawData, WebSocket } from 'ws';
 import { IntentManager } from '@dooboostore/simple-boot/intent/IntentManager';
 import { RouterManager } from '@dooboostore/simple-boot/route/RouterManager';
-import { Intent, PublishType } from '@dooboostore/simple-boot/intent/Intent';
+import { Intent } from '@dooboostore/simple-boot/intent/Intent';
 import { ReflectUtils } from '@dooboostore/core/reflect/ReflectUtils';
 import { RandomUtils } from '@dooboostore/core/random/RandomUtils';
 import { Subject } from '@dooboostore/core/message/Subject';
@@ -627,7 +627,6 @@ export class WebSocketManager implements WebSocketEndPoint {
       }
 
       const intent = new Intent(clientTopics.target);
-      intent.publishType = PublishType.INLINE_DATA_PARAMETERS;
       const webSocketRequest: WebSocketRequest = {
         webSocketSet: wsSet,
         uuid: clientTopics.uuid,

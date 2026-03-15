@@ -1,6 +1,6 @@
 import { SimstanceManager } from './simstance/SimstanceManager';
 import { SimOption } from './SimOption';
-import { IntentManager, isRouterPublishType, RouterPublishType } from './intent/IntentManager';
+import { IntentManager, isRouterPublishType, PublishData, RouterPublishType } from './intent/IntentManager';
 import { RouterManager, RoutingOption } from './route/RouterManager';
 import { Intent } from './intent/Intent';
 import { ConstructorType, GenericClassDecorator } from '@dooboostore/core/types';
@@ -20,6 +20,7 @@ export class SimpleApplication {
   // constructor(rootRouter?: ConstructorType<Object> | Function);
   // constructor(rootRouter?: ConstructorType<Object> | Function, option?: SimOption);
   // constructor(rootRouter?: (ConstructorType<Object> | Function) | SimOption, option = new SimOption()) {
+  // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
   constructor(public option: SimOption = new SimOption()) {
     // if (option.rootRouter instanceof SimOption) {
     //   option = rootRouter;
@@ -40,19 +41,19 @@ export class SimpleApplication {
     containers.add(this);
   }
 
-  public getSimstanceManager() {
+  public getSimstanceManager(): SimstanceManager {
     return this.simstanceManager;
   }
 
-  public getIntentManager() {
+  public getIntentManager(): IntentManager {
     return this.intentManager;
   }
 
-  public getRouterManager() {
+  public getRouterManager(): RouterManager {
     return this.routerManager;
   }
 
-  public run(otherInstanceSim?: Map<ConstructorType<any> | Function | SimConfig | Symbol, any>) {
+  public run(otherInstanceSim?: Map<ConstructorType<any> | Function | SimConfig | Symbol, any>): this {
     otherInstanceSim ??= new Map<ConstructorType<any> | Function | SimConfig | Symbol, any>();
     otherInstanceSim.set(SimpleApplication, this);
     this.simstanceManager.run(otherInstanceSim);
@@ -60,7 +61,7 @@ export class SimpleApplication {
     // return this.simstanceManager;
   }
 
-  public simAtomic<T>(type: ConstructorType<T> | Function | Symbol) {
+  public simAtomic<T>(type: ConstructorType<T> | Function | Symbol): SimAtomic<T> | undefined {
     if (typeof type === 'symbol') {
       return this.simstanceManager.findFirstSim(type);
     } else if (typeof type === 'function') {
@@ -68,7 +69,7 @@ export class SimpleApplication {
       // return new SimAtomic<T>(type, this.simstanceManager);
     }
   }
-  public simAtomics<T>(type: ConstructorType<T> | Function | Symbol) {
+  public simAtomics<T>(type: ConstructorType<T> | Function | Symbol): SimAtomic<T>[] {
     if (typeof type === 'symbol') {
       return this.simstanceManager.findSims(type) ?? [];
     } else if (typeof type === 'function') {
@@ -78,7 +79,7 @@ export class SimpleApplication {
     }
   }
 
-  public getInstance<T>(type: ConstructorType<T>) {
+  public getInstance<T>(type: ConstructorType<T>): T {
     const i = this.sim<T>(type);
     if (i) {
       return i;
@@ -103,17 +104,8 @@ export class SimpleApplication {
     }
   }
 
-  public publishIntent(i: string, data?: any): Promise<any[]>;
-  public publishIntent(i: RouterPublishType): Promise<any[]>;
-  public publishIntent(i: Intent): Promise<any[]>;
-  public publishIntent(i: Intent | string | RouterPublishType, data?: any): Promise<any[]> {
-    if (i instanceof Intent) {
-      return this.intentManager.publish(i);
-    } else if (isRouterPublishType(i)) {
-      return this.intentManager.publish(i, data);
-    } else {
-      return this.intentManager.publish(i, data);
-    }
+  public publishIntent(i: PublishData, data?: any): Promise<any[]> {
+    return this.intentManager.publish(i, data);
   }
 
   public routing<R = SimAtomic, M = any>(i: string, option?: RoutingOption): Promise<RouterModule<R, M>>;

@@ -22,7 +22,7 @@ A lightweight and powerful HTTP web server framework for Node.js, built on `@doo
 -   **WebSocket Binary File Transfer**: Send/receive files inside regular message payloads (JSON + binary framing).
 -   **WebSocket Auto Reconnect**: Automatic reconnect and re-subscribe with configurable retry.
 
-## Quick Star``t
+## Quick Start
 
 ```bash
 npx @dooboostore/create-simple-boot-http-server my-server

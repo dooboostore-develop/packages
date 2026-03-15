@@ -1,30 +1,37 @@
 import { Expression } from '@dooboostore/core/expression/Expression';
 
-export enum PublishType {
-  DATA_PARAMETERS = 'DATA_PARAMETERS',
-  INLINE_DATA_PARAMETERS = 'INLINE_DATA_PARAMETERS',
-}
-
 /* uri struct
     scheme uri example: mymodule://asd/asd/b?a=545&aa=33&wow=wow
     global uri example: ://asd/asd/b?a=545&aa=33&wow=wow
     route uri example: Router(/users/aa/ffw)://asd/asd/b?a=545&aa=33&wow=wow
     Symbol.for uri example: Symbol.for(zzz)://asd/asd/b?a=545&aa=33&wow=wow
     <스킴>://<사용자이름>:<비밀번호>@<호스트>:<포트>/<경로>?<질의>#<프레그먼트>
+
+    URL {origin: 'https://www.google.com', protocol: 'https:', username: '', password: '', host: 'www.google.com', …}
+    host : "www.google.com"
+    hostname : "www.google.com"
+    href : "https://www.google.com/search?sca_esv=873f891b9c737763&sxsrf=ANbL-n4MYzsxgnVWYQYX_HFn_SDiF50gng:1773588779997&udm=2&fbs=ADc_l-bD_nyrjATWBKup7flJ4rea5XFXsPHwMjGsTekJ1HCohBAQ3Hh19DqzlO7wr7YUgTf11rdGODep1hjYV7VngF90iRfoKFoNV193gunAY5doENCEzhzHTAwBIK7uA_u7vWEPlSr2SNmvolDNY_BBTeC5a_VNbQUhGitQNtnOX1ZEZVe5iCML48JohpujnTYUreb8T0DRU1U5y-DNg1BBVMghmIfI7w&q=uri&sa=X&ved=2ahUKEwjlhdaJnaKTAxX-dPUHHW2sK6oQtKgLegQIHRAB&biw=1682&bih=997&dpr=1#sv=CAMSXhoyKhBlLXVRQWVwTzMwWVFrcVdNMg51UUFlcE8zMFlRa3FXTToOcE8tdnNsZTU3a1N6b00gBCokCg5JMnQyRUVQV3JwaTVOTRIQZS11UUFlcE8zMFlRa3FXTRgAMAEYByDSjNDNATACSggQAhgCIAIoAg"
+    origin : "https://www.google.com"
+    pathname : "/search"
+    protocol : "https:"
+    search : "?sca_esv=873f891b9c737763&sxsrf=ANbL-n4MYzsxgnVWYQYX_HFn_SDiF50gng:1773588779997&udm=2&fbs=ADc_l-bD_nyrjATWBKup7flJ4rea5XFXsPHwMjGsTekJ1HCohBAQ3Hh19DqzlO7wr7YUgTf11rdGODep1hjYV7VngF90iRfoKFoNV193gunAY5doENCEzhzHTAwBIK7uA_u7vWEPlSr2SNmvolDNY_BBTeC5a_VNbQUhGitQNtnOX1ZEZVe5iCML48JohpujnTYUreb8T0DRU1U5y-DNg1BBVMghmIfI7w&q=uri&sa=X&ved=2ahUKEwjlhdaJnaKTAxX-dPUHHW2sK6oQtKgLegQIHRAB&biw=1682&bih=997&dpr=1"
+    searchParams : URLSearchParams {size: 10}
 */
 export class Intent<T = any, E = any> {
-  public publishType?: PublishType;
   public sessionData = new Map<string, any>();
 
-  constructor(public uri: string | { symbol: Symbol | Symbol[], uri: `/${string}` }, public data?: T, public event?: E) {
-
+  constructor(
+    public uri: string | { symbol: Symbol | Symbol[]; uri: `/${string}` },
+    public data?: T,
+    public event?: E
+  ) {
     if (typeof uri === 'string') {
       const match = uri.match(/^Symbol\.for\((.+)\):\/(.*)$/);
       if (match) {
         const symbol = Symbol.for(match[1] as string);
         this.uri = {
           symbol: symbol,
-          uri: match[2] as `/${string}`,
+          uri: match[2] as `/${string}`
         };
       }
     }
@@ -32,8 +39,8 @@ export class Intent<T = any, E = any> {
 
   get symbols() {
     if (typeof this.uri === 'object') {
-        // ensure symbol is always an array
-        return Array.isArray(this.uri.symbol) ? this.uri.symbol : [this.uri.symbol];
+      // ensure symbol is always an array
+      return Array.isArray(this.uri.symbol) ? this.uri.symbol : [this.uri.symbol];
     }
     return undefined;
   }
@@ -51,11 +58,11 @@ export class Intent<T = any, E = any> {
   }
 
   get paths() {
-    return (this.pathname.split('/') ?? []);
+    return this.pathname.split('/') ?? [];
   }
 
   get fullPath() {
-    const uri = typeof this.uri === 'string' ? this.uri : this.uri.uri
+    const uri = typeof this.uri === 'string' ? this.uri : this.uri.uri;
     const paths = uri.split('://');
     return paths[paths.length >= 2 ? 1 : 0] ?? '';
   }
@@ -71,8 +78,7 @@ export class Intent<T = any, E = any> {
     return paths[1] ?? '';
   }
 
-
-  getQueryParamDecodeURI<T>():T;
+  getQueryParamDecodeURI<T>(): T;
   getQueryParamDecodeURI(key: string): string | string[] | undefined;
   getQueryParamDecodeURI<T>(key?: string): string | string[] | undefined | T {
     const p = this.queryParamsDecodeURI;
@@ -82,16 +88,16 @@ export class Intent<T = any, E = any> {
       return p as T;
     }
   }
-  getQueryParamDecodeURIFirst(key: string): string  | undefined {
+  getQueryParamDecodeURIFirst(key: string): string | undefined {
     const param = this.getQueryParamDecodeURI(key);
     if (Array.isArray(param)) {
       return param[0];
     } else {
       return param;
     }
-  };
+  }
 
-  getQueryParam<T>():T;
+  getQueryParam<T>(): T;
   getQueryParam(key: string): string | string[] | undefined;
   getQueryParam<T>(key?: string): string | string[] | undefined | T {
     const p = this.queryParams;
@@ -101,7 +107,7 @@ export class Intent<T = any, E = any> {
       return p as T;
     }
   }
-  getQueryParamFirst(key: string): string  | undefined {
+  getQueryParamFirst(key: string): string | undefined {
     const param = this.getQueryParam(key);
     if (Array.isArray(param)) {
       return param[0];
@@ -113,7 +119,7 @@ export class Intent<T = any, E = any> {
   get queryParams(): { [key: string]: string | string[] } {
     const param = {} as { [key: string]: string | string[] };
     this.query.split('&')?.forEach(it => {
-      const a = it.split('=')
+      const a = it.split('=');
       if (param[a[0]]) {
         if (Array.isArray(param[a[0]])) {
           (param[a[0]] as string[]).push(a[1]);
@@ -123,11 +129,11 @@ export class Intent<T = any, E = any> {
       } else {
         param[a[0]] = a[1];
       }
-    })
+    });
     return param;
   }
 
-  get queryParamsDecodeURI(): { [key: string]: string| string[] } {
+  get queryParamsDecodeURI(): { [key: string]: string | string[] } {
     const params = this.queryParams;
     for (const key in params) {
       if (params.hasOwnProperty(key)) {
@@ -145,8 +151,6 @@ export class Intent<T = any, E = any> {
   getPathnameData(urlExpression: string) {
     return Expression.Path.pathNameData(this.pathname, urlExpression);
   }
-
-  
 
   get isSymbolScheme(): boolean {
     return this.symbols !== undefined;

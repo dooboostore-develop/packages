@@ -5,7 +5,7 @@ import { SimpleBootHttpServer } from '../SimpleBootHttpServer';
 import { HttpHeaders } from '../codes/HttpHeaders';
 import { Mimes } from '../codes/Mimes';
 import { HttpStatus } from '../codes/HttpStatus';
-import { Intent, PublishType } from '@dooboostore/simple-boot/intent/Intent';
+import { Intent } from '@dooboostore/simple-boot/intent/Intent';
 import { IntentManager } from '@dooboostore/simple-boot/intent/IntentManager';
 import { RouterManager } from '@dooboostore/simple-boot/route/RouterManager';
 import { FileUtils } from '@dooboostore/core-node/file/FileUtils';
@@ -292,7 +292,6 @@ export class TopicProtocolFilter implements Filter {
 
       if (request.type === 'router') {
         const intent = new Intent(request.target);
-        intent.publishType = PublishType.INLINE_DATA_PARAMETERS;
         intent.data = [body, rr];
         const routerModule = await this.routerManager.routing(intent);
         const moduleInstance = routerModule?.getModuleInstance?.();
@@ -312,7 +311,6 @@ export class TopicProtocolFilter implements Filter {
         }
       } else {
         const intent = new Intent(request.target);
-        intent.publishType = PublishType.INLINE_DATA_PARAMETERS;
         intent.data = [body, rr];
         const result = await this.intentManager.publishMeta(intent);
         if (result.target.length <= 0) {

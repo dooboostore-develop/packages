@@ -1,23 +1,21 @@
-import {Filter} from './Filter';
-import {HttpHeaders} from '../codes/HttpHeaders';
-import {Intent, PublishType} from '@dooboostore/simple-boot/intent/Intent';
-import {IntentManager} from '@dooboostore/simple-boot/intent/IntentManager';
-import {Sim} from '@dooboostore/simple-boot/decorators/SimDecorator';
-import {HttpStatus} from '../codes/HttpStatus';
-import {RequestResponse} from '../models/RequestResponse';
-import {SimpleBootHttpServer} from '../SimpleBootHttpServer';
-import {Mimes} from '../codes/Mimes';
-import {NotFoundError} from "../errors/NotFoundError";
+import { Filter } from './Filter';
+import { HttpHeaders } from '../codes/HttpHeaders';
+import { Intent } from '@dooboostore/simple-boot/intent/Intent';
+import { IntentManager } from '@dooboostore/simple-boot/intent/IntentManager';
+import { Sim } from '@dooboostore/simple-boot/decorators/SimDecorator';
+import { HttpStatus } from '../codes/HttpStatus';
+import { RequestResponse } from '../models/RequestResponse';
+import { SimpleBootHttpServer } from '../SimpleBootHttpServer';
+import { Mimes } from '../codes/Mimes';
+import { NotFoundError } from '../errors/NotFoundError';
 
 @Sim
 export class IntentSchemeFilter implements Filter {
-  constructor(private intentManager: IntentManager) {
-  }
+  constructor(private intentManager: IntentManager) {}
 
-  async onInit(app: SimpleBootHttpServer) {
-  }
+  async onInit(app: SimpleBootHttpServer) {}
 
-  async proceedBefore({rr, app}: { rr: RequestResponse, app: SimpleBootHttpServer, carrier: Map<string, any> }) {
+  async proceedBefore({ rr, app }: { rr: RequestResponse; app: SimpleBootHttpServer; carrier: Map<string, any> }) {
     // const rr = rrr;
     const url = rr.reqUrl;
     const contentLength = Number(rr.reqHeader(HttpHeaders.ContentLength.toLowerCase() ?? '0'));
@@ -26,7 +24,6 @@ export class IntentSchemeFilter implements Filter {
     const intentScheme = rr.reqHeader(HttpHeaders.XSimpleBootSsrIntentScheme);
     if (acceptType === Mimes.ApplicationJsonPostSimpleBootSsrIntentScheme && intentScheme) {
       let intent = new Intent(`${intentScheme}:/${url}`);
-      intent.publishType = PublishType.INLINE_DATA_PARAMETERS;
       // console.log('---------1--intent request', intentScheme, url, contentLength, contentType );
       // const responseHeader = {} as any;
       // responseHeader[HttpHeaders.ContentType] = Mimes.ApplicationJson;
@@ -37,26 +34,26 @@ export class IntentSchemeFilter implements Filter {
           intent.data = [await rr.reqBodyMultipartFormDataObject(), rr];
         }
         // console.log('---------2--intent request',intent);
-        const {return:rdatas, target} = await this.intentManager.publishMeta(intent);
-        if(target.length <=0) {
-          throw new NotFoundError({message: 'Not found intent target'});
+        const { return: rdatas, target } = await this.intentManager.publishMeta(intent);
+        if (target.length <= 0) {
+          throw new NotFoundError({ message: 'Not found intent target' });
         }
         const rdata = rdatas[0];
         const wdata = rdata instanceof Promise ? await rdata : rdata;
         rr.resStatusCode(HttpStatus.Ok);
-        rr.resSetHeader(HttpHeaders.ContentType, [Mimes.ApplicationJson])
+        rr.resSetHeader(HttpHeaders.ContentType, [Mimes.ApplicationJson]);
         await rr.resEnd(wdata ? JSON.stringify(wdata) : undefined);
       } else {
         intent.data = rr.reqUrlSearchParamTuples.length > 0 ? [rr.reqUrlSearchParamsObj, rr] : [rr];
-        const {return:rdatas, target} = await this.intentManager.publishMeta(intent);
-        if(target.length <=0) {
-          throw new NotFoundError({message: 'Not found intent target'});
+        const { return: rdatas, target } = await this.intentManager.publishMeta(intent);
+        if (target.length <= 0) {
+          throw new NotFoundError({ message: 'Not found intent target' });
         }
         const rdata = rdatas[0];
         const wdata = rdata instanceof Promise ? await rdata : rdata;
         // const wdata =undefined;
         rr.resStatusCode(HttpStatus.Ok);
-        rr.resSetHeader(HttpHeaders.ContentType, [Mimes.ApplicationJson])
+        rr.resSetHeader(HttpHeaders.ContentType, [Mimes.ApplicationJson]);
         await rr.resEnd(wdata ? JSON.stringify(wdata) : undefined);
       }
       // console.log('---------3--intent request', rr.req.readable, rr.req.readableLength);
@@ -66,8 +63,7 @@ export class IntentSchemeFilter implements Filter {
     }
   }
 
-  async proceedAfter({rr, app}: { rr: RequestResponse, app: SimpleBootHttpServer, carrier: Map<string, any> }) {
+  async proceedAfter({ rr, app }: { rr: RequestResponse; app: SimpleBootHttpServer; carrier: Map<string, any> }) {
     return true;
   }
-
 }

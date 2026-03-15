@@ -35,8 +35,7 @@ pnpm add @dooboostore/dom-editor
 import { DomEditor } from '@dooboostore/dom-editor';
 
 // Create editor instance
-const editor = new DomEditor({
-  container: document.getElementById('editor-container')!,
+const editor = new DomEditor('#editor-container', {
   debug: true,
   enableMobileSupport: true
 });
@@ -52,7 +51,6 @@ console.log(html);
 import { DomEditor, DomEditorOptions } from '@dooboostore/dom-editor';
 
 const options: DomEditorOptions = {
-  container: document.getElementById('editor-container')!,
   initialContent: '<div class="my-element">Hello World</div>',
   debug: false,
   dragDelay: 500, // milliseconds
@@ -65,7 +63,7 @@ const options: DomEditorOptions = {
   `
 };
 
-const editor = new DomEditor(options);
+const editor = new DomEditor(document.getElementById('editor-container')!, options);
 ```
 
 ### HTML Usage (UMD Bundle)
@@ -81,8 +79,7 @@ const editor = new DomEditor(options);
   
   <script src="https://unpkg.com/@dooboostore/dom-editor/dist/umd-bundle/dooboostore-dom-editor.umd.js"></script>
   <script>
-    const editor = new dooboostoreDomEditor.DomEditor({
-      container: document.getElementById('editor-container'),
+    const editor = new dooboostoreDomEditor.DomEditor('#editor-container', {
       debug: true
     });
   </script>
@@ -97,15 +94,13 @@ const editor = new DomEditor(options);
 #### Constructor
 
 ```typescript
-new DomEditor(options: DomEditorOptions)
+new DomEditor(target: string | HTMLElement, options?: DomEditorOptions)
 ```
 
 #### Options
 
 ```typescript
 interface DomEditorOptions {
-  /** Container element where the editor will be mounted */
-  container: HTMLElement;
   /** Initial HTML content to load */
   initialContent?: string;
   /** Enable debug mode */
@@ -200,9 +195,7 @@ interface ElementData {
 ```typescript
 import { DomEditor } from '@dooboostore/dom-editor';
 
-const editor = new DomEditor({
-  container: document.getElementById('builder')!
-});
+const editor = new DomEditor('#builder');
 
 // Add event listener for content changes
 document.getElementById('export-btn')?.addEventListener('click', () => {
@@ -216,8 +209,7 @@ document.getElementById('export-btn')?.addEventListener('click', () => {
 ```typescript
 import { DomEditor } from '@dooboostore/dom-editor';
 
-const formBuilder = new DomEditor({
-  container: document.getElementById('form-builder')!,
+const formBuilder = new DomEditor('#form-builder', {
   initialContent: `
     <form>
       <div class="form-group">
@@ -234,8 +226,7 @@ const formBuilder = new DomEditor({
 ```typescript
 import { DomEditor } from '@dooboostore/dom-editor';
 
-const layoutDesigner = new DomEditor({
-  container: document.getElementById('layout-designer')!,
+const layoutDesigner = new DomEditor('#layout-designer', {
   customStyles: `
     .layout-section {
       min-height: 200px;

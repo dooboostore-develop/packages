@@ -54,13 +54,13 @@ type InjectOptions = {
 // [아키텍트님의 정석] 3대 주입 전략
 export type InjectBySymbol = {
   symbol: Symbol;
-  factory?: (caller: { instance?: any; methodName?: string | symbol; parameter: any[]; application: SimpleApplication }, injectInstance?: any) => any;
+  factory?: (caller: { instance?: any; methodName?: string | symbol; parameter: any[]; application: SimpleApplication; injectInstance?: any }) => any;
 };
 
 export type InjectByType<T> = {
   type?: ConstructorType<T>;
   scheme?: string;
-  factory?: (caller: { instance?: any; methodName?: string | symbol; parameter: any[]; application: SimpleApplication }, injectInstance?: T) => any;
+  factory?: (caller: { instance?: any; methodName?: string | symbol; parameter: any[]; application: SimpleApplication; injectInstance?: T }) => any;
 };
 
 export type InjectByFactory<T> = {

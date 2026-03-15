@@ -40,7 +40,11 @@ async function generateImage() {
   const randomImage = new RandomImage();
   const filePath = path.join(__dirname, 'my-random-image.png');
 
-  await randomImage.generate(200, 200, 'Hello, Node!', filePath);
+  await randomImage.writeFile({
+    path: filePath,
+    size: { w: 200, h: 200 },
+    mimeType: 'image/png'
+  });
 
   console.log(`Image saved to ${filePath}`);
 }
