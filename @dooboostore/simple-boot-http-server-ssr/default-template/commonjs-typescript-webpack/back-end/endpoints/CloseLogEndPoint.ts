@@ -1,8 +1,8 @@
-import { backLogger } from '@back-end/logger';
+import { backLogger } from '@lazycollect-back-end/logger';
 import { EndPoint } from '@dooboostore/simple-boot-http-server/endpoints/EndPoint';
 import { SimpleBootHttpServer } from '@dooboostore/simple-boot-http-server/SimpleBootHttpServer';
 import { RequestResponse } from '@dooboostore/simple-boot-http-server/models/RequestResponse';
-import { HttpHeaders } from '@dooboostore/simple-boot-http-server-ssr/codes/HttpHeaders';
+import { HttpHeaders } from '@dooboostore/simple-boot-http-server/codes/HttpHeaders';
 
 export class CloseLogEndPoint implements EndPoint {
 
@@ -11,7 +11,7 @@ export class CloseLogEndPoint implements EndPoint {
     }
 
     async endPoint(rr: RequestResponse, app: SimpleBootHttpServer) {
-        const startTime = rr.reqSessionGet<number>('startTime');
+        const startTime = await rr.reqSessionGet<number>('startTime');
         let duration = 'unknown';
         if (startTime){
             duration = (Date.now() - startTime) + 'ms';

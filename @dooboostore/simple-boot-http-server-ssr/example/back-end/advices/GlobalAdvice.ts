@@ -1,7 +1,7 @@
 import { ExceptionHandler, ExceptionHandlerSituationType } from '@dooboostore/simple-boot/decorators/exception/ExceptionDecorator';
 import { Inject } from '@dooboostore/simple-boot/decorators/inject/Inject';
 import { RequestResponse } from '@dooboostore/simple-boot-http-server/models/RequestResponse';
-import { backLogger } from '@back-end/logger';
+import { backLogger } from '@lazycollect-back-end/logger';
 import { HttpStatus } from '@dooboostore/simple-boot-http-server/codes/HttpStatus';
 import { HttpHeaders } from '@dooboostore/simple-boot-http-server-ssr/codes/HttpHeaders';
 import { Mimes } from '@dooboostore/simple-boot-http-server-ssr/codes/Mimes';

@@ -28,7 +28,7 @@
 ```typescript
 import { RequestResponse } from '@dooboostore/simple-boot-http-server/models/RequestResponse';
 import { Config } from '@dooboostore/app-system/proxy/SymbolIntentApiServiceProxy';
-import { Layers } from '@src/entities/Layers';
+import { Layers } from '@lazycollect-src/entities/Layers';
 
 // 서비스의 고유 식별자로 사용될 심볼
 export namespace LayerService {
@@ -60,7 +60,7 @@ export interface LayerService {
 **`apps/lazycollect/front/service/FrontLayerService.ts`**
 ```typescript
 import { Sim } from '@dooboostore/simple-boot/decorators/SimDecorator';
-import { LayerService } from '@src/service/LayerService';
+import { LayerService } from '@lazycollect-src/service/LayerService';
 import { Config, SymbolIntentApiServiceProxy } from '@dooboostore/app-system/proxy/SymbolIntentApiServiceProxy';
 
 @Sim({
@@ -86,9 +86,9 @@ export class FrontLayerService implements LayerService {
 **`apps/lazycollect/backend/service/layer/BackLayerService.ts`**
 ```typescript
 import { Sim } from '@dooboostore/simple-boot/decorators/SimDecorator';
-import { LayerService } from '@src/service/LayerService';
-import { DatabaseService } from '@backend/service/database';
-import { SecurityService } from '@backend/service/SecurityService';
+import { LayerService } from '@lazycollect-src/service/LayerService';
+import { DatabaseService } from '@lazycollect-back-end/service/database';
+import { SecurityService } from '@lazycollect-back-end/service/SecurityService';
 // ...
 
 @Sim({ symbol: LayerService.SYMBOL }) // 프론트엔드와 동일한 심볼 사용

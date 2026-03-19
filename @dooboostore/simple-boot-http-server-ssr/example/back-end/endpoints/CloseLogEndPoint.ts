@@ -1,4 +1,4 @@
-import { backLogger } from '@back-end/logger';
+import { backLogger } from '@lazycollect-back-end/logger';
 import { EndPoint } from '@dooboostore/simple-boot-http-server/endpoints/EndPoint';
 import { SimpleBootHttpServer } from '@dooboostore/simple-boot-http-server/SimpleBootHttpServer';
 import { RequestResponse } from '@dooboostore/simple-boot-http-server/models/RequestResponse';

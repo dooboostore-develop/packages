@@ -2,7 +2,7 @@ import { SimFrontOption, UrlType } from '@dooboostore/simple-boot-front/option/S
 import { SimpleBootHttpSSRFactory } from '@dooboostore/simple-boot-http-server-ssr/SimpleBootHttpSSRFactory';
 import { ConstructorType, isDefined } from '@dooboostore/core/types';
 import { SimpleBootFront } from '@dooboostore/simple-boot-front/SimpleBootFront';
-import { IndexRouterComponent } from '@src/pages/index.router.component';
+import { IndexRouterComponent } from '@lazycollect-src/pages/index.router.component';
 import { Observable, Subject, Subscription } from 'rxjs';
 import { AlertService } from '@dooboostore/simple-boot/alert/AlertService';
 import { ApiService } from '@dooboostore/simple-boot/fetch/ApiService';

@@ -1,6 +1,6 @@
 import { Sim } from '@dooboostore/simple-boot/decorators/SimDecorator';
 import { Router } from '@dooboostore/simple-boot/decorators/route/Router';
-import { ApiRrouter } from '@back-end/api/ApiRrouter';
+import { ApiRrouter } from '@lazycollect-back-end/api/ApiRrouter';
 
 @Sim
 @Router({

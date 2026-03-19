@@ -51,7 +51,7 @@ export class FrontAlertFactory<T = any> implements AlertFactory<T> {
 import { Sim } from '@dooboostore/simple-boot/decorators/SimDecorator';
 import { Alert, AlertType } from '@dooboostore/simple-boot/alert';
 import { AlertFactory } from '@dooboostore/simple-boot/alert/AlertFactory';
-import { LoggingService } from '@backend/service/LoggingService'; // 가상의 로깅 서비스
+import { LoggingService } from '@lazycollect-back-end/service/LoggingService'; // 가상의 로깅 서비스
 
 @Sim({symbol: AlertFactory.SYMBOL}) // 동일한 심볼로 등록
 export class BackAlertFactory<T = any> implements AlertFactory<T> {

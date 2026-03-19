@@ -1,6 +1,6 @@
 import { Sim } from '@dooboostore/simple-boot/decorators/SimDecorator';
 import { RequestResponse } from '@dooboostore/simple-boot-http-server/models/RequestResponse';
-import { TalkService } from '@src/service/TalkService';
+import { TalkService } from '@lazycollect-src/service/TalkService';
 
 @Sim({symbol: TalkService.SYMBOL})
 export class BackTalkService implements TalkService {

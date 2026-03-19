@@ -1,15 +1,15 @@
 //
-// import {Rectangle} from "@src/domain/Rectangle";
-// import {Point} from "@src/domain/Point";
-// import {Obj} from "@src/object/obj/Obj";
-// // import {engine} from "@src/index";
-// import {MathUtil} from "@src/math/MathUtil";
-// import {Optional} from "@src/optional/Optional";
+// import {Rectangle} from "@lazycollect-src/domain/Rectangle";
+// import {Point} from "@lazycollect-src/domain/Point";
+// import {Obj} from "@lazycollect-src/object/obj/Obj";
+// // import {engine} from "@lazycollect-src/index";
+// import {MathUtil} from "@lazycollect-src/math/MathUtil";
+// import {Optional} from "@lazycollect-src/optional/Optional";
 // const {range, fromEvent, interval, Observable, of, Subscription, timer} = require('rxjs');
-// import {config} from "@src/config";
-// import {DrawObj} from "@src/object/obj/DrawObj";
-// import {PointVector} from "@src/domain/PointVector";
-// import {Draw} from "@src/draw/Draw";
+// import {config} from "@lazycollect-src/config";
+// import {DrawObj} from "@lazycollect-src/object/obj/DrawObj";
+// import {PointVector} from "@lazycollect-src/domain/PointVector";
+// import {Draw} from "@lazycollect-src/draw/Draw";
 //
 // export class TriangleObj extends DrawObj {
 //

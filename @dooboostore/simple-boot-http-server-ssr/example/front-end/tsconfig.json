@@ -4,9 +4,9 @@
     "outDir": "../dist-front",
     "baseUrl": ".",
     "paths": {
-      "@front-end/*": ["../front-end/*"],
-      "@back-end/*": ["../backend-end/*"],
-      "@src/*": ["../src/*"]
+      "@lazycollect-front-end/*": ["../front-end/*"],
+      "@lazycollect-back-end/*": ["../backend-end/*"],
+      "@lazycollect-src/*": ["../src/*"]
     }
   },
   "exclude": ["node_modules", "dist-front"]

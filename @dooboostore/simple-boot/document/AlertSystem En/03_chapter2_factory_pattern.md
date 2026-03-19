@@ -51,7 +51,7 @@ For example, let's assume a `danger` type alert was requested because a 500 erro
 import { Sim } from '@dooboostore/simple-boot/decorators/SimDecorator';
 import { Alert, AlertType } from '@dooboostore/simple-boot/alert';
 import { AlertFactory } from '@dooboostore/simple-boot/alert/AlertFactory';
-import { LoggingService } from '@backend/service/LoggingService'; // Fictional logging service
+import { LoggingService } from '@lazycollect-back-end/service/LoggingService'; // Fictional logging service
 
 @Sim({symbol: AlertFactory.SYMBOL}) // Register with the same symbol
 export class BackAlertFactory<T = any> implements AlertFactory<T> {

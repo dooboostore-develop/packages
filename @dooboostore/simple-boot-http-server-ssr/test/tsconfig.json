@@ -18,9 +18,9 @@
     "rootDir": ".",
     "baseUrl": ".",
     "paths": {
-      "@src/*": ["src/*"],
-      "@back-end/*": ["back-end/*"],
-      "@front-end/*": ["front-end/*"]
+      "@lazycollect-src/*": ["src/*"],
+      "@lazycollect-back-end/*": ["back-end/*"],
+      "@lazycollect-front-end/*": ["front-end/*"]
     }
   },
   "typeRoots": ["./types", "./node_modules/@types"],

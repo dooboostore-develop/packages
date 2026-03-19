@@ -14,7 +14,7 @@ import { Alert } from '@dooboostore/simple-boot/alert';
 import { AlertService } from '@dooboostore/simple-boot/alert/AlertService';
 import { AlertFactoryConfig } from '@dooboostore/simple-boot/alert/AlertFactoryConfig';
 // Import the component that will handle the actual UI.
-import { DangerAlertComponent } from '@src/component/alert/danger/DangerAlertComponent';
+import { DangerAlertComponent } from '@lazycollect-src/component/alert/danger/DangerAlertComponent';
 
 export class DangerAlert<T = any> extends Alert<T> {
   constructor(alertService?: AlertService<T>, config?: AlertFactoryConfig<T>) {

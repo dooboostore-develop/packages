@@ -1,7 +1,7 @@
 import { Sim } from '@dooboostore/simple-boot/decorators/SimDecorator';
 import { Config, SymbolIntentApiServiceProxy } from '@dooboostore/simple-boot-http-server-ssr/proxy/SymbolIntentApiServiceProxy';
 import { RequestResponse } from '@dooboostore/simple-boot-http-server/models/RequestResponse';
-import { TalkService } from '@src/service/TalkService';
+import { TalkService } from '@lazycollect-src/service/TalkService';
 
 @Sim({
   symbol: TalkService.SYMBOL,

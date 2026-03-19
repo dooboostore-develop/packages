@@ -1,10 +1,9 @@
 import { ExceptionHandler, ExceptionHandlerSituationType } from '@dooboostore/simple-boot/decorators/exception/ExceptionDecorator';
 import { Inject } from '@dooboostore/simple-boot/decorators/inject/Inject';
 import { RequestResponse } from '@dooboostore/simple-boot-http-server/models/RequestResponse';
-import { backLogger } from '@back-end/logger';
 import { HttpStatus } from '@dooboostore/simple-boot-http-server/codes/HttpStatus';
-import { HttpHeaders } from '@dooboostore/simple-boot-http-server-ssr/codes/HttpHeaders';
-import { Mimes } from '@dooboostore/simple-boot-http-server-ssr/codes/Mimes';
+import { HttpHeaders } from '@dooboostore/simple-boot-http-server/codes/HttpHeaders';
+import { Mimes } from '@dooboostore/simple-boot-http-server/codes/Mimes';
 import { HttpError } from '@dooboostore/simple-boot-http-server/errors/HttpError';
 import { InternalServerError } from '@dooboostore/simple-boot-http-server/errors/InternalServerError';
 
@@ -15,7 +14,6 @@ export class GlobalAdvice {
 
     @ExceptionHandler()
     async catch(@Inject({situationType: ExceptionHandlerSituationType.ERROR_OBJECT}) e: any, rr: RequestResponse) {
-        backLogger.error(`GlobalAdvice.catch ${rr.reqUrl}`, e);
         if (rr.resIsDone()) {
             return;
         }

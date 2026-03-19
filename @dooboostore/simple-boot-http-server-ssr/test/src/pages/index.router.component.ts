@@ -4,7 +4,7 @@ import { Component } from '@dooboostore/simple-boot-front/decorators/Component';
 import { IndexRouteComponent } from './index.route.component';
 import { ComponentRouterBase } from '@dooboostore/simple-boot-front/component/ComponentRouterBase';
 import template from './index.router.component.html';
-import ProjectComponent from '@src/component';
+import ProjectComponent from '@lazycollect-src/component';
 import {drComponent} from '@dooboostore/dom-render/components/index';
 
 @Sim

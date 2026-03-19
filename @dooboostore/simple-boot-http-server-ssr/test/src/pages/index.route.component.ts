@@ -7,7 +7,7 @@ import { ComponentBase } from '@dooboostore/dom-render/components/ComponentBase'
 import { Appender } from '@dooboostore/dom-render/operators/Appender';
 import { ApiService } from '@dooboostore/simple-boot/fetch/ApiService';
 import { Inject } from '@dooboostore/simple-boot/decorators/inject/Inject';
-import { TalkService } from '@src/service/TalkService';
+import { TalkService } from '@lazycollect-src/service/TalkService';
 
 @Sim({
   scope: Lifecycle.Transient

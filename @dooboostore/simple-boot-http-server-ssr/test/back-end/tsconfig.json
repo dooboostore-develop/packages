@@ -5,9 +5,9 @@
     "baseUrl": ".",
     "strict": true,
     "paths": {
-      "@back-end/*": ["./*"],
-      "@front-end/*": ["../front-end/*"],
-      "@src/*": ["../src/*"],
+      "@lazycollect-back-end/*": ["./*"],
+      "@lazycollect-front-end/*": ["../front-end/*"],
+      "@lazycollect-src/*": ["../src/*"],
       "@dooboostore/simple-boot": ["../../../../../packages/@dooboostore/simple-boot/src/*"],
       "@dooboostore/simple-boot-http-server": ["../../../../../packages/@dooboostore/simple-boot-http-server/src/*"],
       "@dooboostore/simple-boot-http-server-ssr": ["../../../../../packages/@dooboostore/simple-boot-http-server-ssr/src/*"],

@@ -1,4 +1,4 @@
-import { HelloComponent } from '@src/component/hello/hello.component';
+import { HelloComponent } from '@lazycollect-src/component/hello/hello.component';
 
 export default {
   HelloComponent

@@ -1,7 +1,5 @@
-import { Subject } from './Subject';
-import { Subscription } from './Subscription';
-import { Observer } from './Observer';
-import { CompleteCallBack, ErrorCallBack, ObserverCallBack } from './Subscribable';
+import {Subject} from './Subject';
+import {Subscription} from './Subscription';
 
 export class BehaviorSubject<T, E = any> extends Subject<T, E> {
   private _value: T; // BehaviorSubject always has a current value

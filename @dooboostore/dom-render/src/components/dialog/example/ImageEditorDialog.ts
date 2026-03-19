@@ -2,22 +2,22 @@
 // import template from './imageEditorDialog.html'
 // import styles from './imageEditorDialog.css'
 // import { ComponentBase } from '@dooboostore/app-system/component/ComponentBase';
-// import { AuthStore } from '@src/store/AuthStore';
+// import { AuthStore } from '@lazycollect-src/store/AuthStore';
 // import { OnCreateRender } from '@dooboostore/dom-render/lifecycle/OnCreateRender';
 // import { OnDestroyRender, OnDestroyRenderParams } from '@dooboostore/dom-render/lifecycle/OnDestroyRender';
 // import { Subscription } from '@dooboostore/core/message';
 // import { Inject } from '@dooboostore/simple-boot/decorators/inject/Inject';
-// import { AuthService } from '@src/service/AuthService';
-// import { UserService } from '@src/service/UserService';
-// import { ObjetService } from '@src/service/ObjetService';
-// import { Talks } from '@src/entities/Talks';
-// import { TalkService } from '@src/service/TalkService';
-// import { ItemService } from '@src/service/ItemService';
+// import { AuthService } from '@lazycollect-src/service/AuthService';
+// import { UserService } from '@lazycollect-src/service/UserService';
+// import { ObjetService } from '@lazycollect-src/service/ObjetService';
+// import { Talks } from '@lazycollect-src/entities/Talks';
+// import { TalkService } from '@lazycollect-src/service/TalkService';
+// import { ItemService } from '@lazycollect-src/service/ItemService';
 // import { SimFrontOption } from '@dooboostore/simple-boot-front/option/SimFrontOption';
 // import { DomRenderNoProxy } from '@dooboostore/dom-render/decorators/DomRenderNoProxy';
 // import { Appender } from '@dooboostore/dom-render/operators/Appender';
 // import { ConvertUtils as WebConvertUtils } from '@dooboostore/core-web/convert/ConvertUtils';
-// import { WorldService } from '@src/service/WorldService';
+// import { WorldService } from '@lazycollect-src/service/WorldService';
 // import { ConvertUtils } from '@dooboostore/core/convert/ConvertUtils';
 // import { Router } from '@dooboostore/dom-render/routers/Router';
 //

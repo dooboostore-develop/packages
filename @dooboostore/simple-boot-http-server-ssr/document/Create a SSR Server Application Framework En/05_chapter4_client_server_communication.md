@@ -28,7 +28,7 @@ First, we define the `LayerService` interface that will be shared by the front-e
 ```typescript
 import { RequestResponse } from '@dooboostore/simple-boot-http-server/models/RequestResponse';
 import { Config } from '@dooboostore/app-system/proxy/SymbolIntentApiServiceProxy';
-import { Layers } from '@src/entities/Layers';
+import { Layers } from '@lazycollect-src/entities/Layers';
 
 // A symbol to be used as a unique identifier for the service
 export namespace LayerService {
@@ -60,7 +60,7 @@ On the front-end, we implement the `LayerService` interface and add the `proxy` 
 **`apps/lazycollect/front/service/FrontLayerService.ts`**
 ```typescript
 import { Sim } from '@dooboostore/simple-boot/decorators/SimDecorator';
-import { LayerService } from '@src/service/LayerService';
+import { LayerService } from '@lazycollect-src/service/LayerService';
 import { Config, SymbolIntentApiServiceProxy } from '@dooboostore/app-system/proxy/SymbolIntentApiServiceProxy';
 
 @Sim({
@@ -86,9 +86,9 @@ On the back-end, we implement the actual business logic of the `LayerService` in
 **`apps/lazycollect/backend/service/layer/BackLayerService.ts`**
 ```typescript
 import { Sim } from '@dooboostore/simple-boot/decorators/SimDecorator';
-import { LayerService } from '@src/service/LayerService';
-import { DatabaseService } from '@backend/service/database';
-import { SecurityService } from '@backend/service/SecurityService';
+import { LayerService } from '@lazycollect-src/service/LayerService';
+import { DatabaseService } from '@lazycollect-back-end/service/database';
+import { SecurityService } from '@lazycollect-back-end/service/SecurityService';
 // ...
 
 @Sim({ symbol: LayerService.SYMBOL }) // Use the same symbol as the front-end

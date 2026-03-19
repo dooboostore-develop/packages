@@ -3,15 +3,15 @@ import { SimpleBootHttpSSRServer } from '@dooboostore/simple-boot-http-server-ss
 import { HttpSSRServerOption } from '@dooboostore/simple-boot-http-server-ssr/option/HttpSSRServerOption';
 import { environment } from './environments/environment';
 import { NotFoundError } from '@dooboostore/simple-boot-http-server/errors/NotFoundError';
-import Factory, { MakeSimFrontOption } from '@src/bootfactory';
+import Factory, { MakeSimFrontOption } from '@lazycollect-src/bootfactory';
 import { FactoryAndParams, SSRFilter } from '@dooboostore/simple-boot-http-server-ssr/filters/SSRFilter';
-import { RootRouter } from '@back-end/root.router';
+import { RootRouter } from '@lazycollect-back-end/root.router';
 import { IntentSchemeFilter } from '@dooboostore/simple-boot-http-server-ssr/filters/IntentSchemeFilter';
 import { SimpleBootHttpSSRFactory } from '@dooboostore/simple-boot-http-server-ssr/SimpleBootHttpSSRFactory';
 import { Runnable } from '@dooboostore/core/runs/Runnable';
 import { SimpleBootHttpServer } from '@dooboostore/simple-boot-http-server/SimpleBootHttpServer';
 import { ResourceFilter } from '@dooboostore/simple-boot-http-server/filters/ResourceFilter';
-import { services } from '@back-end/service';
+import { services } from '@lazycollect-back-end/service';
 import { CloseLogEndPoint } from './endpoints/CloseLogEndPoint';
 import { ErrorLogEndPoint } from './endpoints/ErrorLogEndPoint';
 import { GlobalAdvice } from './advices/GlobalAdvice';
