@@ -6,7 +6,7 @@ import { DomEditor } from '../../src/DomEditor';
 import type { DomEditorOptions, ElementData } from '../../src/DomEditor';
 
 describe('DomEditor', () => {
-  let container: HTMLElement;
+  let container: HTMLElementBase;
   let editor: DomEditor;
 
   beforeEach(() => {
@@ -45,7 +45,7 @@ describe('DomEditor', () => {
       expect(container.classList.contains('dom-editor')).toBe(true);
       
       // Check if debug element is visible
-      const debugElement = container.querySelector('.debug') as HTMLElement;
+      const debugElement = container.querySelector('.debug') as HTMLElementBase;
       expect(debugElement).toBeTruthy();
       expect(debugElement.style.display).not.toBe('none');
     });

@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Unified Web Component Laboratory</title>
+  <style>
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 30px; background: #f0f2f5; color: #333; }
+    .test-section { background: white; padding: 20px; margin-bottom: 30px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border: 1px solid #e0e0e0; }
+    h2 { margin-top: 0; color: #1a73e8; border-bottom: 2px solid #f0f0f0; padding-bottom: 10px; }
+    h3 { color: #5f6368; font-size: 1rem; }
+    .controls { margin-bottom: 15px; display: flex; gap: 10px; flex-wrap: wrap; }
+    button { padding: 8px 16px; cursor: pointer; border-radius: 6px; border: 1px solid #dadce0; background: white; transition: all 0.2s; }
+    button:hover { background: #f8f9fa; border-color: #bdc1c6; }
+    .btn-primary { background: #1a73e8; color: white; border: none; }
+    .btn-primary:hover { background: #1557b0; }
+    hr { border: 0; border-top: 1px solid #eee; margin: 20px 0; }
+
+    /* 1. 확장형(Built-in) 스타일 */
+    ul[is="dr-list"] { border: 2px dashed #4285f4; padding: 20px; list-style: inside circle; border-radius: 8px; }
+    
+    /* 3. 슬롯 루프 아이템 스타일 (Light DOM) */
+    .user-node { display: flex; justify-content: space-between; padding: 10px; background: #f8f9fa; margin: 4px 0; border-radius: 4px; border: 1px solid #eee; }
+    
+    /* 4. 텍스트 슬롯 데이터 스타일 */
+    .data-text { color: #d93025; font-weight: bold; font-family: monospace; }
+
+    /* 6. 반응형 섹션 스타일 */
+    .reactive-card { padding: 10px; border: 2px solid #34a853; border-radius: 8px; margin-top: 10px; }
+  </style>
+</head>
+<body>
+
+<h1>Web Component Lab 🧪</h1>
+
+<!-- Section 6: Reactive Proxy Integration (New!) -->
+<div class="test-section" style="border-color: #34a853; border-width: 2px;">
+  <h2>6. Reactive Proxy & Slot Integration (v2 Alpha)</h2>
+  <p><small>데이터(Proxy)를 수정하면 해당 슬롯만 마법처럼 업데이트됩니다.</small></p>
+  <div class="controls">
+    <button class="btn-primary" onclick="reactivePush()">배열에 push('New Item')</button>
+    <button onclick="reactiveUpdateFirst()">첫 번째 아이템만 수정</button>
+    <button onclick="console.log('현재 데이터:', window.appState.items)">데이터 로그 확인</button>
+  </div>
+  
+  <dr-for-of id="reactive-loop">
+    <div slot="template" style="display: none;">
+      <div class="user-node">
+        <span>Slot: <b>#index#</b> → <span style="color:#34a853">#it#</span></span>
+        <i>(Reactive)</i>
+      </div>
+    </div>
+  </dr-for-of>
+</div>
+
+<!-- Section 1: Basics & Extends -->
+<div class="test-section">
+  <h2>1. Basics & Customized Built-in</h2>
+  <test-element>
+    <h3 slot="title">기본 커스텀 엘리먼트</h3>
+    <p slot="content">Shadow DOM 내부에서 슬롯으로 배치됩니다.</p>
+  </test-element>
+  <hr>
+  <h3>기본 태그 확장 (Extended UL & Button)</h3>
+  <ul is="dr-list">
+    <li>초기 아이템 (Light DOM)</li>
+  </ul>
+  <button is="dr-button">리스트 아이템 추가</button>
+</div>
+
+<!-- Section 2: Styling & Context -->
+<div class="test-section">
+  <h2>2. Shadow Styling (:host, :context)</h2>
+  <div class="controls">
+    <button onclick="toggleHostClass()">Host (.active) 토글</button>
+    <button onclick="toggleDarkMode()">부모 다크모드 토글</button>
+  </div>
+  <div id="parent-container" class="theme-wrapper">
+    <styled-element id="styled-el">
+      <span slot="highlight">Shadow DOM 외부에서 스타일링된 슬롯 텍스트</span>
+    </styled-element>
+  </div>
+</div>
+
+<!-- Section 3: Lazy Template -->
+<div class="test-section">
+  <h2>3. Lazy Template (Fetch)</h2>
+  <div class="controls">
+    <button onclick="createLazyElement()">외부 HTML 가져오기 (1초 지연)</button>
+  </div>
+  <div id="lazy-container"></div>
+</div>
+
+<!-- Section 4: Slot-per-Row Loop (Legacy Concept) -->
+<div class="test-section">
+  <h2>4. Row-per-Slot Architecture</h2>
+  <div class="controls">
+    <button onclick="addLoopData()">행 추가</button>
+    <button onclick="resetLoopData()">초기화</button>
+  </div>
+  <dr-for-of id="loop-comp">
+    <div slot="template" style="display: none;">
+      <div class="user-node">
+        <span>#index#. <b>#it#</b>님</span>
+        <button onclick="alert('Light DOM 직접 클릭: #it#')">ID</button>
+      </div>
+    </div>
+  </dr-for-of>
+</div>
+
+<script>
+  // --- [핵심] 반응성 엔진 (Proxy) 정의 ---
+  function makeReactive(obj, callback) {
+    return new Proxy(obj, {
+      set(target, prop, value) {
+        target[prop] = value;
+        callback(prop, value);
+        return true;
+      }
+    });
+  }
+
+  // --- 1. Basic & Built-in Definitions ---
+  customElements.define('test-element', class extends HTMLElementBase {
+    constructor() { super(); this.attachShadow({mode: 'open'}); }
+    connectedCallback() {
+      this.shadowRoot.innerHTML = `<style>div { color: #1a73e8; }</style>
+      <div><slot name="title"></slot><slot name="content"></slot></div>`;
+    }
+  });
+
+  customElements.define('dr-list', class extends HTMLUListElement {
+    connectedCallback() { console.log('Extended UL Connected'); }
+  }, { extends: 'ul' });
+
+  customElements.define('dr-button', class extends HTMLButtonElement {
+    connectedCallback() {
+      this.onclick = () => {
+        const li = document.createElement('li');
+        li.textContent = `동적 아이템 ${document.querySelector('ul[is="dr-list"]').children.length + 1}`;
+        document.querySelector('ul[is="dr-list"]').appendChild(li);
+      };
+    }
+  }, { extends: 'button' });
+
+  // --- 2. Styling Element ---
+  customElements.define('styled-element', class extends HTMLElementBase {
+    constructor() { super(); this.attachShadow({mode: 'open'}); }
+    connectedCallback() { this.render(); }
+    render() {
+      this.shadowRoot.innerHTML = `
+        <style>
+          :host { display: block; padding: 15px; border: 2px solid #ddd; border-radius: 8px; transition: 0.3s; }
+          :host(.active) { border-color: #1a73e8; transform: scale(1.02); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+          :host-context(.dark-mode) { background: #3c4043; color: white; }
+          ::slotted(span) { color: #f29900; font-weight: bold; }
+        </style>
+        <div><h4>Internal Shadow Content</h4><slot name="highlight"></slot></div>`;
+    }
+  });
+
+  function toggleHostClass() { document.getElementById('styled-el').classList.toggle('active'); }
+  function toggleDarkMode() { document.getElementById('parent-container').classList.toggle('dark-mode'); }
+
+  // --- 3. Lazy Element ---
+  class LazyElement extends HTMLElementBase {
+    async connectedCallback() {
+      const url = this.getAttribute('src');
+      this.attachShadow({mode: 'open'}).innerHTML = '<i>Loading template...</i>';
+      await new Promise(r => setTimeout(r, 1000));
+      try {
+        const res = await fetch(url);
+        this.shadowRoot.innerHTML = await res.text();
+      } catch(e) { this.shadowRoot.innerHTML = `<b style="color:red">${e.message}</b>`; }
+    }
+  }
+  customElements.define('lazy-element', LazyElement);
+  function createLazyElement() {
+    const container = document.getElementById('lazy-container');
+    container.innerHTML = '';
+    const el = document.createElement('lazy-element');
+    el.setAttribute('src', './external-template.html');
+    container.appendChild(el);
+  }
+
+  // --- 4 & 6. Smart dr-for-of (Slot-per-Row & Reactive) ---
+  class DrForOf extends HTMLElementBase {
+    constructor() {
+      super(); 
+      this.attachShadow({mode: 'open'});
+      this._items = [];
+      this.shadowRoot.innerHTML = `
+        <style>
+          .wrapper { border: 1px solid #eee; padding: 10px; border-radius: 8px; background: #fafafa; }
+          .row-wrap { margin-bottom: 5px; }
+        </style>
+        <slot name="template" id="tpl-slot"></slot>
+        <div class="wrapper" id="layout"></div>`;
+    }
+
+    set items(val) {
+      // 배열이 통째로 바뀌면 전체 리셋
+      this._items = val;
+      this.renderAll();
+    }
+
+    connectedCallback() {
+      const tplSlot = this.shadowRoot.getElementById('tpl-slot');
+      this._masterTpl = tplSlot.assignedNodes().find(n => n.nodeType === Node.ELEMENT_NODE);
+      this.renderAll();
+    }
+
+    // 특정 인덱스만 부분 업데이트 (반응성 핵심)
+    updateSingleRow(index, newValue) {
+      const target = this.querySelector(`[slot="row-${index}"]`);
+      if (target) {
+        this.applyData(target, newValue, index);
+      } else {
+        // 인덱스에 해당하는 로우가 없으면 새로 추가 (Append)
+        this.renderRow(newValue, index);
+      }
+    }
+
+    applyData(node, item, index) {
+      const walk = (n) => {
+        if(n.nodeType === Node.TEXT_NODE) {
+            // 정교한 치환을 위해 초기 원본 텍스트를 보관하는 방식이 좋으나 여기선 간단히 처리
+            if (!n._original) n._original = n.textContent;
+            n.textContent = n._original.replace(/#it#/g, item).replace(/#index#/g, index);
+        }
+        else if(n.nodeType === Node.ELEMENT_NODE) {
+          Array.from(n.attributes).forEach(a => {
+            if (!a._original) a._original = a.value;
+            a.value = a._original.replace(/#it#/g, item).replace(/#index#/g, index);
+          });
+          n.childNodes.forEach(walk);
+        }
+      };
+      walk(node);
+    }
+
+    renderRow(item, index) {
+      const layout = this.shadowRoot.getElementById('layout');
+      const slotName = `row-${index}`;
+      
+      const frame = document.createElement('div');
+      frame.className = 'row-wrap';
+      frame.innerHTML = `<slot name="${slotName}"></slot>`;
+      layout.appendChild(frame);
+
+      const clone = this._masterTpl.cloneNode(true);
+      clone.removeAttribute('slot');
+      clone.setAttribute('slot', slotName);
+      clone.style.display = '';
+      this.applyData(clone, item, index);
+      this.appendChild(clone);
+    }
+
+    renderAll() {
+      if (!this._masterTpl) return;
+      const layout = this.shadowRoot.getElementById('layout');
+      Array.from(this.children).forEach(c => { if(c.getAttribute('slot') !== 'template') c.remove(); });
+      layout.innerHTML = '';
+      this._items.forEach((item, index) => this.renderRow(item, index));
+    }
+  }
+  customElements.define('dr-for-of', DrForOf);
+
+  // --- 작동 테스트 (Legacy) ---
+  const loopComp = document.getElementById('loop-comp');
+  let loopData = ['Strawberry', 'Peach'];
+  loopComp.items = loopData;
+  function addLoopData() { loopData = [...loopData, 'Blueberry', 'Kiwi']; loopComp.items = loopData; }
+  function resetLoopData() { loopData = ['Fresh Start']; loopComp.items = loopData; }
+
+  // --- [New] Reactive Section Logic ---
+  const reactiveComp = document.getElementById('reactive-loop');
+  const rawArray = ['Init 1', 'Init 2'];
+  
+  // 윈도우 전역 객체로 상태 관리 시뮬레이션
+  window.appState = {
+    items: makeReactive(rawArray, (prop, val) => {
+      // 배열의 인덱스가 바뀌거나 push가 일어날 때 호출됨
+      if (!isNaN(prop)) {
+        reactiveComp.updateSingleRow(prop, val);
+      } else if (prop === 'length') {
+        // 길이는 무시하거나 로그용
+      }
+    })
+  };
+  reactiveComp.items = window.appState.items;
+
+  function reactivePush() {
+    const nextIdx = window.appState.items.length;
+    window.appState.items[nextIdx] = `New Item ${nextIdx + 1}`;
+    // 주의: 실제 Proxy 배열 push는 조금 더 복잡한 트래핑이 필요하지만
+    // 여기서는 직관적인 인덱스 할당 방식으로 반응성을 보여줍니다.
+  }
+
+  function reactiveUpdateFirst() {
+    if (window.appState.items.length > 0) {
+      window.appState.items[0] = "Updated! " + new Date().getSeconds();
+    }
+  }
+
+</script>
+</body>
+</html>

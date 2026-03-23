@@ -1,0 +1,11 @@
+{
+  "name": "@dooboostore/simple-web-component-bundle-test",
+  "private": true,
+  "scripts": {
+    "dev": "serve -p 3006"
+  },
+  "devDependencies": {
+    "serve": "^14.2.3",
+    "@dooboostore/simple-web-component": "workspace:*"
+  }
+}

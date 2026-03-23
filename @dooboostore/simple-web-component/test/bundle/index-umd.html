@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>UMD Bundle Test</title>
+    <script src="node_modules/@dooboostore/simple-web-component/dist/umd-bundle/dooboostore-simple-web-component.umd.js"></script>
+    <style>
+      .container {
+        margin: 20px;
+        font-family: sans-serif;
+      }
+      .box {
+        border: 1px solid #ccc;
+        padding: 10px;
+        margin-top: 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>UMD Bundle Test</h1>
+      <div class="box">
+        <swc-object id="my-obj" as="u">
+          <div>Name: <strong>{{u.name}}</strong></div>
+          <div>Age: <strong>{{u.age}}</strong></div>
+        </swc-object>
+      </div>
+
+      <div class="box">
+        <ul id="my-list-container">
+          <swc-for-of id="my-list" as="item">
+            <li>{{index}}: {{item.name}}</li>
+          </swc-for-of>
+        </ul>
+      </div>
+
+      <div class="box">
+        <button id="update-btn">Update Data</button>
+      </div>
+    </div>
+
+    <script>
+      const { SwcObject, SwcForOf } = dooboostoreSimpleWebComponent;
+
+      const objEl = document.getElementById('my-obj');
+      objEl.swcValue = { name: 'UMD User', age: 30 };
+
+      const listEl = document.getElementById('my-list');
+      listEl.swcValue = [{ name: 'Item 1' }, { name: 'Item 2' }];
+
+      document.getElementById('update-btn').addEventListener('click', () => {
+        objEl.swcValue.name = 'Updated UMD User';
+        objEl.swcValue.age = Math.floor(Math.random() * 100);
+        listEl.swcValue.push({ name: 'New Item ' + listEl.swcValue.length });
+      });
+    </script>
+  </body>
+</html>

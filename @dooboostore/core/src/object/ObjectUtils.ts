@@ -613,6 +613,9 @@ export namespace ObjectUtils {
      */
     // @ts-ignore
     export const evaluate = <T = any>(script: string, thisTarget: any = {}): T | undefined => {
+      //  new Function('event', 'console.log(event)').call(window, {a:2});
+      // new Function('event', '$data', newValue).call(this, event, event.detail);
+      // 첫번쨰 인자는 this로 바인딩될 객체, 이후 인자들은 스크립트에서 사용할 매개변수로 전달됩니다.
       try {
         return Function(`"use strict"; ${script} `).bind(thisTarget)() as T;
       } catch (e) {

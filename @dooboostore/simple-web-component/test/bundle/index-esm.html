@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>ESM Bundle Test</title>
+    <style>
+      .container {
+        margin: 20px;
+        font-family: sans-serif;
+      }
+      .box {
+        border: 1px solid #ccc;
+        padding: 10px;
+        margin-top: 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>ESM Bundle Test</h1>
+      <div class="box">
+        <swc-object id="my-obj" as="u">
+          <div>Name: <strong>{{u.name}}</strong></div>
+          <div>Age: <strong>{{u.age}}</strong></div>
+        </swc-object>
+      </div>
+
+      <div class="box">
+        <ul id="my-list-container">
+          <swc-for-of id="my-list" as="item">
+            <li>{{index}}: {{item.name}}</li>
+          </swc-for-of>
+        </ul>
+      </div>
+
+      <div class="box">
+        <button id="update-btn">Update Data</button>
+      </div>
+    </div>
+
+    <script type="module">
+      import { SwcObject, SwcForOf } from './node_modules/@dooboostore/simple-web-component/dist/esm-bundle/dooboostore-simple-web-component.esm.js';
+
+      const objEl = document.getElementById('my-obj');
+      objEl.swcValue = { name: 'ESM User', age: 25 };
+
+      const listEl = document.getElementById('my-list');
+      listEl.swcValue = [{ name: 'ESM Item 1' }, { name: 'ESM Item 2' }];
+
+      document.getElementById('update-btn').addEventListener('click', () => {
+        objEl.swcValue.name = 'Updated ESM User';
+        objEl.swcValue.age = Math.floor(Math.random() * 100);
+        listEl.swcValue.push({ name: 'New ESM Item ' + listEl.swcValue.length });
+      });
+    </script>
+  </body>
+</html>
