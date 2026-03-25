@@ -90,7 +90,8 @@ module.exports = {
       '@dooboostore/core': path.resolve(__dirname, '../../../core/src'),
       '@dooboostore/core-node': path.resolve(__dirname, '../../../core-node/src'),
       '@dooboostore/core-web': path.resolve(__dirname, '../../../core-web/src'),
-      '@dooboostore/simple-web-component': path.resolve(__dirname, '../../src')
+      '@dooboostore/simple-web-component': path.resolve(__dirname, '../../src'),
+      '@dooboostore/simple-boot': path.resolve(__dirname, '../../../simple-boot/src')
     },
     modules: ['node_modules', path.resolve(__dirname, '..'), path.resolve(__dirname, '../..'), path.resolve(__dirname, '../../..')]
   },

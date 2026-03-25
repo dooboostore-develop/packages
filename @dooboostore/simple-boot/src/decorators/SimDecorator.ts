@@ -16,7 +16,7 @@ export enum Lifecycle {
 
 export const sims = new Map<ConstructorType<any> | Function, Set<ConstructorType<any> | Function | any>>();
 export const containers = new Set<SimpleApplication>();
-
+// console.log('-->',sims)
 
 export type SimConfigProxy = ((ProxyHandler<any> | ConstructorType<any> | Function)) | (ProxyHandler<any> | ConstructorType<any> | Function)[];
 export type SimConfigUsing = (ConstructorType<any> | Function | object) | ((ConstructorType<any> | Function | object)[]);

@@ -35,6 +35,7 @@
     "@dooboostore/core-node": "workspace:*",
     "@dooboostore/core-web": "workspace:*",
     "@dooboostore/simple-web-component": "workspace:*",
+    "@dooboostore/simple-boot": "workspace:*",
     "reflect-metadata": "^0.2.2"
   }
 }

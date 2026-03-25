@@ -1,9 +1,18 @@
 import { PathRouter } from '@dooboostore/core-web/routers/PathRouter';
 import { HashRouter } from '@dooboostore/core-web/routers/HashRouter';
 import { attribute, elementDefine, innerHtml, state, onAfterConnected, addEventListener } from '@dooboostore/simple-web-component';
+import {SimpleApplication} from "@dooboostore/simple-boot/SimpleApplication";
+import {Sim} from "@dooboostore/simple-boot/decorators/SimDecorator";
+
+
+
+
+
+
 
 const router = new PathRouter({ window });
 
+@Sim
 @elementDefine({ name: 'my-component' })
 class MyComponent extends HTMLElement {
   @state route = 'zz';
@@ -43,6 +52,11 @@ class MyComponent extends HTMLElement {
     this.showExtra = !this.showExtra;
   }
 }
+
+
+const sim = new SimpleApplication().run();
+const m = sim.sim(MyComponent)
+console.log('m', m);
 
 router.observable.subscribe(it => {
   console.log('router.observable', it);
