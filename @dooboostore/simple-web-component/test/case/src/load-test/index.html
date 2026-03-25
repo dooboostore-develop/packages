@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Load Test - @dooboostore/simple-web-component</title>
+    <style>
+      body {
+        font-family: sans-serif;
+        padding: 40px;
+        line-height: 1.6;
+      }
+      .controls {
+        margin-bottom: 20px;
+        position: sticky;
+        top: 0;
+        background: white;
+        padding: 20px;
+        border-bottom: 2px solid #eee;
+        z-index: 100;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+      }
+      .stats {
+        font-weight: bold;
+        color: #1a73e8;
+        margin-top: 15px;
+        font-size: 1.1em;
+      }
+      button {
+        padding: 10px 20px;
+        cursor: pointer;
+        margin-right: 10px;
+        border-radius: 6px;
+        border: 1px solid #ccc;
+        background: #f8f9fa;
+      }
+      button:hover {
+        background: #e2e6ea;
+      }
+      h1 {
+        color: #202124;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Load Test: Pure Architecture</h1>
+    <p>Testing performance with 1,000+ elements using <code>@setAttribute</code>, <code>@changedAttribute</code> and <code>@addEventListener</code>.</p>
+
+    <div class="controls">
+      <button id="add-1-btn">Add 1 Row</button>
+      <button id="add-100-btn">Add 100 Rows</button>
+      <button id="add-1000-btn">Add 1,000 Rows</button>
+      <button id="inc-parent-btn">Increment Parent Attr</button>
+      <button id="clear-btn">Clear All</button>
+      <div id="result" class="stats">Time: - ms</div>
+    </div>
+
+    <!-- The reactive parent container -->
+    <load-test-container id="main-container" parent-count="0">
+      <load-test-item title="Initial Item" count="0"></load-test-item>
+    </load-test-container>
+
+  </body>
+</html>

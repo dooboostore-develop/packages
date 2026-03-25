@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Host Event Attribute Test</title>
+    <style>
+      body {
+        font-family: sans-serif;
+        padding: 40px;
+        line-height: 1.5;
+      }
+      nav {
+        background: #eee;
+        padding: 15px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+      }
+      nav a {
+        color: #1a73e8;
+        text-decoration: none;
+        font-weight: bold;
+      }
+      .controls {
+        margin-bottom: 30px;
+        display: flex;
+        gap: 10px;
+      }
+      button {
+        padding: 10px 20px;
+        cursor: pointer;
+        border-radius: 4px;
+        border: 1px solid #ccc;
+        background: white;
+      }
+      button:hover {
+        background: #f0f0f0;
+      }
+      #mount-point {
+        border: 1px dashed #aaa;
+        padding: 20px;
+        min-height: 100px;
+      }
+      code {
+        background: #f4f4f4;
+        padding: 2px 4px;
+        border-radius: 3px;
+      }
+    </style>
+  </head>
+  <body>
+
+    <h1>Host Event Attribute Test</h1>
+    <p>In "Pure" mode, we only support <code>swc-on-*</code> attributes on the <strong>host element itself</strong>. Child elements are not scanned for these attributes to ensure maximum performance.</p>
+
+    <div class="controls">
+      <button id="add-host-btn">Add Component with Host Events</button>
+      <button id="remove-attr-btn">Remove Host 'swc-on-click'</button>
+      <button id="remove-host-btn">Clear All</button>
+    </div>
+
+    <div id="mount-point">
+      <!-- Components will be added here -->
+    </div>
+
+    <div style="margin-top: 40px">
+      <h3>Static Test</h3>
+      <event-test-host id="static-host" swc-on-click="console.log('Static host clicked!', this)" swc-on-connected="console.log('Static host connected', this)">
+        <div slot="content">
+          <p>I am a static element defined in HTML.</p>
+          <button swc-on-click="alert('This will NOT work!')">Internal Button (No scanning)</button>
+        </div>
+      </event-test-host>
+    </div>
+  </body>
+</html>

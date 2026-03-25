@@ -22,7 +22,7 @@ export type ChangeStateConfig = { noEventAndPublish?: boolean };
 export type StateOptions = { data?: any, title?: string, config?: ChangeStateConfig };
 export type RouterMethodOptions = { data?: any, title?: string, config?: ChangeStateConfig };
 
-type RouterEventType = RouteData & { triggerPoint: 'start' | 'end' };
+export type RouterEventType = RouteData & { triggerPoint: 'start' | 'end' };
 
 // popstate 이벤트 무시를 위한 마커
 const ROUTER_NO_EVENT_MARKER = '__ROUTER_NO_EVENT__';
@@ -32,7 +32,6 @@ export abstract class Router<T = any> {
   private _config: RouterConfig<T>;
 
   constructor(config: RouterConfig<any>) {
-    console.log('-------------------', this)
     this._config = config;
 
     let routeData: RouterEventType;

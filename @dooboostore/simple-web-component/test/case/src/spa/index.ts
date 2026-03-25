@@ -1,100 +1,139 @@
-import { PathRouter } from '@dooboostore/core-web/routers/PathRouter';
-import { HashRouter } from '@dooboostore/core-web/routers/HashRouter';
-import { attribute, elementDefine, innerHtml, state, onAfterConnected, addEventListener } from '@dooboostore/simple-web-component';
-import {SimpleApplication} from "@dooboostore/simple-boot/SimpleApplication";
-import {Sim, SimConfig} from "@dooboostore/simple-boot/decorators/SimDecorator";
-import {SimOption} from "@dooboostore/simple-boot/SimOption";
-import {ConstructorType} from "@dooboostore/core/types";
-import {Router} from "@dooboostore/core-web/routers/Router";
+import { Inject } from '@dooboostore/simple-boot/decorators/inject/Inject';
 
+console.log('rootstart');
+import {addEventListener, elementDefine, HostSet, InjectSituationType, innerHtml, onAdopted, onConnected, onDisconnected, query} from '@dooboostore/simple-web-component';
+import { SimpleApplication } from '@dooboostore/simple-boot/SimpleApplication';
+import { Sim } from '@dooboostore/simple-boot/decorators/SimDecorator';
+import { Router as WebRouter } from '@dooboostore/core-web/routers/Router';
+import { Router } from '@dooboostore/simple-boot/decorators/route/Router';
+import { RouterAction } from '@dooboostore/simple-boot/route/RouterAction';
+import { RoutingDataSet } from '@dooboostore/simple-boot/route/RouterManager';
+import createMyComponent from './MyComponent';
+import {SwcAttributeConfigType} from "@dooboostore/simple-web-component/elements/SwcAppEngine";
 
-
-
-
-
-
-const router = new PathRouter({ window });
+const w = window;
+const MyComponent = createMyComponent(w);
 
 @Sim
-@elementDefine({ name: 'my-component' })
-class MyComponent extends HTMLElement {
-  @state route = 'zz';
-  @state @attribute name?: string | null;
-
-  @state showExtra = false;
-
-  constructor(private router: Router) {
-    super();
-    console.log('------->', router)
+@elementDefine({ name: 'my-component2', window: w })
+class MyComponent2 extends HTMLElement {
+  say() {
+    console.log('hello MyComponent2');
   }
 
   @innerHtml
   render() {
     return `
       <div style="padding: 10px; border: 1px solid #ccc;">
-        <h3>My Component</h3>
-        <p>Current Route: <strong>{{route}}</strong></p>
-        <p>Current name: <strong>{{name}}</strong></p>
-        <button id="change-name-btn">Change Name Internal</button>
-        <button id="toggle-extra-btn">Toggle Extra Content</button>
-        
-        <div is="swc-if-div" swcValue="{{showExtra}}">
-          <p style="color: blue; font-weight: bold;">This is extra content triggered by @state showExtra!</p>
-        </div>
+        <h3>My Component2</h3>
+      </div>
+    `;
+  }
+}
+
+@Sim
+@Router({
+  path: '/hello',
+  route: {
+    '/good': MyComponent,
+    '/good2': MyComponent2
+  }
+})
+@elementDefine('my-router')
+class MyRouter extends HTMLElement implements RouterAction.CanActivate {
+  @query('#my-route')
+  myRoute!: HTMLElement;
+
+  @innerHtml
+  render() {
+    return `
+      <div style="padding: 10px; border: 1px solid #ccc;">
+        <h3>My Router</h3>
+        <div id="my-route"></div>
       </div>
     `;
   }
 
-  @onAfterConnected
-  init() {
-    console.log('init2222', this.name);
-  }
-
-  @addEventListener({ type: 'click', query: '#change-name-btn' })
-  onChangeName() {
-    this.name = 'Internal Change ' + new Date().getSeconds();
-  }
-
-  @addEventListener({ type: 'click', query: '#toggle-extra-btn' })
-  onToggleExtra() {
-    this.showExtra = !this.showExtra;
+  async canActivate(url: RoutingDataSet, data?: any): Promise<void> {
+    console.log('canActivate', url, data, '---');
+    if (data instanceof Node && !this.myRoute.contains(data)) {
+      this.myRoute.replaceChildren(data);
+    }
   }
 }
 
-// @Sim
-// class MyComponent2 {
-//
-//   constructor(private router: Router) {
-//     console.log('------->', router)
-//   }
-// }
-const option = new SimOption({excludeProxys: [Node]});
-const otherInstanceSim = new Map<ConstructorType<any> | Function | SimConfig | Symbol, any>();
-otherInstanceSim.set(Router, router);
-const sim = new SimpleApplication(option).run(otherInstanceSim);
+@Sim
+@Router({
+  routers: [MyRouter]
+})
+@elementDefine({ name: 'root-router', window: w })
+class RootRouter extends HTMLDivElement implements RouterAction.CanActivate {
+  route = '';
+  name = 'Root Name';
 
-const m = sim.sim(MyComponent)
-console.log('m', m);
+  constructor(
+    private router: WebRouter,
+    private sim: SimpleApplication
+  ) {
+    super();
+  }
 
-router.observable.subscribe(it => {
-  console.log('router.observable', it);
-  if (it.triggerPoint === 'end') {
-    const app = document.getElementById('app');
-    if (app) {
-      // const e = new MyComponent();
-      // app.appendChild(e);
-      // app.innerHTML = `
-      //   <my-component swc-on-constructor="this.name='zzzz'; console.log('11', this, window);" names="Initial Name" route="${it.path}"></my-component>
-      // `;
-
-      document.querySelector('#route-btn')?.addEventListener('click', () => {
-        router.go(`/${Date.now()}`);
-      });
+  async canActivate(url: RoutingDataSet, data?: any): Promise<void> {
+    console.log('canActivate', url, data, '---');
+    this.route = url.intent.pathname;
+    if (data instanceof Node && !this.contains(data)) {
+      this.replaceChildren(data);
     }
   }
-});
-window.addEventListener('DOMContentLoaded', () => {
-  // document.querySelector('#route-btn')?.addEventListener('click', () => {
-  //   router.go(`/${Date.now()}`);
-  // })
-});
+
+  @addEventListener({ type: 'click', query: '#route-btn' })
+  onRouteBtnClick() {
+    this.name = 'Changed Root ' + new Date().getSeconds();
+    this.router.go('/hello/good');
+  }
+
+  @innerHtml({ useShadow: true })
+  render() {
+    return `
+      <div class="container">
+        <h3>Root Router</h3>
+        <p>Current Route: <strong>${this.route}</strong></p>
+        <p>Current Name: <strong>${this.name}</strong></p>
+        <button id="route-btn">Route to /hello/good</button>
+        <slot></slot>
+      </div>
+    `;
+  }
+}
+
+@elementDefine({ name: 'test-component', window: w })
+class TestComponent extends HTMLElement {
+  @innerHtml
+  render() {
+    return `<div>test-component</div>`;
+  }
+
+  @onDisconnected
+  ttt(@Inject({ situationType: InjectSituationType.HOST_SET }) hostSet: HostSet, @Inject({ type: WebRouter }) router: WebRouter) {
+    console.log('TestComponent onDisconnected', hostSet, router);
+  }
+
+  @onConnected
+  good(@Inject({ situationType: InjectSituationType.HOST_SET }) hostSet: HostSet, @Inject({ type: WebRouter }) router: WebRouter) {
+    console.log('TestComponent onConnected', hostSet, router);
+  }
+}
+
+console.log('startss');
+export const wow = () => {
+  console.log('wow');
+};
+export const applicationConfig = (app: any): SwcAttributeConfigType => {
+  return {
+    rootRouter: RootRouter,
+    path: '/hello/good2',
+    window: w
+  };
+};
+(w as any).applicationConfig = applicationConfig;
+(w as any).wow = wow;

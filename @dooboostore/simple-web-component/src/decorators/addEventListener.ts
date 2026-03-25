@@ -1,8 +1,6 @@
 import { ReflectUtils } from '@dooboostore/core/reflect/ReflectUtils';
 
 export interface AddEventListenerOptions extends EventListenerOptions {
-  query?: string;
-  type: string;
   root?: 'light' | 'shadow' | 'all' | 'auto';
   capture?: boolean;
   once?: boolean;
@@ -10,28 +8,33 @@ export interface AddEventListenerOptions extends EventListenerOptions {
   stopPropagation?: boolean;
   stopImmediatePropagation?: boolean;
   preventDefault?: boolean;
+  delegate?: boolean;
 }
 
 export interface AddEventListenerMetadata {
+  selector: string;
+  type: string;
   options: AddEventListenerOptions;
   propertyKey: string | symbol;
 }
 
 export const ADD_EVENT_LISTENER_METADATA_KEY = Symbol('simple-web-component:add-event-listener');
 
-export function addEventListener(type: string, query?: string): MethodDecorator;
-export function addEventListener(options: AddEventListenerOptions): MethodDecorator;
-export function addEventListener(arg1: string | AddEventListenerOptions, arg2?: string): MethodDecorator {
+/**
+ * @addEventListener decorator to bind events to elements.
+ * Usage: @addEventListener('.btn', 'click') onClick() { ... }
+ * Usage: @addEventListener('', 'scroll', { passive: true }) onScroll() { ... }
+ */
+export function addEventListener(selector: string, type: string, options: AddEventListenerOptions = {}): MethodDecorator {
   return (target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor) => {
     const constructor = target.constructor;
-    const options: AddEventListenerOptions = typeof arg1 === 'string' ? { type: arg1, query: arg2 } : arg1;
 
     let listeners = ReflectUtils.getMetadata<AddEventListenerMetadata[]>(ADD_EVENT_LISTENER_METADATA_KEY, constructor);
     if (!listeners) {
       listeners = [];
       ReflectUtils.defineMetadata(ADD_EVENT_LISTENER_METADATA_KEY, listeners, constructor);
     }
-    listeners.push({ options, propertyKey });
+    listeners.push({ selector, type, options, propertyKey });
   };
 }
 

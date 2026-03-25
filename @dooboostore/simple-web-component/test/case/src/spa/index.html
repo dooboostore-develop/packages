@@ -5,19 +5,9 @@
   <title>Title</title>
 </head>
 <body>
-  <nav style="background: #eee; padding: 10px; margin-bottom: 20px; border-radius: 4px; font-family: sans-serif">
-      <strong>Test Cases:</strong>
-      <a href="../index.html">Main Hub</a> | 
-      <a href="../full-suite/index.html">Full Suite</a> | 
-      <a href="../lifecycle/index.html">Lifecycle Test</a> |
-      <a href="../attr/index.html">Attribute Test</a>
-  </nav>
-  <h1>SPA Test</h1>
-  <div>Status: SPA initialized</div>
-  <h2>app</h2>
-  <section id="app"></section>
-<section>
-  <button id="route-btn">routing</button>
-</section>
+<div is="swc-app-div" swc-get-application-config="applicationConfig(this)">
+  <test-component></test-component>
+</div>
+<test-component></test-component>
 </body>
 </html>

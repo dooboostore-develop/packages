@@ -232,3 +232,4 @@ storybook-static
 /@dooboostore/dom-render/create/lib/
 /@dooboostore/simple-boot-http-server-ssr/test/dist-back-end/
 /@dooboostore/simple-boot-http-server-ssr/test/dist-front-end/
+/pnpm-lock.yaml

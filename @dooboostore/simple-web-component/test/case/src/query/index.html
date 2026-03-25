@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Query Decorators Test</title>
+    <script src="https://unpkg.com/@ungap/custom-elements"></script>
+    <style>
+      body {
+        font-family: sans-serif;
+        padding: 40px;
+        line-height: 1.5;
+      }
+      nav {
+        background: #eee;
+        padding: 15px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+      }
+      nav a {
+        color: #1a73e8;
+        text-decoration: none;
+        font-weight: bold;
+      }
+    </style>
+  </head>
+  <body>
+
+    <h1>Query & QueryAll Test</h1>
+    <p>Testing <code>@query</code> and <code>@queryAll</code> for automatic element injection into properties.</p>
+
+    <query-element></query-element>
+
+    <script type="module" src="./index.ts"></script>
+  </body>
+</html>

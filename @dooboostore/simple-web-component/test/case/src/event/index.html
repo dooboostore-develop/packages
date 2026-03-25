@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Event Decorator Test</title>
+    <script src="https://unpkg.com/@ungap/custom-elements"></script>
+    <style>
+      body {
+        font-family: sans-serif;
+        padding: 40px;
+        line-height: 1.5;
+      }
+      nav {
+        background: #eee;
+        padding: 15px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+      }
+      nav a {
+        color: #1a73e8;
+        text-decoration: none;
+        font-weight: bold;
+      }
+      .box {
+        border: 1px solid #ccc;
+        padding: 20px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+      }
+      button {
+        padding: 8px 16px;
+        cursor: pointer;
+      }
+      code {
+        background: #f4f4f4;
+        padding: 2px 4px;
+        border-radius: 3px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Event Decorator (@addEventListener) Test</h1>
+    <p>Testing direct binding behavior in "Pure" mode.</p>
+
+    <event-element></event-element>
+
+    <script type="module" src="./index.ts"></script>
+  </body>
+</html>

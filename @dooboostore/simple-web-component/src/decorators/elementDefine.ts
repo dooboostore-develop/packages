@@ -3,529 +3,371 @@ import { getInnerHtmlMetadataList } from './innerHtml';
 import { getQueryMetadata } from './query';
 import { getQueryAllMetadata } from './queryAll';
 import { getAddEventListenerMetadata } from './addEventListener';
-import { getLifecycleMetadata, ON_BEFORE_CONNECTED_METADATA_KEY, ON_AFTER_CONNECTED_METADATA_KEY, ON_BEFORE_DISCONNECTED_METADATA_KEY, ON_AFTER_DISCONNECTED_METADATA_KEY, ON_BEFORE_ADOPTED_METADATA_KEY, ON_AFTER_ADOPTED_METADATA_KEY, ON_ADD_EVENT_LISTENER_METADATA_KEY, ON_ATTRIBUTE_CHANGED_METADATA_KEY, ATTRIBUTE_CHANGED_WILDCARD } from './lifecycles';
-import { getAttributeMetadataList } from './attribute';
-import { getStateMetadataList } from './state';
+import { ON_BEFORE_CONNECTED_METADATA_KEY, ON_AFTER_CONNECTED_METADATA_KEY, ON_BEFORE_DISCONNECTED_METADATA_KEY, ON_AFTER_DISCONNECTED_METADATA_KEY, ON_BEFORE_ADOPTED_METADATA_KEY, ON_AFTER_ADOPTED_METADATA_KEY, ON_ADD_EVENT_LISTENER_METADATA_KEY, ATTRIBUTE_CHANGED_WILDCARD, findAllLifecycleMetadata } from './lifecycles';
 import { getEmitCustomEventMetadataList } from './emitCustomEvent';
+import { changedAttribute, findAllAttributeChangedMetadata } from './changedAttribute';
+import { setAttribute, findAllSetAttributeMetadata } from './setAttribute';
 import { SwcUtils } from '../utils/Utils';
+import { HTML_TAG_ENTRIES, DOM_EVENT_NAMES } from '../config/config';
+import { SituationType, SituationTypeContainer, SituationTypeContainers } from '@dooboostore/simple-boot/decorators/inject/Inject';
+import { ConstructorType } from '@dooboostore/core/types';
+import { InjectSituationType, HostSet, SwcAppInterface } from '../types';
+
+// --- Core Interfaces & Types (Integrated) ---
 
 export interface ElementConfig {
   name: string;
   extends?: string;
   observedAttributes?: string[];
   customElementRegistry?: CustomElementRegistry;
-  autoRemoveEventListeners?: boolean;
+  window?: Window;
 }
 
 export const ELEMENT_CONFIG_KEY = Symbol('simple-web-component:element-config');
-export const STATE_CHANGE_EVENT = 'swc:state-change';
 
-const BUILT_IN_TAG_MAP = new Map<any, string>();
+// --- Environment Initialization Helper ---
 
-const registerTag = (className: string, tagName: string) => {
-  if (typeof globalThis !== 'undefined' && (globalThis as any)[className]) {
-    BUILT_IN_TAG_MAP.set((globalThis as any)[className], tagName);
+function buildEnv(configWindow?: Window) {
+  const win: any = configWindow || (typeof window !== 'undefined' ? window : undefined);
+  const doc: Document = win?.document;
+
+  const builtInTagMap = new Map<any, string>();
+  for (const [cls, tag] of HTML_TAG_ENTRIES) {
+    if (win?.[cls]) builtInTagMap.set(win[cls], tag);
   }
-};
 
-[
-  ['HTMLAnchorElement', 'a'],
-  ['HTMLAreaElement', 'area'],
-  ['HTMLAudioElement', 'audio'],
-  ['HTMLBaseElement', 'base'],
-  ['HTMLButtonElement', 'button'],
-  ['HTMLCanvasElement', 'canvas'],
-  ['HTMLDataElement', 'data'],
-  ['HTMLDataListElement', 'datalist'],
-  ['HTMLDetailsElement', 'details'],
-  ['HTMLDialogElement', 'dialog'],
-  ['HTMLDivElement', 'div'],
-  ['HTMLDListElement', 'dl'],
-  ['HTMLEmbedElement', 'embed'],
-  ['HTMLFieldSetElement', 'fieldset'],
-  ['HTMLFormElement', 'form'],
-  ['HTMLHRElement', 'hr'],
-  ['HTMLIFrameElement', 'iframe'],
-  ['HTMLImageElement', 'img'],
-  ['HTMLInputElement', 'input'],
-  ['HTMLLabelElement', 'label'],
-  ['HTMLLegendElement', 'legend'],
-  ['HTMLLIElement', 'li'],
-  ['HTMLLinkElement', 'link'],
-  ['HTMLMapElement', 'map'],
-  ['HTMLMetaElement', 'meta'],
-  ['HTMLMeterElement', 'meter'],
-  ['HTMLModElement', 'del'],
-  ['HTMLObjectElement', 'object'],
-  ['HTMLOListElement', 'ol'],
-  ['HTMLOptGroupElement', 'optgroup'],
-  ['HTMLOptionElement', 'option'],
-  ['HTMLOutputElement', 'output'],
-  ['HTMLParagraphElement', 'p'],
-  ['HTMLParamElement', 'param'],
-  ['HTMLPictureElement', 'picture'],
-  ['HTMLPreElement', 'pre'],
-  ['HTMLProgressElement', 'progress'],
-  ['HTMLQuoteElement', 'blockquote'],
-  ['HTMLScriptElement', 'script'],
-  ['HTMLSelectElement', 'select'],
-  ['HTMLSlotElement', 'slot'],
-  ['HTMLSourceElement', 'source'],
-  ['HTMLSpanElement', 'span'],
-  ['HTMLStyleElement', 'style'],
-  ['HTMLTableElement', 'table'],
-  ['HTMLTableSectionElement', 'tbody'],
-  ['HTMLTableCellElement', 'td'],
-  ['HTMLTemplateElement', 'template'],
-  ['HTMLTextAreaElement', 'textarea'],
-  ['HTMLTimeElement', 'time'],
-  ['HTMLTitleElement', 'title'],
-  ['HTMLTableRowElement', 'tr'],
-  ['HTMLTrackElement', 'track'],
-  ['HTMLUListElement', 'ul'],
-  ['HTMLVideoElement', 'video'],
-  ['HTMLHeadingElement', 'h1']
-].forEach(([cls, tag]) => registerTag(cls, tag));
+  const domHelpers = {
+    $d: doc,
+    $w: win,
+    $q: (sel: string, root?: Element | Document | ShadowRoot) => (root ?? doc).querySelector(sel),
+    $qa: (sel: string, root?: Element | Document | ShadowRoot) => Array.from((root ?? doc).querySelectorAll(sel)),
+    $qi: (id: string, root?: Document | ShadowRoot) => (root ?? doc).getElementById(id)
+  } as const;
+
+  return { win, doc, builtInTagMap, domHelpers };
+}
+
+const getHandlers = (inst: any) => {
+  if (!inst.__swc_attributeEventHandlers) inst.__swc_attributeEventHandlers = new Map();
+  return inst.__swc_attributeEventHandlers;
+};
 
 export const elementDefine =
   (inConfig: ElementConfig | string): ClassDecorator =>
   (constructor: any) => {
     const config: ElementConfig = typeof inConfig === 'string' ? { name: inConfig } : inConfig;
+    const { win, doc, builtInTagMap: BUILT_IN_TAG_MAP, domHelpers: SWC_DOM_HELPERS } = buildEnv(config.window);
+    config.window = win;
+    const SWC_DOM_HELPER_KEYS = Object.keys(SWC_DOM_HELPERS) as (keyof typeof SWC_DOM_HELPERS)[];
+    const SWC_DOM_HELPER_VALS = () => SWC_DOM_HELPER_KEYS.map(k => (SWC_DOM_HELPERS as any)[k]);
 
     let extendsTagName = config.extends;
     if (!extendsTagName) {
-      let proto = Object.getPrototypeOf(constructor);
+      let proto = constructor;
       while (proto && proto !== HTMLElement && proto !== Function.prototype) {
         extendsTagName = BUILT_IN_TAG_MAP.get(proto);
         if (extendsTagName) break;
         proto = Object.getPrototypeOf(proto);
       }
+      config.extends = extendsTagName;
     }
 
-    const attributePropsList = getAttributeMetadataList(constructor);
-    const emitCustomEventList = getEmitCustomEventMetadataList(constructor);
-    const stateList = getStateMetadataList(constructor);
-    const observedFromProps = attributePropsList ? attributePropsList.map(it => it.options.name!) : [];
-    const observedFromEmits = emitCustomEventList ? emitCustomEventList.map(it => it.options.attributeName!) : [];
-    const swcLifecycleAttributes = ['swc-on-constructor', 'swc-on-before-connected', 'swc-on-after-connected', 'swc-on-before-disconnected', 'swc-on-after-disconnected', 'swc-on-before-adopted', 'swc-on-after-adopted', 'swc-on-attribute-changed'];
-    const mergedObservedAttributes = [...new Set([...(config.observedAttributes ?? []), ...observedFromProps, ...observedFromEmits, ...swcLifecycleAttributes])];
+    const emitCustomEventList = getEmitCustomEventMetadataList(constructor) || [];
+    const addEventListenerList = getAddEventListenerMetadata(constructor) || [];
+    const attrChangeMap = findAllAttributeChangedMetadata(constructor);
+    const setAttrMap = findAllSetAttributeMetadata(constructor);
+
+    const swcLifecycleAttributes = ['swc-on-constructor', 'swc-on-connected', 'swc-on-disconnected', 'swc-on-before-connected', 'swc-on-after-connected', 'swc-on-before-disconnected', 'swc-on-after-disconnected', 'swc-on-before-adopted', 'swc-on-after-adopted', 'swc-on-attribute-changed'];
+    const swcOnEvents = DOM_EVENT_NAMES.map(e => `swc-on-${e}`);
+
+    const mergedObservedAttributes = [...new Set([...(config.observedAttributes ?? []), ...attrChangeMap.keys(), ...setAttrMap.keys(), ...emitCustomEventList.map(it => it.options.attributeName!), ...swcLifecycleAttributes, ...swcOnEvents])];
+    const innerHtmlList = getInnerHtmlMetadataList(constructor) || [];
 
     const NewClass = class extends (constructor as any) {
       private _swcId = Math.random().toString(36).substring(2, 11);
-      private _observer: MutationObserver | null = null;
-      private _boundElements = new WeakMap<Element, Set<string | symbol>>();
-      private _activeListeners: Array<{ el: Element | HTMLElement; type: string; handler: EventListener; options?: any }> = [];
       private _emitHandlers = new Map<string, EventListener>();
-      private _stateBindings = new Map<string, any[]>();
-      private _internalStates = new Map<string | symbol, any>();
-      private _externalSources = new Map<string, HTMLElement>();
+
+      private _executeSwcScript(attrName: string, hostSet: HostSet, extraArgs: Record<string, any> = {}) {
+        const script = this.getAttribute(attrName);
+        if (script) {
+          try {
+            const args = { ...hostSet, ...SWC_DOM_HELPERS, ...extraArgs };
+            const argNames = Object.keys(args);
+            const argValues = Object.values(args);
+            new Function(...argNames, script).apply(this, argValues);
+          } catch (e) {
+            console.error(`[SWC] Failed to execute ${attrName}:`, e);
+          }
+        }
+      }
+
+      private async _invokeLifecycleMethod(methodName: string | symbol, hostSet: HostSet, extraArgs: any[] = []) {
+        if (typeof (this as any)[methodName] !== 'function') return;
+        const app = hostSet.$appHost?.simpleApplication;
+
+        if (app) {
+          const otherStorage = new Map<any, any>();
+          const situations = new SituationTypeContainers([new SituationTypeContainer({ situationType: InjectSituationType.HOST_SET, data: hostSet }), new SituationTypeContainer({ situationType: InjectSituationType.APP_HOST, data: hostSet.$appHost }), new SituationTypeContainer({ situationType: InjectSituationType.APP_HOSTS, data: hostSet.$appHosts }), new SituationTypeContainer({ situationType: InjectSituationType.HOST, data: hostSet.$host }), new SituationTypeContainer({ situationType: InjectSituationType.HOSTS, data: hostSet.$hosts }), new SituationTypeContainer({ situationType: InjectSituationType.FIRST_HOST, data: hostSet.$firstHost }), new SituationTypeContainer({ situationType: InjectSituationType.LAST_HOST, data: hostSet.$lastHost }), new SituationTypeContainer({ situationType: InjectSituationType.FIRST_APP_HOST, data: hostSet.$firstAppHost }), new SituationTypeContainer({ situationType: InjectSituationType.LAST_APP_HOST, data: hostSet.$lastAppHost })]);
+          otherStorage.set(SituationTypeContainers, situations);
+
+          return app.simstanceManager.executeBindParameterSimPromise(
+            {
+              target: this,
+              targetKey: methodName,
+              inputParameters: extraArgs
+            },
+            otherStorage
+          );
+        } else {
+          return (this as any)[methodName](...extraArgs);
+        }
+      }
+
+      private _bindAttributeEvent(el: HTMLElement, attrName: string, script: string, eventName?: string) {
+        if (!eventName) {
+          if (!attrName.startsWith('swc-on-')) return;
+          eventName = attrName.substring(7);
+        }
+        if (swcLifecycleAttributes.includes(attrName)) return;
+
+        const elHandlers = getHandlers(this);
+        let handlers = elHandlers.get(el);
+        if (!handlers) {
+          handlers = new Map();
+          elHandlers.set(el, handlers);
+        }
+
+        const oldHandler = handlers.get(attrName);
+        if (oldHandler) el.removeEventListener(eventName, oldHandler);
+
+        const handler = (event: any) => {
+          const hostSet = SwcUtils.getHostSet(el);
+          const argNames = Object.keys(hostSet);
+          const argValues = Object.values(hostSet);
+          new Function('event', '$data', ...argNames, ...SWC_DOM_HELPER_KEYS, script).call(el, event, (event as CustomEvent).detail, ...argValues, ...SWC_DOM_HELPER_VALS());
+        };
+
+        el.addEventListener(eventName, handler);
+        handlers.set(attrName, handler);
+      }
+
+      constructor(...args: any[]) {
+        super(...args);
+        const hostSet = SwcUtils.getHostSet(this as any);
+        this._executeSwcScript('swc-on-constructor', hostSet);
+
+        if (innerHtmlList.some(it => it.options.useShadow === true) && !this.shadowRoot) {
+          this.attachShadow({ mode: 'open' });
+        }
+      }
 
       static get observedAttributes() {
         return mergedObservedAttributes;
       }
 
-      private _executeSwcScript(attrName: string, extraArgs: Record<string, any> = {}) {
-        const script = this.getAttribute(attrName);
-        if (script) {
-          try {
-            const argNames = Object.keys(extraArgs);
-            const argValues = Object.values(extraArgs);
-            new Function(...argNames, script).apply(this, argValues);
-          } catch (e) {
-            console.error(`[SWC] Failed to execute ${attrName} script:`, e);
+      async connectedCallback() {
+        const hostSet = SwcUtils.getHostSet(this as any);
+
+        this._executeSwcScript('swc-on-before-connected', hostSet);
+        const bMethods = findAllLifecycleMetadata(this, ON_BEFORE_CONNECTED_METADATA_KEY);
+        if (bMethods) {
+          for (const m of bMethods) await this._invokeLifecycleMethod(m, hostSet);
+        }
+
+        if (typeof (this as any).initCore === 'function') (this as any).initCore();
+
+        if (innerHtmlList.length > 0) {
+          let sContent = '',
+            lContent = '';
+          for (const meta of innerHtmlList) {
+            const res = await (this as any)[meta.propertyKey]();
+            if (res !== undefined) {
+              if (meta.options.useShadow) sContent += res;
+              else lContent += res;
+            }
           }
-        }
-      }
-
-      constructor(...args: any[]) {
-        super(...args);
-        this._executeSwcScript('swc-on-constructor');
-
-        if (stateList) {
-          stateList.forEach(meta => {
-            const key = meta.propertyKey;
-            const stateName = meta.options.name!;
-            const initialVal = (this as any)[key];
-            this._internalStates.set(
-              key,
-              SwcUtils.createReactiveProxy(initialVal, () => this._updateState(stateName))
-            );
-            Object.defineProperty(this, key, {
-              get: () => this._internalStates.get(key),
-              set: newVal => {
-                if (this._internalStates.get(key) === newVal) return;
-                this._internalStates.set(
-                  key,
-                  SwcUtils.createReactiveProxy(newVal, () => this._updateState(stateName))
-                );
-                this._updateState(stateName);
-              },
-              enumerable: true,
-              configurable: true
-            });
-          });
+          if (this.shadowRoot) this.shadowRoot.innerHTML = sContent;
+          if (lContent) this.innerHTML = lContent;
         }
 
-        if (attributePropsList) {
-          attributePropsList.forEach(meta => {
-            const key = meta.propertyKey;
-            const attrName = meta.options.name!;
-            const attrValue = this.getAttribute(attrName);
-            let initialVal = attrValue !== null ? attrValue : (this as any)[key];
-            if (initialVal === undefined) initialVal = null;
+        // --- @addEventListener binding ---
+        addEventListenerList.forEach(meta => {
+          const { selector, type, options } = meta;
+          const { root, capture, once, passive, stopPropagation, stopImmediatePropagation, preventDefault, delegate } = options;
 
-            if (attrValue !== null) {
-              if (meta.options.type === Number) initialVal = Number(attrValue);
-              else if (meta.options.type === Boolean) initialVal = true;
-              else if (meta.options.type === Object) {
-                try {
-                  initialVal = JSON.parse(attrValue);
-                } catch (e) {}
-              }
+          if (delegate && selector && selector !== ':host') {
+            const bindRoots: (HTMLElement | ShadowRoot)[] = [];
+            const r = root || 'auto';
+            if (r === 'auto') {
+              bindRoots.push(this.shadowRoot || (this as any));
+            } else if (r === 'light') {
+              bindRoots.push(this as any);
+            } else if (r === 'shadow') {
+              if (this.shadowRoot) bindRoots.push(this.shadowRoot as any);
+            } else if (r === 'all') {
+              bindRoots.push(this as any);
+              if (this.shadowRoot) bindRoots.push(this.shadowRoot as any);
             }
 
-            this._internalStates.set(key, initialVal);
-            Object.defineProperty(this, key, {
-              get: () => this._internalStates.get(key),
-              set: newVal => {
-                if (this._internalStates.get(key) === newVal) return;
-                this._internalStates.set(key, newVal);
-                if (typeof (this as any)._updateState === 'function') (this as any)._updateState(attrName);
-                if (!meta.options.disableReflect && this.setAttribute) {
-                  if (newVal === null || newVal === undefined || newVal === false) this.removeAttribute(attrName);
-                  else this.setAttribute(attrName, typeof newVal === 'object' ? JSON.stringify(newVal) : String(newVal));
+            bindRoots.forEach(bindRoot => {
+              const handler = (event: Event) => {
+                const target = event.target as HTMLElement;
+                const matchedEl = target.closest(selector);
+                if (matchedEl && (bindRoot as any).contains(matchedEl)) {
+                  if (stopPropagation) event.stopPropagation();
+                  if (stopImmediatePropagation) event.stopImmediatePropagation();
+                  if (preventDefault) event.preventDefault();
+
+                  const hostSet = SwcUtils.getHostSet(this as any);
+                  this._invokeLifecycleMethod(meta.propertyKey, hostSet, [event, hostSet, matchedEl]);
                 }
-              },
-              enumerable: true,
-              configurable: true
+              };
+              bindRoot.addEventListener(type, handler, { capture, once, passive });
             });
-          });
-        }
-
-        const innerHtmlList = getInnerHtmlMetadataList(this);
-        if (innerHtmlList?.some(it => it.options.useShadow === true) && !this.shadowRoot) {
-          this.attachShadow({ mode: 'open' });
-        }
-      }
-
-      private _syncDecorators() {
-        this._buildStateMap();
-        const getSearchRoots = (rootOption?: string): Node[] => {
-          const roots: Node[] = [];
-          if (rootOption === 'shadow') {
-            if (this.shadowRoot) roots.push(this.shadowRoot);
-          } else if (rootOption === 'light') {
-            roots.push(this as any as Node);
-          } else if (rootOption === 'all') {
-            if (this.shadowRoot) roots.push(this.shadowRoot);
-            roots.push(this as any as Node);
           } else {
-            roots.push(this.shadowRoot || (this as any as Node));
-          }
-          return roots;
-        };
-
-        const queryMetadata = getQueryMetadata(this);
-        if (queryMetadata) {
-          queryMetadata
-            .filter(it => it.isMethod)
-            .forEach(it => {
-              const searchRoots = getSearchRoots(it.options.root);
-              let foundEl: Element | null = null;
-              for (const root of searchRoots) {
-                foundEl = it.selector ? (root as HTMLElement).querySelector(it.selector) : (this as any as Element);
-                if (foundEl) break;
+            const targetEls: (HTMLElement | Element | Document | ShadowRoot | Window)[] = [];
+            if (!selector || selector === ':host') {
+              targetEls.push(this as any);
+            } else {
+              const searchRoots: (HTMLElement | ShadowRoot)[] = [];
+              const r = root || 'auto';
+              if (r === 'auto') {
+                searchRoots.push((this.shadowRoot || (this as any)) as any);
+              } else if (r === 'light') {
+                searchRoots.push(this as any);
+              } else if (r === 'shadow') {
+                if (this.shadowRoot) searchRoots.push(this.shadowRoot as any);
+              } else if (r === 'all') {
+                searchRoots.push(this as any);
+                if (this.shadowRoot) searchRoots.push(this.shadowRoot as any);
               }
-              if (foundEl) {
-                let bound = this._boundElements.get(foundEl);
-                if (!bound) {
-                  bound = new Set();
-                  this._boundElements.set(foundEl, bound);
-                }
-                if (!bound.has(it.propertyKey)) {
-                  (this as any)[it.propertyKey](foundEl);
-                  bound.add(it.propertyKey);
-                }
-              }
-            });
-        }
 
-        const queryAllMetadata = getQueryAllMetadata(this);
-        if (queryAllMetadata) {
-          queryAllMetadata
-            .filter(it => it.isMethod)
-            .forEach(it => {
-              const searchRoots = getSearchRoots(it.options.root);
-              const allElements: Element[] = [];
-              searchRoots.forEach(root => {
-                const found = it.selector ? (root as HTMLElement).querySelectorAll(it.selector) : [this as any as Element];
-                allElements.push(...Array.from(found));
+              searchRoots.forEach(sr => {
+                const found = sr.querySelectorAll(selector);
+                found.forEach(el => targetEls.push(el as any));
               });
-              (this as any)[it.propertyKey](allElements);
+            }
+
+            targetEls.forEach(el => {
+              const handler = (event: Event) => {
+                if (stopPropagation) event.stopPropagation();
+                if (stopImmediatePropagation) event.stopImmediatePropagation();
+                if (preventDefault) event.preventDefault();
+
+                const hostSet = SwcUtils.getHostSet(this as any);
+                this._invokeLifecycleMethod(meta.propertyKey, hostSet, [event, hostSet]);
+              };
+              const opts = { capture, once, passive };
+              el.addEventListener(type, handler, opts);
             });
+          }
+        });
+
+        if (super.connectedCallback) await super.connectedCallback();
+        const aMethods = findAllLifecycleMetadata(this, ON_AFTER_CONNECTED_METADATA_KEY);
+        if (aMethods) {
+          for (const m of aMethods) await this._invokeLifecycleMethod(m, hostSet);
         }
 
-        const eventListeners = getAddEventListenerMetadata(this);
-        if (eventListeners) {
-          eventListeners.forEach(it => {
-            const { query, type, root: rootOption, ...options } = it.options;
-            const searchRoots = getSearchRoots(rootOption);
-            searchRoots.forEach(root => {
-              const targetElements = query ? (root as HTMLElement).querySelectorAll(query) : [this as any as Element];
-              targetElements.forEach(targetElement => {
-                if (targetElement) {
-                  let bound = this._boundElements.get(targetElement);
-                  if (!bound) {
-                    bound = new Set();
-                    this._boundElements.set(targetElement, bound);
-                  }
-                  const eventKey = `event:${String(it.propertyKey)}:${type}`;
-                  if (!bound.has(eventKey)) {
-                    const handler = (event: any) => {
-                      if (it.options.stopImmediatePropagation) event.stopImmediatePropagation();
-                      if (it.options.stopPropagation) event.stopPropagation();
-                      if (it.options.preventDefault) event.preventDefault();
-                      (this as any)[it.propertyKey](event, targetElement);
-                    };
-                    targetElement.addEventListener(type, handler, options);
-                    bound.add(eventKey);
-                    if (config.autoRemoveEventListeners) this._activeListeners.push({ el: targetElement, type, handler, options });
-                    const addEventMethods = getLifecycleMetadata(this, ON_ADD_EVENT_LISTENER_METADATA_KEY);
-                    addEventMethods?.forEach(m => {
-                      if (typeof (this as any)[m] === 'function') (this as any)[m](targetElement, type, handler);
-                    });
-                  }
-                }
-              });
-            });
-          });
-        }
-      }
-
-      private _buildStateMap() {
-        const scan = (root: Node) => {
-          const walker = document.createTreeWalker(root, NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_TEXT);
-          let node: Node | null = null;
-          while ((node = walker.nextNode())) {
-            if (node.nodeType === Node.TEXT_NODE) this._parseAndBind(node, 'text');
-            else if (node.nodeType === Node.ELEMENT_NODE) {
-              const el = node as HTMLElement;
-              const alias = el.getAttribute('as');
-              if (alias && !this._externalSources.has(alias)) {
-                this._externalSources.set(alias, el);
-                el.addEventListener(STATE_CHANGE_EVENT, () => this._updateState(alias));
-              }
-              Array.from(el.attributes).forEach(attr => this._parseAndBind(attr, 'attribute', el));
-            }
-          }
-        };
-        if (this.shadowRoot) scan(this.shadowRoot);
-        scan(this as any as Node);
-      }
-
-      private _parseAndBind(node: Node | Attr, type: 'text' | 'attribute', owner?: HTMLElement) {
-        const tplKey = `__swc_original_${this._swcId}`;
-        const isAlreadyBound = (node as any).__swc_bound_ids?.has(this._swcId);
-        const content = (node as any)[tplKey] || node.textContent || '';
-        const matches = Array.from(content.matchAll(/{{(.*?)}}/g));
-        if (matches.length === 0 || isAlreadyBound) return;
-
-        matches.forEach(match => {
-          const fullPath = match[1].trim();
-          const rootName = fullPath.split('.')[0];
-          const isState = stateList?.some(s => s.options.name === rootName);
-          const isAttr = attributePropsList?.some(a => a.options.name === rootName);
-          const isLogicKey = (this as any)._asKey === rootName || (this as any)._asIndexKey === rootName;
-          const isExternal = this._externalSources.has(rootName);
-          const isSelfAlias = this.getAttribute('as') === rootName;
-          if (!isState && !isAttr && !isLogicKey && !isExternal && !isSelfAlias) return;
-
-          if (!this._stateBindings.has(rootName)) this._stateBindings.set(rootName, []);
-          if (!(node as any)[tplKey]) (node as any)[tplKey] = content;
-          if (!(node as any).__swc_bound_ids) (node as any).__swc_bound_ids = new Set();
-          (node as any).__swc_bound_ids.add(this._swcId);
-          this._stateBindings.get(rootName)!.push({ node, type, owner, path: fullPath });
-          this._updateState(rootName);
-        });
-      }
-
-      private _updateState(stateName: string) {
-        if (!this._stateBindings) return;
-        this._executeBindingUpdate(stateName);
-        const selfAlias = this.getAttribute('as');
-        if (selfAlias && selfAlias !== stateName) this._executeBindingUpdate(selfAlias);
-        this.dispatchEvent(new CustomEvent(STATE_CHANGE_EVENT, { bubbles: true, composed: true }));
-      }
-
-      private _executeBindingUpdate(stateName: string) {
-        const bindings = this._stateBindings.get(stateName);
-        if (!bindings) return;
-        const tplKey = `__swc_original_${this._swcId}`;
-        bindings.forEach(bin => {
-          let text = (bin.node as any)[tplKey];
-          if (!text) return;
-          const matches = Array.from(text.matchAll(/{{(.*?)}}/g));
-          let updatedText = text;
-          for (const match of matches) {
-            const path = match[1].trim();
-            const root = path.split('.')[0];
-            let val: any = undefined;
-            let current: HTMLElement | null = this as any as HTMLElement;
-            while (current) {
-              const currentNewClass = current as any;
-              if (current.getAttribute('as') === root) {
-                val = SwcUtils.getValueByPath(current, path.split('.').slice(1).join('.') || 'value', 'value');
-                if (val !== undefined) break;
-              }
-              const externalSource = currentNewClass._externalSources?.get(root);
-              if (externalSource) {
-                val = SwcUtils.getValueByPath(externalSource, path.split('.').slice(1).join('.') || 'value', 'value');
-                if (val !== undefined) break;
-              }
-              const cStates = getStateMetadataList(current.constructor);
-              const cAttrs = getAttributeMetadataList(current.constructor);
-              const sMeta = cStates?.find(s => s.options.name === root);
-              const aMeta = cAttrs?.find(a => a.options.name === root);
-              if (sMeta || aMeta) {
-                let aPath = path;
-                if (sMeta && sMeta.options.name !== String(sMeta.propertyKey)) aPath = path.replace(sMeta.options.name!, String(sMeta.propertyKey));
-                else if (aMeta && aMeta.options.name !== String(aMeta.propertyKey)) aPath = path.replace(aMeta.options.name!, String(aMeta.propertyKey));
-                val = SwcUtils.getValueByPath(current, aPath, root);
-                if (val !== undefined) break;
-              }
-              current = current.parentElement || (current.getRootNode() as any).host;
-            }
-            if (val !== undefined) {
-              const strVal = val === null || val === undefined ? '' : typeof val === 'object' ? '[Object]' : String(val);
-              updatedText = updatedText.replace(match[0], strVal);
-              if (bin.type === 'attribute' && bin.owner) {
-                const attrName = (bin.node as Attr).name;
-                if (val === null || val === undefined) bin.owner.removeAttribute(attrName);
-                else {
-                  bin.owner.setAttribute(attrName, updatedText);
-                  if ((attrName === 'value' || attrName === 'checked') && bin.owner.tagName.match(/INPUT|TEXTAREA|SELECT/)) {
-                    (bin.owner as any)[attrName] = updatedText;
-                  }
-                }
-              }
-            }
-          }
-          if (bin.type === 'text') bin.node.textContent = updatedText;
-        });
+        this._executeSwcScript('swc-on-connected', hostSet);
+        this._executeSwcScript('swc-on-after-connected', hostSet);
       }
 
       disconnectedCallback() {
-        this._executeSwcScript('swc-on-before-disconnected');
-        const bMethods = getLifecycleMetadata(this, ON_BEFORE_DISCONNECTED_METADATA_KEY);
-        bMethods?.forEach(m => {
-          if (typeof (this as any)[m] === 'function') (this as any)[m]();
-        });
-        if (this._observer) this._observer.disconnect();
-        if (config.autoRemoveEventListeners) {
-          this._activeListeners.forEach(({ el, type, handler, options }) => el.removeEventListener(type, handler, options));
-          this._activeListeners = [];
-        }
+        const hostSet = SwcUtils.getHostSet(this as any);
+        this._executeSwcScript('swc-on-before-disconnected', hostSet);
+        const bMethods = findAllLifecycleMetadata(this, ON_BEFORE_DISCONNECTED_METADATA_KEY);
+        if (bMethods) bMethods.forEach(m => this._invokeLifecycleMethod(m, hostSet));
+
         if (super.disconnectedCallback) super.disconnectedCallback();
-        const aMethods = getLifecycleMetadata(this, ON_AFTER_DISCONNECTED_METADATA_KEY);
-        aMethods?.forEach(m => {
-          if (typeof (this as any)[m] === 'function') (this as any)[m]();
-        });
-        this._executeSwcScript('swc-on-after-disconnected');
+
+        const aMethods = findAllLifecycleMetadata(this, ON_AFTER_DISCONNECTED_METADATA_KEY);
+        if (aMethods) aMethods.forEach(m => this._invokeLifecycleMethod(m, hostSet));
+        this._executeSwcScript('swc-on-disconnected', hostSet);
+        this._executeSwcScript('swc-on-after-disconnected', hostSet);
       }
 
       adoptedCallback() {
-        this._executeSwcScript('swc-on-before-adopted');
-        const bMethods = getLifecycleMetadata(this, ON_BEFORE_ADOPTED_METADATA_KEY);
-        bMethods?.forEach(m => {
-          if (typeof (this as any)[m] === 'function') (this as any)[m]();
-        });
+        const hostSet = SwcUtils.getHostSet(this as any);
+        this._executeSwcScript('swc-on-before-adopted', hostSet);
+        const bMethods = findAllLifecycleMetadata(this, ON_BEFORE_ADOPTED_METADATA_KEY);
+        if (bMethods) bMethods.forEach(m => this._invokeLifecycleMethod(m, hostSet));
+
         if (super.adoptedCallback) super.adoptedCallback();
-        const aMethods = getLifecycleMetadata(this, ON_AFTER_ADOPTED_METADATA_KEY);
-        aMethods?.forEach(m => {
-          if (typeof (this as any)[m] === 'function') (this as any)[m]();
-        });
-        this._executeSwcScript('swc-on-after-adopted');
+
+        const aMethods = findAllLifecycleMetadata(this, ON_AFTER_ADOPTED_METADATA_KEY);
+        if (aMethods) aMethods.forEach(m => this._invokeLifecycleMethod(m, hostSet));
+        this._executeSwcScript('swc-on-adopted', hostSet);
+        this._executeSwcScript('swc-on-after-adopted', hostSet);
       }
 
-      async connectedCallback() {
-        this._executeSwcScript('swc-on-before-connected');
-        const bMethods = getLifecycleMetadata(this, ON_BEFORE_CONNECTED_METADATA_KEY);
-        bMethods?.forEach(m => {
-          if (typeof (this as any)[m] === 'function') (this as any)[m]();
-        });
-        if (typeof (this as any).initCore === 'function') (this as any).initCore();
-        const iHtmlList = getInnerHtmlMetadataList(this);
-        let sContent = '';
-        let lContent = '';
-        if (iHtmlList) {
-          for (const meta of iHtmlList) {
-            const result = await (this as any)[meta.propertyKey]();
-            if (result !== undefined) {
-              if (meta.options.useShadow === true) sContent += result;
-              else lContent += result;
-            }
-          }
-        }
-        if (this.shadowRoot) this.shadowRoot.innerHTML = sContent;
-        if (lContent) this.innerHTML = lContent;
-        (this as any)._syncDecorators();
-        this._observer = new MutationObserver(() => (this as any)._syncDecorators());
-        this._observer.observe(this.shadowRoot || this, { childList: true, subtree: true });
-        if (super.connectedCallback) await super.connectedCallback();
-        const aMethods = getLifecycleMetadata(this, ON_AFTER_CONNECTED_METADATA_KEY);
-        aMethods?.forEach(m => {
-          if (typeof (this as any)[m] === 'function') (this as any)[m]();
-        });
-        this._executeSwcScript('swc-on-after-connected');
-      }
+      attributeChangedCallback(name: string, old: string | null, newVal: string | null) {
+        if (super.attributeChangedCallback) super.attributeChangedCallback(name, old, newVal);
 
-      attributeChangedCallback(name: string, oldValue: string | null, newValue: string | null) {
-        if (super.attributeChangedCallback) super.attributeChangedCallback(name, oldValue, newValue);
-        if (attributePropsList) {
-          attributePropsList.forEach(meta => {
-            if (meta.options.name === name) {
-              if (String((this as any)[meta.propertyKey]) !== String(newValue)) (this as any)[meta.propertyKey] = newValue;
-            }
-          });
-        }
-        if (typeof (this as any)._updateState === 'function') (this as any)._updateState(name);
-        const aMethodsMap = getLifecycleMetadata(constructor, ON_ATTRIBUTE_CHANGED_METADATA_KEY) as Map<string, (string | symbol)[]>;
-        const mKeys = aMethodsMap?.get(name);
-        if (mKeys && Array.isArray(mKeys))
-          mKeys.forEach(key => {
-            if (typeof (this as any)[key] === 'function') (this as any)[key](newValue, oldValue, name);
-          });
-        if (emitCustomEventList) {
-          const eMeta = emitCustomEventList.find(it => it.options.attributeName === name);
-          if (eMeta) {
-            const eType = eMeta.options.type;
-            const oHandler = this._emitHandlers.get(eType);
-            if (oHandler) this.removeEventListener(eType, oHandler);
-            if (newValue) {
-              const nHandler = (e: Event) => {
-                new Function('event', '$data', newValue).call(this, e, (e as CustomEvent).detail);
-              };
-              this.addEventListener(eType, nHandler);
-              this._emitHandlers.set(eType, nHandler);
-            }
+        if (name.startsWith('swc-on-') && !swcLifecycleAttributes.includes(name)) {
+          if (newVal !== null) {
+            const customEventMeta = emitCustomEventList.find(it => it.options.attributeName === name);
+            const eventName = customEventMeta ? customEventMeta.options.type : name.substring(7);
+            this._bindAttributeEvent(this as any, name, newVal, eventName);
           }
         }
-        const wMethodsKeys = aMethodsMap?.get(ATTRIBUTE_CHANGED_WILDCARD);
-        if (wMethodsKeys && Array.isArray(wMethodsKeys))
-          wMethodsKeys.forEach(key => {
-            if (typeof (this as any)[key] === 'function') (this as any)[key](newValue, oldValue, name);
-          });
-        this._executeSwcScript('swc-on-attribute-changed', { $new: newValue, $old: oldValue, $name: name });
+
+        const mKeys = attrChangeMap.get(name);
+        if (mKeys && Array.isArray(mKeys)) {
+          const hSet = SwcUtils.getHostSet(this as any);
+          mKeys.forEach(key => this._invokeLifecycleMethod(key, hSet, [newVal, old, name]));
+        }
       }
     };
 
-    const registry = config.customElementRegistry || (typeof customElements !== 'undefined' ? customElements : undefined);
-    if (registry && !registry.get(config.name)) {
-      const options = config.extends ? { extends: config.extends } : undefined;
-      registry.define(config.name, NewClass as any, options);
-    }
+    // --- @setAttribute wrapping logic ---
+    setAttrMap.forEach((methodName, attrName) => {
+      const original = NewClass.prototype[methodName as any];
+      if (typeof original === 'function') {
+        NewClass.prototype[methodName as any] = function (...args: any[]) {
+          const res = original.apply(this, args);
+          if (res !== undefined) {
+            if (res === null) this.removeAttribute(attrName);
+            else this.setAttribute(attrName, String(res));
+          }
+          return res;
+        };
+      }
+    });
+
+    // --- @emitCustomEvent wrapping logic ---
+    emitCustomEventList.forEach(meta => {
+      const { propertyKey, options } = meta;
+      const original = NewClass.prototype[propertyKey as any];
+      if (typeof original === 'function') {
+        NewClass.prototype[propertyKey as any] = function (...args: any[]) {
+          const detail = original.apply(this, args);
+          const event = new CustomEvent(options.type, {
+            detail,
+            bubbles: options.bubbles,
+            composed: options.composed,
+            cancelable: options.cancelable
+          });
+          this.dispatchEvent(event);
+          return detail;
+        };
+      }
+    });
+
+    const originalProto = constructor.prototype;
+    const newProto = NewClass.prototype;
+    Object.getOwnPropertyNames(originalProto).forEach(name => {
+      if (name === 'constructor') return;
+      const keys = Reflect.getMetadataKeys(originalProto, name);
+      keys.forEach(key => Reflect.defineMetadata(key, Reflect.getMetadata(key, originalProto, name), newProto, name));
+    });
 
     ReflectUtils.defineMetadata(ELEMENT_CONFIG_KEY, config, NewClass);
+    ReflectUtils.defineMetadata(ELEMENT_CONFIG_KEY, config, constructor);
+    const registry = config.customElementRegistry || (win as any)?.customElements;
+    if (registry && !registry.get(config.name)) {
+      registry.define(config.name, NewClass as any, config.extends ? { extends: config.extends } : undefined);
+    }
     return NewClass as any;
   };
 

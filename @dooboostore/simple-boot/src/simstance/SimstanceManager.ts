@@ -122,24 +122,24 @@ export class SimstanceManager implements Runnable<void, Map<ConstructorType<any>
     if (typeof data === 'symbol') {
       return this.findSims(data)[0];
     } else {
-      return this.findSims(data as { scheme?: string; type?: ConstructorType<any> })[0];
+      return this.findSims(data as { scheme?: string; type?: ConstructorType<any> | Function })[0];
     }
   }
 
   findLastSim<T = any>(symbol: Symbol): SimAtomic<T> | undefined;
-  findLastSim<T = any>(data: { scheme?: string; type?: ConstructorType<any> }): SimAtomic<T> | undefined;
+  findLastSim<T = any>(data: { scheme?: string; type?: ConstructorType<any> | Function }): SimAtomic<T> | undefined;
   findLastSim<T = any>(
     data:
       | {
           scheme?: string;
-          type?: ConstructorType<any>;
+          type?: ConstructorType<any> | Function;
         }
       | Symbol
   ): SimAtomic<T> | undefined {
     if (typeof data === 'symbol') {
       return this.findSims(data).reverse()[0];
     } else {
-      return this.findSims(data as { scheme?: string; type?: ConstructorType<any> }).reverse()[0];
+      return this.findSims(data as { scheme?: string; type?: ConstructorType<any> | Function }).reverse()[0];
     }
   }
 

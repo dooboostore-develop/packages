@@ -9,7 +9,7 @@
 // // export * from './operators';
 // export { Appender as AppenderArray, Dr, DrAppender, DrFor, DrForOf, DrForm, DrIf, DrInnerHTML, DrInnerText, DrPre, DrRepeat, DrStripElement, DrTargetAttr, DrTargetElement, DrTargetElementIsElement, DrThis, DrThisProperty, OperatorExecuter, OperatorExecuterAttrRequire } from './operators';
 // export * from './rawsets';
-export * from '@dooboostore/core-web/routers';
+export * from '@dooboostore/core-web/routers/index';
 // export * from './types';
 // export * from './validators';
 // export * from './DomRender';

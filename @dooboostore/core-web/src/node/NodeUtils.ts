@@ -8,10 +8,21 @@ export namespace NodeUtils {
   }
   // https://stackoverflow.com/questions/3955229/remove-all-child-elements-of-a-dom-node-in-javascript
   export const removeAllChildNode = (node: Node) => {
+    // 최신 api node.replaceChildren();
     while (node?.firstChild) {
       node.firstChild.remove();
     }
   };
+
+  export const removeAllChildNodeAndAppend = (node: Node, newNode: Node | Node[]) => {
+    // 최신 api e.replaceChildren(data);
+    removeAllChildNode(node);
+    if (Array.isArray(newNode)) {
+      newNode.forEach(it => node.appendChild(it));
+      return;
+    }
+    node.appendChild(newNode);
+  }
 
   export const appendChild = (parentNode: Node, childNode: Node) => {
     return parentNode.appendChild(childNode);

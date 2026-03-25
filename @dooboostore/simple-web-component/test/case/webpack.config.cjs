@@ -61,6 +61,12 @@ module.exports = {
     watchFiles: [path.resolve(__dirname, 'src/**/*.html')]
   },
   plugins: [...htmlPlugins],
+  ignoreWarnings: [
+    {
+      module: /.+/
+    },
+    /Circular dependency/i
+  ],
   module: {
     rules: [
       {

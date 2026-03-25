@@ -46,7 +46,6 @@ export class SituationTypeContainers {
 // [아키텍트님의 정석] 주입 공통 옵션
 type InjectOptions = {
   situationType?: SituationType;
-  // argument?: any; // 트랜젝션떄문에 사용했는데 어떻게 해야될지 나중에 다시 생각..
   proxy?: ConstructorType<ProxyHandler<any>> | ((caller: { application: SimpleApplication; instance: any }) => ProxyHandler<any>);
   optional?: boolean;
 };
@@ -58,7 +57,7 @@ export type InjectBySymbol = {
 };
 
 export type InjectByType<T> = {
-  type?: ConstructorType<T>;
+  type?: ConstructorType<T> | Function;
   scheme?: string;
   factory?: (caller: { instance?: any; methodName?: string | symbol; parameter: any[]; application: SimpleApplication; injectInstance?: T }) => any;
 };
@@ -69,7 +68,7 @@ export type InjectByFactory<T> = {
 
 export type InjectConfig<T = any> = InjectOptions & (InjectBySymbol | InjectByType<T> | InjectByFactory<T>);
 
-// [아키텍트님의 정석] Type Guards for InjectConfig (High Precision)
+// [아키텍트님의 정석] Type Guards
 export const isTargetSymbol = (config: InjectConfig): config is InjectOptions & InjectBySymbol => {
   return 'symbol' in config && config.symbol !== undefined;
 };
@@ -100,7 +99,6 @@ export type SaveInjectConfig = {
 const InjectMetadataKey = Symbol('Inject');
 const injectProcess = (config: InjectConfig, target: Object, propertyKey: string | symbol | undefined, parameterIndex: number) => {
   if (propertyKey && typeof target === 'object') {
-    // <-- object: method
     const otarget = target;
     target = target.constructor;
     const saves = (Reflect.getOwnMetadata(InjectMetadataKey, target, propertyKey) || []) as SaveInjectConfig[];
@@ -108,7 +106,6 @@ const injectProcess = (config: InjectConfig, target: Object, propertyKey: string
     saves.push({ index: parameterIndex, config: config, propertyKey, type });
     ReflectUtils.defineMetadata(InjectMetadataKey, saves, target, propertyKey);
   } else if (!propertyKey || typeof target === 'function') {
-    // <-- function: constructor
     const existingInjectdParameters = (ReflectUtils.getMetadata(InjectMetadataKey, target) || []) as SaveInjectConfig[];
     const type = ReflectUtils.getParameterTypes(target)[parameterIndex];
     existingInjectdParameters.push({ index: parameterIndex, config: config, type });
@@ -128,14 +125,6 @@ export function Inject<T = any>(configOrTarget: Object | InjectConfig<T>, proper
   }
 }
 
-export const getInject = (target: ConstructorType<any> | Function | any, propertyKey?: string | symbol): SaveInjectConfig[] => {
-  if (target != null && target !== undefined && typeof target === 'object') {
-    target = target.constructor;
-  }
-  if (propertyKey) {
-    const parameters: SaveInjectConfig[] = Reflect.getOwnMetadata(InjectMetadataKey, target, propertyKey);
-    return parameters;
-  } else {
-    return ReflectUtils.getMetadata(InjectMetadataKey, target) ?? [];
-  }
+export const getInject = (target: any, propertyKey?: string | symbol): SaveInjectConfig[] => {
+  return ReflectUtils.findMetadata(InjectMetadataKey, target, propertyKey) ?? [];
 };

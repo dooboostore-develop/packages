@@ -1,165 +1,282 @@
-# @dooboostore/simple-web-component
+# @dooboostore/simple-web-component (SWC)
 
-An ultra-lightweight, high-performance Web Component library that brings **Modern Reactivity** to **Standard Web Technologies**. Build complex, high-performance UIs using native Shadow DOM, Slots, and MutationObservers without the overhead of a Virtual DOM.
+> **"Pure, Standards-Compliant, and Blazing Fast Web Components Framework."**
 
-## 🚀 Key Advantages
-
-- **Surgical Updates**: Powered by Proxy-based reactivity. It updates only the specific **Text Nodes or Attributes** bound to data—no full-tree diffing.
-- **Standard-First**: Keep your HTML semantic. Use the native `is` attribute to enhance standard tags (`ul`, `table`, `div`, etc.).
-- **Zero Boilerplate**: Define queries, events, and lifecycles declaratively using decorators.
-- **Scoped Context (`as`)**: Effortlessly isolate and share data between parent and child components using explicit aliases.
-- **Hybrid Rendering**: Seamlessly combine **Shadow DOM** and **Light DOM** in a single component.
+`simple-web-component` (SWC) is a minimalist library designed for building high-performance Web Components and Single Page Applications (SPA). It strips away heavy "magic" features like Proxy-based reactivity and continuous `MutationObserver` scans in favor of a **Pure Architecture** that stays out of your way while offering professional-grade Dependency Injection (DI) and Routing.
 
 ---
 
-## 📦 Installation
+## 🚀 Why SWC?
+
+- **Zero Magic**: No Proxy traps, no Virtual DOM diffing. Predictive and standard-compliant.
+- **Native Inheritance**: Inherit directly from `HTMLElement`, `HTMLDivElement`, etc.
+- **Extreme Performance**: Ideal for high-load UIs (1,000+ nodes) with minimal memory overhead.
+- **Micro-Frontend Ready**: Independent routing and DI containers for every component scope.
+- **Standard-First**: Works directly with native Custom Elements, Shadow DOM, and Slots.
+
+---
+
+## 📦 Installation & Setup
 
 ```bash
-pnpm add @dooboostore/simple-web-component
+npm install @dooboostore/simple-web-component reflect-metadata
 ```
 
-### Safari Support (Required)
-Include this polyfill at the very top of your entry point to support the `is` attribute in Safari:
-```javascript
-import '@ungap/custom-elements';
-import 'reflect-metadata';
-```
-
----
-
-## 💡 Practical Showcase
-
-### 1. Basic Reactive Component
-A counter where only the number part is updated in the DOM when you click.
-
-```typescript
-import { elementDefine, innerHtml, state, addEventListener } from '@dooboostore/simple-web-component';
-
-@elementDefine('my-counter')
-class MyCounter extends HTMLElement {
-  @state count = 0;
-
-  @innerHtml({ useShadow: true })
-  render() {
-    return `
-      <p>Count: <strong>{{count}}</strong></p>
-      <button id="inc"> +1 </button>
-    `;
-  }
-
-  @addEventListener({ type: 'click', query: '#inc' })
-  onInc() {
-    this.count++; // 👈 Surgical Update!
-  }
-}
-```
-
-### 2. Nested Scopes with `as="alias"`
-Access parent data from deeply nested children without naming collisions. You can access local state directly without a prefix.
-
-```typescript
-@elementDefine({ name: 'parent-comp' })
-class Parent extends HTMLElement {
-  @state user = { name: 'Alice', score: 100 };
-  @innerHtml({ useShadow: true })
-  render() { 
-    return `<h3>User: {{user.name}}</h3><slot></slot>`; // 👈 Local state: No prefix needed
-  }
-}
-
-@elementDefine({ name: 'child-comp' })
-class Child extends HTMLElement {
-  @state score = 0;
-  @innerHtml({ useShadow: true })
-  render() {
-    return `
-      <div>Child Score: {{score}}</div> 
-      <div>Parent's User: {{user.name}}</div> <!-- 👈 Automatic Bubbling: No prefix needed -->
-    `;
-  }
-}
-```
+### Browser Support
+For **Safari** support of the `is` attribute, add this to your `<head>`:
 ```html
-<!-- HTML Usage -->
-<parent-comp as="p">
-  <child-comp as="c"></child-comp>
-</parent-comp>
+<script src="https://unpkg.com/@ungap/custom-elements"></script>
 ```
 
 ---
 
-## 📑 Decorator Deep Dive
+## 💡 Core Decorators
 
 ### 1. `@elementDefine(config)`
-Registers the class as a Custom Element.
-- `name`: (Required) Tag name.
-- `extends`: (Optional) Native tag to extend.
-- `autoRemoveEventListeners`: (Optional) Auto-cleanup on disconnect.
+Registers the class as a custom element.
 
-### 2. `@innerHtml` or `@innerHtml(options?)`
-Defines markup. Supports **Async (Promises)**.
-- `useShadow`: (Optional) Injects into Shadow DOM if `true` (default: `false`).
+| Option | Type | Description |
+|---|---|---|
+| `name` | `string` | The custom element tag name (e.g., `'my-el'`). |
+| `extends` | `string` | (Optional) The native tag to extend. |
+| `observedAttributes` | `string[]` | (Optional) Extra attributes to observe. |
+| `window` | `Window` | (Optional) Custom window object (useful for SSR). |
 
-### 3. `@state` or `@state(alias?)`
-Declares a property as reactive. Changes trigger **Surgical Updates**.
-- `alias`: Custom name for templates (e.g. `{{alias.path}}`).
-
-### 4. `@attribute` or `@attribute(options?)`
-Syncs property with HTML attribute. Supports parameterless usage.
-- `name`: (Optional) Attribute name. Defaults to property name.
-- `type`: (`String`, `Number`, `Boolean`, `Object`) Conversion type.
-- `disableReflect`: If `true`, stops JS -> HTML sync. Default is `false`.
+### 2. `@innerHtml(options?)`
+Defines the template for the component.
 
 ```typescript
-@attribute count = 0; // Standard usage
-@attribute({ type: Number }) age = 20; 
-@attribute({ name: 'user-id', disableReflect: true }) id = ''; 
+@elementDefine('my-el')
+class MyEl extends HTMLElement {
+  @innerHtml({ useShadow: true })
+  render() {
+    return `<style>:host { color: blue; }</style><div>Hello World</div>`;
+  }
+}
 ```
 
-### 5. `@query` or `@query(selector, options?)`
-Lazy-loads elements from the DOM. Supports parameterless usage to target the **Host**.
-- `selector`: CSS selector.
-- `root`: `'shadow' | 'light' | 'all' | 'auto'` (Default: `'auto'`).
+### 3. Modern Attribute Management
+SWC uses a **Method-Based Reflection** approach. You control exactly how data flows.
+
+- **`@setAttribute(name?)`**: Reflects the method's **return value** to the DOM attribute.
+- **`@changedAttribute(name?)`**: A handler triggered when the attribute changes.
 
 ```typescript
-@query hostEl: HTMLElement; // Targets the Host
-@query('.title', { root: 'light' }) titleEl: HTMLElement;
+@elementDefine('my-counter')
+class MyCounter extends HTMLElement {
+  private count = 0;
+  @query('#display') displayEl?: HTMLElement;
+
+  @setAttribute('count')
+  updateCount(val: number) { return val; } // Sets 'count' attribute in DOM
+
+  @changedAttribute('count')
+  onCountChange(newVal: string, oldVal: string, name: string) {
+    this.count = Number(newVal);
+    // Surgical Update: Only update the specific node
+    if (this.displayEl) this.displayEl.textContent = newVal;
+  }
+}
 ```
 
-### 6. `@addEventListener(options)`
-Declarative event binding. Method receives `(event, targetElement)`.
-- `type`: Event type.
-- `query`: CSS selector. Omit to bind to **Host**.
-- `root`: Search scope for target.
-- `stopPropagation`, `preventDefault`, `stopImmediatePropagation`: Event modifiers.
+### 4. Powerful Queries (`@query`, `@queryAll`)
+Inject internal elements directly into properties. Supports the **`:host`** selector.
 
-### 7. `@emitCustomEvent(options)`
-Dispatches `CustomEvent`. Returns from the method become **`$data`** in parent `on[type]` handlers.
+| Root Option | Description |
+|---|---|
+| `auto` (default) | Search in `shadowRoot` if exists, otherwise `this` (Light DOM). |
+| `shadow` | **Strictly** search in `shadowRoot`. Returns `null/[]` if no shadow. |
+| `light` | **Strictly** search in Light DOM (`this`). |
+| `all` | Search in **both** Shadow and Light DOM. |
+
+Inject elements directly into properties. Supports `:host` and scoped root control.
+
+```typescript
+@elementDefine('query-demo')
+class QueryDemo extends HTMLElement {
+  @query('.title') titleEl!: HTMLElement;
+  @queryAll('.items') list!: NodeListOf<HTMLElement>;
+  
+  // Reference the component itself
+  @query(':host') self!: HTMLElement;
+
+  // Root options: 'light' | 'shadow' | 'all' | 'auto' (default)
+  @query('.btn', { root: 'shadow' }) shadowBtn!: HTMLButtonElement;
+}
+```
+
+### 5. Smart Event Binding (`@addEventListener`)
+Bind events declaratively with support for **Event Delegation**.
+
+```typescript
+@elementDefine('event-demo')
+class EventDemo extends HTMLElement {
+  // 1. Direct binding (Pure Mode)
+  @addEventListener('.static-btn', 'click')
+  onStaticClick(event: MouseEvent) { ... }
+
+  // 2. Event Delegation (Works for dynamic nodes added LATER)
+  @addEventListener('.item', 'click', { delegate: true })
+  onItemClick(event: MouseEvent, { $host }: HostSet, target: HTMLElement) {
+    console.log('Clicked dynamic item:', target.textContent);
+  }
+}
+```
 
 ---
 
-## ⏳ Lifecycle Hooks
-Provides 6-stage hooks for precise control. Multiple methods per hook are supported.
+## 🌐 Powerful SPA & Routing
 
-| Hook | Timing |
-| :--- | :--- |
-| **`@onBeforeConnected`** | Before template injection. |
-| **`@onAfterConnected`** | After injection (Alias: **`@onConnected`**). |
-| **`@onBeforeDisconnected`**| Before element removal. |
-| **`@onAfterDisconnected`** | After removal and cleanup (Alias: **`@onDisconnected`**). |
-| **`@onAttributeChanged(key)`**| When an attribute (or `*` wildcard) changes. Receives `(newVal, oldVal, name)`. |
-| **`@onAddEventListener`** | Called when a listener is attached. Receives `(element, type, handler)`. |
+SWC provides a revolutionary way to build SPAs where **each component scope is an independent application**.
+
+### 1. Isolated App Scopes (Micro-Frontends)
+Use the `<swc-app>` tag to create an isolated universe. Each instance has its own **DI Container** and **Router**. You can run multiple independent SPAs on a single page without URL conflicts.
+
+```html
+<!-- index.html -->
+<swc-app swc-get-application-config="myAppConfig(this)"></swc-app>
+
+<script>
+  // This function returns the configuration needed to bootstrap the SWC App
+  window.myAppConfig = (host) => {
+    return {
+      rootRouter: RootRouter, // The entry point class (must be @Sim)
+      routeType: 'element',   // 'element' (in-memory history), 'hash', or 'path'
+      path: '/users/list',    // Initial route path
+      window: window          // Optional: custom window object
+    };
+  };
+
+  // 4. External Control (Anywhere in your JS)
+  function navigateFromOutside() {
+      const app = document.querySelector('swc-app');
+      // Programmatically trigger routing from outside the component
+      app.routing('/users/detail/2'); 
+  }
+</script>
+
+<button onclick="navigateFromOutside()">External Link to User 2</button>
+```
+
+### 2. DI-Powered Routing
+Define routes using decorators. Components are automatically instantiated and managed by the DI container.
+
+```typescript
+import { Router } from '@dooboostore/simple-boot/decorators/route/Router';
+import { Sim } from '@dooboostore/simple-boot/decorators/SimDecorator';
+
+@Sim
+@Router({
+  path: '/users',
+  route: {
+    '/list': UserList,
+    '/detail/:id': UserDetail
+  }
+})
+@elementDefine('user-router')
+class UserRouter extends HTMLElement implements RouterAction.CanActivate {
+  @innerHtml({ useShadow: true })
+  render() { 
+    return `<header>User System</header><main><slot></slot></main>`; 
+  }
+
+  async canActivate(url: RoutingDataSet, data?: any) {
+    if (data instanceof Node) this.replaceChildren(data);
+  }
+}
+
+// Pure Service (Business Logic)
+@Sim
+class UserService {
+  async getProfile(id: string) {
+    return { id, name: 'Standard User' };
+  }
+}
+
+// Example Page Components
+@Sim
+@elementDefine('user-list')
+class UserList extends HTMLElement {
+  constructor(private router: Router, private userService: UserService) { super(); }
+
+  @innerHtml
+  render() { 
+    return `
+      <ul><li>User A</li><li>User B</li></ul>
+      <button swc-on-click="$host.router.go('/users/detail/1')">Go to Detail</button>
+    `; 
+  }
+}
+
+@Sim
+@elementDefine('user-detail')
+class UserDetail extends HTMLElement {
+  constructor(private router: Router, private userService: UserService) { super(); }
+
+  @onConnected
+  async init() {
+     const id = this.router.getIntent()?.params?.id;
+     const profile = await this.userService.getProfile(id);
+     console.log('Viewing User:', profile.name);
+  }
+
+  @innerHtml
+  render() { return `<div>User Detail View <button swc-on-click="$host.router.back()">Back</button></div>`; }
+}
+```
+
+### 3. Lifecycle @Inject
+Inject services or component context directly into lifecycle methods. This is the ultimate way to handle side effects cleanly.
+
+```typescript
+import { Inject } from '@dooboostore/simple-boot/decorators/inject/Inject';
+import { InjectSituationType, onConnected, HostSet } from '@dooboostore/simple-web-component';
+import { Router } from '@dooboostore/core-web/routers/Router';
+
+@elementDefine('profile-page')
+class ProfilePage extends HTMLElement {
+
+  @onConnected
+  async init(
+    @Inject({ situationType: InjectSituationType.HOST_SET }) hostSet: HostSet,
+    @Inject({ type: Router }) router: Router,
+    @Inject({ type: UserService }) api: UserService
+  ) {
+    console.log('App scope:', hostSet.$appHost);
+    const user = await api.getProfile();
+    // Navigate programmatically using injected router
+    if (!user) router.go('/login');
+  }
+}
+```
 
 ---
 
-## 🛠 Built-in Logic Components (`is` Variants)
+## 🏰 Host Hierarchy & Context
+SWC automatically traverses the DOM to provide meaningful context to your scripts and listeners:
 
-Enhance any standard HTML tag with logic using the `is` attribute. Use **`swcValue`** to bind data.
+- **`$host`**: The current component Handling the event (**Self**).
+- **`$parentHost`**: The direct parent SWC component.
+- **`$appHost`**: The nearest parent `<swc-app>` (the SPA boundary).
+- **`$hosts`**: Array of all SWC ancestors `[Root, ..., Parent, Self]`.
 
-- **Looping**: `<ul is="swc-for-of-ul" swcValue="{{items}}" as="item">...</ul>`
-- **Conditionals**: `<div is="swc-if-div" swcValue="{{isVisible}}">...</div>`
-- **Branching**: `<div is="swc-choose-div" swcValue="{{status}}">...</div>`
-- **Object Binding**: `<div is="swc-object-div" swcValue="{{user}}">...</div>`
+---
+
+## 🛠 Lifecycle Hooks
+Executed in **Parent -> Child** order.
+- `@onBeforeConnected` / `@onAfterConnected` (alias: `@onConnected`)
+- `@onBeforeDisconnected` / `@onAfterDisconnected` (alias: `@onDisconnected`)
+- `@onBeforeAdopted` / `@onAfterAdopted` (alias: `@onAdopted`)
+- `@onAddEventListener`
+
+---
+
+## ⚡ Performance
+- **Zero "Deep Scan"**: Listeners are only bound to specific selectors.
+- **Surgical Updates**: Manipulate DOM directly in `@changedAttribute` instead of full re-renders.
+- **Zero Background Overhead**: No polling, no background observers.
+
+---
 
 ## 📜 License
 MIT

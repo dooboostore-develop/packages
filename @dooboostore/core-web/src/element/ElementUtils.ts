@@ -1,11 +1,22 @@
 import { Promises } from '@dooboostore/core/promise/Promises';
 
 export namespace ElementUtils {
-  export type Attr = {name: string, value: any}
+  export type Attr = { name: string; value: any };
 
-  export type LoadImageCallbackType = { onload: (img: HTMLImageElement) => void, onerror: OnErrorEventHandler };
-  export type LoadAudioCallbackType = { onload: (img: HTMLAudioElement) => void, onerror: (e: ErrorEvent) => void };
+  export type LoadImageCallbackType = { onload: (img: HTMLImageElement) => void; onerror: OnErrorEventHandler };
+  export type LoadAudioCallbackType = { onload: (img: HTMLAudioElement) => void; onerror: (e: ErrorEvent) => void };
 
+  export function removeAllChildren(el: Element): void;
+  export function removeAllChildren(el: Element, els: Node | Node[]): void;
+  export function removeAllChildren(el: Element, els?: Node | Node[]): void {
+    if (!els) {
+      el.replaceChildren();
+    } else if (Array.isArray(els)) {
+      el.replaceChildren(...els);
+    } else {
+      el.replaceChildren(els);
+    }
+  }
 
   export function loadImage(src: string): Promise<HTMLImageElement>;
   export function loadImage(src: string, callback: LoadImageCallbackType): void;
@@ -50,7 +61,7 @@ export namespace ElementUtils {
     audio.addEventListener('canplay', () => {
       targetCallback?.(audio);
     });
-    audio.addEventListener('error', (e) => {
+    audio.addEventListener('error', e => {
       callback?.onerror(e);
     });
     audio.load();
@@ -64,7 +75,7 @@ export namespace ElementUtils {
     // console.log('DocumentFragment innerHTML:', tempDiv.innerHTML);
     return tempDiv.innerHTML;
     // }
-  }
+  };
   // export const fragmentToHTML = (fragment: DocumentFragment, config: { document: Document } = { document }): string => {
   //    const tempDiv = config.document.createElement('div');
   //    tempDiv.appendChild(fragment.cloneNode(true));
@@ -72,18 +83,16 @@ export namespace ElementUtils {
   //  }
 
   export const htmlToFragment = (html: string, config: { document: Document } = { document }): DocumentFragment => {
-      const tempDiv = config.document.createElement('div');
-      tempDiv.innerHTML = html;
-      const fragment = config.document.createDocumentFragment();
-      while (tempDiv.firstChild) {
-        fragment.appendChild(tempDiv.firstChild);
-      }
-      return fragment;
+    const tempDiv = config.document.createElement('div');
+    tempDiv.innerHTML = html;
+    const fragment = config.document.createDocumentFragment();
+    while (tempDiv.firstChild) {
+      fragment.appendChild(tempDiv.firstChild);
     }
+    return fragment;
+  };
 
-
-
-/*
+  /*
    17 // originalDiv 자체와 속성만 복사하고, childSpan은 복사하지 않습니다.
    18 const shallowCopy = originalDiv.cloneNode(false);
    19 shallowCopy.id = 'shallowCopyDiv'; // ID 변경 (중복 방지)
@@ -101,26 +110,25 @@ export namespace ElementUtils {
 
   export const replaceWith = (targetElement: Element, replaceElement: Element) => {
     targetElement.replaceWith(replaceElement);
-
-  }
+  };
   export const nodeList = (documentFragment: DocumentFragment) => {
-    return Array.from(documentFragment.childNodes)
-  }
+    return Array.from(documentFragment.childNodes);
+  };
 
   export const cloneNodeList = (documentFragment: DocumentFragment) => {
     return Array.from(documentFragment.childNodes).map(node => node.cloneNode(true));
-  }
+  };
 
-  export const querySelector  = (e: Element | {start: Element, end: Element}, selector: string) => {
-    const elements = ElementUtils.querySelectorAll(e,selector);
-    if (elements.length > 0 ) {
+  export const querySelector = (e: Element | { start: Element; end: Element }, selector: string) => {
+    const elements = ElementUtils.querySelectorAll(e, selector);
+    if (elements.length > 0) {
       return elements[0];
     } else {
       return null;
     }
-  }
+  };
 
-  export const querySelectorAll = (e: Element | {start: Node, end: Node}, selector: string) => {
+  export const querySelectorAll = (e: Element | { start: Node; end: Node }, selector: string) => {
     if (e instanceof Element) {
       return Array.from(e.querySelectorAll(selector));
     } else {
@@ -143,49 +151,48 @@ export namespace ElementUtils {
       }
     }
     return [];
-  }
+  };
 
-
-export const selectorElements = (selector: string, element: Element|Document = document): Element[] => {
+  export const selectorElements = (selector: string, element: Element | Document = document): Element[] => {
     return Array.prototype.slice.call(element.querySelectorAll(selector));
-  }
+  };
 
-export const selectorNodes = (selector: string, element: Element|Document = document) => {
+  export const selectorNodes = (selector: string, element: Element | Document = document) => {
     return element.querySelectorAll(selector);
-  }
+  };
 
-export const removeAttribute = (result: Element, attrs: string[]) => {
+  export const removeAttribute = (result: Element, attrs: string[]) => {
     attrs.forEach(it => {
-      result.removeAttribute(it)
+      result.removeAttribute(it);
     });
-  }
+  };
 
-export const setAttribute = (result: Element, attrs: string[]) => {
+  export const setAttribute = (result: Element, attrs: string[]) => {
     attrs.forEach(it => {
-      result.setAttribute(it, '')
+      result.setAttribute(it, '');
     });
-  }
+  };
 
-export const setAttributeAttr = (result: Element, attrs: Attr[]) => {
+  export const setAttributeAttr = (result: Element, attrs: Attr[]) => {
     attrs.forEach(it => {
-      result.setAttribute(it.name, it.value)
+      result.setAttribute(it.name, it.value);
     });
-  }
+  };
 
-export const getAttributeToObject = (input: Element): any => {
+  export const getAttributeToObject = (input: Element): any => {
     const attribute = {} as any;
     input.getAttributeNames().forEach(ait => {
       attribute[ait] = input.getAttribute(ait);
     });
     return attribute;
-  }
+  };
 
-export const getStyleToObject = (input: HTMLElement): any => {
+  export const getStyleToObject = (input: HTMLElement): any => {
     const style = {} as any;
     for (let i = 0; i < input.style.length; i++) {
       const key = input.style[i];
       style[key] = (input.style as any)[key];
     }
     return style;
-  }
+  };
 }
