@@ -50,7 +50,7 @@ export abstract class Validator<T = any, E = Element> {
 
     setEvent(event: Event | undefined) {
         if (event) {
-            this._event = this.domRenderFinal(event);
+            this._event = event;
         }
         return this;
     }
@@ -73,15 +73,15 @@ export abstract class Validator<T = any, E = Element> {
 
     setTarget(target: E | undefined) {
         if (target) {
-            this._target = this.domRenderFinal(target);
+            this._target = target;
         }
         return this;
     }
 
-    private domRenderFinal(obj: any) {
-        (obj as any)._DomRender_isFinal = true;
-        return obj
-    }
+    // private domRenderFinal(obj: any) {
+    //     (obj as any)._DomRender_isFinal = true;
+    //     return obj
+    // }
 
     get value(): T | undefined {
         if (this._value === undefined || this._value === null) {

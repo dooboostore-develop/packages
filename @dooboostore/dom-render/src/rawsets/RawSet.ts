@@ -2,7 +2,7 @@ import { RandomUtils } from '@dooboostore/core/random/RandomUtils';
 import { StringUtils } from '@dooboostore/core/string/StringUtils';
 import { EventManager, NormalAttrDataType } from '../events/EventManager';
 import type { DomRenderConfig } from '../configs/DomRenderConfig';
-import { Range } from '../iterators/Range';
+import { Range } from '@dooboostore/core/iterators/Range';
 import { ElementUtils } from '@dooboostore/core-web/element/ElementUtils';
 import { ComponentSet } from '../components/ComponentSet';
 import { DrPre } from '../operators/DrPre';

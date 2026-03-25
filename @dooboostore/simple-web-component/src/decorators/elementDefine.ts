@@ -107,7 +107,8 @@ export const elementDefine =
     const stateList = getStateMetadataList(constructor);
     const observedFromProps = attributePropsList ? attributePropsList.map(it => it.options.name!) : [];
     const observedFromEmits = emitCustomEventList ? emitCustomEventList.map(it => it.options.attributeName!) : [];
-    const mergedObservedAttributes = [...new Set([...(config.observedAttributes ?? []), ...observedFromProps, ...observedFromEmits])];
+    const swcLifecycleAttributes = ['swc-on-constructor', 'swc-on-before-connected', 'swc-on-after-connected', 'swc-on-before-disconnected', 'swc-on-after-disconnected', 'swc-on-before-adopted', 'swc-on-after-adopted', 'swc-on-attribute-changed'];
+    const mergedObservedAttributes = [...new Set([...(config.observedAttributes ?? []), ...observedFromProps, ...observedFromEmits, ...swcLifecycleAttributes])];
 
     const NewClass = class extends (constructor as any) {
       private _swcId = Math.random().toString(36).substring(2, 11);
@@ -123,21 +124,32 @@ export const elementDefine =
         return mergedObservedAttributes;
       }
 
+      private _executeSwcScript(attrName: string, extraArgs: Record<string, any> = {}) {
+        const script = this.getAttribute(attrName);
+        if (script) {
+          try {
+            const argNames = Object.keys(extraArgs);
+            const argValues = Object.values(extraArgs);
+            new Function(...argNames, script).apply(this, argValues);
+          } catch (e) {
+            console.error(`[SWC] Failed to execute ${attrName} script:`, e);
+          }
+        }
+      }
+
       constructor(...args: any[]) {
         super(...args);
+        this._executeSwcScript('swc-on-constructor');
 
         if (stateList) {
           stateList.forEach(meta => {
             const key = meta.propertyKey;
             const stateName = meta.options.name!;
-
-            // 필드 초기화로 덮어씌워지기 전/후의 값을 확실히 낚아챔
             const initialVal = (this as any)[key];
             this._internalStates.set(
               key,
               SwcUtils.createReactiveProxy(initialVal, () => this._updateState(stateName))
             );
-
             Object.defineProperty(this, key, {
               get: () => this._internalStates.get(key),
               set: newVal => {
@@ -147,6 +159,42 @@ export const elementDefine =
                   SwcUtils.createReactiveProxy(newVal, () => this._updateState(stateName))
                 );
                 this._updateState(stateName);
+              },
+              enumerable: true,
+              configurable: true
+            });
+          });
+        }
+
+        if (attributePropsList) {
+          attributePropsList.forEach(meta => {
+            const key = meta.propertyKey;
+            const attrName = meta.options.name!;
+            const attrValue = this.getAttribute(attrName);
+            let initialVal = attrValue !== null ? attrValue : (this as any)[key];
+            if (initialVal === undefined) initialVal = null;
+
+            if (attrValue !== null) {
+              if (meta.options.type === Number) initialVal = Number(attrValue);
+              else if (meta.options.type === Boolean) initialVal = true;
+              else if (meta.options.type === Object) {
+                try {
+                  initialVal = JSON.parse(attrValue);
+                } catch (e) {}
+              }
+            }
+
+            this._internalStates.set(key, initialVal);
+            Object.defineProperty(this, key, {
+              get: () => this._internalStates.get(key),
+              set: newVal => {
+                if (this._internalStates.get(key) === newVal) return;
+                this._internalStates.set(key, newVal);
+                if (typeof (this as any)._updateState === 'function') (this as any)._updateState(attrName);
+                if (!meta.options.disableReflect && this.setAttribute) {
+                  if (newVal === null || newVal === undefined || newVal === false) this.removeAttribute(attrName);
+                  else this.setAttribute(attrName, typeof newVal === 'object' ? JSON.stringify(newVal) : String(newVal));
+                }
               },
               enumerable: true,
               configurable: true
@@ -255,7 +303,6 @@ export const elementDefine =
       }
 
       private _buildStateMap() {
-        // 기존 바인딩 맵을 완전히 비우지 않고 유지하면서 새로운 노드만 추가함 (바인딩 소실 방지 핵심)
         const scan = (root: Node) => {
           const walker = document.createTreeWalker(root, NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_TEXT);
           let node: Node | null = null;
@@ -278,35 +325,25 @@ export const elementDefine =
 
       private _parseAndBind(node: Node | Attr, type: 'text' | 'attribute', owner?: HTMLElement) {
         const tplKey = `__swc_original_${this._swcId}`;
-        // 이미 이 인스턴스에 의해 바인딩된 노드라면 스킵 (중복 방지)
         const isAlreadyBound = (node as any).__swc_bound_ids?.has(this._swcId);
-
-        // 텍스트는 원본 템플릿(tplKey)에서, 없으면 현재 내용에서 추출
         const content = (node as any)[tplKey] || node.textContent || '';
         const matches = Array.from(content.matchAll(/{{(.*?)}}/g));
-        if (matches.length === 0) return;
-
-        if (isAlreadyBound) return;
+        if (matches.length === 0 || isAlreadyBound) return;
 
         matches.forEach(match => {
           const fullPath = match[1].trim();
           const rootName = fullPath.split('.')[0];
-
           const isState = stateList?.some(s => s.options.name === rootName);
+          const isAttr = attributePropsList?.some(a => a.options.name === rootName);
           const isLogicKey = (this as any)._asKey === rootName || (this as any)._asIndexKey === rootName;
           const isExternal = this._externalSources.has(rootName);
           const isSelfAlias = this.getAttribute('as') === rootName;
-
-          if (!isState && !isLogicKey && !isExternal && !isSelfAlias) return;
+          if (!isState && !isAttr && !isLogicKey && !isExternal && !isSelfAlias) return;
 
           if (!this._stateBindings.has(rootName)) this._stateBindings.set(rootName, []);
-
           if (!(node as any)[tplKey]) (node as any)[tplKey] = content;
-
-          // 바인딩 ID 기록
           if (!(node as any).__swc_bound_ids) (node as any).__swc_bound_ids = new Set();
           (node as any).__swc_bound_ids.add(this._swcId);
-
           this._stateBindings.get(rootName)!.push({ node, type, owner, path: fullPath });
           this._updateState(rootName);
         });
@@ -324,20 +361,16 @@ export const elementDefine =
         const bindings = this._stateBindings.get(stateName);
         if (!bindings) return;
         const tplKey = `__swc_original_${this._swcId}`;
-
         bindings.forEach(bin => {
           let text = (bin.node as any)[tplKey];
           if (!text) return;
-
           const matches = Array.from(text.matchAll(/{{(.*?)}}/g));
           let updatedText = text;
-
           for (const match of matches) {
             const path = match[1].trim();
             const root = path.split('.')[0];
             let val: any = undefined;
             let current: HTMLElement | null = this as any as HTMLElement;
-
             while (current) {
               const currentNewClass = current as any;
               if (current.getAttribute('as') === root) {
@@ -362,11 +395,9 @@ export const elementDefine =
               }
               current = current.parentElement || (current.getRootNode() as any).host;
             }
-
             if (val !== undefined) {
               const strVal = val === null || val === undefined ? '' : typeof val === 'object' ? '[Object]' : String(val);
               updatedText = updatedText.replace(match[0], strVal);
-
               if (bin.type === 'attribute' && bin.owner) {
                 const attrName = (bin.node as Attr).name;
                 if (val === null || val === undefined) bin.owner.removeAttribute(attrName);
@@ -384,6 +415,7 @@ export const elementDefine =
       }
 
       disconnectedCallback() {
+        this._executeSwcScript('swc-on-before-disconnected');
         const bMethods = getLifecycleMetadata(this, ON_BEFORE_DISCONNECTED_METADATA_KEY);
         bMethods?.forEach(m => {
           if (typeof (this as any)[m] === 'function') (this as any)[m]();
@@ -398,9 +430,11 @@ export const elementDefine =
         aMethods?.forEach(m => {
           if (typeof (this as any)[m] === 'function') (this as any)[m]();
         });
+        this._executeSwcScript('swc-on-after-disconnected');
       }
 
       adoptedCallback() {
+        this._executeSwcScript('swc-on-before-adopted');
         const bMethods = getLifecycleMetadata(this, ON_BEFORE_ADOPTED_METADATA_KEY);
         bMethods?.forEach(m => {
           if (typeof (this as any)[m] === 'function') (this as any)[m]();
@@ -410,9 +444,11 @@ export const elementDefine =
         aMethods?.forEach(m => {
           if (typeof (this as any)[m] === 'function') (this as any)[m]();
         });
+        this._executeSwcScript('swc-on-after-adopted');
       }
 
       async connectedCallback() {
+        this._executeSwcScript('swc-on-before-connected');
         const bMethods = getLifecycleMetadata(this, ON_BEFORE_CONNECTED_METADATA_KEY);
         bMethods?.forEach(m => {
           if (typeof (this as any)[m] === 'function') (this as any)[m]();
@@ -440,6 +476,7 @@ export const elementDefine =
         aMethods?.forEach(m => {
           if (typeof (this as any)[m] === 'function') (this as any)[m]();
         });
+        this._executeSwcScript('swc-on-after-connected');
       }
 
       attributeChangedCallback(name: string, oldValue: string | null, newValue: string | null) {
@@ -478,13 +515,16 @@ export const elementDefine =
           wMethodsKeys.forEach(key => {
             if (typeof (this as any)[key] === 'function') (this as any)[key](newValue, oldValue, name);
           });
+        this._executeSwcScript('swc-on-attribute-changed', { $new: newValue, $old: oldValue, $name: name });
       }
     };
 
     const registry = config.customElementRegistry || (typeof customElements !== 'undefined' ? customElements : undefined);
     if (registry && !registry.get(config.name)) {
-      registry.define(config.name, NewClass as any, config.extends ? { extends: config.extends } : undefined);
+      const options = config.extends ? { extends: config.extends } : undefined;
+      registry.define(config.name, NewClass as any, options);
     }
+
     ReflectUtils.defineMetadata(ELEMENT_CONFIG_KEY, config, NewClass);
     return NewClass as any;
   };

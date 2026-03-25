@@ -18,6 +18,7 @@
 -   **Event Handling**: Helpers to create `Observable` streams from DOM and window events.
 -   **Animation Utilities**: Tools for working with `requestAnimationFrame` to create smooth animations.
 -   **Web-Specific Conversions**: Advanced converters for `File`, `Blob`, `ImageBitmap`, `Canvas`, and Base64 data URLs.
+-   **Routing**: Standard routing implementations including `PathRouter`, `HashRouter`, and `LocationRouter` (full page reload).
 
 ## Installation
 

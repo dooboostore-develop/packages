@@ -15,6 +15,7 @@ export class RangeIterator implements Iterator<number> {
   private _current: number;
   private _last: number;
   private _step: number;
+
   constructor(first: number, last: number, step: number) {
     this._current = this._first = first;
     this._last = last;
@@ -52,7 +53,8 @@ export class Range implements Iterable<number> {
     public first: number,
     public last: number,
     public step: number = 1
-  ) {}
+  ) {
+  }
 
   [Symbol.iterator](): Iterator<number> {
     return new RangeIterator(this.first, this.last, this.step);

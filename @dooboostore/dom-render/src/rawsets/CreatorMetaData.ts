@@ -1,4 +1,4 @@
-import {Router} from '../routers/Router';
+import {Router} from '@dooboostore/core-web/routers/Router';
 import {Attrs} from './Attrs';
 import {RawSet} from './RawSet';
 

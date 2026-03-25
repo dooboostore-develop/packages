@@ -8,6 +8,7 @@ An ultra-lightweight, high-performance Web Component library that brings **Moder
 - **Standard-First**: Keep your HTML semantic. Use the native `is` attribute to enhance standard tags (`ul`, `table`, `div`, etc.).
 - **Zero Boilerplate**: Define queries, events, and lifecycles declaratively using decorators.
 - **Scoped Context (`as`)**: Effortlessly isolate and share data between parent and child components using explicit aliases.
+- **Hybrid Rendering**: Seamlessly combine **Shadow DOM** and **Light DOM** in a single component.
 
 ---
 
@@ -85,61 +86,54 @@ class Child extends HTMLElement {
 </parent-comp>
 ```
 
-### 3. Mixed Shadow & Light DOM Rendering
-You can distribute templates across both Shadow and Light DOM in a single component.
-
-```typescript
-@elementDefine({ name: 'hybrid-comp' })
-class HybridComp extends HTMLElement {
-  @innerHtml({ useShadow: true })
-  renderShadow() {
-    return `<div style="border: 1px solid blue;"><slot></slot></div>`;
-  }
-
-  @innerHtml
-  renderLight() {
-    return `<p>I am in the Light DOM!</p>`;
-  }
-}
-```
-
 ---
 
 ## 📑 Decorator Deep Dive
 
-### `@elementDefine(config)`
+### 1. `@elementDefine(config)`
 Registers the class as a Custom Element.
 - `name`: (Required) Tag name.
-- `extends`: (Optional) Native tag to extend (e.g., `'ul'`).
+- `extends`: (Optional) Native tag to extend.
 - `autoRemoveEventListeners`: (Optional) Auto-cleanup on disconnect.
 
-### `@innerHtml(options?)`
+### 2. `@innerHtml` or `@innerHtml(options?)`
 Defines markup. Supports **Async (Promises)**.
 - `useShadow`: (Optional) Injects into Shadow DOM if `true` (default: `false`).
 
-### `@state(alias?)`
+### 3. `@state` or `@state(alias?)`
 Declares a property as reactive. Changes trigger **Surgical Updates**.
 - `alias`: Custom name for templates (e.g. `{{alias.path}}`).
 
-### `@attribute(options?)`
-Syncs property with HTML attribute.
-- `name`: HTML attribute name.
-- `type`: `String`, `Number`, `Boolean`, `Object`.
+### 4. `@attribute` or `@attribute(options?)`
+Syncs property with HTML attribute. Supports parameterless usage.
+- `name`: (Optional) Attribute name. Defaults to property name.
+- `type`: (`String`, `Number`, `Boolean`, `Object`) Conversion type.
 - `disableReflect`: If `true`, stops JS -> HTML sync. Default is `false`.
 
-### `@query(selector?, options?)`
-Lazy-loads elements from the DOM.
-- `selector`: CSS selector. If omitted, targets the **Host**.
+```typescript
+@attribute count = 0; // Standard usage
+@attribute({ type: Number }) age = 20; 
+@attribute({ name: 'user-id', disableReflect: true }) id = ''; 
+```
+
+### 5. `@query` or `@query(selector, options?)`
+Lazy-loads elements from the DOM. Supports parameterless usage to target the **Host**.
+- `selector`: CSS selector.
 - `root`: `'shadow' | 'light' | 'all' | 'auto'` (Default: `'auto'`).
 
-### `@addEventListener(options)`
+```typescript
+@query hostEl: HTMLElement; // Targets the Host
+@query('.title', { root: 'light' }) titleEl: HTMLElement;
+```
+
+### 6. `@addEventListener(options)`
 Declarative event binding. Method receives `(event, targetElement)`.
 - `type`: Event type.
 - `query`: CSS selector. Omit to bind to **Host**.
 - `root`: Search scope for target.
 - `stopPropagation`, `preventDefault`, `stopImmediatePropagation`: Event modifiers.
 
-### `@emitCustomEvent(options)`
+### 7. `@emitCustomEvent(options)`
 Dispatches `CustomEvent`. Returns from the method become **`$data`** in parent `on[type]` handlers.
 
 ---

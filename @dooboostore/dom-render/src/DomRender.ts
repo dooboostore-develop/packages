@@ -1,12 +1,12 @@
 import { DomRenderProxy } from './DomRenderProxy';
 import { DomRenderConfig } from './configs/DomRenderConfig';
-import { PathRouter } from './routers/PathRouter';
-import { HashRouter } from './routers/HashRouter';
+import { PathRouter } from '@dooboostore/core-web/routers/PathRouter';
+import { HashRouter } from '@dooboostore/core-web/routers/HashRouter';
 import { ConstructorType } from '@dooboostore/core/types';
 import { DomRenderFinalProxy } from './types/Types';
 import { RawSet } from './rawsets/RawSet';
 import { DefaultMessenger } from './messenger/DefaultMessenger';
-import { Router } from './routers/Router';
+import { Router } from '@dooboostore/core-web/routers/Router';
 import { drComponent } from './components';
 import { EventManager } from './events/EventManager';
 import { RandomUtils } from '@dooboostore/core/random/RandomUtils';

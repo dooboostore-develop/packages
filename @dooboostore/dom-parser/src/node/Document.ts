@@ -3,27 +3,27 @@ import { ParentNode } from './ParentNode';
 import { Element } from './elements/Element';
 import { HTMLElement } from './elements/HTMLElement';
 import { HTMLCollection, HTMLCollectionOf } from './collection';
-import {Comment} from "./Comment";
-import {Text} from "./Text";
+import { Comment } from './Comment';
+import { Text } from './Text';
 import { DocumentFragment } from './DocumentFragment';
 import { HTMLElementTagNameMap, SVGElementTagNameMap, MathMLElementTagNameMap, HTMLElementDeprecatedTagNameMap, HTMLImageElement, HTMLAnchorElement, HTMLAreaElement, HTMLEmbedElement, HTMLFormElement, HTMLScriptElement, HTMLHeadElement, SVGElement, MathMLElement } from './elements';
 import { NodeListOf } from './collection/NodeListOf';
 
 // 추가 타입들 정의
 export interface ElementCreationOptions {
-    is?: string;
+  is?: string;
 }
 
 export interface ImportNodeOptions {
-    deep?: boolean;
+  deep?: boolean;
 }
 
 export interface CaretPositionFromPointOptions {
-    shadowRoots?: ShadowRoot[];
+  shadowRoots?: ShadowRoot[];
 }
 
 export interface StartViewTransitionOptions {
-    update?: ViewTransitionUpdateCallback;
+  update?: ViewTransitionUpdateCallback;
 }
 
 export type DocumentReadyState = 'loading' | 'interactive' | 'complete';
@@ -36,119 +36,144 @@ export { Comment } from './Comment';
 export { DocumentFragment } from './DocumentFragment';
 
 // Document 관련 인터페이스들 (간소화된 버전)
-export interface DocumentOrShadowRoot { }
-export interface FontFaceSource { }
-export interface GlobalEventHandlers { }
-export interface NonElementParentNode { }
-export interface XPathEvaluatorBase { }
-export interface DocumentAndElementEventHandlers { }
-export interface HTMLAllCollection extends HTMLCollection { }
-export interface DocumentType extends Node { }
-export interface DOMImplementation { }
-export interface FragmentDirective { }
-export interface DocumentTimeline { }
-export interface Location { href: string; }
-export interface Selection { }
-export interface Range { }
-export interface NodeIterator { }
-export interface TreeWalker { }
-export interface ViewTransition { }
-export interface CaretPosition { }
-export interface NodeFilter { }
-export interface ProcessingInstruction extends Node { }
-export interface CDATASection extends Text { }
-export interface Attr extends Node { }
-export interface HTMLOrSVGScriptElement extends HTMLElement { }
-export interface WindowProxy { }
-export interface ShadowRoot { }
+export interface DocumentOrShadowRoot {}
+export interface FontFaceSource {}
+export interface GlobalEventHandlers {}
+export interface NonElementParentNode {}
+export interface XPathEvaluatorBase {}
+export interface DocumentAndElementEventHandlers {}
+export interface HTMLAllCollection extends HTMLCollection {}
+export interface DocumentType extends Node {}
+export interface DOMImplementation {}
+export interface FragmentDirective {}
+export interface DocumentTimeline {}
+export interface Location {
+  href: string;
+}
+export interface Selection {}
+export interface Range {}
+export interface NodeIterator {
+  readonly root: Node;
+  readonly whatToShow: number;
+  readonly filter: NodeFilter | null;
+  readonly referenceNode: Node;
+  readonly pointerBeforeReferenceNode: boolean;
+  nextNode(): Node | null;
+  previousNode(): Node | null;
+  detach(): void;
+}
+export interface TreeWalker {
+  readonly root: Node;
+  readonly whatToShow: number;
+  readonly filter: NodeFilter | null;
+  currentNode: Node;
+  parentNode(): Node | null;
+  firstChild(): Node | null;
+  lastChild(): Node | null;
+  previousSibling(): Node | null;
+  nextSibling(): Node | null;
+  previousNode(): Node | null;
+  nextNode(): Node | null;
+}
+export interface ViewTransition {}
+export interface CaretPosition {}
+export interface NodeFilter {
+  acceptNode(node: Node): number;
+}
+export interface ProcessingInstruction extends Node {}
+export interface CDATASection extends Text {}
+export interface Attr extends Node {}
+export interface HTMLOrSVGScriptElement extends HTMLElement {}
+export interface WindowProxy {}
+export interface ShadowRoot {}
 
 // Event interfaces
-export interface Event { }
-export interface AnimationEvent extends Event { }
-export interface AnimationPlaybackEvent extends Event { }
-export interface AudioProcessingEvent extends Event { }
-export interface BeforeUnloadEvent extends Event { }
-export interface BlobEvent extends Event { }
-export interface ClipboardEvent extends Event { }
-export interface CloseEvent extends Event { }
-export interface CompositionEvent extends Event { }
-export interface ContentVisibilityAutoStateChangeEvent extends Event { }
-export interface CookieChangeEvent extends Event { }
-export interface CustomEvent extends Event { }
-export interface DeviceMotionEvent extends Event { }
-export interface DeviceOrientationEvent extends Event { }
-export interface DragEvent extends Event { }
-export interface ErrorEvent extends Event { }
-export interface FocusEvent extends Event { }
-export interface FontFaceSetLoadEvent extends Event { }
-export interface FormDataEvent extends Event { }
-export interface GamepadEvent extends Event { }
-export interface HashChangeEvent extends Event { }
-export interface IDBVersionChangeEvent extends Event { }
-export interface InputEvent extends Event { }
-export interface KeyboardEvent extends Event { }
-export interface MIDIConnectionEvent extends Event { }
-export interface MIDIMessageEvent extends Event { }
-export interface MediaEncryptedEvent extends Event { }
-export interface MediaKeyMessageEvent extends Event { }
-export interface MediaQueryListEvent extends Event { }
-export interface MediaStreamTrackEvent extends Event { }
-export interface MessageEvent extends Event { }
-export interface MouseEvent extends Event { }
-export interface OfflineAudioCompletionEvent extends Event { }
-export interface PageRevealEvent extends Event { }
-export interface PageSwapEvent extends Event { }
-export interface PageTransitionEvent extends Event { }
-export interface PaymentMethodChangeEvent extends Event { }
-export interface PaymentRequestUpdateEvent extends Event { }
-export interface PictureInPictureEvent extends Event { }
-export interface PointerEvent extends Event { }
-export interface PopStateEvent extends Event { }
-export interface ProgressEvent extends Event { }
-export interface PromiseRejectionEvent extends Event { }
-export interface RTCDTMFToneChangeEvent extends Event { }
-export interface RTCDataChannelEvent extends Event { }
-export interface RTCErrorEvent extends Event { }
-export interface RTCPeerConnectionIceErrorEvent extends Event { }
-export interface RTCPeerConnectionIceEvent extends Event { }
-export interface RTCTrackEvent extends Event { }
-export interface SecurityPolicyViolationEvent extends Event { }
-export interface SpeechSynthesisErrorEvent extends Event { }
-export interface SpeechSynthesisEvent extends Event { }
-export interface StorageEvent extends Event { }
-export interface SubmitEvent extends Event { }
-export interface TextEvent extends Event { }
-export interface ToggleEvent extends Event { }
-export interface TouchEvent extends Event { }
-export interface TrackEvent extends Event { }
-export interface TransitionEvent extends Event { }
-export interface UIEvent extends Event { }
-export interface WebGLContextEvent extends Event { }
-export interface WheelEvent extends Event { }
+export interface Event {}
+export interface AnimationEvent extends Event {}
+export interface AnimationPlaybackEvent extends Event {}
+export interface AudioProcessingEvent extends Event {}
+export interface BeforeUnloadEvent extends Event {}
+export interface BlobEvent extends Event {}
+export interface ClipboardEvent extends Event {}
+export interface CloseEvent extends Event {}
+export interface CompositionEvent extends Event {}
+export interface ContentVisibilityAutoStateChangeEvent extends Event {}
+export interface CookieChangeEvent extends Event {}
+export interface CustomEvent extends Event {}
+export interface DeviceMotionEvent extends Event {}
+export interface DeviceOrientationEvent extends Event {}
+export interface DragEvent extends Event {}
+export interface ErrorEvent extends Event {}
+export interface FocusEvent extends Event {}
+export interface FontFaceSetLoadEvent extends Event {}
+export interface FormDataEvent extends Event {}
+export interface GamepadEvent extends Event {}
+export interface HashChangeEvent extends Event {}
+export interface IDBVersionChangeEvent extends Event {}
+export interface InputEvent extends Event {}
+export interface KeyboardEvent extends Event {}
+export interface MIDIConnectionEvent extends Event {}
+export interface MIDIMessageEvent extends Event {}
+export interface MediaEncryptedEvent extends Event {}
+export interface MediaKeyMessageEvent extends Event {}
+export interface MediaQueryListEvent extends Event {}
+export interface MediaStreamTrackEvent extends Event {}
+export interface MessageEvent extends Event {}
+export interface MouseEvent extends Event {}
+export interface OfflineAudioCompletionEvent extends Event {}
+export interface PageRevealEvent extends Event {}
+export interface PageSwapEvent extends Event {}
+export interface PageTransitionEvent extends Event {}
+export interface PaymentMethodChangeEvent extends Event {}
+export interface PaymentRequestUpdateEvent extends Event {}
+export interface PictureInPictureEvent extends Event {}
+export interface PointerEvent extends Event {}
+export interface PopStateEvent extends Event {}
+export interface ProgressEvent extends Event {}
+export interface PromiseRejectionEvent extends Event {}
+export interface RTCDTMFToneChangeEvent extends Event {}
+export interface RTCDataChannelEvent extends Event {}
+export interface RTCErrorEvent extends Event {}
+export interface RTCPeerConnectionIceErrorEvent extends Event {}
+export interface RTCPeerConnectionIceEvent extends Event {}
+export interface RTCTrackEvent extends Event {}
+export interface SecurityPolicyViolationEvent extends Event {}
+export interface SpeechSynthesisErrorEvent extends Event {}
+export interface SpeechSynthesisEvent extends Event {}
+export interface StorageEvent extends Event {}
+export interface SubmitEvent extends Event {}
+export interface TextEvent extends Event {}
+export interface ToggleEvent extends Event {}
+export interface TouchEvent extends Event {}
+export interface TrackEvent extends Event {}
+export interface TransitionEvent extends Event {}
+export interface UIEvent extends Event {}
+export interface WebGLContextEvent extends Event {}
+export interface WheelEvent extends Event {}
 
 export interface EventListenerOptions {
-    capture?: boolean;
+  capture?: boolean;
 }
 
 export interface AddEventListenerOptions extends EventListenerOptions {
-    once?: boolean;
-    passive?: boolean;
-    signal?: AbortSignal;
+  once?: boolean;
+  passive?: boolean;
+  signal?: AbortSignal;
 }
 
 export interface EventListenerOrEventListenerObject {
-    (evt: Event): void;
+  (evt: Event): void;
 }
 
 export interface DocumentEventMap {
-    [key: string]: Event;
+  [key: string]: Event;
 }
 
-export interface AbortSignal { }
+export interface AbortSignal {}
 
 /**
  * The **`Document`** interface represents any web page loaded in the browser and serves as an entry point into the web page's content, which is the DOM tree.
- * 
+ *
  * [MDN Reference](https://developer.mozilla.org/docs/Web/API/Document)
  */
 export interface Document extends Node, NonElementParentNode, DocumentOrShadowRoot, ParentNode, XPathEvaluatorBase, GlobalEventHandlers, DocumentAndElementEventHandlers {
@@ -591,11 +616,11 @@ export interface Document extends Node, NonElementParentNode, DocumentOrShadowRo
    *
    * [MDN Reference](https://developer.mozilla.org/docs/Web/API/Document/createElementNS)
    */
-  createElementNS(namespaceURI: "http://www.w3.org/1999/xhtml", qualifiedName: string): HTMLElement;
-  createElementNS<K extends keyof SVGElementTagNameMap>(namespaceURI: "http://www.w3.org/2000/svg", qualifiedName: K): SVGElementTagNameMap[K];
-  createElementNS(namespaceURI: "http://www.w3.org/2000/svg", qualifiedName: string): SVGElement;
-  createElementNS<K extends keyof MathMLElementTagNameMap>(namespaceURI: "http://www.w3.org/1998/Math/MathML", qualifiedName: K): MathMLElementTagNameMap[K];
-  createElementNS(namespaceURI: "http://www.w3.org/1998/Math/MathML", qualifiedName: string): MathMLElement;
+  createElementNS(namespaceURI: 'http://www.w3.org/1999/xhtml', qualifiedName: string): HTMLElement;
+  createElementNS<K extends keyof SVGElementTagNameMap>(namespaceURI: 'http://www.w3.org/2000/svg', qualifiedName: K): SVGElementTagNameMap[K];
+  createElementNS(namespaceURI: 'http://www.w3.org/2000/svg', qualifiedName: string): SVGElement;
+  createElementNS<K extends keyof MathMLElementTagNameMap>(namespaceURI: 'http://www.w3.org/1998/Math/MathML', qualifiedName: K): MathMLElementTagNameMap[K];
+  createElementNS(namespaceURI: 'http://www.w3.org/1998/Math/MathML', qualifiedName: string): MathMLElement;
   createElementNS(namespaceURI: string | null, qualifiedName: string, options?: ElementCreationOptions): Element;
   createElementNS(namespace: string | null, qualifiedName: string, options?: string | ElementCreationOptions): Element;
 
@@ -605,71 +630,71 @@ export interface Document extends Node, NonElementParentNode, DocumentOrShadowRo
    *
    * [MDN Reference](https://developer.mozilla.org/docs/Web/API/Document/createEvent)
    */
-  createEvent(eventInterface: "AnimationEvent"): AnimationEvent;
-  createEvent(eventInterface: "AnimationPlaybackEvent"): AnimationPlaybackEvent;
-  createEvent(eventInterface: "AudioProcessingEvent"): AudioProcessingEvent;
-  createEvent(eventInterface: "BeforeUnloadEvent"): BeforeUnloadEvent;
-  createEvent(eventInterface: "BlobEvent"): BlobEvent;
-  createEvent(eventInterface: "ClipboardEvent"): ClipboardEvent;
-  createEvent(eventInterface: "CloseEvent"): CloseEvent;
-  createEvent(eventInterface: "CompositionEvent"): CompositionEvent;
-  createEvent(eventInterface: "ContentVisibilityAutoStateChangeEvent"): ContentVisibilityAutoStateChangeEvent;
-  createEvent(eventInterface: "CookieChangeEvent"): CookieChangeEvent;
-  createEvent(eventInterface: "CustomEvent"): CustomEvent;
-  createEvent(eventInterface: "DeviceMotionEvent"): DeviceMotionEvent;
-  createEvent(eventInterface: "DeviceOrientationEvent"): DeviceOrientationEvent;
-  createEvent(eventInterface: "DragEvent"): DragEvent;
-  createEvent(eventInterface: "ErrorEvent"): ErrorEvent;
-  createEvent(eventInterface: "Event"): Event;
-  createEvent(eventInterface: "Events"): Event;
-  createEvent(eventInterface: "FocusEvent"): FocusEvent;
-  createEvent(eventInterface: "FontFaceSetLoadEvent"): FontFaceSetLoadEvent;
-  createEvent(eventInterface: "FormDataEvent"): FormDataEvent;
-  createEvent(eventInterface: "GamepadEvent"): GamepadEvent;
-  createEvent(eventInterface: "HashChangeEvent"): HashChangeEvent;
-  createEvent(eventInterface: "IDBVersionChangeEvent"): IDBVersionChangeEvent;
-  createEvent(eventInterface: "InputEvent"): InputEvent;
-  createEvent(eventInterface: "KeyboardEvent"): KeyboardEvent;
-  createEvent(eventInterface: "MIDIConnectionEvent"): MIDIConnectionEvent;
-  createEvent(eventInterface: "MIDIMessageEvent"): MIDIMessageEvent;
-  createEvent(eventInterface: "MediaEncryptedEvent"): MediaEncryptedEvent;
-  createEvent(eventInterface: "MediaKeyMessageEvent"): MediaKeyMessageEvent;
-  createEvent(eventInterface: "MediaQueryListEvent"): MediaQueryListEvent;
-  createEvent(eventInterface: "MediaStreamTrackEvent"): MediaStreamTrackEvent;
-  createEvent(eventInterface: "MessageEvent"): MessageEvent;
-  createEvent(eventInterface: "MouseEvent"): MouseEvent;
-  createEvent(eventInterface: "MouseEvents"): MouseEvent;
-  createEvent(eventInterface: "OfflineAudioCompletionEvent"): OfflineAudioCompletionEvent;
-  createEvent(eventInterface: "PageRevealEvent"): PageRevealEvent;
-  createEvent(eventInterface: "PageSwapEvent"): PageSwapEvent;
-  createEvent(eventInterface: "PageTransitionEvent"): PageTransitionEvent;
-  createEvent(eventInterface: "PaymentMethodChangeEvent"): PaymentMethodChangeEvent;
-  createEvent(eventInterface: "PaymentRequestUpdateEvent"): PaymentRequestUpdateEvent;
-  createEvent(eventInterface: "PictureInPictureEvent"): PictureInPictureEvent;
-  createEvent(eventInterface: "PointerEvent"): PointerEvent;
-  createEvent(eventInterface: "PopStateEvent"): PopStateEvent;
-  createEvent(eventInterface: "ProgressEvent"): ProgressEvent;
-  createEvent(eventInterface: "PromiseRejectionEvent"): PromiseRejectionEvent;
-  createEvent(eventInterface: "RTCDTMFToneChangeEvent"): RTCDTMFToneChangeEvent;
-  createEvent(eventInterface: "RTCDataChannelEvent"): RTCDataChannelEvent;
-  createEvent(eventInterface: "RTCErrorEvent"): RTCErrorEvent;
-  createEvent(eventInterface: "RTCPeerConnectionIceErrorEvent"): RTCPeerConnectionIceErrorEvent;
-  createEvent(eventInterface: "RTCPeerConnectionIceEvent"): RTCPeerConnectionIceEvent;
-  createEvent(eventInterface: "RTCTrackEvent"): RTCTrackEvent;
-  createEvent(eventInterface: "SecurityPolicyViolationEvent"): SecurityPolicyViolationEvent;
-  createEvent(eventInterface: "SpeechSynthesisErrorEvent"): SpeechSynthesisErrorEvent;
-  createEvent(eventInterface: "SpeechSynthesisEvent"): SpeechSynthesisEvent;
-  createEvent(eventInterface: "StorageEvent"): StorageEvent;
-  createEvent(eventInterface: "SubmitEvent"): SubmitEvent;
-  createEvent(eventInterface: "TextEvent"): TextEvent;
-  createEvent(eventInterface: "ToggleEvent"): ToggleEvent;
-  createEvent(eventInterface: "TouchEvent"): TouchEvent;
-  createEvent(eventInterface: "TrackEvent"): TrackEvent;
-  createEvent(eventInterface: "TransitionEvent"): TransitionEvent;
-  createEvent(eventInterface: "UIEvent"): UIEvent;
-  createEvent(eventInterface: "UIEvents"): UIEvent;
-  createEvent(eventInterface: "WebGLContextEvent"): WebGLContextEvent;
-  createEvent(eventInterface: "WheelEvent"): WheelEvent;
+  createEvent(eventInterface: 'AnimationEvent'): AnimationEvent;
+  createEvent(eventInterface: 'AnimationPlaybackEvent'): AnimationPlaybackEvent;
+  createEvent(eventInterface: 'AudioProcessingEvent'): AudioProcessingEvent;
+  createEvent(eventInterface: 'BeforeUnloadEvent'): BeforeUnloadEvent;
+  createEvent(eventInterface: 'BlobEvent'): BlobEvent;
+  createEvent(eventInterface: 'ClipboardEvent'): ClipboardEvent;
+  createEvent(eventInterface: 'CloseEvent'): CloseEvent;
+  createEvent(eventInterface: 'CompositionEvent'): CompositionEvent;
+  createEvent(eventInterface: 'ContentVisibilityAutoStateChangeEvent'): ContentVisibilityAutoStateChangeEvent;
+  createEvent(eventInterface: 'CookieChangeEvent'): CookieChangeEvent;
+  createEvent(eventInterface: 'CustomEvent'): CustomEvent;
+  createEvent(eventInterface: 'DeviceMotionEvent'): DeviceMotionEvent;
+  createEvent(eventInterface: 'DeviceOrientationEvent'): DeviceOrientationEvent;
+  createEvent(eventInterface: 'DragEvent'): DragEvent;
+  createEvent(eventInterface: 'ErrorEvent'): ErrorEvent;
+  createEvent(eventInterface: 'Event'): Event;
+  createEvent(eventInterface: 'Events'): Event;
+  createEvent(eventInterface: 'FocusEvent'): FocusEvent;
+  createEvent(eventInterface: 'FontFaceSetLoadEvent'): FontFaceSetLoadEvent;
+  createEvent(eventInterface: 'FormDataEvent'): FormDataEvent;
+  createEvent(eventInterface: 'GamepadEvent'): GamepadEvent;
+  createEvent(eventInterface: 'HashChangeEvent'): HashChangeEvent;
+  createEvent(eventInterface: 'IDBVersionChangeEvent'): IDBVersionChangeEvent;
+  createEvent(eventInterface: 'InputEvent'): InputEvent;
+  createEvent(eventInterface: 'KeyboardEvent'): KeyboardEvent;
+  createEvent(eventInterface: 'MIDIConnectionEvent'): MIDIConnectionEvent;
+  createEvent(eventInterface: 'MIDIMessageEvent'): MIDIMessageEvent;
+  createEvent(eventInterface: 'MediaEncryptedEvent'): MediaEncryptedEvent;
+  createEvent(eventInterface: 'MediaKeyMessageEvent'): MediaKeyMessageEvent;
+  createEvent(eventInterface: 'MediaQueryListEvent'): MediaQueryListEvent;
+  createEvent(eventInterface: 'MediaStreamTrackEvent'): MediaStreamTrackEvent;
+  createEvent(eventInterface: 'MessageEvent'): MessageEvent;
+  createEvent(eventInterface: 'MouseEvent'): MouseEvent;
+  createEvent(eventInterface: 'MouseEvents'): MouseEvent;
+  createEvent(eventInterface: 'OfflineAudioCompletionEvent'): OfflineAudioCompletionEvent;
+  createEvent(eventInterface: 'PageRevealEvent'): PageRevealEvent;
+  createEvent(eventInterface: 'PageSwapEvent'): PageSwapEvent;
+  createEvent(eventInterface: 'PageTransitionEvent'): PageTransitionEvent;
+  createEvent(eventInterface: 'PaymentMethodChangeEvent'): PaymentMethodChangeEvent;
+  createEvent(eventInterface: 'PaymentRequestUpdateEvent'): PaymentRequestUpdateEvent;
+  createEvent(eventInterface: 'PictureInPictureEvent'): PictureInPictureEvent;
+  createEvent(eventInterface: 'PointerEvent'): PointerEvent;
+  createEvent(eventInterface: 'PopStateEvent'): PopStateEvent;
+  createEvent(eventInterface: 'ProgressEvent'): ProgressEvent;
+  createEvent(eventInterface: 'PromiseRejectionEvent'): PromiseRejectionEvent;
+  createEvent(eventInterface: 'RTCDTMFToneChangeEvent'): RTCDTMFToneChangeEvent;
+  createEvent(eventInterface: 'RTCDataChannelEvent'): RTCDataChannelEvent;
+  createEvent(eventInterface: 'RTCErrorEvent'): RTCErrorEvent;
+  createEvent(eventInterface: 'RTCPeerConnectionIceErrorEvent'): RTCPeerConnectionIceErrorEvent;
+  createEvent(eventInterface: 'RTCPeerConnectionIceEvent'): RTCPeerConnectionIceEvent;
+  createEvent(eventInterface: 'RTCTrackEvent'): RTCTrackEvent;
+  createEvent(eventInterface: 'SecurityPolicyViolationEvent'): SecurityPolicyViolationEvent;
+  createEvent(eventInterface: 'SpeechSynthesisErrorEvent'): SpeechSynthesisErrorEvent;
+  createEvent(eventInterface: 'SpeechSynthesisEvent'): SpeechSynthesisEvent;
+  createEvent(eventInterface: 'StorageEvent'): StorageEvent;
+  createEvent(eventInterface: 'SubmitEvent'): SubmitEvent;
+  createEvent(eventInterface: 'TextEvent'): TextEvent;
+  createEvent(eventInterface: 'ToggleEvent'): ToggleEvent;
+  createEvent(eventInterface: 'TouchEvent'): TouchEvent;
+  createEvent(eventInterface: 'TrackEvent'): TrackEvent;
+  createEvent(eventInterface: 'TransitionEvent'): TransitionEvent;
+  createEvent(eventInterface: 'UIEvent'): UIEvent;
+  createEvent(eventInterface: 'UIEvents'): UIEvent;
+  createEvent(eventInterface: 'WebGLContextEvent'): WebGLContextEvent;
+  createEvent(eventInterface: 'WheelEvent'): WheelEvent;
   createEvent(eventInterface: string): Event;
 
   /**
@@ -769,9 +794,9 @@ export interface Document extends Node, NonElementParentNode, DocumentOrShadowRo
    *
    * [MDN Reference](https://developer.mozilla.org/docs/Web/API/Document/getElementsByTagNameNS)
    */
-  getElementsByTagNameNS(namespaceURI: "http://www.w3.org/1999/xhtml", localName: string): HTMLCollectionOf<HTMLElement>;
-  getElementsByTagNameNS(namespaceURI: "http://www.w3.org/2000/svg", localName: string): HTMLCollectionOf<SVGElement>;
-  getElementsByTagNameNS(namespaceURI: "http://www.w3.org/1998/Math/MathML", localName: string): HTMLCollectionOf<MathMLElement>;
+  getElementsByTagNameNS(namespaceURI: 'http://www.w3.org/1999/xhtml', localName: string): HTMLCollectionOf<HTMLElement>;
+  getElementsByTagNameNS(namespaceURI: 'http://www.w3.org/2000/svg', localName: string): HTMLCollectionOf<SVGElement>;
+  getElementsByTagNameNS(namespaceURI: 'http://www.w3.org/1998/Math/MathML', localName: string): HTMLCollectionOf<MathMLElement>;
   getElementsByTagNameNS(namespace: string | null, localName: string): HTMLCollectionOf<Element>;
 
   /**

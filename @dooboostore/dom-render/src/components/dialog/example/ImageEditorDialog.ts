@@ -19,7 +19,7 @@
 // import { ConvertUtils as WebConvertUtils } from '@dooboostore/core-web/convert/ConvertUtils';
 // import { WorldService } from '@lazycollect-src/service/WorldService';
 // import { ConvertUtils } from '@dooboostore/core/convert/ConvertUtils';
-// import { Router } from '@dooboostore/dom-render/routers/Router';
+// import { Router } from '@dooboostore/core-web/routers/Router';
 //
 // export type ImageEditorDialogData = {}
 //

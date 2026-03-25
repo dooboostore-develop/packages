@@ -33,6 +33,7 @@
   "dependencies": {
     "@dooboostore/core": "workspace:*",
     "@dooboostore/core-node": "workspace:*",
+    "@dooboostore/core-web": "workspace:*",
     "@dooboostore/simple-web-component": "workspace:*",
     "reflect-metadata": "^0.2.2"
   }

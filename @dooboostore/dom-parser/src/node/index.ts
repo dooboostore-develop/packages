@@ -21,6 +21,10 @@ export { Comment } from './Comment';
 export { NodeList } from './collection/NodeList';
 export { NodeListOf } from './collection/NodeListOf';
 
+// Traversal
+export { NodeIterator, NodeFilter } from './NodeIterator';
+export { TreeWalker } from './TreeWalker';
+
 // Element interfaces (from element directory)
 export * from './elements';
 

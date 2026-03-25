@@ -14,4 +14,5 @@
 // export * from './stylecss';
 // export * from './valid';
 // export * from './window';
-export default {}
+export * from './routers';
+export default {};

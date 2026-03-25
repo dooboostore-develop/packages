@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Lifecycle Test Case</title>
+    <script src="https://unpkg.com/@ungap/custom-elements"></script>
+  </head>
+  <body>
+    <nav style="background: #eee; padding: 10px; margin-bottom: 20px; border-radius: 4px; font-family: sans-serif">
+      <strong>Test Cases:</strong>
+      <a href="../index.html">Main Hub</a> | <a href="../full-suite/index.html">Full Suite</a> | <a href="../attr/index.html">Attribute Test</a> |
+      <a href="../spa/index.html">SPA Test</a>
+    </nav>
+
+    <h1>Lifecycle Test</h1>
+    <div id="container">
+      <lifecycle-element id="target"></lifecycle-element>
+    </div>
+    <button id="remove-btn">Remove Element</button>
+    <button id="add-btn">Add Element</button>
+
+    <script>
+      document.getElementById('remove-btn').onclick = () => {
+        document.getElementById('target')?.remove();
+      };
+      document.getElementById('add-btn').onclick = () => {
+        if (!document.getElementById('target')) {
+          const el = document.createElement('lifecycle-element');
+          el.id = 'target';
+          document.getElementById('container').appendChild(el);
+        }
+      };
+    </script>
+  </body>
+</html>

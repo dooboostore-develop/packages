@@ -1,7 +1,7 @@
 import { DomRenderConfig } from '../configs/DomRenderConfig';
 import { ScriptUtils } from '@dooboostore/core-web/script/ScriptUtils';
 import { ElementUtils } from '@dooboostore/core-web/element/ElementUtils';
-import { Range } from '../iterators/Range';
+import { Range } from '@dooboostore/core/iterators/Range';
 import { getDomRenderConfig } from '../DomRenderProxy';
 import { ObjectUtils } from '@dooboostore/core/object/ObjectUtils';
 

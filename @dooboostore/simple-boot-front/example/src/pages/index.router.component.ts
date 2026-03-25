@@ -1,6 +1,6 @@
 import { Sim } from '@dooboostore/simple-boot/decorators/SimDecorator';
 import { Router } from '@dooboostore/simple-boot/decorators/route/Router';
-import { Router as DomRenderRouter } from '@dooboostore/dom-render/routers/Router';
+import { Router as DomRenderRouter } from '@dooboostore/core-web/routers/Router';
 import { Component } from '@dooboostore/simple-boot-front/decorators/Component';
 import { ComponentRouterBase } from '@dooboostore/simple-boot-front/component/ComponentRouterBase';
 import { drComponent } from '@dooboostore/dom-render/components/index';

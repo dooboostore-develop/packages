@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Attribute Test Case</title>
+    <script src="https://unpkg.com/@ungap/custom-elements"></script>
+  </head>
+  <body>
+    <nav style="background: #eee; padding: 10px; margin-bottom: 20px; border-radius: 4px; font-family: sans-serif">
+      <strong>Test Cases:</strong>
+      <a href="../index.html">Main Hub</a> | <a href="../full-suite/index.html">Full Suite</a> | <a href="../lifecycle/index.html">Lifecycle Test</a> |
+      <a href="../spa/index.html">SPA Test</a>
+    </nav>
+
+    <h1>Attribute Test</h1>
+
+    <attr-element id="target" count="10" active></attr-element>
+
+    <div style="margin-top: 20px">
+      <button onclick="document.getElementById('target').setAttribute('count', Math.floor(Math.random() * 100))">Randomize Count Attr</button>
+      <button onclick="document.getElementById('target').toggleAttribute('active')">Toggle Active Attr</button>
+    </div>
+  </body>
+</html>

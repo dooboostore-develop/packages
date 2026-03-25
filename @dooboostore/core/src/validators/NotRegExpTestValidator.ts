@@ -1,11 +1,10 @@
 import {Validator} from './Validator';
-import {DomRenderProxy} from '../DomRenderProxy';
 
 export class NotRegExpTestValidator<T = any, E = Element> extends Validator<T, E> {
     public regexp: RegExp;
     constructor(regexp: RegExp, value?: T, target?: E, event?: Event, autoValid = true) {
         super(value, target, event, autoValid);
-        this.regexp = DomRenderProxy.final(regexp)
+        this.regexp = regexp
     }
 
     valid(): boolean {

@@ -1,12 +1,12 @@
-import { ConstructorType } from '@dooboostore/core/types';
-import { RawSet } from '../rawsets/RawSet';
-import { Router } from '../routers/Router';
-import { Messenger } from '../messenger/Messenger';
-import { TargetElement } from './TargetElement';
-import { TargetAttr } from './TargetAttr';
-import { Attrs } from '../rawsets/Attrs';
-import { OperatorAround } from '../operators/OperatorExecuter';
-import { EventManager } from '../events/EventManager';
+import {ConstructorType} from '@dooboostore/core/types';
+import {RawSet} from '../rawsets/RawSet';
+import {Messenger} from '../messenger/Messenger';
+import {TargetElement} from './TargetElement';
+import {TargetAttr} from './TargetAttr';
+import {Attrs} from '../rawsets/Attrs';
+import {OperatorAround} from '../operators/OperatorExecuter';
+import {EventManager} from '../events/EventManager';
+import {Router} from "@dooboostore/core-web/routers/Router";
 
 export type DomRenderConfig<T = any> = {
   window: Window;

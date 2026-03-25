@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- Safari is="" support polyfill -->
+    <script src="https://unpkg.com/@ungap/custom-elements"></script>
+    <title>Full Suite Test - @dooboostore/simple-web-component</title>
+    <style>
+      .controls {
+        margin: 10px 0;
+        display: flex;
+        gap: 5px;
+      }
+      button {
+        padding: 5px 10px;
+        cursor: pointer;
+      }
+      .my-list-container {
+        margin-top: 15px;
+        border: 2px solid #1a73e8;
+        padding: 20px;
+        border-radius: 8px;
+        list-style: square inside;
+        background-color: #f8f9fa;
+        color: #333;
+      }
+      section {
+        margin-bottom: 30px;
+        padding: 15px;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+      }
+      h2 {
+        margin-top: 0;
+        color: #1a73e8;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app" style="max-width: 800px; margin: 0 auto; padding: 20px">
+      <nav style="background: #eee; padding: 10px; margin-bottom: 20px; border-radius: 4px; font-family: sans-serif">
+        <strong>Test Cases:</strong>
+        <a href="../index.html">Main Hub</a> | <a href="../lifecycle/index.html">Lifecycle Test</a> | <a href="../attr/index.html">Attribute Test</a> |
+        <a href="../spa/index.html">SPA Test</a>
+      </nav>
+
+      <h1>Full Suite Test</h1>
+
+      <section>
+        <h2>1. Nesting & Alias Test (T1 > T2)</h2>
+        <div class="controls">
+          <button id="remove-t-btn">Remove T1</button>
+          <button id="inc-count-btn">Increment T1 Count</button>
+          <button id="inc-count-btn2">Increment T2 Count</button>
+        </div>
+        <t-test id="the-t-test" as="t1" onconnected="console.log('-11-', this, event)" onbtn-click="console.log('Context Test - this is:', this, 'data is:', $data)">
+          <div slot="good"><strong>T1 Scope:</strong> count is {{count}} , {{t1.count}}</div>
+
+          <t-test2 id="the-t-test2" onconnected="this.parentElement.good(this);console.log('-22-', this, event)" slot="good" as="t2">
+            <div style="border: 1px dashed purple; padding: 10px; margin-top: 10px">
+              <h4>Inside T2 (Aliased as 't2')</h4>
+              <p>T2's own count: <strong>{{count}}</strong></p>
+              <p>T2's own count: <strong>{{t2.count}}</strong></p>
+              <p>Accessing Parent T1's count: <strong>{{t1.count}}</strong></p>
+            </div>
+          </t-test2>
+        </t-test>
+      </section>
+
+      <section>
+        <h2>2. is="swc-for-of-ul" Test</h2>
+        <ul is="swc-for-of-ul" id="is-u-loop" class="my-list-container" as="item" as-index="i">
+          <li style="padding: 5px; color: darkblue"><strong>#{{i}}</strong>: {{item.name}} (is version)</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>3. is="swc-if-div" Test</h2>
+        <div class="controls">
+          <button id="toggle-is-if-btn">Toggle If Content</button>
+        </div>
+        <div is="swc-if-div" id="is-if-el" class="my-list-container" style="background: #f1f8e9; border-color: #8bc34a">
+          <p style="color: #33691e; font-weight: bold">This content is physically swapped via is="swc-if-div"! ✅</p>
+        </div>
+      </section>
+
+      <section>
+        <h2>4. is="swc-choose-div" Test</h2>
+        <div class="controls">
+          <button id="set-choose-a-btn">Set A</button>
+          <button id="set-choose-b-btn">Set B</button>
+          <button id="set-choose-c-btn">Set Other</button>
+        </div>
+        <div is="swc-choose-div" id="is-choose-el" class="my-list-container" style="background: #fff3e0; border-color: #ff9800">
+          <span is="swc-when-span" test="A" style="color: #e65100; font-weight: bold">[Case A] Physically Swapped Element</span>
+          <span is="swc-when-span" test="B" style="color: #311b92; font-weight: bold">[Case B] Physically Swapped Element</span>
+          <div is="swc-other-div" style="color: #1b5e20">[Case Other] Default content</div>
+        </div>
+      </section>
+
+      <section>
+        <h2>5. is="swc-object-div" Test</h2>
+        <div class="controls">
+          <button id="update-is-obj-btn">Update Object</button>
+        </div>
+        <div is="swc-object-div" id="is-obj-el" class="my-list-container" style="background: #e1f5fe; border-color: #03a9f4" as="u">
+          <h3>User: {{name}}</h3>
+          <h3>User: {{u.name}}</h3>
+          <p>Age: {{u.age}}</p>
+        </div>
+      </section>
+
+      <section>
+        <h2>6. Autonomous Logic Components</h2>
+        <button id="toggle-auto-if-btn">Toggle swc-if</button>
+        <swc-if id="auto-if">
+          <div style="padding: 10px; border: 1px solid #ccc">Autonomous If Content</div>
+        </swc-if>
+
+        <swc-for-of id="auto-loop" as="it" style="display: block; margin-top: 10px">
+          <div style="padding: 5px; border-bottom: 1px solid #eee">{{it.name}}</div>
+        </swc-for-of>
+      </section>
+
+      <section>
+        <h2>7. @query & @addEventListener Test</h2>
+        <query-event-test></query-event-test>
+      </section>
+    </div>
+  </body>
+</html>

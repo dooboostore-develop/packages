@@ -1,5 +1,5 @@
 import { ChangeStateResult, RouteAction, Router, RouterConfig, ChangeStateConfig, RouterMethodOptions } from './Router';
-import { LocationUtils } from '@dooboostore/core-web/location/LocationUtils';
+import { LocationUtils } from '../location/LocationUtils';
 import { UrlUtils } from '@dooboostore/core/url/UrlUtils';
 
 
