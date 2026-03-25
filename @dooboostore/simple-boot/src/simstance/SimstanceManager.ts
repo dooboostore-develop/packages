@@ -158,7 +158,11 @@ export class SimstanceManager implements Runnable<void, Map<ConstructorType<any>
   }
 
   getStoreSet<T>(targetKey: ConstructorType<T> | Function, target?: ConstructorType<any> | Function): { type: ConstructorType<T> | Function; instance?: T } | undefined {
-    const find = this.getStoreSets(targetKey).find(it => it.type === target);
+    const sets = this.getStoreSets(targetKey);
+    let find = sets.find(it => it.type === target);
+    if (!find && (!target || target === targetKey)) {
+      find = sets.find(it => it.instance);
+    }
     // console.log('getStoreSet', targetKey, target, find)
     if (!find?.instance) {
       const type = target ?? targetKey;
@@ -212,7 +216,7 @@ export class SimstanceManager implements Runnable<void, Map<ConstructorType<any>
     const itemMap = this.storage.get(targetKey) ?? new Map<ConstructorType<any> | Function, any>();
     regTyps.forEach(it => {
       const { type, value } = (typeof it === 'object' ? { type: it.constructor, value: it } : { type: it, value: undefined }) as { type: ConstructorType<any> | Function; value: any };
-      if (!itemMap.has(type)) {
+      if (!itemMap.has(type) || (value !== undefined && itemMap.get(type) === undefined)) {
         itemMap.set(type, value);
       }
     });
@@ -490,10 +494,11 @@ export class SimstanceManager implements Runnable<void, Map<ConstructorType<any>
   public proxy<T = any>(target: T): T {
     try {
       const noProxy = isSimNoProxy(target);
-      if (!noProxy && target !== null && getSim(target) && typeof target === 'object' && !('_SimpleBoot_isProxy' in target)) {
+      const isExcludeProxy = this.option.excludeProxys?.some(it => target instanceof it);
+      if (!noProxy && !isExcludeProxy && target !== null && getSim(target) && typeof target === 'object' && !('_SimpleBoot_isProxy' in target)) {
         for (const key in target) {
           if (!isSimNoProxy(target, key)) {
-            target[key] = this.proxy(target[key]);
+            (target as any)[key] = this.proxy((target as any)[key]);
           }
         }
 

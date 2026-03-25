@@ -5,13 +5,14 @@ import { CacheStorage } from './decorators/cache/CacheDecorator';
 
 export type ProxyHandlerType = { onAfterProxy: <T>(it: T) => T };
 export type InitOptionType = {
-  rootRouter?: ConstructorType<any>,
-  container?: string,
-  excludeSim?: (ConstructorType<any> | Function)[],
-  advice?: ConstructorType<any>[],
-  proxy?: ProxyHandlerType,
-  using?: SimConfigUsing,
-  cache?: CacheConfig,
+  rootRouter?: ConstructorType<any>;
+  container?: string;
+  excludeSim?: (ConstructorType<any> | Function)[];
+  advice?: ConstructorType<any>[];
+  excludeProxys?: (ConstructorType<any> | Function)[];
+  proxy?: ProxyHandlerType;
+  using?: SimConfigUsing;
+  cache?: CacheConfig;
 };
 type CacheConfig = {
   ms?: number;
@@ -20,18 +21,20 @@ type CacheConfig = {
 };
 
 export class SimOption {
-  public rootRouter?: ConstructorType<any>
+  public rootRouter?: ConstructorType<any>;
   public container?: string;
   public advice: ConstructorType<any>[];
+  public excludeProxys?: (ConstructorType<any> | Function )[];
   public proxy?: ProxyHandlerType;
   // public excludeSim: ((ConstructorType<any> | Function)[]) | ((type: (ConstructorType<any> | Function)) => boolean);
   public using?: SimConfigUsing;
-  public cache?: CacheConfig
+  public cache?: CacheConfig;
 
-  constructor({rootRouter, container, cache,  advice = [], proxy, using}: InitOptionType = {}) {
+  constructor({ rootRouter, container, cache, advice = [], excludeProxys, proxy, using }: InitOptionType = {}) {
     this.rootRouter = rootRouter;
     this.container = container;
     this.advice = advice;
+    this.excludeProxys = excludeProxys;
     // this.excludeSim = excludeSim;
     this.proxy = proxy;
     this.using = using;
@@ -39,7 +42,7 @@ export class SimOption {
   }
 
   addAdvicce(advice: ConstructorType<any>) {
-    this.advice??= [];
+    this.advice ??= [];
     this.advice.push(advice);
   }
 

@@ -32,6 +32,7 @@ export abstract class Router<T = any> {
   private _config: RouterConfig<T>;
 
   constructor(config: RouterConfig<any>) {
+    console.log('-------------------', this)
     this._config = config;
 
     let routeData: RouterEventType;

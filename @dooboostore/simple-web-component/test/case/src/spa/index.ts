@@ -2,7 +2,10 @@ import { PathRouter } from '@dooboostore/core-web/routers/PathRouter';
 import { HashRouter } from '@dooboostore/core-web/routers/HashRouter';
 import { attribute, elementDefine, innerHtml, state, onAfterConnected, addEventListener } from '@dooboostore/simple-web-component';
 import {SimpleApplication} from "@dooboostore/simple-boot/SimpleApplication";
-import {Sim} from "@dooboostore/simple-boot/decorators/SimDecorator";
+import {Sim, SimConfig} from "@dooboostore/simple-boot/decorators/SimDecorator";
+import {SimOption} from "@dooboostore/simple-boot/SimOption";
+import {ConstructorType} from "@dooboostore/core/types";
+import {Router} from "@dooboostore/core-web/routers/Router";
 
 
 
@@ -19,6 +22,11 @@ class MyComponent extends HTMLElement {
   @state @attribute name?: string | null;
 
   @state showExtra = false;
+
+  constructor(private router: Router) {
+    super();
+    console.log('------->', router)
+  }
 
   @innerHtml
   render() {
@@ -53,8 +61,18 @@ class MyComponent extends HTMLElement {
   }
 }
 
+// @Sim
+// class MyComponent2 {
+//
+//   constructor(private router: Router) {
+//     console.log('------->', router)
+//   }
+// }
+const option = new SimOption({excludeProxys: [Node]});
+const otherInstanceSim = new Map<ConstructorType<any> | Function | SimConfig | Symbol, any>();
+otherInstanceSim.set(Router, router);
+const sim = new SimpleApplication(option).run(otherInstanceSim);
 
-const sim = new SimpleApplication().run();
 const m = sim.sim(MyComponent)
 console.log('m', m);
 
@@ -63,8 +81,8 @@ router.observable.subscribe(it => {
   if (it.triggerPoint === 'end') {
     const app = document.getElementById('app');
     if (app) {
-      const e = new MyComponent();
-      app.appendChild(e);
+      // const e = new MyComponent();
+      // app.appendChild(e);
       // app.innerHTML = `
       //   <my-component swc-on-constructor="this.name='zzzz'; console.log('11', this, window);" names="Initial Name" route="${it.path}"></my-component>
       // `;
