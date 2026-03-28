@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>SwcIf Test</title>
+    <script src="https://unpkg.com/@ungap/custom-elements"></script>
+    <style>
+      body {
+        font-family: sans-serif;
+        padding: 40px;
+        line-height: 1.6;
+      }
+      .controls {
+        margin-bottom: 20px;
+        display: flex;
+        gap: 10px;
+        border-bottom: 1px solid #eee;
+        padding-bottom: 15px;
+        align-items: center;
+      }
+      .box {
+        padding: 15px;
+        border-radius: 8px;
+        margin-top: 15px;
+      }
+      .visible {
+        background: #e8f5e9;
+        border: 2px solid #4caf50;
+      }
+      .independent {
+        background: #fff3e0;
+        border: 2px solid #ff9800;
+      }
+      button {
+        padding: 8px 16px;
+        cursor: pointer;
+        border-radius: 4px;
+        border: 1px solid #ccc;
+        background: white;
+      }
+    </style>
+  </head>
+  <body>
+    <script>
+      var userData = null;
+      var showIndependent = true;
+    </script>
+    <h1>SwcIf: Conditional Template</h1>
+    <p>Testing nested templates inside a host AND independent templates directly in the body.</p>
+
+    <div class="controls">
+      <button id="toggle-btn">Toggle User Data (Nested)</button>
+      <button onclick="window.showIndependent = !window.showIndependent; document.getElementById('indep-if').refresh()">Toggle Independent If</button>
+    </div>
+
+    <!-- 1. Independent If (Directly in Body) -->
+    <div style="margin-bottom: 30px">
+      <h3>1. Independent If (No Parent Host)</h3>
+      <template is="swc-if" id="indep-if" on-get-value="window.showIndependent">
+        <div class="box independent">
+          <strong>I am Independent!</strong>
+          <p>I have no parent SWC host. My events should be handled by <code>document</code> delegation.</p>
+          <button swc-on-click="alert('Global delegation works! hostId: ' + $host.id)">Test Global Event</button>
+        </div>
+      </template>
+    </div>
+
+    <hr />
+
+    <!-- 2. Nested If (Inside Host) -->
+    <h3>2. Nested If (Inside if-test-app)</h3>
+    <if-test-app id="app-root">
+      <div style="border: 2px dashed #aaa; padding: 20px; min-height: 50px">
+        <template
+          is="swc-if"
+          id="my-if"
+          on-get-value="userData"
+          on-clone-nodes="
+              if($firstElement) {
+                 $firstElement.querySelector('h3').textContent = 'User Profile: ' + ($value?.name || 'Unknown');
+                 $firstElement.querySelector('.age-display').textContent = 'Age: ' + ($value?.age || '--');
+              }
+            "
+        >
+          <div class="box visible" id="profile-box">
+            <h3></h3>
+            <p class="age-display"></p>
+            <p>This content only exists when <code>userData</code> is truthy.</p>
+            <button swc-on-click="alert('Nested delegation works! hostId: ' + $host.id)">Test Nested Event</button>
+          </div>
+        </template>
+      </div>
+    </if-test-app>
+
+    <script type="module" src="./index.ts"></script>
+  </body>
+</html>

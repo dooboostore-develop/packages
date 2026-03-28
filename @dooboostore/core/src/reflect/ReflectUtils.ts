@@ -1,35 +1,35 @@
 import { ConstructorType } from '../types';
 
-export const ReflectUtils = {
-  getParameterTypes: (target: any, propertyKey?: string | symbol): ConstructorType<any>[] => {
+export namespace ReflectUtils {
+  export const getParameterTypes = (target: any, propertyKey?: string | symbol): ConstructorType<any>[] => {
     if (propertyKey) {
       return Reflect.getMetadata('design:paramtypes', target, propertyKey) || [];
     } else {
       return Reflect.getMetadata('design:paramtypes', target) || [];
     }
-  },
+  };
 
-  getReturnType: (target: any, propertyKey: string | symbol): any => {
+  export const getReturnType = (target: any, propertyKey: string | symbol): any => {
     return Reflect.getMetadata('design:returntype', target, propertyKey);
-  },
+  };
 
-  getType: (target: any, propertyKey?: string | symbol): any => {
+  export const getType = (target: any, propertyKey?: string | symbol): any => {
     if (propertyKey) {
       return Reflect.getMetadata('design:type', target, propertyKey);
     } else {
       return Reflect.getMetadata('design:type', target);
     }
-  },
+  };
 
-  getMetadata: <T = any>(metadataKey: any, target: any, propertyKey?: string | symbol): T | undefined => {
+  export const getMetadata = <T = any>(metadataKey: any, target: any, propertyKey?: string | symbol): T | undefined => {
     if (propertyKey) {
       return Reflect.getMetadata(metadataKey, target, propertyKey);
     } else {
       return Reflect.getMetadata(metadataKey, target);
     }
-  },
+  };
 
-  findMetadata: <T = any>(metadataKey: any, target: any, propertyKey?: string | symbol): T | undefined => {
+  export const findMetadata = <T = any>(metadataKey: any, target: any, propertyKey?: string | symbol): T | undefined => {
     if (target == null) return undefined;
     let searchTarget = typeof target === 'object' && typeof target !== 'function' ? target.constructor : target;
 
@@ -41,12 +41,12 @@ export const ReflectUtils = {
       if (searchTarget === target) break;
     }
     return undefined;
-  },
+  };
 
   /**
    * 프로토타입 체인의 모든 메타데이터를 수집하여 리스트로 반환합니다. (부모 -> 자식 순)
    */
-  findAllMetadata: <T = any>(metadataKey: any, target: any, propertyKey?: string | symbol): T[] => {
+  export const findAllMetadata = <T = any>(metadataKey: any, target: any, propertyKey?: string | symbol): T[] => {
     const results: T[] = [];
     if (target == null) return results;
     let searchTarget = typeof target === 'object' && typeof target !== 'function' ? target.constructor : target;
@@ -59,26 +59,26 @@ export const ReflectUtils = {
       if (searchTarget === target) break;
     }
     return results;
-  },
+  };
 
   /**
    * 모든 메타데이터(배열 형태)를 수집하여 하나의 배열로 합칩니다. (부모 -> 자식 순)
    */
-  findAllMetadataFlatten: <T = any>(metadataKey: any, target: any, propertyKey?: string | symbol): T[] => {
+  export const findAllMetadataFlatten = <T = any>(metadataKey: any, target: any, propertyKey?: string | symbol): T[] => {
     const results: T[] = [];
-    const metaList = ReflectUtils.findAllMetadata<T[]>(metadataKey, target, propertyKey);
+    const metaList = findAllMetadata<T[]>(metadataKey, target, propertyKey);
     metaList.forEach(data => {
       if (Array.isArray(data)) results.push(...data);
     });
     return [...new Set(results)];
-  },
+  };
 
   /**
    * 프로토타입 체인의 모든 메타데이터(맵 형태)를 수집하여 합칩니다. (부모 -> 자식 순)
    */
-  findAllMapMetadata: <K, V>(metadataKey: any, target: any): Map<K, V[]> => {
+  export const findAllMapMetadata = <K, V>(metadataKey: any, target: any): Map<K, V[]> => {
     const finalMap = new Map<K, V[]>();
-    const metaList = ReflectUtils.findAllMetadata<Map<K, V[]>>(metadataKey, target);
+    const metaList = findAllMetadata<Map<K, V[]>>(metadataKey, target);
 
     metaList.forEach(data => {
       if (data instanceof Map) {
@@ -90,33 +90,33 @@ export const ReflectUtils = {
       }
     });
     return finalMap;
-  },
+  };
 
-  getMetadataKeys: (target: any) => {
+  export const getMetadataKeys = (target: any) => {
     return Reflect.getMetadataKeys(target);
-  },
+  };
 
-  getOwnMetadata: (metadataKey: any, target: any, propertyKey?: string | symbol): any => {
+  export const getOwnMetadata = (metadataKey: any, target: any, propertyKey?: string | symbol): any => {
     if (propertyKey) {
       return Reflect.getOwnMetadata(metadataKey, target, propertyKey);
     } else {
       return Reflect.getOwnMetadata(metadataKey, target);
     }
-  },
+  };
 
-  getMetadatas: (target: any) => {
-    return ReflectUtils.getMetadataKeys(target).map(it => ReflectUtils.getMetadata(it, target));
-  },
+  export const getMetadatas = (target: any) => {
+    return getMetadataKeys(target).map(it => getMetadata(it, target));
+  };
 
-  metadata: (metadataKey: any, data: any) => {
+  export const metadata = (metadataKey: any, data: any) => {
     return Reflect.metadata(metadataKey, data);
-  },
+  };
 
-  defineMetadata: (metadataKey: any, value: any, target: any, propertyKey?: string | symbol) => {
+  export const defineMetadata = (metadataKey: any, value: any, target: any, propertyKey?: string | symbol) => {
     if (propertyKey && Reflect.defineMetadata) {
       Reflect.defineMetadata(metadataKey, value, target, propertyKey);
     } else if (Reflect.defineMetadata) {
       Reflect.defineMetadata(metadataKey, value, target);
     }
-  }
-};
+  };
+}

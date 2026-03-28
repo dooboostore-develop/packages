@@ -1,10 +1,30 @@
-import { SwcAppInterface, HostSet } from '../types';
+import { SwcAppInterface, HostSet, HelperSet, HelperHostSet } from '../types';
 import { getElementConfig } from '../decorators/elementDefine';
 
 export const SWC_NOT_FOUND = Symbol('SWC_NOT_FOUND');
 
-export class SwcUtils {
-  static getValueByPath(obj: any, path: string, rootName: string) {
+export namespace SwcUtils {
+  export const getHelperSet = (win: Window): HelperSet => {
+    const doc: Document = win.document;
+    return {
+      $d: doc,
+      $w: win,
+      $q: (sel: string, root?: Element | Document | ShadowRoot) => (root ?? doc).querySelector(sel),
+      $qa: (sel: string, root?: Element | Document | ShadowRoot) => Array.from((root ?? doc).querySelectorAll(sel)) as HTMLElement[],
+      $qi: (id: string, root?: Document | ShadowRoot) => (root ?? doc).getElementById(id) as HTMLElement
+    } as const;
+  };
+
+  export const getHelperAndHostSet = (win: Window, el: HTMLElement): HelperHostSet => {
+    const helperSet = getHelperSet(win);
+    const hostSet = getHostSet(el);
+    return {
+      ...helperSet,
+      ...hostSet
+    };
+  };
+
+  export const getValueByPath = (obj: any, path: string, rootName: string) => {
     if (!obj || !path) return SWC_NOT_FOUND;
 
     const parts = path.split('.');
@@ -15,58 +35,87 @@ export class SwcUtils {
       current = current[part];
     }
     return current;
-  }
+  };
 
-  static findNearestSwcHost(el: HTMLElement | Node): HTMLElement | undefined {
-    let current: any = el instanceof Node && !(el instanceof HTMLElement) ? (el as any).host : el;
-    current = current?.parentElement || (current?.getRootNode() as any)?.host;
+  /**
+   * Finds the nearest logical SWC host for an element.
+   * Checks __swc_host property first, then climbs the DOM tree.
+   */
+  export const findNearestSwcHost = (el: HTMLElement | Node): HTMLElement | undefined => {
+    if ((el as any).__swc_host) return (el as any).__swc_host;
 
-    while (current) {
+    let current: any = el.parentElement || (el.getRootNode?.() as any)?.host;
+    while (current && current !== document && current !== window) {
+      if (current.__swc_host) return current.__swc_host;
       if (getElementConfig(current)) return current as HTMLElement;
-      current = current.parentElement || (current?.getRootNode() as any)?.host;
+      current = current.parentElement || (current.getRootNode?.() as any)?.host;
     }
     return undefined;
-  }
+  };
 
   /**
    * Returns all SWC ancestors (excluding self) in [root, ..., parent] order.
    */
-  static findAllSwcHosts(el: HTMLElement | Node): HTMLElement[] {
+  export const findAllSwcHosts = (el: HTMLElement | Node): HTMLElement[] => {
     const hosts: HTMLElement[] = [];
-    let current = this.findNearestSwcHost(el);
+    let current = findNearestSwcHost(el);
     while (current) {
       hosts.push(current);
-      current = this.findNearestSwcHost(current);
+      // To find the next ancestor, we must start searching from the PARENT of the found host
+      current = findNearestSwcHost(current);
     }
     return hosts.reverse();
-  }
+  };
 
-  static getHosts(el: HTMLElement): HTMLElement[] {
-    return [...this.findAllSwcHosts(el), el];
-  }
+  export const getHosts = (el: HTMLElement): HTMLElement[] => {
+    const ancestors = findAllSwcHosts(el);
+    if (getElementConfig(el)) return [...ancestors, el];
+    return ancestors;
+  };
 
-  static getHost(el: HTMLElement): HTMLElement | undefined {
-    return el;
-  }
+  export const getHost = (el: HTMLElement): HTMLElement | undefined => {
+    if (getElementConfig(el)) return el;
+    return findNearestSwcHost(el);
+  };
 
-  static getAppHosts(el: HTMLElement): SwcAppInterface[] {
-    const hosts = this.getHosts(el);
+  export const getAppHosts = (el: HTMLElement): SwcAppInterface[] => {
+    const hosts = getHosts(el);
     return hosts.filter(host => host.tagName.toLowerCase() === 'swc-app' || host.getAttribute('is')?.startsWith('swc-app-')) as SwcAppInterface[];
-  }
+  };
 
-  static getAppHost(el: HTMLElement): SwcAppInterface | undefined {
-    const appHosts = this.getAppHosts(el);
+  export const getAppHost = (el: HTMLElement): SwcAppInterface | undefined => {
+    const appHosts = getAppHosts(el);
     const appHostsWithoutSelf = appHosts.filter(h => h !== el);
-    // Nearest app host is the last one in [root, ..., parent]
     return appHostsWithoutSelf.length > 0 ? appHostsWithoutSelf[appHostsWithoutSelf.length - 1] : undefined;
-  }
+  };
 
-  static getHostSet(el: HTMLElement): HostSet {
-    const ancestors = this.findAllSwcHosts(el); // [root, ..., parent]
-    const $host = el;
-    const $hosts = [...ancestors, $host]; // [root, ..., parent, self]
-    const $parentHost = ancestors.length > 0 ? ancestors[ancestors.length - 1] : null;
-    const $firstHost = ancestors.length > 0 ? ancestors[0] : null;
+  export const getHostSet = (el: HTMLElement): HostSet => {
+    const isSwc = !!getElementConfig(el);
+    const ancestors = findAllSwcHosts(el); // [root, ..., parent]
+
+    let $host: HTMLElement;
+    let $parentHost: HTMLElement | null;
+
+    if (isSwc) {
+      $host = el;
+      $parentHost = ancestors.length > 0 ? ancestors[ancestors.length - 1] : null;
+    } else {
+      $host = ancestors.length > 0 ? ancestors[ancestors.length - 1] : el;
+      $parentHost = ancestors.length > 1 ? ancestors[ancestors.length - 2] : null;
+    }
+
+    const $hosts = isSwc ? [...ancestors, el] : ancestors;
+    const $firstHost = $hosts.length > 0 ? $hosts[0] : null;
+
+    // Collect loop contexts
+    const loopContext: Record<string, any> = {};
+    let curr: any = el;
+    while (curr && curr !== document.documentElement) {
+      if (curr.__swc_loop_context) {
+        Object.assign(loopContext, curr.__swc_loop_context);
+      }
+      curr = curr.parentElement || (curr.getRootNode() as any).host;
+    }
 
     const $appHosts = $hosts.filter(h => h.tagName.toLowerCase() === 'swc-app' || h.getAttribute('is')?.startsWith('swc-app-')) as SwcAppInterface[];
     const $appHost = $appHosts.length > 0 ? ($appHosts[$appHosts.length - 1] === el ? ($appHosts.length > 1 ? $appHosts[$appHosts.length - 2] : null) : $appHosts[$appHosts.length - 1]) : null;
@@ -81,7 +130,8 @@ export class SwcUtils {
       $appHost,
       $appHosts,
       $firstAppHost,
-      $lastAppHost: $appHost
-    };
-  }
+      $lastAppHost: $appHost,
+      ...loopContext
+    } as any;
+  };
 }

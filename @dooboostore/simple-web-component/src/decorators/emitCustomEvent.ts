@@ -1,7 +1,7 @@
 import { ReflectUtils } from '@dooboostore/core/reflect/ReflectUtils';
+import { SpecialSelector, SwcQueryOptions } from '../types';
 
-export interface EmitCustomEventOptions {
-  type: string;
+export interface EmitCustomEventBaseOptions {
   attributeName?: string;
   bubbles?: boolean;
   composed?: boolean;
@@ -10,28 +10,35 @@ export interface EmitCustomEventOptions {
 
 export interface EmitCustomEventMetadata {
   propertyKey: string | symbol;
-  options: EmitCustomEventOptions;
+  selector: string;
+  type: string;
+  options: EmitCustomEventBaseOptions & SwcQueryOptions;
 }
 
 export const EMIT_CUSTOM_EVENT_METADATA_KEY = Symbol('simple-web-component:emit-custom-event');
+export function emitCustomEvent(target: SpecialSelector, type: string, options?: EmitCustomEventBaseOptions): MethodDecorator;
+export function emitCustomEvent(selector: string, type: string, options?: EmitCustomEventBaseOptions & SwcQueryOptions): MethodDecorator;
+/**
+ * @emitCustomEvent decorator to dispatch custom events to a target.
+ */
+export function emitCustomEvent(selectorOrTarget: string, type: string, options: any = {}): MethodDecorator {
+  return (targetObj: Object, propertyKey: string | symbol) => {
+    const constructor = targetObj.constructor;
 
-export function emitCustomEvent(typeOrOptions: string | EmitCustomEventOptions): MethodDecorator {
-  return (target: Object, propertyKey: string | symbol) => {
-    const constructor = target.constructor;
-    const options: EmitCustomEventOptions = typeof typeOrOptions === 'string' ? { type: typeOrOptions } : typeOrOptions;
+    const fullOptions: any = { ...options, type };
 
-    if (!options.attributeName) {
-      options.attributeName = `swc-on-${options.type}`;
+    if (!fullOptions.attributeName) {
+      fullOptions.attributeName = `swc-on-${type}`;
     }
-    if (options.bubbles === undefined) options.bubbles = true;
-    if (options.composed === undefined) options.composed = true;
+    if (fullOptions.bubbles === undefined) fullOptions.bubbles = true;
+    if (fullOptions.composed === undefined) fullOptions.composed = true;
 
     let list = ReflectUtils.getMetadata<EmitCustomEventMetadata[]>(EMIT_CUSTOM_EVENT_METADATA_KEY, constructor);
     if (!list) {
       list = [];
       ReflectUtils.defineMetadata(EMIT_CUSTOM_EVENT_METADATA_KEY, list, constructor);
     }
-    list.push({ propertyKey, options });
+    list.push({ propertyKey, selector: selectorOrTarget, type, options: fullOptions });
   };
 }
 

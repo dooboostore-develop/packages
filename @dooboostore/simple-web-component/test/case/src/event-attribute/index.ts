@@ -1,21 +1,21 @@
-import { addEventListener, elementDefine, innerHtml, onDisconnected, emitCustomEvent } from '@dooboostore/simple-web-component';
+import { addEventListener, elementDefine, onConnectedInnerHtml, onDisconnected, emitCustomEvent } from '@dooboostore/simple-web-component';
 
 @elementDefine({
   name: 'event-test-host'
 })
 class EventTestHost extends HTMLElement {
-  @addEventListener('click', '#test-btn')
+  @addEventListener('#test-btn', 'click')
   testBtn() {
     console.log('--- Internal Test Button Clicked ---');
   }
 
-  @addEventListener('click', '#emit-btn')
+  @addEventListener('#emit-btn', 'click')
   emitBtn() {
     console.log('--- Internal Emit Test Button Clicked ---');
     this.sendData();
   }
 
-  @emitCustomEvent('my-custom-event')
+  @emitCustomEvent(':host', 'my-custom-event')
   sendData() {
     const data = { time: Date.now(), msg: 'Hello from SWC!' };
     console.log('--- Dispatching my-custom-event ---', data);
@@ -27,7 +27,7 @@ class EventTestHost extends HTMLElement {
     console.log('EventTestHost disconnected');
   }
 
-  @innerHtml({ useShadow: true })
+  @onConnectedInnerHtml({ useShadow: true })
   render() {
     return `
             <div style="padding: 15px; border: 2px solid #1a73e8; border-radius: 8px; background: #e8f0fe;">

@@ -1,59 +1,81 @@
-# 🧪 SWC Comprehensive Test Suite
+# 🧪 SWC Pure Architecture Test Suite
 
-This directory contains a rich set of test cases designed to verify the core features, performance, and edge cases of **@dooboostore/simple-web-component**. Use these as both a verification tool and a practical reference for building your own applications.
-
----
-
-## 🏁 How to Run Tests
-
-1. Install dependencies at the workspace root.
-2. Navigate to this package: `cd packages/@dooboostore/simple-web-component`.
-3. Start the test hub: `pnpm run test:case`.
-4. Open your browser at `http://localhost:3005`.
+This directory contains dedicated test cases for **@dooboostore/simple-web-component** (SWC). These tests verify the "Pure Architecture" philosophy: maximizing performance and standard compliance by removing heavy magic (Proxy, MutationObservers) in favor of explicit decorators and native Web Component features.
 
 ---
 
-## 📂 Test Scenarios
+## 🏁 How to Run
 
-### 1. 🚀 Full Suite (`/full-suite`)
-**Goal**: Stress-test the entire engine with complex nesting and deep reactivity.
-- **Nesting**: Parent-Child-Grandchild data propagation using `as="alias"`.
-- **Bubbling**: How deep nodes find state in distant ancestors.
-- **Surgical Updates**: Verifying that changing a single property only touches the specific Text Node tied to it.
-
-### 2. 🌐 SPA & Advanced Routing (`/spa`)
-**Goal**: Demonstrate the "Sexy" routing pattern using native Web standards.
-- **Slot-based Routing**: Using `replaceChildren` to swap pages in the Light DOM while maintaining layout in the Shadow DOM.
-- **DI Integration**: Injecting `WebRouter` and `SimpleApplication` directly into Web Components via `simple-boot`.
-- **Hierarchical Events**: Using `$host`, `$hosts`, and `$firstHost` to navigate and control the routing flow from deep within the UI.
-
-### 3. 🔁 Dynamic For-Of (`/for-of`)
-**Goal**: Performance and integrity of list rendering.
-- **Efficient Updates**: Using `addRow(item)` and `removeRow(index)` instead of re-rendering the entire list.
-- **Index Integrity**: Verifying that `{{index}}` bindings update correctly when rows are removed from the middle of a list.
-- **Variants**: Comparing `swc-for-of-children` (wrapper stays) vs `swc-for-of` (physical removal).
-
-### 4. 🧪 Template-based Logic (`/if` & `/choose`)
-**Goal**: Wrapper-less conditional rendering using the `Range` API.
-- **Physical Removal**: Elements are truly removed and replaced with a `Comment` placeholder, ensuring CSS layout remains pristine.
-- **Pure Text Support**: Testing IF blocks that only contain raw text nodes without any HTML tags.
-- **Complex Branching**: Nested `<template is="swc-choose">` structures with multiple `swc-when` conditions.
-
-### 5. ⏳ Lifecycles & 🔧 Attributes (`/lifecycle` & `/attr`)
-**Goal**: Reliability of the underlying Web Component hooks.
-- **6-Stage Lifecycle**: Precise firing of `before/after` hooks for connection, disconnection, and adoption.
-- **Bi-directional Sync**: `@attribute` changes reflecting in DOM and vice-versa.
-- **Type Safety**: Proper conversion of `String`, `Number`, `Boolean`, and `Object` types during attribute updates.
+1.  **Install**: Ensure dependencies are installed (`pnpm install` at root).
+2.  **Start Dev Server**:
+    ```bash
+    cd packages/@dooboostore/simple-web-component/test/case
+    pnpm run dev
+    ```
+3.  **Open**: Navigate to `http://localhost:3005` in your browser.
 
 ---
 
-## 💡 Key Patterns to Observe
+## 📂 Test Scenario Breakdown
 
-### The `$host` Variable
-In almost every test, notice how `swc-on-click="$host.doSomething()"` is used. This is the recommended way to communicate from a template element back to its logic-owner without complex event bubbling.
+### 1. ⏳ Lifecycles (`/lifecycle`)
+Verifies the execution order and reliability of all 8 lifecycle decorators.
+- **Hooks**: `@onBeforeConnected`, `@onAfterConnected`, `@onBeforeDisconnected`, `@onAfterDisconnected`, `@onBeforeAdopted`, `@onAfterAdopted`.
+- **Order**: Ensures **Parent -> Child** execution sequence.
+- **Adoption**: Tests moving elements between the main document and an `iframe`.
 
-### Explicit Value Binding
-Always look for the `value="{{state}}"` or `swc-value="{{state}}"` pattern. It is the heart of the reactivity system that enables surgical updates.
+### 2. 🔧 Attributes (`/attr`)
+Verifies the **Method-Based Reflection** approach.
+- **`@setAttribute`**: Checks if method return values are correctly reflected to DOM attributes.
+- **`@changedAttribute`**: Verifies that handlers trigger on both internal and external attribute changes.
+- **Instantiation**: Tests behavior when created via `document.createElement`, `new Class()`, or `innerHTML`.
 
-### Shadow vs Light DOM
-Tests like the SPA suite show how to mix Shadow DOM for styling/layout with Light DOM for content/slots to get the best of both worlds.
+### 3. ⚡ Event System (`/event` & `/event-attribute`)
+Verifies the robust, non-intrusive event binding system.
+- **Direct Binding**: Testing `@addEventListener(selector, type)`.
+- **Delegation**: Verifies `{ delegate: true }` handles elements added dynamically after connection.
+- **Special Selectors**: Validates `:host`, `:window`, and `:document` as event targets.
+- **`swc-on-*`**: Tests declarative event scripts on host elements and their automatic context injection.
+- **`@emitCustomEvent`**: Verifies custom event dispatching and declarative handling via `swc-on-{{type}}`.
+
+### 4. 🔍 Queries & Injection (`/query`)
+Tests the automatic injection of elements and host contexts into class properties.
+- **DOM Query**: `@query` and `@queryAll` for internal element access.
+- **Hierarchy Navigation**: Using special selectors like `:parentHost`, `:appHost`, and `:hosts` to inject ancestor instances directly.
+- **Safety**: Verifies that `@query` is restricted to class properties only.
+
+### 5. 🔄 Structural Directives (`/swc-loop`, `/swc-if`, `/swc-choose`)
+Verifies the high-performance template-based logic components.
+- **`swc-loop`**: Tests surgical list updates, `append()`, and index-preserving `remove()`.
+- **`swc-if`**: Tests conditional rendering and the `swc-default` fallback state.
+- **`swc-choose`**: Tests multi-case logic using `swc-when`, `swc-otherwise`, and `swc-default`.
+- **Context**: Verifies `$item`, `$index`, `$value`, `$nodes`, and `$firstElement` availability in callbacks.
+
+### 6. ⏳ Async Handling (`/swc-async`)
+Tests declarative Promise state management.
+- **States**: Seamless switching between `swc-loading`, `swc-error`, and `swc-success` templates.
+- **Race Conditions**: Ensures only the latest requested Promise is rendered.
+
+### 7. 🌐 SPA & DI (`/spa`)
+Verifies full application orchestration.
+- **Scoped DI**: Independent dependency containers for different `<swc-app>` instances.
+- **Lifecycle @Inject**: Injecting services and routers directly into `@onConnected` methods.
+- **Nested Routing**: Managing complex layouts using Shadow DOM and `<slot>` based page swapping.
+
+### 8. 🚀 Performance (`/load-test`)
+Benchmarks the library under heavy stress.
+- **Scenario**: Dynamically adding 1,000+ reactive items.
+- **Verification**: Proves that the lack of `MutationObserver` and "Deep Scanning" results in near-native rendering speeds.
+
+---
+
+## 💡 Key Philosophies to Observe
+
+### The `$host` and `$parentHost`
+In the "Pure" model, `$host` always refers to the **current logical owner** of the script. For nodes inside an `swc-loop`, `$host` is the loop template itself, while `$parentHost` is the surrounding component.
+
+### Explicit Delegation
+Notice in the `/event` test how dynamic buttons do **not** work by default unless `{ delegate: true }` is used. This is by design—SWC never scans your DOM unless you explicitly ask it to.
+
+### Surgical Updates
+Unlike VDOM frameworks, SWC encourages direct DOM manipulation inside `@changedAttribute` or `on-clone-node`. This "Surgical" approach is why SWC remains fast even as your application grows.

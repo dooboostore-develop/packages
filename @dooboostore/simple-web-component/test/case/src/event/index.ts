@@ -1,11 +1,11 @@
-import { elementDefine, innerHtml, addEventListener, HostSet, query } from '@dooboostore/simple-web-component';
+import { elementDefine, onConnectedInnerHtml, addEventListener, HostSet, query } from '@dooboostore/simple-web-component';
 
 @elementDefine('event-element')
 class EventElement extends HTMLElement {
   @query('#dynamic-container') containerEl?: HTMLElement;
   @query('#delegate-container') delegateContainerEl?: HTMLElement;
 
-  @innerHtml({ useShadow: true })
+  @onConnectedInnerHtml({ useShadow: true })
   render() {
     return `
       <div style="padding: 20px; border: 2px solid #673ab7; border-radius: 8px; background: #f3e5f5; font-family: sans-serif;">

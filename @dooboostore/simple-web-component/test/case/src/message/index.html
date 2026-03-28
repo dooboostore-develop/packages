@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Global Message Test</title>
+    <script src="https://unpkg.com/@ungap/custom-elements"></script>
+    <style>
+      body {
+        font-family: sans-serif;
+        padding: 40px;
+        line-height: 1.6;
+      }
+      nav {
+        background: #eee;
+        padding: 15px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+      }
+      nav a {
+        color: #1a73e8;
+        text-decoration: none;
+        font-weight: bold;
+      }
+      .app-box {
+        border: 2px solid #333;
+        padding: 20px;
+        margin-bottom: 20px;
+        border-radius: 10px;
+        background: #fff;
+      }
+      .comp-box {
+        border: 1px solid #aaa;
+        padding: 15px;
+        background: #f9f9f9;
+        margin-top: 10px;
+        border-radius: 5px;
+      }
+      button {
+        padding: 8px 16px;
+        cursor: pointer;
+        margin-right: 5px;
+      }
+      .status {
+        color: #d32f2f;
+        font-weight: bold;
+      }
+    </style>
+  </head>
+  <body>
+    <nav>
+      <strong>Test Cases:</strong>
+      <a href="../index.html">Main Hub</a> |
+      <a href="../surgical/index.html">Surgical Test</a>
+    </nav>
+
+    <h1>Integrated Messaging System</h1>
+    <p>Using <code>@emitCustomEvent</code> with selectors to control message scope without an external manager.</p>
+
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px">
+      <!-- App 1 -->
+      <div class="app-box">
+        <h2>App Scope A (Blue)</h2>
+        <swc-app swc-get-application-config="{}">
+          <message-sender label="Sender A"></message-sender>
+          <message-receiver label="Local Receiver A"></message-receiver>
+        </swc-app>
+      </div>
+
+      <!-- App 2 -->
+      <div class="app-box">
+        <h2>App Scope B (Green)</h2>
+        <swc-app swc-get-application-config="{}">
+          <message-sender label="Sender B"></message-sender>
+          <message-receiver label="Local Receiver B"></message-receiver>
+        </swc-app>
+      </div>
+    </div>
+
+    <div style="border: 2px dashed #f44336; padding: 20px; border-radius: 10px; margin-top: 20px; background: #fff5f5">
+      <h3>Global Window Observer</h3>
+      <p id="global-log">Waiting for window-level events...</p>
+    </div>
+
+    <script type="module" src="./index.ts"></script>
+  </body>
+</html>

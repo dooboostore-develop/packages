@@ -1,4 +1,4 @@
-import { elementDefine, innerHtml,  onAfterConnected, addEventListener } from '@dooboostore/simple-web-component';
+import { elementDefine, innerHtml, onAfterConnected, addEventListener } from '@dooboostore/simple-web-component';
 import { Sim } from '@dooboostore/simple-boot/decorators/SimDecorator';
 import { Router as WebRouter } from '@dooboostore/core-web/routers/Router';
 
@@ -49,17 +49,17 @@ export default (w: Window) => {
       console.log('init2222', this.name);
     }
 
-    @addEventListener({ type: 'click', query: '#change-name-btn' })
+    @addEventListener('#change-name-btn', 'click')
     onChangeName() {
       this.name = 'Internal Change ' + new Date().getSeconds();
     }
 
-    @addEventListener({ type: 'click', query: '#toggle-extra-btn' })
+    @addEventListener('#toggle-extra-btn', 'click')
     onToggleExtra() {
       this.showExtra = !this.showExtra;
     }
 
-    @addEventListener({ type: 'click', query: '#toggle-real-if-btn' })
+    @addEventListener('#toggle-real-if-btn', 'click')
     onToggleRealIf() {
       this.showRealIf = !this.showRealIf;
     }

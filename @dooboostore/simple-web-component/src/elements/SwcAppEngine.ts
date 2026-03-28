@@ -6,6 +6,7 @@ import { SimOption } from '@dooboostore/simple-boot/SimOption';
 import { Router, RouterEventType } from '@dooboostore/core-web/routers/Router';
 import { Subscription } from '@dooboostore/core/message/Subscription';
 import { ConstructorType, Optional } from '@dooboostore/core/types';
+import { FunctionUtils } from '@dooboostore/core/function/FunctionUtils';
 
 export type SwcConfigType = {
   rootRouter: ConstructorType<any>;
@@ -35,7 +36,7 @@ export class SwcAppEngine {
     if (!configStr) return;
 
     try {
-      const userConfig: SwcAttributeConfigType = new Function(`return ${configStr}`).apply(this.host);
+      const userConfig: SwcAttributeConfigType = FunctionUtils.executeReturn({ script: configStr, context: this.host });
       if (userConfig && userConfig.rootRouter) {
         const _config: SwcConfigType = {
           routeType: 'element',

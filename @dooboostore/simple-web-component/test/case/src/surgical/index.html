@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Surgical Update Test</title>
+    <script src="https://unpkg.com/@ungap/custom-elements"></script>
+    <style>
+      body {
+        font-family: sans-serif;
+        padding: 40px;
+        line-height: 1.6;
+      }
+      nav {
+        background: #eee;
+        padding: 15px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+      }
+      nav a {
+        color: #1a73e8;
+        text-decoration: none;
+        font-weight: bold;
+      }
+      .surgical-box {
+        border: 2px solid #2196f3;
+        padding: 20px;
+        border-radius: 10px;
+        background: #e3f2fd;
+      }
+      .outlet {
+        border: 1px dashed #2196f3;
+        padding: 15px;
+        background: white;
+        min-height: 50px;
+        margin: 15px 0;
+      }
+      .item {
+        padding: 8px;
+        margin: 5px 0;
+        background: #fffde7;
+        border: 1px solid #fbc02d;
+        border-radius: 4px;
+      }
+      button {
+        padding: 8px 16px;
+        cursor: pointer;
+        border-radius: 4px;
+        border: 1px solid #ccc;
+        background: white;
+        margin-right: 5px;
+      }
+      button:hover {
+        background: #f0f0f0;
+      }
+    </style>
+  </head>
+  <body>
+    <nav>
+      <strong>Test Cases:</strong>
+      <a href="../index.html">Main Hub</a> | <a href="../swc-loop/index.html">Loop Test</a> |
+      <a href="../swc-if/index.html">If Test</a>
+    </nav>
+
+    <h1>Surgical DOM Manipulation</h1>
+    <p>Testing <code>@replaceChildren</code> and <code>@appendChild</code> for targeted updates without full re-renders.</p>
+
+    <surgical-element></surgical-element>
+
+    <script type="module" src="./index.ts"></script>
+  </body>
+</html>

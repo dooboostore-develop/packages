@@ -1,52 +1,78 @@
 import { ReflectUtils } from '@dooboostore/core/reflect/ReflectUtils';
+import { getElementConfig } from './elementDefine';
+import { SwcUtils } from '../utils/Utils';
+import { SpecialSelector, SwcQueryOptions } from '../types';
 
-export interface QueryOptions {
-  root?: 'light' | 'shadow' | 'all' | 'auto';
-}
+export type QueryOptions = { root?: 'light' | 'shadow' | 'all' | 'auto' };
 
 export interface QueryMetadata {
-  selector: string;
-  options: QueryOptions;
   propertyKey: string | symbol;
+  selector: string;
+  options: SwcQueryOptions;
 }
 
 export const QUERY_METADATA_KEY = Symbol('simple-web-component:query');
 
+export function query(target: SpecialSelector): PropertyDecorator;
+export function query(selector: string, options?: SwcQueryOptions): PropertyDecorator;
 /**
  * @query decorator to inject a single element into a class property.
- * Usage: @query('.my-class') myEl!: HTMLElement;
- * Usage: @query('#my-id', { root: 'shadow' }) myEl!: HTMLElement;
  */
-export function query(selector: string, options: QueryOptions = {}): PropertyDecorator {
-  return (target: Object, propertyKey: string | symbol, descriptor?: never): void => {
+export function query(selectorOrTarget: string, options: any = {}): PropertyDecorator {
+  return (targetObj: Object, propertyKey: string | symbol, descriptor?: never): void => {
     if (descriptor !== undefined) {
       throw new Error(`@query decorator cannot be used on methods. (Method: ${String(propertyKey)})`);
     }
 
-    const constructor = target.constructor;
+    const constructor = targetObj.constructor;
     let queries = ReflectUtils.getMetadata<QueryMetadata[]>(QUERY_METADATA_KEY, constructor);
     if (!queries) {
       queries = [];
       ReflectUtils.defineMetadata(QUERY_METADATA_KEY, queries, constructor);
     }
-    queries.push({ selector, options, propertyKey });
+    queries.push({ propertyKey, selector: selectorOrTarget, options });
 
-    Object.defineProperty(target, propertyKey, {
+    Object.defineProperty(targetObj, propertyKey, {
       get(this: HTMLElement) {
-        if (!selector || selector === ':host') return this;
-        const r = options.root || 'auto';
+        const selector = selectorOrTarget;
 
-        if (r === 'shadow') {
-          return this.shadowRoot ? this.shadowRoot.querySelector(selector) : null;
-        }
-        if (r === 'light') {
-          return this.querySelector(selector);
-        }
-        if (r === 'all') {
-          return this.shadowRoot?.querySelector(selector) || this.querySelector(selector);
-        }
-        // auto
+        // --- Special Selectors: HostSet ---
+        const hostSet = SwcUtils.getHostSet(this);
+        if (selector === ':parentHost') return hostSet.$parentHost;
+        if (selector === ':appHost') return hostSet.$appHost;
+        if (selector === ':firstHost') return hostSet.$firstHost;
+        if (selector === ':lastHost') return hostSet.$lastHost;
+        if (selector === ':firstAppHost') return hostSet.$firstAppHost;
+        if (selector === ':lastAppHost') return hostSet.$lastAppHost;
+
+        // --- Special Selectors: Env ---
+        const config = getElementConfig(this);
+        const win = config?.window || window;
+        if (selector === ':window') return win;
+        if (selector === ':document') return win.document;
+        if (selector === ':host') return this;
+
+        // --- Standard Selectors ---
+        const r = options.root || 'auto';
+        if (r === 'shadow') return this.shadowRoot ? this.shadowRoot.querySelector(selector) : null;
+        if (r === 'light') return this.querySelector(selector);
+        if (r === 'all') return this.shadowRoot?.querySelector(selector) || this.querySelector(selector);
         return (this.shadowRoot || this).querySelector(selector);
+      },
+      set(this: HTMLElement, nv: any) {
+        if (nv === null || nv === undefined) {
+          const selector = selectorOrTarget;
+          if (selector.startsWith(':') && selector !== ':host') return;
+
+          const r = options.root || 'auto';
+          let targetEl: Element | null = null;
+          if (r === 'shadow') targetEl = this.shadowRoot ? this.shadowRoot.querySelector(selector) : null;
+          else if (r === 'light') targetEl = this.querySelector(selector);
+          else if (r === 'all') targetEl = this.shadowRoot?.querySelector(selector) || this.querySelector(selector);
+          else targetEl = (this.shadowRoot || this).querySelector(selector);
+
+          if (targetEl) targetEl.remove();
+        }
       },
       enumerable: true,
       configurable: true

@@ -14,10 +14,24 @@ export enum InjectSituationType {
   LAST_APP_HOST = 'SIMPLE_WEB_COMPONENT://LASTAPPHOST'
 }
 
+export type SwcRootType = 'light' | 'shadow' | 'all' | 'auto';
+
+export type SpecialSelector = ':host' | ':window' | ':document' | ':parentHost' | ':appHost' | ':firstHost' | ':lastHost' | ':firstAppHost' | ':lastAppHost' | ':hosts' | ':appHosts';
+
+export type SwcQueryOptions = { root?: SwcRootType };
+
+export type HelperSet = {
+  $d: Document;
+  $w: Window;
+  $q: (selector: string, root?: Element | Document | ShadowRoot) => HTMLElement | null;
+  $qa: (selector: string, root?: Element | Document | ShadowRoot) => HTMLElement[];
+  $qi: (id: string, root?: Document | ShadowRoot) => HTMLElement | null;
+};
+
 export type HostSet = {
   $host: HTMLElement; // Current component itself
   $parentHost: HTMLElement | null; // Nearest parent SWC component
-  $hosts: HTMLElement[]; // [self, parent, ..., top]
+  $hosts: HTMLElement[]; // [root, ..., parent, self]
   $firstHost: HTMLElement | null; // Top-most SWC ancestor
   $lastHost: HTMLElement | null; // Same as $parentHost (for backward compatibility or clarity)
   $appHost: SwcAppInterface | null;
@@ -25,6 +39,8 @@ export type HostSet = {
   $firstAppHost: SwcAppInterface | null;
   $lastAppHost: SwcAppInterface | null;
 };
+
+export type HelperHostSet = HelperSet & HostSet;
 
 export interface SwcAppInterface extends HTMLElement {
   simpleApplication?: SimpleApplication;

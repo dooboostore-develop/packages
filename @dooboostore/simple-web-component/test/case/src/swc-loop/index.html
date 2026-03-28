@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>SwcLoop Full Test</title>
+    <script src="https://unpkg.com/@ungap/custom-elements"></script>
+    <style>
+      body {
+        font-family: sans-serif;
+        padding: 40px;
+        line-height: 1.6;
+      }
+      .controls {
+        margin-bottom: 20px;
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        border: 1px solid #eee;
+        padding: 15px;
+        border-radius: 8px;
+      }
+      .user-row {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        padding: 8px;
+        border-bottom: 1px solid #eee;
+      }
+      .user-row:hover {
+        background: #f9f9f9;
+      }
+      .index {
+        color: #888;
+        font-family: monospace;
+        width: 40px;
+      }
+      .name {
+        font-weight: bold;
+        width: 150px;
+      }
+      .age {
+        color: #666;
+        width: 80px;
+      }
+      button {
+        padding: 5px 12px;
+        cursor: pointer;
+      }
+      .delete-btn {
+        color: white;
+        background: #d93025;
+        border: none;
+        border-radius: 4px;
+      }
+      .delete-btn:hover {
+        background: #b71c1c;
+      }
+    </style>
+  </head>
+  <body>
+  <script>
+    var initialUsers = [
+      { name: 'Alice', age: 25 },
+      { name: 'Bob', age: 8 },
+      { name: 'Charlie', age: 32 }
+    ];
+  </script>
+    <h1>SwcLoop: Pure Structural Directive</h1>
+    <p>Testing conditional rendering (<code>on-get-if</code>), surgical updates (<code>on-clone-node</code>), and index-preserving removal.</p>
+
+    <div class="controls">
+      <button id="reset-btn">Reset List (value=)</button>
+      <button id="append-btn">Append Item (append())</button>
+      <button id="remove-last-btn">Remove Last (remove())</button>
+      <span style="margin-left: auto; color: #666">Check console for lifecycle logs.</span>
+    </div>
+
+    <loop-test-app>
+      <button swc-on-click="console.log('vvvaaav', $host)">aaaavvavaaaaaa</button>
+    </loop-test-app>
+
+    <loop-test-app>
+      <button swc-on-click="console.log('vvv', $host)">aaaaaaaaa</button>
+      <div style="border: 2px solid #1a73e8; border-radius: 8px; padding: 10px; background: white">
+        <template
+          is="swc-loop"
+          id="main-loop"
+          on-get-value="initialUsers"
+          on-clone-nodes="
+              $firstElement.querySelector('.index').textContent = '[' + $index + ']';
+              $firstElement.querySelector('.name').textContent = $item.name;
+              $firstElement.querySelector('.age').textContent = 'Age: ' + $item.age;
+              $firstElement.querySelector('.delete-btn').index = $index;
+            "
+        >
+          <div class="user-row">
+            <span class="index"></span>
+            <span class="name"></span>
+            <span class="age"></span>
+            <button class="delete-btn" swc-on-click="$parentHost.deleteItem(this.index)">Delete</button>
+<!--            <button class="delete-btn" swc-on-click="console.log($host, $parentHost)">Delete</button>-->
+          </div>
+        </template>
+      </div>
+    </loop-test-app>
+
+    <script type="module" src="./index.ts"></script>
+  </body>
+</html>

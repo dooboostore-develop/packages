@@ -1,7 +1,7 @@
 import { Inject } from '@dooboostore/simple-boot/decorators/inject/Inject';
 
 console.log('rootstart');
-import {addEventListener, elementDefine, HostSet, InjectSituationType, innerHtml, onAdopted, onConnected, onDisconnected, query} from '@dooboostore/simple-web-component';
+import { addEventListener, elementDefine, HostSet, InjectSituationType, onConnectedInnerHtml, onAdopted, onConnected, onDisconnected, query } from '@dooboostore/simple-web-component';
 import { SimpleApplication } from '@dooboostore/simple-boot/SimpleApplication';
 import { Sim } from '@dooboostore/simple-boot/decorators/SimDecorator';
 import { Router as WebRouter } from '@dooboostore/core-web/routers/Router';
@@ -9,7 +9,7 @@ import { Router } from '@dooboostore/simple-boot/decorators/route/Router';
 import { RouterAction } from '@dooboostore/simple-boot/route/RouterAction';
 import { RoutingDataSet } from '@dooboostore/simple-boot/route/RouterManager';
 import createMyComponent from './MyComponent';
-import {SwcAttributeConfigType} from "@dooboostore/simple-web-component/elements/SwcAppEngine";
+import { SwcAttributeConfigType } from '@dooboostore/simple-web-component/elements/SwcAppEngine';
 
 const w = window;
 const MyComponent = createMyComponent(w);
@@ -21,7 +21,7 @@ class MyComponent2 extends HTMLElement {
     console.log('hello MyComponent2');
   }
 
-  @innerHtml
+  @onConnectedInnerHtml
   render() {
     return `
       <div style="padding: 10px; border: 1px solid #ccc;">
@@ -44,7 +44,7 @@ class MyRouter extends HTMLElement implements RouterAction.CanActivate {
   @query('#my-route')
   myRoute!: HTMLElement;
 
-  @innerHtml
+  @onConnectedInnerHtml
   render() {
     return `
       <div style="padding: 10px; border: 1px solid #ccc;">
@@ -86,13 +86,13 @@ class RootRouter extends HTMLDivElement implements RouterAction.CanActivate {
     }
   }
 
-  @addEventListener({ type: 'click', query: '#route-btn' })
+  @addEventListener('#route-btn', 'click')
   onRouteBtnClick() {
     this.name = 'Changed Root ' + new Date().getSeconds();
     this.router.go('/hello/good');
   }
 
-  @innerHtml({ useShadow: true })
+  @onConnectedInnerHtml({ useShadow: true })
   render() {
     return `
       <div class="container">
@@ -108,7 +108,7 @@ class RootRouter extends HTMLDivElement implements RouterAction.CanActivate {
 
 @elementDefine({ name: 'test-component', window: w })
 class TestComponent extends HTMLElement {
-  @innerHtml
+  @onConnectedInnerHtml
   render() {
     return `<div>test-component</div>`;
   }

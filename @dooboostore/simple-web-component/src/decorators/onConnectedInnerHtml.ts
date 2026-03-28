@@ -11,9 +11,12 @@ export interface InnerHtmlMetadata {
 
 export const INNER_HTML_METADATA_KEY = Symbol('simple-web-component:inner-html');
 
-export function innerHtml(options: InnerHtmlOptions): MethodDecorator;
-export function innerHtml(target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor): void;
-export function innerHtml(arg1?: InnerHtmlOptions | Object, arg2?: string | symbol, arg3?: PropertyDescriptor): MethodDecorator | void {
+/**
+ * @onConnectedInnerHtml decorator to define the initial HTML content when connected.
+ */
+export function onConnectedInnerHtml(options: InnerHtmlOptions): MethodDecorator;
+export function onConnectedInnerHtml(target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor): void;
+export function onConnectedInnerHtml(arg1?: InnerHtmlOptions | Object, arg2?: string | symbol, arg3?: PropertyDescriptor): MethodDecorator | void {
   const decorator = (options: InnerHtmlOptions, target: Object, propertyKey: string | symbol) => {
     const constructor = target.constructor;
     let list = ReflectUtils.getMetadata<InnerHtmlMetadata[]>(INNER_HTML_METADATA_KEY, constructor);
@@ -25,17 +28,15 @@ export function innerHtml(arg1?: InnerHtmlOptions | Object, arg2?: string | symb
   };
 
   if (arg2) {
-    // Used as @innerHtml
     return decorator({}, arg1!, arg2);
   }
 
-  // Used as @innerHtml(options)
   return (target: Object, propertyKey: string | symbol) => {
     decorator((arg1 as InnerHtmlOptions) || {}, target, propertyKey);
   };
 }
 
-export const getInnerHtmlMetadataList = (target: any): InnerHtmlMetadata[] | undefined => {
+export const getOnConnectedInnerHtmlMetadata = (target: any): InnerHtmlMetadata[] | undefined => {
   const constructor = target instanceof Function ? target : target.constructor;
   return ReflectUtils.getMetadata(INNER_HTML_METADATA_KEY, constructor);
 };
