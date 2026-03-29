@@ -1,6 +1,5 @@
 import {HTMLElementBase} from './HTMLElementBase';
-import {HTMLCollection} from '../collection';
-import {HTMLElement} from './HTMLElement';
+import {HTMLCollectionImp} from '../collection';
 
 /**
  * The **`HTMLTheadElement`** class represents an HTML `<thead>` element.
@@ -12,7 +11,7 @@ export class HTMLTheadElement extends HTMLElementBase {
         super(tagName, ownerDocument);
     }
 
-    get rows(): HTMLCollection {
+    get rows(): HTMLCollectionImp {
         return this.querySelectorAll('tr') as any;
     }
 

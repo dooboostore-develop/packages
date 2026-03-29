@@ -50,7 +50,12 @@
 
     <div class="controls">
       <button id="toggle-btn">Toggle User Data (Nested)</button>
-      <button onclick="window.showIndependent = !window.showIndependent; document.getElementById('indep-if').refresh()">Toggle Independent If</button>
+      <button onclick="
+      window.showIndependent = !window.showIndependent;
+      console.log(window.showIndependent);
+      document.getElementById('indep-if').removeAttribute('on-get-value');
+      document.getElementById('indep-if').setAttribute('on-get-value', 'window.showIndependent');
+      ">Toggle Independent If</button>
     </div>
 
     <!-- 1. Independent If (Directly in Body) -->

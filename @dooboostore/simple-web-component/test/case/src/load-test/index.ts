@@ -1,6 +1,7 @@
-import { elementDefine, innerHtml, changedAttribute, setAttribute, addEventListener, query, HostSet } from '@dooboostore/simple-web-component';
+import swcRegister, { elementDefine, onConnectedInnerHtml, changedAttribute, setAttribute, addEventListener, query, HostSet } from '@dooboostore/simple-web-component';
 
-@elementDefine({ name: 'load-test-container' })
+swcRegister(window);
+@elementDefine('load-test-container', { window })
 class LoadTestContainer extends HTMLElement {
   parentCount = 0;
 
@@ -13,12 +14,12 @@ class LoadTestContainer extends HTMLElement {
     if (this.displayEl) this.displayEl.textContent = String(this.parentCount);
   }
 
-  @setAttribute('parent-count')
+  @setAttribute(':host', 'parent-count')
   incParent() {
     return this.parentCount + 1;
   }
 
-  @innerHtml({ useShadow: true })
+  @onConnectedInnerHtml({ useShadow: true })
   render() {
     return `
             <div style="border: 3px double #1a73e8; padding: 20px; border-radius: 10px; background: #e8f0fe;">
@@ -32,7 +33,7 @@ class LoadTestContainer extends HTMLElement {
   }
 }
 
-@elementDefine({ name: 'load-test-item' })
+@elementDefine('load-test-item', { window })
 class LoadTestItem extends HTMLElement {
   count = 0;
   titleStr = '';
@@ -55,7 +56,7 @@ class LoadTestItem extends HTMLElement {
     if (this.titleValEl) this.titleValEl.textContent = this.titleStr;
   }
 
-  @setAttribute('count')
+  @setAttribute(':host', 'count')
   updateCount(val: number) {
     return val;
   }
@@ -76,7 +77,7 @@ class LoadTestItem extends HTMLElement {
     }
   }
 
-  @innerHtml({ useShadow: true })
+  @onConnectedInnerHtml({ useShadow: true })
   render() {
     return `
             <div style="padding: 10px; border-bottom: 1px solid #eee; display: flex; align-items: center; gap: 15px;">

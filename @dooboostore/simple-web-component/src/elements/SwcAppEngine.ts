@@ -7,9 +7,10 @@ import { Router, RouterEventType } from '@dooboostore/core-web/routers/Router';
 import { Subscription } from '@dooboostore/core/message/Subscription';
 import { ConstructorType, Optional } from '@dooboostore/core/types';
 import { FunctionUtils } from '@dooboostore/core/function/FunctionUtils';
+import { SwcUtils } from '../utils/Utils';
 
 export type SwcConfigType = {
-  rootRouter: ConstructorType<any>;
+  rootRouter: ConstructorType<any> | Symbol;
   routeType: 'path' | 'hash' | 'element';
   path?: string;
   window: Window;
@@ -25,22 +26,35 @@ export class SwcAppEngine {
 
   constructor(private host: HTMLElement) {}
 
-  async connect() {
+  async connect(config?: SwcAttributeConfigType) {
     if (this._isInitialized) return;
+
+    let userConfig = config;
+    const win = this.host.ownerDocument?.defaultView || window;
+    const Node = (win as any).Node as typeof globalThis.Node;
+    if (!userConfig) {
+      const configStr = this.host.getAttribute('swc-get-application-config');
+      if (configStr) {
+        try {
+          userConfig = FunctionUtils.executeReturn({
+            script: configStr,
+            context: this.host,
+            args: SwcUtils.getHelperAndHostSet(win, this.host)
+          });
+        } catch (e) {
+          console.error('[SWC-APP-ENGINE] Script execution failed:', e);
+        }
+      }
+    }
+
+    if (!userConfig) return;
     this._isInitialized = true;
 
-    // Wait for event loop to ensure attributes and global scripts are ready
-    await new Promise(resolve => setTimeout(resolve, 0));
-
-    const configStr = this.host.getAttribute('swc-get-application-config');
-    if (!configStr) return;
-
     try {
-      const userConfig: SwcAttributeConfigType = FunctionUtils.executeReturn({ script: configStr, context: this.host });
-      if (userConfig && userConfig.rootRouter) {
+      if (userConfig.rootRouter) {
         const _config: SwcConfigType = {
           routeType: 'element',
-          window: window,
+          window: win,
           ...userConfig
         } as SwcConfigType;
 
@@ -62,6 +76,7 @@ export class SwcAppEngine {
           });
         }
 
+
         // App start
         this.simpleApplication = new SimpleApplication(new SimOption({ excludeProxys: [Node], rootRouter: _config.rootRouter }));
 
@@ -76,7 +91,7 @@ export class SwcAppEngine {
           else this.host.replaceChildren(data);
         }
 
-        if (_config.path) await this.router?.go(_config.path);
+        if (_config.path) this.router?.go(_config.path);
       }
     } catch (e) {
       console.error('[SWC-APP-ENGINE] Init failed:', e);

@@ -58,6 +58,12 @@ class MyEl extends HTMLElement {
 ### 3. Modern Attribute Management
 SWC uses a **Method-Based Reflection** approach. You control exactly how data flows.
 
+**Attribute sync rules**
+- Initial sync honors DOM-first semantics: if a markup attribute already exists (e.g., `<my-el count="11">`), the first write keeps that DOM value even when the class defines `count = 0`.
+- `connectedInitialize: true` flips the direction for that property so the in-memory value is pushed to the DOM during `connectedCallback`.
+- Type conversion is automatic through `convertValue` so `Boolean`, `Number`, and `String` fields always expose typed values while still storing the serialized attribute on the element.
+- Getters return `null` when the resolved target exists but the attribute is absent, giving you an explicit signal that the DOM is missing that state.
+
 - **`@setAttribute(name?)`**: Reflects the method's **return value** to the DOM attribute.
 - **`@changedAttribute(name?)`**: A handler triggered when the attribute changes.
 
@@ -178,6 +184,78 @@ const el = createElement(
   { class: 'my-class', 'data-id': '123' }
 );
 ```
+
+---
+
+## ⚡ Quick Start
+
+```ts
+import 'reflect-metadata';
+import swcRegister, { elementDefine, onConnectedInnerHtml } from '@dooboostore/simple-web-component';
+
+swcRegister(window);
+
+@elementDefine('hello-swc')
+class HelloSwc extends HTMLElement {
+  @onConnectedInnerHtml({ useShadow: true })
+  render() {
+    return `<style>:host{display:block;padding:12px;background:#111;color:#fefefe}</style><slot>Hello SWC</slot>`;
+  }
+}
+
+// <hello-swc> contents render automatically once the element is connected.
+```
+
+- Call `swcRegister(window)` once per window to register structural elements (`swc-if`, `swc-loop`, etc.) globally.
+- Decorators rely on `reflect-metadata`, so make sure it is imported before defining elements.
+
+---
+
+## 🧪 Interactive Test Cases
+
+Every decorator and directive ships with runnable playgrounds under [test/case/src](test/case/src). They double as living documentation.
+
+1. Install dependencies at the repo root: `pnpm install`.
+2. Start the playground server:
+   ```bash
+   cd packages/@dooboostore/simple-web-component/test/case
+   pnpm run dev
+   ```
+3. Open `http://localhost:3005` and pick a scenario from the menu.
+
+| Scenario | Folder | Highlights |
+| --- | --- | --- |
+| Lifecycle hooks | `lifecycle/` | All pre/post connect, disconnect, adopt hooks with parent-child ordering. |
+| Attribute flow | `attr/` and `attribute-test/` | DOM-first attribute sync, `@setAttribute`, `@changedAttribute`, `connectedInitialize` edge cases. |
+| Events | `event/` and `event-attribute/` | Direct binding, delegation, special selectors, `swc-on-*`, custom event emission. |
+| Queries | `query/` | `@query`, `@queryAll`, special selectors like `:appHost`, element injection safety. |
+| Structural directives | `swc-loop/`, `swc-if/`, `swc-choose/`, `swc-async/` | Surgical list handling, portal rendering, async template states. |
+| SPA & DI | `spa/` | Multiple `<swc-app>` instances, DI containers, nested routers. |
+| Performance | `load-test/` | 1,000+ node stress tests showcasing zero MutationObserver overhead. |
+
+Each folder contains an `index.ts` that demonstrates the decorator usage and an `index.html` you can load standalone if needed.
+
+---
+
+## 🧱 Project Layout
+
+- [src/](src) holds the production TypeScript sources (decorators, structural elements, router, utilities).
+- [test/case/src](test/case/src) aggregates example applications used in documentation and regression checks.
+- [test/case/src/README.md](test/case/src/README.md) provides an overview of every scenario along with the architectural ideas they validate.
+
+---
+
+## 🛠 Developer Scripts
+
+Inside [package.json](package.json) you will find task shortcuts:
+
+- `pnpm run build` – produce ESM, CJS, and bundle artifacts (`dist/`).
+- `pnpm run watch` – rebuild all targets on file changes.
+- `pnpm run build:esm` / `build:cjs` – individual module formats when you only care about one output.
+- `pnpm run test:bundle` – launches the bundle regression playground (`@dooboostore/simple-web-component-bundle-test`).
+- `pnpm run typecheck` – validate TypeScript types without emitting output.
+
+Publishing uses `publish:npm`, which runs a clean build, packs artifacts, and pushes them with the correct metadata.
 
 ---
 

@@ -1,9 +1,6 @@
-import { Node } from './Node';
 import { ChildNodeBase } from './ChildNodeBase';
-import { ParentNode } from './ParentNode';
-import { Element } from './elements/Element';
-import { HTMLCollection } from './collection/HTMLCollection';
-import { NodeListOf } from './collection/NodeListOf';
+import { HTMLCollectionImp } from './collection/HTMLCollectionImp';
+import { NodeListOfImp } from './collection/NodeListOfImp';
 import { ELEMENT_NODE, TEXT_NODE } from './Node';
 import { TextBase } from './TextBase';
 import { CSSSelector } from '../utils/CSSSelector';
@@ -31,7 +28,7 @@ export abstract class ParentNodeBase extends ChildNodeBase implements ParentNode
                 elements.push(child as unknown as Element);
             }
         }
-        return new HTMLCollection(elements);
+        return new HTMLCollectionImp(elements) as unknown as HTMLCollection;
     }
 
     get firstElementChild(): Element | null {
@@ -57,7 +54,7 @@ export abstract class ParentNodeBase extends ChildNodeBase implements ParentNode
         for (const node of nodes) {
             if (typeof node === 'string') {
                 const textNode = new TextBase(node, this._ownerDocument);
-                this.appendChild(textNode);
+                this.appendChild(textNode as unknown as Node);
             } else {
                 this.appendChild(node);
             }
@@ -69,7 +66,7 @@ export abstract class ParentNodeBase extends ChildNodeBase implements ParentNode
         for (const node of nodes) {
             if (typeof node === 'string') {
                 const textNode = new TextBase(node, this._ownerDocument);
-                this.insertBefore(textNode, firstChild);
+                this.insertBefore(textNode as unknown as Node, firstChild);
             } else {
                 this.insertBefore(node, firstChild);
             }
@@ -81,7 +78,7 @@ export abstract class ParentNodeBase extends ChildNodeBase implements ParentNode
         while (this._childNodesInternal.length > 0) {
             const child = this._childNodesInternal[0];
             if (child) {
-                this.removeChild(child);
+                this.removeChild(child as unknown as Node);
             }
         }
 
@@ -117,7 +114,7 @@ export abstract class ParentNodeBase extends ChildNodeBase implements ParentNode
             }
         }
         
-        return new NodeListOf<E>(uniqueResults);
+        return new NodeListOfImp<E>(uniqueResults) as unknown as NodeListOf<E>;
     }
 
     // Private helper methods for querySelector

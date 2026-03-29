@@ -5,7 +5,7 @@ import { CacheStorage } from './decorators/cache/CacheDecorator';
 
 export type ProxyHandlerType = { onAfterProxy: <T>(it: T) => T };
 export type InitOptionType = {
-  rootRouter?: ConstructorType<any>;
+  rootRouter?: ConstructorType<any> | Symbol;
   container?: string;
   excludeSim?: (ConstructorType<any> | Function)[];
   advice?: ConstructorType<any>[];
@@ -21,7 +21,7 @@ type CacheConfig = {
 };
 
 export class SimOption {
-  public rootRouter?: ConstructorType<any>;
+  public rootRouter?: ConstructorType<any> | Symbol;
   public container?: string;
   public advice: ConstructorType<any>[];
   public excludeProxys?: (ConstructorType<any> | Function )[];

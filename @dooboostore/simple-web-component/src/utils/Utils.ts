@@ -1,5 +1,5 @@
 import { SwcAppInterface, HostSet, HelperSet, HelperHostSet } from '../types';
-import { getElementConfig } from '../decorators/elementDefine';
+import {getElementConfig} from "../decorators";
 
 export const SWC_NOT_FOUND = Symbol('SWC_NOT_FOUND');
 
@@ -45,7 +45,9 @@ export namespace SwcUtils {
     if ((el as any).__swc_host) return (el as any).__swc_host;
 
     let current: any = el.parentElement || (el.getRootNode?.() as any)?.host;
-    while (current && current !== document && current !== window) {
+    const doc = el.ownerDocument;
+    const win = doc?.defaultView || ((typeof window !== 'undefined' ? window : undefined) as any);
+    while (current && current !== doc && current !== win) {
       if (current.__swc_host) return current.__swc_host;
       if (getElementConfig(current)) return current as HTMLElement;
       current = current.parentElement || (current.getRootNode?.() as any)?.host;
@@ -110,7 +112,8 @@ export namespace SwcUtils {
     // Collect loop contexts
     const loopContext: Record<string, any> = {};
     let curr: any = el;
-    while (curr && curr !== document.documentElement) {
+    const rootEl = el.ownerDocument?.documentElement;
+    while (curr && curr !== rootEl) {
       if (curr.__swc_loop_context) {
         Object.assign(loopContext, curr.__swc_loop_context);
       }

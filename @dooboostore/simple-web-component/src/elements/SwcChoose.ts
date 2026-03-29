@@ -1,10 +1,7 @@
-import { elementDefine } from '../decorators/elementDefine';
 import { changedAttribute } from '../decorators/changedAttribute';
 import { SwcUtils } from '../utils/Utils';
 import { FunctionUtils } from '@dooboostore/core/function/FunctionUtils';
-import { SwcWhen, SwcOtherwise } from './SwcSubTemplates';
 
-@elementDefine({ name: 'swc-choose', extends: 'template' })
 export class SwcChoose extends HTMLTemplateElement {
   private _nodes: Node[] = [];
   private _value: any = null;
@@ -12,115 +9,92 @@ export class SwcChoose extends HTMLTemplateElement {
   get value(): any {
     return this._value;
   }
-
   set value(nv: any) {
     this._value = nv;
     this.render();
   }
 
-  private _executeCallback(attrName: string, extraArgs: Record<string, any>) {
-    const script = this.getAttribute(attrName);
+  private _resolvePortal(): Element | null {
+    const portalScript = this.getAttribute('on-get-portal');
+    if (!portalScript) return this.parentElement;
+
+    const win = this.ownerDocument?.defaultView || window;
+    const res = FunctionUtils.executeReturn({
+      script: portalScript,
+      context: this,
+      args: SwcUtils.getHelperAndHostSet(win, this)
+    });
+
+    if (res instanceof HTMLElement) return res;
+    if (typeof res === 'string') return win.document.querySelector(res);
+    return this.parentElement;
+  }
+
+  private _executeCloneCallback(attr: string, args: any) {
+    const script = this.getAttribute(attr);
     if (!script) return;
-    const helperHostSet = SwcUtils.getHelperAndHostSet(window, this);
-    try {
-      FunctionUtils.execute({ script, context: this, args: { ...helperHostSet, ...extraArgs } });
-    } catch (e) {
-      console.error(`[SwcChoose] Error in ${attrName}:`, e);
-    }
+    FunctionUtils.execute({ script, context: this, args });
   }
 
   @changedAttribute('on-get-value')
-  private refresh(newValue?: string | null) {
-    const script = newValue !== undefined ? newValue : this.getAttribute('on-get-value');
+  private refresh() {
+    const script = this.getAttribute('on-get-value');
     if (!script) {
       this.value = null;
       return;
     }
-    if (!this.parentElement) return;
-
-    const helperHostSet = SwcUtils.getHelperAndHostSet(window, this);
-    try {
-      const result = FunctionUtils.executeReturn({
-        script,
-        context: this,
-        args: helperHostSet
-      });
-      this.value = result;
-    } catch (e) {
-      console.error('[SwcChoose] Error in on-get-value:', e);
-    }
+    const win = this.ownerDocument?.defaultView || window;
+    const result = FunctionUtils.executeReturn({ script, context: this, args: SwcUtils.getHelperAndHostSet(win, this) });
+    this.value = result;
   }
 
   private render() {
     this.cleanup();
-    if (!this.parentElement) return;
+    const portal = this._resolvePortal();
+    if (!portal) return;
+
+    const win = this.ownerDocument?.defaultView || window;
+    const helperSet = SwcUtils.getHelperAndHostSet(win, this);
 
     const templates = Array.from(this.content.querySelectorAll('template'));
     let selected: HTMLTemplateElement | null = null;
-    let otherwise: HTMLTemplateElement | null = null;
-    let defaultTmp: HTMLTemplateElement | null = null;
-
     for (const t of templates) {
-      const is = t.getAttribute('is');
-      if (is === 'swc-when') {
-        const whenVal = t.getAttribute('value');
-        if (String(whenVal) === String(this._value)) {
-          selected = t;
-          break;
-        }
-      } else if (is === 'swc-otherwise') {
-        otherwise = t;
-      } else if (is === 'swc-default') {
-        defaultTmp = t;
+      if (t.getAttribute('is') === 'swc-when' && String(t.getAttribute('value')) === String(this._value)) {
+        selected = t;
+        break;
       }
     }
+    const target = selected || (this.content.querySelector('template[is="swc-otherwise"]') as HTMLTemplateElement);
 
-    const targetTemplate = (this._value == null ? defaultTmp : selected) || otherwise || defaultTmp;
-    if (targetTemplate) {
-      const clone = targetTemplate.content.cloneNode(true) as DocumentFragment;
-      const nodes = Array.from(clone.childNodes);
-      const elements = nodes.filter(n => n.nodeType === 1) as HTMLElement[];
+    if (target) {
+      const clone = target.content.cloneNode(true) as DocumentFragment;
+      this._nodes = Array.from(clone.childNodes);
+      const elements = this._nodes.filter(n => n.nodeType === 1) as HTMLElement[];
+      const groupArgs = { ...helperSet, $value: this._value, $nodes: this._nodes, $elements: elements, $firstElement: elements[0] };
 
-      const ctx = {
-        $value: this._value,
-        $nodes: nodes,
-        $elements: elements,
-        $firstNode: nodes[0],
-        $lastNode: nodes[nodes.length - 1],
-        $firstElement: elements[0],
-        $lastElement: elements[elements.length - 1]
-      };
-
-      // Execution Callbacks
-      this._executeCallback('on-clone-nodes', ctx);
-      nodes.forEach((node, nodeIndex) => {
-        if (node instanceof HTMLElement) {
-          (node as any).__swc_host = this;
-        }
-        this._executeCallback('on-clone-node', {
-          ...ctx,
-          $node: node,
-          $nodeIndex: nodeIndex,
-          $isElement: node.nodeType === 1
-        });
+      this._nodes.forEach((n, nodeIdx) => {
+        if (n instanceof HTMLElement) (n as any).__swc_host = this;
+        this._executeCloneCallback('on-clone-node', { ...groupArgs, $node: n, $nodeIndex: nodeIdx, $isElement: n.nodeType === 1 });
       });
 
-      this._nodes = nodes;
-      this.parentElement.insertBefore(clone, this.nextSibling);
+      this._executeCloneCallback('on-clone-nodes', groupArgs);
+
+      if (portal === this.parentElement) {
+        portal.insertBefore(clone, this.nextSibling);
+      } else {
+        portal.appendChild(clone);
+      }
     }
   }
 
   private cleanup() {
-    this._nodes.forEach(n => {
-      if (n.parentElement) n.parentElement.removeChild(n);
-    });
+    this._nodes.forEach(n => n.parentElement?.removeChild(n));
     this._nodes = [];
   }
 
   connectedCallback() {
     this.refresh();
   }
-
   disconnectedCallback() {
     this.cleanup();
   }

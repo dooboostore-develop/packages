@@ -16,7 +16,7 @@ export class HTMLTdElement extends HTMLElementBase {
         
         const cells = row.querySelectorAll('td, th');
         for (let i = 0; i < cells.length; i++) {
-            if (cells[i] === this) {
+            if (cells[i] === this as unknown as HTMLElement) {
                 return i;
             }
         }

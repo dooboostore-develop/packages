@@ -1,5 +1,4 @@
-import { Node } from './Node';
-import { NodeFilter } from './NodeFilter';
+import {NodeFilter} from "./NodeFilter";
 
 /**
  * TreeWalker implementation for traversing DOM nodes

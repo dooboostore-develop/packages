@@ -59,3 +59,5 @@ export const HTML_TAG_ENTRIES: [string, string][] = [
 ];
 
 export const DOM_EVENT_NAMES = ['click', 'dblclick', 'mousedown', 'mouseenter', 'mouseleave', 'mousemove', 'mouseout', 'mouseover', 'mouseup', 'contextmenu', 'keydown', 'keypress', 'keyup', 'blur', 'change', 'focus', 'focusin', 'focusout', 'input', 'invalid', 'reset', 'search', 'select', 'submit', 'drag', 'dragend', 'dragenter', 'dragleave', 'dragover', 'dragstart', 'drop', 'copy', 'cut', 'paste', 'abort', 'canplay', 'canplaythrough', 'durationchange', 'emptied', 'ended', 'error', 'loadeddata', 'loadedmetadata', 'loadstart', 'pause', 'play', 'playing', 'progress', 'ratechange', 'seeked', 'seeking', 'stalled', 'suspend', 'timeupdate', 'volumechange', 'waiting', 'scroll', 'resize', 'load', 'unload', 'hashchange', 'connected'];
+
+export const BROWSER_GLOBALS = ['window', 'document', 'Node', 'Element', 'HTMLElement', 'DocumentFragment', 'CustomEvent', 'customElements', 'NodeFilter', ...HTML_TAG_ENTRIES.map(([className]) => className)];

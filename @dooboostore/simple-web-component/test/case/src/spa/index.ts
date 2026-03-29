@@ -1,7 +1,9 @@
 import { Inject } from '@dooboostore/simple-boot/decorators/inject/Inject';
 
 console.log('rootstart');
-import { addEventListener, elementDefine, HostSet, InjectSituationType, onConnectedInnerHtml, onAdopted, onConnected, onDisconnected, query } from '@dooboostore/simple-web-component';
+import swcRegister, { addEventListener, elementDefine, HostSet, InjectSituationType, onConnectedInnerHtml, onAdopted, onConnected, onDisconnected, query } from '@dooboostore/simple-web-component';
+
+swcRegister(window);
 import { SimpleApplication } from '@dooboostore/simple-boot/SimpleApplication';
 import { Sim } from '@dooboostore/simple-boot/decorators/SimDecorator';
 import { Router as WebRouter } from '@dooboostore/core-web/routers/Router';
@@ -15,7 +17,7 @@ const w = window;
 const MyComponent = createMyComponent(w);
 
 @Sim
-@elementDefine({ name: 'my-component2', window: w })
+@elementDefine('my-component2', { window: w })
 class MyComponent2 extends HTMLElement {
   say() {
     console.log('hello MyComponent2');
@@ -39,7 +41,7 @@ class MyComponent2 extends HTMLElement {
     '/good2': MyComponent2
   }
 })
-@elementDefine('my-router')
+@elementDefine('my-router', { window: w })
 class MyRouter extends HTMLElement implements RouterAction.CanActivate {
   @query('#my-route')
   myRoute!: HTMLElement;
@@ -66,7 +68,7 @@ class MyRouter extends HTMLElement implements RouterAction.CanActivate {
 @Router({
   routers: [MyRouter]
 })
-@elementDefine({ name: 'root-router', window: w })
+@elementDefine('root-router', { window: w })
 class RootRouter extends HTMLDivElement implements RouterAction.CanActivate {
   route = '';
   name = 'Root Name';
@@ -76,6 +78,7 @@ class RootRouter extends HTMLDivElement implements RouterAction.CanActivate {
     private sim: SimpleApplication
   ) {
     super();
+    console.log('----------', this.router, this.sim);
   }
 
   async canActivate(url: RoutingDataSet, data?: any): Promise<void> {
@@ -106,7 +109,7 @@ class RootRouter extends HTMLDivElement implements RouterAction.CanActivate {
   }
 }
 
-@elementDefine({ name: 'test-component', window: w })
+@elementDefine('test-component', { window: w })
 class TestComponent extends HTMLElement {
   @onConnectedInnerHtml
   render() {
@@ -137,3 +140,13 @@ export const applicationConfig = (app: any): SwcAttributeConfigType => {
 };
 (w as any).applicationConfig = applicationConfig;
 (w as any).wow = wow;
+
+document.addEventListener('DOMContentLoaded', () => {
+  const config = {
+    rootRouter: RootRouter,
+    path: '/hello/good2',
+    window: w
+  };;
+  const app = document.querySelector('#app');
+  (app as any).connect(config)
+})

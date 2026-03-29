@@ -21,18 +21,15 @@ function findFiles(dir, extension) {
         } else if (filepath.endsWith(extension)) {
           filelist.push(filepath);
         }
-      }
-      catch (e) {
+      } catch (e) {
         // ignore stat errors
       }
     });
-  }
-  catch (e) {
+  } catch (e) {
     // ignore readdir errors
   }
   return filelist;
 }
-
 
 function generateModuleDeclarations() {
   console.log('Generating module declarations for deep imports...');
@@ -74,7 +71,10 @@ function generateModuleDeclarations() {
     });
 
     declarations += `declare module "${moduleName}" {\n`;
-    declarations += fixedContent.split('\n').map(line => `  ${line}`).join('\n');
+    declarations += fixedContent
+      .split('\n')
+      .map(line => `  ${line}`)
+      .join('\n');
     declarations += `\n}\n\n`;
   }
 
@@ -92,15 +92,15 @@ function addSubmoduleReferences() {
   }
 
   try {
-    const subdirs = fs.readdirSync(typesDir, { withFileTypes: true })
+    const subdirs = fs
+      .readdirSync(typesDir, { withFileTypes: true })
       .filter(dirent => dirent.isDirectory())
       .map(dirent => dirent.name);
 
     let directives = '';
     for (const dir of subdirs) {
       const subDirFullPath = path.resolve(typesDir, dir);
-      const dtsFilesInSubdir = fs.readdirSync(subDirFullPath)
-        .filter(file => file.endsWith('.d.ts'));
+      const dtsFilesInSubdir = fs.readdirSync(subDirFullPath).filter(file => file.endsWith('.d.ts'));
 
       for (const dtsFile of dtsFilesInSubdir) {
         directives += `/// <reference path="${dir}/${dtsFile}" />\n`;
@@ -120,84 +120,90 @@ function addSubmoduleReferences() {
   }
 }
 
-
 function generateExportsInPackageJson() {
-    console.log('Generating exports in package.json...');
-    const typesDir = path.resolve(__dirname, 'dist/types');
-    const packageJsonPath = path.resolve(__dirname, 'package.json');
+  console.log('Generating exports in package.json...');
+  const typesDir = path.resolve(__dirname, 'dist/types');
+  const packageJsonPath = path.resolve(__dirname, 'package.json');
 
-    if (!fs.existsSync(typesDir)) {
-        console.warn(`Warning: '${typesDir}' not found. Skipping exports generation.`);
-        return;
+  if (!fs.existsSync(typesDir)) {
+    console.warn(`Warning: '${typesDir}' not found. Skipping exports generation.`);
+    return;
+  }
+
+  const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
+  const dtsFiles = findFiles(typesDir, '.d.ts')
+    .filter(file => !file.includes('bundle-entry'))
+    .map(file =>
+      path
+        .relative(typesDir, file)
+        .replace(/\.d\.ts$/, '')
+        .replace(/\\/g, '/')
+    );
+
+  const exports = {
+    '.': {
+      types: './dist/types/index.d.ts',
+      node: './dist/cjs/index.js',
+      require: './dist/cjs/index.js',
+      import: './dist/esm/index.js'
     }
+  };
 
-    const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
-    const dtsFiles = findFiles(typesDir, '.d.ts')
-        .filter(file => !file.includes('bundle-entry'))
-        .map(file => path.relative(typesDir, file).replace(/\.d\.ts$/, '').replace(/\\/g, '/'));
+  const exportPaths = new Set();
+  dtsFiles.forEach(file => {
+    if (file !== 'index' && file !== 'types') {
+      let exportPath = file;
+      if (exportPath.endsWith('/index')) {
+        exportPath = exportPath.slice(0, -6);
+      }
+      exportPaths.add(exportPath);
+    }
+  });
 
-    const exports = {
-        ".": {
-            "types": "./dist/types/index.d.ts",
-            "node": "./dist/cjs/index.js",
-            "require": "./dist/cjs/index.js",
-            "import": "./dist/esm/index.js"
-        }
-    };
+  Array.from(exportPaths)
+    .sort()
+    .forEach(modulePath => {
+      const exportKey = `./${modulePath}`;
+      const typePath = `./dist/types/${modulePath}${fs.existsSync(path.resolve(typesDir, modulePath, 'index.d.ts')) ? '/index.d.ts' : '.d.ts'}`;
+      const esmPath = `./dist/esm/${modulePath}${fs.existsSync(path.resolve(__dirname, 'dist/esm', modulePath, 'index.js')) ? '/index.js' : '.js'}`;
+      const cjsPath = `./dist/cjs/${modulePath}${fs.existsSync(path.resolve(__dirname, 'dist/cjs', modulePath, 'index.js')) ? '/index.js' : '.js'}`;
 
-    const exportPaths = new Set();
-    dtsFiles.forEach(file => {
-        if (file !== 'index' && file !== 'types') {
-            let exportPath = file;
-            if (exportPath.endsWith('/index')) {
-                exportPath = exportPath.slice(0, -6);
-            }
-            exportPaths.add(exportPath);
-        }
+      exports[exportKey] = {
+        types: typePath,
+        node: cjsPath,
+        require: cjsPath,
+        import: esmPath
+      };
     });
 
-    Array.from(exportPaths).sort().forEach(modulePath => {
-        const exportKey = `./${modulePath}`;
-        const typePath = `./dist/types/${modulePath}${fs.existsSync(path.resolve(typesDir, modulePath, 'index.d.ts')) ? '/index.d.ts' : '.d.ts'}`;
-        const esmPath = `./dist/esm/${modulePath}${fs.existsSync(path.resolve(__dirname, 'dist/esm', modulePath, 'index.js')) ? '/index.js' : '.js'}`;
-        const cjsPath = `./dist/cjs/${modulePath}${fs.existsSync(path.resolve(__dirname, 'dist/cjs', modulePath, 'index.js')) ? '/index.js' : '.js'}`;
-        
-        exports[exportKey] = {
-            "types": typePath,
-            "node": cjsPath,
-            "require": cjsPath,
-            "import": esmPath
-        };
-    });
+  exports['./*'] = {
+    types: './dist/types/*.d.ts',
+    require: './dist/cjs/*.js',
+    import: './dist/esm/*.js'
+  };
 
-    exports["./*"] = {
-        "types": "./dist/types/*.d.ts",
-        "require": "./dist/cjs/*.js",
-        "import": "./dist/esm/*.js"
-    };
+  packageJson.exports = exports;
+  fs.writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 2) + '\n', 'utf8');
 
-    packageJson.exports = exports;
-    fs.writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 2) + '\n', 'utf8');
-    
-    console.log(`✅ Generated ${Object.keys(exports).length} exports in package.json`);
-    console.log(`   Including ${Object.keys(exports).length - 2} explicit module paths`);
+  console.log(`✅ Generated ${Object.keys(exports).length} exports in package.json`);
+  console.log(`   Including ${Object.keys(exports).length - 2} explicit module paths`);
 }
 
 const declarationGeneratorPlugin = {
-    name: 'declaration-generator',
-    setup(build) {
-        build.onEnd(result => {
-            if (result.errors.length === 0) {
-                console.log('Build successful, generating declarations...');
-                try {
-                    execSync('pnpm exec tsc -p tsconfig.json --noEmit false --emitDeclarationOnly', { stdio: 'inherit' });
-                    // generateExportsInPackageJson();
-                } catch (e) {
-                    console.error('Declaration generation failed:', e);
-                }
-            }
-        });
-    }
+  name: 'declaration-generator',
+  setup(build) {
+    build.onEnd(result => {
+      if (result.errors.length === 0) {
+        console.log('Build successful, generating declarations...');
+        try {
+          execSync('pnpm exec tsc -p tsconfig.json --noEmit false --emitDeclarationOnly', { stdio: 'inherit' });
+          // generateExportsInPackageJson();
+        } catch (e) {
+          console.error('Declaration generation failed:', e);
+        }
+      }
+    });
+  }
 };
 
 // Function to add .js extension to relative imports/exports in generated JS files
@@ -206,7 +212,7 @@ function addJsExtensionToImports(dir) {
     console.warn(`Directory ${dir} does not exist, skipping JS extension addition`);
     return;
   }
-  
+
   const files = fs.readdirSync(dir);
   files.forEach(file => {
     const filepath = path.join(dir, file);
@@ -258,8 +264,8 @@ async function buildTarget(target, watch = false) {
     platform: 'browser', // dom-render is a browser package
     loader: {
       '.html': 'text',
-      '.css': 'text',
-    },
+      '.css': 'text'
+    }
   };
 
   // const externals = [
@@ -268,85 +274,97 @@ async function buildTarget(target, watch = false) {
   //   'reflect-metadata',
   // ];
 
-  
-    // Define a plugin to run after each build
-    const addJsExtensionPlugin = {
-        name: 'add-js-extension',
-        setup(build) {
-            build.onEnd(result => {
-                if (result.errors.length === 0 && build.initialOptions.format === 'esm' && build.initialOptions.outdir) {
-                    console.log('Adding .js extensions to ESM imports after build...');
-                    // Add a small delay to ensure files are written
-                    setTimeout(() => {
-                        addJsExtensionToImports(build.initialOptions.outdir);
-                    }, 100);
-                }
-            });
-        },
-    };
+  // Define a plugin to run after each build
+  const addJsExtensionPlugin = {
+    name: 'add-js-extension',
+    setup(build) {
+      build.onEnd(result => {
+        if (result.errors.length === 0 && build.initialOptions.format === 'esm' && build.initialOptions.outdir) {
+          console.log('Adding .js extensions to ESM imports after build...');
+          // Add a small delay to ensure files are written
+          setTimeout(() => {
+            addJsExtensionToImports(build.initialOptions.outdir);
+          }, 100);
+        }
+      });
+    }
+  };
   switch (target) {
     case 'esm':
       console.log('Starting ESM build...');
-      await performBuild({
-        ...baseOptions,
-        entryPoints: tsFiles,
-        bundle: false,
-        outdir: path.resolve(__dirname, 'dist', 'esm'),
-        format: 'esm',
-        resolveExtensions: ['.ts', '.tsx', '.js', '.jsx', '.json'],
-        mainFields: ['module', 'main'],
-        plugins: [esbuildPluginTsc({tsconfigPath:'tsconfig.esm.json'}), addJsExtensionPlugin, declarationGeneratorPlugin],
-      }, watch);
+      await performBuild(
+        {
+          ...baseOptions,
+          entryPoints: tsFiles,
+          bundle: false,
+          outdir: path.resolve(__dirname, 'dist', 'esm'),
+          format: 'esm',
+          resolveExtensions: ['.ts', '.tsx', '.js', '.jsx', '.json'],
+          mainFields: ['module', 'main'],
+          plugins: [esbuildPluginTsc({ tsconfigPath: 'tsconfig.esm.json' }), addJsExtensionPlugin, declarationGeneratorPlugin]
+        },
+        watch
+      );
       console.log('ESM build complete.');
       break;
     case 'cjs':
       console.log('Starting CJS build...');
-      await performBuild({
-        ...baseOptions,
-        entryPoints: tsFiles,
-        bundle: false,
-        outdir: path.resolve(__dirname, 'dist', 'cjs'),
-        format: 'cjs',
-        plugins: [esbuildPluginTsc({tsconfigPath:'tsconfig.cjs.json'}),declarationGeneratorPlugin],
-      }, watch);
+      await performBuild(
+        {
+          ...baseOptions,
+          entryPoints: tsFiles,
+          bundle: false,
+          outdir: path.resolve(__dirname, 'dist', 'cjs'),
+          format: 'cjs',
+          plugins: [esbuildPluginTsc({ tsconfigPath: 'tsconfig.cjs.json' }), declarationGeneratorPlugin]
+        },
+        watch
+      );
       // Create package.json in dist/cjs to mark it as CommonJS
-      const cjsPackageJson = { 
+      const cjsOutDir = path.resolve(__dirname, 'dist', 'cjs');
+      if (!fs.existsSync(cjsOutDir)) {
+        fs.mkdirSync(cjsOutDir, { recursive: true });
+      }
+      const cjsPackageJson = {
         name: '@dooboostore/dom-parser-cjs-internal',
         private: true,
-        type: 'commonjs' 
+        type: 'commonjs'
       };
-      fs.writeFileSync(
-        path.resolve(__dirname, 'dist', 'cjs', 'package.json'),
-        JSON.stringify(cjsPackageJson, null, 2)
-      );
+      fs.writeFileSync(path.resolve(cjsOutDir, 'package.json'), JSON.stringify(cjsPackageJson, null, 2));
       console.log('CJS build complete.');
       break;
     case 'umd-bundle':
       console.log('Starting UMD bundle build (browser-only, no type declarations)...');
-      await performBuild({
-        ...baseOptions,
-        entryPoints: [path.resolve(__dirname, 'src', 'index.ts')],
-        bundle: true,
-        outfile: path.resolve(__dirname, 'dist', 'umd-bundle', 'dooboostore-dom-parser.umd.js'),
-        format: 'iife',
-        globalName: 'dooboostoreDomParser',
-        plugins: [esbuildPluginTsc({tsconfigPath:'tsconfig.umd.json'})],
-        // tsconfig: 'tsconfig.umd.json',
-        external: [], // Bundle all dependencies including reflect-metadata
-      }, watch);
+      await performBuild(
+        {
+          ...baseOptions,
+          entryPoints: [path.resolve(__dirname, 'src', 'index.ts')],
+          bundle: true,
+          outfile: path.resolve(__dirname, 'dist', 'umd-bundle', 'dooboostore-dom-parser.umd.js'),
+          format: 'iife',
+          globalName: 'dooboostoreDomParser',
+          plugins: [esbuildPluginTsc({ tsconfigPath: 'tsconfig.umd.json' })],
+          // tsconfig: 'tsconfig.umd.json',
+          external: [] // Bundle all dependencies including reflect-metadata
+        },
+        watch
+      );
       console.log('UMD bundle build complete.');
       break;
     case 'esm-bundle':
       console.log('Starting ESM bundle build (browser-only, no type declarations)...');
-      await performBuild({
-        ...baseOptions,
-        entryPoints: [path.resolve(__dirname, 'src', 'index.ts')],
-        bundle: true,
-        outfile: path.resolve(__dirname, 'dist', 'esm-bundle', 'dooboostore-dom-parser.esm.js'),
-        format: 'esm',
-        plugins: [esbuildPluginTsc({tsconfigPath:'tsconfig.esm.json'})],
-        external: [], // Bundle all dependencies including reflect-metadata
-      }, watch);
+      await performBuild(
+        {
+          ...baseOptions,
+          entryPoints: [path.resolve(__dirname, 'src', 'index.ts')],
+          bundle: true,
+          outfile: path.resolve(__dirname, 'dist', 'esm-bundle', 'dooboostore-dom-parser.esm.js'),
+          format: 'esm',
+          plugins: [esbuildPluginTsc({ tsconfigPath: 'tsconfig.esm.json' })],
+          external: [] // Bundle all dependencies including reflect-metadata
+        },
+        watch
+      );
       console.log('ESM bundle build complete.');
       break;
     case 'all':
@@ -368,7 +386,7 @@ const args = process.argv.slice(2);
 const target = args[0] || 'all';
 const watch = args.includes('--watch');
 
-buildTarget(target, watch).catch((error) => {
+buildTarget(target, watch).catch(error => {
   console.error('Build process failed:', error);
   process.exit(1);
 });

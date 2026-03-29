@@ -1,9 +1,6 @@
 import { HTMLElementBase } from './HTMLElementBase';
 import { DocumentFragmentBase } from '../DocumentFragmentBase';
-import { Node, TEXT_NODE } from "../Node";
-import {Text} from '../Text'
-import {ElementFactory} from '../../factory/ElementFactory';
-import { NodeBase } from "../NodeBase";
+import { TEXT_NODE } from "../Node";
 
 /**
  * The **`HTMLTemplateElement`** class represents an HTML `<template>` element.
@@ -88,8 +85,8 @@ export class HTMLTemplateElement extends HTMLElementBase {
         const children = [...this._childNodesInternal];
         for (const child of children) {
             if (child) {
-                this.removeChild(child);
-                this._content.appendChild(child);
+                this.removeChild(child as unknown as Node);
+                this._content.appendChild(child as unknown as Node);
             }
         }
     }

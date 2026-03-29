@@ -1,8 +1,9 @@
-import { elementDefine, innerHtml, onBeforeConnected, onAfterConnected, onBeforeDisconnected, onAfterDisconnected, onBeforeAdopted, onAfterAdopted, onAddEventListener, onConnected, onDisconnected } from '@dooboostore/simple-web-component';
+import swcRegister, { elementDefine, onConnectedInnerHtml, onBeforeConnected, onAfterConnected, onBeforeDisconnected, onAfterDisconnected, onBeforeAdopted, onAfterAdopted, onAddEventListener, onConnected, onDisconnected } from '@dooboostore/simple-web-component';
 
-@elementDefine({ name: 'lifecycle-element' })
+swcRegister(window);
+@elementDefine('lifecycle-element', { window })
 class LifecycleElement extends HTMLElement {
-  @innerHtml
+  @onConnectedInnerHtml
   render() {
     return `
       <div style="padding: 20px; border: 2px solid #f29900; border-radius: 8px; background: #fff7e6;">

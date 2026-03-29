@@ -1,4 +1,4 @@
-import { Node } from '../Node';
+// import { Node } from '../Node';
 
 /**
  * **`NodeList`** objects are collections of nodes, usually returned by properties such as Node.childNodes and methods such as document.querySelectorAll().

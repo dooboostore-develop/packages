@@ -1,5 +1,4 @@
 import { HTMLElementBase } from './HTMLElementBase';
-import { Document } from '../Document';
 
 /**
  * The **`HTMLEmbedElement`** interface provides special properties (beyond the regular HTMLElement interface it also has available to it by inheritance) for manipulating `<embed>` elements.

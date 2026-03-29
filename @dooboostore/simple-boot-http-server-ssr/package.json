@@ -69,6 +69,7 @@
     "@dooboostore/core-node": "workspace:*",
     "@dooboostore/core-web": "workspace:*",
     "@dooboostore/dom-render": "workspace:*",
+    "@dooboostore/simple-web-component": "workspace:*",
     "@dooboostore/simple-boot": "workspace:*",
     "@dooboostore/simple-boot-front": "workspace:*",
     "@dooboostore/simple-boot-http-server": "workspace:*",

@@ -1,0 +1,87 @@
+import { RequestResponse } from '@dooboostore/simple-boot-http-server/models/RequestResponse';
+import { HttpHeaders } from '@dooboostore/simple-boot-http-server/codes/HttpHeaders';
+import { Filter } from '@dooboostore/simple-boot-http-server/filters/Filter';
+import { Mimes } from '@dooboostore/simple-boot-http-server/codes/Mimes';
+import { HttpStatus } from '@dooboostore/simple-boot-http-server/codes/HttpStatus';
+import { SimpleBootHttpServer } from '@dooboostore/simple-boot-http-server/SimpleBootHttpServer';
+import { DomParserInitializer } from '../initializers/DomParserInitializer';
+
+export type SWCSSRConfig = {
+  frontDistPath: string;
+  frontDistIndexFileName?: string;
+  welcomUrl?: string;
+  ssrExcludeFilter?: (rr: RequestResponse) => boolean;
+  /**
+   * Function to register components for each request.
+   */
+  registerComponents?: (window: any) => Promise<void> | void;
+};
+
+/**
+ * SSR Filter specifically for Simple Web Component (SWC).
+ * It utilizes @dooboostore/dom-parser for rendering and DSD support.
+ */
+export class SSRSimpleWebComponentFilter implements Filter {
+  private welcomUrl = 'http://localhost';
+
+  constructor(public config: SWCSSRConfig) {
+    this.welcomUrl = config.welcomUrl || this.welcomUrl;
+  }
+
+  async onInit(app: SimpleBootHttpServer) {}
+
+  async onDestroy() {}
+
+  async proceedBefore({ rr }: { rr: RequestResponse; app: SimpleBootHttpServer; carrier: Map<string, any> }) {
+    if (this.config.ssrExcludeFilter?.(rr)) {
+      return false;
+    }
+
+    if (rr.reqHasAcceptHeader(Mimes.TextHtml) || rr.reqHasAcceptHeader(Mimes.All)) {
+      const url = rr.reqUrlObj({ host: 'localhost' });
+      const targetUrl = url.toString() ?? this.welcomUrl;
+
+      // 1. Initialize Virtual DOM Environment
+      const domParserInitializer = new DomParserInitializer(this.config.frontDistPath, this.config.frontDistIndexFileName || 'index.html', { url: targetUrl });
+      const window = await domParserInitializer.run();
+      console.log('---------', window.document.body.innerHTML);
+
+      try {
+        // 2. Register Components if provided
+        // We use SwcApplication inside the callback or directly here.
+        if (this.config.registerComponents) {
+          await this.config.registerComponents(window);
+        }
+
+        // 3. Generate Final HTML
+        const html = this.makeHTML(window);
+
+        await this.writeOkHtmlAndEnd({ rr }, html);
+      } finally {
+        // 4. Cleanup
+        (window as any).close?.();
+        domParserInitializer.destroy();
+      }
+      return false;
+    }
+    return true;
+  }
+
+  makeHTML(window: any) {
+    let html = window.document.documentElement.outerHTML;
+    if (!/^<!DOCTYPE html>/i.test(html)) {
+      html = '<!DOCTYPE html>\n' + html;
+    }
+    return html;
+  }
+
+  async writeOkHtmlAndEnd({ rr, status = HttpStatus.Ok }: { rr: RequestResponse; status?: HttpStatus }, html: string) {
+    rr.resStatusCode(status);
+    rr.resSetHeader(HttpHeaders.ContentType, Mimes.TextHtml);
+    await rr.resEnd(html);
+  }
+
+  async proceedAfter() {
+    return true;
+  }
+}

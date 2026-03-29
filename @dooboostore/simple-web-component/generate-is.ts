@@ -3,47 +3,84 @@ import * as path from 'path';
 import { HTML_TAG_ENTRIES } from './src/config/config';
 
 const elements: [string, string][] = HTML_TAG_ENTRIES;
+const targetFile = './src/elements/register.ts';
 
-const isTargetDir = './src/elements/is';
+// Helper to load and transform core element source - returns class with decorator
+const getCoreSource = (fileName: string, tagName: string, baseClassName: string, extendsTag?: string) => {
+  const content = fs.readFileSync(`./src/elements/${fileName}.ts`, 'utf-8');
 
-// Clean is/
-if (fs.existsSync(isTargetDir)) {
-  fs.readdirSync(isTargetDir).forEach(file => {
-    if (file === 'index.ts') return;
-    fs.unlinkSync(path.join(isTargetDir, file));
-  });
-} else {
-  fs.mkdirSync(isTargetDir, { recursive: true });
-}
+  // Find the exact start of the class body after 'export class ... {'
+  const match = content.match(/export\s+class\s+\w+\s+extends\s+\w+\s+\{/);
+  if (!match) throw new Error(`Could not find class definition in ${fileName}.ts`);
 
-// Master Template Load
-const appTemplate = fs.readFileSync('./src/elements/SwcApp.ts', 'utf-8');
+  const startIdx = match.index! + match[0].length;
+  const endIdx = content.lastIndexOf('}');
 
-let isIndexContent = '';
+  if (startIdx === -1 || endIdx === -1 || startIdx >= endIdx) {
+    throw new Error(`Could not find valid class body in ${fileName}.ts`);
+  }
 
-elements.forEach(([className, tagName]) => {
-  let shortName = className.replace('HTML', '').replace('Element', '');
-  if (shortName === 'UList') shortName = 'Ul';
-  if (shortName === 'OList') shortName = 'Ol';
-  if (shortName === 'DList') shortName = 'Dl';
-  if (shortName === 'LI') shortName = 'Li';
-  if (shortName === 'HR') shortName = 'Hr';
+  const body = content.substring(startIdx, endIdx);
 
-  const targetClassName = 'SwcApp' + shortName;
-  const genIsFile = (name: string, content: string) => fs.writeFileSync(path.join(isTargetDir, name + '.ts'), content);
+  const decorator = extendsTag ? `@elementDefine('${tagName}', { extends: '${extendsTag}', window: w })` : `@elementDefine('${tagName}', { window: w })`;
 
-  // Simple Transformation
-  let elContent = appTemplate
-    .replace(/from\s*['"]\.\.\/decorators\/elementDefine['"]/g, `from '../../decorators/elementDefine'`)
-    .replace(/from\s*['"]\.\/SwcAppEngine['"]/g, `from '../SwcAppEngine'`)
-    .replace(/@elementDefine\s*\(\s*{\s*name:\s*['"]swc-app['"]\s*,\s*extends:\s*undefined\s*}\s*\)/, `@elementDefine({ name: 'swc-app-${tagName}', extends: '${tagName}' })`)
-    .replace(/export\s+class\s+SwcApp\s+extends\s+HTMLElement/, `export class ${targetClassName} extends ${className}`);
+  return `  ${decorator}\n  class ${fileName} extends ${baseClassName} {${body}  }`;
+};
 
-  genIsFile(targetClassName, elContent);
-  isIndexContent += `export * from './${targetClassName}';\n`;
+// 1. Collect all unique base classes needed
+const baseClasses = new Set<string>(['HTMLElement', 'HTMLTemplateElement', 'DocumentFragment', 'Node', 'Element']);
+elements.forEach(([className]) => baseClasses.add(className));
+
+// 2. Build the extraction block
+let extractionBlock = '  const {\n';
+baseClasses.forEach(cls => {
+  extractionBlock += `    ${cls}: _${cls},\n`;
+});
+extractionBlock += '  } = w as any;\n\n';
+
+baseClasses.forEach(cls => {
+  extractionBlock += `  const ${cls} = _${cls} as typeof globalThis.${cls};\n`;
 });
 
-// Write is/index.ts
-fs.writeFileSync(path.join(isTargetDir, 'index.ts'), isIndexContent);
+let registerContent = `import { elementDefine } from '../decorators/elementDefine';
+import { SwcAppMixin } from './SwcAppMixin';
+import { SwcUtils } from '../utils/Utils';
+import { FunctionUtils } from '@dooboostore/core/function/FunctionUtils';
+import { changedAttribute } from '../decorators/changedAttribute';
 
-console.log('Engine-based SWC: Generated apps are now minimal shells delegating to SwcAppEngine!');
+export const registerAllElements = (w: any) => {
+${extractionBlock}
+
+  // --- Sub Templates ---
+  @elementDefine('swc-loading', { extends: 'template', window: w }) class SwcLoading extends HTMLTemplateElement {}
+  @elementDefine('swc-error', { extends: 'template', window: w }) class SwcError extends HTMLTemplateElement {}
+  @elementDefine('swc-success', { extends: 'template', window: w }) class SwcSuccess extends HTMLTemplateElement {}
+  @elementDefine('swc-when', { extends: 'template', window: w }) class SwcWhen extends HTMLTemplateElement {}
+  @elementDefine('swc-otherwise', { extends: 'template', window: w }) class SwcOtherwise extends HTMLTemplateElement {}
+  @elementDefine('swc-default', { extends: 'template', window: w }) class SwcDefault extends HTMLTemplateElement {}
+
+  // --- Core Elements ---
+  @elementDefine('swc-app', { window: w })
+  class SwcApp extends SwcAppMixin(HTMLElement) {}
+
+  ${getCoreSource('SwcIf', 'swc-if', 'HTMLTemplateElement', 'template')}
+
+  ${getCoreSource('SwcLoop', 'swc-loop', 'HTMLTemplateElement', 'template')}
+
+  ${getCoreSource('SwcChoose', 'swc-choose', 'HTMLTemplateElement', 'template')}
+
+  ${getCoreSource('SwcAsync', 'swc-async', 'HTMLTemplateElement', 'template')}
+
+  // --- "is" Elements ---
+`;
+
+elements.forEach(([className, tagName]) => {
+  const shortName = className.replace('HTML', '').replace('Element', '');
+  registerContent += `  @elementDefine('swc-app-${tagName}', { extends: '${tagName}', window: w })\n`;
+  registerContent += `  class SwcApp${shortName} extends SwcAppMixin(${className}) {}\n\n`;
+});
+
+registerContent += '};\n';
+
+fs.writeFileSync(targetFile, registerContent);
+console.log('Engine-based SWC: Unified registration helper regenerated with stable body extraction!');

@@ -1,7 +1,3 @@
-import { Node } from './Node';
-import { NodeFilter } from './NodeFilter';
-
-export { NodeFilter };
 
 /**
  * NodeIterator implementation for traversing DOM nodes
@@ -140,7 +136,7 @@ export class NodeIterator {
     }
 
     if (this._filter) {
-      const result = this._filter.acceptNode(node);
+      const result = ('acceptNode' in this._filter) ? this._filter.acceptNode(node) : this._filter(node);
       return result === NodeFilter.FILTER_ACCEPT;
     }
 

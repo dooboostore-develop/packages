@@ -1,5 +1,5 @@
 import { ReflectUtils } from '@dooboostore/core/reflect/ReflectUtils';
-import { getElementConfig } from './elementDefine';
+import { getElementConfig, ensureInit } from './elementDefine';
 import { SwcUtils } from '../utils/Utils';
 import { SpecialSelector, SwcQueryOptions } from '../types';
 
@@ -32,46 +32,70 @@ export function query(selectorOrTarget: string, options: any = {}): PropertyDeco
     }
     queries.push({ propertyKey, selector: selectorOrTarget, options });
 
+    // const propertyType = Reflect.getMetadata("design:type", targetObj, propertyKey);
+    // console.log(`Property ${String(propertyKey)} type is:`, propertyType.name);
     Object.defineProperty(targetObj, propertyKey, {
       get(this: HTMLElement) {
+        ensureInit(this);
         const selector = selectorOrTarget;
+
+        const r = options.root || 'auto';
+        const applyRoot = (t: any) => {
+          if (!t || !(t instanceof HTMLElement)) return t;
+          if (r === 'auto') return t.shadowRoot || t;
+          if (r === 'shadow') return t.shadowRoot;
+          if (r === 'light') return t;
+          if (r === 'all') return t.shadowRoot || t; // query only returns one, so shadow preferred
+          return t;
+        };
 
         // --- Special Selectors: HostSet ---
         const hostSet = SwcUtils.getHostSet(this);
-        if (selector === ':parentHost') return hostSet.$parentHost;
-        if (selector === ':appHost') return hostSet.$appHost;
-        if (selector === ':firstHost') return hostSet.$firstHost;
-        if (selector === ':lastHost') return hostSet.$lastHost;
-        if (selector === ':firstAppHost') return hostSet.$firstAppHost;
-        if (selector === ':lastAppHost') return hostSet.$lastAppHost;
+        if (selector === ':parentHost') return applyRoot(hostSet.$parentHost);
+        if (selector === ':appHost') return applyRoot(hostSet.$appHost);
+        if (selector === ':firstHost') return applyRoot(hostSet.$firstHost);
+        if (selector === ':lastHost') return applyRoot(hostSet.$lastHost);
+        if (selector === ':firstAppHost') return applyRoot(hostSet.$firstAppHost);
+        if (selector === ':lastAppHost') return applyRoot(hostSet.$lastAppHost);
 
         // --- Special Selectors: Env ---
         const config = getElementConfig(this);
         const win = config?.window || window;
         if (selector === ':window') return win;
         if (selector === ':document') return win.document;
-        if (selector === ':host') return this;
+        if (selector === ':host') return applyRoot(this);
 
         // --- Standard Selectors ---
-        const r = options.root || 'auto';
         if (r === 'shadow') return this.shadowRoot ? this.shadowRoot.querySelector(selector) : null;
         if (r === 'light') return this.querySelector(selector);
-        if (r === 'all') return this.shadowRoot?.querySelector(selector) || this.querySelector(selector);
+        if (r === 'all') {
+          const shadowMatch = this.shadowRoot ? this.shadowRoot.querySelector(selector) : null;
+          return shadowMatch || this.querySelector(selector);
+        }
         return (this.shadowRoot || this).querySelector(selector);
       },
       set(this: HTMLElement, nv: any) {
+        ensureInit(this);
         if (nv === null || nv === undefined) {
           const selector = selectorOrTarget;
           if (selector.startsWith(':') && selector !== ':host') return;
 
           const r = options.root || 'auto';
-          let targetEl: Element | null = null;
-          if (r === 'shadow') targetEl = this.shadowRoot ? this.shadowRoot.querySelector(selector) : null;
-          else if (r === 'light') targetEl = this.querySelector(selector);
-          else if (r === 'all') targetEl = this.shadowRoot?.querySelector(selector) || this.querySelector(selector);
-          else targetEl = (this.shadowRoot || this).querySelector(selector);
+          const targets: Element[] = [];
 
-          if (targetEl) targetEl.remove();
+          if (r === 'shadow') {
+            if (this.shadowRoot?.querySelector(selector)) targets.push(this.shadowRoot.querySelector(selector)!);
+          } else if (r === 'light') {
+            if (this.querySelector(selector)) targets.push(this.querySelector(selector)!);
+          } else if (r === 'all') {
+            if (this.shadowRoot?.querySelector(selector)) targets.push(this.shadowRoot.querySelector(selector)!);
+            if (this.querySelector(selector)) targets.push(this.querySelector(selector)!);
+          } else {
+            const el = (this.shadowRoot || this).querySelector(selector);
+            if (el) targets.push(el);
+          }
+
+          targets.forEach(t => t.remove());
         }
       },
       enumerable: true,

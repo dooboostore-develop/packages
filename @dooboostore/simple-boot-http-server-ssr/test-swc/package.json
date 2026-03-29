@@ -1,0 +1,33 @@
+{
+  "name": "test-swc",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "front-end:build": "webpack --config front-end/webpack.config.cjs",
+    "front-end:build:watch": "webpack --config front-end/webpack.config.cjs --watch",
+    "back-end:build": "webpack --config back-end/webpack.config.cjs",
+    "back-end:build:watch": "webpack --config back-end/webpack.config.cjs --watch",
+    "back-end:start:watch": "node --watch dist-back-end/index.cjs",
+    "back-end:dev": "npm run back-end:build && (npm run back-end:build:watch & npm run back-end:start:watch)",
+    "build": "npm run front-end:build && npm run back-end:build",
+    "start": "node dist-back-end/index.cjs",
+    "verify": "tsx verify-ssr.ts"
+  },
+  "dependencies": {
+    "@dooboostore/simple-boot-http-server": "workspace:*",
+    "@dooboostore/simple-boot-http-server-ssr": "workspace:*",
+    "@dooboostore/simple-web-component": "workspace:*",
+    "@dooboostore/dom-parser": "workspace:*",
+    "reflect-metadata": "^0.2.2"
+  },
+  "devDependencies": {
+    "webpack": "^5.93.0",
+    "webpack-cli": "^5.1.4",
+    "ts-loader": "^9.5.1",
+    "html-webpack-plugin": "^5.6.3",
+    "tsconfig-paths-webpack-plugin": "^4.2.0",
+    "raw-loader": "^4.0.2",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.2"
+  }
+}

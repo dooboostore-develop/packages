@@ -1,6 +1,7 @@
-import { elementDefine, innerHtml, query, queryAll, addEventListener } from '@dooboostore/simple-web-component';
+import swcRegister, { elementDefine, onConnectedInnerHtml, query, queryAll, addEventListener } from '@dooboostore/simple-web-component';
 
-@elementDefine('query-element')
+swcRegister(window);
+@elementDefine('query-element', { window })
 class QueryElement extends HTMLElement {
   // 1. Property injection (@query)
   @query('h2') titleEl?: HTMLElement;
@@ -9,7 +10,7 @@ class QueryElement extends HTMLElement {
   // 2. Property injection (@queryAll)
   @queryAll('.item') listItems?: NodeListOf<HTMLElement>;
 
-  @innerHtml({ useShadow: true })
+  @onConnectedInnerHtml({ useShadow: true })
   render() {
     return `
       <div style="padding: 20px; border: 2px solid #34a853; border-radius: 8px; background: #e6f4ea;">

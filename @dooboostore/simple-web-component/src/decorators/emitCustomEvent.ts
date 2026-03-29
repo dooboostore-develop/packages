@@ -1,5 +1,7 @@
 import { ReflectUtils } from '@dooboostore/core/reflect/ReflectUtils';
 import { SpecialSelector, SwcQueryOptions } from '../types';
+import { ensureInit, getElementConfig } from './elementDefine';
+import { SwcUtils } from '../utils/Utils';
 
 export interface EmitCustomEventBaseOptions {
   attributeName?: string;
@@ -22,7 +24,7 @@ export function emitCustomEvent(selector: string, type: string, options?: EmitCu
  * @emitCustomEvent decorator to dispatch custom events to a target.
  */
 export function emitCustomEvent(selectorOrTarget: string, type: string, options: any = {}): MethodDecorator {
-  return (targetObj: Object, propertyKey: string | symbol) => {
+  return (targetObj: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor) => {
     const constructor = targetObj.constructor;
 
     const fullOptions: any = { ...options, type };
@@ -39,6 +41,61 @@ export function emitCustomEvent(selectorOrTarget: string, type: string, options:
       ReflectUtils.defineMetadata(EMIT_CUSTOM_EVENT_METADATA_KEY, list, constructor);
     }
     list.push({ propertyKey, selector: selectorOrTarget, type, options: fullOptions });
+
+    const original = descriptor.value;
+    descriptor.value = async function (...args: any[]) {
+      ensureInit(this);
+      const detail = await original.apply(this, args);
+      const event = new CustomEvent(type, {
+        detail,
+        bubbles: fullOptions.bubbles,
+        composed: fullOptions.composed,
+        cancelable: fullOptions.cancelable
+      });
+
+      const hostSet = SwcUtils.getHostSet(this as any);
+      const conf = getElementConfig(this);
+      const currentWin = (this as any)._resolveWindow?.(conf) || ((typeof window !== 'undefined' ? window : undefined) as Window);
+
+      const eventTargets: EventTarget[] = [];
+      if (selectorOrTarget === ':window') eventTargets.push(currentWin);
+      else if (selectorOrTarget === ':document') eventTargets.push(currentWin.document);
+      else if (selectorOrTarget === ':parentHost') {
+        if (hostSet.$parentHost) eventTargets.push(hostSet.$parentHost);
+      } else if (selectorOrTarget === ':appHost') {
+        if (hostSet.$appHost) eventTargets.push(hostSet.$appHost);
+      } else if (selectorOrTarget === ':firstHost') {
+        if (hostSet.$firstHost) eventTargets.push(hostSet.$firstHost);
+      } else if (selectorOrTarget === ':lastHost') {
+        if (hostSet.$lastHost) eventTargets.push(hostSet.$lastHost);
+      } else if (selectorOrTarget === ':firstAppHost') {
+        if (hostSet.$firstAppHost) eventTargets.push(hostSet.$firstAppHost);
+      } else if (selectorOrTarget === ':lastAppHost') {
+        if (hostSet.$lastAppHost) eventTargets.push(hostSet.$lastAppHost);
+      } else if (selectorOrTarget === ':hosts') {
+        hostSet.$hosts.forEach(h => eventTargets.push(h));
+      } else if (selectorOrTarget === ':appHosts') {
+        hostSet.$appHosts.forEach(h => eventTargets.push(h));
+      } else if (selectorOrTarget === ':host' || !selectorOrTarget) eventTargets.push(this as any);
+      else {
+        const r = fullOptions.root || 'auto';
+        const searchRoots: (HTMLElement | ShadowRoot)[] = [];
+        if (r === 'auto') searchRoots.push(this.shadowRoot || (this as any));
+        else if (r === 'light') searchRoots.push(this as any);
+        else if (r === 'shadow' && this.shadowRoot) searchRoots.push(this.shadowRoot);
+        else if (r === 'all') {
+          searchRoots.push(this as any);
+          if (this.shadowRoot) searchRoots.push(this.shadowRoot);
+        }
+
+        searchRoots.forEach(sr => {
+          sr.querySelectorAll(selectorOrTarget).forEach(el => eventTargets.push(el));
+        });
+      }
+
+      eventTargets.forEach(t => t.dispatchEvent(event));
+      return detail;
+    };
   };
 }
 

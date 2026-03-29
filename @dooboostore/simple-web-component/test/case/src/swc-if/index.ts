@@ -1,9 +1,9 @@
-import { elementDefine, onConnectedInnerHtml, SwcIf } from '@dooboostore/simple-web-component';
+import swcRegister, { elementDefine, onConnectedInnerHtml } from '@dooboostore/simple-web-component';
 
-console.log('>>> SwcIf class definition:', SwcIf);
+swcRegister(window);
 
 // Define a parent to handle event delegation for children
-@elementDefine('if-test-app')
+@elementDefine('if-test-app', { window })
 class IfTestApp extends HTMLElement {
   @onConnectedInnerHtml({ useShadow: true })
   render() {
@@ -13,7 +13,7 @@ class IfTestApp extends HTMLElement {
 
 (window as any).userData = null;
 
-const ifEl = document.getElementById('my-if') as SwcIf;
+const ifEl = document.getElementById('my-if') as any;
 
 // --- Test Actions ---
 

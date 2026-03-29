@@ -1,4 +1,3 @@
-import { Element } from '../node/elements/Element';
 
 /**
  * CSS Selector Parser and Matcher

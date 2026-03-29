@@ -1,10 +1,10 @@
-import { elementDefine, innerHtml, onAfterConnected, addEventListener } from '@dooboostore/simple-web-component';
+import { elementDefine, onConnectedInnerHtml, onAfterConnected, addEventListener } from '@dooboostore/simple-web-component';
 import { Sim } from '@dooboostore/simple-boot/decorators/SimDecorator';
 import { Router as WebRouter } from '@dooboostore/core-web/routers/Router';
 
 export default (w: Window) => {
   @Sim
-  @elementDefine({ name: 'my-component', window: w })
+  @elementDefine('my-component', { window: w })
   class MyComponent extends HTMLElement {
     name?: string | null;
     showExtra = false;
@@ -15,7 +15,7 @@ export default (w: Window) => {
       console.log('------->', router);
     }
 
-    @innerHtml({ useShadow: true })
+    @onConnectedInnerHtml({ useShadow: true })
     render() {
       return `
         <div style="padding: 10px; border: 1px solid #ccc;">

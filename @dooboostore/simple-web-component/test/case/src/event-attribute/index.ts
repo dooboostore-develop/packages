@@ -1,8 +1,7 @@
-import { addEventListener, elementDefine, onConnectedInnerHtml, onDisconnected, emitCustomEvent } from '@dooboostore/simple-web-component';
+import swcRegister, { addEventListener, elementDefine, onConnectedInnerHtml, onDisconnected, emitCustomEvent } from '@dooboostore/simple-web-component';
 
-@elementDefine({
-  name: 'event-test-host'
-})
+swcRegister(window);
+@elementDefine('event-test-host', { window })
 class EventTestHost extends HTMLElement {
   @addEventListener('#test-btn', 'click')
   testBtn() {

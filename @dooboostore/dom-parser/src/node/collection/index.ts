@@ -1,4 +1,4 @@
-export { HTMLCollection } from './HTMLCollection';
-export { HTMLCollectionOf } from './HTMLCollectionOf';
+export { HTMLCollectionImp } from './HTMLCollectionImp';
+export { HTMLCollectionOfImp } from './HTMLCollectionOfImp';
 export { NodeList } from './NodeList';
-export { NodeListOf } from './NodeListOf';
+export { NodeListOfImp } from './NodeListOfImp';

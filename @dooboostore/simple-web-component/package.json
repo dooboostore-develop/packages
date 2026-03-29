@@ -1,6 +1,6 @@
 {
   "name": "@dooboostore/simple-web-component",
-  "version": "1.0.18",
+  "version": "1.0.19",
   "license": "MIT",
   "type": "module",
   "main": "./dist/cjs/index.js",
@@ -109,7 +109,7 @@
     "ts:clean": "find . -name '*.js' -o -name '*.map' -o -name '*.d.ts' | xargs rm -f",
     "typecheck": "pnpm exec tsc --noEmit",
     "generate:is": "tsx generate-is.ts",
-    "generate:is:watch": "node --import tsx --watch --watch-path=./src/elements/base/SwcHTMLElementBase.ts --watch-path=./src/elements/SwcApp.ts generate-is.ts",
+    "generate:is:watch": "node --import tsx --watch --watch-path=./src/elements/SwcIf.ts --watch-path=./src/elements/SwcLoop.ts --watch-path=./src/elements/SwcChoose.ts --watch-path=./src/elements/SwcAsync.ts --watch-path=./src/elements/SwcAppMixin.ts --watch-path=./generate-is.ts generate-is.ts",
     "test": "echo test",
     "test:bundle": "pnpm --filter @dooboostore/simple-web-component-bundle-test dev"
   }

@@ -1,6 +1,5 @@
-import { HTMLElement } from './HTMLElement';
 import { HTMLElementBase } from './HTMLElementBase';
-import { HTMLCollection, NodeListOf, NodeList, HTMLCollectionOf } from '../collection';
+import { HTMLCollectionImp, NodeListOfImp, NodeList, HTMLCollectionOfImp } from '../collection';
 /**
  * The **`HTMLTrElement`** class represents an HTML `<tr>` element.
  * 
@@ -11,7 +10,7 @@ export class HTMLTrElement extends HTMLElementBase {
         super(tagName, ownerDocument);
     }
 
-    get cells(): HTMLCollection {
+    get cells(): HTMLCollectionImp {
         return this.querySelectorAll('td, th') as any;
     }
 
@@ -35,7 +34,7 @@ export class HTMLTrElement extends HTMLElementBase {
         
         const sectionRows = section.querySelectorAll('tr');
         for (let i = 0; i < sectionRows.length; i++) {
-            if (sectionRows[i] === this) {
+            if (sectionRows[i] === this as unknown as HTMLElement) {
                 return i;
             }
         }

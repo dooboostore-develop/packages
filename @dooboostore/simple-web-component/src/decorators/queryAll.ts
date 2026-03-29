@@ -1,5 +1,5 @@
 import { ReflectUtils } from '@dooboostore/core/reflect/ReflectUtils';
-import { getElementConfig } from './elementDefine';
+import { getElementConfig, ensureInit } from './elementDefine';
 import { SwcUtils } from '../utils/Utils';
 import { SpecialSelector, SwcQueryOptions } from '../types';
 
@@ -32,22 +32,41 @@ export function queryAll(selectorOrTarget: string, options: any = {}): PropertyD
 
     Object.defineProperty(targetObj, propertyKey, {
       get(this: HTMLElement) {
+        ensureInit(this);
         const selector = selectorOrTarget;
+
+        const r = options.root || 'auto';
+        const applyRoot = (t: any): any[] => {
+          if (!t) return [];
+          const items = Array.isArray(t) ? t : [t];
+          const results: any[] = [];
+          items.forEach(it => {
+            if (!(it instanceof HTMLElement)) {
+              results.push(it);
+              return;
+            }
+            if (r === 'auto') results.push(it.shadowRoot || it);
+            else {
+              if (r === 'light' || r === 'all') results.push(it);
+              if ((r === 'shadow' || r === 'all') && it.shadowRoot) results.push(it.shadowRoot);
+            }
+          });
+          return results;
+        };
 
         // --- Special Selectors: HostSet ---
         const hostSet = SwcUtils.getHostSet(this);
-        if (selector === ':hosts') return hostSet.$hosts;
-        if (selector === ':appHosts') return hostSet.$appHosts;
+        if (selector === ':hosts') return applyRoot(hostSet.$hosts);
+        if (selector === ':appHosts') return applyRoot(hostSet.$appHosts);
 
         // --- Special Selectors: Env ---
         const config = getElementConfig(this);
         const win = config?.window || window;
         if (selector === ':window') return [win];
         if (selector === ':document') return [win.document];
-        if (selector === ':host') return [this];
+        if (selector === ':host') return applyRoot(this);
 
         // --- Standard Selectors ---
-        const r = options.root || 'auto';
         if (r === 'shadow') return this.shadowRoot ? Array.from(this.shadowRoot.querySelectorAll(selector)) : [];
         if (r === 'light') return Array.from(this.querySelectorAll(selector));
         if (r === 'all') {
@@ -59,6 +78,7 @@ export function queryAll(selectorOrTarget: string, options: any = {}): PropertyD
         return Array.from(root.querySelectorAll(selector));
       },
       set(this: HTMLElement, nv: any) {
+        ensureInit(this);
         if (nv === null || nv === undefined || (Array.isArray(nv) && nv.length === 0)) {
           const selector = selectorOrTarget;
           if (selector.startsWith(':') && selector !== ':host') return;

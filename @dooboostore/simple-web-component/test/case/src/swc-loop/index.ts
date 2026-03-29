@@ -1,7 +1,8 @@
-import { elementDefine, onConnectedInnerHtml, SwcLoop } from '@dooboostore/simple-web-component';
+import swcRegister, { elementDefine, onConnectedInnerHtml, addEventListener } from '@dooboostore/simple-web-component';
 
+swcRegister(window);
 // Define a parent to test context
-@elementDefine('loop-test-app')
+@elementDefine('loop-test-app', { window })
 class LoopTestApp extends HTMLElement {
   @onConnectedInnerHtml({ useShadow: true })
   render() {
@@ -10,13 +11,13 @@ class LoopTestApp extends HTMLElement {
 
   // Helper for children to trigger loop removal
   deleteItem(index: number) {
-    const loop = document.getElementById('main-loop') as SwcLoop;
+    const loop = document.getElementById('main-loop') as any;
     console.log('>>> [Loop Test App] Request to remove index:', index);
     loop.remove(index);
   }
 }
 
-const loop = document.getElementById('main-loop') as SwcLoop;
+const loop = document.getElementById('main-loop') as any;
 
 // --- Button Actions ---
 

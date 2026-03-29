@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Advanced Messaging Test</title>
+    <script src="https://unpkg.com/@ungap/custom-elements"></script>
+    <style>
+      body {
+        font-family: sans-serif;
+        padding: 40px;
+        line-height: 1.6;
+      }
+      nav {
+        background: #eee;
+        padding: 15px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+      }
+      nav a {
+        color: #1a73e8;
+        text-decoration: none;
+        font-weight: bold;
+      }
+      .app-box {
+        border: 3px solid #607d8b;
+        padding: 20px;
+        border-radius: 12px;
+        background: #eceff1;
+        margin-bottom: 20px;
+      }
+      .component {
+        border: 1px solid #90a4ae;
+        padding: 15px;
+        margin: 10px 0;
+        border-radius: 8px;
+        background: white;
+      }
+      .log {
+        background: #263238;
+        color: #81c784;
+        padding: 10px;
+        border-radius: 4px;
+        font-family: monospace;
+        font-size: 0.85em;
+        overflow-y: auto;
+        max-height: 150px;
+        min-height: 50px;
+      }
+      button {
+        padding: 8px 16px;
+        cursor: pointer;
+        border-radius: 4px;
+        border: 1px solid #ccc;
+        background: white;
+        margin-right: 5px;
+        margin-bottom: 5px;
+      }
+      button:hover {
+        background: #f5f5f5;
+      }
+    </style>
+  </head>
+  <body>
+    <nav>
+      <strong>Test Cases:</strong>
+      <a href="../index.html">Main Hub</a> |
+      <a href="../message/index.html">Basic Message Test</a>
+    </nav>
+
+    <h1>Advanced Integrated Messaging</h1>
+    <p>Testing multi-target dispatching (<code>:hosts</code>, <code>:appHosts</code>) and unified selector logic in nested hierarchies.</p>
+
+    <div class="app-box">
+      <h2>Grandparent App (Root)</h2>
+      <swc-app id="root-app" swc-get-application-config="{}">
+        <div class="app-box" style="border-style: dashed; background: #f5f5f5">
+          <h3>Parent App (Nested)</h3>
+          <swc-app id="parent-app" swc-get-application-config="{}">
+            <div class="component">
+              <h4>Leaf Component</h4>
+              <advanced-sender></advanced-sender>
+            </div>
+
+            <div class="component" style="background: #e1f5fe">
+              <advanced-receiver label="Parent App Receiver (Local)"></advanced-receiver>
+            </div>
+          </swc-app>
+        </div>
+
+        <div class="component" style="background: #fff9c4">
+          <advanced-receiver label="Grandparent App Receiver (Ancestor)"></advanced-receiver>
+        </div>
+      </swc-app>
+    </div>
+
+    <div style="border: 2px solid #ff5722; padding: 15px; border-radius: 10px; background: #fff5f5">
+      <h3>Window Level Log</h3>
+      <div id="window-log" class="log">Waiting for global events...</div>
+    </div>
+
+    <script type="module" src="./index.ts"></script>
+  </body>
+</html>

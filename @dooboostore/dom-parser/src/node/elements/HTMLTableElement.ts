@@ -1,9 +1,5 @@
-import { Element } from './Element';
-import { Document } from '../Document';
-import { HTMLElement } from './HTMLElement';
 import { HTMLElementBase } from './HTMLElementBase';
-import { HTMLCollection } from '../collection/HTMLCollection'
-import { HTMLElementTagNameMap } from './index';
+import { HTMLCollectionImp } from '../collection/HTMLCollectionImp'
 
 /**
  * The **`HTMLTableElement`** class represents an HTML `<table>` element.
@@ -27,11 +23,11 @@ export class HTMLTableElement extends HTMLElementBase {
         return this.querySelector('tfoot');
     }
 
-    get tBodies(): HTMLCollection {
+    get tBodies(): HTMLCollectionImp {
         return this.querySelectorAll('tbody') as any;
     }
 
-    get rows(): HTMLCollection {
+    get rows(): HTMLCollectionImp {
         return this.querySelectorAll('tr') as any;
     }
 

@@ -1,0 +1,26 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "outDir": "../dist-front-end",
+    "baseUrl": ".",
+    "paths": {
+      "@swc-src/*": ["../src/*"],
+      "@swc-front-end/*": ["./*"],
+      "@swc-back-end/*": ["../back-end/*"],
+      "@dooboostore/core": ["../../../core/src/index.ts"],
+      "@dooboostore/core/*": ["../../../core/src/*"],
+      "@dooboostore/simple-boot": ["../../../simple-boot/src/index.ts"],
+      "@dooboostore/simple-boot/*": ["../../../simple-boot/src/*"],
+      "@dooboostore/simple-boot-http-server": ["../../../simple-boot-http-server/src/index.ts"],
+      "@dooboostore/simple-boot-http-server/*": ["../../../simple-boot-http-server/src/*"],
+      "@dooboostore/simple-boot-http-server-ssr": ["../../src/index.ts"],
+      "@dooboostore/simple-boot-http-server-ssr/*": ["../../src/*"],
+      "@dooboostore/dom-parser": ["../../../dom-parser/src/index.ts"],
+      "@dooboostore/dom-parser/*": ["../../../dom-parser/src/*"],
+      "@dooboostore/simple-web-component": ["../../../simple-web-component/src/index.ts"],
+      "@dooboostore/simple-web-component/*": ["../../../simple-web-component/src/*"]
+    }
+  },
+  "include": ["**/*.ts", "../src/**/*.ts"],
+  "exclude": ["node_modules", "dist-front-end"]
+}

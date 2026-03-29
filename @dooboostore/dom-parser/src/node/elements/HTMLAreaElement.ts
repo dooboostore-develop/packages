@@ -1,5 +1,4 @@
 import { HTMLElementBase } from './HTMLElementBase';
-import { Document } from '../Document';
 
 /**
  * The **`HTMLAreaElement`** interface provides special properties and methods (beyond those of the regular object HTMLElement interface it also has available to it by inheritance) for manipulating the layout and presentation of `<area>` elements.

@@ -1,6 +1,5 @@
 import { HTMLElementBase } from './HTMLElementBase';
-import { HTMLCollection } from '../collection';
-import { HTMLElement } from './HTMLElement';
+import { HTMLCollectionImp } from '../collection';
 /**
  * The **`HTMLTfootElement`** class represents an HTML `<tfoot>` element.
  * 
@@ -13,7 +12,7 @@ export class HTMLTfootElement extends HTMLElementBase {
         super(HTMLTfootElement.TAG_NAME, ownerDocument);
     }
 
-    get rows(): HTMLCollection {
+    get rows(): HTMLCollectionImp {
         return this.querySelectorAll('tr') as any;
     }
 

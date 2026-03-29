@@ -1,7 +1,17 @@
-import {DocumentBase} from './node/DocumentBase';
-import {TextBase} from './node/TextBase';
-import {Comment} from './node/Comment';
-import {WindowBase} from './window/WindowBase';
+import { DocumentBase } from './node/DocumentBase';
+import { TextBase } from './node/TextBase';
+import { Comment } from './node/Comment';
+import { WindowBase } from './window/WindowBase';
+import { ElementBase } from './node/elements/ElementBase';
+import { ElementFactory } from './factory/ElementFactory';
+
+// Inject dependencies into ElementBase to break circular references
+// without using 'require' or 'global' injection magic.
+ElementBase.dependencies = {
+  ElementFactory,
+  TextBase,
+  Comment
+};
 
 export interface DomParserOptions {
   href?: string;
@@ -13,7 +23,7 @@ export class DomParser {
 
   constructor(html: string, option?: DomParserOptions) {
     // Create WindowBase instance with the document
-    const windowBase = new WindowBase({initialUrl: option?.href});
+    const windowBase = new WindowBase({ initialUrl: option?.href });
     this._window = windowBase as unknown as Window;
     this._document = windowBase.document as any;
 
@@ -51,7 +61,7 @@ export class DomParser {
       this._window.close();
       this._window = null;
     }
-    
+
     this._document = null;
   }
 
@@ -62,7 +72,7 @@ export class DomParser {
     if (!this._document) {
       throw new Error('DomParser has been destroyed');
     }
-    
+
     // Clear current document content
     this.clearDocument();
 
@@ -75,7 +85,7 @@ export class DomParser {
 
   private clearDocument(): void {
     if (!this._document) return;
-    
+
     // Clear document body and head content while preserving structure
     if (this._document.head) {
       while (this._document.head.firstChild) {
@@ -94,13 +104,18 @@ export class DomParser {
     if (!this._document) {
       throw new Error('DomParser has been destroyed');
     }
-    // Simple HTML parsing implementation
+
+    // Ensure basic HTML structure if input is empty or lacks it
     if (!html.trim()) {
-      return;
+      html = '<html><head></head><body></body></html>';
+    } else if (!/<html/i.test(html)) {
+      // If it's just a fragment, we still need html/head/body for a full document
+      // but only if it's not explicitly intended to be a fragment?
+      // Actually, standard DOMParser.parseFromString always creates them.
+      html = `<html><head></head><body>${html}</body></html>`;
     }
 
     // Basic HTML parsing - this is a simplified version
-    // In a real implementation, you'd use a proper HTML parser
     this.parseHTMLString(html, this.document);
   }
 
@@ -204,10 +219,8 @@ export class DomParser {
         attributes = attributes.slice(0, -1).trim();
       }
 
-
       // Create element
       const element = this.document.createElement(tagName.toLowerCase());
-
 
       // Parse attributes
       if (attributes.trim()) {
@@ -372,7 +385,7 @@ export class DomParser {
       '&rdquo;': '"'
     };
 
-    return str.replace(/&[a-zA-Z0-9#]+;/g, (entity) => {
+    return str.replace(/&[a-zA-Z0-9#]+;/g, entity => {
       // Handle named entities
       if (entityMap[entity]) {
         return entityMap[entity];
@@ -468,7 +481,6 @@ export class DomParser {
     // Choose the BODY element with content, then attributes, then first one
     let bodyElement = null;
 
-
     // First priority: BODY with child nodes (content)
     for (let i = 0; i < allBodyElements.length; i++) {
       const body = allBodyElements[i];
@@ -493,10 +505,6 @@ export class DomParser {
     if (!bodyElement && allBodyElements.length > 0) {
       bodyElement = allBodyElements[0];
     }
-
-
-    // For now, just use the elements as they are parsed
-    // TODO: Implement proper DOM structure reorganization later
 
     // Set document references
     if (htmlElement) {

@@ -1,5 +1,3 @@
-import { Node } from './Node';
-import { ChildNode } from './ChildNode';
 
 /**
  * The **`CharacterData`** abstract interface represents a Node object that contains characters.

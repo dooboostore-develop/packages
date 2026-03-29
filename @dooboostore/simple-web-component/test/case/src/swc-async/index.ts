@@ -1,5 +1,6 @@
-import { SwcAsync, SwcLoading, SwcError } from '@dooboostore/simple-web-component';
+import swcRegister, { SwcAsync, SwcLoading, SwcError } from '@dooboostore/simple-web-component';
 
+swcRegister(window);
 console.log('>>> SwcAsync module loaded:', { SwcAsync, SwcLoading, SwcError });
 
 // Redefine global fetchData to support mode switching for interactive testing

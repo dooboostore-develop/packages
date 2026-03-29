@@ -12,11 +12,26 @@ export namespace UrlUtils {
   //   10 }
   export const origin = (fullurl: string) => {
     return new URL(fullurl).origin;
-  }
+  };
 
   export const toUrl = (fullUrl: string) => {
     return new URL(fullUrl);
-  }
+  };
+
+  /**
+   * Returns the relative path (pathname + search) from a URL or string.
+   */
+  export const getUrlPath = (url: URL | string | { pathname: string; search: string }): string => {
+    if (typeof url === 'string') {
+      try {
+        const u = new URL(url, 'http://localhost');
+        return u.pathname + u.search;
+      } catch (e) {
+        return url;
+      }
+    }
+    return (url.pathname ?? '') + (url.search ?? '');
+  };
 
   /**
    * URLSearchParams에서 특정 키를 삭제
@@ -25,7 +40,7 @@ export namespace UrlUtils {
     const names = Array.isArray(name) ? name : [name];
     names.forEach(n => searchParams.delete(n));
     return searchParams;
-  }
+  };
 
   /**
    * URLSearchParams에 키-값 쌍을 추가
@@ -33,7 +48,7 @@ export namespace UrlUtils {
   export const appendSearchParam = (searchParams: URLSearchParams, params: [[string, string]]): URLSearchParams => {
     params.forEach(([key, value]) => searchParams.append(key, value));
     return searchParams;
-  }
+  };
 
   /**
    * URLSearchParams에서 키를 삭제하고 새로운 값을 추가 (upsert)
@@ -49,15 +64,12 @@ export namespace UrlUtils {
       }
     });
     return searchParams;
-  }
+  };
 
   /**
    * URLSearchParams 조작을 위한 헬퍼
    */
-  export const manipulateSearchParams = (
-    searchParams: URLSearchParams,
-    options?: { delete?: string[], append?: [[string, string]], upsert?: Record<string, string | string[]> }
-  ): URLSearchParams => {
+  export const manipulateSearchParams = (searchParams: URLSearchParams, options?: { delete?: string[]; append?: [[string, string]]; upsert?: Record<string, string | string[]> }): URLSearchParams => {
     if (options?.delete) {
       deleteSearchParam(searchParams, options.delete);
     }
@@ -68,6 +80,5 @@ export namespace UrlUtils {
       upsertSearchParam(searchParams, options.upsert);
     }
     return searchParams;
-  }
-
+  };
 }

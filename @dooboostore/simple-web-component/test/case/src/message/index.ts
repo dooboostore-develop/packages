@@ -1,6 +1,7 @@
-import {elementDefine, onConnectedInnerHtml, emitCustomEvent, addEventListener, SpecialSelector} from '@dooboostore/simple-web-component';
+import swcRegister, { elementDefine, onConnectedInnerHtml, emitCustomEvent, addEventListener } from '@dooboostore/simple-web-component';
 
-@elementDefine('message-sender')
+swcRegister(window);
+@elementDefine('message-sender', { window })
 class MessageSender extends HTMLElement {
   label = '';
 
@@ -31,7 +32,7 @@ class MessageSender extends HTMLElement {
   }
 }
 
-@elementDefine('message-receiver')
+@elementDefine('message-receiver', { window })
 class MessageReceiver extends HTMLElement {
   @onConnectedInnerHtml
   render() {

@@ -1,6 +1,5 @@
 import { HTMLElementBase } from './HTMLElementBase';
-import { HTMLCollection } from '../collection';
-import {HTMLElement} from "./HTMLElement";
+import { HTMLCollectionImp } from '../collection';
 
 /**
  * The **`HTMLTbodyElement`** class represents an HTML `<tbody>` element.
@@ -12,7 +11,7 @@ export class HTMLTbodyElement extends HTMLElementBase {
         super(tagName, ownerDocument);
     }
 
-    get rows(): HTMLCollection {
+    get rows(): HTMLCollectionImp {
         return this.querySelectorAll('tr') as any;
     }
 

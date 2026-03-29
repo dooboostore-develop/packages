@@ -1,12 +1,7 @@
 import { ParentNodeBase } from './ParentNodeBase';
-import { DocumentFragment } from './DocumentFragment';
-import { Document } from './Document';
-import {DOCUMENT_FRAGMENT_NODE, ELEMENT_NODE, Node} from './Node';
+import {DOCUMENT_FRAGMENT_NODE, ELEMENT_NODE} from './Node';
 import { NodeBase } from './NodeBase';
-import { Element } from './elements/Element';
-import { HTMLElement } from './elements/HTMLElement';
-import { HTMLElementTagNameMap, SVGElementTagNameMap, MathMLElementTagNameMap } from './elements';
-import { NodeListOf } from './collection/NodeListOf';
+import { NodeListOfImp } from './collection/NodeListOfImp';
 
 /**
  * The **`DocumentFragmentBase`** class is the concrete implementation of the DocumentFragment interface.
@@ -69,8 +64,8 @@ export class DocumentFragmentBase extends ParentNodeBase implements DocumentFrag
     /**
      * Override cloneNode to return DocumentFragment
      */
-    cloneNode(deep?: boolean): DocumentFragmentBase {
-        const clone = new DocumentFragmentBase(this._ownerDocument as Document);
+    cloneNode(deep?: boolean): DocumentFragment {
+        const clone = new DocumentFragmentBase(this._ownerDocument as Document) as unknown as DocumentFragment;
         
         if (deep) {
             for (const child of this._childNodesInternal) {

@@ -1,6 +1,7 @@
-import { elementDefine, innerHtml, changedAttribute, setAttribute, addEventListener } from '@dooboostore/simple-web-component';
+import swcRegister, { elementDefine, onConnectedInnerHtml, changedAttribute, setAttribute, addEventListener } from '@dooboostore/simple-web-component';
 
-@elementDefine({ name: 'attr-element' })
+swcRegister(window);
+@elementDefine('attr-element', { window })
 class AttrElement extends HTMLElement {
   count = 0;
   active = false;
@@ -17,13 +18,15 @@ class AttrElement extends HTMLElement {
     console.log(`[changedAttribute] name: ${name}, old: ${oldVal}, new: ${newVal} (active: ${this.active})`);
   }
 
-  @setAttribute('count')
+  // Updated to new signature: (selector, name)
+  @setAttribute(':host', 'count')
   updateCount(next: number, old?: any, name?: string) {
     console.log(`[setAttribute] name: ${name}, old: ${old}, next: ${next}`);
     return next; // Returns value to be set as attribute
   }
 
-  @setAttribute('active')
+  // Updated to new signature: (selector, name)
+  @setAttribute(':host', 'active')
   toggleActive(old?: any, name?: string) {
     const next = !this.active;
     console.log(`[setAttribute] name: ${name}, old: ${old}, next: ${next}`);
@@ -42,7 +45,7 @@ class AttrElement extends HTMLElement {
     this.toggleActive();
   }
 
-  @innerHtml
+  @onConnectedInnerHtml
   render() {
     return `
       <div style="padding: 20px; border: 2px solid #1a73e8; border-radius: 8px; background: #f0f4f8; font-family: sans-serif;">
@@ -51,8 +54,8 @@ class AttrElement extends HTMLElement {
         <p>Active Status: <strong style="color: ${this.active ? '#1e8e3e' : '#5f6368'}; font-size: 1.2em;">${this.active ? 'ACTIVE' : 'INACTIVE'}</strong></p>
         
         <div style="display: flex; gap: 10px; margin-top: 15px;">
-          <button id="btn-inc" style="padding: 8px 16px; cursor: pointer; background: #1a73e8; color: white; border: none; border-radius: 4px;">Count up (@addEventListener)</button>
-          <button id="btn-toggle" style="padding: 8px 16px; cursor: pointer; background: #34a853; color: white; border: none; border-radius: 4px;">Toggle Active (@addEventListener)</button>
+          <button id="btn-inc" style="padding: 8px 16px; cursor: pointer; background: #1a73e8; color: white; border: none; border-radius: 4px;">Count up (@setAttribute)</button>
+          <button id="btn-toggle" style="padding: 8px 16px; cursor: pointer; background: #34a853; color: white; border: none; border-radius: 4px;">Toggle Active (@setAttribute)</button>
         </div>
         <div style="margin-top: 10px; font-size: 0.9em; color: #666;">
           Check the console and DOM attributes!

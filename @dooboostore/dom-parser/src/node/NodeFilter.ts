@@ -1,16 +1,33 @@
-import { Node } from './Node';
+// import { Node } from './Node';
 
 /**
  * NodeFilter interface for filtering nodes in NodeIterator and TreeWalker
  */
-export interface NodeFilter {
-  acceptNode(node: Node): number;
-}
+// export interface NodeFilter {
+//   acceptNode(node: Node): number;
+// }
 
 /**
- * NodeFilter constants
+ * NodeFilter constants and static methods
  */
-export const NodeFilter = {
+export const NodeFilter: {
+  readonly FILTER_ACCEPT: number;
+  readonly FILTER_REJECT: number;
+  readonly FILTER_SKIP: number;
+  readonly SHOW_ALL: number;
+  readonly SHOW_ELEMENT: number;
+  readonly SHOW_ATTRIBUTE: number;
+  readonly SHOW_TEXT: number;
+  readonly SHOW_CDATA_SECTION: number;
+  readonly SHOW_ENTITY_REFERENCE: number;
+  readonly SHOW_ENTITY: number;
+  readonly SHOW_PROCESSING_INSTRUCTION: number;
+  readonly SHOW_COMMENT: number;
+  readonly SHOW_DOCUMENT: number;
+  readonly SHOW_DOCUMENT_TYPE: number;
+  readonly SHOW_DOCUMENT_FRAGMENT: number;
+  readonly SHOW_NOTATION: number;
+} = {
   // Constants for acceptNode return values
   FILTER_ACCEPT: 1,
   FILTER_REJECT: 2,

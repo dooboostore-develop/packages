@@ -12,7 +12,7 @@ import {SimOption} from '../SimOption';
 import {Subject} from '@dooboostore/core/message/Subject';
 import {SimpleApplication} from "../SimpleApplication";
 
-export type RoutingOption = { router?: ConstructorType<any> | any, noOnRouting?: boolean, find?: { router: 'last' | 'first' } };
+export type RoutingOption = { router?: ConstructorType<any> | any | Symbol, noOnRouting?: boolean, find?: { router: 'last' | 'first' } };
 export type RoutingDataSet = {
   intent: Intent, routerModule: RouterModule, routerManager: RouterManager
 }
@@ -99,16 +99,21 @@ export class RouterManager {
       intent = new Intent(intent);
     }
     const targetRouter = option?.router ?? this.simOption.rootRouter;
+    console.log('------->', targetRouter)
     const callCheckOnRouting = option?.noOnRouting !== true; // 기본값은 false, 즉 onRouting 호출
 
     if (!targetRouter) {
+      debugger;
       throw new Error('no router');
     }
     // await new Promise((r)=> setTimeout(r, 0)); // <-- 이거 넣어야지 두번불러지는게 없어지는듯? 뭐지 event loop 변경된건가?
     const targetType = (typeof targetRouter === 'object') ? targetRouter.constructor : targetRouter;
     const targetValue = (typeof targetRouter === 'object') ? targetRouter : undefined;
 
-    const routerAtomic = new SimAtomic({targetKeyType: targetType, originalType: targetType, value: targetValue}, this.simstanceManager);
+
+
+
+    const routerAtomic = typeof targetType === 'symbol' ? this.simstanceManager.findFirstSim(targetType) : new SimAtomic({targetKeyType: targetType, originalType: targetType, value: targetValue}, this.simstanceManager);
     const rootRouter = routerAtomic.getValue()!;
     const executeModuleResult = this.getExecuteModule(routerAtomic, intent, [], option);
     if (executeModuleResult) {

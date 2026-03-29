@@ -1,17 +1,18 @@
-import { describe, it, expect, beforeEach } from 'vitest';
-import { parserHTML } from '../../../src/index';
+import { describe, it, beforeEach } from 'node:test';
+import assert from 'node:assert/strict';
+import { parseHTML } from '@dooboostore/dom-parser';
 
 describe('innerHTML Complex Real-world Cases', () => {
   let document: any;
 
   beforeEach(() => {
-    const window = parserHTML('<html><body></body></html>');
+    const window = parseHTML('<html><body></body></html>');
     document = window.document;
   });
 
   it('should handle complex nested div structure', () => {
     const container = document.createElement('div');
-    
+
     const complexHTML = `
       <div class="container">
         <header class="hero">
@@ -31,38 +32,38 @@ describe('innerHTML Complex Real-world Cases', () => {
     `;
 
     container.innerHTML = complexHTML;
-    
+
     // Check structure
-    expect(container.children.length).toBe(1);
+    assert.equal(container.children.length, 1);
     const mainDiv = container.children[0];
-    expect(mainDiv.tagName).toBe('DIV');
-    expect(mainDiv.className).toBe('container');
-    
+    assert.equal(mainDiv.tagName, 'DIV');
+    assert.equal(mainDiv.className, 'container');
+
     // Check nested structure
-    expect(mainDiv.children.length).toBe(2); // header and section
-    
+    assert.equal(mainDiv.children.length, 2); // header and section
+
     const header = mainDiv.children[0];
-    expect(header.tagName).toBe('HEADER');
-    expect(header.className).toBe('hero');
-    
+    assert.equal(header.tagName, 'HEADER');
+    assert.equal(header.className, 'hero');
+
     const section = mainDiv.children[1];
-    expect(section.tagName).toBe('SECTION');
-    expect(section.className).toBe('demo-section');
-    
+    assert.equal(section.tagName, 'SECTION');
+    assert.equal(section.className, 'demo-section');
+
     // Check innerHTML consistency
     const regeneratedHTML = container.innerHTML;
-    expect(regeneratedHTML).toContain('<div class="container">');
-    expect(regeneratedHTML).toContain('<header class="hero">');
-    expect(regeneratedHTML).toContain('<h1 class="title">Test Title</h1>');
+    assert.ok(regeneratedHTML.includes('<div class="container">'));
+    assert.ok(regeneratedHTML.includes('<header class="hero">'));
+    assert.ok(regeneratedHTML.includes('<h1 class="title">Test Title</h1>'));
     // Should not have actual broken closing tags
     const actualBrokenTags = /(?<!<)\/\w+>/g.test(regeneratedHTML);
-    expect(actualBrokenTags).toBe(false);
-    expect(regeneratedHTML).toContain('</div>');
+    assert.equal(actualBrokenTags, false);
+    assert.ok(regeneratedHTML.includes('</div>'));
   });
 
   it('should handle mixed content with meta tags and style', () => {
     const body = document.createElement('body');
-    
+
     const mixedHTML = `
       <meta id="test-start"/>
       <style id="test-style">
@@ -78,39 +79,39 @@ describe('innerHTML Complex Real-world Cases', () => {
     `;
 
     body.innerHTML = mixedHTML;
-    
+
     // Check structure
-    expect(body.children.length).toBe(4); // meta, style, main, meta
-    
+    assert.equal(body.children.length, 4); // meta, style, main, meta
+
     const meta1 = body.children[0];
-    expect(meta1.tagName).toBe('META');
-    expect(meta1.getAttribute('id')).toBe('test-start');
-    
+    assert.equal(meta1.tagName, 'META');
+    assert.equal(meta1.getAttribute('id'), 'test-start');
+
     const style = body.children[1];
-    expect(style.tagName).toBe('STYLE');
-    expect(style.getAttribute('id')).toBe('test-style');
-    expect(style.textContent).toContain('.container { display: flex; }');
-    
+    assert.equal(style.tagName, 'STYLE');
+    assert.equal(style.getAttribute('id'), 'test-style');
+    assert.ok(style.textContent.includes('.container { display: flex; }'));
+
     const main = body.children[2];
-    expect(main.tagName).toBe('MAIN');
-    
+    assert.equal(main.tagName, 'MAIN');
+
     const meta2 = body.children[3];
-    expect(meta2.tagName).toBe('META');
-    expect(meta2.getAttribute('id')).toBe('test-end');
-    
+    assert.equal(meta2.tagName, 'META');
+    assert.equal(meta2.getAttribute('id'), 'test-end');
+
     // Check innerHTML regeneration
     const regeneratedHTML = body.innerHTML;
-    expect(regeneratedHTML).toContain('<meta id="test-start" />');
-    expect(regeneratedHTML).toContain('<style id="test-style">');
-    expect(regeneratedHTML).toContain('</style>');
-    expect(regeneratedHTML).toContain('<main>');
-    expect(regeneratedHTML).toContain('</main>');
-    expect(regeneratedHTML).toContain('<meta id="test-end" />');
+    assert.ok(regeneratedHTML.includes('<meta id="test-start" />'));
+    assert.ok(regeneratedHTML.includes('<style id="test-style">'));
+    assert.ok(regeneratedHTML.includes('</style>'));
+    assert.ok(regeneratedHTML.includes('<main>'));
+    assert.ok(regeneratedHTML.includes('</main>'));
+    assert.ok(regeneratedHTML.includes('<meta id="test-end" />'));
   });
 
   it('should handle deeply nested structure without breaking', () => {
     const root = document.createElement('div');
-    
+
     const deepHTML = `
       <div class="level1">
         <div class="level2">
@@ -126,42 +127,42 @@ describe('innerHTML Complex Real-world Cases', () => {
     `;
 
     root.innerHTML = deepHTML;
-    
+
     // Navigate through the structure
     let current = root.children[0]; // level1
-    expect(current.className).toBe('level1');
-    
+    assert.equal(current.className, 'level1');
+
     current = current.children[0]; // level2
-    expect(current.className).toBe('level2');
-    
+    assert.equal(current.className, 'level2');
+
     current = current.children[0]; // level3
-    expect(current.className).toBe('level3');
-    
+    assert.equal(current.className, 'level3');
+
     current = current.children[0]; // level4
-    expect(current.className).toBe('level4');
-    
+    assert.equal(current.className, 'level4');
+
     current = current.children[0]; // level5
-    expect(current.className).toBe('level5');
-    
+    assert.equal(current.className, 'level5');
+
     const span = current.children[0];
-    expect(span.tagName).toBe('SPAN');
-    expect(span.textContent).toBe('Deep content');
-    
+    assert.equal(span.tagName, 'SPAN');
+    assert.equal(span.textContent, 'Deep content');
+
     // Check innerHTML consistency - should not have broken closing tags
     const regeneratedHTML = root.innerHTML;
     const actualBrokenTags = /(?<!<)\/\w+>/g.test(regeneratedHTML);
-    expect(actualBrokenTags).toBe(false); // Should not have broken tags
-    expect(regeneratedHTML).toContain('</div>'); // Should have proper closing tags
-    
+    assert.equal(actualBrokenTags, false); // Should not have broken tags
+    assert.ok(regeneratedHTML.includes('</div>')); // Should have proper closing tags
+
     // Count opening and closing div tags
     const openingDivs = (regeneratedHTML.match(/<div/g) || []).length;
     const closingDivs = (regeneratedHTML.match(/<\/div>/g) || []).length;
-    expect(openingDivs).toBe(closingDivs); // Should be balanced
+    assert.equal(openingDivs, closingDivs); // Should be balanced
   });
 
   it('should handle real-world complex HTML structure', () => {
     const body = document.createElement('body');
-    
+
     // Simplified version of the problematic HTML
     const realWorldHTML = `
       <meta id="start-marker"/>
@@ -192,39 +193,39 @@ describe('innerHTML Complex Real-world Cases', () => {
     `;
 
     body.innerHTML = realWorldHTML;
-    
+
     // Verify structure is intact
-    expect(body.children.length).toBe(4); // meta, style, main, meta
-    
+    assert.equal(body.children.length, 4); // meta, style, main, meta
+
     const main = body.children[2];
-    expect(main.tagName).toBe('MAIN');
-    
+    assert.equal(main.tagName, 'MAIN');
+
     const container = main.children[0];
-    expect(container.className).toBe('container');
-    
+    assert.equal(container.className, 'container');
+
     const header = container.children[0];
-    expect(header.tagName).toBe('HEADER');
-    
+    assert.equal(header.tagName, 'HEADER');
+
     const section = container.children[1];
-    expect(section.tagName).toBe('SECTION');
-    
+    assert.equal(section.tagName, 'SECTION');
+
     // Most importantly - check that innerHTML doesn't break the structure
     const regeneratedHTML = body.innerHTML;
-    
+
     // Should not have actual broken closing tags (not part of proper closing tags)
     const actualBrokenTags = /(?<!<)\/\w+>/g.test(regeneratedHTML);
-    expect(actualBrokenTags).toBe(false);
-    
+    assert.equal(actualBrokenTags, false);
+
     // Should have proper closing tags
-    expect(regeneratedHTML).toContain('</div>');
-    expect(regeneratedHTML).toContain('</main>');
-    expect(regeneratedHTML).toContain('</section>');
-    expect(regeneratedHTML).toContain('</header>');
-    
+    assert.ok(regeneratedHTML.includes('</div>'));
+    assert.ok(regeneratedHTML.includes('</main>'));
+    assert.ok(regeneratedHTML.includes('</section>'));
+    assert.ok(regeneratedHTML.includes('</header>'));
+
     // Structure should be preserved
-    expect(regeneratedHTML).toContain('<main>');
-    expect(regeneratedHTML).toContain('<div class="container">');
-    expect(regeneratedHTML).toContain('<header class="hero">');
-    expect(regeneratedHTML).toContain('<section class="demo-section">');
+    assert.ok(regeneratedHTML.includes('<main>'));
+    assert.ok(regeneratedHTML.includes('<div class="container">'));
+    assert.ok(regeneratedHTML.includes('<header class="hero">'));
+    assert.ok(regeneratedHTML.includes('<section class="demo-section">'));
   });
 });

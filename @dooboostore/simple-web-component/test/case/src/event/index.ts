@@ -1,6 +1,8 @@
-import { elementDefine, onConnectedInnerHtml, addEventListener, HostSet, query } from '@dooboostore/simple-web-component';
+import swcRegister, { elementDefine, onConnectedInnerHtml, addEventListener, HostSet, query } from '@dooboostore/simple-web-component';
 
-@elementDefine('event-element')
+swcRegister(window);
+
+@elementDefine('event-element', { window })
 class EventElement extends HTMLElement {
   @query('#dynamic-container') containerEl?: HTMLElement;
   @query('#delegate-container') delegateContainerEl?: HTMLElement;
@@ -101,9 +103,28 @@ class EventElement extends HTMLElement {
   // --- 4. Host Handler ---
   @addEventListener(':host', 'click')
   onHostClick(event: MouseEvent, { $host }: HostSet) {
-    console.log('>>> [Event Test] :host clicked!', $host?.tagName);
+    console.log('>>> [Event Test] :host clicked!', {
+      tag: $host?.tagName,
+      target: event.target,
+      currentTarget: event.currentTarget
+    });
+
     if ((event.target as HTMLElement).id === 'host-trigger-btn') {
-      alert('Host listener triggered!');
+      alert('Host listener triggered! (Target is button because of auto-shadow)');
     }
+  }
+
+  @addEventListener(':host', 'click', { root: 'shadow' })
+  onHostShadowClick(event: MouseEvent, { $host }: HostSet) {
+    console.log('>>> shadow [Event Test] :host clicked!', {
+      tag: $host?.tagName,
+      target: event.target,
+      currentTarget: event.currentTarget
+    });
+  }
+
+  @addEventListener(':parentHost', 'click', { root: 'shadow' })
+  onParentShadowClick(event: Event) {
+    console.log('>>> [Event Test] :parentHost shadow clicked!', event.target);
   }
 }

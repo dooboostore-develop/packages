@@ -1,19 +1,20 @@
-import { DomParser, DomParserOptions } from "./DomParser";
+import {DomParser, DomParserOptions} from './DomParser';
 
 // Main exports - what users actually need
-export { DomParser };
-
+export {DomParser};
+export {NodeIterator} from './node/NodeIterator';
+export {NodeFilter} from './node/NodeFilter'
 // Utility function to parse HTML and return window object
 export const parseHTML = (html: string, option?: DomParserOptions) => {
-    const parser = new DomParser(html, option);
-    return parser.window;
-}
+  const parser = new DomParser(html, option);
+  return parser.window;
+};
 
 // Default export
 export default {
-    DomParser,
-    parseHTML
-}
+  DomParser,
+  parseHTML
+};
 
 // Internal exports (commented out - users don't need these)
 // export { WindowBase } from './window/WindowBase';

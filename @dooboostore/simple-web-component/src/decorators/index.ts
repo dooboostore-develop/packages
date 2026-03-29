@@ -1,4 +1,5 @@
 export * from './addEventListener';
+export * from './attribute';
 export * from './elementDefine';
 export * from './changedAttribute';
 export * from './setAttribute';
@@ -8,3 +9,6 @@ export * from './appendChild';
 export * from './lifecycles';
 export * from './query';
 export * from './queryAll';
+export * from './onConnectedInnerHtml';
+export * from './classList';
+export * from './style';

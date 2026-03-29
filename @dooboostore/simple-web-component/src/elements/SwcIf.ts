@@ -1,133 +1,111 @@
-import { elementDefine } from '../decorators/elementDefine';
 import { changedAttribute } from '../decorators/changedAttribute';
 import { SwcUtils } from '../utils/Utils';
 import { FunctionUtils } from '@dooboostore/core/function/FunctionUtils';
 
-@elementDefine({ name: 'swc-if', extends: 'template' })
 export class SwcIf extends HTMLTemplateElement {
+  private _value = false;
   private _nodes: Node[] = [];
-  private _value: any = null;
 
-  get value(): any {
+  get value(): boolean {
     return this._value;
   }
-
   set value(nv: any) {
-    this._value = nv;
+    this._value = Boolean(nv);
     this.render();
   }
 
-  private _getTarget(): Element | DocumentFragment | null {
-    const script = this.getAttribute('on-get-portal');
-    if (!script) return null;
-    try {
-      const res = FunctionUtils.executeReturn({
-        script,
-        context: this,
-        args: SwcUtils.getHelperAndHostSet(window, this)
-      });
-      if (typeof res === 'string') return document.querySelector(res);
-      if (res instanceof Node) return res as any;
-    } catch (e) {
-      console.error('[SwcIf] Portal target error:', e);
-    }
-    return null;
+  private _resolvePortal(): Element | null {
+    const portalScript = this.getAttribute('on-get-portal');
+    if (!portalScript) return this.parentElement;
+
+    const win = this.ownerDocument?.defaultView || window;
+    const res = FunctionUtils.executeReturn({
+      script: portalScript,
+      context: this,
+      args: SwcUtils.getHelperAndHostSet(win, this)
+    });
+
+    if (res instanceof HTMLElement) return res;
+    if (typeof res === 'string') return win.document.querySelector(res);
+    return this.parentElement;
   }
 
-  private _executeCallback(attrName: string, extraArgs: Record<string, any>) {
-    const script = this.getAttribute(attrName);
+  private _executeCloneCallback(attr: string, args: any) {
+    const script = this.getAttribute(attr);
     if (!script) return;
-    const helperHostSet = SwcUtils.getHelperAndHostSet(window, this);
-    try {
-      FunctionUtils.execute({ script, context: this, args: { ...helperHostSet, ...extraArgs } });
-    } catch (e) {
-      console.error(`[SwcIf] Error in ${attrName}:`, e);
-    }
+    FunctionUtils.execute({ script, context: this, args });
   }
 
   @changedAttribute('on-get-value')
-  private refresh(newValue?: string | null) {
-    const script = newValue !== undefined ? newValue : this.getAttribute('on-get-value');
+  private refreshValue() {
+    const script = this.getAttribute('on-get-value');
     if (!script) {
-      this.value = null;
+      this.value = false;
       return;
     }
-    if (!this.parentElement) return;
+    const win = this.ownerDocument?.defaultView || window;
+    const res = FunctionUtils.executeReturn({
+      script,
+      context: this,
+      args: SwcUtils.getHelperAndHostSet(win, this)
+    });
 
-    const helperHostSet = SwcUtils.getHelperAndHostSet(window, this);
-    try {
-      const result = FunctionUtils.executeReturn({
-        script,
-        context: this,
-        args: helperHostSet
-      });
-      this.value = result;
-    } catch (e) {
-      console.error('[SwcIf] Error in on-get-value:', e);
-      this.value = null;
+    if (res instanceof Promise) {
+      res.then(v => (this.value = v)).catch(() => (this.value = false));
+    } else {
+      this.value = res;
     }
   }
 
   private render() {
     this.cleanup();
-    if (!this.parentElement) return;
+    const portal = this._resolvePortal();
+    if (!portal) return;
 
-    let fragment: DocumentFragment | null = null;
-    const ctx: any = { $value: this._value, $nodes: [], $elements: [] };
+    const win = this.ownerDocument?.defaultView || window;
+    const helperSet = SwcUtils.getHelperAndHostSet(win, this);
 
+    let targetTpl: HTMLTemplateElement | null = null;
     if (this._value) {
-      const clone = this.content.cloneNode(true) as DocumentFragment;
-      Array.from(clone.querySelectorAll('template[is="swc-default"]')).forEach(t => t.remove());
-      fragment = clone;
+      targetTpl = this;
     } else {
-      const t = this.content.querySelector('template[is="swc-default"]') as HTMLTemplateElement;
-      if (t) fragment = t.content.cloneNode(true) as DocumentFragment;
+      targetTpl = this.content.querySelector('template[is="swc-default"]') as HTMLTemplateElement;
     }
 
-    if (fragment) {
-      this.mount(fragment, ctx);
-    }
-  }
+    if (targetTpl) {
+      const clone = targetTpl.content.cloneNode(true) as DocumentFragment;
+      // If it's the host template, remove sub-templates from clone
+      if (targetTpl === this) {
+        clone.querySelectorAll('template[is^="swc-"]').forEach(t => t.remove());
+      }
 
-  private mount(fragment: DocumentFragment, ctx: any) {
-    const nodes = Array.from(fragment.childNodes);
-    const elements = nodes.filter(n => n.nodeType === 1) as HTMLElement[];
+      this._nodes = Array.from(clone.childNodes);
+      const elements = this._nodes.filter(n => n.nodeType === 1) as HTMLElement[];
+      const groupArgs = { ...helperSet, $value: this._value, $nodes: this._nodes, $elements: elements, $firstElement: elements[0] };
 
-    Object.assign(ctx, {
-      $nodes: nodes,
-      $elements: elements,
-      $firstNode: nodes[0],
-      $lastNode: nodes[nodes.length - 1],
-      $firstElement: elements[0],
-      $lastElement: elements[elements.length - 1]
-    });
+      this._nodes.forEach((node, nodeIdx) => {
+        if (node instanceof HTMLElement) (node as any).__swc_host = this;
+        this._executeCloneCallback('on-clone-node', { ...groupArgs, $node: node, $nodeIndex: nodeIdx, $isElement: node.nodeType === 1 });
+      });
 
-    this._executeCallback('on-clone-nodes', ctx);
-    nodes.forEach((node, nodeIndex) => {
-      if (node instanceof HTMLElement) (node as any).__swc_host = this;
-      this._executeCallback('on-clone-node', { ...ctx, $node: node, $nodeIndex: nodeIndex, $isElement: node.nodeType === 1 });
-    });
+      this._executeCloneCallback('on-clone-nodes', groupArgs);
 
-    this._nodes = nodes;
-    const target = this._getTarget();
-    if (target) {
-      target.appendChild(fragment);
-    } else {
-      this.parentElement?.insertBefore(fragment, this.nextSibling);
+      if (portal === this.parentElement) {
+        portal.insertBefore(clone, this.nextSibling);
+      } else {
+        portal.appendChild(clone);
+      }
     }
   }
 
   private cleanup() {
-    this._nodes.forEach(n => {
-      if (n.parentElement) n.parentElement.removeChild(n);
-    });
+    this._nodes.forEach(n => n.parentElement?.removeChild(n));
     this._nodes = [];
   }
 
   connectedCallback() {
-    this.refresh();
+    this.refreshValue();
   }
-
   disconnectedCallback() {
     this.cleanup();
   }
