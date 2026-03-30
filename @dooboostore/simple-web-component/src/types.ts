@@ -45,5 +45,6 @@ export type HelperHostSet = HelperSet & HostSet;
 export interface SwcAppInterface extends HTMLElement {
   simpleApplication?: SimpleApplication;
   router?: Router;
+  connect(config?: any): Promise<void>;
   routing(path: string): Promise<void>;
 }

@@ -11,13 +11,14 @@ export interface IndexRoute {}
 
 export default (w: Window) => {
   const HTMLElement = (w as any).HTMLElement as typeof globalThis.HTMLElement;
+  console.log('-----asddddcccc', HTMLElement)
   @Sim({ symbol: IndexRoute.SYMBOL })
   @elementDefine('index-route', { window: w })
   class IndexRouteImp extends HTMLElement implements IndexRoute {
-    // constructor() {
-    //   super();
-    //   console.log('IndexRouteImp constructor called');
-    // }
+    constructor() {
+      super();
+      console.log('IndexRouteImp constructor called');
+    }
     @onConnectedInnerHtml
     render() {
       return `

@@ -1,4 +1,4 @@
-import { HTMLElementBase, HTMLGenericElement, htmlElements, svgElements, mathmlElements } from '../node/elements';
+import {HTMLElementBase, htmlElements, svgElements, mathmlElements, HTMLElement} from '../node/elements';
 
 /**
  * Factory for creating HTML elements based on tag names
@@ -27,16 +27,23 @@ export class ElementFactory {
       }
     }
 
-    // 2. Check for Autonomous Custom Elements
-    if (normalizedTagName.includes('-') && customElements && typeof customElements.get === 'function') {
-      const CustomElementClass = customElements.get(normalizedTagName);
-      if (CustomElementClass) {
-        const element = new CustomElementClass() as any;
-        element._tagName = tagName.toUpperCase();
-        element.nodeName = tagName.toUpperCase();
-        element._ownerDocument = ownerDocument;
-        return element;
+    // 2. Check for Autonomous Custom Elements (or preserve unknown custom tags)
+      console.log('vvv2222222vvvvvvvvv222222vvvvv', tagName, normalizedTagName)
+    if (normalizedTagName.includes('-')) {
+      console.log('vvvvvvvvvvvvvvvvv')
+      if (customElements && typeof customElements.get === 'function') {
+        const CustomElementClass = customElements.get(normalizedTagName);
+        if (CustomElementClass) {
+          const element = new CustomElementClass() as any;
+          element._tagName = tagName.toUpperCase();
+          element.nodeName = tagName.toUpperCase();
+          element._ownerDocument = ownerDocument;
+          return element;
+        }
       }
+
+      // No registered custom element yet – keep the tag name intact.
+      return new HTMLElement(tagName.toUpperCase(), ownerDocument);
     }
 
     // 3. Check HTML elements
@@ -62,7 +69,7 @@ export class ElementFactory {
     }
 
     // For unknown elements, create a generic HTMLElement
-    return new HTMLGenericElement(tagName.toUpperCase(), ownerDocument);
+    return new HTMLElement(tagName.toUpperCase(), ownerDocument);
   }
 
   /**

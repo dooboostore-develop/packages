@@ -2,13 +2,12 @@
 // export type { Element, DOMTokenList } from './Element';
 export { HTMLCollectionImp, HTMLCollectionOfImp } from '../collection';
 
-// Base Element implementations
-export { ElementBase } from './ElementBase';
-export { HTMLElementBase } from './HTMLElementBase';
-export { HTMLGenericElement } from './HTMLGenericElement';
+
 
 // Import all element classes
 import { HTMLElement } from './HTMLElement';
+import { ElementBase } from './ElementBase';
+import { HTMLElementBase } from './HTMLElementBase';
 import { HTMLAnchorElement } from './HTMLAnchorElement';
 import { HTMLAreaElement } from './HTMLAreaElement';
 import { HTMLAudioElement } from './HTMLAudioElement';
@@ -79,6 +78,8 @@ import { SVGRectElement } from './SVGRectElement';
 
 // Export all element classes
 export {
+  ElementBase,
+  HTMLElementBase,
   HTMLElement,
   HTMLAnchorElement,
   HTMLAreaElement,

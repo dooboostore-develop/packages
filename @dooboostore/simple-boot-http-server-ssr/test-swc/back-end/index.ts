@@ -38,6 +38,7 @@ const swcFilter = new SSRSimpleWebComponentFilter({
   frontDistPath: frontDistPath,
   frontDistIndexFileName: 'index.html',
   registerComponents: async (window: any) => {
+    // window.
     // 1. Register Core SWC Elements
     swcRegister(window);
     const urlPath = UrlUtils.getUrlPath(window.location);

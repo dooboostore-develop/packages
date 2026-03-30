@@ -22,6 +22,7 @@ export class DomParser {
   private _document: Document | null;
 
   constructor(html: string, option?: DomParserOptions) {
+    console.log('create DomParser==',html)
     // Create WindowBase instance with the document
     const windowBase = new WindowBase({ initialUrl: option?.href });
     this._window = windowBase as unknown as Window;

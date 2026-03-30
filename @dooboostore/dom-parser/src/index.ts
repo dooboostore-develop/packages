@@ -4,6 +4,16 @@ import {DomParser, DomParserOptions} from './DomParser';
 export {DomParser};
 export {NodeIterator} from './node/NodeIterator';
 export {NodeFilter} from './node/NodeFilter'
+export { HTMLElementBase } from './node/elements/HTMLElementBase';
+export { ElementBase } from './node/elements/ElementBase';
+export { HTMLElement } from './node/elements/HTMLElement';
+export { NodeBase } from './node/NodeBase';
+export { ParentNodeBase } from './node/ParentNodeBase';
+export { ChildNodeBase } from './node/ChildNodeBase';
+export { DocumentBase } from './node/DocumentBase';
+export { DocumentFragmentBase } from './node/DocumentFragmentBase';
+export { ShadowRootBase } from './node/ShadowRootBase';
+export { WindowBase } from './window/WindowBase';
 // Utility function to parse HTML and return window object
 export const parseHTML = (html: string, option?: DomParserOptions) => {
   const parser = new DomParser(html, option);

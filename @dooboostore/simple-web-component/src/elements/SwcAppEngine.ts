@@ -12,6 +12,7 @@ import { SwcUtils } from '../utils/Utils';
 export type SwcConfigType = {
   rootRouter: ConstructorType<any> | Symbol;
   routeType: 'path' | 'hash' | 'element';
+  connectMode?: 'direct' | 'swap';
   path?: string;
   window: Window;
 };

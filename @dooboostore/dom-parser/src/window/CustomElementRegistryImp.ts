@@ -22,6 +22,13 @@ export class CustomElementRegistryImp implements CustomElementRegistration {
       throw new Error(`Registration failed for '${name}': the name is not a valid custom element name.`);
     }
 
+    // Keep registration metadata on constructor so direct `new` calls can infer the proper tag name.
+    // const ctor = constructor as any;
+    // ctor.__domParserTagName = name;
+    // if (options?.extends) {
+    //   ctor.__domParserExtendsTagName = options.extends;
+    // }
+
     this._definitions.set(name, { constructor, options });
 
     // Resolve any pending whenDefined promises
@@ -35,6 +42,17 @@ export class CustomElementRegistryImp implements CustomElementRegistration {
       this.upgrade(this._window.document);
     }
   }
+
+
+  getName(constructor: any): string | undefined {
+    for (const [name, registration] of this._definitions) {
+      if (registration.constructor === constructor) {
+        return name;
+      }
+    }
+    return undefined;
+  }
+
 
   get(name: string): any | undefined {
     return this._definitions.get(name)?.constructor;

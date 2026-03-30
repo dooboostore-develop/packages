@@ -17,22 +17,23 @@ export interface IndexRouter {}
 export default (w: Window) => {
   const HTMLElement = (w as any).HTMLElement as typeof globalThis.HTMLElement;
 
+  console.log('router factory called', HTMLElement)
   @Sim({ symbol: IndexRouter.SYMBOL })
   @Router({
     path: '',
     route: {
       '': '/',
-      // '/': IndexRoute.SYMBOL,
-      // '/user': UserRoute.SYMBOL,
-      '/': ww(w),
-      '/user': uu(w) //UserRoute.SYMBOL,
+      '/': IndexRoute.SYMBOL,
+      '/user': UserRoute.SYMBOL,
+      // '/': ww(w),
+      // '/user': uu(w) //UserRoute.SYMBOL,
     }
   })
   @elementDefine('index-router', { window: w })
   class IndexRouterImp extends HTMLElement implements IndexRouter, RouterAction.CanActivate {
     constructor(private router: WebRouter) {
       super();
-      console.log('IndexRouter constructor called')
+      console.log('IndexRouter constructor called', router)
     }
 
     @setAttribute('#url-text', 'value')
@@ -41,8 +42,10 @@ export default (w: Window) => {
       return url;
     }
     async canActivate(url: RoutingDataSet, data?: any): Promise<void> {
-      // return Promise.resolve(undefined);
+      console.log('-------ac', data);
       if (data instanceof Node && !this.contains(data)) {
+        // data.nodeName='RR-RR'
+        console.log('chgange-->', data.nodeName)
         this.replaceChildren(data);
       }
     }

@@ -20,8 +20,14 @@ export abstract class HTMLElementBase extends ElementBase implements HTMLElement
   private _outerText: string = '';
 
   constructor(tagName: string = 'DIV', ownerDocument?: any) {
-    super(tagName, ownerDocument);
+    const ctor = new.target as any;
+    const resolvedTagName = tagName || ctor?.__domParserExtendsTagName || ctor?.__domParserTagName || 'DIV';
+    super(resolvedTagName, ownerDocument);
   }
+  // constructor(tagName?: string , ownerDocument?: any) {
+  //   super(tagName, ownerDocument);
+  //   console.log('vvvvvvvvv', tagName)
+  // }
 
   accessKeyLabel: string;
     autocapitalize: string;

@@ -5,6 +5,9 @@ import { Mimes } from '@dooboostore/simple-boot-http-server/codes/Mimes';
 import { HttpStatus } from '@dooboostore/simple-boot-http-server/codes/HttpStatus';
 import { SimpleBootHttpServer } from '@dooboostore/simple-boot-http-server/SimpleBootHttpServer';
 import { DomParserInitializer } from '../initializers/DomParserInitializer';
+import { HTMLElementBase } from '@dooboostore/dom-parser';
+import {ConstructorType} from "@dooboostore/core/types";
+import {getElementConfig} from "@dooboostore/simple-web-component";
 
 export type SWCSSRConfig = {
   frontDistPath: string;
@@ -44,7 +47,20 @@ export class SSRSimpleWebComponentFilter implements Filter {
       // 1. Initialize Virtual DOM Environment
       const domParserInitializer = new DomParserInitializer(this.config.frontDistPath, this.config.frontDistIndexFileName || 'index.html', { url: targetUrl });
       const window = await domParserInitializer.run();
-      console.log('---------', window.document.body.innerHTML);
+
+      // web component 경우 자기 tagName을 생성자 에게 HTMLElementBase에넘겨줘야되기떄문에
+      const getTagName = (type: ConstructorType<any>) => {
+        const zz = getElementConfig(type);
+        return zz.name;
+      };
+      (window as any).HTMLElement = class extends HTMLElementBase {
+        constructor(...args: any[]) {
+          const ctor = new.target as any; // 이런 슈가 기능이...
+          const resolvedTagName = getTagName(ctor);
+          super(resolvedTagName, args[0]);
+        }
+      }
+
 
       try {
         // 2. Register Components if provided

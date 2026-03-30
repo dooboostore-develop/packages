@@ -12,7 +12,38 @@ export function SwcAppMixin<T extends { new (...args: any[]): HTMLElement }>(Bas
     }
 
     async connect(config?: SwcAttributeConfigType) {
-      await this.__swc_engine.connect(config);
+      const mode = config?.connectMode || 'direct';
+
+      if (mode !== 'swap') {
+        await this.__swc_engine.connect(config);
+        this.setAttribute('swc-connect-mode', 'direct');
+        return;
+      }
+
+      const parent = this.parentNode;
+      if (!parent) {
+        await this.__swc_engine.connect(config);
+        this.setAttribute('swc-connect-mode', 'direct');
+        return;
+      }
+
+      const clonedApp = this.cloneNode(true) as any;
+      clonedApp.style.display = 'none';
+      parent.insertBefore(clonedApp, this.nextSibling);
+
+      try {
+        await clonedApp.connect({ ...(config || {}), connectMode: 'direct' });
+        if (this.parentNode) {
+          this.parentNode.removeChild(this);
+        }
+        clonedApp.setAttribute('swc-connect-mode', 'swap');
+        clonedApp.style.display = '';
+      } catch (e) {
+        if (clonedApp.parentNode) {
+          clonedApp.parentNode.removeChild(clonedApp);
+        }
+        throw e;
+      }
     }
 
     connectedCallback() {
