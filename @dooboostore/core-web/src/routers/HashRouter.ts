@@ -1,6 +1,6 @@
 import { ChangeStateResult, RouteAction, Router, RouterConfig, ChangeStateConfig, RouterMethodOptions } from './Router';
 import { LocationUtils } from '../location/LocationUtils';
-import { UrlUtils } from '@dooboostore/core/url/UrlUtils';
+import { UrlUtils } from '@dooboostore/core';
 
 
 export class HashRouter extends Router {

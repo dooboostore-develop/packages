@@ -1,11 +1,12 @@
 import { HTMLElementBase } from './HTMLElementBase';
+import {HTMLElement} from "./HTMLElement";
 
 /**
  * The **`HTMLCaptionElement`** class represents an HTML `<caption>` element.
  * 
  * [MDN Reference](https://developer.mozilla.org/docs/Web/API/HTMLTableCaptionElement)
  */
-export class HTMLCaptionElement extends HTMLElementBase {
+export class HTMLCaptionElement extends HTMLElement {
     constructor(tagName: string, ownerDocument?: any) {
         super(tagName, ownerDocument);
     }

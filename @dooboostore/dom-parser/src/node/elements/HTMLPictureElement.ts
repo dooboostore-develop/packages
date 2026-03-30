@@ -1,2 +1,3 @@
 import { HTMLElementBase } from './HTMLElementBase';
-export class HTMLPictureElement extends HTMLElementBase { constructor(tagName: string = 'PICTURE', ownerDocument?: any) { super(tagName, ownerDocument); } }
+import {HTMLElement} from "./HTMLElement";
+export class HTMLPictureElement extends HTMLElement { constructor(tagName: string = 'PICTURE', ownerDocument?: any) { super(tagName, ownerDocument); } }

@@ -6,29 +6,47 @@
 
 **Full Documentation:** [https://dooboostore-develop.github.io/@dooboostore/lib-web](https://dooboostore-develop.github.io/@dooboostore/lib-web)
 
-A library of advanced, canvas-based components for web applications.
+Canvas-centered UI components for building rich browser editors and map-like visual tools.
 
 ---
 
 ## Features
 
--   **Image Editor (`ImageEditorCanvas`)**:
-    -   A multi-layer image editor.
-    -   Add and manipulate images, text, and various shapes (rectangles, circles, stars, hearts, etc.).
-    -   Layers can be moved, resized, rotated, flipped, and reordered (z-index).
-    -   Features for polygonal cropping and erasing parts of layers.
-    -   Undo/Redo history management.
-    -   Export the final composition as a single image.
+- **ImageEditorCanvas**: multi-layer canvas editor with object transform, ordering, and export.
+- **GpsMarkerCanvas**: route/point visualization canvas with pan and zoom.
+- **ImageCropCanvas**: polygon crop workflow for image trimming.
+- **Root-first exports**: consume all public APIs from package root.
+- **Bundle entry support**: dedicated `./bundle-entry` subpath for bundlers or UMD/ESM interop workflows.
 
--   **GPS Marker Map (`GpsMarkerCanvas`)**:
-    -   Display GPS points and paths on an interactive canvas map.
-    -   Supports panning and zooming.
-    -   Option to use Mercator projection for more accurate map representation.
-    -   Customizable markers (images or colors) and paths.
+## Public API
 
--   **Image Cropper (`ImageCropCanvas`)**:
-    -   Load an image and draw a freeform polygon to crop it.
-    -   Exports the cropped area as a new image.
+`@dooboostore/lib-web` root currently exposes:
+
+- `ImageEditorCanvas`
+- `GpsMarkerCanvas`
+- `ImageCropCanvas`
+
+## Import Guide
+
+### Root import (recommended)
+
+```typescript
+import { ImageEditorCanvas, GpsMarkerCanvas, ImageCropCanvas } from '@dooboostore/lib-web';
+```
+
+### Bundle entry import
+
+```typescript
+import { ImageEditorCanvas } from '@dooboostore/lib-web/bundle-entry';
+```
+
+### Namespace access from bundle entry
+
+```typescript
+import { LibWebModule } from '@dooboostore/lib-web/bundle-entry';
+
+const editor = new LibWebModule.ImageEditorCanvas(/* ... */);
+```
 
 ## Installation
 
@@ -43,10 +61,78 @@ npm install @dooboostore/lib-web
 yarn add @dooboostore/lib-web
 ```
 
+## Quick Start
+
+### Image editor
+
+```typescript
+import { ImageEditorCanvas } from '@dooboostore/lib-web';
+
+const editor = new ImageEditorCanvas({
+    target: document.getElementById('app') as HTMLElement,
+    width: 1024,
+    height: 768
+});
+
+// Typical operations vary by app implementation:
+// - add image/text/shape layers
+// - update position/scale/rotation
+// - export final image
+```
+
+### GPS marker map
+
+```typescript
+import { GpsMarkerCanvas } from '@dooboostore/lib-web';
+
+const map = new GpsMarkerCanvas({
+    target: document.getElementById('map') as HTMLElement,
+    width: 800,
+    height: 600
+});
+
+// Render points and tracks, then support zoom/pan interactions.
+```
+
+### Image crop
+
+```typescript
+import { ImageCropCanvas } from '@dooboostore/lib-web';
+
+const cropper = new ImageCropCanvas({
+    target: document.getElementById('crop') as HTMLElement
+});
+
+// Load image, draw polygon region, export cropped result.
+```
+
+## Best Practices
+
+- Keep canvas dimensions explicit for stable rendering quality.
+- Debounce high-frequency pointer events in host application state updates.
+- Export from finalized state rather than per-frame snapshots.
+- Use root import paths (`@dooboostore/lib-web`) as default; keep deep imports internal.
+
+## Troubleshooting
+
+**Issue:** Blurry canvas output on high-DPI displays  
+**Solution:** align canvas internal size with device pixel ratio and scale drawing context.
+
+**Issue:** Slow interaction with many objects  
+**Solution:** reduce redraw region, batch operations, and disable expensive effects while dragging.
+
+**Issue:** Import path errors in consumers  
+**Solution:** use root path or `@dooboostore/lib-web/bundle-entry`, not internal source paths.
+
 ## Learn More
 
 The detailed API documentation for each component is available on our documentation website.
 
+## Related Packages
+
+- [@dooboostore/core](https://www.npmjs.com/package/@dooboostore/core)
+- [@dooboostore/core-web](https://www.npmjs.com/package/@dooboostore/core-web)
+- [@dooboostore/dom-render](https://www.npmjs.com/package/@dooboostore/dom-render)
 
 ## License
 

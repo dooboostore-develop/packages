@@ -1,2 +1,8 @@
-import { HTMLElementBase } from './HTMLElementBase';
-export class HTMLDialogElement extends HTMLElementBase { constructor(tagName: string = 'DIALOG', ownerDocument?: any) { super(tagName, ownerDocument); } }
+import {HTMLElementBase} from './HTMLElementBase';
+import {HTMLElement} from "./HTMLElement";
+
+export class HTMLDialogElement extends HTMLElement {
+  constructor(tagName: string = 'DIALOG', ownerDocument?: any) {
+    super(tagName, ownerDocument);
+  }
+}

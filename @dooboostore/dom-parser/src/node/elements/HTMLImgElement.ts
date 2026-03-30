@@ -1,11 +1,12 @@
 import { HTMLElementBase } from './HTMLElementBase';
+import {HTMLElement} from "./HTMLElement";
 
 /**
  * The **`HTMLImgElement`** class represents an HTML `<img>` element.
  * 
  * [MDN Reference](https://developer.mozilla.org/docs/Web/API/HTMLImageElement)
  */
-export class HTMLImgElement extends HTMLElementBase  {
+export class HTMLImgElement extends HTMLElement  {
     private _src: string = '';
     private _alt: string = '';
     private _width: number = 0;

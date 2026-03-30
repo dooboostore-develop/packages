@@ -1,4 +1,4 @@
-import { ReflectUtils } from '@dooboostore/core/reflect/ReflectUtils';
+import { ReflectUtils } from '@dooboostore/core';
 import { ON_ATTRIBUTE_CHANGED_METADATA_KEY } from './changedAttribute';
 import { SET_ATTRIBUTE_METADATA_KEY } from './setAttribute';
 

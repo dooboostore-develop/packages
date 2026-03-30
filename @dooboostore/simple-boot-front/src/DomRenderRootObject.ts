@@ -1,12 +1,7 @@
 import {ComponentRouterBase} from './component/ComponentRouterBase';
-import {OnRawSetRenderedOtherData} from "@dooboostore/dom-render/lifecycle/OnRawSetRendered";
-import {ChildrenSet} from "@dooboostore/dom-render/components/ComponentBase";
-import {RawSet} from "@dooboostore/dom-render/rawsets/RawSet";
-import {OnChildRawSetRendered} from "@dooboostore/dom-render/lifecycle/OnChildRawSetRendered";
-import {Subject} from "@dooboostore/core/message/Subject";
-import type {RoutingDataSet} from "@dooboostore/simple-boot/route/RouterManager";
-import {DomRenderComponentMetaKey} from "@dooboostore/dom-render/rawsets/index";
-import * as url from "node:url";
+import {ChildrenSet, DomRenderComponentMetaKey, RawSet} from '@dooboostore/dom-render';
+import {Subject} from '@dooboostore/core';
+import type {RoutingDataSet} from '@dooboostore/simple-boot';
 // export const DomRenderRootDefaultTemplate = '${@this@.name}$ <button dr-event-click="$router.go(\'/\')">aa</button><button dr-event-click="console.log(@this@.name); @this@.name = 22">aa</button>  ${@this@.rootRouter}$<dr-this value="${@this@.rootRouter}$"></dr-this>'
 export const DomRenderRootDefaultTemplate = '<dr-this value="${@this@.child}$"></dr-this>'
 // export const DomRenderRootDefaultTemplate = '<div>zz${@this@.name}$z</div>'

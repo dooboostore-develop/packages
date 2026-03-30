@@ -1,11 +1,12 @@
 import { HTMLElementBase } from './HTMLElementBase';
+import {HTMLElement} from "./HTMLElement";
 
 /**
  * The **`HTMLTdElement`** class represents an HTML `<td>` element.
  * 
  * [MDN Reference](https://developer.mozilla.org/docs/Web/API/HTMLTableCellElement)
  */
-export class HTMLTdElement extends HTMLElementBase {
+export class HTMLTdElement extends HTMLElement {
     constructor(tagName: string, ownerDocument?: any) {
         super(tagName, ownerDocument);
     }

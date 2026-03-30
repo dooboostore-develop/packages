@@ -1,11 +1,12 @@
 import { ElementBase } from './ElementBase';
+import {HTMLElement} from "./HTMLElement";
 
 /**
  * The **`MathMLElement`** class represents the base class for all MathML elements.
  * 
  * [MDN Reference](https://developer.mozilla.org/docs/Web/API/MathMLElement)
  */
-export class MathMLElement extends ElementBase {
+export class MathMLElement extends HTMLElement {
     constructor(tagName: string, ownerDocument?: any) {
         super(tagName.toUpperCase(), ownerDocument);
     }

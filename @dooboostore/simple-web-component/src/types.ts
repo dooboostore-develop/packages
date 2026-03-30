@@ -1,5 +1,5 @@
 import { SimpleApplication } from '@dooboostore/simple-boot/SimpleApplication';
-import { Router } from '@dooboostore/core-web/routers/Router';
+import { Router } from '@dooboostore/core-web';
 
 export enum InjectSituationType {
   HOST_SET = 'SIMPLE_WEB_COMPONENT://HOSTSET',

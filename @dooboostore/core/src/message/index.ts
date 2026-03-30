@@ -5,6 +5,7 @@ export * from './ReplaySubject';
 export * from './ReplayForwardSubject';
 export * from './Observable';
 export * from './Subscription';
+export * from './AutoCloseSubscription'
 
 // Internal utilities
 export * as MessageInternal from './internal';

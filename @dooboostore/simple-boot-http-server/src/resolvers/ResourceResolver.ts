@@ -1,7 +1,7 @@
 import { Resolver } from './Resolver';
 import { RequestResponse } from '../models/RequestResponse';
 import { Resource } from '../models/datas/Resource';
-import { Sim } from '@dooboostore/simple-boot/decorators/SimDecorator';
+import { Sim } from '@dooboostore/simple-boot';
 
 @Sim
 export class ResourceResolver implements Resolver {

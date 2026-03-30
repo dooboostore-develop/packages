@@ -1,4 +1,4 @@
-import { ReflectUtils } from '@dooboostore/core/reflect/ReflectUtils';
+import { ReflectUtils } from '@dooboostore/core';
 
 export const ON_ATTRIBUTE_CHANGED_METADATA_KEY = Symbol('simple-web-component:on-attribute-changed');
 

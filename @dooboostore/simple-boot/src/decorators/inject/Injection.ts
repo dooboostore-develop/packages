@@ -1,5 +1,5 @@
 
-import { ReflectUtils } from '@dooboostore/core/reflect/ReflectUtils';
+import { ReflectUtils } from '@dooboostore/core';
 import {ReflectMethod} from '../../types/Types';
 
 export type InjectionConfig = {}

@@ -1,11 +1,12 @@
 import { HTMLElementBase } from './HTMLElementBase';
+import {HTMLElement} from "./HTMLElement";
 
 /**
  * The **`HTMLAreaElement`** interface provides special properties and methods (beyond those of the regular object HTMLElement interface it also has available to it by inheritance) for manipulating the layout and presentation of `<area>` elements.
  * 
  * [MDN Reference](https://developer.mozilla.org/docs/Web/API/HTMLAreaElement)
  */
-export class HTMLAreaElement extends HTMLElementBase {
+export class HTMLAreaElement extends HTMLElement {
     /**
      * A string containing the alternative text for the element.
      */

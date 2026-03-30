@@ -1,8 +1,7 @@
-import { ConstructorType } from '@dooboostore/core/types';
+import { ConstructorType, RandomUtils } from '@dooboostore/core';
 import {FactoryAndParams} from './SSRFilter';
 import {JsdomInitializer} from '../initializers/JsdomInitializer';
 import JSDOM from 'jsdom';
-import {RandomUtils} from '@dooboostore/core/random/RandomUtils';
 import {SimpleBootFront} from '@dooboostore/simple-boot-front/SimpleBootFront';
 
 export class SSRWorker {

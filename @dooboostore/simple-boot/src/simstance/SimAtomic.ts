@@ -1,11 +1,11 @@
-import { ConstructorType } from '@dooboostore/core/types';
+import { ConstructorType } from '@dooboostore/core';
 import { SimConfig, SimMetadataKey } from '../decorators/SimDecorator';
 import { Carrier, SimstanceManager } from './SimstanceManager';
-import { ReflectUtils } from '@dooboostore/core/reflect/ReflectUtils';
+import { ReflectUtils } from '@dooboostore/core';
 
 export class SimAtomic<T = object> {
   private value?: T | undefined;
-  constructor(public type:{targetKeyType: ConstructorType<T> | Function, originalType: ConstructorType<T> | Function, value?: T}, private simstanceManager: SimstanceManager, private config?: {optional?: boolean}) {
+  constructor(public type:{targetKeyType: ConstructorType<T> | Function | symbol, originalType: ConstructorType<T> | Function, value?: T}, private simstanceManager: SimstanceManager, private config?: {optional?: boolean}) {
     this.value = type.value;
   }
 
@@ -26,7 +26,11 @@ export class SimAtomic<T = object> {
     // console.log('------value?', this.type, this.simstanceManager.storage)
     // return this.simstanceManager.getOrNewSim({target:this.type, newInstanceCarrier: config?.newInstanceCarrier});
     if (!this.value) {
-      this.value = this.simstanceManager.getOrNewSim({target: this.type.targetKeyType, originTypeTarget: this.type.originalType, newInstanceCarrier: config?.newInstanceCarrier});
+      if (typeof this.type.targetKeyType === 'symbol') {
+        this.value = this.simstanceManager.findFirstSim(this.type.targetKeyType)?.getValue();
+      } else {
+        this.value = this.simstanceManager.getOrNewSim({target: this.type.targetKeyType as any, originTypeTarget: this.type.originalType, newInstanceCarrier: config?.newInstanceCarrier});
+      }
       // const findFirstSim = this.simstanceManager.findFirstSim({type: this.type});
       // if (findFirstSim) {
       //   this.value = findFirstSim.getValue(config);

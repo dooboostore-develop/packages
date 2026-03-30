@@ -1,11 +1,12 @@
 import { HTMLElementBase } from './HTMLElementBase';
+import {HTMLElement} from "./HTMLElement";
 
 /**
  * The **`HTMLLIElement`** class represents an HTML `<li>` element.
  * 
  * [MDN Reference](https://developer.mozilla.org/docs/Web/API/HTMLLIElement)
  */
-export class HTMLLIElement extends HTMLElementBase {
+export class HTMLLIElement extends HTMLElement {
     private _value: number = 0;
     
     constructor(tagName: string, ownerDocument?: any) {

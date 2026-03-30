@@ -1,11 +1,11 @@
-import { ConstructorType, isDefined } from '@dooboostore/core/types';
+import { ConstructorType, isDefined } from '@dooboostore/core';
 import { SimAtomic } from '../simstance/SimAtomic';
 import { Intent } from '../intent/Intent';
 import { SimstanceManager } from '../simstance/SimstanceManager';
 import { getInjection } from '../decorators/inject/Injection';
 import { MethodNoSuch } from '../throwable/MethodNoSuch';
 import { getRoute, getRouter, getRoutes } from '../decorators/route/Router';
-import { Expression } from '@dooboostore/core/expression/Expression';
+import { Expression } from '@dooboostore/core';
 
 export class RouterModule<R = SimAtomic, M = any> {
   private _pathData?: Expression.Path.PathNameData;

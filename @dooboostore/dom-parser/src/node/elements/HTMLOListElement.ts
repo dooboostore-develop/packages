@@ -1,11 +1,12 @@
 import { HTMLElementBase } from './HTMLElementBase';
+import {HTMLElement} from "./HTMLElement";
 
 /**
  * The **`HTMLOListElement`** class represents an HTML `<ol>` element.
  * 
  * [MDN Reference](https://developer.mozilla.org/docs/Web/API/HTMLOListElement)
  */
-export class HTMLOListElement extends HTMLElementBase {
+export class HTMLOListElement extends HTMLElement {
     private _start: number = 1;
     private _type: string = '';
     private _reversed: boolean = false;

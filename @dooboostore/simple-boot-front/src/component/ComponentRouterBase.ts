@@ -1,11 +1,11 @@
-import { ComponentRouterBase as DomRenderComponentRouterBase } from '@dooboostore/dom-render/components/ComponentRouterBase';
+import { ComponentRouterBase as DomRenderComponentRouterBase } from '@dooboostore/dom-render';
 import { ComponentSet } from './ComponentSet';
-import { RouterAction } from '@dooboostore/simple-boot/route/RouterAction';
-import { ChildrenSet, ComponentBaseConfig } from '@dooboostore/dom-render/components/ComponentBase';
-import { getDomRenderOriginObject } from '@dooboostore/dom-render/DomRenderProxy';
-import { RouterOutlet } from '@dooboostore/dom-render/components/router/RouterOutlet';
-import type { RoutingDataSet } from '@dooboostore/simple-boot/route/RouterManager';
-import {DomRenderNoProxy} from "@dooboostore/dom-render/decorators/DomRenderNoProxy";
+import { RouterAction } from '@dooboostore/simple-boot';
+import { ChildrenSet, ComponentBaseConfig } from '@dooboostore/dom-render';
+import { getDomRenderOriginObject } from '@dooboostore/dom-render';
+import { RouterOutlet } from '@dooboostore/dom-render';
+import type { RoutingDataSet } from '@dooboostore/simple-boot';
+import { DomRenderNoProxy } from '@dooboostore/dom-render';
 
 export type ComponentRouterBaseConfig = ComponentBaseConfig & { sameRouteNoApply?: boolean };
 

@@ -1,7 +1,7 @@
 import { elementDefine } from '../decorators/elementDefine';
 import { SwcAppMixin } from './SwcAppMixin';
 import { SwcUtils } from '../utils/Utils';
-import { FunctionUtils } from '@dooboostore/core/function/FunctionUtils';
+import { FunctionUtils } from '@dooboostore/core';
 import { changedAttribute } from '../decorators/changedAttribute';
 
 export const registerAllElements = (w: any) => {

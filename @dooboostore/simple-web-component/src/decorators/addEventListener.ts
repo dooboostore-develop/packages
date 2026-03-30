@@ -1,4 +1,4 @@
-import { ReflectUtils } from '@dooboostore/core/reflect/ReflectUtils';
+import { ReflectUtils } from '@dooboostore/core';
 import { SpecialSelector, SwcQueryOptions } from '../types';
 
 export interface AddEventListenerBaseOptions extends EventListenerOptions {

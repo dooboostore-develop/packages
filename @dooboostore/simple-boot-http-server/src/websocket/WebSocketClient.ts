@@ -1,9 +1,8 @@
-import {RandomUtils} from '@dooboostore/core/random/RandomUtils';
+import {RandomUtils} from '@dooboostore/core';
 import {TopicRequest, TopicResponse, TopicServerEventRequest, TopicServerEventResponse, TopicServerEventUnSubscribeRequest, TopicSubscribeRequest, TopicType, TopicUnsubscribeRequest} from './WebSocketManager';
-import {Observable, Subject} from '@dooboostore/core/message/index';
-import {filter} from '@dooboostore/core/message/operators/filter';
+import {MessageOperator, Observable, Subject} from '@dooboostore/core';
 
-export * from '@dooboostore/core/message/index';
+export * from '@dooboostore/core';
 
 type TopicObserverNextCallBack<T> = <R = any>(data: T, meta: { socket: WebSocket }) => void;
 type TopicObserverEventCallBack = { [event: string]: <T, R = any>(data: T, meta: { socket: WebSocket }) => Promise<R> | void | any } | (<T, R = any>(event: string, data: T, meta: { socket: WebSocket }) => Promise<R> | void | any);
@@ -566,7 +565,7 @@ export class WebSocketClient {
           const value: TopicRequest = { type: option?.type, uuid, requestUUID, body: body };
           self.sendMessage(value);
         }
-        return topicSubject.pipe(filter(data => data && data.requestUUID === requestUUID));
+        return topicSubject.pipe(MessageOperator.filter(data => data && data.requestUUID === requestUUID));
       },
       onUnsubscribe: (callback: OnUnsubscribeCallback) => {
         onUnsubscribes.push(callback);

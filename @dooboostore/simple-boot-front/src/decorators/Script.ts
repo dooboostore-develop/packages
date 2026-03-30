@@ -1,5 +1,4 @@
-import { ConstructorType } from '@dooboostore/core/types';
-import { ReflectUtils } from '@dooboostore/core/reflect/ReflectUtils';
+import { ConstructorType, ReflectUtils } from '@dooboostore/core';
 import { ScriptRunnable } from '../script/ScriptRunnable';
 
 export const scripts = new Map<string, ConstructorType<ScriptRunnable>>();

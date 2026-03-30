@@ -4,12 +4,10 @@ import { RawSet } from '../../rawsets/RawSet';
 import { OtherData } from '../../lifecycle/OnChangeAttrRender';
 import { OnCreateRender } from '../../lifecycle/OnCreateRender';
 import { OnDestroyRender, OnDestroyRenderParams } from '../../lifecycle/OnDestroyRender';
-import { Subscription } from '@dooboostore/core/message/Subscription';
-import { ValidUtils } from '@dooboostore/core/valid/ValidUtils';
-import { map } from '@dooboostore/core/message/operators/map';
-import { EventUtils } from '@dooboostore/core-web/event/EventUtils';
-import { debounceTime } from '@dooboostore/core/message/operators/debounceTime';
-import { distinctUntilChanged } from '@dooboostore/core/message/operators/distinctUntilChanged';
+import { Subscription } from '@dooboostore/core';
+import { ValidUtils } from '@dooboostore/core';
+import { MessageOperator } from '@dooboostore/core';
+import { EventUtils } from '@dooboostore/core-web';
 
 export namespace Input {
   export const selector = `dr-input`;
@@ -52,7 +50,7 @@ export namespace Input {
           // let result$ = EventUtils.htmlElementEventObservable(inputElement,'input');
 
           let result$ = EventUtils.htmlElementEventObservable(inputElement, 'input').pipe(
-            map((event: Event) => {
+            MessageOperator.map((event: Event) => {
               const target = event.target;
               if (target instanceof HTMLInputElement) {
                 return target.value.trim();
@@ -63,10 +61,10 @@ export namespace Input {
           );
 
           if (ValidUtils.isNotNullUndefined(debounceTimeValue) && debounceTimeValue > 0) {
-            result$ = result$.pipe(debounceTime(debounceTimeValue));
+            result$ = result$.pipe(MessageOperator.debounceTime(debounceTimeValue));
           }
           if (ValidUtils.isNotNullUndefined(distinct) && distinct === true) {
-            result$ = result$.pipe(distinctUntilChanged());
+            result$ = result$.pipe(MessageOperator.distinctUntilChanged());
           }
           return result$;
         };

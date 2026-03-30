@@ -1,6 +1,6 @@
-import { ConstructorType } from '@dooboostore/core/types';
-import { ReflectMethod } from '@dooboostore/simple-boot/types/Types';
-import { ReflectUtils } from '@dooboostore/core/reflect/ReflectUtils';
+import { ConstructorType } from '@dooboostore/core';
+import { ReflectMethod } from '@dooboostore/simple-boot';
+import { ReflectUtils } from '@dooboostore/core';
 import { Resolver } from '../resolvers/Resolver';
 import { Mimes } from '../codes/Mimes';
 import { HttpMethod } from '../codes/HttpMethod';

@@ -30,6 +30,27 @@ cd my-server
 npm start
 ```
 
+## Security Hardening
+
+- Enforce TLS in production: configure HTTPS (or terminate TLS at a trusted reverse proxy) and redirect HTTP to HTTPS.
+- Keep session cookies hardened: use `httpOnly`, `secure`, `sameSite`, short expiration, and explicit `domain/path` when required.
+- Protect WebSocket endpoints: validate origin, authenticate at connect/subscribe time, and authorize per topic.
+- Validate all inputs: apply strict validation for route params, query/body payloads, and uploaded files (type/size/path).
+- Avoid sensitive data leakage: never return stack traces, internal file paths, raw SQL errors, or secrets in responses/logs.
+- Configure CORS minimally: allow only required origins/methods/headers, avoid wildcard credentials.
+- Add rate limiting and timeout guards: mitigate brute force and resource-exhaustion attacks.
+- Rotate secrets/keys regularly and load them from environment or a secret manager (never hardcode in source).
+- Keep dependencies updated and scan regularly for CVEs.
+
+### Minimal Production Checklist
+
+- `HTTPS` enabled end-to-end
+- Session cookie options set (`httpOnly`, `secure`, `sameSite`)
+- CORS restricted to trusted origins
+- Request/WS auth + authorization enforced
+- Upload size/type limits configured
+- Error responses sanitized
+
 ## Learn More
 
 The detailed API documentation, including all decorators and usage examples, is available on our documentation website.

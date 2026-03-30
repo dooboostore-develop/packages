@@ -1,13 +1,14 @@
 import { HTMLElementBase } from './HTMLElementBase';
 import { DocumentFragmentBase } from '../DocumentFragmentBase';
 import { TEXT_NODE } from "../Node";
+import {HTMLElement} from "./HTMLElement";
 
 /**
  * The **`HTMLTemplateElement`** class represents an HTML `<template>` element.
  * 
  * [MDN Reference](https://developer.mozilla.org/docs/Web/API/HTMLTemplateElement)
  */
-export class HTMLTemplateElement extends HTMLElementBase {
+export class HTMLTemplateElement extends HTMLElement {
     private _content: DocumentFragmentBase;
     
     constructor(tagName: string, ownerDocument?: any) {

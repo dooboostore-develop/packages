@@ -1,5 +1,5 @@
 import { SimpleBootFront } from '@dooboostore/simple-boot-front/SimpleBootFront';
-import { ConstructorType } from '@dooboostore/core/types';
+import { ConstructorType } from '@dooboostore/core';
 import { SimFrontOption } from '@dooboostore/simple-boot-front/option/SimFrontOption';
 export abstract class SimpleBootHttpSSRFactory {
     public abstract factory(simFrontOption: SimFrontOption, using: (ConstructorType<any> | Function)[], domExcludes: ConstructorType<any>[]): Promise<SimpleBootFront> ;

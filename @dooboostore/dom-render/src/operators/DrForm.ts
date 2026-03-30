@@ -1,12 +1,11 @@
-import {ScriptUtils} from '@dooboostore/core-web/script/ScriptUtils';
 import {RawSet} from '../rawsets/RawSet';
-import {Validator} from '@dooboostore/core/validators/Validator';
+import {Validator} from '@dooboostore/core';
 import {EventManager} from '../events/EventManager';
-import {ValidatorArray} from '@dooboostore/core/validators/ValidatorArray';
+import {ValidatorArray} from '@dooboostore/core';
 import {Render} from '../rawsets/Render';
 import {OperatorExecuterAttrRequire} from './OperatorExecuterAttrRequire';
 import {AfterCallBack, ElementSource, ExecuteState, ReturnContainer, Source} from './OperatorExecuter';
-import {ObjectUtils} from "@dooboostore/core/object/ObjectUtils";
+import {ObjectUtils} from "@dooboostore/core";
 
 export class DrForm extends OperatorExecuterAttrRequire<string> {
     constructor(rawSet: RawSet, render: Render, returnContainer: ReturnContainer, elementSource: ElementSource, source: Source, afterCallBack: AfterCallBack) {

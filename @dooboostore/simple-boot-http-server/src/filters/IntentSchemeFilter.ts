@@ -1,8 +1,8 @@
 import { Filter } from './Filter';
 import { HttpHeaders } from '../codes/HttpHeaders';
-import { Intent } from '@dooboostore/simple-boot/intent/Intent';
-import { IntentManager } from '@dooboostore/simple-boot/intent/IntentManager';
-import { Sim } from '@dooboostore/simple-boot/decorators/SimDecorator';
+import { Intent } from '@dooboostore/simple-boot';
+import { IntentManager } from '@dooboostore/simple-boot';
+import { Sim } from '@dooboostore/simple-boot';
 import { HttpStatus } from '../codes/HttpStatus';
 import { RequestResponse } from '../models/RequestResponse';
 import { SimpleBootHttpServer } from '../SimpleBootHttpServer';

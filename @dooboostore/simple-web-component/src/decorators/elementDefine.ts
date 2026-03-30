@@ -1,5 +1,5 @@
-import { ReflectUtils } from '@dooboostore/core/reflect/ReflectUtils';
-import { FunctionUtils } from '@dooboostore/core/function/FunctionUtils';
+import { ReflectUtils } from '@dooboostore/core';
+import { FunctionUtils } from '@dooboostore/core';
 import { getOnConnectedInnerHtmlMetadata } from './onConnectedInnerHtml';
 import { getAddEventListenerMetadata } from './addEventListener';
 import { ON_BEFORE_CONNECTED_METADATA_KEY, ON_AFTER_CONNECTED_METADATA_KEY, ON_BEFORE_DISCONNECTED_METADATA_KEY, ON_AFTER_DISCONNECTED_METADATA_KEY, ON_BEFORE_ADOPTED_METADATA_KEY, ON_AFTER_ADOPTED_METADATA_KEY, findAllLifecycleMetadata } from './lifecycles';

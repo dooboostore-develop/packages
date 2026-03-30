@@ -1,4 +1,5 @@
 import { HTMLElementBase } from './HTMLElementBase';
+import {HTMLElement} from "./HTMLElement";
 
 /**
  * The **`HTMLBaseElement`** class represents an HTML `<base>` element.
@@ -6,7 +7,7 @@ import { HTMLElementBase } from './HTMLElementBase';
  * 
  * [MDN Reference](https://developer.mozilla.org/docs/Web/API/HTMLBaseElement)
  */
-export class HTMLBaseElement extends HTMLElementBase {
+export class HTMLBaseElement extends HTMLElement {
     private _href: string = '';
     private _target: string = '';
     

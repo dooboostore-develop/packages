@@ -1,5 +1,5 @@
 import { ChangeStateResult, RouteAction, Router, RouterConfig, ChangeStateConfig, RouterMethodOptions } from './Router';
-import { UrlUtils } from '@dooboostore/core/url/UrlUtils';
+import { UrlUtils } from '@dooboostore/core';
 
 export class PathRouter extends Router {
   constructor(config: RouterConfig) {

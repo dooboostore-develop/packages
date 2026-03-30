@@ -4,9 +4,9 @@ import { RequestResponse } from '../models/RequestResponse';
 import { SimpleBootHttpServer } from '../SimpleBootHttpServer';
 import * as fs from 'fs';
 import * as path from 'path';
-import { FileUtils } from '@dooboostore/core-node/file/FileUtils';
-import { ConvertUtils } from '@dooboostore/core-node/convert/ConvertUtils';
-import { RandomUtils } from '@dooboostore/core/random/RandomUtils';
+import { FileUtils } from '@dooboostore/core-node';
+import { ConvertUtils } from '@dooboostore/core-node';
+import { RandomUtils } from '@dooboostore/core';
 
 export type CacheFilterSessionType = { key: string; lifeTime: number; isUpdate: boolean; responseHeaders?: string[] };
 

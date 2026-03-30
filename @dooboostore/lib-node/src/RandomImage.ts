@@ -1,5 +1,5 @@
 import { createCanvas } from 'canvas';
-import { RandomUtils } from '@dooboostore/core/random/RandomUtils';
+import { RandomUtils } from '@dooboostore/core/bundle-entry';
 import * as fs from 'node:fs';
 
 

@@ -1,7 +1,7 @@
 export type WithRequiredProperty<Type, Key extends keyof Type> = Type & {
   [Property in Key]-?: Type[Property];
 };
-export type Optional<T, K extends keyof T> = Pick<Partial<T>, K> & Omit<T, K>;
+export type OptionalType<T, K extends keyof T> = Pick<Partial<T>, K> & Omit<T, K>;
 export type KeysWithValsOfType<T, V> = keyof { [P in keyof T as T[P] extends V ? P : never]: P };
 export type PropType<T> = {
   [P in keyof T]: T[P];

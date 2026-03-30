@@ -1,11 +1,12 @@
 import { HTMLElementBase } from './HTMLElementBase';
 import { HTMLCollectionImp, NodeListOfImp, NodeList, HTMLCollectionOfImp } from '../collection';
+import {HTMLElement} from "./HTMLElement";
 /**
  * The **`HTMLTrElement`** class represents an HTML `<tr>` element.
  * 
  * [MDN Reference](https://developer.mozilla.org/docs/Web/API/HTMLTableRowElement)
  */
-export class HTMLTrElement extends HTMLElementBase {
+export class HTMLTrElement extends HTMLElement {
     constructor(tagName: string, ownerDocument?: any) {
         super(tagName, ownerDocument);
     }
@@ -34,6 +35,7 @@ export class HTMLTrElement extends HTMLElementBase {
         
         const sectionRows = section.querySelectorAll('tr');
         for (let i = 0; i < sectionRows.length; i++) {
+            // @ts-ignore
             if (sectionRows[i] === this as unknown as HTMLElement) {
                 return i;
             }
@@ -58,6 +60,7 @@ export class HTMLTrElement extends HTMLElementBase {
             }
         }
         
+        // @ts-ignore
         return cell;
     }
 

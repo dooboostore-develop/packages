@@ -1,12 +1,13 @@
 import { HTMLElementBase } from './HTMLElementBase';
 import { HTMLCollectionImp } from '../collection/HTMLCollectionImp'
+import {HTMLElement} from "./HTMLElement";
 
 /**
  * The **`HTMLTableElement`** class represents an HTML `<table>` element.
  * 
  * [MDN Reference](https://developer.mozilla.org/docs/Web/API/HTMLTableElement)
  */
-export class HTMLTableElement extends HTMLElementBase {
+export class HTMLTableElement extends HTMLElement {
     constructor(tagName: string, ownerDocument?: any) {
         super(tagName, ownerDocument);
     }
@@ -34,6 +35,7 @@ export class HTMLTableElement extends HTMLElementBase {
     createCaption(): HTMLElement {
         let caption = this.caption;
         if (!caption) {
+            // @ts-ignore
             caption = this.ownerDocument.createElement('caption');
             this.insertBefore(caption, this.firstChild);
         }
@@ -50,6 +52,7 @@ export class HTMLTableElement extends HTMLElementBase {
     createTHead(): HTMLElement {
         let thead = this.tHead;
         if (!thead) {
+            // @ts-ignore
             thead = this.ownerDocument.createElement('thead');
             const firstTBody = this.querySelector('tbody');
             this.insertBefore(thead, firstTBody);
@@ -67,6 +70,7 @@ export class HTMLTableElement extends HTMLElementBase {
     createTFoot(): HTMLElement {
         let tfoot = this.tFoot;
         if (!tfoot) {
+            // @ts-ignore
             tfoot = this.ownerDocument.createElement('tfoot');
             this.appendChild(tfoot);
         }
@@ -100,6 +104,7 @@ export class HTMLTableElement extends HTMLElementBase {
             }
         }
         
+        // @ts-ignore
         return row;
     }
 

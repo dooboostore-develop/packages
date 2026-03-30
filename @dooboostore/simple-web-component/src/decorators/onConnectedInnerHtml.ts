@@ -1,4 +1,4 @@
-import { ReflectUtils } from '@dooboostore/core/reflect/ReflectUtils';
+import { ReflectUtils } from '@dooboostore/core';
 
 export interface InnerHtmlOptions {
   useShadow?: boolean;

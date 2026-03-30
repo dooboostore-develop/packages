@@ -1,2 +1,3 @@
 import { HTMLElementBase } from './HTMLElementBase';
-export class HTMLSlotElement extends HTMLElementBase { constructor(tagName: string = 'SLOT', ownerDocument?: any) { super(tagName, ownerDocument); } }
+import {HTMLElement} from "./HTMLElement";
+export class HTMLSlotElement extends HTMLElement { constructor(tagName: string = 'SLOT', ownerDocument?: any) { super(tagName, ownerDocument); } }

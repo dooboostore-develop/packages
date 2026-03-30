@@ -3,8 +3,8 @@ import { DomRender, DomRenderRunConfig } from '../../DomRender';
 import { RawSet } from '../../rawsets/RawSet';
 import { OtherData } from '../../lifecycle/OnChangeAttrRender';
 
-import { ValidUtils } from '@dooboostore/core/valid/ValidUtils';
-import { Promises } from '@dooboostore/core/promise/Promises';
+import { ValidUtils } from '@dooboostore/core';
+import { Promises } from '@dooboostore/core';
 import { OnCreateRenderDataParams } from '../../lifecycle/OnCreateRenderData';
 
 export namespace PromiseSwitch {

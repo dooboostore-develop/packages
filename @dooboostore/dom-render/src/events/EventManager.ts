@@ -1,9 +1,9 @@
 import { DomRenderConfig } from '../configs/DomRenderConfig';
-import { ScriptUtils } from '@dooboostore/core-web/script/ScriptUtils';
-import { ElementUtils } from '@dooboostore/core-web/element/ElementUtils';
-import { Range } from '@dooboostore/core/iterators/Range';
+import { ScriptUtils } from '@dooboostore/core-web';
+import { ElementUtils } from '@dooboostore/core-web';
+import { Range } from '@dooboostore/core';
 import { getDomRenderConfig } from '../DomRenderProxy';
-import { ObjectUtils } from '@dooboostore/core/object/ObjectUtils';
+import { ObjectUtils } from '@dooboostore/core';
 
 type HandlerInfo = {
   element: HTMLElement;

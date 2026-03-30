@@ -1,2 +1,3 @@
 import { HTMLElementBase } from './HTMLElementBase';
-export class HTMLPreElement extends HTMLElementBase { constructor(tagName: string = 'PRE', ownerDocument?: any) { super(tagName, ownerDocument); } }
+import {HTMLElement} from "./HTMLElement";
+export class HTMLPreElement extends HTMLElement { constructor(tagName: string = 'PRE', ownerDocument?: any) { super(tagName, ownerDocument); } }

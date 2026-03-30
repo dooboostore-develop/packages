@@ -5,7 +5,6 @@
     "sourceMap": true,
     "declaration": true,
     "declarationMap": true,
-    "noEmit": false,
     "stripInternal": true,
     "noEmit": true,
     "target": "es2020",
@@ -14,7 +13,8 @@
     "emitDecoratorMetadata": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
+    "module": "esnext",
     "baseUrl": ".",
     "paths": {
 //      "@dooboostore/core/*": ["../core/*"]

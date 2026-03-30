@@ -1,2 +1,8 @@
-import { HTMLElementBase } from './HTMLElementBase';
-export class HTMLDListElement extends HTMLElementBase { constructor(tagName: string = 'DL', ownerDocument?: any) { super(tagName, ownerDocument); } }
+import {HTMLElementBase} from './HTMLElementBase';
+import {HTMLElement} from "./HTMLElement";
+
+export class HTMLDListElement extends HTMLElement {
+  constructor(tagName: string = 'DL', ownerDocument?: any) {
+    super(tagName, ownerDocument);
+  }
+}

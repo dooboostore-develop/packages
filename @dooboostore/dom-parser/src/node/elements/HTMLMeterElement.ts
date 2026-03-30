@@ -1,2 +1,3 @@
 import { HTMLElementBase } from './HTMLElementBase';
-export class HTMLMeterElement extends HTMLElementBase { constructor(tagName: string = 'METER', ownerDocument?: any) { super(tagName, ownerDocument); } }
+import {HTMLElement} from "./HTMLElement";
+export class HTMLMeterElement extends HTMLElement { constructor(tagName: string = 'METER', ownerDocument?: any) { super(tagName, ownerDocument); } }

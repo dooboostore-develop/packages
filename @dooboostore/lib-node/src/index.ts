@@ -1,3 +1,1 @@
-// export * from './RandomImage';
-
-export default {}
+export * from './RandomImage';

@@ -1,11 +1,12 @@
 import { HTMLElementBase } from './HTMLElementBase';
+import {HTMLElement} from "./HTMLElement";
 
 /**
  * The **`HTMLThElement`** class represents an HTML `<th>` element.
  * 
  * [MDN Reference](https://developer.mozilla.org/docs/Web/API/HTMLTableCellElement)
  */
-export class HTMLThElement extends HTMLElementBase {
+export class HTMLThElement extends HTMLElement {
     constructor(tagName: string, ownerDocument?: any) {
         super(tagName, ownerDocument);
     }

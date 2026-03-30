@@ -1,7 +1,7 @@
 import { SimpleBootHttpServer } from '@dooboostore/simple-boot-http-server/SimpleBootHttpServer';
 // import { SimstanceManager } from '@dooboostore/simple-boot/simstance/SimstanceManager';
 import { HttpSSRServerOption } from './option/HttpSSRServerOption';
-import { ConstructorType } from '@dooboostore/core/types';
+import { ConstructorType } from '@dooboostore/core';
 import {SimConfig} from "@dooboostore/simple-boot/decorators/SimDecorator";
 
 export class SimpleBootHttpSSRServer extends SimpleBootHttpServer {

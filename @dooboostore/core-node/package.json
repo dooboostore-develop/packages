@@ -1,6 +1,6 @@
 {
   "name": "@dooboostore/core-node",
-  "version": "1.0.10",
+  "version": "1.0.12",
   "license": "MIT",
   "type": "module",
   "main": "./dist/cjs/index.js",
@@ -24,17 +24,19 @@
     "access": "public"
   },
   "exports": {
-      ".": {
-        "types": "./dist/types/index.d.ts",
-        "import": "./dist/esm/index.js",
-        "require": "./dist/cjs/index.js"
-      },
-      "./*": {
-        "types": "./dist/types/*.d.ts",
-        "import": "./dist/esm/*.js",
-        "require": "./dist/cjs/*.js"
-      }
+    ".": {
+      "types": "./dist/types/index.d.ts",
+      "import": "./dist/esm/index.js",
+      "require": "./dist/cjs/index.js",
+      "default": "./dist/esm/index.js"
     },
+    "./bundle-entry": {
+      "types": "./dist/types/bundle-entry.d.ts",
+      "import": "./dist/esm/bundle-entry.js",
+      "require": "./dist/cjs/bundle-entry.js",
+      "default": "./dist/esm/bundle-entry.js"
+    }
+  },
   "author": "dooboostore <dooboostore@gmail.com> (https://github.com/dooboostore)",
   "contributors": [
     "sewoo <sewooimda@nate.com> (https://github.com/sewoo)",
@@ -60,7 +62,6 @@
     "reflect-metadata": "^0.2.2"
   },
   "devDependencies": {
-    "@dooboostore/core": "workspace:*",
     "esbuild-plugin-tsc": "^0.5.0",
     "webpack": "^5.93.0",
     "webpack-cli": "^5.1.4",
@@ -68,7 +69,8 @@
     "tslib": "^2.8.1",
     "@types/node": "^20",
     "typescript": "^5.9.2",
-    "esbuild": "^0.23.0"
+    "esbuild": "^0.23.0",
+    "@dooboostore/core": "1.0.30"
   },
   "scripts": {
     "clean": "rm -rf dist",

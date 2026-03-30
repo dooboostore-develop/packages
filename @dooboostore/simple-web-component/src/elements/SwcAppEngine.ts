@@ -1,23 +1,23 @@
 import { SimpleApplication } from '@dooboostore/simple-boot/SimpleApplication';
-import { PathRouter } from '@dooboostore/core-web/routers/PathRouter';
-import { HashRouter } from '@dooboostore/core-web/routers/HashRouter';
+import { PathRouter } from '@dooboostore/core-web';
+import { HashRouter } from '@dooboostore/core-web';
 import { ElementRouter } from '../router/ElementRouter';
 import { SimOption } from '@dooboostore/simple-boot/SimOption';
-import { Router, RouterEventType } from '@dooboostore/core-web/routers/Router';
-import { Subscription } from '@dooboostore/core/message/Subscription';
-import { ConstructorType, Optional } from '@dooboostore/core/types';
-import { FunctionUtils } from '@dooboostore/core/function/FunctionUtils';
+import { Router, RouterEventType } from '@dooboostore/core-web';
+import { Subscription } from '@dooboostore/core';
+import { ConstructorType, OptionalType } from '@dooboostore/core';
+import { FunctionUtils } from '@dooboostore/core';
 import { SwcUtils } from '../utils/Utils';
 
 export type SwcConfigType = {
-  rootRouter: ConstructorType<any> | Symbol;
+  rootRouter: ConstructorType<any> | symbol;
   routeType: 'path' | 'hash' | 'element';
   connectMode?: 'direct' | 'swap';
   path?: string;
   window: Window;
 };
 
-export type SwcAttributeConfigType = Optional<SwcConfigType, 'routeType' | 'window'>;
+export type SwcAttributeConfigType = OptionalType<SwcConfigType, 'routeType' | 'window'>;
 
 export class SwcAppEngine {
   public simpleApplication?: SimpleApplication;

@@ -1,5 +1,5 @@
-import { ConstructorType, MethodKeys } from '@dooboostore/core/types';
-import { ReflectUtils } from '@dooboostore/core/reflect/ReflectUtils';
+import { ConstructorType, MethodKeys } from '@dooboostore/core';
+import { ReflectUtils } from '@dooboostore/core';
 import { ExceptionHandlerSituationType } from '../exception/ExceptionDecorator';
 import { SimpleApplication } from '../../SimpleApplication';
 

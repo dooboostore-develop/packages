@@ -1,4 +1,4 @@
-import {ApiService} from '@dooboostore/simple-boot/fetch/ApiService';
+import {ApiService} from '@dooboostore/simple-boot';
 import {SymbolIntentApiServiceProxy} from './SymbolIntentApiServiceProxy';
 
 export class SymbolIntentApiServiceProxyBase<T extends object = any> {

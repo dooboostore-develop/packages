@@ -1,5 +1,5 @@
 
-import { ObjectUtils } from '@dooboostore/core/object/ObjectUtils';
+import { ObjectUtils } from '@dooboostore/core';
 
 export class ScriptUtils {
 

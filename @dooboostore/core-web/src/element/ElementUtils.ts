@@ -1,4 +1,4 @@
-import { Promises } from '@dooboostore/core/promise/Promises';
+import { Promises } from '@dooboostore/core';
 
 export namespace ElementUtils {
   export type Attr = { name: string; value: any };

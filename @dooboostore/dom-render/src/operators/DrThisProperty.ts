@@ -1,10 +1,10 @@
 import {OperatorExecuterAttrRequire} from './OperatorExecuterAttrRequire';
-import {ScriptUtils} from '@dooboostore/core-web/script/ScriptUtils';
+import {ScriptUtils} from '@dooboostore/core-web';
 import {RawSet} from '../rawsets/RawSet';
 import {Render} from '../rawsets/Render';
 import {AfterCallBack, ElementSource, ExecuteState, ReturnContainer, Source} from './OperatorExecuter';
 import {DomRenderConfig} from '../configs/DomRenderConfig';
-import {ObjectUtils} from "@dooboostore/core/object/ObjectUtils";
+import {ObjectUtils} from "@dooboostore/core";
 
 export class DrThisProperty extends OperatorExecuterAttrRequire<string> {
     constructor(rawSet: RawSet, render: Render, returnContainer: ReturnContainer, elementSource: ElementSource, source: Source, afterCallBack: AfterCallBack) {

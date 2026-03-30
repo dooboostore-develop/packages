@@ -1,6 +1,5 @@
-import { Runnable } from '@dooboostore/core/runs/Runnable';
-import { RawSet } from '@dooboostore/dom-render/rawsets/RawSet';
-import { DomRenderProxy } from '@dooboostore/dom-render/DomRenderProxy';
+import { Runnable } from '@dooboostore/core';
+import { DomRenderProxy, RawSet } from '@dooboostore/dom-render';
 export abstract class ScriptRunnable implements Runnable {
     // 훔 아래 로직이? 왜있었는지 까먹었지만 ..훔 제거해야될듯?
     public rawSets = new Map<RawSet, any>();

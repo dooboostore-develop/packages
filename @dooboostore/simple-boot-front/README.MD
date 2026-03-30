@@ -6,18 +6,22 @@
 
 **Full Documentation:** [https://dooboostore-develop.github.io/@dooboostore/simple-boot-front](https://dooboostore-develop.github.io/@dooboostore/simple-boot-front)
 
-A component-based framework for building fast and modern Single Page Applications (SPAs), built on top of `@dooboostore/simple-boot` and `@dooboostore/dom-render`.
+`@dooboostore/simple-boot-front` is the browser-side runtime for DoobooStore applications.
+It combines:
+
+- `@dooboostore/simple-boot` for DI, routing, modules, and lifecycle
+- `@dooboostore/dom-render` for component rendering and template bindings
+- `@dooboostore/core-web` routers for path/hash navigation
 
 ---
 
-## Features
+## Why This Package
 
--   **Component-Based Architecture**: Define reusable UI components with the `@Component` decorator, complete with their own templates and styles.
--   **Declarative Routing**: A simple and powerful routing system using the `@Router` decorator to map URLs to components.
--   **Dependency Injection**: Built-in DI container from `@dooboostore/simple-boot` to manage your components and services.
--   **Lifecycle Hooks**: Tap into component lifecycle events like `@PostConstruct` for fine-grained control.
--   **Global Scripts**: Create injectable helper functions (e.g., for i18n) with the `@Script` decorator that can be used directly in your templates.
--   **Extensible**: Leverages the AOP and Exception Handling capabilities of `@dooboostore/simple-boot`.
+- Component-first SPA runtime with decorator metadata.
+- Root-level API exports for standard app usage.
+- Bundle entry support for bundlers that prefer a single explicit subpath.
+- Router lifecycle streams (`routingStartObservable`, `routingEndObservable`) for integration points.
+- Compatibility with path and hash routing via `SimFrontOption`.
 
 ## Quick Start
 
@@ -27,9 +31,99 @@ cd my-app
 npm start
 ```
 
+## Installation
+
+```bash
+pnpm add @dooboostore/simple-boot-front reflect-metadata
+```
+
+## Import Guide
+
+Root import (recommended for normal library usage):
+
+```ts
+import {
+	SimpleBootFront,
+	SimFrontOption,
+	UrlType,
+	Component,
+	Script,
+	ComponentBase
+} from '@dooboostore/simple-boot-front';
+```
+
+Bundle entry import (explicit bundle-style contract):
+
+```ts
+import * as SimpleBootFrontBundle from '@dooboostore/simple-boot-front/bundle-entry';
+
+const app = new SimpleBootFrontBundle.SimpleBootFront(
+	new SimpleBootFrontBundle.SimFrontOption({
+		window,
+		selector: '#app',
+		urlType: SimpleBootFrontBundle.UrlType.path
+	})
+);
+```
+
+## Minimal App Example
+
+```ts
+import 'reflect-metadata';
+import { Component, SimpleBootFront, SimFrontOption, UrlType } from '@dooboostore/simple-boot-front';
+
+@Component({
+	selector: 'home-page',
+	template: '<h1>Hello SimpleBootFront</h1>'
+})
+class HomePage {}
+
+const app = new SimpleBootFront(
+	new SimFrontOption({
+		window,
+		selector: '#app',
+		urlType: UrlType.path,
+		using: [HomePage]
+	})
+);
+
+app.run();
+```
+
+## Core API
+
+- `SimpleBootFront`
+	- Browser runtime bootstrap class.
+	- Exposes routing observables and `goRouting(url)` helper.
+- `SimFrontOption` / `UrlType`
+	- Front runtime option object.
+	- Configure `window`, root `selector`, and route strategy (`path` or `hash`).
+- `@Component(config)`
+	- Registers renderable component metadata (`selector`, `template`, `styles`, `using`, `proxy`).
+- `@Script(config)`
+	- Registers reusable script functions/classes for template context.
+- `ComponentBase`
+	- Extends dom-render component base and supports routing callbacks.
+
+## Architecture Notes
+
+- `SimpleBootFront` extends `SimpleApplication` from `@dooboostore/simple-boot`.
+- A `DomRender` instance is created and stored in simstance storage.
+- Router events from dom-render are translated into SimpleBoot routing flow.
+- Root render object is managed by `DomRenderRootObject`.
+
+## Troubleshooting
+
+- `reflect-metadata` must be loaded before decorators are evaluated.
+	- Ensure `import 'reflect-metadata'` appears in your app entry.
+- Target selector must exist in the current document.
+	- `SimFrontOption.selector` defaults to `#app`.
+- If path routing does not behave as expected in static hosting, try hash mode.
+	- Set `urlType: UrlType.hash`.
+
 ## Learn More
 
-The detailed API documentation, including all decorators and usage examples, is available on our documentation website.
+The detailed API documentation, including all decorators and usage examples, is available on the documentation website.
 
 ## License
 

@@ -4,13 +4,13 @@ import {RawSet} from '../../rawsets/RawSet';
 import {OnCreateRenderData} from '../../lifecycle/OnCreateRenderData';
 import {OnInitRender} from '../../lifecycle/OnInitRender';
 import {OnDestroyRender} from '../../lifecycle/OnDestroyRender';
-import {EventUtils} from '@dooboostore/core-web/event/EventUtils';
-import {type Subscription} from '@dooboostore/core/message/Subscription';
-import {ValidUtils} from '@dooboostore/core-web/valid/ValidUtils';
+import {EventUtils} from '@dooboostore/core-web';
+import {type Subscription} from '@dooboostore/core';
+import {ValidUtils} from '@dooboostore/core-web';
 import {DomRenderNoProxy} from '../../decorators/DomRenderNoProxy';
 import {OnCreateRender} from '../../lifecycle/OnCreateRender';
 import {DomRenderConfig} from '../../configs/DomRenderConfig';
-import {WindowUtils} from '@dooboostore/core-web/window/WindowUtils';
+import {WindowUtils} from '@dooboostore/core-web';
 import {OnRawSetRenderedOtherData} from '../../lifecycle';
 
 /** 사용법

@@ -1,23 +1,22 @@
-import { ElementUtils } from '@dooboostore/core-web/element/ElementUtils';
+import { ElementUtils } from '@dooboostore/core-web';
 import { OnChangeAttrRender, OtherData } from '../lifecycle/OnChangeAttrRender';
 import { OnCreateRenderData, OnCreateRenderDataParams } from '../lifecycle/OnCreateRenderData';
 import { RawSet } from '../rawsets/RawSet';
-import { ConstructorType } from '@dooboostore/core/types';
+import { ConstructorType } from '@dooboostore/core';
 import { OnCreatedThisChild } from '../lifecycle/OnCreatedThisChild';
 import { DomRenderNoProxy } from '../decorators/DomRenderNoProxy';
 import { OnInitRender } from '../lifecycle/OnInitRender';
-import { ConvertUtils } from '@dooboostore/core/convert/ConvertUtils';
+import { ConvertUtils } from '@dooboostore/core';
 import { OnDestroyRender, OnDestroyRenderParams } from '../lifecycle/OnDestroyRender';
 import { OnDrThisUnBind } from '../lifecycle/dr-this/OnDrThisUnBind';
 import { OnDrThisBind } from '../lifecycle/dr-this/OnDrThisBind';
 import type { Render } from '../rawsets/Render';
-import { ReflectUtils } from '@dooboostore/core/reflect/ReflectUtils';
+import { ReflectUtils } from '@dooboostore/core';
 import { DomRenderConfig } from '../configs/DomRenderConfig';
-import { Subject } from '@dooboostore/core/message/Subject';
-import { debounceTime } from '@dooboostore/core/message/operators/debounceTime';
-import type { Subscription } from '@dooboostore/core/message/Subscription';
+import { Subject } from '@dooboostore/core';
+import { MessageOperator } from '@dooboostore/core';
+import type { Subscription } from '@dooboostore/core';
 import { OnRawSetRendered, OnRawSetRenderedOtherData } from "../lifecycle/OnRawSetRendered";
-import {bufferTime} from "@dooboostore/core/message/operators/bufferTime";
 import {OnChildRawSetRendered} from "../lifecycle/OnChildRawSetRendered";
 
 
@@ -713,7 +712,7 @@ getAttributeNames(attribute = this._attribute): string[] {
     // console.log('onInitRender ComponentBase', this.constructor.name, rawSet?.uuid);
     const window = rawSet.dataSet?.config?.window;
     this.createChildrenDebounceSubscription = this.childrenSetSubject.pipe(
-      debounceTime(this.componentConfig?.createChildrenDebounce??1, {
+      MessageOperator.debounceTime(this.componentConfig?.createChildrenDebounce??1, {
         setTimeout: window ? window.setTimeout.bind(window) : undefined,
         clearTimeout: window ? window.clearTimeout.bind(window) : undefined,
       })
@@ -722,7 +721,7 @@ getAttributeNames(attribute = this._attribute): string[] {
       this.onCreatedThisChildDebounce(it);
     });
     this.onRawSetRenderedOtherDataSubjectSubscription = this.onRawSetRenderedOtherDataSubject.pipe(
-      bufferTime(this.componentConfig?.onRawSetRenderedOtherDataDebounce??1, {
+      MessageOperator.bufferTime(this.componentConfig?.onRawSetRenderedOtherDataDebounce??1, {
         skipEmpty: true,
         setInterval: window ? window.setInterval.bind(window) : undefined,
         clearInterval: window ? window.clearInterval.bind(window) : undefined,
@@ -733,7 +732,7 @@ getAttributeNames(attribute = this._attribute): string[] {
       this.onRawSetRenderedDebounce(it);
     });
     this.onChildRawSetRenderedOtherDataSubjectSubscription = this.onChildRawSetRenderedOtherDataSubject.pipe(
-      debounceTime(this.componentConfig?.onChildRawSetRenderedOtherDataDebounce??10, {
+      MessageOperator.debounceTime(this.componentConfig?.onChildRawSetRenderedOtherDataDebounce??10, {
         setTimeout: window ? window.setTimeout.bind(window) : undefined,
         clearTimeout: window ? window.clearTimeout.bind(window) : undefined,
       })

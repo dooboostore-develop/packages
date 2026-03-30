@@ -1,15 +1,15 @@
 import { DomRenderProxy } from './DomRenderProxy';
 import { DomRenderConfig } from './configs/DomRenderConfig';
-import { PathRouter } from '@dooboostore/core-web/routers/PathRouter';
-import { HashRouter } from '@dooboostore/core-web/routers/HashRouter';
-import { ConstructorType } from '@dooboostore/core/types';
+import { PathRouter } from '@dooboostore/core-web';
+import { HashRouter } from '@dooboostore/core-web';
+import { ConstructorType } from '@dooboostore/core';
 import { DomRenderFinalProxy } from './types/Types';
 import { RawSet } from './rawsets/RawSet';
 import { DefaultMessenger } from './messenger/DefaultMessenger';
-import { Router } from '@dooboostore/core-web/routers/Router';
+import { Router } from '@dooboostore/core-web';
 import { drComponent } from './components';
 import { EventManager } from './events/EventManager';
-import { RandomUtils } from '@dooboostore/core/random/RandomUtils';
+import { RandomUtils } from '@dooboostore/core';
 
 export type DomRenderRunConfig<T = any> = Omit<DomRenderConfig<T>, 'router' | 'uuid' | 'eventManager' | 'messenger' | 'root' | 'rootElement'> & { routerType?: 'path' | 'hash' | ((obj: T, targetConfig: DomRenderConfig) => Router) | Router };
 export type CreateComponentParam = { type: ConstructorType<any> | any, tagName?: string, noStrip?: boolean, template?: string, styles?: string[] | string };

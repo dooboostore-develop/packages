@@ -1,2 +1,8 @@
-import { HTMLElementBase } from './HTMLElementBase';
-export class HTMLFieldSetElement extends HTMLElementBase { constructor(tagName: string = 'FIELDSET', ownerDocument?: any) { super(tagName, ownerDocument); } }
+import {HTMLElementBase} from './HTMLElementBase';
+import {HTMLElement} from "./HTMLElement";
+
+export class HTMLFieldSetElement extends HTMLElement {
+  constructor(tagName: string = 'FIELDSET', ownerDocument?: any) {
+    super(tagName, ownerDocument);
+  }
+}

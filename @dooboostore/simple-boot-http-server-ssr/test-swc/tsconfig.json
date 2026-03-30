@@ -29,5 +29,5 @@
       "@dooboostore/simple-web-component": ["../../simple-web-component/src"]
     }
   },
-  "include": ["src", "back-end", "front-end"]
+  "include": [".", "src", "back-end", "front-end"]
 }

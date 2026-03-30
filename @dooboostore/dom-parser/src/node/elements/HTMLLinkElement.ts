@@ -1,11 +1,12 @@
 import { HTMLElementBase } from './HTMLElementBase';
+import {HTMLElement} from "./HTMLElement";
 
 /**
  * The **`HTMLLinkElement`** class represents an HTML `<link>` element.
  * 
  * [MDN Reference](https://developer.mozilla.org/docs/Web/API/HTMLLinkElement)
  */
-export class HTMLLinkElement extends HTMLElementBase {
+export class HTMLLinkElement extends HTMLElement {
     private _href: string = '';
     private _rel: string = '';
     private _type: string = '';

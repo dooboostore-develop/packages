@@ -1,6 +1,6 @@
 import { changedAttribute } from '../decorators/changedAttribute';
 import { SwcUtils } from '../utils/Utils';
-import { FunctionUtils } from '@dooboostore/core/function/FunctionUtils';
+import { FunctionUtils } from '@dooboostore/core';
 
 export class SwcChoose extends HTMLTemplateElement {
   private _nodes: Node[] = [];

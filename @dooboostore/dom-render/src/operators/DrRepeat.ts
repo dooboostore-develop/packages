@@ -1,10 +1,9 @@
 import {OperatorExecuterAttrRequire} from './OperatorExecuterAttrRequire';
-import {ScriptUtils} from '@dooboostore/core-web/script/ScriptUtils';
 import {RawSet} from '../rawsets/RawSet';
 import {EventManager} from '../events/EventManager';
 import {Render} from '../rawsets/Render';
 import {AfterCallBack, ElementSource, ExecuteState, ReturnContainer, Source} from './OperatorExecuter';
-import {ObjectUtils} from "@dooboostore/core/object/ObjectUtils";
+import {ObjectUtils} from "@dooboostore/core";
 
 export class DrRepeat extends OperatorExecuterAttrRequire<string> {
     constructor(rawSet: RawSet, render: Render, returnContainer: ReturnContainer, elementSource: ElementSource, source: Source, afterCallBack: AfterCallBack) {

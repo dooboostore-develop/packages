@@ -1,17 +1,17 @@
 import { Filter } from './Filter';
-import { Sim } from '@dooboostore/simple-boot/decorators/SimDecorator';
+import { Sim } from '@dooboostore/simple-boot';
 import { RequestResponse } from '../models/RequestResponse';
 import { SimpleBootHttpServer } from '../SimpleBootHttpServer';
 import { HttpHeaders } from '../codes/HttpHeaders';
 import { Mimes } from '../codes/Mimes';
 import { HttpStatus } from '../codes/HttpStatus';
-import { Intent } from '@dooboostore/simple-boot/intent/Intent';
-import { IntentManager } from '@dooboostore/simple-boot/intent/IntentManager';
-import { RouterManager } from '@dooboostore/simple-boot/route/RouterManager';
-import { FileUtils } from '@dooboostore/core-node/file/FileUtils';
+import { Intent } from '@dooboostore/simple-boot';
+import { IntentManager } from '@dooboostore/simple-boot';
+import { RouterManager } from '@dooboostore/simple-boot';
+import { FileUtils } from '@dooboostore/core-node';
 import { MultipartData } from '../models/datas/MultipartData';
 import * as fs from 'node:fs';
-import { RandomUtils } from '@dooboostore/core/random/RandomUtils';
+import { RandomUtils } from '@dooboostore/core';
 
 type HttpTopicType = 'intent' | 'router';
 

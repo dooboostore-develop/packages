@@ -1,4 +1,4 @@
-import {RandomUtils} from '@dooboostore/core/random/RandomUtils'
+import {RandomUtils} from '@dooboostore/core'
 import { HttpServerOption, SessionOption } from '../option/HttpServerOption';
 import {RequestResponse} from '../models/RequestResponse';
 

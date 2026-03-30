@@ -1,6 +1,6 @@
-import { ConstructorType } from '@dooboostore/core/types';
 import {MethodParameter, ReflectField} from '../../types/Types';
-import { ReflectUtils } from '@dooboostore/core/reflect/ReflectUtils';
+import { ConstructorType } from '@dooboostore/core';
+import { ReflectUtils } from '@dooboostore/core';
 const ValidMetadataKey = Symbol('ValidMetadataKey');
 export const Valid: MethodParameter = (target: Object, propertyKey: string | symbol | undefined, parameterIndex: number) => {
     if (propertyKey && typeof target === 'object') { // <-- object: method

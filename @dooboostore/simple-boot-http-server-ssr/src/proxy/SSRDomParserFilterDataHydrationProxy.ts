@@ -1,7 +1,7 @@
-import { Sim, getSim } from '@dooboostore/simple-boot/decorators/SimDecorator';
-import { SimpleBootFront } from '@dooboostore/simple-boot-front/SimpleBootFront';
-import { ValidUtils } from '@dooboostore/core-web/valid/ValidUtils';
-import { Inject } from '@dooboostore/simple-boot/decorators/inject/Inject';
+import { Sim, getSim } from '@dooboostore/simple-boot';
+import { SimpleBootFront } from '@dooboostore/simple-boot-front';
+import { ValidUtils } from '@dooboostore/core-web';
+import { Inject } from '@dooboostore/simple-boot';
 
 @Sim
 export class SSRDomParserFilterDataHydrationProxy implements ProxyHandler<any> {

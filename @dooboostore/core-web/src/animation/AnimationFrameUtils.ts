@@ -1,6 +1,6 @@
-import { Observable } from '@dooboostore/core/message/Observable';
-import { Subscription } from '@dooboostore/core/message/Subscription';
-import { AutoCloseSubscription } from '@dooboostore/core/message/AutoCloseSubscription';
+import { Observable } from '@dooboostore/core';
+import { Subscription } from '@dooboostore/core';
+import { AutoCloseSubscription } from '@dooboostore/core';
 
 export namespace AnimationFrameUtils {
   export type FpsConfigParamType = { window: Window; second?: number };

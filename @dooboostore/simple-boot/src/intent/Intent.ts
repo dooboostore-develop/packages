@@ -1,4 +1,4 @@
-import { Expression } from '@dooboostore/core/expression/Expression';
+import { Expression } from '@dooboostore/core';
 
 /* uri struct
     scheme uri example: mymodule://asd/asd/b?a=545&aa=33&wow=wow

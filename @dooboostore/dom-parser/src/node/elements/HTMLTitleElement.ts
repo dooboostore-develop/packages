@@ -1,11 +1,12 @@
 import { HTMLElementBase } from './HTMLElementBase';
+import {HTMLElement} from "./HTMLElement";
 
 /**
  * The **`HTMLTitleElement`** class represents an HTML `<title>` element.
  * 
  * [MDN Reference](https://developer.mozilla.org/docs/Web/API/HTMLTitleElement)
  */
-export class HTMLTitleElement extends HTMLElementBase {
+export class HTMLTitleElement extends HTMLElement {
     constructor(tagName: string, ownerDocument?: any) {
         super(tagName, ownerDocument);
     }

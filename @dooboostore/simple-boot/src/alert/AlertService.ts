@@ -2,11 +2,11 @@ import { AlertFactoryConfig } from './AlertFactoryConfig';
 import { Alert } from './Alert';
 import { Inject } from '../decorators/inject/Inject';
 import { AlertFactory } from './AlertFactory';
-import { Store } from '@dooboostore/core/message/Store';
+import { Store } from '@dooboostore/core';
 import { AlertAction } from './AlertAction';
 import { AlertType } from './AlertType';
 import { PostConstruct, Sim } from '../decorators/SimDecorator';
-import { ReplaySubject } from '@dooboostore/core/message/ReplaySubject';
+import { ReplaySubject } from '@dooboostore/core';
 
 export namespace AlertService {
   // export const SYMBOL: Symbol | undefined = Symbol('AlertService');

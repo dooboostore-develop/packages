@@ -1,7 +1,7 @@
 import { IncomingMessage, OutgoingHttpHeader, OutgoingHttpHeaders, ServerResponse } from 'http';
 import { HttpHeaders, HttpHeadersType } from '../codes/HttpHeaders';
 import { Mimes } from '../codes/Mimes';
-import { Intent } from '@dooboostore/simple-boot/intent/Intent';
+import { Intent } from '@dooboostore/simple-boot';
 import { URL, URLSearchParams } from 'url';
 import { Buffer } from 'buffer';
 import { MultipartData } from './datas/MultipartData';
@@ -16,10 +16,10 @@ import { HttpServerOption } from '../option/HttpServerOption';
 import { Blob } from 'node:buffer';
 import * as fs from 'fs';
 import * as os from 'os';
-import { RandomUtils } from '@dooboostore/core/random/RandomUtils';
-import { FileUtils } from '@dooboostore/core-node/file/FileUtils';
-import { ConvertUtils as CoreConvertUtils } from '@dooboostore/core/convert/ConvertUtils';
-import { ConvertUtils } from '@dooboostore/core-node/convert/ConvertUtils';
+import { RandomUtils } from '@dooboostore/core';
+import { FileUtils } from '@dooboostore/core-node';
+import { ConvertUtils as CoreConvertUtils } from '@dooboostore/core';
+import { ConvertUtils } from '@dooboostore/core-node';
 
 type Config = { sessionManager?: SessionManager; option: HttpServerOption };
 

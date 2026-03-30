@@ -1,11 +1,12 @@
 import { ElementBase } from './ElementBase';
+import {HTMLElement} from "./HTMLElement";
 
 /**
  * The **`SVGElement`** class represents the base class for all SVG elements.
  * 
  * [MDN Reference](https://developer.mozilla.org/docs/Web/API/SVGElement)
  */
-export class SVGElement extends ElementBase {
+export class SVGElement extends HTMLElement {
     constructor(tagName: string, ownerDocument?: any) {
         super(tagName, ownerDocument);
     }

@@ -1,7 +1,7 @@
-import { ConstructorType } from '@dooboostore/core/types';
+import { ConstructorType } from '@dooboostore/core';
 import {ReflectMethod} from '../../types/Types';
-import { ReflectUtils } from '@dooboostore/core/reflect/ReflectUtils';
-import {ObjectUtils} from '@dooboostore/core/object/ObjectUtils';
+import { ReflectUtils } from '@dooboostore/core';
+import {ObjectUtils} from '@dooboostore/core';
 
 export enum ExceptionHandlerSituationType {
     ERROR_OBJECT = 'SIMPLE_BOOT_CORE://ExceptionHandler/ERROR_OBJECT',

@@ -1,4 +1,4 @@
-import { ConstructorType } from '@dooboostore/core/types';
+import { ConstructorType } from '@dooboostore/core';
 import {DomRenderFinalProxy} from '../types/Types';
 import {DomRenderConfig} from '../configs/DomRenderConfig';
 

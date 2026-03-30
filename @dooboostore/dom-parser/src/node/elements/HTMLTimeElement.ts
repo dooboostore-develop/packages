@@ -1,2 +1,3 @@
 import { HTMLElementBase } from './HTMLElementBase';
-export class HTMLTimeElement extends HTMLElementBase { constructor(tagName: string = 'TIME', ownerDocument?: any) { super(tagName, ownerDocument); } }
+import {HTMLElement} from "./HTMLElement";
+export class HTMLTimeElement extends HTMLElement { constructor(tagName: string = 'TIME', ownerDocument?: any) { super(tagName, ownerDocument); } }

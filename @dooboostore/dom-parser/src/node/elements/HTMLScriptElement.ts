@@ -1,11 +1,12 @@
 import { HTMLElementBase } from './HTMLElementBase';
+import {HTMLElement} from "./HTMLElement";
 
 /**
  * The **`HTMLScriptElement`** class represents an HTML `<script>` element.
  * 
  * [MDN Reference](https://developer.mozilla.org/docs/Web/API/HTMLScriptElement)
  */
-export class HTMLScriptElement extends HTMLElementBase {
+export class HTMLScriptElement extends HTMLElement {
     private _src: string = '';
     private _type: string = 'text/javascript';
     private _async: boolean = false;

@@ -11,19 +11,17 @@ import { isOnCreateRender } from './lifecycle/OnCreateRender';
 import { isOnInitRender } from './lifecycle/OnInitRender';
 import { isOnCreateRenderData } from './lifecycle/OnCreateRenderData';
 import { isOnChangeAttrRender } from './lifecycle/OnChangeAttrRender';
-import { DocumentUtils } from '@dooboostore/core-web/document/DocumentUtils';
-import { isDefined } from '@dooboostore/core/types';
+import { DocumentUtils } from '@dooboostore/core-web';
 import { isOnBeforeReturnSet } from './lifecycle/OnBeforeReturnSet';
 import { isOnChildRenderedByProperty } from './lifecycle/OnChildRenderedByProperty';
-import { ObjectUtils } from '@dooboostore/core/object/ObjectUtils';
-import { ValidUtils } from '@dooboostore/core/valid/ValidUtils';
+import { ObjectUtils } from '@dooboostore/core';
+import { ValidUtils } from '@dooboostore/core';
 import { isOnProxyDomRender } from './lifecycle/OnProxyDomRender';
 import { isOnRawSetRendered } from './lifecycle/OnRawSetRendered';
 import { isOnChildRawSetRendered } from "./lifecycle/OnChildRawSetRendered";
 import { DomRenderComponentMetaKey, DomRenderProxyMetaKey } from './rawsets';
 
 const excludeGetSetPropertys: string[] = [
-  // '__domrender_components',
   DomRenderComponentMetaKey.DOMRENDER_COMPONENTS_KEY,
   DomRenderProxyMetaKey.onBeforeReturnGet,
   DomRenderProxyMetaKey.onBeforeReturnSet,
@@ -643,7 +641,7 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
           ObjectUtils.Script.evaluateReturn<[string, NormalAttrDataType][]>(elementInfo.value)
         );
         Array.from(targets.entries())
-          .filter(isDefined)
+          .filter(ValidUtils.isDefined<[string, NormalAttrDataType]>)
           .flatMap(([key, valueScript]) => {
             return fullPathInfo
               .flat()
@@ -698,7 +696,7 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
 
         Array.from(targets.entries())
           .filter(([key, value]) => value.trim())
-          .filter(isDefined)
+          .filter(ValidUtils.isDefined<[string, string]>)
           .flatMap(([key, valueScript]) => {
             return fullPathInfo
               .flat()
@@ -720,7 +718,7 @@ export class DomRenderProxy<T extends object> implements ProxyHandler<T> {
 
         Array.from(targets.entries())
           .filter(([key, value]) => value.trim())
-          .filter(isDefined)
+          .filter(ValidUtils.isDefined<[string, string]>)
           .flatMap(([key, valueScript]) => {
             return fullPathInfo
               .flat()

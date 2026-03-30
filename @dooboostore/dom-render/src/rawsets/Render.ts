@@ -1,5 +1,5 @@
 import { CreatorMetaData } from './CreatorMetaData';
-import { Router } from '@dooboostore/core-web/routers/Router';
+import { Router } from '@dooboostore/core-web';
 import { RawSet } from './RawSet';
 
 export type Render = {

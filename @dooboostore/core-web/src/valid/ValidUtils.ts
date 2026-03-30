@@ -1,4 +1,4 @@
-import {ValidUtils as CoreValidUtils} from '@dooboostore/core/valid/ValidUtils';
+import {ValidUtils as CoreValidUtils} from '@dooboostore/core';
 
 export namespace ValidUtils {
   export const coreValidUtils = CoreValidUtils;

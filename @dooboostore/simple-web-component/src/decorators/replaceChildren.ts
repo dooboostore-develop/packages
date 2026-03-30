@@ -1,4 +1,4 @@
-import { ReflectUtils } from '@dooboostore/core/reflect/ReflectUtils';
+import { ReflectUtils } from '@dooboostore/core';
 import { ensureInit, getElementConfig } from './elementDefine';
 
 export const REPLACE_CHILDREN_METADATA_KEY = Symbol('simple-web-component:replace-children');

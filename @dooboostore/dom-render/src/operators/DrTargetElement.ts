@@ -1,4 +1,4 @@
-import { ObjectUtils } from '@dooboostore/core/object/ObjectUtils';
+import { ObjectUtils } from '@dooboostore/core';
 import { RawSet } from '../rawsets/RawSet';
 import { CreatorMetaData } from '../rawsets/CreatorMetaData';
 import {
@@ -10,7 +10,6 @@ import {
   Source
 } from './OperatorExecuter';
 import { Render } from '../rawsets/Render';
-import { ElementUtils } from '@dooboostore/core-web/element/ElementUtils';
 import { TargetElement } from '../configs';
 import { DomRenderComponentMetaKey } from '../rawsets';
 

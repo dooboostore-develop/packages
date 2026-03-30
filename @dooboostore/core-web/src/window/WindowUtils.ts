@@ -1,5 +1,4 @@
-import { Observable } from '@dooboostore/core/message/Observable';
-import { Subscription } from '@dooboostore/core/message/Subscription';
+import { Observable } from '@dooboostore/core';
 
 export namespace WindowUtils {
 

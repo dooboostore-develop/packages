@@ -4,7 +4,7 @@ import { ComponentSet } from '../components/ComponentSet';
 import { ExecuteState } from './OperatorExecuter';
 import { isOnDrThisUnBind } from '../lifecycle/dr-this/OnDrThisUnBind';
 import { isOnDrThisBind } from '../lifecycle/dr-this/OnDrThisBind';
-import { ObjectUtils } from '@dooboostore/core/object/ObjectUtils';
+import { ObjectUtils } from '@dooboostore/core';
 import { Render } from '../rawsets/Render';
 
 export class DrThis extends OperatorExecuterAttrRequire<string> {

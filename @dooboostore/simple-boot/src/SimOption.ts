@@ -1,11 +1,10 @@
-import { ConstructorType } from '@dooboostore/core/types';
+import { ConstructorType } from '@dooboostore/core';
 import { SimConfigUsing } from './decorators/SimDecorator';
-import { Storage } from '@dooboostore/core/storage/Storage';
 import { CacheStorage } from './decorators/cache/CacheDecorator';
 
 export type ProxyHandlerType = { onAfterProxy: <T>(it: T) => T };
 export type InitOptionType = {
-  rootRouter?: ConstructorType<any> | Symbol;
+  rootRouter?: ConstructorType<any> | symbol;
   container?: string;
   excludeSim?: (ConstructorType<any> | Function)[];
   advice?: ConstructorType<any>[];
@@ -21,7 +20,7 @@ type CacheConfig = {
 };
 
 export class SimOption {
-  public rootRouter?: ConstructorType<any> | Symbol;
+  public rootRouter?: ConstructorType<any> | symbol;
   public container?: string;
   public advice: ConstructorType<any>[];
   public excludeProxys?: (ConstructorType<any> | Function )[];

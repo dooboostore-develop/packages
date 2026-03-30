@@ -1,5 +1,5 @@
-import { ChangeStateConfig, ChangeStateResult, RouteAction, Router, RouterConfig, RouterMethodOptions } from '@dooboostore/core-web/routers/Router';
-import { UrlUtils } from '@dooboostore/core/url/UrlUtils';
+import { ChangeStateConfig, ChangeStateResult, RouteAction, Router, RouterConfig, RouterMethodOptions } from '@dooboostore/core-web';
+import { UrlUtils } from '@dooboostore/core';
 
 export class ElementRouter extends Router {
   private _history: { url: string; data: any; title?: string }[] = [];

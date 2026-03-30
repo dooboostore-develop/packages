@@ -1,5 +1,6 @@
 import { HTMLElementBase } from './HTMLElementBase';
-export class HTMLDataElement extends HTMLElementBase {
+import {HTMLElement} from "./HTMLElement";
+export class HTMLDataElement extends HTMLElement {
   constructor(tagName: string = 'DATA', ownerDocument?: any) {
     super(tagName, ownerDocument);
   }

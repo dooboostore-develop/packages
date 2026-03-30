@@ -1,11 +1,12 @@
 import { HTMLElementBase } from './HTMLElementBase';
+import {HTMLElement} from "./HTMLElement";
 
 /**
  * The **`HTMLStyleElement`** class represents an HTML `<style>` element.
  * 
  * [MDN Reference](https://developer.mozilla.org/docs/Web/API/HTMLStyleElement)
  */
-export class HTMLStyleElement extends HTMLElementBase {
+export class HTMLStyleElement extends HTMLElement {
     private _type: string = 'text/css';
     private _media: string = '';
     

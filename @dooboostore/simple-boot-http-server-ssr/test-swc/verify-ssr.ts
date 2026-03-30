@@ -2,7 +2,7 @@ import { DomParser } from '../../dom-parser/src/index';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import HelloComponentFactory from './src/component/hello.component';
-import { SSRSimpleWebComponentFilter } from '@dooboostore/simple-boot-http-server-ssr/filters/SSRSimpleWebComponentFilter';
+import { SSRSimpleWebComponentFilter } from '@dooboostore/simple-boot-http-server-ssr';
 import swcRegister from '@dooboostore/simple-web-component';
 import bootfactory from './src/bootfactory';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));

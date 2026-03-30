@@ -1,5 +1,5 @@
 import { AlertFactoryConfig } from './AlertFactoryConfig';
-import { RandomUtils } from '@dooboostore/core/random/RandomUtils';
+import { RandomUtils } from '@dooboostore/core';
 import { AlertAction } from './AlertAction';
 import { AlertService } from './AlertService';
 

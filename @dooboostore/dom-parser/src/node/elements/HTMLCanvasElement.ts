@@ -1,6 +1,7 @@
 import { HTMLElementBase } from './HTMLElementBase';
+import {HTMLElement} from "./HTMLElement";
 
-export class HTMLCanvasElement extends HTMLElementBase {
+export class HTMLCanvasElement extends HTMLElement {
     private _width: number = 300;
     private _height: number = 150;
 

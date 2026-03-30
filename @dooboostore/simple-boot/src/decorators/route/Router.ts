@@ -1,23 +1,23 @@
-import { ConstructorType, GenericClassDecorator } from '@dooboostore/core/types';
+import { ConstructorType, GenericClassDecorator } from '@dooboostore/core';
+import { ReflectUtils } from '@dooboostore/core';
 import { ReflectMethod} from '../../types/Types';
-import { ReflectUtils } from '@dooboostore/core/reflect/ReflectUtils';
 import {RouteFilter} from '../../route/RouteFilter';
 
 export type Filterss = (RouteFilter | ConstructorType<RouteFilter>)[];
 export type Filters = RouteFilter | ConstructorType<RouteFilter> | Filterss;
 export type RoteAndFilter = {filters: Filters, target: ConstructorType<Object>};
 export type RouteTargetMethod = {target: ConstructorType<Object>, propertyKeys: (string|symbol)[], filters?: Filterss}
-export type RouteProperty = ConstructorType<Object> | RoteAndFilter | [ConstructorType<Object> | RoteAndFilter, any] | RouteTargetMethod | string | Symbol;
+export type RouteProperty = ConstructorType<Object> | RoteAndFilter | [ConstructorType<Object> | RoteAndFilter, any] | RouteTargetMethod | string | symbol;
 export type Route = {[name: string]: RouteProperty};
 export interface RouterConfig {
     path?: string;
     route?: Route;
-    routers?: ConstructorType<Object>[];
+    routers?: (ConstructorType<Object> | symbol)[];
     filters?: Filters;
 }
 
 export const RouterMetadataKey = Symbol('Router');
-export const routerProcess = (config: RouterConfig, target: ConstructorType<any> | Function) => {
+export const routerProcess = (config: RouterConfig, target: ConstructorType<any> | Function | symbol) => {
     getRoutes(target)?.forEach(it => {
         config.route = (config.route ?? {});
         const paths = Array.isArray(it.config.path) ? it.config.path : [it.config.path];

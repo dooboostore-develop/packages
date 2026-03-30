@@ -5,7 +5,7 @@ import { RawSet } from '../../rawsets/RawSet';
 import type { DomRenderConfig } from '../../configs/DomRenderConfig';
 import { DomRenderNoProxy } from '../../decorators/DomRenderNoProxy';
 import { OnDestroyRenderParams } from '../../lifecycle/OnDestroyRender';
-import { Subscription } from '@dooboostore/core/message/Subscription';
+import { Subscription } from '@dooboostore/core';
 
 export namespace Route {
   export const selector = 'dr-route';

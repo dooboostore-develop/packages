@@ -1,12 +1,13 @@
 import { HTMLElementBase } from './HTMLElementBase';
 import { HTMLCollectionImp } from '../collection';
+import {HTMLElement} from "./HTMLElement";
 
 /**
  * The **`HTMLTbodyElement`** class represents an HTML `<tbody>` element.
  * 
  * [MDN Reference](https://developer.mozilla.org/docs/Web/API/HTMLTableSectionElement)
  */
-export class HTMLTbodyElement extends HTMLElementBase {
+export class HTMLTbodyElement extends HTMLElement {
     constructor(tagName: string, ownerDocument?: any) {
         super(tagName, ownerDocument);
     }
@@ -32,7 +33,7 @@ export class HTMLTbodyElement extends HTMLElementBase {
             }
         }
 
-        return row;
+        return row as any;
     }
 
     deleteRow(index: number): void {

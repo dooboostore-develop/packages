@@ -1,4 +1,4 @@
-import { ComponentSet as DomRenderComponentSet} from '@dooboostore/dom-render/components/ComponentSet';
+import { ComponentSet as DomRenderComponentSet } from '@dooboostore/dom-render';
 import { getComponent } from '../decorators/Component';
 export class ComponentSet<T = any> extends DomRenderComponentSet<T> {
  constructor(data: any) {

@@ -1,6 +1,6 @@
 {
   "name": "@dooboostore/core",
-  "version": "1.0.28",
+  "version": "1.0.30",
   "license": "MIT",
   "type": "module",
   "main": "./dist/cjs/index.js",
@@ -27,12 +27,14 @@
     ".": {
       "types": "./dist/types/index.d.ts",
       "import": "./dist/esm/index.js",
-      "require": "./dist/cjs/index.js"
+      "require": "./dist/cjs/index.js",
+      "default": "./dist/esm/index.js"
     },
-    "./*": {
-      "types": "./dist/types/*.d.ts",
-      "import": "./dist/esm/*.js",
-      "require": "./dist/cjs/*.js"
+    "./bundle-entry": {
+      "types": "./dist/types/bundle-entry.d.ts",
+      "import": "./dist/esm/bundle-entry.js",
+      "require": "./dist/cjs/bundle-entry.js",
+      "default": "./dist/esm/bundle-entry.js"
     }
   },
   "author": "dooboostore <dooboostore@gmail.com> (https://github.com/dooboostore)",

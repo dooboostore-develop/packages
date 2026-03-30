@@ -1,6 +1,5 @@
 import {addEventListener, elementDefine, onConnectedInnerHtml} from '@dooboostore/simple-web-component';
-import {Schedule} from "@dooboostore/core/schedule/Schedule";
-import {Sim} from "@dooboostore/simple-boot/decorators/SimDecorator";
+import {Sim} from "@dooboostore/simple-boot";
 
 export namespace HelloComponent {
   export const SYMBOL = Symbol.for('HelloComponent');

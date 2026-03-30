@@ -1,4 +1,4 @@
-import { Observable } from '@dooboostore/core/message/Observable';
+import { Observable } from '@dooboostore/core';
 
 export namespace EventUtils {
   export const htmlElementEventObservable = <K extends keyof HTMLElementEventMap>(element: HTMLElement | Document, type: K, options?: boolean | AddEventListenerOptions): Observable<HTMLElementEventMap[K]> => {

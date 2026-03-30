@@ -28,9 +28,9 @@ export class ElementFactory {
     }
 
     // 2. Check for Autonomous Custom Elements (or preserve unknown custom tags)
-      console.log('vvv2222222vvvvvvvvv222222vvvvv', tagName, normalizedTagName)
+    //   console.log('vvv2222222vvvvvvvvv222222vvvvv', tagName, normalizedTagName)
     if (normalizedTagName.includes('-')) {
-      console.log('vvvvvvvvvvvvvvvvv')
+      // console.log('vvvvvvvvvvvvvvvvv')
       if (customElements && typeof customElements.get === 'function') {
         const CustomElementClass = customElements.get(normalizedTagName);
         if (CustomElementClass) {

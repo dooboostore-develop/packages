@@ -1,2 +1,3 @@
 import { HTMLElementBase } from './HTMLElementBase';
-export class HTMLModElement extends HTMLElementBase { constructor(tagName: string = 'DEL', ownerDocument?: any) { super(tagName, ownerDocument); } }
+import {HTMLElement} from "./HTMLElement";
+export class HTMLModElement extends HTMLElement { constructor(tagName: string = 'DEL', ownerDocument?: any) { super(tagName, ownerDocument); } }

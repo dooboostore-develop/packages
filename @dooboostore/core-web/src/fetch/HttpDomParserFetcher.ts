@@ -1,5 +1,5 @@
-import { HttpFetcher, HttpFetcherConfig, HttpFetcherTarget } from '@dooboostore/core/fetch/HttpFetcher';
-import { FetcherRequest } from '@dooboostore/core/fetch/Fetcher';
+import { HttpFetcher, HttpFetcherConfig, HttpFetcherTarget } from '@dooboostore/core';
+import { FetcherRequest } from '@dooboostore/core';
 
 export type HttpDomParserFetcherConfig<CONFIG> = HttpFetcherConfig<CONFIG, Document> & {
   bypassTransform?: boolean;

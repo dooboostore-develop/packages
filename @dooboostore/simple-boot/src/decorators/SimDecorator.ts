@@ -1,7 +1,7 @@
-import { ConstructorType, GenericClassDecorator } from '@dooboostore/core/types';
-import { ReflectUtils } from '@dooboostore/core/reflect/ReflectUtils';
+import { ConstructorType, GenericClassDecorator } from '@dooboostore/core';
+import { ReflectUtils } from '@dooboostore/core';
 import { SimpleApplication } from '../SimpleApplication';
-import { ValidUtils } from '@dooboostore/core/valid/ValidUtils';
+import { ValidUtils } from '@dooboostore/core';
 
 export enum Lifecycle {
   /**

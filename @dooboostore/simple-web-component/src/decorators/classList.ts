@@ -1,4 +1,4 @@
-import { ReflectUtils } from '@dooboostore/core/reflect/ReflectUtils';
+import { ReflectUtils } from '@dooboostore/core';
 import { ensureInit } from './elementDefine';
 import { SwcUtils } from '../utils/Utils';
 

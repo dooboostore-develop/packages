@@ -1,6 +1,6 @@
 {
   "name": "@dooboostore/dom-editor",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "license": "MIT",
   "type": "module",
   "sideEffects": false,
@@ -48,6 +48,11 @@
       "types": "./dist/types/index.d.ts",
       "import": "./dist/esm/index.js",
       "require": "./dist/cjs/index.js"
+    },
+    "./bundle-entry": {
+      "types": "./dist/types/bundle-entry.d.ts",
+      "import": "./dist/esm/bundle-entry.js",
+      "require": "./dist/cjs/bundle-entry.js"
     },
     "./cjs": {
       "types": "./dist/types/index.d.ts",

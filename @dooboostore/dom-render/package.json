@@ -1,6 +1,6 @@
 {
   "name": "@dooboostore/dom-render",
-  "version": "1.0.112",
+  "version": "1.0.113",
   "license": "MIT",
   "type": "module",
   "main": "./dist/cjs/index.js",
@@ -38,17 +38,13 @@
     "access": "public"
   },
   "exports": {
-      ".": {
-        "types": "./dist/types/index.d.ts",
-        "import": "./dist/esm/index.js",
-        "require": "./dist/cjs/index.js"
-      },
-      "./*": {
-        "types": "./dist/types/*.d.ts",
-        "import": "./dist/esm/*.js",
-        "require": "./dist/cjs/*.js"
-      }
-    },
+    ".": {
+      "types": "./dist/types/index.d.ts",
+      "import": "./dist/esm/index.js",
+      "require": "./dist/cjs/index.js",
+      "default": "./dist/esm/index.js"
+    }
+  },
   "author": "dooboostore <dooboostore@gmail.com> (https://github.com/dooboostore)",
   "contributors": [
     "sewoo <sewooimda@nate.com> (https://github.com/sewoo)",

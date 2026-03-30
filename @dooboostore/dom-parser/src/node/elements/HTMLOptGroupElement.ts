@@ -1,2 +1,3 @@
 import { HTMLElementBase } from './HTMLElementBase';
-export class HTMLOptGroupElement extends HTMLElementBase { constructor(tagName: string = 'OPTGROUP', ownerDocument?: any) { super(tagName, ownerDocument); } }
+import {HTMLElement} from "./HTMLElement";
+export class HTMLOptGroupElement extends HTMLElement { constructor(tagName: string = 'OPTGROUP', ownerDocument?: any) { super(tagName, ownerDocument); } }

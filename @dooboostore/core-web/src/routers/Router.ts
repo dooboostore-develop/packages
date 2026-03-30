@@ -1,9 +1,9 @@
-import {ConvertUtils} from '@dooboostore/core/convert/ConvertUtils';
-import {Observable} from '@dooboostore/core/message/Observable';
-import {BehaviorSubject} from '@dooboostore/core/message/BehaviorSubject';
-import {Expression} from '@dooboostore/core/expression/Expression';
+import {ConvertUtils} from '@dooboostore/core';
+import {Observable} from '@dooboostore/core';
+import {BehaviorSubject} from '@dooboostore/core';
+import {Expression} from '@dooboostore/core';
 import ToURLSearchParamsParams = ConvertUtils.ToURLSearchParamsParams;
-import {ValidUtils} from "@dooboostore/core/valid/ValidUtils";
+import {ValidUtils} from "@dooboostore/core";
 
 export type RouteData = {
   path: string;

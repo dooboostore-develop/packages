@@ -1,7 +1,7 @@
 import { RequestResponse } from '@dooboostore/simple-boot-http-server/models/RequestResponse';
 import { HttpHeaders } from '@dooboostore/simple-boot-http-server/codes/HttpHeaders';
 import { SimpleBootHttpSSRFactory } from '../SimpleBootHttpSSRFactory';
-import { ConstructorType } from '@dooboostore/core/types';
+import { ConstructorType, AsyncBlockingQueue, RandomUtils, MessageOperator, MessageInternal } from '@dooboostore/core';
 import { JsdomInitializer } from '../initializers/JsdomInitializer';
 import { Filter } from '@dooboostore/simple-boot-http-server/filters/Filter';
 import { Mimes } from '@dooboostore/simple-boot-http-server/codes/Mimes';
@@ -9,14 +9,9 @@ import { HttpStatus } from '@dooboostore/simple-boot-http-server/codes/HttpStatu
 import { SimpleBootHttpServer } from '@dooboostore/simple-boot-http-server/SimpleBootHttpServer';
 import { SimFrontOption } from '@dooboostore/simple-boot-front/option/SimFrontOption';
 import { SimpleBootFront } from '@dooboostore/simple-boot-front/SimpleBootFront';
-import { AsyncBlockingQueue } from '@dooboostore/core/queues/AsyncBlockingQueue';
-import { RandomUtils } from '@dooboostore/core/random/RandomUtils';
 import * as JSDOM from 'jsdom';
 import { NotFoundError } from '@dooboostore/simple-boot-http-server/errors/NotFoundError';
-import { DomRenderProxy } from '@dooboostore/dom-render/DomRenderProxy';
-import { filter } from '@dooboostore/core/message/operators/filter';
-import { first } from '@dooboostore/core/message/operators/first';
-import { firstValueFrom } from '@dooboostore/core/message/internal/firstValueFrom';
+import { DomRenderProxy } from '@dooboostore/dom-render';
 
 export type FactoryAndParams = {
   frontDistPath: string;
@@ -167,18 +162,18 @@ export class SSRFilter implements Filter {
         //     // delay(1000),
         //     first()
         // );
-        const data = await firstValueFrom(
+        const data = await MessageInternal.firstValueFrom(
           // @ts-ignore
           simpleBootFront.routingObservable.pipe(
           // @ts-ignore
-            filter(
+            MessageOperator.filter(
               (it) =>
                 it.triggerPoint === 'end' &&
                 typeof it.routerModule.intent.uri === 'string' &&
                 targetUrl.endsWith(it.routerModule.intent.uri)
             ),
             // delay(1000),
-            first()
+            MessageOperator.first()
           )
         );
         // console.log('rrrrrssss');

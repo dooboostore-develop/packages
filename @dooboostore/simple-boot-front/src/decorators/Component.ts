@@ -1,6 +1,5 @@
-import { ConstructorType, GenericClassDecorator } from '@dooboostore/core/types';
-import { ReflectUtils } from '@dooboostore/core/reflect/ReflectUtils';
-import { SimConfigProxy, SimConfigUsing } from '@dooboostore/simple-boot/decorators/SimDecorator';
+import { ConstructorType, GenericClassDecorator, ReflectUtils } from '@dooboostore/core';
+import { SimConfigProxy, SimConfigUsing } from '@dooboostore/simple-boot';
 
 export const componentSelectors = new Map<string, ConstructorType<any>>();
 export interface ComponentConfig<T = any> {

@@ -1,11 +1,12 @@
 import { HTMLElementBase } from './HTMLElementBase';
+import {HTMLElement} from "./HTMLElement";
 
 /**
  * The **`HTMLAElement`** class represents an HTML `<a>` element.
  * 
  * [MDN Reference](https://developer.mozilla.org/docs/Web/API/HTMLAnchorElement)
  */
-export class HTMLAnchorElement extends HTMLElementBase  {
+export class HTMLAnchorElement extends HTMLElement  {
     private _href: string = '';
     private _target: string = '';
 

@@ -1,6 +1,6 @@
 {
   "name": "@dooboostore/simple-boot",
-  "version": "1.0.53",
+  "version": "1.0.54",
   "license": "MIT",
   "type": "module",
   "main": "./dist/cjs/index.js",
@@ -33,7 +33,14 @@
     ".": {
       "types": "./dist/types/index.d.ts",
       "import": "./dist/esm/index.js",
-      "require": "./dist/cjs/index.js"
+      "require": "./dist/cjs/index.js",
+      "default": "./dist/esm/index.js"
+    },
+    "./bundle-entry": {
+      "types": "./dist/types/bundle-entry.d.ts",
+      "import": "./dist/esm/bundle-entry.js",
+      "require": "./dist/cjs/bundle-entry.js",
+      "default": "./dist/esm/bundle-entry.js"
     },
     "./*": {
       "types": "./dist/types/*.d.ts",

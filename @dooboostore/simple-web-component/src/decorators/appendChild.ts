@@ -1,4 +1,4 @@
-import { ReflectUtils } from '@dooboostore/core/reflect/ReflectUtils';
+import { ReflectUtils } from '@dooboostore/core';
 import { ensureInit, getElementConfig } from './elementDefine';
 
 export type AppendChildPosition = 'beforeBegin' | 'afterBegin' | 'beforeEnd' | 'afterEnd';

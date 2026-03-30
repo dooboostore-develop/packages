@@ -1,11 +1,12 @@
 import { HTMLElementBase } from './HTMLElementBase';
+import {HTMLElement} from "./HTMLElement";
 
 /**
  * The **`HTMLInputElement`** class represents an HTML `<input>` element.
  * 
  * [MDN Reference](https://developer.mozilla.org/docs/Web/API/HTMLInputElement)
  */
-export class HTMLInputElement extends HTMLElementBase {
+export class HTMLInputElement extends HTMLElement {
     private _type: string = 'text';
     private _value: string = '';
     private _placeholder: string = '';

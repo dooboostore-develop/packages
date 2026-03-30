@@ -1,5 +1,5 @@
-import { ValidUtils } from '@dooboostore/core/valid/ValidUtils';
-import {ReflectUtils} from "@dooboostore/core/reflect/ReflectUtils";
+import { ValidUtils } from '@dooboostore/core';
+import {ReflectUtils} from "@dooboostore/core";
 
 export const DomRenderNoProxyKey = 'DomRender:NoProxy'
 export const DomRenderNoProxy = (target: any, propertyKey?: string | symbol) => {

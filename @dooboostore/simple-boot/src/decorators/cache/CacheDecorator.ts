@@ -1,6 +1,5 @@
-import { ReflectUtils } from '@dooboostore/core/reflect/ReflectUtils';
-import { ConstructorType, Method } from '@dooboostore/core/types';
-import { Storage } from '@dooboostore/core/storage/Storage';
+import { ReflectUtils } from '@dooboostore/core';
+import { ConstructorType, Method } from '@dooboostore/core';
 import { SimstanceManager } from '../../simstance/SimstanceManager';
 import { SimOption } from '../../SimOption';
 import { SimpleApplication } from '../../SimpleApplication';

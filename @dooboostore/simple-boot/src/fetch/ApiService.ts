@@ -2,18 +2,18 @@ import { Sim } from '../decorators/SimDecorator';
 import { Alert } from '../alert/Alert';
 import { AlertService } from '../alert/AlertService';
 import { SimstanceManager } from '../simstance/SimstanceManager';
-import { isDefined } from '@dooboostore/core/types';
-import { Subject } from '@dooboostore/core/message/Subject';
-import { Observable } from '@dooboostore/core/message/Observable';
-import { HttpFetcherTarget, HttpFetcherConfig, AfterProxyFetchParams, BeforeProxyFetchParams, FetchSet } from '@dooboostore/core/fetch/HttpFetcher';
-import { FetcherRequest } from '@dooboostore/core/fetch/Fetcher';
-import { HttpJsonFetcher, HttpJsonFetcherConfig } from '@dooboostore/core/fetch/HttpJsonFetcher';
+import { Subject } from '@dooboostore/core';
+import { Observable } from '@dooboostore/core';
+import { ValidUtils } from '@dooboostore/core';
+import { HttpFetcherTarget, HttpFetcherConfig, AfterProxyFetchParams, BeforeProxyFetchParams, FetchSet } from '@dooboostore/core';
+import { FetcherRequest } from '@dooboostore/core';
+import { HttpJsonFetcher, HttpJsonFetcherConfig } from '@dooboostore/core';
 
 export namespace ApiServiceInterceptor {
   export const TOKEN = Symbol('ApiServiceInterceptor');
   export const resolveAll = (simstanceManager: SimstanceManager): ApiServiceInterceptor[] => {
     try {
-      return (simstanceManager.findSims<ApiServiceInterceptor>(ApiServiceInterceptor.TOKEN) ?? []).map(it => it.getValue()).filter(isDefined);
+      return (simstanceManager.findSims<ApiServiceInterceptor>(ApiServiceInterceptor.TOKEN) ?? []).map(it => it.getValue()).filter(ValidUtils.isDefined);
     } catch (e) {
       return [];
     }

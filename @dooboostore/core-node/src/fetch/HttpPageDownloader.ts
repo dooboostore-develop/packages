@@ -1,4 +1,4 @@
-import { HttpFetcher, HttpFetcherRequest } from '@dooboostore/core/fetch/HttpFetcher';
+import { HttpFetcher, HttpFetcherRequest } from '@dooboostore/core';
 import * as fs from "fs";
 import * as path from "path";
 

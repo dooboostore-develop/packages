@@ -1,8 +1,8 @@
-import { getSim, Sim } from '@dooboostore/simple-boot/decorators/SimDecorator';
+import { getSim, Sim } from '@dooboostore/simple-boot';
 import { HttpHeaders } from '../codes/HttpHeaders';
-import { ApiService } from '@dooboostore/simple-boot/fetch/ApiService';
-import { RandomUtils } from '@dooboostore/core/random/RandomUtils';
-import { HttpFetcherTarget } from '@dooboostore/core/fetch/HttpFetcher';
+import { ApiService } from '@dooboostore/simple-boot';
+import { RandomUtils } from '@dooboostore/core';
+import { HttpFetcherTarget } from '@dooboostore/core';
 
 export type TopicProtocolConfig<TBody = unknown> = {
   bypassTransform?: boolean;

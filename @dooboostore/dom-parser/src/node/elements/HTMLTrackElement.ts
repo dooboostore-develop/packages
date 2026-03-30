@@ -1,2 +1,3 @@
 import { HTMLElementBase } from './HTMLElementBase';
-export class HTMLTrackElement extends HTMLElementBase { constructor(tagName: string = 'TRACK', ownerDocument?: any) { super(tagName, ownerDocument); } }
+import {HTMLElement} from "./HTMLElement";
+export class HTMLTrackElement extends HTMLElement { constructor(tagName: string = 'TRACK', ownerDocument?: any) { super(tagName, ownerDocument); } }

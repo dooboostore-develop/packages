@@ -6,7 +6,7 @@ import { HttpStatus } from '@dooboostore/simple-boot-http-server/codes/HttpStatu
 import { SimpleBootHttpServer } from '@dooboostore/simple-boot-http-server/SimpleBootHttpServer';
 import { DomParserInitializer } from '../initializers/DomParserInitializer';
 import { HTMLElementBase } from '@dooboostore/dom-parser';
-import {ConstructorType} from "@dooboostore/core/types";
+import { ConstructorType } from '@dooboostore/core';
 import {getElementConfig} from "@dooboostore/simple-web-component";
 
 export type SWCSSRConfig = {

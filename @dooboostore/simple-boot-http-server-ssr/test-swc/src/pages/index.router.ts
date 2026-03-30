@@ -1,10 +1,9 @@
-import { Sim } from '@dooboostore/simple-boot/decorators/SimDecorator';
-import { Router } from '@dooboostore/simple-boot/decorators/route/Router';
-import { Router as WebRouter } from '@dooboostore/core-web/routers/Router';
+import { Sim } from '@dooboostore/simple-boot';
+import { Router } from '@dooboostore/simple-boot';
+import { Router as WebRouter } from '@dooboostore/core-web';
 import {elementDefine, onConnectedInnerHtml, setAttribute} from '@dooboostore/simple-web-component';
-import { RouterAction } from '@dooboostore/simple-boot/route/RouterAction';
-import { HTMLElement } from '../../../../dom-parser/src/node';
-import { RoutingDataSet } from '@dooboostore/simple-boot/route/RouterManager';
+import { RouterAction } from '@dooboostore/simple-boot';
+import { RoutingDataSet } from '@dooboostore/simple-boot';
 import ww, { IndexRoute } from './index.route';
 import uu, { UserRoute } from './user.route';
 

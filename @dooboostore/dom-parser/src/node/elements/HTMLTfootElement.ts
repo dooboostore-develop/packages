@@ -1,11 +1,12 @@
 import { HTMLElementBase } from './HTMLElementBase';
 import { HTMLCollectionImp } from '../collection';
+import {HTMLElement} from "./HTMLElement";
 /**
  * The **`HTMLTfootElement`** class represents an HTML `<tfoot>` element.
  * 
  * [MDN Reference](https://developer.mozilla.org/docs/Web/API/HTMLTableSectionElement)
  */
-export class HTMLTfootElement extends HTMLElementBase {
+export class HTMLTfootElement extends HTMLElement {
     static readonly TAG_NAME = 'TFOOT';
     
     constructor(ownerDocument?: any) {
@@ -33,6 +34,7 @@ export class HTMLTfootElement extends HTMLElementBase {
             }
         }
         
+        // @ts-ignore
         return row;
     }
 

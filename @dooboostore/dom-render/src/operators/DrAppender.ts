@@ -2,7 +2,7 @@ import { OperatorExecuterAttrRequire } from './OperatorExecuterAttrRequire';
 import { RawSet } from '../rawsets/RawSet';
 import { Render } from '../rawsets/Render';
 import { AfterCallBack, ElementSource, ExecuteState, ReturnContainer, Source } from './OperatorExecuter';
-import { ObjectUtils } from '@dooboostore/core/object/ObjectUtils';
+import { ObjectUtils } from '@dooboostore/core';
 
 export class DrAppender extends OperatorExecuterAttrRequire<string> {
   constructor(rawSet: RawSet, render: Render, returnContainer: ReturnContainer, elementSource: ElementSource, source: Source, afterCallBack: AfterCallBack) {

@@ -1,11 +1,12 @@
 import { HTMLElementBase } from './HTMLElementBase';
+import {HTMLElement} from "./HTMLElement";
 
 /**
  * The **`HTMLButtonElement`** class represents an HTML `<button>` element.
  *
  * [MDN Reference](https://developer.mozilla.org/docs/Web/API/HTMLButtonElement)
  */
-export class HTMLButtonElement extends HTMLElementBase {
+export class HTMLButtonElement extends HTMLElement {
   private _type: string = 'submit';
   private _disabled: boolean = false;
   private _value: string = '';

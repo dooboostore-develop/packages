@@ -1,1 +1,2 @@
-export * from './canvas';
+export * from './index';
+export * as LibWebModule from './index';

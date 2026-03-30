@@ -1,7 +1,7 @@
-import { ReflectUtils } from '@dooboostore/core/reflect/ReflectUtils';
+import { ReflectUtils } from '@dooboostore/core';
 import { MetaDataPropertyAtomic } from '../MetaDataAtomic';
-import { ObjectUtils } from '@dooboostore/core/object/ObjectUtils';
-import { ConstructorType } from '@dooboostore/core/types';
+import { ObjectUtils } from '@dooboostore/core';
+import { ConstructorType } from '@dooboostore/core';
 import { ReflectMethod } from '../../types/Types';
 
 const AfterMetadataKey = Symbol('After');

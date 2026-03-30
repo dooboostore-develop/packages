@@ -1,6 +1,4 @@
-import { Sim } from '@dooboostore/simple-boot/decorators/SimDecorator';
-import { Router } from '@dooboostore/simple-boot/decorators/route/Router';
-import { Router as WebRouter } from '@dooboostore/core-web/routers/Router';
+import { Sim } from '@dooboostore/simple-boot';
 import { elementDefine, onConnectedInnerHtml } from '@dooboostore/simple-web-component';
 
 export namespace IndexRoute {

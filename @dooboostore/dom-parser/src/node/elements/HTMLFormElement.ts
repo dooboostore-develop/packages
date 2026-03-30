@@ -1,11 +1,12 @@
 import { HTMLElementBase } from './HTMLElementBase';
+import {HTMLElement} from "./HTMLElement";
 
 /**
  * The **`HTMLFormElement`** class represents an HTML `<form>` element.
  * 
  * [MDN Reference](https://developer.mozilla.org/docs/Web/API/HTMLFormElement)
  */
-export class HTMLFormElement extends HTMLElementBase {
+export class HTMLFormElement extends HTMLElement {
     private _action: string = '';
     private _method: string = 'get';
     private _enctype: string = 'application/x-www-form-urlencoded';

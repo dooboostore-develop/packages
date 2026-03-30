@@ -1,15 +1,14 @@
 import {Intent} from '../intent/Intent';
-import {ConstructorType} from '@dooboostore/core/types';
+import {ConstructorType} from '@dooboostore/core';
 import {RouterModule} from './RouterModule';
 import {Route, RouterConfig, RouterMetadataKey} from '../decorators/route/Router';
 import {SimAtomic} from '../simstance/SimAtomic';
 import {SimstanceManager} from '../simstance/SimstanceManager';
 import {RouteFilter} from './RouteFilter';
-import {Sim} from '../decorators/SimDecorator';
-import {Expression} from '@dooboostore/core/expression/Expression';
+import {Expression} from '@dooboostore/core';
 import {RouterAction} from '../route/RouterAction';
 import {SimOption} from '../SimOption';
-import {Subject} from '@dooboostore/core/message/Subject';
+import {Subject} from '@dooboostore/core';
 import {SimpleApplication} from "../SimpleApplication";
 
 export type RoutingOption = { router?: ConstructorType<any> | any | Symbol, noOnRouting?: boolean, find?: { router: 'last' | 'first' } };
@@ -260,7 +259,13 @@ export class RouterManager {
           let bestMatchLength = -1;
 
           for (const child of routerConfig.routers) {
-            const routerAtomic = new SimAtomic({targetKeyType: child, originalType: child}, this.simstanceManager);
+            const routerAtomic =
+              typeof child === 'symbol'
+                ? this.simstanceManager.findFirstSim(child)
+                : new SimAtomic({ targetKeyType: child, originalType: child as ConstructorType<any> | Function }, this.simstanceManager);
+            if (!routerAtomic) {
+              continue;
+            }
             const executeModule = this.getExecuteModule(routerAtomic, intent, currentParentRouters, option)
 
             if (executeModule) {
@@ -329,7 +334,13 @@ export class RouterManager {
         // Collect matches from child routers
         if (routerConfig.routers && routerConfig.routers.length > 0) {
           for (const child of routerConfig.routers) {
-            const routerAtomic = new SimAtomic({targetKeyType: child, originalType: child}, this.simstanceManager);
+            const routerAtomic =
+              typeof child === 'symbol'
+                ? this.simstanceManager.findFirstSim(child)
+                : new SimAtomic({ targetKeyType: child, originalType: child as ConstructorType<any> | Function }, this.simstanceManager);
+            if (!routerAtomic) {
+              continue;
+            }
             matches.push(...this._collectAllMatchingModules(routerAtomic, intent, currentParentRouters));
           }
         }
@@ -396,7 +407,10 @@ export class RouterManager {
     if (typeof routeElement === 'function') {
       child = {targetKeyType: routeElement, originalType: routeElement};
     } else if (typeof routeElement === 'symbol') {
-      child = this.simstanceManager.findLastSim(routeElement)?.type;
+      const findSimType = this.simstanceManager.findLastSim(routeElement)?.type;
+      if (findSimType?.originalType) {
+        child = { targetKeyType: findSimType.originalType, originalType: findSimType.originalType };
+      }
     } else if (typeof routeElement === 'string') {
       return this.findRouteProperty(route, routeElement, intent)
     } else if (Array.isArray(routeElement)) {

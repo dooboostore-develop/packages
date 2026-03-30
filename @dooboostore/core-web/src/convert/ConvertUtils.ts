@@ -1,4 +1,4 @@
-import { ConvertUtils as CoreConverUtils } from '@dooboostore/core/convert/ConvertUtils';
+import { ConvertUtils as CoreConverUtils } from '@dooboostore/core';
 
 export namespace ConvertUtils {
   export const coreConvertUtils = CoreConverUtils;

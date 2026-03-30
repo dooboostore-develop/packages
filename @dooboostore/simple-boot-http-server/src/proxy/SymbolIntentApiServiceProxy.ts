@@ -1,7 +1,7 @@
-import { getSim, Sim } from '@dooboostore/simple-boot/decorators/SimDecorator';
+import { getSim, Sim } from '@dooboostore/simple-boot';
 import { makeIntentHeaderBySymbolFor } from '../codes/HttpHeaders';
-import { ConvertUtils } from '@dooboostore/core/convert/ConvertUtils';
-import { ApiService } from '@dooboostore/simple-boot/fetch/ApiService';
+import { ConvertUtils } from '@dooboostore/core';
+import { ApiService } from '@dooboostore/simple-boot';
 
 export type Config<T = any> = {
   method?: 'get' | 'post' | 'petch' | 'delete' | 'head';

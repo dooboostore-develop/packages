@@ -5,9 +5,9 @@ import { OtherData } from '../../lifecycle/OnChangeAttrRender';
 import { OnInitRender } from '../../lifecycle/OnInitRender';
 import { OnCreateRenderDataParams } from '../../lifecycle/OnCreateRenderData';
 import { OnCreateRender } from '../../lifecycle/OnCreateRender';
-import { type Subscription } from '@dooboostore/core/message/Subscription';
-import { ValidUtils } from '@dooboostore/core-web/valid/ValidUtils';
-import { EventUtils } from '@dooboostore/core-web/event/EventUtils';
+import { type Subscription } from '@dooboostore/core';
+import { ValidUtils } from '@dooboostore/core-web';
+import { EventUtils } from '@dooboostore/core-web';
 
 export namespace Details {
   export const selector = 'dr-details';

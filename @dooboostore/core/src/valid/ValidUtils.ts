@@ -89,8 +89,22 @@ export namespace ValidUtils {
     return data !== null && data !== undefined;
   }
 
+  export function isDefined<T>(value: T | null | undefined): value is NonNullable<T>;
+  export function isDefined<K extends string, V>(entry: [K, V] | null | undefined): entry is [K, V];
+  export function isDefined(value: unknown): boolean {
+    return value !== null && value !== undefined;
+  }
+
   export const isNotNullUndefined = <T>(data: T | null | undefined): data is NonNullable<T> => {
-    return data !== null && data !== undefined;
+    return isDefined(data);
+  }
+
+  export const isNormalAttrEntry = <T>(entry: [string, T] | undefined | null): entry is [string, T] => {
+    return isDefined(entry);
+  }
+
+  export const isStringEntry = (entry: [string, string] | undefined | null): entry is [string, string] => {
+    return isDefined(entry);
   }
 
   export const isNull = (data: any): data is null => {

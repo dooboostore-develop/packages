@@ -1,6 +1,6 @@
 import bootfactory from "@swc-src/bootfactory";
 import {SwcAttributeConfigType} from "@dooboostore/simple-web-component/elements/SwcAppEngine";
-import {UrlUtils} from "@dooboostore/core/url";
+import {UrlUtils} from "@dooboostore/core";
 
 console.log('🚀 Client-side App Starting with SwcApplication...');
 

@@ -3,7 +3,7 @@ import { SimOption } from './SimOption';
 import { IntentManager, isRouterPublishType, PublishData, RouterPublishType } from './intent/IntentManager';
 import { RouterManager, RoutingOption } from './route/RouterManager';
 import { Intent } from './intent/Intent';
-import { ConstructorType, GenericClassDecorator } from '@dooboostore/core/types';
+import { ConstructorType, GenericClassDecorator } from '@dooboostore/core';
 import { RouterModule } from './route/RouterModule';
 import { SimAtomic } from './simstance/SimAtomic';
 import { SimNoSuch } from './throwable/SimNoSuch';
