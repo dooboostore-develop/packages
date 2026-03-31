@@ -119,4 +119,19 @@ export namespace ReflectUtils {
       Reflect.defineMetadata(metadataKey, value, target);
     }
   };
+
+  /**
+   * 한 타겟에서 다른 타겟으로 모든 메타데이터를 복사합니다. (이미 등록된 클래스 갱신용)
+   */
+  export const copyMetadata = (from: any, to: any, propertyKey?: string | symbol) => {
+    const keys = propertyKey ? (Reflect as any).getOwnMetadataKeys(from, propertyKey) : (Reflect as any).getOwnMetadataKeys(from);
+    for (const key of keys) {
+      const data = propertyKey ? Reflect.getOwnMetadata(key, from, propertyKey) : Reflect.getOwnMetadata(key, from);
+      if (propertyKey) {
+        (Reflect as any).defineMetadata(key, data, to, propertyKey);
+      } else {
+        (Reflect as any).defineMetadata(key, data, to);
+      }
+    }
+  };
 }

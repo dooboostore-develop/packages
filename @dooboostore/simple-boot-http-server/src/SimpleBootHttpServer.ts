@@ -44,8 +44,8 @@ export class SimpleBootHttpServer extends SimpleApplication {
   }
 
 
-  public run(otherInstanceSim?: Map<ConstructorType<any> | Function | SimConfig | Symbol, any>) {
-    otherInstanceSim ??= new Map<ConstructorType<any> | Function | SimConfig | Symbol, any>();
+  public run(otherInstanceSim?: Map<ConstructorType<any> | Function | SimConfig | symbol, any>) {
+    otherInstanceSim ??= new Map<ConstructorType<any> | Function | SimConfig | symbol, any>();
     otherInstanceSim.set(SimpleBootHttpServer, this);
     super.run(otherInstanceSim);
     const targets = [...this.option.closeEndPoints ?? [], ...this.option.errorEndPoints ?? [], ...this.option.requestEndPoints ?? [], ...this.option.filters ?? []];

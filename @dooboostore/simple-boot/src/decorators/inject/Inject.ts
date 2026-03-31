@@ -7,7 +7,7 @@ export enum InjectSituationType {
   INDEX = 'SIMPLE_BOOT_CORE://Inject/INDEX'
 }
 
-export type SituationType = string | Symbol | ConstructorType<any> | InjectSituationType | ExceptionHandlerSituationType;
+export type SituationType = string | symbol | ConstructorType<any> | InjectSituationType | ExceptionHandlerSituationType;
 
 export class SituationTypeContainer {
   public situationType: SituationType;
@@ -52,7 +52,7 @@ type InjectOptions = {
 
 // [아키텍트님의 정석] 3대 주입 전략
 export type InjectBySymbol = {
-  symbol: Symbol;
+  symbol: symbol;
   factory?: (caller: { instance?: any; methodName?: string | symbol; parameter: any[]; application: SimpleApplication; injectInstance?: any }) => any;
 };
 
@@ -96,7 +96,7 @@ export type SaveInjectConfig = {
   config: InjectConfig;
 };
 
-const InjectMetadataKey = Symbol('Inject');
+const InjectMetadataKey = Symbol.for('simple-boot:inject-metadata');
 const injectProcess = (config: InjectConfig, target: Object, propertyKey: string | symbol | undefined, parameterIndex: number) => {
   if (propertyKey && typeof target === 'object') {
     const otarget = target;

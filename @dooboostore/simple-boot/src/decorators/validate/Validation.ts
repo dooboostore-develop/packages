@@ -1,7 +1,7 @@
 import {MethodParameter, ReflectField} from '../../types/Types';
 import { ConstructorType } from '@dooboostore/core';
 import { ReflectUtils } from '@dooboostore/core';
-const ValidMetadataKey = Symbol('ValidMetadataKey');
+const ValidMetadataKey = Symbol.for('simple-boot:valid-metadata');
 export const Valid: MethodParameter = (target: Object, propertyKey: string | symbol | undefined, parameterIndex: number) => {
     if (propertyKey && typeof target === 'object') { // <-- object: method
         target = target.constructor;
@@ -28,7 +28,7 @@ export const getValidIndex = (target: ConstructorType<any> | Function | any, pro
 }
 
 export type Validator = (value: any, ...params: any[]) => boolean;
-const ValidationMetadataKey = Symbol('ValidationMetadataKey');
+const ValidationMetadataKey = Symbol.for('simple-boot:validation-metadata');
 export type SaveValidator = {
     propertyKey: string | symbol;
     validator: Validator;

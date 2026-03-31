@@ -135,7 +135,7 @@ export const deleteCacheByKeyStartWith = (simpleApplication: SimpleApplication, 
   findCacheByKeyStartWith(simpleApplication, key).forEach(([key, data]) => deleteCacheByKey(simpleApplication, key));
 }
 
-const CacheMetadataKey = Symbol('Cache');
+const CacheMetadataKey = Symbol.for('simple-boot:cache-metadata');
 const cacheProcess = <M extends Method>(data: CacheOption<M>, target: Object, propertyKey: string | symbol, descriptor: TypedPropertyDescriptor<any>) => {
 
 

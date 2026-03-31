@@ -1,4 +1,4 @@
-import { changedAttribute } from '../decorators/changedAttribute';
+import { changedAttributeHost } from '../decorators/changedAttributeHost';
 import { SwcUtils } from '../utils/Utils';
 import { FunctionUtils } from '@dooboostore/core';
 
@@ -28,7 +28,7 @@ export class SwcAsync extends HTMLTemplateElement {
     FunctionUtils.execute({ script, context: this, args });
   }
 
-  @changedAttribute('on-get-value')
+  @changedAttributeHost('on-get-value')
   private refresh() {
     const script = this.getAttribute('on-get-value');
     if (!script) return;

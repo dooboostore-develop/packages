@@ -1,12 +1,12 @@
 import { test, describe } from 'node:test';
 import assert from 'node:assert';
 import 'reflect-metadata';
-import { SimpleApplication } from '@dooboostore/simple-boot/SimpleApplication';
-import { Sim } from '@dooboostore/simple-boot/decorators/SimDecorator';
-import { Inject } from '@dooboostore/simple-boot/decorators/inject/Inject';
-import { Intent } from '@dooboostore/simple-boot/intent/Intent';
-import { IntentSubscribe } from '@dooboostore/simple-boot/intent/IntentSubscribe';
-import { PostConstruct } from '@dooboostore/simple-boot/decorators/SimDecorator';
+import { SimpleApplication } from '@dooboostore/simple-boot';
+import { Sim } from '@dooboostore/simple-boot';
+import { Inject } from '@dooboostore/simple-boot';
+import { Intent } from '@dooboostore/simple-boot';
+import { IntentSubscribe } from '@dooboostore/simple-boot';
+import { PostConstruct } from '@dooboostore/simple-boot';
 
 const TestIntentServiceSymbol = Symbol.for('TestIntentService');
 const DependencyServiceSymbol = Symbol.for('DependencyService');

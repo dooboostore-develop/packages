@@ -1,36 +1,27 @@
 import 'reflect-metadata';
 import { registerAllElements } from './elements/register';
+import {ConstructorType} from "@dooboostore/core";
 
 // Decorators
-export * from './decorators/elementDefine';
-export * from './decorators/attribute';
-export * from './decorators/setAttribute';
-export * from './decorators/changedAttribute';
-export { onConnectedInnerHtml } from './decorators/onConnectedInnerHtml';
-export * from './decorators/replaceChildren';
-export * from './decorators/appendChild';
-export * from './decorators/classList';
-export * from './decorators/style';
-export * from './decorators/emitCustomEvent';
-export * from './decorators/lifecycles';
-export * from './decorators/query';
-export * from './decorators/queryAll';
-export * from './decorators/addEventListener';
+export * from './decorators';
 
 // Types
 export * from './types';
 
 // Utilities
 export * from './utils/Utils';
-export * from './utils/TemplateUtils';
 
 // Config
 export * from './config/config';
 
 // Registration Factory
-export default (w: Window, other?: ((w: Window) => void)[]): void => {
+export default (w: Window, other?: (((w: Window) => ConstructorType<any>) | any) []) => {
   registerAllElements(w);
-  other?.forEach(fn => {
-    fn(w);
+  const r = other?.map(fn => {
+    if (typeof fn === 'function') {
+      const a = fn(w);
+    } else {
+    }
   });
+  // return r??[];
 };

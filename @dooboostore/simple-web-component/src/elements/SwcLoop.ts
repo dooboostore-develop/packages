@@ -1,4 +1,4 @@
-import { changedAttribute } from '../decorators/changedAttribute';
+import { changedAttributeHost } from '../decorators/changedAttributeHost';
 import { SwcUtils } from '../utils/Utils';
 import { FunctionUtils } from '@dooboostore/core';
 
@@ -41,7 +41,7 @@ export class SwcLoop extends HTMLTemplateElement {
     this._nodeGroups = [];
   }
 
-  @changedAttribute('on-get-value')
+  @changedAttributeHost('on-get-value')
   private refreshValue() {
     const script = this.getAttribute('on-get-value');
     if (!script) {

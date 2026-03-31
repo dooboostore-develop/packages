@@ -10,7 +10,7 @@ import { FetcherRequest } from '@dooboostore/core';
 import { HttpJsonFetcher, HttpJsonFetcherConfig } from '@dooboostore/core';
 
 export namespace ApiServiceInterceptor {
-  export const TOKEN = Symbol('ApiServiceInterceptor');
+  export const TOKEN = Symbol.for('simple-boot:api-service-interceptor-token');
   export const resolveAll = (simstanceManager: SimstanceManager): ApiServiceInterceptor[] => {
     try {
       return (simstanceManager.findSims<ApiServiceInterceptor>(ApiServiceInterceptor.TOKEN) ?? []).map(it => it.getValue()).filter(ValidUtils.isDefined);

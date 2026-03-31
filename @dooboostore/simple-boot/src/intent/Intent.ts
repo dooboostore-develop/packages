@@ -21,7 +21,7 @@ export class Intent<T = any, E = any> {
   public sessionData = new Map<string, any>();
 
   constructor(
-    public uri: string | { symbol: Symbol | Symbol[]; uri: `/${string}` },
+    public uri: string | { symbol: symbol | symbol[]; uri: `/${string}` },
     public data?: T,
     public event?: E
   ) {

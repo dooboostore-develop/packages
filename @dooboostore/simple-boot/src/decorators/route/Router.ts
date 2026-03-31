@@ -16,7 +16,7 @@ export interface RouterConfig {
     filters?: Filters;
 }
 
-export const RouterMetadataKey = Symbol('Router');
+export const RouterMetadataKey = Symbol.for('simple-boot:router-metadata');
 export const routerProcess = (config: RouterConfig, target: ConstructorType<any> | Function | symbol) => {
     getRoutes(target)?.forEach(it => {
         config.route = (config.route ?? {});
@@ -63,7 +63,7 @@ export const getRouter = (target: ConstructorType<any> | Function | any): Router
 
 type RouteConfig = { path: string | string[], filters?: Filters }
 export type SaveRouteConfig = { propertyKey: string | symbol; method: Function; config: RouteConfig; }
-export const RouteMetadataKey = Symbol('RouteMetadataKey');
+export const RouteMetadataKey = Symbol.for('simple-boot:route-metadata');
 
 export const Route = (config: RouteConfig): ReflectMethod => {
     return (target: any, propertyKey: string | symbol, descriptor: PropertyDescriptor) => {

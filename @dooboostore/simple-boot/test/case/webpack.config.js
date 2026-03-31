@@ -27,13 +27,13 @@ module.exports = {
   resolve: {
     extensions: ['.ts', '.js'],
     alias: {
-      '@dooboostore/core': path.resolve(__dirname, '../../../core/src'),
-      '@dooboostore/core-node': path.resolve(__dirname, '../../../core-node/src'),
-      '@dooboostore/simple-boot': path.resolve(__dirname, '../../../simple-boot/src'),
-      '@dooboostore/simple-boot-http-server': path.resolve(__dirname, '../../../simple-boot-http-server/src'),
-      '@dooboostore/simple-boot-http-server-ssr': path.resolve(__dirname, '../../../simple-boot-http-server-ssr/src'),
-      '@dooboostore/simple-boot-front': path.resolve(__dirname, '../../../simple-boot-front/src'),
-      '@dooboostore/dom-render': path.resolve(__dirname, '../../../dom-render/src')
+      '@dooboostore/core': path.resolve(__dirname, '../../../core/src/index.ts'),
+      '@dooboostore/core-node': path.resolve(__dirname, '../../../core-node/src/index.ts'),
+      '@dooboostore/simple-boot': path.resolve(__dirname, '../../../simple-boot/src/index.ts'),
+      '@dooboostore/simple-boot-http-server': path.resolve(__dirname, '../../../simple-boot-http-server/src/index.ts'),
+      '@dooboostore/simple-boot-http-server-ssr': path.resolve(__dirname, '../../../simple-boot-http-server-ssr/src/index.ts'),
+      '@dooboostore/simple-boot-front': path.resolve(__dirname, '../../../simple-boot-front/src/index.ts'),
+      '@dooboostore/dom-render': path.resolve(__dirname, '../../../dom-render/src/index.ts')
     }
   },
   output: {

@@ -1,10 +1,8 @@
-// import { Expression } from '@dooboostore/core/expression/Expression';
-//
-// const data = Expression.bindExpression(`Hello $\{name} \${date:ffff}`, { name: 'World', date: (param: string) => new Date().toLocaleDateString() + param });
-// console.log(data);
-
 import 'reflect-metadata';
-import test from './inject';
+import './cache/cache.test';
+import './di/di.test';
+import './execute/execute.test';
+import './inject/inject.test';
 import './intent/intent.test';
 
 // namespace InjectSituationType {

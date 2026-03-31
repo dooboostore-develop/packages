@@ -45,8 +45,8 @@ baseClasses.forEach(cls => {
 let registerContent = `import { elementDefine } from '../decorators/elementDefine';
 import { SwcAppMixin } from './SwcAppMixin';
 import { SwcUtils } from '../utils/Utils';
-import { FunctionUtils } from '@dooboostore/core/function/FunctionUtils';
-import { changedAttribute } from '../decorators/changedAttribute';
+import { FunctionUtils } from '@dooboostore/core';
+import { changedAttributeHost } from '../decorators/changedAttributeHost';
 
 export const registerAllElements = (w: any) => {
 ${extractionBlock}

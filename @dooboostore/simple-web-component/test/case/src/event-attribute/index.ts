@@ -65,6 +65,7 @@ addBtn.addEventListener('click', () => {
             swc-on-my-custom-event="alert(1); console.log('>>> [Custom Event Received via swc-on-my-custom-event attribute]', event.detail); alert('Custom event from ' + $host?.id + '\\nData: ' + JSON.stringify(event.detail))"
             >
             
+
             <div slot="content">
                 <strong>Host ID: host-${hostCount}</strong>
                 <p>Try the buttons below to test listeners and custom events.</p>

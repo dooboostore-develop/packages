@@ -1,26 +1,22 @@
-import { ReflectUtils } from '@dooboostore/core';
-import { ensureInit, getElementConfig } from './elementDefine';
-import { SwcUtils } from '../utils/Utils';
-import { SpecialSelector, SwcQueryOptions } from '../types';
-
-export interface AttributeOptions extends SwcQueryOptions {
+import {ReflectUtils} from '@dooboostore/core';
+import {ensureInit, getElementConfig} from './elementDefine';
+import {SwcUtils} from '../utils/Utils';
+import {SpecialSelector, SwcQueryOptions} from '../types';
+export interface AttributeFieldOptions extends SwcQueryOptions {
   name?: string;
-  connectedInitialize?: boolean;
+  // connectedInitialize?: boolean;
   type?: typeof Number | typeof Boolean | typeof String;
 }
 
-export interface AttributeMetadata {
+export interface AttributeFieldMetadata {
   propertyKey: string | symbol;
   selector: string;
-  options: AttributeOptions;
-  privateKey: symbol; // Added to bypass getter during initialization
+  options: AttributeFieldOptions;
+  privateKey: symbol;
 }
 
-export const ATTRIBUTE_METADATA_KEY = Symbol('simple-web-component:attribute');
+export const ATTRIBUTE_FIELD_METADATA_KEY = Symbol.for('simple-web-component:attribute-field');
 
-/**
- * Helper to perform type conversion from string to target type
- */
 const convertValue = (val: string | null, type: any): any => {
   if (val === null || val === undefined) return val;
   if (type === Number) return Number(val);
@@ -28,18 +24,13 @@ const convertValue = (val: string | null, type: any): any => {
   return val;
 };
 
-/**
- * Helper to resolve target elements based on selector and root options
- */
-export const resolveTargetEls = (inst: any, selector: string, options: AttributeOptions, currentWin: any): HTMLElement[] => {
+export const resolveTargetEls = (inst: any, selector: string, options: AttributeFieldOptions, currentWin: any): HTMLElement[] => {
   const r = options.root || 'auto';
   const results: HTMLElement[] = [];
 
   const applyRoot = (target: any) => {
     if (!target) return;
     if (r === 'auto') {
-      // Attributes belong to the ELEMENT, not the ShadowRoot.
-      // So for :host and direct attribute sync, we mostly want the element itself.
       results.push(target);
     } else {
       if (r === 'light' || r === 'all') results.push(target);
@@ -85,74 +76,125 @@ export const resolveTargetEls = (inst: any, selector: string, options: Attribute
 /**
  * @attribute decorator to sync a field value with an element's attribute.
  */
-export function attribute(selector: string, options: AttributeOptions = {}): PropertyDecorator {
+export function attribute(selector: string, options: AttributeFieldOptions = {}): PropertyDecorator {
   return (target: Object, propertyKey: string | symbol) => {
     const constructor = target.constructor;
     const privateKey = Symbol(String(propertyKey));
-
+    //
     const designType = (Reflect as any).getMetadata('design:type', target, propertyKey);
-
-    let metaList = ReflectUtils.getOwnMetadata(ATTRIBUTE_METADATA_KEY, constructor) as AttributeMetadata[];
+    //
+    let metaList = ReflectUtils.getOwnMetadata(ATTRIBUTE_FIELD_METADATA_KEY, constructor) as AttributeFieldMetadata[];
     if (!metaList) {
       metaList = [];
-      ReflectUtils.defineMetadata(ATTRIBUTE_METADATA_KEY, metaList, constructor);
+      ReflectUtils.defineMetadata(ATTRIBUTE_FIELD_METADATA_KEY, metaList, constructor);
     }
-    metaList.push({ propertyKey, selector, options, privateKey });
+    metaList.push({propertyKey, selector, options, privateKey});
 
-    Object.defineProperty(target, propertyKey, {
-      get(this: any) {
-        const attrName = options.name || String(propertyKey);
-        const conf = getElementConfig(this);
-        const currentWin = this._resolveWindow?.(conf) || ((typeof window !== 'undefined' ? window : undefined) as any);
-        const targetType = options.type || designType;
-
-        console.log('type-->', propertyKey, targetType);
-        // During early init phase, if syncing memory to DOM, return memory.
-        if (this.__swc_syncing_init || (options.connectedInitialize && !this.__swc_connected)) {
-          return convertValue(this[privateKey], targetType);
-        }
-
-        const targets = resolveTargetEls(this, selector, options, currentWin);
-        const primaryTarget = targets[0];
-
-        if (primaryTarget && typeof (primaryTarget as any).hasAttribute === 'function') {
-          if ((primaryTarget as any).hasAttribute(attrName)) {
-            const domVal = (primaryTarget as any).getAttribute(attrName);
-            return convertValue(domVal, targetType);
-          }
-          return null;
-        }
-
-        return convertValue(this[privateKey], targetType);
-      },
-      set(this: any, nv: any) {
-        const targetType = options.type || designType;
-        // const convertedValue = convertValue(nv, targetType);
-        // console.log('---set', propertyKey, targetType, nv, convertedValue);
-
-        const attrName = options.name || String(propertyKey);
-        const conf = getElementConfig(this);
-        const currentWin = this._resolveWindow?.(conf) || ((typeof window !== 'undefined' ? window : undefined) as any);
-        const targets = resolveTargetEls(this, selector, options, currentWin);
-        targets.forEach(it => {
-          console.log('----->', it)
-          if (it && typeof (it as any).setAttribute === 'function') {
-            if (nv === null) {
-              (it as any).removeAttribute(attrName);
-            } else {
-              (it as any).setAttribute(attrName, String(nv));
-            }
+    const applySetAttribute = (inst: any, targets: HTMLElement[], attrName: string, nv: any) => {
+      targets.forEach(it => {
+        if (it && typeof (it as any).setAttribute === 'function') {
+          if (nv === null) {
+            (it as any).removeAttribute(attrName);
           } else {
-            this[privateKey] = nv;
+            (it as any).setAttribute(attrName, String(nv));
           }
-        })
-      },
-      enumerable: true,
-      configurable: true
-    });
+        } else {
+          inst[privateKey] = nv;
+        }
+      });
+    };
+
+    try {
+      // Own property를 삭제하여 getter가 작동하도록 함
+      // delete target[propertyKey];
+
+      // const defineTarget = target instanceof Function ? target : (target as any).constructor;
+      
+      Object.defineProperty(target, propertyKey, {
+        get(this: any) {
+          // try {
+            const attrName = options.name || String(propertyKey);
+            const conf = getElementConfig(this);
+            const currentWin = this._resolveWindow?.(conf) || ((typeof window !== 'undefined' ? window : undefined) as any);
+            const targetType = options.type || designType;
+          //
+            // connectedInitialize: true이면 privateKey 값만 반환 (DOM 무시)
+            // if (options.connectedInitialize === true && (this as any).__swc_syncing_init) {
+            //   console.log('cccccccc2');
+            //   return this[privateKey];
+            //   // return convertValue(this[privateKey], targetType);
+            // }
+
+            const targets = resolveTargetEls(this, selector, options, currentWin);
+            const primaryTarget = targets[0];
+
+            if (primaryTarget && typeof (primaryTarget as any).hasAttribute === 'function') {
+              if ((primaryTarget as any).hasAttribute(attrName)) {
+                const domVal = (primaryTarget as any).getAttribute(attrName);
+                return convertValue(domVal, targetType);
+              }
+              return null;
+            }
+
+            return convertValue(this[privateKey], targetType);
+          // } catch (err) {
+          //   console.error('Error in getter:', err);
+          //   throw err;
+          // }
+        },
+        set(this: any, nv: any) {
+          // this[propertyKey] = nv;
+          const attrName = options.name || String(propertyKey);
+          const conf = getElementConfig(this);
+          const currentWin = this._resolveWindow?.(conf) || ((typeof window !== 'undefined' ? window : undefined) as any);
+
+
+          // if (!this.__swc_connected) {
+          //   this[privateKey] = nv;
+          //   return;
+          // }
+
+          const targets = resolveTargetEls(this, selector, options, currentWin);
+          applySetAttribute(this, targets, attrName, nv);
+        },
+        enumerable: true,
+        configurable: true
+      });
+  } catch (err) {
+    console.error('[SWC] defineProperty error:', err);
+  }
   };
 }
 
-export const findAllAttributeMetadata = (target: any): AttributeMetadata[] => {
-  return ReflectUtils.findAllMetadata<AttributeMetadata[]>(ATTRIBUTE_METADATA_KEY, target).flat();
+/**
+ * @attributeHost decorator to sync a field value with the :host element's attribute.
+ */
+export function attributeHost(target: Object, propertyKey: string | symbol): void;
+export function attributeHost(options: AttributeFieldOptions): PropertyDecorator;
+export function attributeHost(attrName: string): PropertyDecorator;
+export function attributeHost(attrName: string, options: AttributeFieldOptions): PropertyDecorator;
+export function attributeHost(targetOrAttrOrOptions?: any, propertyKeyOrOptions?: any): any {
+  if (propertyKeyOrOptions !== undefined && (typeof propertyKeyOrOptions === 'string' || typeof propertyKeyOrOptions === 'symbol')) {
+    return attribute(':host', { name: String(propertyKeyOrOptions) })(targetOrAttrOrOptions, propertyKeyOrOptions);
+  }
+
+  if (typeof targetOrAttrOrOptions === 'string') {
+    const attrName = targetOrAttrOrOptions;
+    const options = (typeof propertyKeyOrOptions === 'object' ? propertyKeyOrOptions : {}) as AttributeFieldOptions;
+    return attribute(':host', { ...options, name: attrName });
+  } else if (typeof targetOrAttrOrOptions === 'object') {
+    const options = targetOrAttrOrOptions as AttributeFieldOptions;
+    return (target: Object, propertyKey: string | symbol) => {
+      return attribute(':host', { ...options, name: String(propertyKey) })(target, propertyKey);
+    };
+  } else {
+    return (target: Object, propertyKey: string | symbol) => {
+      return attribute(':host', { name: String(propertyKey) })(target, propertyKey);
+    };
+  }
+}
+
+export const findAllAttributeMetadata = (target: any): AttributeFieldMetadata[] => {
+  const actualTarget = target instanceof Function ? target : target.constructor;
+  return ReflectUtils.findAllMetadata<AttributeFieldMetadata[]>(ATTRIBUTE_FIELD_METADATA_KEY, actualTarget).flat();
 };

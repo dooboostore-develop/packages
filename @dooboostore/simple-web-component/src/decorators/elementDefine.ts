@@ -1,16 +1,13 @@
 import { ReflectUtils } from '@dooboostore/core';
 import { FunctionUtils } from '@dooboostore/core';
-import { getOnConnectedInnerHtmlMetadata } from './onConnectedInnerHtml';
 import { getAddEventListenerMetadata } from './addEventListener';
-import { ON_BEFORE_CONNECTED_METADATA_KEY, ON_AFTER_CONNECTED_METADATA_KEY, ON_BEFORE_DISCONNECTED_METADATA_KEY, ON_AFTER_DISCONNECTED_METADATA_KEY, ON_BEFORE_ADOPTED_METADATA_KEY, ON_AFTER_ADOPTED_METADATA_KEY, findAllLifecycleMetadata } from './lifecycles';
+import { ON_INITIALIZE_METADATA_KEY, ON_BEFORE_CONNECTED_METADATA_KEY, ON_AFTER_CONNECTED_METADATA_KEY, ON_BEFORE_DISCONNECTED_METADATA_KEY, ON_AFTER_DISCONNECTED_METADATA_KEY, ON_BEFORE_ADOPTED_METADATA_KEY, ON_AFTER_ADOPTED_METADATA_KEY, findAllLifecycleMetadata, getOnConnectedInnerHtmlMetadata } from './lifecycles';
 import { getEmitCustomEventMetadataList } from './emitCustomEvent';
-import { findAllAttributeChangedMetadata } from './changedAttribute';
-import { findAllSetAttributeMetadata } from './setAttribute';
-import { findAllReplaceChildrenMetadata } from './replaceChildren';
-import { findAllAppendChildMetadata } from './appendChild';
-import { findAllClassListMetadata } from './classList';
-import { findAllStyleMetadata } from './style';
+import { findAllAttributeChangedMetadata } from './changedAttributeHost';
+import { findAllAttributeApplyMetadata } from './applyAttribute';
 import { findAllAttributeMetadata } from './attribute';
+import { getQueryMetadata } from './query';
+import { getQueryAllMetadata } from './queryAll';
 import { SwcUtils } from '../utils/Utils';
 import { HTML_TAG_ENTRIES, DOM_EVENT_NAMES } from '../config/config';
 import { SituationTypeContainer, SituationTypeContainers } from '@dooboostore/simple-boot/decorators/inject/Inject';
@@ -18,7 +15,7 @@ import { InjectSituationType, HostSet } from '../types';
 
 // --- Core Interfaces & Types ---
 
-export const ELEMENT_CONFIG_KEY = Symbol('simple-web-component:element-config');
+export const ELEMENT_CONFIG_KEY = Symbol.for('simple-web-component:element-config');
 
 export interface ElementConfig {
   extends?: string;
@@ -44,9 +41,63 @@ export const ensureInit = (inst: any) => {
     inst._boundListeners = [];
     inst.__swc_initialized = true;
 
+    // const attributeList = findAllQ(inst);
+    // attributeList.forEach(meta => {
+    //   delete (inst as any)[meta.propertyKey];
+    // });
+
+    const target = inst instanceof Function ? inst : inst.constructor;
+    
+    // ╔════════════════════════════════════════════════════════════════════════════════╗
+    // ║ decorator 필드의 own property 삭제                                              ║
+    // ║                                                                                ║
+    // ║ 이유:                                                                          ║
+    // ║ 1. TypeScript는 초기값이 있는 필드를 constructor에서 own property로 생성       ║
+    // ║    @attributeHost('id') myId: string = "default"  →  this.myId = "default"    ║
+    // ║                                                                                ║
+    // ║ 2. JavaScript의 property lookup은 own property를 먼저 찾음                      ║
+    // ║    - this.myId 접근                                                           ║
+    // ║    - 1순위: instance의 own property 있나? → 있으면 그것 반환                  ║
+    // ║    - 2순위: prototype의 getter 있나? → 있으면 호출                            ║
+    // ║                                                                                ║
+    // ║ 3. own property가 있으면 prototype의 getter는 절대 호출되지 않음               ║
+    // ║    따라서 getter에서 정의된 DOM 동기화 로직이 작동하지 않음                   ║
+    // ║                                                                                ║
+    // ║ 4. own property를 삭제하면 JavaScript가 prototype의 getter를 찾게 됨          ║
+    // ║    → getter 호출됨 → DOM 속성 값 동기화됨                                     ║
+    // ╚════════════════════════════════════════════════════════════════════════════════╝
+    
+    // @attribute 필드의 own property 삭제 → getter/setter 작동
+    const attributeList = findAllAttributeMetadata(target);
+    attributeList.forEach(meta => {
+      delete (inst as any)[meta.propertyKey];
+    });
+    
+    // @query 필드의 own property 삭제 → getter 작동
+    const queryList = getQueryMetadata(target);
+    if (queryList) {
+      queryList.forEach(meta => {
+        delete (inst as any)[meta.propertyKey];
+      });
+    }
+    
+    // @queryAll 필드의 own property 삭제 → getter 작동
+    const queryAllList = getQueryAllMetadata(target);
+    if (queryAllList) {
+      queryAllList.forEach(meta => {
+        delete (inst as any)[meta.propertyKey];
+      });
+    }
+
     // Call constructor script if present
     const hostSet = SwcUtils.getHostSet(inst);
     inst._executeSwcScript?.('swc-on-constructor', hostSet);
+
+    // Call @onInitialize lifecycle methods
+    const cMethods = findAllLifecycleMetadata(inst, ON_INITIALIZE_METADATA_KEY);
+    if (cMethods) {
+      for (const m of cMethods) (inst)._invokeLifecycleMethod(m, hostSet);
+    }
   }
 };
 
@@ -78,9 +129,10 @@ function buildEnv(configWindow?: Window) {
   const doc: Document = win?.document;
   const builtInTagMap = new Map<any, string>();
   for (const [cls, tag] of HTML_TAG_ENTRIES) {
-    if (win?.[cls]) builtInTagMap.set(win[cls], tag);
+    if ((win as any)?.[cls]) builtInTagMap.set((win as any)[cls], tag);
   }
   const domHelpers = SwcUtils.getHelperSet(win);
+  
   return { win, doc, builtInTagMap, domHelpers };
 }
 
@@ -160,7 +212,8 @@ const setupPrototype = (proto: any) => {
     if (oldHandler) el.removeEventListener(eventName, oldHandler);
 
     const handler = async (event: any) => {
-      const hostSet = SwcUtils.getHostSet(el);
+      const parent = SwcUtils.findNearestSwcHost(el);
+      const hostSet = SwcUtils.getHostSet(parent || el);
       const conf = getElementConfig(this);
       const currentWin = (this as any)._resolveWindow(conf);
       const helpers = SwcUtils.getHelperSet(currentWin);
@@ -181,13 +234,18 @@ const setupPrototype = (proto: any) => {
 
   proto.__swc_executeAttributeEvent = async function (el: HTMLElement, attrName: string, script: string, event: Event) {
     ensureInit(this);
-    const hostSet = SwcUtils.getHostSet(el);
+
+    const parent = SwcUtils.findNearestSwcHost(el);
+    const hostSet = SwcUtils.getHostSet(parent || el);
     const conf = getElementConfig(this);
     const currentWin = (this as any)._resolveWindow(conf);
     const currentHelpers = SwcUtils.getHelperSet(currentWin);
+    const detail = (event as CustomEvent).detail;
     const args = {
       event,
-      $data: (event as CustomEvent).detail,
+      $event: event,
+      $data: detail,
+      $detail: detail,
       ...hostSet,
       ...currentHelpers,
       $el: el,
@@ -220,15 +278,29 @@ export const elementDefine =
     }
 
     const emitCustomEventList = getEmitCustomEventMetadataList(constructor) || [];
+    const emitHostCustomEventList = emitCustomEventList.filter(meta => meta.selector === ':host' || meta.selector === '');
     const addEventListenerList = getAddEventListenerMetadata(constructor) || [];
     const attrChangeMap = findAllAttributeChangedMetadata(constructor);
     const attributeList = findAllAttributeMetadata(constructor);
+    const applyAttributeMap = findAllAttributeApplyMetadata(constructor);
 
     const swcLifecycleAttributes = ['swc-on-constructor', 'swc-on-connected', 'swc-on-disconnected', 'swc-on-before-connected', 'swc-on-after-connected', 'swc-on-before-disconnected', 'swc-on-after-disconnected', 'swc-on-before-adopted', 'swc-on-after-adopted', 'swc-on-attribute-changed'];
     const swcOnEvents = DOM_EVENT_NAMES.map(e => `swc-on-${e}`);
 
     // Collect all observed attributes from all decorators
-    const mergedObservedAttributes = [...new Set([...(metadata.observedAttributes ?? []), ...attrChangeMap.keys(), ...Array.from(findAllSetAttributeMetadata(constructor).values()).map(it => it.name), ...attributeList.map(it => it.options.name || String(it.propertyKey)), ...emitCustomEventList.map(it => it.options.attributeName!), ...swcLifecycleAttributes, ...swcOnEvents])];
+    const attributeApplyNames = Array.from(applyAttributeMap.values()).map(it => it.options.name).filter(Boolean) as string[];
+    // const attributeListNames = attributeList.map(it => it.options.name || String(it.propertyKey));
+    const hostAttributes = attributeList.filter(it => it.selector === ':host').map(it=>it.options.name || String(it.propertyKey));
+
+    const mergedObservedAttributes = [...new Set([
+      ...(metadata.observedAttributes ?? []),
+      ...attrChangeMap.keys(),
+      ...attributeApplyNames,
+      ...hostAttributes,
+      ...emitHostCustomEventList.map(it => (it.options as any).attributeName).filter(Boolean),
+      ...swcLifecycleAttributes,
+      ...swcOnEvents
+    ])];
 
     const connectedInnerHtmlList = getOnConnectedInnerHtmlMetadata(constructor) || [];
 
@@ -239,47 +311,20 @@ export const elementDefine =
     proto.connectedCallback = function () {
       ensureInit(this);
 
+      const hostSet = SwcUtils.getHostSet(this as any);
+      const appHost = hostSet.$appHost;
+      const conf = getElementConfig(this);
+      const currentWin = (this as any)._resolveWindow(conf);
+
       if (connectedInnerHtmlList.some(it => it.options.useShadow === true) && !this.shadowRoot) {
         this.attachShadow({ mode: 'open' });
       }
-
-      const conf = getElementConfig(this);
-      const currentWin = (this as any)._resolveWindow(conf);
-      const hostSet = SwcUtils.getHostSet(this as any);
 
       (this as any)._executeSwcScript('swc-on-before-connected', hostSet);
       const bMethods = findAllLifecycleMetadata(this, ON_BEFORE_CONNECTED_METADATA_KEY);
       if (bMethods) {
         for (const m of bMethods) (this as any)._invokeLifecycleMethod(m, hostSet);
       }
-
-      // Initialize @attribute fields (DOM <-> JS Sync)
-      attributeList.forEach(meta => {
-        const attrName = meta.options.name || String(meta.propertyKey);
-        if (meta.options.connectedInitialize) {
-          // JS -> DOM (FORCE OVERWRITE)
-          const memoryVal = (this as any)[meta.privateKey];
-          if (memoryVal !== undefined) {
-            (this as any).__swc_syncing_init = true;
-            try {
-              (this as any)[meta.propertyKey] = memoryVal; // Trigger setter to update DOM
-            } finally {
-              (this as any).__swc_syncing_init = false;
-            }
-          }
-        } else if (meta.selector === ':host' || !meta.selector) {
-          // DOM -> JS (Pull from HTML)
-          const domVal = this.getAttribute(attrName);
-          if (domVal !== null) {
-            (this as any).__swc_syncing_init = true;
-            try {
-              (this as any)[meta.propertyKey] = domVal; // Update memory with DOM value
-            } finally {
-              (this as any).__swc_syncing_init = false;
-            }
-          }
-        }
-      });
 
       if (connectedInnerHtmlList.length > 0) {
         let sContent = '',
@@ -303,7 +348,70 @@ export const elementDefine =
         globalDelegatedRoots.add(root);
       }
 
+      // Separate delegate and non-delegate listeners
+      const delegateListeners: typeof addEventListenerList = [];
+      const nonDelegateListeners: typeof addEventListenerList = [];
+      
       addEventListenerList.forEach(meta => {
+        if (meta.options.delegate && meta.selector !== ':window' && meta.selector !== ':document' && meta.selector !== ':parentHost' && meta.selector !== ':appHost' && meta.selector !== ':firstHost' && meta.selector !== ':lastHost' && meta.selector !== ':firstAppHost' && meta.selector !== ':lastAppHost' && meta.selector !== ':hosts' && meta.selector !== ':appHosts' && meta.selector !== ':host' && meta.selector !== '') {
+          delegateListeners.push(meta);
+        } else {
+          nonDelegateListeners.push(meta);
+        }
+      });
+
+      const delegatesByTypeAndRoot = new Map<string, any[]>();
+      delegateListeners.forEach(meta => {
+        const r = meta.options.root || 'auto';
+        const rootKey = `${meta.type}:${r}`;
+        if (!delegatesByTypeAndRoot.has(rootKey)) {
+          delegatesByTypeAndRoot.set(rootKey, []);
+        }
+        delegatesByTypeAndRoot.get(rootKey)!.push(meta);
+      });
+
+      delegatesByTypeAndRoot.forEach((metaList, typeRootKey) => {
+        const [type, rStr] = typeRootKey.split(':');
+        const r = rStr === 'auto' ? 'auto' : rStr;
+        const opts = { capture: metaList[0].options.capture, once: metaList[0].options.once, passive: metaList[0].options.passive };
+        
+        const bindRoots: (HTMLElement | ShadowRoot)[] = [];
+        if (r === 'auto') bindRoots.push(this.shadowRoot || (this as any));
+        else if (r === 'light') bindRoots.push(this as any);
+        else if (r === 'shadow' && this.shadowRoot) bindRoots.push(this.shadowRoot);
+        else if (r === 'all') {
+          bindRoots.push(this as any);
+          if (this.shadowRoot) bindRoots.push(this.shadowRoot);
+        }
+
+        bindRoots.forEach(br => {
+          const sortedMetaList = [...metaList].sort((a, b) => {
+            const aStop = a.options.stopPropagation ? 1 : 0;
+            const bStop = b.options.stopPropagation ? 1 : 0;
+            return bStop - aStop;
+          });
+          
+          const unifiedHandler = async (event: Event) => {
+            for (const meta of sortedMetaList) {
+              const { selector, options } = meta;
+              const matchedEl = (event.target as HTMLElement).closest(selector);
+              if (matchedEl && (br as any).contains(matchedEl)) {
+                if (options.stopPropagation) event.stopPropagation();
+                if (options.stopImmediatePropagation) event.stopImmediatePropagation();
+                if (options.preventDefault) event.preventDefault();
+                const currentHostSet = SwcUtils.getHostSet(this as any);
+                const args = { event, ...currentHostSet, $el: matchedEl, $root: br };
+                await (this as any)[meta.propertyKey](event, currentHostSet, matchedEl, args);
+                if ((event as any).cancelBubble) break;
+              }
+            }
+          };
+          br.addEventListener(type, unifiedHandler, opts);
+          (this as any)._boundListeners.push({ target: br, type, handler: unifiedHandler, options: opts });
+        });
+      });
+
+      nonDelegateListeners.forEach(meta => {
         const { selector, type, options } = meta;
         const opts = { capture: options.capture, once: options.once, passive: options.passive };
         const bindTargets: EventTarget[] = [];
@@ -329,34 +437,7 @@ export const elementDefine =
         else if (selector === ':hosts') hostSet.$hosts.forEach(applyRootOption);
         else if (selector === ':appHosts') hostSet.$appHosts.forEach(applyRootOption);
         else if (selector === ':host' || !selector) applyRootOption(this);
-        else if (options.delegate) {
-          const bindRoots: (HTMLElement | ShadowRoot)[] = [];
-          if (r === 'auto') bindRoots.push(this.shadowRoot || (this as any));
-          else if (r === 'light') bindRoots.push(this as any);
-          else if (r === 'shadow' && this.shadowRoot) bindRoots.push(this.shadowRoot);
-          else if (r === 'all') {
-            bindRoots.push(this as any);
-            if (this.shadowRoot) bindRoots.push(this.shadowRoot);
-          }
-
-          bindRoots.forEach(br => {
-            const handler = async (event: Event) => {
-              const matchedEl = (event.target as HTMLElement).closest(selector);
-              if (matchedEl && (br as any).contains(matchedEl)) {
-                if (options.stopPropagation) event.stopPropagation();
-                if (options.stopImmediatePropagation) event.stopImmediatePropagation();
-                if (options.preventDefault) event.preventDefault();
-                const currentHostSet = SwcUtils.getHostSet(this as any);
-                const args = { event, ...currentHostSet, $el: matchedEl, $root: br };
-                await (this as any)._invokeLifecycleMethod(meta.propertyKey, currentHostSet, [event, currentHostSet, matchedEl, args]);
-              }
-            };
-            br.addEventListener(type, handler, opts);
-            if (options.removeOnDisconnected === true || (br !== this && br !== this.shadowRoot)) {
-              (this as any)._boundListeners.push({ target: br, type, handler, options: opts });
-            }
-          });
-        } else {
+        else {
           const searchRoots: (HTMLElement | ShadowRoot)[] = [];
           if (r === 'auto') searchRoots.push(this.shadowRoot || (this as any));
           else if (r === 'light') searchRoots.push(this as any);
@@ -378,7 +459,7 @@ export const elementDefine =
             if (options.preventDefault) event.preventDefault();
             const currentHostSet = SwcUtils.getHostSet(this as any);
             const args = { event, ...currentHostSet, $el: t, $root: t };
-            await (this as any)._invokeLifecycleMethod(meta.propertyKey, currentHostSet, [event, currentHostSet, args]);
+            await (this as any)[meta.propertyKey](event, currentHostSet, args);
           };
           t.addEventListener(type, handler, opts);
           if (options.removeOnDisconnected === true || t === currentWin || t === currentWin.document) {
@@ -396,6 +477,11 @@ export const elementDefine =
       (this as any)._executeSwcScript('swc-on-connected', hostSet);
       (this as any)._executeSwcScript('swc-on-after-connected', hostSet);
       (this as any).__swc_connected = true;
+
+      // Register to appHost LAST when all lifecycle completed
+      if (appHost && typeof (appHost as any)._connected === 'function') {
+        (appHost as any)._connected(this);
+      }
     };
 
     const originalDisconnected = proto.disconnectedCallback;
@@ -421,6 +507,12 @@ export const elementDefine =
       (this as any)._executeSwcScript('swc-on-disconnected', hostSet);
       (this as any)._executeSwcScript('swc-on-after-disconnected', hostSet);
       (this as any).__swc_connected = false;
+      
+      // Remove from appHost LAST when disconnected
+      const appHost = hostSet.$appHost;
+      if (appHost && typeof (appHost as any)._disconnected === 'function') {
+        (appHost as any)._disconnected(this);
+      }
     };
 
     const originalAdopted = proto.adoptedCallback;
@@ -446,20 +538,23 @@ export const elementDefine =
     proto.attributeChangedCallback = function (name: string, old: string | null, newVal: string | null) {
       if (originalAttributeChanged) originalAttributeChanged.apply(this, [name, old, newVal]);
 
-      // Handle swc-on-* events
+      const hSet = SwcUtils.getHostSet(this as any);
+
       if (name.startsWith('swc-on-') && !swcLifecycleAttributes.includes(name)) {
         if (newVal !== null) {
-          const customEventMeta = emitCustomEventList.find(it => it.options.attributeName === name);
-          const eventName = customEventMeta ? customEventMeta.type : name.substring(7);
+          const eventName = name.substring(7);
           (this as any)._bindAttributeEvent(this as any, name, newVal, eventName);
         }
       }
 
-      // Handle @changedAttribute callbacks
+      const hostCustomEventMeta = emitHostCustomEventList.find(it => (it.options as any).attributeName === name);
+      if (hostCustomEventMeta && newVal !== null) {
+        (this as any)._bindAttributeEvent(this as any, name, newVal, hostCustomEventMeta.type);
+      }
+
       const mKeys = attrChangeMap.get(name);
       if (mKeys && Array.isArray(mKeys)) {
-        const hSet = SwcUtils.getHostSet(this as any);
-        for (const key of mKeys) (this as any)._invokeLifecycleMethod(key, hSet, [newVal, old, name]);
+        for (const key of mKeys) (this as any)[key](newVal, old, name, hSet);
       }
     };
 

@@ -5,7 +5,7 @@ import swcRegister, { addEventListener, elementDefine, HostSet, InjectSituationT
 
 swcRegister(window);
 import { SimpleApplication } from '@dooboostore/simple-boot/SimpleApplication';
-import { Sim } from '@dooboostore/simple-boot/decorators/SimDecorator';
+import { Sim } from '@dooboostore/simple-boot';
 import { Router as WebRouter } from '@dooboostore/core-web/routers/Router';
 import { Router } from '@dooboostore/simple-boot/decorators/route/Router';
 import { RouterAction } from '@dooboostore/simple-boot/route/RouterAction';

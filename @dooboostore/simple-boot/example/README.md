@@ -171,7 +171,6 @@ example/
 
 ## Learn More
 
-- **Full Documentation**: [https://dooboostore-develop.github.io/packages/simple-boot](https://dooboostore-develop.github.io/packages/simple-boot)
 - **NPM Package**: [@dooboostore/simple-boot](https://www.npmjs.com/package/@dooboostore/simple-boot)
 - **GitHub**: [dooboostore-develop/packages](https://github.com/dooboostore-develop/packages)
 

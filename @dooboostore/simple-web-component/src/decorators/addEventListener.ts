@@ -19,7 +19,7 @@ export interface AddEventListenerMetadata {
   options: AddEventListenerBaseOptions & SwcQueryOptions & { delegate?: boolean };
 }
 
-export const ADD_EVENT_LISTENER_METADATA_KEY = Symbol('simple-web-component:add-event-listener');
+export const ADD_EVENT_LISTENER_METADATA_KEY = Symbol.for('simple-web-component:add-event-listener');
 
 export function addEventListener(target: SpecialSelector, type: string, options?: AddEventListenerBaseOptions): MethodDecorator;
 export function addEventListener(selector: string, type: string, options?: AddEventListenerBaseOptions & SwcQueryOptions & { delegate?: boolean }): MethodDecorator;
@@ -44,3 +44,12 @@ export const getAddEventListenerMetadata = (target: any): AddEventListenerMetada
   const constructor = target instanceof Function ? target : target.constructor;
   return ReflectUtils.getMetadata(ADD_EVENT_LISTENER_METADATA_KEY, constructor);
 };
+
+/**
+ * @addEventListenerHost decorator - simplified version of @addEventListener for :host selector
+ * Usage: @addEventListenerHost('click')
+ * Usage: @addEventListenerHost('click', { stopPropagation: true })
+ */
+export function addEventListenerHost(type: string, options?: AddEventListenerBaseOptions & SwcQueryOptions): MethodDecorator {
+  return addEventListener(':host', type, options);
+}

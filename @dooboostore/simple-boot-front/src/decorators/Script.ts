@@ -6,7 +6,7 @@ export interface ScriptConfig {
     name?: string
 }
 
-export const ScriptMetadataKey = Symbol('Script');
+export const ScriptMetadataKey = Symbol.for('simple-boot-front:script-metadata');
 
 export type GenericClassDecorator<T> = (target: T) => void;
 

@@ -32,7 +32,7 @@ export type MappingConfig = {
     resolver?: Resolver|ConstructorType<Resolver>;
 }
 export type SaveMappingConfig = {propertyKey: string | symbol; config: MappingConfig}
-const MappingMetadataKey = Symbol('MappingMetadataKey');
+const MappingMetadataKey = Symbol.for('simple-boot-http-server:mapping-metadata');
 // const GETSMappingMetadataKey = Symbol('GET_METHODS');
 // const GETMappingMetadataKey = Symbol('GET_METHOD');
 

@@ -22,17 +22,17 @@ export type SimConfigProxy = ((ProxyHandler<any> | ConstructorType<any> | Functi
 export type SimConfigUsing = (ConstructorType<any> | Function | object) | ((ConstructorType<any> | Function | object)[]);
 
 export interface SimConfig {
-  symbol?: Symbol | (Symbol[]);
+  symbol?: symbol | (symbol[]);
   scheme?: string | (string[]);
   scope?: Lifecycle;
-  container?: string | (string[]);
+  container?: SimpleApplication | symbol | (SimpleApplication | symbol)[];
   autoCreate?: boolean;
   proxy?: SimConfigProxy;
   type?: (ConstructorType<any> | Function) | (ConstructorType<any> | Function)[];
   using?: SimConfigUsing;
 }
 
-export const SimMetadataKey = Symbol('Sim');
+export const SimMetadataKey = Symbol.for('simple-boot:sim-metadata');
 
 const isNotNullObjetInstance = (target: any) => target != null && target !== undefined && typeof target === 'object';
 
@@ -120,7 +120,7 @@ export const getSim = (target: ConstructorType<any> | Function | any): SimConfig
   }
 }
 
-const PostConstructMetadataKey = Symbol('PostConstruct');
+const PostConstructMetadataKey = Symbol.for('simple-boot:post-construct-metadata');
 export type PostConstructMetaType = {property: string};
 const postConstructProcess = (target: any, config: PostConstructMetaType) => {
   const metas = getPostConstructs(target) ?? [];

@@ -15,7 +15,7 @@ export type RouterPublishType = {
 };
 export const isRouterPublishType = (it: any): it is RouterPublishType => typeof it === 'object' && it !== null && typeof it.router === 'string' && typeof it.rootRouter === 'function';
 
-export type SymbolPublishType = { symbol: Symbol | Symbol[]; path: string };
+export type SymbolPublishType = { symbol: symbol | symbol[]; path: string };
 export const isSymbolPublishType = (it: any): it is SymbolPublishType => typeof it === 'object' && it !== null && 'symbol' in it && 'path' in it;
 
 export type SymbolForPublishType = `Symbol.for(${string}):/${string}`;

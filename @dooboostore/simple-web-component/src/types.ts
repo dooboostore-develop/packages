@@ -1,5 +1,6 @@
 import { SimpleApplication } from '@dooboostore/simple-boot/SimpleApplication';
 import { Router } from '@dooboostore/core-web';
+import {SwcAttributeConfigType} from "./elements/SwcAppEngine";
 
 export enum InjectSituationType {
   HOST_SET = 'SIMPLE_WEB_COMPONENT://HOSTSET',
@@ -45,6 +46,6 @@ export type HelperHostSet = HelperSet & HostSet;
 export interface SwcAppInterface extends HTMLElement {
   simpleApplication?: SimpleApplication;
   router?: Router;
-  connect(config?: any): Promise<void>;
+  connect(config?: SwcAttributeConfigType): Promise<void>;
   routing(path: string): Promise<void>;
 }

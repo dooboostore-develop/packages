@@ -1,4 +1,4 @@
-export const SimNoProxyKey = Symbol('Sim:NoProxy');
+export const SimNoProxyKey = Symbol.for('simple-boot:sim-no-proxy-metadata');
 export const SimNoProxy = (target: any, propertyKey?: string | symbol) => {
   // 클래스 데코레이터로 사용된 경우
   if (propertyKey === undefined) {

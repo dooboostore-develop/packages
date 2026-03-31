@@ -1,5 +1,5 @@
 import { ConstructorType } from '@dooboostore/core';
-import { InitOptionType, SimOption } from '@dooboostore/simple-boot';
+import { InitOptionType, SimOption, Sim } from '@dooboostore/simple-boot';
 
 export enum UrlType {
   path = 'path',

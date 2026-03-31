@@ -53,15 +53,15 @@ export class SimpleApplication {
     return this.routerManager;
   }
 
-  public run(otherInstanceSim?: Map<ConstructorType<any> | Function | SimConfig | Symbol, any>): this {
-    otherInstanceSim ??= new Map<ConstructorType<any> | Function | SimConfig | Symbol, any>();
+  public run(otherInstanceSim?: Map<ConstructorType<any> | Function | SimConfig | symbol, any>): this {
+    otherInstanceSim ??= new Map<ConstructorType<any> | Function | SimConfig | symbol, any>();
     otherInstanceSim.set(SimpleApplication, this);
     this.simstanceManager.run(otherInstanceSim);
     return this;
     // return this.simstanceManager;
   }
 
-  public simAtomic<T>(type: ConstructorType<T> | Function | Symbol): SimAtomic<T> | undefined {
+  public simAtomic<T>(type: ConstructorType<T> | Function | symbol): SimAtomic<T> | undefined {
     if (typeof type === 'symbol') {
       return this.simstanceManager.findFirstSim(type);
     } else if (typeof type === 'function') {
@@ -69,7 +69,7 @@ export class SimpleApplication {
       // return new SimAtomic<T>(type, this.simstanceManager);
     }
   }
-  public simAtomics<T>(type: ConstructorType<T> | Function | Symbol): SimAtomic<T>[] {
+  public simAtomics<T>(type: ConstructorType<T> | Function | symbol): SimAtomic<T>[] {
     if (typeof type === 'symbol') {
       return this.simstanceManager.findSims(type) ?? [];
     } else if (typeof type === 'function') {
@@ -88,10 +88,10 @@ export class SimpleApplication {
     }
   }
 
-  public sim<T>(type: ConstructorType<T> | Function | Symbol): T | undefined {
+  public sim<T>(type: ConstructorType<T> | Function | symbol): T | undefined {
     return this.simAtomic<T>(type)?.getValue();
   }
-  public sims<T>(type: ConstructorType<T> | Function | Symbol): T[] {
+  public sims<T>(type: ConstructorType<T> | Function | symbol): T[] {
     return this.simAtomics(type).map(it => it.getValue());
   }
 

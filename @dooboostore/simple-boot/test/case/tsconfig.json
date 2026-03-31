@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
     "target": "es2019",
-    "module": "commonjs",
+    "module": "esnext",
     "lib": ["es2019", "dom"],
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
@@ -10,15 +10,26 @@
     "forceConsistentCasingInFileNames": true,
     "strict": false,
     "sourceMap": true,
-    "baseUrl": ".",
+    "moduleResolution": "node",
+    "baseUrl": "./",
     "paths": {
-      "@dooboostore/core": ["../../../core/src/*"],
-      "@dooboostore/core-node": ["../../../core-node/src/*"],
-      "@dooboostore/simple-boot": ["../../../simple-boot/src/*"],
-      "@dooboostore/simple-boot-http-server": ["../../../simple-boot-http-server/src/*"],
-      "@dooboostore/simple-boot-http-server-ssr": ["../../../simple-boot-http-server-ssr/src/*"],
-      "@dooboostore/simple-boot-front": ["../../../simple-boot-front/src/*"],
-      "@dooboostore/dom-render": ["../../../dom-render/src/*"]
+      "@dooboostore/core": ["../../../core/src/index.ts"],
+      "@dooboostore/core-node": ["../../../core-node/src/index.ts"],
+      "@dooboostore/simple-boot": ["../../../simple-boot/src/index.ts"],
+      "@dooboostore/simple-boot-http-server": ["../../../simple-boot-http-server/src/index.ts"],
+      "@dooboostore/simple-boot-http-server-ssr": ["../../../simple-boot-http-server-ssr/src/index.ts"],
+      "@dooboostore/simple-boot-front": ["../../../simple-boot-front/src/index.ts"],
+      "@dooboostore/dom-render": ["../../../dom-render/src/index.ts"]
+    }
+  },
+  "ts-node": {
+    "esm": true,
+    "experimentalEsm": true,
+    "compilerOptions": {
+      "module": "esnext",
+      "experimentalDecorators": true,
+      "emitDecoratorMetadata": true,
+      "strict": false
     }
   }
 }

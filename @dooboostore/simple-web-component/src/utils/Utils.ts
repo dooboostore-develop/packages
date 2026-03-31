@@ -1,7 +1,151 @@
 import { SwcAppInterface, HostSet, HelperSet, HelperHostSet } from '../types';
 import {getElementConfig} from "../decorators";
 
-export const SWC_NOT_FOUND = Symbol('SWC_NOT_FOUND');
+export const SWC_NOT_FOUND = Symbol.for('simple-web-component:not-found');
+
+// DOM Creation Utilities
+export const htmlFragment = (html: string, doc?: Document): DocumentFragment => {
+  const d = doc || (typeof document !== 'undefined' ? document : undefined);
+  if (!d) throw new Error('Document is not available');
+  const template = d.createElement('template');
+  template.innerHTML = html.trim();
+  return template.content;
+};
+
+export const textNode = (text: string | any, doc?: Document): Text => {
+  const d = doc || (typeof document !== 'undefined' ? document : undefined);
+  if (!d) throw new Error('Document is not available');
+  return d.createTextNode(text !== undefined && text !== null ? String(text) : '');
+};
+
+export const commentNode = (comment: string | any, doc?: Document): Comment => {
+  const d = doc || (typeof document !== 'undefined' ? document : undefined);
+  if (!d) throw new Error('Document is not available');
+  return d.createComment(comment !== undefined && comment !== null ? String(comment) : '');
+};
+
+export const createElement = <T extends HTMLElement>(
+  tagName: string,
+  options?: { html?: string; attrs?: Record<string, any>; doc?: Document }
+): T => {
+  const d = options?.doc || (typeof document !== 'undefined' ? document : undefined);
+  if (!d) throw new Error('Document is not available');
+  const el = d.createElement(tagName) as T;
+  if (options?.html) el.innerHTML = options.html;
+  if (options?.attrs) {
+    Object.entries(options.attrs).forEach(([k, v]) => el.setAttribute(k, String(v)));
+  }
+  return el;
+};
+
+// Element factory functions
+export const htmlDivElement = (html: string, options?: { doc?: Document; attrs?: Record<string, any> }): HTMLDivElement => {
+  const d = options?.doc || (typeof document !== 'undefined' ? document : undefined);
+  if (!d) throw new Error('Document is not available');
+  const el = d.createElement('div') as HTMLDivElement;
+  el.innerHTML = html.trim();
+  if (options?.attrs) {
+    Object.entries(options.attrs).forEach(([k, v]) => el.setAttribute(k, String(v)));
+  }
+  return el;
+};
+
+export const htmlSpanElement = (html: string, options?: { doc?: Document; attrs?: Record<string, any> }): HTMLSpanElement => {
+  const d = options?.doc || (typeof document !== 'undefined' ? document : undefined);
+  if (!d) throw new Error('Document is not available');
+  const el = d.createElement('span') as HTMLSpanElement;
+  el.innerHTML = html.trim();
+  if (options?.attrs) {
+    Object.entries(options.attrs).forEach(([k, v]) => el.setAttribute(k, String(v)));
+  }
+  return el;
+};
+
+export const htmlButtonElement = (html: string, options?: { doc?: Document; attrs?: Record<string, any> }): HTMLButtonElement => {
+  const d = options?.doc || (typeof document !== 'undefined' ? document : undefined);
+  if (!d) throw new Error('Document is not available');
+  const el = d.createElement('button') as HTMLButtonElement;
+  el.innerHTML = html.trim();
+  if (options?.attrs) {
+    Object.entries(options.attrs).forEach(([k, v]) => el.setAttribute(k, String(v)));
+  }
+  return el;
+};
+
+export const htmlUlElement = (options?: { doc?: Document; attrs?: Record<string, any> }): HTMLUListElement => {
+  const d = options?.doc || (typeof document !== 'undefined' ? document : undefined);
+  if (!d) throw new Error('Document is not available');
+  const el = d.createElement('ul') as HTMLUListElement;
+  if (options?.attrs) {
+    Object.entries(options.attrs).forEach(([k, v]) => el.setAttribute(k, String(v)));
+  }
+  return el;
+};
+
+export const htmlLiElement = (html: string, options?: { doc?: Document; attrs?: Record<string, any> }): HTMLLIElement => {
+  const d = options?.doc || (typeof document !== 'undefined' ? document : undefined);
+  if (!d) throw new Error('Document is not available');
+  const el = d.createElement('li') as HTMLLIElement;
+  el.innerHTML = html.trim();
+  if (options?.attrs) {
+    Object.entries(options.attrs).forEach(([k, v]) => el.setAttribute(k, String(v)));
+  }
+  return el;
+};
+
+export const htmlAElement = (html: string, options?: { href?: string; doc?: Document; attrs?: Record<string, any> }): HTMLAnchorElement => {
+  const d = options?.doc || (typeof document !== 'undefined' ? document : undefined);
+  if (!d) throw new Error('Document is not available');
+  const el = d.createElement('a') as HTMLAnchorElement;
+  el.innerHTML = html.trim();
+  if (options?.href) el.href = options.href;
+  if (options?.attrs) {
+    Object.entries(options.attrs).forEach(([k, v]) => el.setAttribute(k, String(v)));
+  }
+  return el;
+};
+
+export const htmlPElement = (html: string, options?: { doc?: Document; attrs?: Record<string, any> }): HTMLParagraphElement => {
+  const d = options?.doc || (typeof document !== 'undefined' ? document : undefined);
+  if (!d) throw new Error('Document is not available');
+  const el = d.createElement('p') as HTMLParagraphElement;
+  el.innerHTML = html.trim();
+  if (options?.attrs) {
+    Object.entries(options.attrs).forEach(([k, v]) => el.setAttribute(k, String(v)));
+  }
+  return el;
+};
+
+export const htmlHeadingElement = (level: 1 | 2 | 3 | 4 | 5 | 6, html: string, options?: { doc?: Document; attrs?: Record<string, any> }): HTMLHeadingElement => {
+  const d = options?.doc || (typeof document !== 'undefined' ? document : undefined);
+  if (!d) throw new Error('Document is not available');
+  const el = d.createElement(`h${level}`) as HTMLHeadingElement;
+  el.innerHTML = html.trim();
+  if (options?.attrs) {
+    Object.entries(options.attrs).forEach(([k, v]) => el.setAttribute(k, String(v)));
+  }
+  return el;
+};
+
+export const htmlSectionElement = (options?: { doc?: Document; attrs?: Record<string, any> }): HTMLElement => {
+  const d = options?.doc || (typeof document !== 'undefined' ? document : undefined);
+  if (!d) throw new Error('Document is not available');
+  const el = d.createElement('section');
+  if (options?.attrs) {
+    Object.entries(options.attrs).forEach(([k, v]) => el.setAttribute(k, String(v)));
+  }
+  return el;
+};
+
+export const htmlArticleElement = (options?: { doc?: Document; attrs?: Record<string, any> }): HTMLElement => {
+  const d = options?.doc || (typeof document !== 'undefined' ? document : undefined);
+  if (!d) throw new Error('Document is not available');
+  const el = d.createElement('article');
+  if (options?.attrs) {
+    Object.entries(options.attrs).forEach(([k, v]) => el.setAttribute(k, String(v)));
+  }
+  return el;
+};
 
 export namespace SwcUtils {
   export const getHelperSet = (win: Window): HelperSet => {
@@ -43,6 +187,7 @@ export namespace SwcUtils {
    */
   export const findNearestSwcHost = (el: HTMLElement | Node): HTMLElement | undefined => {
     if ((el as any).__swc_host) return (el as any).__swc_host;
+    // if ((el as any).__swc_proto_setup) return (el as any).__swc_proto_setup;
 
     let current: any = el.parentElement || (el.getRootNode?.() as any)?.host;
     const doc = el.ownerDocument;
@@ -136,5 +281,38 @@ export namespace SwcUtils {
       $lastAppHost: $appHost,
       ...loopContext
     } as any;
+  };
+
+  export const parsePathPattern = (pattern: string | undefined, currentPath: string): { [key: string]: string } | null => {
+    // pattern이 null/undefined면 와일드카드 (모든 경로 매칭)
+    if (pattern === null || pattern === undefined) return {};
+    
+    // 공백만 있는 패턴도 와일드카드
+    const trimmedPattern = pattern.trim();
+    if (trimmedPattern === '' && pattern !== '') return {}; // 공백 문자만 있는 경우
+    
+    // 패턴을 정규식으로 변환
+    // 지원 형식:
+    //   {id} → ([^/]+)  기본 (/ 제외한 모든 문자)
+    //   {tail:.*} → (.*)  정규표현식 직접 지정
+    //   {slug:[a-z0-9-]+} → ([a-z0-9-]+)
+    const paramNames: string[] = [];
+    const regexPattern = trimmedPattern.replace(/{(\w+)(?::(.+?))?}/g, (match, paramName, customRegex) => {
+      paramNames.push(paramName);
+      // customRegex가 있으면 사용, 없으면 기본값 ([^/]+)
+      return `(${customRegex || '[^/]+'})`;
+    });
+    
+    const regex = new RegExp(`^${regexPattern}$`);
+    const match = currentPath.match(regex);
+    
+    if (!match) return null;
+    
+    const result: { [key: string]: string } = {};
+    paramNames.forEach((name, index) => {
+      result[name] = match[index + 1];
+    });
+    
+    return result;
   };
 }

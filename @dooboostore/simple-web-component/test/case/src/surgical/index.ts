@@ -1,4 +1,4 @@
-import swcRegister, { elementDefine, onConnectedInnerHtml, replaceChildren, appendChild, addEventListener, htmlFragment, textNode, htmlDivElement, htmlSpanElement, createElement, HostSet, setStyle, updateStyle, setClassList, updateClassList } from '@dooboostore/simple-web-component';
+import swcRegister, { elementDefine, onConnectedInnerHtml, applyNode, applyReplaceChildrenNode, addEventListener, htmlFragment, textNode, htmlDivElement, htmlSpanElement, createElement, HostSet, setStyle, updateStyle, setClass, updateClass } from '@dooboostore/simple-web-component';
 
 swcRegister(window);
 @elementDefine('surgical-element', { window })
@@ -6,42 +6,59 @@ class SurgicalElement extends HTMLElement {
   isActive = false;
 
   // --- 1. htmlFragment & replaceChildren ---
-  @replaceChildren('#display-outlet')
+  @applyReplaceChildrenNode('#display-outlet')
   testHtmlFragment() {
     console.log('>>> [Surgical Test] htmlFragment called');
-    return htmlFragment`
+    return htmlFragment(`
       <div style="background: #fff9c4; padding: 10px; border: 1px solid #fbc02d;">
         <strong>Fragment Result:</strong>
-        <p>This was created using <code>htmlFragment\`...\`</code></p>
+        <p>This was created using <code>htmlFragment</code></p>
       </div>
-    `;
+    `);
   }
 
-  // --- 2. textNode & appendChild ---
-  @appendChild('#display-outlet')
+  // --- 2. textNode & applyNode ---
+  @applyNode('#display-outlet')
   testTextNode() {
     console.log('>>> [Surgical Test] textNode called');
-    return textNode` (Added via textNode\`)`;
+    return textNode(` (Added via textNode)`);
   }
 
-  // --- 3. html***Element & appendChild ---
-  @appendChild('#list-outlet')
+  // --- 3. html***Element & applyNode ---
+  @applyNode('#list-outlet')
   testElementFactory() {
-    const res = htmlDivElement`
+    const res = htmlDivElement(`
         <span style="color: #673ab7;">[Factory]</span> New Row at ${new Date().toLocaleTimeString()}
-    `;
+    `);
     console.log('>>> [Surgical Test] htmlDivElement result:', res);
     return res;
   }
 
   // --- 4. createElement (Structured) ---
-  @appendChild('#list-outlet', { position: 'afterBegin' })
+  @applyNode('#list-outlet', { position: 'afterBegin' })
   testCreateElement() {
     console.log('>>> [Surgical Test] createElement called');
-    return createElement({ tagName: 'div', innerHtml: '<strong>[Structured]</strong> Prepended via <code>createElement</code>' }, { class: 'item', style: 'background: #f1f8e9; border-color: #8bc34a;' });
+    return createElement('div', { 
+        html: '<strong>[Structured]</strong> Prepended via <code>createElement</code>',
+        attrs: {
+            class: 'item', 
+            style: 'background: #f1f8e9; border-color: #8bc34a;' 
+        }
+    });
   }
 
-  // --- 5. setStyle & updateStyle ---
+  // --- 5. applyNode with replace position ---
+  @applyNode('#list-outlet', { position: 'replace' })
+  testReplaceElement() {
+    console.log('>>> [Surgical Test] replace position called');
+    return htmlDivElement(`
+        <div style="background: #f3e5f5; border: 2px solid #9c27b0; padding: 15px; border-radius: 8px;">
+          <strong style="color: #6a1b9a;">[REPLACED]</strong> Entire outlet replaced at ${new Date().toLocaleTimeString()}
+        </div>
+    `);
+  }
+
+  // --- 6. setStyle & updateStyle ---
   @setStyle('#style-box')
   testSetStyle() {
     return { background: '#ffcdd2', color: '#c62828', padding: '20px', border: '2px solid #c62828' };
@@ -52,17 +69,15 @@ class SurgicalElement extends HTMLElement {
     return { borderRadius: '15px', fontWeight: 'bold', boxShadow: '0 4px 8px rgba(0,0,0,0.2)' };
   }
 
-  // --- 6. updateClassList (Object mapping or String/Array) ---
-  @updateClassList('#style-box')
-  testUpdateClassList() {
-    // If you want to just add classes as string/array:
-    // return ['added-via-update', 'another-one'];
+  // --- 7. updateClass (Object mapping or String/Array) ---
+  @updateClass('#style-box')
+  testUpdateClass() {
     return { 'active-mode': this.isActive, 'fancy-border': true };
   }
 
-  // --- 7. setClassList (Replace all) ---
-  @setClassList('#style-box')
-  testSetClassList() {
+  // --- 8. setClass (Replace all) ---
+  @setClass('#style-box')
+  testSetClass() {
     return { 'new-class-only': true, 'removed-class': false };
   }
 
@@ -88,6 +103,11 @@ class SurgicalElement extends HTMLElement {
     this.testCreateElement();
   }
 
+  @addEventListener('#btn-replace', 'click')
+  onReplace() {
+    this.testReplaceElement();
+  }
+
   @addEventListener('#btn-set-style', 'click')
   onSetStyle() {
     this.testSetStyle();
@@ -101,12 +121,12 @@ class SurgicalElement extends HTMLElement {
   @addEventListener('#btn-update-class', 'click')
   onUpdateClass() {
     this.isActive = !this.isActive;
-    this.testUpdateClassList();
+    this.testUpdateClass();
   }
 
   @addEventListener('#btn-set-class', 'click')
   onSetClass() {
-    this.testSetClassList();
+    this.testSetClass();
   }
 
   @onConnectedInnerHtml({ useShadow: true })
@@ -137,8 +157,9 @@ class SurgicalElement extends HTMLElement {
 
         <h3>2. Element Creation Test</h3>
         <div class="controls">
-            <button id="btn-factory">appendChild (htmlDivElement factory)</button>
-            <button id="btn-create">appendChild (createElement structured)</button>
+            <button id="btn-factory">applyNode (htmlDivElement factory)</button>
+            <button id="btn-create">applyNode (createElement structured)</button>
+            <button id="btn-replace">applyNode (replace position)</button>
         </div>
         <div id="list-outlet" class="outlet">
             <div class="item">Initial Static Item</div>
@@ -150,8 +171,8 @@ class SurgicalElement extends HTMLElement {
         <div class="controls">
             <button id="btn-set-style">setStyle (Replace All Styles)</button>
             <button id="btn-update-style">updateStyle (Merge Styles)</button>
-            <button id="btn-update-class">updateClassList (Toggle Object)</button>
-            <button id="btn-set-class">setClassList (Replace All Classes)</button>
+            <button id="btn-update-class">updateClass (Toggle Object)</button>
+            <button id="btn-set-class">setClass (Replace All Classes)</button>
         </div>
         <div id="style-box" class="outlet" style="font-size: 1.2em;">Target Box for Styling & Classes</div>
       </div>
@@ -159,4 +180,4 @@ class SurgicalElement extends HTMLElement {
   }
 }
 
-console.log('>>> SurgicalElement module loaded with TemplateUtils');
+console.log('>>> SurgicalElement module loaded');

@@ -4,7 +4,7 @@ export interface EventListenerOption {
     target: string | any;
     name: string;
 }
-const EventListenerMetadataKey = Symbol('EventListener');
+const EventListenerMetadataKey = Symbol.for('simple-boot:event-listener-metadata');
 export const EventListener = (option: EventListenerOption) => {
     return ReflectUtils.metadata(EventListenerMetadataKey, option);
 }

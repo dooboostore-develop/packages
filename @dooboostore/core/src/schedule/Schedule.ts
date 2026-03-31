@@ -1,7 +1,7 @@
 import { Runnable } from '../runs/Runnable';
 
 export namespace Schedule {
-  export const SYMBOL = Symbol('Schedule');
+  export const SYMBOL = Symbol.for('core:schedule-token');
   export type State = 'INITIALIZE' | 'RUNNING' | 'DONE-AND-WAITING' | 'STOPPED' | 'ERROR' | 'SUCCESS';
 }
 

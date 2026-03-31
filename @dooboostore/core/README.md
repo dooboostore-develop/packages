@@ -1,10 +1,9 @@
 # @dooboostore/core
 
-[![NPM version](https://img.shields.io/npm/v/@dooboostore/core.svg?style=flat-square)](https://www.npmjs.com/package/@dooboostore/core)
+[![NPM version](https://img.shields.io/npm/v/@dooboostore/core.svg?color=cb3837&style=flat-square)](https://www.npmjs.com/package/@dooboostore/core)
 [![Build and Test](https://github.com/dooboostore-develop/packages/actions/workflows/main.yaml/badge.svg?branch=main)](https://github.com/dooboostore-develop/packages/actions/workflows/main.yaml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](https://opensource.org/licenses/MIT)
 
-**Full Documentation:** [https://dooboostore-develop.github.io/@dooboostore/core](https://dooboostore-develop.github.io/@dooboostore/core)
 
 A comprehensive TypeScript utility library providing 35+ modules with 200+ utilities for enterprise-grade application development. From reactive messaging to advanced async patterns, geometry operations to form validation—`@dooboostore/core` is the foundational toolkit for the @dooboostore ecosystem.
 

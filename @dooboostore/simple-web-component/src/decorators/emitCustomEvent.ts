@@ -4,7 +4,6 @@ import { ensureInit, getElementConfig } from './elementDefine';
 import { SwcUtils } from '../utils/Utils';
 
 export interface EmitCustomEventBaseOptions {
-  attributeName?: string;
   bubbles?: boolean;
   composed?: boolean;
   cancelable?: boolean;
@@ -14,10 +13,10 @@ export interface EmitCustomEventMetadata {
   propertyKey: string | symbol;
   selector: string;
   type: string;
-  options: EmitCustomEventBaseOptions & SwcQueryOptions;
+  options: (EmitCustomEventBaseOptions & SwcQueryOptions) | (EmitCustomEventBaseOptions & SwcQueryOptions & { attributeName?: string });
 }
 
-export const EMIT_CUSTOM_EVENT_METADATA_KEY = Symbol('simple-web-component:emit-custom-event');
+export const EMIT_CUSTOM_EVENT_METADATA_KEY = Symbol.for('simple-web-component:emit-custom-event');
 export function emitCustomEvent(target: SpecialSelector, type: string, options?: EmitCustomEventBaseOptions): MethodDecorator;
 export function emitCustomEvent(selector: string, type: string, options?: EmitCustomEventBaseOptions & SwcQueryOptions): MethodDecorator;
 /**
@@ -29,9 +28,6 @@ export function emitCustomEvent(selectorOrTarget: string, type: string, options:
 
     const fullOptions: any = { ...options, type };
 
-    if (!fullOptions.attributeName) {
-      fullOptions.attributeName = `swc-on-${type}`;
-    }
     if (fullOptions.bubbles === undefined) fullOptions.bubbles = true;
     if (fullOptions.composed === undefined) fullOptions.composed = true;
 
@@ -103,3 +99,18 @@ export const getEmitCustomEventMetadataList = (target: any): EmitCustomEventMeta
   const constructor = target instanceof Function ? target : target.constructor;
   return ReflectUtils.getMetadata(EMIT_CUSTOM_EVENT_METADATA_KEY, constructor);
 };
+
+/**
+ * @emitCustomEventHost decorator - simplified version of @emitCustomEvent for :host selector
+ * Usage: @emitCustomEventHost('navigate') // default attributeName: 'on-emit-navigate'
+ * Usage: @emitCustomEventHost('navigate', { attributeName: 'on-navigate' })
+ * 
+ * The attributeName option is used to automatically observe attributes for this event.
+ * For example, { attributeName: 'on-navigate' } will add 'on-navigate' to observedAttributes.
+ */
+export function emitCustomEventHost(type: string, options: EmitCustomEventBaseOptions & SwcQueryOptions & { attributeName?: string } = {}): MethodDecorator {
+  if (!options.attributeName) {
+    options.attributeName = `on-emit-${type}`;
+  }
+  return emitCustomEvent(':host', type, options);
+}

@@ -16,7 +16,7 @@ import { DomParserInitializer } from '../initializers/DomParserInitializer';
 import { JsdomInitializer } from '../initializers';
 import { SimConfig } from '@dooboostore/simple-boot/decorators/SimDecorator';
 
-export type FactoryAndParams = {
+export type DomParserFactoryAndParams = {
   frontDistPath: string;
   frontDistIndexFileName?: string;
   factorySimFrontOption: (window: any) => SimFrontOption;
@@ -43,7 +43,7 @@ export class SSRDomParserFilter implements Filter {
   // private intervalId?: NodeJS.Timeout;
 
   constructor(
-    public config: FactoryAndParams,
+    public config: DomParserFactoryAndParams,
     public otherInstanceSim?: Map<ConstructorType<any> | Function | SimConfig | Symbol, any>
   ) {
     config.frontDistIndexFileName = config.frontDistIndexFileName || 'index.html';
@@ -97,10 +97,10 @@ export class SSRDomParserFilter implements Filter {
     const option = this.config.factorySimFrontOption(DomRenderProxy.final(window));
     const domExcludes = [RequestResponse, ...(this.config.domExcludes || [])];
     const simpleBootFront = await this.config.factory.create(option, this.config.using, domExcludes);
-    otherInstanceSim ??= new Map<Function | ConstructorType<any> | SimConfig | Symbol, any>();
+    otherInstanceSim ??= new Map<Function | ConstructorType<any> | SimConfig | symbol, any>();
     this.otherInstanceSim?.forEach((v, k) => otherInstanceSim!.set(k, v));
 
-    simpleBootFront.run(otherInstanceSim);
+    simpleBootFront.run(otherInstanceSim as any);
     // (simpleBootFront as any).generation = this.poolGeneration;
     return simpleBootFront;
   }

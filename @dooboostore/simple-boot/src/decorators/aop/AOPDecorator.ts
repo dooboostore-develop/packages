@@ -4,9 +4,9 @@ import { ObjectUtils } from '@dooboostore/core';
 import { ConstructorType } from '@dooboostore/core';
 import { ReflectMethod } from '../../types/Types';
 
-const AfterMetadataKey = Symbol('After');
-const BeforeMetadataKey = Symbol('Before');
-const AroundMetadataKey = Symbol('Around');
+const AfterMetadataKey = Symbol.for('simple-boot:after-metadata');
+const BeforeMetadataKey = Symbol.for('simple-boot:before-metadata');
+const AroundMetadataKey = Symbol.for('simple-boot:around-metadata');
 type AOPOption = { type?: ConstructorType<any>; property: string };
 type AroundOption = {
   before?: (obj: any, propertyKey: string, args: any[]) => any[];

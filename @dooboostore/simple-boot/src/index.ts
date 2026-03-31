@@ -1,9 +1,6 @@
 import 'reflect-metadata';
-export * as Core from '@dooboostore/core/bundle-entry';
-export { SimpleApplication } from './SimpleApplication';
-export { SimOption } from './SimOption';
-export type { InitOptionType, ProxyHandlerType } from './SimOption';
-
+export * from './SimpleApplication';
+export * from './SimOption';
 // Subdirectories
 export * from './alert';
 export * from './cache';

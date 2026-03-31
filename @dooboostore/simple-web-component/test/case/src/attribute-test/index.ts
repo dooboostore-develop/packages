@@ -4,15 +4,15 @@ swcRegister(window);
 
 @elementDefine('attribute-test-element')
 class AttributeTestElement extends HTMLElement {
-  @attribute(':host',  { name:'zz', connectedInitialize: true })
+  @attribute(':host',  { name:'zz' })
   v = 1022;
 
   // 1. Host attribute with auto-init and Number type
-  @attribute(':host', { connectedInitialize: true })
+  @attribute(':host')
   count = 10;
 
   // 2. Host attribute with custom name and Boolean type
-  @attribute(':host', { name: 'is-active', type: Boolean, connectedInitialize: true })
+  @attribute(':host', { name: 'is-active', type: Boolean })
   active  = true;
 
   // 3. Child attribute

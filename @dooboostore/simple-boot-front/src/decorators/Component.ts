@@ -11,7 +11,7 @@ export interface ComponentConfig<T = any> {
     using?: SimConfigUsing;
 }
 
-export const ComponentMetadataKey = Symbol('Component');
+export const ComponentMetadataKey = Symbol.for('simple-boot-front:component-metadata');
 
 // Partial<ComponentConfig>
 const componentProcess = (config: ComponentConfig, target: ConstructorType<any>) => {

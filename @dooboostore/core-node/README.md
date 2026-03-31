@@ -1,10 +1,9 @@
 # @dooboostore/core-node
 
-[![NPM version](https://img.shields.io/npm/v/@dooboostore/core-node.svg?style=flat-square)](https://www.npmjs.com/package/@dooboostore/core-node)
+[![NPM version](https://img.shields.io/npm/v/@dooboostore/core-node.svg?color=cb3837&style=flat-square)](https://www.npmjs.com/package/@dooboostore/core-node)
 [![Build and Test](https://github.com/dooboostore-develop/packages/actions/workflows/main.yaml/badge.svg?branch=main)](https://github.com/dooboostore-develop/packages/actions/workflows/main.yaml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](https://opensource.org/licenses/MIT)
 
-**Full Documentation:** [https://dooboostore-develop.github.io/@dooboostore/core-node](https://dooboostore-develop.github.io/@dooboostore/core-node)
 
 A comprehensive Node.js-specific utility library extending `@dooboostore/core` with file system operations, process management, memory profiling, and batch HTTP downloading capabilities. Perfect for backend services, CLI tools, SSR applications, and DevOps workflows.
 

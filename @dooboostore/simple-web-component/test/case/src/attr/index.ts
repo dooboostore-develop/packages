@@ -1,4 +1,4 @@
-import swcRegister, { elementDefine, onConnectedInnerHtml, changedAttribute, setAttribute, addEventListener } from '@dooboostore/simple-web-component';
+import swcRegister, { elementDefine, onConnectedInnerHtml, changedAttributeHost, setAttribute, addEventListener } from '@dooboostore/simple-web-component';
 
 swcRegister(window);
 @elementDefine('attr-element', { window })
@@ -6,31 +6,29 @@ class AttrElement extends HTMLElement {
   count = 0;
   active = false;
 
-  @changedAttribute('count')
+  @changedAttributeHost('count')
   onCountChanged(newVal: any, oldVal: any, name: string) {
     console.log(`[changedAttribute] name: ${name}, old: ${oldVal}, new: ${newVal}`);
     this.count = Number(newVal);
   }
 
-  @changedAttribute('active')
+  @changedAttributeHost('active')
   onActiveChanged(newVal: any, oldVal: any, name: string) {
     this.active = newVal !== null;
     console.log(`[changedAttribute] name: ${name}, old: ${oldVal}, new: ${newVal} (active: ${this.active})`);
   }
 
-  // Updated to new signature: (selector, name)
   @setAttribute(':host', 'count')
   updateCount(next: number, old?: any, name?: string) {
     console.log(`[setAttribute] name: ${name}, old: ${old}, next: ${next}`);
-    return next; // Returns value to be set as attribute
+    return next;
   }
 
-  // Updated to new signature: (selector, name)
   @setAttribute(':host', 'active')
   toggleActive(old?: any, name?: string) {
     const next = !this.active;
     console.log(`[setAttribute] name: ${name}, old: ${old}, next: ${next}`);
-    return next ? '' : null; // '' to set, null to remove
+    return next ? '' : null;
   }
 
   @addEventListener('#btn-inc', 'click')
@@ -65,8 +63,6 @@ class AttrElement extends HTMLElement {
   }
 }
 
-// --- Dynamic Creation Tests ---
-
 const testContainer = document.createElement('div');
 testContainer.style.marginTop = '40px';
 testContainer.style.padding = '20px';
@@ -74,7 +70,6 @@ testContainer.style.border = '2px dashed #999';
 testContainer.innerHTML = '<h2>Creation Mode Tests</h2>';
 document.body.appendChild(testContainer);
 
-// 1. document.createElement
 const btn1 = document.createElement('button');
 btn1.textContent = 'Create via document.createElement';
 btn1.onclick = () => {
@@ -84,7 +79,6 @@ btn1.onclick = () => {
 };
 testContainer.appendChild(btn1);
 
-// 2. new AttrElement()
 const btn2 = document.createElement('button');
 btn2.textContent = 'Create via new AttrElement()';
 btn2.style.marginLeft = '10px';
@@ -96,7 +90,6 @@ btn2.onclick = () => {
 };
 testContainer.appendChild(btn2);
 
-// 3. innerHTML
 const btn3 = document.createElement('button');
 btn3.textContent = 'Create via innerHTML';
 btn3.style.marginLeft = '10px';

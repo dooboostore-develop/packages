@@ -191,7 +191,7 @@ export class SimpleBootFront extends SimpleApplication {
     return obj;
   }
 
-  private initRun(otherInstanceSim?: Map<ConstructorType<any> | Function | SimConfig | Symbol, any>) {
+  private initRun(otherInstanceSim?: Map<ConstructorType<any> | Function | SimConfig | symbol, any>) {
     // console.log('!@!!', this.option.window.document.body.innerHTML);
     const targetUserElement = typeof this.option.selector === 'string' ? this.option.window.document.querySelector(this.option.selector) : this.option.selector;
 
@@ -331,7 +331,7 @@ export class SimpleBootFront extends SimpleApplication {
     return data;
   }
 
-  public run(otherInstanceSim?: Map<ConstructorType<any> | Function | SimConfig | Symbol, any>, url?: string) {
+  public run(otherInstanceSim?: Map<ConstructorType<any> | Function | SimConfig | symbol, any>, url?: string) {
     const simstanceManager = this.initRun(otherInstanceSim);
     // const currentUrl = UrlUtils.toUrl(this.option.window.location.href);
     // const origin = currentUrl.origin;

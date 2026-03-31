@@ -11,7 +11,7 @@ import {SimOption} from '../SimOption';
 import {Subject} from '@dooboostore/core';
 import {SimpleApplication} from "../SimpleApplication";
 
-export type RoutingOption = { router?: ConstructorType<any> | any | Symbol, noOnRouting?: boolean, find?: { router: 'last' | 'first' } };
+export type RoutingOption = { router?: ConstructorType<any> | any | symbol, noOnRouting?: boolean, find?: { router: 'last' | 'first' } };
 export type RoutingDataSet = {
   intent: Intent, routerModule: RouterModule, routerManager: RouterManager
 }
@@ -98,7 +98,7 @@ export class RouterManager {
       intent = new Intent(intent);
     }
     const targetRouter = option?.router ?? this.simOption.rootRouter;
-    console.log('------->', targetRouter)
+    // console.log('------->', targetRouter)
     const callCheckOnRouting = option?.noOnRouting !== true; // 기본값은 false, 즉 onRouting 호출
 
     if (!targetRouter) {

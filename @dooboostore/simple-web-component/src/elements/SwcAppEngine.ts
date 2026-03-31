@@ -9,12 +9,18 @@ import { ConstructorType, OptionalType } from '@dooboostore/core';
 import { FunctionUtils } from '@dooboostore/core';
 import { SwcUtils } from '../utils/Utils';
 
+import { SwcAppInterface } from '../types';
+import {Intent} from "@dooboostore/simple-boot";
+
 export type SwcConfigType = {
-  rootRouter: ConstructorType<any> | symbol;
   routeType: 'path' | 'hash' | 'element';
   connectMode?: 'direct' | 'swap';
+  container?: symbol;
   path?: string;
   window: Window;
+  onEngineStarted?: (sp: SimpleApplication, app: SwcAppInterface) => void;
+  onConnected?: (app: SwcAppInterface) => void;
+  onDisconnected?: (app: SwcAppInterface) => void;
 };
 
 export type SwcAttributeConfigType = OptionalType<SwcConfigType, 'routeType' | 'window'>;
@@ -23,76 +29,43 @@ export class SwcAppEngine {
   public simpleApplication?: SimpleApplication;
   public router?: Router;
   private routerSubscription?: Subscription;
-  private _isInitialized = false;
+  private _config?: SwcConfigType;
 
   constructor(private host: HTMLElement) {}
 
-  async connect(config?: SwcAttributeConfigType) {
-    if (this._isInitialized) return;
-
-    let userConfig = config;
-    const win = this.host.ownerDocument?.defaultView || window;
-    const Node = (win as any).Node as typeof globalThis.Node;
-    if (!userConfig) {
-      const configStr = this.host.getAttribute('swc-get-application-config');
-      if (configStr) {
-        try {
-          userConfig = FunctionUtils.executeReturn({
-            script: configStr,
-            context: this.host,
-            args: SwcUtils.getHelperAndHostSet(win, this.host)
-          });
-        } catch (e) {
-          console.error('[SWC-APP-ENGINE] Script execution failed:', e);
-        }
-      }
-    }
-
-    if (!userConfig) return;
-    this._isInitialized = true;
-
+  get config() {
+    return this._config;
+  }
+  async connect(config: SwcConfigType) {
     try {
-      if (userConfig.rootRouter) {
-        const _config: SwcConfigType = {
-          routeType: 'element',
-          window: win,
-          ...userConfig
-        } as SwcConfigType;
+      this._config = config;
 
-        // Router Selection
-        if (_config.routeType === 'path') {
-          this.router = new PathRouter({ window: _config.window, firstUrl: _config.path });
-        } else if (_config.routeType === 'hash') {
-          this.router = new HashRouter({ window: _config.window, firstUrl: _config.path });
-        } else if (_config.routeType === 'element') {
-          this.router = new ElementRouter({ window: _config.window, firstUrl: _config.path });
-        }
+      // Router Selection
+      if (this._config.routeType === 'path') {
+        this.router = new PathRouter({ window: this._config.window, firstUrl: this._config.path });
+      } else if (this._config.routeType === 'hash') {
+        this.router = new HashRouter({ window: this._config.window, firstUrl: this._config.path });
+      } else if (this._config.routeType === 'element') {
+        this.router = new ElementRouter({ window: this._config.window, firstUrl: this._config.path });
+      }
 
-        // Routing sync
-        if (this.router) {
-          this.routerSubscription = this.router.observable.subscribe((route: RouterEventType) => {
-            if (route.triggerPoint === 'end') {
-              this.simpleApplication?.routing(route.path);
-            }
-          });
-        }
+      // console.log('vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv', this.router)
 
+      // App start
+      const containerSymbol = this._config.container || (this.host as any).getContainerSymbol?.();
+      this.simpleApplication = new SimpleApplication(
+        new SimOption({
+          excludeProxys: [Node],
+          container: containerSymbol
+        })
+      );
 
-        // App start
-        this.simpleApplication = new SimpleApplication(new SimOption({ excludeProxys: [Node], rootRouter: _config.rootRouter }));
+      const otherInstanceSim = new Map<any, any>();
+      if (this.router) otherInstanceSim.set(Router, this.router);
+      this.simpleApplication.run(otherInstanceSim);
 
-        const otherInstanceSim = new Map<any, any>();
-        if (this.router) otherInstanceSim.set(Router, this.router);
-        this.simpleApplication.run(otherInstanceSim);
-
-        // Rendering
-        const data = this.simpleApplication.sim(_config.rootRouter);
-        if (data instanceof Node) {
-          if (this.host.shadowRoot) this.host.shadowRoot.replaceChildren(data);
-          else this.host.replaceChildren(data);
-        }
-
-        if (_config.path) this.router?.go(_config.path);
+      if (this._config.onEngineStarted) {
+        this._config.onEngineStarted(this.simpleApplication, this.host as unknown as SwcAppInterface);
       }
     } catch (e) {
       console.error('[SWC-APP-ENGINE] Init failed:', e);

@@ -61,7 +61,7 @@ export class SimstanceManager implements Runnable<void, Map<ConstructorType<any>
     return r;
   }
 
-  getSimConfig(schemeOrSymbol: string | Symbol | undefined): SimAtomic<any>[] {
+  getSimConfig(schemeOrSymbol: string | symbol | undefined): SimAtomic<any>[] {
     const newVar =
       this.getSimAtomics().filter(it => {
         const config = it?.getConfig();
@@ -78,7 +78,7 @@ export class SimstanceManager implements Runnable<void, Map<ConstructorType<any>
     return newVar;
   }
 
-  findSims<T = any>(symbol: Symbol): SimAtomic<T>[];
+  findSims<T = any>(symbol: symbol): SimAtomic<T>[];
   findSims<T = any>(data: { scheme?: string; type?: ConstructorType<any> | Function }): SimAtomic<T>[];
   findSims<T = any>(
     data:
@@ -86,7 +86,7 @@ export class SimstanceManager implements Runnable<void, Map<ConstructorType<any>
           scheme?: string;
           type?: ConstructorType<any> | Function;
         }
-      | Symbol
+      | symbol
   ): SimAtomic<T>[] {
     let r: SimAtomic<T>[] = [];
     if (data) {
@@ -116,9 +116,9 @@ export class SimstanceManager implements Runnable<void, Map<ConstructorType<any>
     return r;
   }
 
-  findFirstSim<T = any>(symbol: Symbol): SimAtomic<T> | undefined;
+  findFirstSim<T = any>(symbol: symbol): SimAtomic<T> | undefined;
   findFirstSim<T = any>(data: { scheme?: string; type?: ConstructorType<any> | Function }): SimAtomic<T> | undefined;
-  findFirstSim<T = any>(data: { scheme?: string; type?: ConstructorType<any> | Function } | Symbol): SimAtomic<T> | undefined {
+  findFirstSim<T = any>(data: { scheme?: string; type?: ConstructorType<any> | Function } | symbol): SimAtomic<T> | undefined {
     if (typeof data === 'symbol') {
       return this.findSims(data)[0];
     } else {
@@ -126,7 +126,7 @@ export class SimstanceManager implements Runnable<void, Map<ConstructorType<any>
     }
   }
 
-  findLastSim<T = any>(symbol: Symbol): SimAtomic<T> | undefined;
+  findLastSim<T = any>(symbol: symbol): SimAtomic<T> | undefined;
   findLastSim<T = any>(data: { scheme?: string; type?: ConstructorType<any> | Function }): SimAtomic<T> | undefined;
   findLastSim<T = any>(
     data:
@@ -134,7 +134,7 @@ export class SimstanceManager implements Runnable<void, Map<ConstructorType<any>
           scheme?: string;
           type?: ConstructorType<any> | Function;
         }
-      | Symbol
+      | symbol
   ): SimAtomic<T> | undefined {
     if (typeof data === 'symbol') {
       return this.findSims(data).reverse()[0];
@@ -527,50 +527,45 @@ export class SimstanceManager implements Runnable<void, Map<ConstructorType<any>
     }
   }
 
-  run(otherInstanceSim: Map<ConstructorType<any> | Function | SimConfig | Symbol, any> = new Map()) {
+  run(otherInstanceSim: Map<ConstructorType<any> | Function | SimConfig | symbol, any> = new Map()) {
     // this.otherInstanceSim = new Map();
     for (const [k, v] of Array.from(otherInstanceSim.entries())) {
-      if (typeof k === 'symbol') {
-        simProcess({ symbol: k }, v);
-      } else if (typeof k === 'object') {
-        // 명확하게 instance를 넘긴거니 타입으로 처리안하기 위해 임의 타입으로 처리한다.
-        simProcess(k as SimConfig, v);
-      } else {
-        simProcess({ type: k }, v);
+      const storageKey = (typeof k === 'object' && k !== null && 'type' in (k as any)) ? (k as any).type : k;
+      this.registerStore(storageKey, new Set([v]));
+      
+      if (typeof k === 'object' && k !== null && 'symbol' in (k as any) && (k as any).symbol) {
+        this.registerStore((k as any).symbol, new Set([v]));
       }
-      // this.otherInstanceSim.set(type, v);
-      // it => ({type: it[0], value: it[1], action: this.setStoreSet.bind(this)})
     }
     // this.otherInstanceSim = otherInstanceSim;
     // const types = Array.from(this.otherInstanceSim?.entries()).map(it => ({type: it[0], value: it[1], action: this.setStoreSet.bind(this)}));
     // types.push(...Array.from(sims.entries()).map(it => ({type: it[0], value: it[1], action: this.registerStore.bind(this)})));
-    const myContainers = ConvertUtils.flatArray(this.option.container).filter(ValidUtils.isDefined);
-    // console.log('simstanceManager run!!', Array.from(sims.entries()));
-    // Array.from(sims.entries()).map(it => ({type: it[0], value: it[1], action: this.registerStore.bind(this)}))
-    Array.from(sims.entries()).forEach(([type, value]) => {
-      const targetContainers = ConvertUtils.flatArray(getSim(type)?.container).filter(ValidUtils.isDefined);
-      let isInclude = false;
-      if (myContainers.length <= 0 && targetContainers.length <= 0) {
-        isInclude = true;
-      } else if (targetContainers.length <= 0) {
-        isInclude = true;
-      } else {
-        isInclude = myContainers.some(it => targetContainers.includes(it));
-      }
+    const myContainers: (SimpleApplication | symbol)[] = ConvertUtils.flatArray(this.option.container).filter(ValidUtils.isDefined);
+    if (!myContainers.includes(this.simpleApplication)) {
+      myContainers.push(this.simpleApplication);
+    }
+    Array.from(sims.entries()).forEach(([type, implementations]) => {
+      const filteredSet = new Set<any>();
 
-      this.registerStore(type, value);
-      // const isInclude = (myContainers.length <= 0 || targetContainers.length <= 0) ? true : myContainers.some(it => targetContainers.includes(it));
-      // const isInclude = (targetContainers.length <= 0) ? true : (myContainers.length > 0 ? true : (myContainers.some(it => targetContainers.includes(it))));
-      // const isInclude = (myContainers.length <= 0 || targetContainers.length <= 0) ? true : (myContainers.some(it => containers.includes(it)));
-      // if (typeof this.option.excludeSim === 'function' && this.option.excludeSim(type)) {
-      //   if (isInclude) {
-      //     it.action(type, it.value);
-      //   }
-      // } else if (Array.isArray(this.option.excludeSim) && !this.option.excludeSim.includes(type)) {
-      //   if (isInclude) {
-      //     it.action(type, it.value);
-      //   }
-      // }
+      implementations.forEach(impl => {
+        const config = getSim(impl);
+        const targetContainers = ConvertUtils.flatArray(config?.container).filter(ValidUtils.isDefined);
+
+        let isInclude = false;
+        if (targetContainers.length <= 0) {
+          isInclude = true;
+        } else {
+          isInclude = myContainers.some(it => targetContainers.includes(it as any));
+        }
+
+        if (isInclude) {
+          filteredSet.add(impl);
+        }
+      });
+
+      if (filteredSet.size > 0) {
+        this.registerStore(type, filteredSet);
+      }
     });
 
     this.callBindPostConstruct(this);

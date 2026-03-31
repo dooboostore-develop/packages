@@ -2,7 +2,7 @@ import { elementDefine } from '../decorators/elementDefine';
 import { SwcAppMixin } from './SwcAppMixin';
 import { SwcUtils } from '../utils/Utils';
 import { FunctionUtils } from '@dooboostore/core';
-import { changedAttribute } from '../decorators/changedAttribute';
+import { changedAttributeHost } from '../decorators/changedAttributeHost';
 
 export const registerAllElements = (w: any) => {
   const {
@@ -179,7 +179,7 @@ export const registerAllElements = (w: any) => {
     FunctionUtils.execute({ script, context: this, args });
   }
 
-  @changedAttribute('on-get-value')
+  @changedAttributeHost('on-get-value')
   private refreshValue() {
     const script = this.getAttribute('on-get-value');
     if (!script) {
@@ -294,7 +294,7 @@ export const registerAllElements = (w: any) => {
     this._nodeGroups = [];
   }
 
-  @changedAttribute('on-get-value')
+  @changedAttributeHost('on-get-value')
   private refreshValue() {
     const script = this.getAttribute('on-get-value');
     if (!script) {
@@ -405,7 +405,7 @@ export const registerAllElements = (w: any) => {
     FunctionUtils.execute({ script, context: this, args });
   }
 
-  @changedAttribute('on-get-value')
+  @changedAttributeHost('on-get-value')
   private refresh() {
     const script = this.getAttribute('on-get-value');
     if (!script) {
@@ -496,7 +496,7 @@ export const registerAllElements = (w: any) => {
     FunctionUtils.execute({ script, context: this, args });
   }
 
-  @changedAttribute('on-get-value')
+  @changedAttributeHost('on-get-value')
   private refresh() {
     const script = this.getAttribute('on-get-value');
     if (!script) return;

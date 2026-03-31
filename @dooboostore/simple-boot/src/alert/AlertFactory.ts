@@ -3,7 +3,7 @@ import { AlertType } from './AlertType';
 import { Sim } from '../decorators/SimDecorator';
 import { AlertFactoryConfig } from './AlertFactoryConfig';
 export namespace AlertFactory {
- export const SYMBOL: Symbol= Symbol('AlertFactory');
+ export const SYMBOL: symbol= Symbol.for('simple-boot:alert-factory-token');
 }
 
 export interface AlertFactory<T> {

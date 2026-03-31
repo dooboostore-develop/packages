@@ -1,6 +1,6 @@
 # @dooboostore/core-web
 
-[![NPM version](https://img.shields.io/npm/v/@dooboostore/core-web.svg?style=flat-square)](https://www.npmjs.com/package/@dooboostore/core-web)
+[![NPM version](https://img.shields.io/npm/v/@dooboostore/core-web.svg?color=cb3837&style=flat-square)](https://www.npmjs.com/package/@dooboostore/core-web)
 [![Build and Test](https://github.com/dooboostore-develop/packages/actions/workflows/main.yaml/badge.svg?branch=main)](https://github.com/dooboostore-develop/packages/actions/workflows/main.yaml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](https://opensource.org/licenses/MIT)
 

@@ -10,7 +10,7 @@ export enum ExceptionHandlerSituationType {
 export type ExceptionHandlerConfig = { type?: ConstructorType<any>; throw?: boolean }
 export type SaveExceptionHandlerConfig = { propertyKey?: string | symbol; method: Function; config: ExceptionHandlerConfig; }
 
-const ExceptionHandlerMetadataKey = Symbol('ExceptionHandler');
+const ExceptionHandlerMetadataKey = Symbol.for('simple-boot:exception-handler-metadata');
 
 export const ExceptionHandler = (config: ExceptionHandlerConfig = {}): ReflectMethod => {
     return (target: any, propertyKey: string, descriptor: PropertyDescriptor) => {

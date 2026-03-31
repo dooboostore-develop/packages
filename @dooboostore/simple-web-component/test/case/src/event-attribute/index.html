@@ -65,8 +65,9 @@
 
     <div style="margin-top: 40px">
       <h3>Static Test</h3>
-      <event-test-host id="static-host" swc-on-click="console.log('Static host clicked!', this)" swc-on-connected="console.log('Static host connected', this)">
+      <event-test-host id="static-host" swc-on-click="console.log('Static host clicked!',$host, this)" swc-on-connected="console.log('Static host connected', this)">
         <div slot="content">
+<!--                <button swc-on-click="console.log($host)">-&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;</button>-->
           <p>I am a static element defined in HTML.</p>
           <button swc-on-click="alert('This will NOT work!')">Internal Button (No scanning)</button>
         </div>

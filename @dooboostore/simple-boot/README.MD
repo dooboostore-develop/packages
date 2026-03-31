@@ -1,10 +1,9 @@
 # @dooboostore/simple-boot
 
-[![NPM version](https://img.shields.io/npm/v/@dooboostore/simple-boot.svg?style=flat-square)](https://www.npmjs.com/package/@dooboostore/simple-boot)
+[![NPM version](https://img.shields.io/npm/v/@dooboostore/simple-boot.svg?color=cb3837&style=flat-square)](https://www.npmjs.com/package/@dooboostore/simple-boot)
 [![Build and Test](https://github.com/dooboostore-develop/packages/actions/workflows/main.yaml/badge.svg?branch=main)](https://github.com/dooboostore-develop/packages/actions/workflows/main.yaml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](https://opensource.org/licenses/MIT)
 
-**Full Documentation:** [https://dooboostore-develop.github.io/@dooboostore/simple-boot](https://dooboostore-develop.github.io/@dooboostore/simple-boot)
 
 A decorator-driven application framework for TypeScript services with DI container, routing, intent events, lifecycle hooks, caching, and exception handling.
 

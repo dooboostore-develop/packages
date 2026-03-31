@@ -20,9 +20,9 @@ import { OnRawSetRendered, OnRawSetRenderedOtherData } from "../lifecycle/OnRawS
 import {OnChildRawSetRendered} from "../lifecycle/OnChildRawSetRendered";
 
 
-export const ATTRIBUTE_METADATA_KEY = Symbol('attribute');
-export const QUERY_METADATA_KEY = Symbol('query');
-export const EVENT_METADATA_KEY = Symbol('event');
+export const ATTRIBUTE_METADATA_KEY = Symbol.for('dom-render:attribute-metadata');
+export const QUERY_METADATA_KEY = Symbol.for('dom-render:query-metadata');
+export const EVENT_METADATA_KEY = Symbol.for('dom-render:event-metadata');
 
 export interface AttributeMetadata {
     propertyKey: string | symbol;
