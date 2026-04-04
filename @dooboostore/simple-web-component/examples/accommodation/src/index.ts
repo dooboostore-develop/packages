@@ -15,7 +15,10 @@ w.document.addEventListener('DOMContentLoaded', () => {
       path: window.location.pathname === '/' ? '/' : window.location.pathname,
       routeType: 'path',
       container: container,
-      window: w
+      window: w,
+      onEngineStarted:(a, e) => {
+        // e.innerHTML = `<accommodation-root-router/>`;
+      }
     });
   }
 });

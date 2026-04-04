@@ -1,6 +1,6 @@
 import MainPage from './MainPage';
 import DetailPage from './DetailPage';
-import { onConnectedSwcApp,applyReplaceChildrenNodeHost, applyInnerHtmlNodeHost, subscribeSwcAppRouteChange, onInitialize, elementDefine, onConnectedInnerHtml } from '@dooboostore/simple-web-component';
+import { onConnectedSwcApp,applyReplaceChildrenNodeHost, applyInnerHtmlNodeHost, subscribeSwcAppRouteChange, onInitialize, elementDefine, onConnectedInnerHtml, setProperty } from '@dooboostore/simple-web-component';
 import { Inject } from '@dooboostore/simple-boot';
 import { Router, type RouterEventType } from '@dooboostore/core-web';
 import { StockService } from '../services/StockService';
@@ -17,11 +17,15 @@ export const rootRouterFactory = (w: Window) => {
   if (existing) {
     return tagName;
   }
-
   @elementDefine(tagName, { window: w })
   class RootRouter extends w.HTMLElement {
     private stockService: StockService;
     private router: Router;
+
+    constructor() {
+      super();
+      console.log('stock-root-routerstock-root-routerstock-root-router');
+    }
 
     @onConnectedSwcApp
     onconstructor(@Inject({ symbol: StockService.SYMBOL }) stockService: StockService, router: Router) {
@@ -29,17 +33,10 @@ export const rootRouterFactory = (w: Window) => {
       this.router = router;
     }
 
-    @subscribeSwcAppRouteChange('/')
-    @applyInnerHtmlNodeHost({ root: 'light' })
-    mainRoute(a: RouterEventType, pathData: any) {
-      console.log('mmmmmmmmmm', a,  a.path);
-      return `<swc-example-stock-main-page/>`;
-    }
-
-    @subscribeSwcAppRouteChange('/detail/{id}')
-    @applyInnerHtmlNodeHost({ root: 'light' })
-    detailRoute(a: RouterEventType, pathData: any) {
-      return `<swc-example-stock-detail-page stock-id="${pathData.id}"/>`;
+    @setProperty('#router', 'value')
+    @subscribeSwcAppRouteChange(['','/', '/detail/{id}'])
+    routeChanged(re: RouterEventType) {
+      return re;
     }
 
     @applyReplaceChildrenNodeHost({
@@ -64,7 +61,26 @@ export const rootRouterFactory = (w: Window) => {
         </style>
         <swc-example-stock-stock-header on-navigate="$host.navigate($data.path)"></swc-example-stock-stock-header>
         <main id="page-container">
-          <slot></slot>
+          <template id="router" is="swc-choose" skip-if-same>
+            <!-- Main -->
+            <template is="swc-when" value="{{ $value?.path === '/' }}">
+              <swc-example-stock-main-page/>
+            </template>
+            
+            <!-- Detail -->
+            <template is="swc-when" value="{{ $value?.path.startsWith('/detail/') }}">
+              <swc-example-stock-detail-page stock-id="{{$value.pathData.id}}"/>
+            </template>
+            
+            <!-- Not Found -->
+            <template is="swc-otherwise">
+              <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 400px; padding: 40px; text-align: center; color: #666;">
+                <h2 style="font-size: 24px; margin: 0 0 10px 0; color: #333;">404 - Page Not Found</h2>
+                <p style="margin: 0 0 20px 0; color: #999;">The page you're looking for doesn't exist.</p>
+                <a href="/" style="padding: 12px 24px; background: #1976d2; color: white; text-decoration: none; border-radius: 4px; font-weight: 600; transition: background 0.3s;">Go Home</a>
+              </div>
+            </template>
+          </template>
         </main>
       `;
     }

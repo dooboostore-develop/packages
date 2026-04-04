@@ -42,11 +42,11 @@ export class SwcAppEngine {
 
       // Router Selection
       if (this._config.routeType === 'path') {
-        this.router = new PathRouter({ window: this._config.window });
+        this.router = new PathRouter({ window: this._config.window, firstUrl: this._config.path });
       } else if (this._config.routeType === 'hash') {
-        this.router = new HashRouter({ window: this._config.window });
+        this.router = new HashRouter({ window: this._config.window, firstUrl: this._config.path });
       } else if (this._config.routeType === 'element') {
-        this.router = new ElementRouter({ window: this._config.window });
+        this.router = new ElementRouter({ window: this._config.window, firstUrl: this._config.path });
       }
 
       // console.log('vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv', this.router)

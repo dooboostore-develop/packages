@@ -7,12 +7,20 @@ import { ON_CONNECTED_SWC_APP_METADATA_KEY, findAllLifecycleMetadata } from '../
 import { getSubscribeSwcAppRouteChangeMetadata } from '../decorators/subscribeSwcAppRouteChange';
 
 export function SwcAppMixin<T extends { new (...args: any[]): HTMLElement }>(Base: T) {
+  //@ts-ignore
   return class extends Base implements SwcAppInterface {
     __swc_engine = new SwcAppEngine(this as any);
     _swc_connected_instance = new Set<any>();
     _routerSubscription?: Subscription;
     _lastRouterEvent?: RouterEventType;
 
+    /*
+      사파리 is 일경우
+    <script src="https://unpkg.com/@ungap/custom-elements"></script>
+    이걸사용하는데 is 대응하는거다 그런데 이때 처리되는 순서가  크롬이나 표준에서는 부모부터 만들어지고 자식들이 만들어지는데
+     저 polyfill에서는 자식부터 만들어지고 부모가 만들어진다 is일때 아 .. 이문제때문에 자식이 _connected_safari 에 강제로 자기자식넣어준다
+     */
+    _connected_safari = [];
     get simpleApplication() {
       return this.__swc_engine.simpleApplication;
     }
@@ -57,13 +65,14 @@ export function SwcAppMixin<T extends { new (...args: any[]): HTMLElement }>(Bas
 
           // Invoke method if conditions pass
           if (pathMatched && filterPassed) {
-            instance[methodName]?.(re, pathData || {});
+            instance[methodName]?.({...re, pathData: pathData});
           }
         });
       }
     }
 
     _connected(instance: any) {
+      // console.log('appmixin--> connected', this, instance);
       if (instance) {
         this._swc_connected_instance.add(instance);
         if (this.simpleApplication) {
@@ -129,24 +138,29 @@ export function SwcAppMixin<T extends { new (...args: any[]): HTMLElement }>(Bas
         }
       }
 
+      // 사파리일떄 예외이다 is 일때 polyfill되는데 이떄 부모부터 만들어지는게 아니라 자식부터 만들어진다 그래서 부모가 만들어질때 자식들이 이미 만들어져있어서 부모가 자식들을 등록해주는 형태로 강제로 등록해준다
+      this._connected_safari.forEach((instance: any) => {
+        this._swc_connected_instance.add(instance);
+      });
       // Invoke @onConnectedSwcApp lifecycle methods on all connected component instances
       // const hostSet = SwcUtils.getHostSet(this as any);
       this._swc_connected_instance.forEach((instance: any) => {
-        // console.log('-----rrrrrrrrrr', instance);
         this._invokeOnConnectedSwcAppStarted(instance);
       });
+
 
       // Subscribe to router changes after connect
       if (!this._routerSubscription && this.router) {
         this._routerSubscription = this.router.observable.subscribe((route: RouterEventType) => {
-          // console.log('Route changed:', route);
+          //@ts-ignore
+          // console.log('Route changed:', route, this._swcId);
           this._handleRouteChange(route);
         });
         // Navigate to initial path if specified
         const config = this.__swc_engine.config;
-        if (config?.path) {
-          this.router.go(config.path);
-        }
+        // if (config?.path) {
+        //   this.router.go(config.path);
+        // }
       }
     }
 

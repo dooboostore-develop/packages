@@ -48,23 +48,21 @@
   <body>
     <script>
       var currentRole = 'guest';
+      var currentScore = 50;
     </script>
     <h1>SwcChoose: Switch-Case Template</h1>
     <p>Using <code>&lt;template is="swc-choose"&gt;</code> to render specific blocks based on values.</p>
 
     <div class="controls">
-      <button onclick="window.currentRole = 'admin'; document.getElementById('role-choose').setAttribute('on-get-value', 'currentRole')">Set Admin</button>
-      <button onclick="window.currentRole = 'user'; document.getElementById('role-choose').setAttribute('on-get-value', 'currentRole')">Set User</button>
-      <button onclick="window.currentRole = 'guest'; document.getElementById('role-choose').setAttribute('on-get-value', 'currentRole')">Set Guest</button>
-      <button onclick="window.currentRole = 'hacker'; document.getElementById('role-choose').setAttribute('on-get-value', 'currentRole')">Set Unknown</button>
-      <button onclick="window.currentRole = null; document.getElementById('role-choose').removeAttribute('on-get-value')">Clear Value</button>
+      <button onclick="window.currentRole = 'admin'; document.getElementById('role-choose').setAttribute('value', '{{ currentRole }}')">Set Admin</button>
+      <button onclick="window.currentRole = 'user'; document.getElementById('role-choose').setAttribute('value', '{{ currentRole }}')">Set User</button>
+      <button onclick="window.currentRole = 'guest'; document.getElementById('role-choose').setAttribute('value', '{{ currentRole }}')">Set Guest</button>
+      <button onclick="window.currentRole = 'hacker'; document.getElementById('role-choose').setAttribute('value', '{{ currentRole }}')">Set Unknown</button>
+      <button onclick="window.currentRole = null; document.getElementById('role-choose').removeAttribute('value')">Clear Value</button>
     </div>
 
     <div style="border: 2px dashed #aaa; padding: 20px">
-      <template is="swc-choose" id="role-choose" on-get-value="currentRole" on-clone-node="if($isElement && $node.querySelector('.val')) $node.querySelector('.val').textContent = $value">
-        <template is="swc-default">
-          <div class="case-box" style="background: #9e9e9e">SYSTEM: PLEASE SELECT A ROLE TO PROCEED</div>
-        </template>
+      <template is="swc-choose" id="role-choose" skip-if-same value="{{ currentRole }}" on-clone-node="if($isElement && $node.querySelector('.val')) $node.querySelector('.val').textContent = $value">
 
         <template is="swc-when" value="admin">
           <div class="case-box admin">ACCESS GRANTED: ADMIN PANEL</div>
@@ -81,6 +79,41 @@
         <template is="swc-otherwise">
           <div class="case-box unknown">ACCESS DENIED: UNKNOWN ROLE [<span class="val"></span>]</div>
         </template>
+      </template>
+    </div>
+
+    <hr style="margin-top: 40px;">
+
+    <h2>ScoreLevel: Using on-get-value for Conditional Logic</h2>
+    <p>Using <code>on-get-value</code> attribute in swc-when to evaluate conditions dynamically.</p>
+
+    <div class="controls">
+      <button onclick="window.currentScore = 90; document.getElementById('score-choose').value = window.currentScore">Set Score 90</button>
+      <button onclick="window.currentScore = 70; document.getElementById('score-choose').value = window.currentScore">Set Score 70</button>
+      <button onclick="window.currentScore = 50; document.getElementById('score-choose').value = window.currentScore">Set Score 50</button>
+      <button onclick="window.currentScore = 20; document.getElementById('score-choose').value = window.currentScore">Set Score 20</button>
+    </div>
+
+    <div style="border: 2px dashed #aaa; padding: 20px">
+      <template is="swc-choose" id="score-choose" skip-if-same>
+
+        <!-- {{ }} 브레이스로 스크립트 실행 -->
+        <template is="swc-when" value="{{ $value >= 80 }}">
+          <div class="case-box admin">⭐ EXCELLENT: Score >= 80</div>
+        </template>
+
+        <template is="swc-when" value="{{ $value >= 60 && $value < 80 }}">
+          <div class="case-box user">👍 GOOD: Score 60-79</div>
+        </template>
+
+        <template is="swc-when" value="{{ $value >= 40 && $value < 60 }}">
+          <div class="case-box guest">⚠️ FAIR: Score 40-59</div>
+        </template>
+
+        <template is="swc-when" value="{{ $value < 40 }}">
+          <div class="case-box unknown">❌ POOR: Score < 40</div>
+        </template>
+
       </template>
     </div>
 

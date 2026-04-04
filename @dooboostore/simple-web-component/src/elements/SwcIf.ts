@@ -2,7 +2,7 @@ import { changedAttributeHost } from '../decorators/changedAttributeHost';
 import { SwcUtils } from '../utils/Utils';
 import { FunctionUtils } from '@dooboostore/core';
 
-export class SwcIf extends HTMLTemplateElement {
+class SwcIf extends HTMLTemplateElement {
   private _value = false;
   private _nodes: Node[] = [];
 
@@ -14,52 +14,39 @@ export class SwcIf extends HTMLTemplateElement {
     this.render();
   }
 
-  private _resolvePortal(): Element | null {
-    const portalScript = this.getAttribute('on-get-portal');
-    if (!portalScript) return this.parentElement;
-
-    const win = this.ownerDocument?.defaultView || window;
-    const res = FunctionUtils.executeReturn({
-      script: portalScript,
-      context: this,
-      args: SwcUtils.getHelperAndHostSet(win, this)
-    });
-
-    if (res instanceof HTMLElement) return res;
-    if (typeof res === 'string') return win.document.querySelector(res);
-    return this.parentElement;
-  }
-
   private _executeCloneCallback(attr: string, args: any) {
     const script = this.getAttribute(attr);
     if (!script) return;
     FunctionUtils.execute({ script, context: this, args });
   }
 
-  @changedAttributeHost('on-get-value')
-  private refreshValue() {
-    const script = this.getAttribute('on-get-value');
-    if (!script) {
+  @changedAttributeHost('value')
+  private refreshValue(valueAttr?: string | null) {
+    valueAttr ??= this.getAttribute('value');
+    if (valueAttr === null) {
       this.value = false;
       return;
     }
-    const win = this.ownerDocument?.defaultView || window;
-    const res = FunctionUtils.executeReturn({
-      script,
-      context: this,
-      args: SwcUtils.getHelperAndHostSet(win, this)
-    });
 
-    if (res instanceof Promise) {
-      res.then(v => (this.value = v)).catch(() => (this.value = false));
+    // {{ }} 브레이스로 감싸진 값은 스크립트 실행
+    if (valueAttr.startsWith('{{') && valueAttr.endsWith('}}')) {
+      const script = valueAttr.slice(2, -2).trim();
+      const win = this.ownerDocument?.defaultView || window;
+      const result = FunctionUtils.executeReturn({
+        script,
+        context: this,
+        args: SwcUtils.getHelperAndHostSet(win, this)
+      });
+      this.value = result;
     } else {
-      this.value = res;
+      // 일반 문자열 값
+      this.value = Boolean(valueAttr);
     }
   }
 
   private render() {
     this.cleanup();
-    const portal = this._resolvePortal();
+    const portal = this.parentElement;
     if (!portal) return;
 
     const win = this.ownerDocument?.defaultView || window;
@@ -83,18 +70,31 @@ export class SwcIf extends HTMLTemplateElement {
       const elements = this._nodes.filter(n => n.nodeType === 1) as HTMLElement[];
       const groupArgs = { ...helperSet, $value: this._value, $nodes: this._nodes, $elements: elements, $firstElement: elements[0] };
 
+      // 부모 체인을 정상적으로 유지하기 위해 __swc_host 할당 제거
       this._nodes.forEach((node, nodeIdx) => {
-        if (node instanceof HTMLElement) (node as any).__swc_host = this;
+        // if (node instanceof HTMLElement) (node as any).__swc_host = this;  // 제거: 부모 체인 유지
         this._executeCloneCallback('on-clone-node', { ...groupArgs, $node: node, $nodeIndex: nodeIdx, $isElement: node.nodeType === 1 });
+
+        // Attribute {{ }} 치환 - SwcChoose처럼 동적 치환
+        if (node instanceof HTMLElement) {
+          Array.from(node.attributes).forEach(attr => {
+            const value = attr.value || '';
+            if (value.startsWith('{{') && value.endsWith('}}')) {
+              const script = value.slice(2, -2).trim();
+              const result = FunctionUtils.executeReturn({
+                script,
+                context: node,
+                args: { ...groupArgs, $value: this._value }
+              });
+              node.setAttribute(attr.name, String(result));
+            }
+          });
+        }
       });
 
       this._executeCloneCallback('on-clone-nodes', groupArgs);
 
-      if (portal === this.parentElement) {
-        portal.insertBefore(clone, this.nextSibling);
-      } else {
-        portal.appendChild(clone);
-      }
+      portal.insertBefore(clone, this.nextSibling);
     }
   }
 

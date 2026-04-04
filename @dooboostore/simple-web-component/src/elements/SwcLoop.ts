@@ -2,7 +2,7 @@ import { changedAttributeHost } from '../decorators/changedAttributeHost';
 import { SwcUtils } from '../utils/Utils';
 import { FunctionUtils } from '@dooboostore/core';
 
-export class SwcLoop extends HTMLTemplateElement {
+class SwcLoop extends HTMLTemplateElement {
   private _value: any[] = [];
   private _nodeGroups: Node[][] = [];
 
@@ -14,21 +14,7 @@ export class SwcLoop extends HTMLTemplateElement {
     this.render();
   }
 
-  private _resolvePortal(): Element | null {
-    const portalScript = this.getAttribute('on-get-portal');
-    if (!portalScript) return this.parentElement;
 
-    const win = this.ownerDocument?.defaultView || window;
-    const res = FunctionUtils.executeReturn({
-      script: portalScript,
-      context: this,
-      args: SwcUtils.getHelperAndHostSet(win, this)
-    });
-
-    if (res instanceof HTMLElement) return res;
-    if (typeof res === 'string') return win.document.querySelector(res);
-    return this.parentElement;
-  }
 
   private _executeCloneCallback(attr: string, args: any) {
     const script = this.getAttribute(attr);
@@ -41,12 +27,16 @@ export class SwcLoop extends HTMLTemplateElement {
     this._nodeGroups = [];
   }
 
-  @changedAttributeHost('on-get-value')
+  @changedAttributeHost('value')
   private refreshValue() {
-    const script = this.getAttribute('on-get-value');
+    let script = this.getAttribute('value');
     if (!script) {
       this.value = [];
       return;
+    }
+    // Parse {{ }} braces
+    if (script.startsWith('{{') && script.endsWith('}}')) {
+      script = script.slice(2, -2).trim();
     }
     const win = this.ownerDocument?.defaultView || window;
     const res = FunctionUtils.executeReturn({
@@ -64,7 +54,7 @@ export class SwcLoop extends HTMLTemplateElement {
 
   render() {
     this._cleanup();
-    const portal = this._resolvePortal();
+    const portal = this.parentElement;
     if (!portal) return;
 
     const win = this.ownerDocument?.defaultView || window;
@@ -92,8 +82,23 @@ export class SwcLoop extends HTMLTemplateElement {
         const groupArgs = { ...helperSet, $item: item, $index: index, $value: this._value, $nodes: nodes, $elements: elements, $firstElement: elements[0] };
 
         nodes.forEach((node, nodeIdx) => {
-          if (node instanceof HTMLElement) (node as any).__swc_host = this;
           this._executeCloneCallback('on-clone-node', { ...groupArgs, $node: node, $nodeIndex: nodeIdx, $isElement: node.nodeType === 1 });
+
+          // Attribute {{ }} 치환 - SwcChoose처럼 동적 치환
+          if (node instanceof HTMLElement) {
+            Array.from(node.attributes).forEach(attr => {
+              const value = attr.value || '';
+              if (value.startsWith('{{') && value.endsWith('}}')) {
+                const script = value.slice(2, -2).trim();
+                const result = FunctionUtils.executeReturn({
+                  script,
+                  context: node,
+                  args: groupArgs
+                });
+                node.setAttribute(attr.name, String(result));
+              }
+            });
+          }
         });
 
         this._executeCloneCallback('on-clone-nodes', groupArgs);

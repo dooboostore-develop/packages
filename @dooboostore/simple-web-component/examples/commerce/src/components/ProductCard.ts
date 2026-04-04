@@ -28,7 +28,6 @@ export default (w: Window) => {
     @changedAttributeHost('data-product-id')
     @applyNodeHost({ position: 'innerHtml' })
     async onProductIdChanged(productId: string, h: any, a: any, b: any) {
-      console.log('vv');
       if (!productId || !this.#productService) return;
       this.#product = (await this.#productService.getProductById(productId)) || undefined;
       return this.#getTemplate();
@@ -199,6 +198,7 @@ export default (w: Window) => {
     @addEventListener('.card', 'click', { delegate: true })
     @emitCustomEventHost('view-product', { bubbles: true, attributeName: 'on-view-product' })
     onCardClick(event: Event) {
+      console.log('vv');
       return { productId: this.#product?.id };
     }
 

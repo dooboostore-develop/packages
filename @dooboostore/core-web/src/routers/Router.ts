@@ -63,6 +63,9 @@ export abstract class Router<T = any> {
     })
   }
 
+  get value() {
+    return this.behaviorSubject.getValue()
+  }
 
   get observable(): Observable<RouterEventType> {
     return this.behaviorSubject.asObservable();

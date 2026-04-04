@@ -1,6 +1,6 @@
-export class SwcLoading extends HTMLTemplateElement {}
-export class SwcError extends HTMLTemplateElement {}
-export class SwcSuccess extends HTMLTemplateElement {}
-export class SwcWhen extends HTMLTemplateElement {}
-export class SwcOtherwise extends HTMLTemplateElement {}
-export class SwcDefault extends HTMLTemplateElement {}
+class SwcLoading extends HTMLTemplateElement {}
+class SwcError extends HTMLTemplateElement {}
+class SwcSuccess extends HTMLTemplateElement {}
+class SwcWhen extends HTMLTemplateElement {}
+class SwcOtherwise extends HTMLTemplateElement {}
+class SwcDefault extends HTMLTemplateElement {}

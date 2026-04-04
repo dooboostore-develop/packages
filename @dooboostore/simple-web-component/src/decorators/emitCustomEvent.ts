@@ -52,6 +52,7 @@ export function emitCustomEvent(selectorOrTarget: string, type: string, options:
       const hostSet = SwcUtils.getHostSet(this as any);
       const conf = getElementConfig(this);
       const currentWin = (this as any)._resolveWindow?.(conf) || ((typeof window !== 'undefined' ? window : undefined) as Window);
+      // console.log('emitEEEEEEEEEEE', hostSet);
 
       const eventTargets: EventTarget[] = [];
       if (selectorOrTarget === ':window') eventTargets.push(currentWin);

@@ -4,7 +4,9 @@ import { SwcUtils } from '../utils/Utils';
 import { FunctionUtils } from '@dooboostore/core';
 import { changedAttributeHost } from '../decorators/changedAttributeHost';
 
-export const registerAllElements = (w: any) => {
+type Constructor<T> = new (...args: any[]) => T;
+
+export const registerAllElements = (w: any): Record<string, Constructor<HTMLElement>> => {
   const {
     HTMLElement: _HTMLElement,
     HTMLTemplateElement: _HTMLTemplateElement,
@@ -157,52 +159,39 @@ export const registerAllElements = (w: any) => {
     this.render();
   }
 
-  private _resolvePortal(): Element | null {
-    const portalScript = this.getAttribute('on-get-portal');
-    if (!portalScript) return this.parentElement;
-
-    const win = this.ownerDocument?.defaultView || window;
-    const res = FunctionUtils.executeReturn({
-      script: portalScript,
-      context: this,
-      args: SwcUtils.getHelperAndHostSet(win, this)
-    });
-
-    if (res instanceof HTMLElement) return res;
-    if (typeof res === 'string') return win.document.querySelector(res);
-    return this.parentElement;
-  }
-
   private _executeCloneCallback(attr: string, args: any) {
     const script = this.getAttribute(attr);
     if (!script) return;
     FunctionUtils.execute({ script, context: this, args });
   }
 
-  @changedAttributeHost('on-get-value')
-  private refreshValue() {
-    const script = this.getAttribute('on-get-value');
-    if (!script) {
+  @changedAttributeHost('value')
+  private refreshValue(valueAttr?: string | null) {
+    valueAttr ??= this.getAttribute('value');
+    if (valueAttr === null) {
       this.value = false;
       return;
     }
-    const win = this.ownerDocument?.defaultView || window;
-    const res = FunctionUtils.executeReturn({
-      script,
-      context: this,
-      args: SwcUtils.getHelperAndHostSet(win, this)
-    });
 
-    if (res instanceof Promise) {
-      res.then(v => (this.value = v)).catch(() => (this.value = false));
+    // {{ }} 브레이스로 감싸진 값은 스크립트 실행
+    if (valueAttr.startsWith('{{') && valueAttr.endsWith('}}')) {
+      const script = valueAttr.slice(2, -2).trim();
+      const win = this.ownerDocument?.defaultView || window;
+      const result = FunctionUtils.executeReturn({
+        script,
+        context: this,
+        args: SwcUtils.getHelperAndHostSet(win, this)
+      });
+      this.value = result;
     } else {
-      this.value = res;
+      // 일반 문자열 값
+      this.value = Boolean(valueAttr);
     }
   }
 
   private render() {
     this.cleanup();
-    const portal = this._resolvePortal();
+    const portal = this.parentElement;
     if (!portal) return;
 
     const win = this.ownerDocument?.defaultView || window;
@@ -226,18 +215,31 @@ export const registerAllElements = (w: any) => {
       const elements = this._nodes.filter(n => n.nodeType === 1) as HTMLElement[];
       const groupArgs = { ...helperSet, $value: this._value, $nodes: this._nodes, $elements: elements, $firstElement: elements[0] };
 
+      // 부모 체인을 정상적으로 유지하기 위해 __swc_host 할당 제거
       this._nodes.forEach((node, nodeIdx) => {
-        if (node instanceof HTMLElement) (node as any).__swc_host = this;
+        // if (node instanceof HTMLElement) (node as any).__swc_host = this;  // 제거: 부모 체인 유지
         this._executeCloneCallback('on-clone-node', { ...groupArgs, $node: node, $nodeIndex: nodeIdx, $isElement: node.nodeType === 1 });
+
+        // Attribute {{ }} 치환 - SwcChoose처럼 동적 치환
+        if (node instanceof HTMLElement) {
+          Array.from(node.attributes).forEach(attr => {
+            const value = attr.value || '';
+            if (value.startsWith('{{') && value.endsWith('}}')) {
+              const script = value.slice(2, -2).trim();
+              const result = FunctionUtils.executeReturn({
+                script,
+                context: node,
+                args: { ...groupArgs, $value: this._value }
+              });
+              node.setAttribute(attr.name, String(result));
+            }
+          });
+        }
       });
 
       this._executeCloneCallback('on-clone-nodes', groupArgs);
 
-      if (portal === this.parentElement) {
-        portal.insertBefore(clone, this.nextSibling);
-      } else {
-        portal.appendChild(clone);
-      }
+      portal.insertBefore(clone, this.nextSibling);
     }
   }
 
@@ -267,21 +269,7 @@ export const registerAllElements = (w: any) => {
     this.render();
   }
 
-  private _resolvePortal(): Element | null {
-    const portalScript = this.getAttribute('on-get-portal');
-    if (!portalScript) return this.parentElement;
 
-    const win = this.ownerDocument?.defaultView || window;
-    const res = FunctionUtils.executeReturn({
-      script: portalScript,
-      context: this,
-      args: SwcUtils.getHelperAndHostSet(win, this)
-    });
-
-    if (res instanceof HTMLElement) return res;
-    if (typeof res === 'string') return win.document.querySelector(res);
-    return this.parentElement;
-  }
 
   private _executeCloneCallback(attr: string, args: any) {
     const script = this.getAttribute(attr);
@@ -294,12 +282,16 @@ export const registerAllElements = (w: any) => {
     this._nodeGroups = [];
   }
 
-  @changedAttributeHost('on-get-value')
+  @changedAttributeHost('value')
   private refreshValue() {
-    const script = this.getAttribute('on-get-value');
+    let script = this.getAttribute('value');
     if (!script) {
       this.value = [];
       return;
+    }
+    // Parse {{ }} braces
+    if (script.startsWith('{{') && script.endsWith('}}')) {
+      script = script.slice(2, -2).trim();
     }
     const win = this.ownerDocument?.defaultView || window;
     const res = FunctionUtils.executeReturn({
@@ -317,7 +309,7 @@ export const registerAllElements = (w: any) => {
 
   render() {
     this._cleanup();
-    const portal = this._resolvePortal();
+    const portal = this.parentElement;
     if (!portal) return;
 
     const win = this.ownerDocument?.defaultView || window;
@@ -345,8 +337,23 @@ export const registerAllElements = (w: any) => {
         const groupArgs = { ...helperSet, $item: item, $index: index, $value: this._value, $nodes: nodes, $elements: elements, $firstElement: elements[0] };
 
         nodes.forEach((node, nodeIdx) => {
-          if (node instanceof HTMLElement) (node as any).__swc_host = this;
           this._executeCloneCallback('on-clone-node', { ...groupArgs, $node: node, $nodeIndex: nodeIdx, $isElement: node.nodeType === 1 });
+
+          // Attribute {{ }} 치환 - SwcChoose처럼 동적 치환
+          if (node instanceof HTMLElement) {
+            Array.from(node.attributes).forEach(attr => {
+              const value = attr.value || '';
+              if (value.startsWith('{{') && value.endsWith('}}')) {
+                const script = value.slice(2, -2).trim();
+                const result = FunctionUtils.executeReturn({
+                  script,
+                  context: node,
+                  args: groupArgs
+                });
+                node.setAttribute(attr.name, String(result));
+              }
+            });
+          }
         });
 
         this._executeCloneCallback('on-clone-nodes', groupArgs);
@@ -374,6 +381,7 @@ export const registerAllElements = (w: any) => {
   class SwcChoose extends HTMLTemplateElement {
   private _nodes: Node[] = [];
   private _value: any = null;
+  private _previousTemplate: HTMLTemplateElement | null = null;
 
   get value(): any {
     return this._value;
@@ -383,57 +391,81 @@ export const registerAllElements = (w: any) => {
     this.render();
   }
 
-  private _resolvePortal(): Element | null {
-    const portalScript = this.getAttribute('on-get-portal');
-    if (!portalScript) return this.parentElement;
-
-    const win = this.ownerDocument?.defaultView || window;
-    const res = FunctionUtils.executeReturn({
-      script: portalScript,
-      context: this,
-      args: SwcUtils.getHelperAndHostSet(win, this)
-    });
-
-    if (res instanceof HTMLElement) return res;
-    if (typeof res === 'string') return win.document.querySelector(res);
-    return this.parentElement;
-  }
-
   private _executeCloneCallback(attr: string, args: any) {
     const script = this.getAttribute(attr);
     if (!script) return;
     FunctionUtils.execute({ script, context: this, args });
   }
 
-  @changedAttributeHost('on-get-value')
-  private refresh() {
-    const script = this.getAttribute('on-get-value');
-    if (!script) {
+  @changedAttributeHost('value')
+  refresh(valueAttr?: string | null) {
+    valueAttr ??= this.getAttribute('value');
+    if (valueAttr === null) {
       this.value = null;
       return;
     }
-    const win = this.ownerDocument?.defaultView || window;
-    const result = FunctionUtils.executeReturn({ script, context: this, args: SwcUtils.getHelperAndHostSet(win, this) });
-    this.value = result;
+
+    // {{ }} 브레이스로 감싸진 값은 스크립트 실행
+    if (valueAttr.startsWith('{{') && valueAttr.endsWith('}}')) {
+      const script = valueAttr.slice(2, -2).trim();
+      const win = this.ownerDocument?.defaultView || window;
+      const helperAndHostSet = SwcUtils.getHelperAndHostSet(win, SwcUtils.findNearestSwcHost(this));
+      // console.log('vvvvvvvvvvvvvvvvvv323', helperAndHostSet);
+      const result = FunctionUtils.executeReturn({ script, context: this, args: helperAndHostSet });
+      this.value = result;
+      // console.log('----------vv', this.value);
+    } else {
+      // 일반 문자열 값
+      this.value = valueAttr;
+    }
   }
 
   private render() {
-    this.cleanup();
-    const portal = this._resolvePortal();
-    if (!portal) return;
-
+    // console.log('-------------', this.value);
     const win = this.ownerDocument?.defaultView || window;
     const helperSet = SwcUtils.getHelperAndHostSet(win, this);
-
     const templates = Array.from(this.content.querySelectorAll('template'));
     let selected: HTMLTemplateElement | null = null;
+
     for (const t of templates) {
-      if (t.getAttribute('is') === 'swc-when' && String(t.getAttribute('value')) === String(this._value)) {
-        selected = t;
-        break;
+      if (t.getAttribute('is') === 'swc-when') {
+        let matches = false;
+        const value = t.getAttribute('value') || '';
+
+        // {{ }} 브레이스로 감싸진 값은 스크립트 실행
+        if (value.startsWith('{{') && value.endsWith('}}')) {
+          const script = value.slice(2, -2).trim();
+          const result = FunctionUtils.executeReturn({
+            script,
+            context: t,
+            args: { ...helperSet, $value: this._value }
+          });
+          // console.log('rrrrrrrrrrrrrr', result);
+          matches = result === true;
+        } else {
+          // 일반 문자열 비교 (기존 방식)
+          matches = String(value) === String(this._value);
+        }
+
+        if (matches) {
+          selected = t;
+          break;
+        }
       }
     }
+
     const target = selected || (this.content.querySelector('template[is="swc-otherwise"]') as HTMLTemplateElement);
+
+    // skip-if-same attribute가 있고 이전과 같은 template이면 렌더링 스킵
+    // 최상위 skip-if-same 또는 각 when/otherwise의 skip-if-same 체크
+    const targetHasSkipIfSame = target?.hasAttribute('skip-if-same');
+    const shouldSkip = (this.hasAttribute('skip-if-same') || targetHasSkipIfSame) && this._previousTemplate === target;
+    if (shouldSkip) {
+      return;
+    }
+
+    this.cleanup();
+    this._previousTemplate = target;
 
     if (target) {
       const clone = target.content.cloneNode(true) as DocumentFragment;
@@ -441,18 +473,36 @@ export const registerAllElements = (w: any) => {
       const elements = this._nodes.filter(n => n.nodeType === 1) as HTMLElement[];
       const groupArgs = { ...helperSet, $value: this._value, $nodes: this._nodes, $elements: elements, $firstElement: elements[0] };
 
+      // 복제된 최상위 요소들은 SwcChoose의 직접 자식이 될 것이므로 __swc_host 설정 안 함
       this._nodes.forEach((n, nodeIdx) => {
-        if (n instanceof HTMLElement) (n as any).__swc_host = this;
+        // if (n instanceof HTMLElement) (n as any).__swc_host = this;  // 제거: 부모 체인 유지
         this._executeCloneCallback('on-clone-node', { ...groupArgs, $node: n, $nodeIndex: nodeIdx, $isElement: n.nodeType === 1 });
+
+        // Attribute {{ }} 치환 - HTML string 차원에서 동적 치환
+        if (n instanceof HTMLElement) {
+          Array.from(n.attributes).forEach(attr => {
+            const value = attr.value || '';
+            if (value.startsWith('{{') && value.endsWith('}}')) {
+              const script = value.slice(2, -2).trim();
+              const result = FunctionUtils.executeReturn({
+                script,
+                context: n,
+                args: { ...groupArgs, $value: this._value }
+              });
+              n.setAttribute(attr.name, String(result));
+            }
+          });
+        }
       });
 
       this._executeCloneCallback('on-clone-nodes', groupArgs);
 
-      if (portal === this.parentElement) {
-        portal.insertBefore(clone, this.nextSibling);
-      } else {
-        portal.appendChild(clone);
-      }
+      this.parentElement?.insertBefore(clone, this.nextSibling);
+      // if (portal === this.parentElement) {
+      //   portal.insertBefore(clone, this.nextSibling);
+      // } else {
+      //   portal.appendChild(clone);
+      // }
     }
   }
 
@@ -474,35 +524,38 @@ export const registerAllElements = (w: any) => {
   private _nodes: Node[] = [];
   private _value: any = null;
 
-  private _resolvePortal(): Element | null {
-    const portalScript = this.getAttribute('on-get-portal');
-    if (!portalScript) return this.parentElement;
-
-    const win = this.ownerDocument?.defaultView || window;
-    const res = FunctionUtils.executeReturn({
-      script: portalScript,
-      context: this,
-      args: SwcUtils.getHelperAndHostSet(win, this)
-    });
-
-    if (res instanceof HTMLElement) return res;
-    if (typeof res === 'string') return win.document.querySelector(res);
-    return this.parentElement;
-  }
-
   private _executeCloneCallback(attr: string, args: any) {
     const script = this.getAttribute(attr);
     if (!script) return;
     FunctionUtils.execute({ script, context: this, args });
   }
 
-  @changedAttributeHost('on-get-value')
-  private refresh() {
-    const script = this.getAttribute('on-get-value');
-    if (!script) return;
-    const win = this.ownerDocument?.defaultView || window;
-    const result = FunctionUtils.executeReturn({ script, context: this, args: SwcUtils.getHelperAndHostSet(win, this) });
+  @changedAttributeHost('value')
+  private refresh(valueAttr?: string | null) {
+    valueAttr ??= this.getAttribute('value');
+    if (!valueAttr) {
+      this.render('default');
+      return;
+    }
 
+    // {{ }} 브레이스로 감싸진 값은 스크립트 실행
+    if (valueAttr.startsWith('{{') && valueAttr.endsWith('}}')) {
+      const script = valueAttr.slice(2, -2).trim();
+      const win = this.ownerDocument?.defaultView || window;
+      const result = FunctionUtils.executeReturn({ 
+        script, 
+        context: this, 
+        args: SwcUtils.getHelperAndHostSet(win, this) 
+      });
+
+      this.executeAsync(result);
+    } else {
+      // 일반 문자열 값 또는 직접 Promise 속성
+      this.executeAsync(valueAttr);
+    }
+  }
+
+  private executeAsync(result: any) {
     if (result instanceof Promise) {
       this.render('loading');
       result
@@ -519,7 +572,7 @@ export const registerAllElements = (w: any) => {
 
   private render(state: string) {
     this.cleanup();
-    const portal = this._resolvePortal();
+    const portal = this.parentElement;
     if (!portal) return;
 
     const win = this.ownerDocument?.defaultView || window;
@@ -532,18 +585,31 @@ export const registerAllElements = (w: any) => {
       const elements = this._nodes.filter(n => n.nodeType === 1) as HTMLElement[];
       const groupArgs = { ...helperSet, $value: this._value, $nodes: this._nodes, $elements: elements, $firstElement: elements[0], $state: state };
 
+      // 부모 체인을 정상적으로 유지하기 위해 __swc_host 할당 제거
       this._nodes.forEach((n, nodeIdx) => {
-        if (n instanceof HTMLElement) (n as any).__swc_host = this;
+        // if (n instanceof HTMLElement) (n as any).__swc_host = this;  // 제거: 부모 체인 유지
         this._executeCloneCallback('on-clone-node', { ...groupArgs, $node: n, $nodeIndex: nodeIdx, $isElement: n.nodeType === 1 });
+
+        // Attribute {{ }} 치환 - SwcChoose처럼 동적 치환
+        if (n instanceof HTMLElement) {
+          Array.from(n.attributes).forEach(attr => {
+            const value = attr.value || '';
+            if (value.startsWith('{{') && value.endsWith('}}')) {
+              const script = value.slice(2, -2).trim();
+              const result = FunctionUtils.executeReturn({
+                script,
+                context: n,
+                args: groupArgs
+              });
+              n.setAttribute(attr.name, String(result));
+            }
+          });
+        }
       });
 
       this._executeCloneCallback('on-clone-nodes', groupArgs);
 
-      if (portal === this.parentElement) {
-        portal.insertBefore(clone, this.nextSibling);
-      } else {
-        portal.appendChild(clone);
-      }
+      portal.insertBefore(clone, this.nextSibling);
     }
   }
 
@@ -732,4 +798,78 @@ export const registerAllElements = (w: any) => {
   @elementDefine('swc-app-body', { extends: 'body', window: w })
   class SwcAppBody extends SwcAppMixin(HTMLBodyElement) {}
 
+
+  return {
+    // Sub Templates
+    SwcLoading,
+    SwcError,
+    SwcSuccess,
+    SwcWhen,
+    SwcOtherwise,
+    SwcDefault,
+    // Core Elements
+    SwcApp,
+    SwcIf,
+    SwcLoop,
+    SwcChoose,
+    SwcAsync,
+    // App Elements
+    SwcAppAnchor,
+    SwcAppArea,
+    SwcAppAudio,
+    SwcAppBase,
+    SwcAppButton,
+    SwcAppCanvas,
+    SwcAppData,
+    SwcAppDataList,
+    SwcAppDetails,
+    SwcAppDialog,
+    SwcAppDiv,
+    SwcAppDList,
+    SwcAppEmbed,
+    SwcAppFieldSet,
+    SwcAppForm,
+    SwcAppHR,
+    SwcAppIFrame,
+    SwcAppImage,
+    SwcAppInput,
+    SwcAppLabel,
+    SwcAppLegend,
+    SwcAppLI,
+    SwcAppLink,
+    SwcAppMap,
+    SwcAppMeta,
+    SwcAppMeter,
+    SwcAppMod,
+    SwcAppObject,
+    SwcAppOList,
+    SwcAppOptGroup,
+    SwcAppOption,
+    SwcAppOutput,
+    SwcAppParagraph,
+    SwcAppParam,
+    SwcAppPicture,
+    SwcAppPre,
+    SwcAppProgress,
+    SwcAppQuote,
+    SwcAppScript,
+    SwcAppSelect,
+    SwcAppSlot,
+    SwcAppSource,
+    SwcAppSpan,
+    SwcAppStyle,
+    SwcAppTable,
+    SwcAppTableSection,
+    SwcAppTableCell,
+    SwcAppTemplate,
+    SwcAppTextArea,
+    SwcAppTime,
+    SwcAppTitle,
+    SwcAppTableRow,
+    SwcAppTrack,
+    SwcAppUList,
+    SwcAppVideo,
+    SwcAppHeading,
+    SwcAppBody,
+  };
 };

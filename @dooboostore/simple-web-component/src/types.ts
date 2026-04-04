@@ -42,7 +42,9 @@ export type HostSet = {
 };
 
 export type HelperHostSet = HelperSet & HostSet;
-
+export interface SwcChooseInterface extends HTMLTemplateElement {
+  refresh(): void;
+}
 export interface SwcAppInterface extends HTMLElement {
   simpleApplication?: SimpleApplication;
   router?: Router;

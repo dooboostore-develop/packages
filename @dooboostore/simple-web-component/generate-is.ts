@@ -9,8 +9,9 @@ const targetFile = './src/elements/register.ts';
 const getCoreSource = (fileName: string, tagName: string, baseClassName: string, extendsTag?: string) => {
   const content = fs.readFileSync(`./src/elements/${fileName}.ts`, 'utf-8');
 
-  // Find the exact start of the class body after 'export class ... {'
-  const match = content.match(/export\s+class\s+\w+\s+extends\s+\w+\s+\{/);
+  // Find the exact start of the class body after 'export class ... { 
+  // 이제 implements를 지원함
+  const match = content.match(/class\s+\w+\s+extends\s+\w+(?:\s+implements\s+[\w\s,]+)?\s+\{/);
   if (!match) throw new Error(`Could not find class definition in ${fileName}.ts`);
 
   const startIdx = match.index! + match[0].length;
@@ -48,7 +49,9 @@ import { SwcUtils } from '../utils/Utils';
 import { FunctionUtils } from '@dooboostore/core';
 import { changedAttributeHost } from '../decorators/changedAttributeHost';
 
-export const registerAllElements = (w: any) => {
+type Constructor<T> = new (...args: any[]) => T;
+
+export const registerAllElements = (w: any): Record<string, Constructor<HTMLElement>> => {
 ${extractionBlock}
 
   // --- Sub Templates ---
@@ -74,13 +77,34 @@ ${extractionBlock}
   // --- "is" Elements ---
 `;
 
+const appElements: string[] = [];
 elements.forEach(([className, tagName]) => {
   const shortName = className.replace('HTML', '').replace('Element', '');
   registerContent += `  @elementDefine('swc-app-${tagName}', { extends: '${tagName}', window: w })\n`;
   registerContent += `  class SwcApp${shortName} extends SwcAppMixin(${className}) {}\n\n`;
+  appElements.push(`    SwcApp${shortName}`);
 });
 
-registerContent += '};\n';
+registerContent += `
+  return {
+    // Sub Templates
+    SwcLoading,
+    SwcError,
+    SwcSuccess,
+    SwcWhen,
+    SwcOtherwise,
+    SwcDefault,
+    // Core Elements
+    SwcApp,
+    SwcIf,
+    SwcLoop,
+    SwcChoose,
+    SwcAsync,
+    // App Elements
+${appElements.join(',\n')},
+  };
+};
+`;
 
 fs.writeFileSync(targetFile, registerContent);
 console.log('Engine-based SWC: Unified registration helper regenerated with stable body extraction!');

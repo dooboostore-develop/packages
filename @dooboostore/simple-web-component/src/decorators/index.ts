@@ -10,4 +10,5 @@ export * from './queryAll';
 export * from './applyClass';
 export * from './applyStyle';
 export * from './applyAttribute';
+export * from './setProperty';
 export * from './subscribeSwcAppRouteChange';

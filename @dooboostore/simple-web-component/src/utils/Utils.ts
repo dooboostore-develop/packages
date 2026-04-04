@@ -148,6 +148,27 @@ export const htmlArticleElement = (options?: { doc?: Document; attrs?: Record<st
 };
 
 export namespace SwcUtils {
+
+
+  export const parsePathPatternsSetAttributeString = (pathPattern: string[], path: string) => {
+    return JSON.stringify(SwcUtils.parsePathPatternsSet(pathPattern, path)).replace(/"/g, "'");
+  }
+
+  export const parsePathPatternsSet = (pathPattern: string[], path: string) => {
+    return {
+      path: path,
+      pathData: SwcUtils.parsePathPatterns(pathPattern, path)
+    };
+  };
+  export const parsePathPatterns = (pathPattern: string[], path: string) => {
+    for (const pattern of pathPattern) {
+      const data = SwcUtils.parsePathPattern(pattern, path || '/');
+      if (data !== null) {
+        return data;
+      }
+    }
+  };
+
   export const getHelperSet = (win: Window): HelperSet => {
     const doc: Document = win.document;
     return {
@@ -236,6 +257,55 @@ export namespace SwcUtils {
     return appHostsWithoutSelf.length > 0 ? appHostsWithoutSelf[appHostsWithoutSelf.length - 1] : undefined;
   };
 
+  /**
+   * Find parent app host by traversing DOM tree directly.
+   * Only checks tagName and is attribute - no SWC host discovery.
+   * Useful for Safari polyfill compatibility where is="" elements upgrade in child-first order.
+   */
+  export const findParentAppHostDirect = (el: HTMLElement): SwcAppInterface | null => {
+    const appHosts = findAllParentAppHostsDirect(el);
+    return appHosts.length > 0 ? appHosts[appHosts.length - 1] : null;
+  };
+
+  /**
+   * Find all parent app hosts by traversing DOM tree directly.
+   * Returns array of all parent app hosts in [closest-parent, ..., root] order.
+   * Only checks tagName and is attribute - no SWC host discovery.
+   * Useful for Safari polyfill compatibility where is="" elements upgrade in child-first order.
+   */
+  export const findAllParentAppHostsDirect = (el: HTMLElement): SwcAppInterface[] => {
+    const appHosts: SwcAppInterface[] = [];
+    
+    // el 자체부터 시작 (el이 app host일 수도 있음)
+    let current: HTMLElement | null = el;
+
+    while (current) {
+      const isAppHost =
+        current.tagName.toLowerCase() === 'swc-app' ||
+        current.getAttribute('is')?.startsWith('swc-app-');
+      if (isAppHost) {
+        appHosts.push(current as SwcAppInterface);
+      }
+
+      // 다음 부모 찾기
+      if (current.parentElement) {
+        // Light DOM: 정상적인 부모 요소
+        current = current.parentElement;
+      } else {
+        // parentElement가 없음 = Shadow root의 직접 자식일 수 있음
+        const root = current.getRootNode();
+        if (root instanceof ShadowRoot) {
+          // Shadow host로 올라가기
+          current = root.host as HTMLElement;
+        } else {
+          // Document root 도달
+          break;
+        }
+      }
+    }
+    return appHosts.reverse(); // [root, ..., closest-parent]
+  };
+
   export const getHostSet = (el: HTMLElement): HostSet => {
     const isSwc = !!getElementConfig(el);
     const ancestors = findAllSwcHosts(el); // [root, ..., parent]
@@ -265,7 +335,8 @@ export namespace SwcUtils {
       curr = curr.parentElement || (curr.getRootNode() as any).host;
     }
 
-    const $appHosts = $hosts.filter(h => h.tagName.toLowerCase() === 'swc-app' || h.getAttribute('is')?.startsWith('swc-app-')) as SwcAppInterface[];
+    const $appHosts = SwcUtils.findAllParentAppHostsDirect(el); //$hosts.filter(h => h.tagName.toLowerCase() === 'swc-app' || h.getAttribute('is')?.startsWith('swc-app-')) as SwcAppInterface[];
+    // console.log('apphosts00000000', $appHosts)
     const $appHost = $appHosts.length > 0 ? ($appHosts[$appHosts.length - 1] === el ? ($appHosts.length > 1 ? $appHosts[$appHosts.length - 2] : null) : $appHosts[$appHosts.length - 1]) : null;
     const $firstAppHost = $appHosts.length > 0 ? $appHosts[0] : null;
 

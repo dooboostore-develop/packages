@@ -6,18 +6,7 @@ export class ElementRouter extends Router {
   private _currentIndex = -1;
 
   constructor(config: RouterConfig) {
-    // Router 부모 클래스가 생성자에서 go()를 호출하여 초기화되지 않은 필드에 접근하는 것을 방지하기 위해
-    // firstUrl을 제거하고 넘긴 뒤 자식에서 수동 처리합니다.
-    const { firstUrl, ...rest } = config;
-    super(rest);
-
-    const startUrl = firstUrl ?? '/';
-    this._history = [{ url: startUrl, data: null }];
-    this._currentIndex = 0;
-
-    if (firstUrl) {
-      this.replace(firstUrl, { config: { noEventAndPublish: true } });
-    }
+    super(config);
   }
 
   // Override pushState to manage internal history

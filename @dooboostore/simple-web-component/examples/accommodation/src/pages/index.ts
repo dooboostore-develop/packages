@@ -3,7 +3,7 @@ import ListPage from './ListPage';
 import DetailPage from './DetailPage';
 import EventDetailPage from './EventDetailPage';
 import { Inject, RouterAction, RoutingDataSet } from '@dooboostore/simple-boot';
-import { onConnectedSwcApp, applyInnerHtmlNodeHost, subscribeSwcAppRouteChange, onInitialize, elementDefine, applyReplaceChildrenNodeHost, onConnectedInnerHtml } from '@dooboostore/simple-web-component';
+import { onConnectedSwcApp, applyInnerHtmlNodeHost, subscribeSwcAppRouteChange, onInitialize, elementDefine, applyReplaceChildrenNodeHost, onConnectedInnerHtml, setProperty } from '@dooboostore/simple-web-component';
 import { Router, type RouterEventType } from '@dooboostore/core-web';
 import { AccommodationService, EventService } from '../services';
 
@@ -30,7 +30,7 @@ const indexPageFactory = (w: Window) => {
 
     constructor() {
       super();
-      console.log('vvvvv');
+      // console.log('vvvvv');
     }
 
     @onConnectedSwcApp
@@ -41,28 +41,11 @@ const indexPageFactory = (w: Window) => {
       console.log('onInitialize', this.router, this.accommodationService, this.eventService);
     }
 
-    @subscribeSwcAppRouteChange('/detail/{productId}')
-    @applyInnerHtmlNodeHost({ root: 'light' })
-    detailRoute(a: RouterEventType, pathData: any) {
-      return `<swc-example-accommodation-detail-page product-id="${pathData.productId}"/>`;
-    }
-
-    @subscribeSwcAppRouteChange('/event/{eventId}')
-    @applyInnerHtmlNodeHost({ root: 'light' })
-    eventRoute(a: RouterEventType, pathData: any) {
-      return `<swc-example-accommodation-event-detail-page event-id="${pathData.eventId}"/>`;
-    }
-
-    @subscribeSwcAppRouteChange('/list')
-    @applyInnerHtmlNodeHost({ root: 'light' })
-    listRoute(a: RouterEventType, pathData: any) {
-      return `<swc-example-accommodation-list-page/>`;
-    }
-
-    @subscribeSwcAppRouteChange(['', '/'])
-    @applyInnerHtmlNodeHost({ root: 'light' })
-    indexRoute(a: RouterEventType, pathData: any) {
-      return `<swc-example-accommodation-landing-page/>`;
+    @setProperty('#router', 'value')
+    @subscribeSwcAppRouteChange(['', '/', '/list', '/event/{eventId}', '/detail/{productId}'])
+    routeChanged(re: RouterEventType) {
+      console.log('----------------------!@@@@');
+      return re;
     }
 
     @applyReplaceChildrenNodeHost({
@@ -92,7 +75,36 @@ const indexPageFactory = (w: Window) => {
           </style>
           <swc-example-accommodation-header on-navigate="$host.onHeaderNavigate(event, $data)"></swc-example-accommodation-header>
           <main id="page-container">
-            <slot></slot>
+            <template id="router" is="swc-choose" skip-if-same>
+              <!-- Home / Landing -->
+              <template is="swc-when" value="{{ ['', '/'].includes($value?.path) }}">
+                <swc-example-accommodation-landing-page/>
+              </template>
+              
+              <!-- List -->
+              <template is="swc-when" value="{{ $value?.path === '/list' }}">
+                <swc-example-accommodation-list-page/>
+              </template>
+              
+              <!-- Event Detail -->
+              <template is="swc-when" value="{{ $value?.path.startsWith('/event/') }}">
+                <swc-example-accommodation-event-detail-page event-id="{{$value.pathData.eventId}}"/>
+              </template>
+              
+              <!-- Product Detail -->
+              <template is="swc-when" value="{{ $value?.path.startsWith('/detail/') }}">
+                <swc-example-accommodation-detail-page product-id="{{$value.pathData.productId}}"/>
+              </template>
+              
+              <!-- Not Found / Default -->
+              <template is="swc-otherwise">
+                <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 400px; padding: 40px; text-align: center; color: #666;">
+                  <h2 style="font-size: 24px; margin: 0 0 10px 0; color: #333;">404 - Page Not Found</h2>
+                  <p style="margin: 0 0 20px 0; color: #999;">The page you're looking for doesn't exist.</p>
+                  <a href="/" style="padding: 12px 24px; background: #1976d2; color: white; text-decoration: none; border-radius: 4px; font-weight: 600; transition: background 0.3s;">Go Home</a>
+                </div>
+              </template>
+            </template>
           </main>
           <footer>
             <div style="max-width: 1440px; margin: 0 auto; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 20px;">

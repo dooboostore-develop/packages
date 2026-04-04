@@ -91,6 +91,7 @@ export const ensureInit = (inst: any) => {
 
     // Call constructor script if present
     const hostSet = SwcUtils.getHostSet(inst);
+    const appHosts = SwcUtils.findAllParentAppHostsDirect(inst);
     inst._executeSwcScript?.('swc-on-constructor', hostSet);
 
     // Call @onInitialize lifecycle methods
@@ -176,14 +177,14 @@ const setupPrototype = (proto: any) => {
     ensureInit(this);
     if (typeof (this as any)[methodName] !== 'function') return;
     const useHostSet = hostSet ?? SwcUtils.getHostSet(this);
-    const app = useHostSet?.$appHost.simpleApplication;
+    const app = useHostSet?.$appHost?.simpleApplication;
     // console.log('---->hh',app, this, methodName);
     if (app) {
       const otherStorage = new Map<any, any>();
       const situations = new SituationTypeContainers([new SituationTypeContainer({ situationType: InjectSituationType.HOST_SET, data: useHostSet }), new SituationTypeContainer({ situationType: InjectSituationType.APP_HOST, data: useHostSet.$appHost }), new SituationTypeContainer({ situationType: InjectSituationType.APP_HOSTS, data: useHostSet.$appHosts }), new SituationTypeContainer({ situationType: InjectSituationType.HOST, data: useHostSet.$host }), new SituationTypeContainer({ situationType: InjectSituationType.HOSTS, data: useHostSet.$hosts }), new SituationTypeContainer({ situationType: InjectSituationType.FIRST_HOST, data: useHostSet.$firstHost }), new SituationTypeContainer({ situationType: InjectSituationType.LAST_HOST, data: useHostSet.$lastHost }), new SituationTypeContainer({ situationType: InjectSituationType.FIRST_APP_HOST, data: useHostSet.$firstAppHost }), new SituationTypeContainer({ situationType: InjectSituationType.LAST_APP_HOST, data: useHostSet.$lastAppHost })]);
       otherStorage.set(SituationTypeContainers, situations);
 
-      return app.simstanceManager.executeBindParameterSimPromise(
+      return app.simstanceManager.executeBindParameterSim(
         {
           target: this,
           targetKey: methodName,
@@ -331,7 +332,10 @@ export const elementDefine =
         let sContent = '',
           lContent = '';
         for (const meta of connectedInnerHtmlList) {
-          const res = (this as any)[meta.propertyKey]();
+          // const res = (this as any)[meta.propertyKey]();
+          const res = (this as any)._invokeLifecycleMethod(meta.propertyKey, hostSet);
+          // console.log('------res0', res);
+          // console.log('------res1', res1);
           if (res !== undefined) {
             if (meta.options.useShadow) sContent += res;
             else lContent += res;
@@ -494,8 +498,14 @@ export const elementDefine =
       (this as any).__swc_connected = true;
 
       // Register to appHost LAST when all lifecycle completed
+      // console.log('!!!!!!!!!!!!!!', this, appHost)
+      const appHostss = SwcUtils.findAllParentAppHostsDirect(this)
+      // const nAppHostSet = SwcUtils.getHostSet(this as any);
       if (appHost && typeof (appHost as any)._connected === 'function') {
         (appHost as any)._connected(this);
+      } else if (appHost && typeof (appHost as any)) {
+        (appHost as any)._connected_safari ??= [];
+        (appHost as any)._connected_safari.push(this);
       }
     };
 
