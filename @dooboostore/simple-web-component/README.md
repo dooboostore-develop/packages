@@ -245,6 +245,13 @@ onDisconnected() {
 onAttributeChanged(name: string, oldValue: string, newValue: string) {
   // Called when attribute changes
 }
+
+@onConnectedSwcApp
+onAppReady(hostSet: HostSet) {
+  // Called after SwcApp.connect() completes on all already-connected components
+  // Full DI support available through hostSet
+  console.log('Application initialization complete!');
+}
 ```
 
 ### 8. **Routing with @subscribeSwcAppRouteChange**

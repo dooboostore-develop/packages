@@ -1,4 +1,4 @@
-import { elementDefine, applyNode, onConnectedInnerHtml, addEventListener, onInitialize } from '@dooboostore/simple-web-component';
+import { onConnectedSwcApp,elementDefine, applyNode, onConnectedInnerHtml, addEventListener, onInitialize } from '@dooboostore/simple-web-component';
 import {Inject} from '@dooboostore/simple-boot';
 import { SubscriptionLike } from '@dooboostore/core';
 import { CartService  } from '../services/CartService';
@@ -24,41 +24,36 @@ export default (w: Window) => {
       itemCount: 0
     };
 
-    @onInitialize
-    setupCart(
-      @Inject({symbol: CartService.SYMBOL})cartService: CartService,
-      @Inject({symbol: OrderService.SYMBOL})orderService: OrderService
-    ) {
+    @onConnectedSwcApp
+    setupCart(@Inject({ symbol: CartService.SYMBOL }) cartService: CartService, @Inject({ symbol: OrderService.SYMBOL }) orderService: OrderService) {
       this.cartService = cartService;
       this.orderService = orderService;
 
       // Load cart from storage
       // cartService.load().then(() => {
-        // Subscribe to reactive store
-        this.subscription = cartService.store.subscribe(cart => {
-          this.cart = cart;
-          this.updateUI();
-        });
+      // Subscribe to reactive store
+      this.subscription = cartService.store.subscribe(cart => {
+        this.cart = cart;
+        this.updateUI();
+      });
       // });
     }
-
 
     updateUI() {
       this.updateCartContent();
       this.updateItemCount();
     }
 
-    @applyNode('.cart-content', {position: 'innerHtml'})
+    @applyNode('.cart-content', { position: 'innerHtml' })
     updateCartContent() {
       return this.renderCart();
     }
 
-    @applyNode('#cart-item-count', {position: 'innerHtml'})
+    @applyNode('#cart-item-count', { position: 'innerHtml' })
     updateItemCount() {
       const count = this.cart.itemCount || 0;
       return `${count} ${count === 1 ? 'item' : 'items'} in cart`;
     }
-
 
     @addEventListener('.btn-quantity-decrease', 'click', { delegate: true, stopPropagation: true })
     onQuantityDecrease(event: Event) {
@@ -109,27 +104,21 @@ export default (w: Window) => {
       }
 
       // Create order from cart
-      const order = this.orderService.createOrder(
-        this.cart.items,
-        this.cart.subtotal,
-        this.cart.tax,
-        this.cart.total,
-        {
-          firstName: 'Customer',
-          lastName: 'Name',
-          email: 'customer@example.com',
-          phone: '+1234567890',
-          street: '123 Main St',
-          city: 'City',
-          state: 'State',
-          zipCode: '12345',
-          country: 'Country'
-        }
-      );
+      const order = this.orderService.createOrder(this.cart.items, this.cart.subtotal, this.cart.tax, this.cart.total, {
+        firstName: 'Customer',
+        lastName: 'Name',
+        email: 'customer@example.com',
+        phone: '+1234567890',
+        street: '123 Main St',
+        city: 'City',
+        state: 'State',
+        zipCode: '12345',
+        country: 'Country'
+      });
 
       // Clear cart after successful order
       this.cartService.clear();
-      
+
       // You can add navigation here if needed
       console.log('[CartPage] Order created:', order.id);
     }
@@ -147,9 +136,7 @@ export default (w: Window) => {
 
       return `
         <div class="cart-items">
-          ${this.cart.items
-            .map(item => this.renderCartItem(item))
-            .join('')}
+          ${this.cart.items.map(item => this.renderCartItem(item)).join('')}
         </div>
 
         <div class="cart-summary">
@@ -211,7 +198,7 @@ export default (w: Window) => {
       `;
     }
 
-    @onConnectedInnerHtml({useShadow: true})
+    @onConnectedInnerHtml({ useShadow: true })
     render() {
       return `
         <style>

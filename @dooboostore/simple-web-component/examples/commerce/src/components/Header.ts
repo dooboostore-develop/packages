@@ -1,4 +1,4 @@
-import { elementDefine, onInitialize, addEventListener, onConnectedInnerHtml, emitCustomEventHost, applyNode } from '@dooboostore/simple-web-component';
+import { onConnectedSwcApp, elementDefine, onInitialize, addEventListener, onConnectedInnerHtml, emitCustomEventHost, applyNode } from '@dooboostore/simple-web-component';
 import {CartService} from "../services/CartService";
 import {Subscription} from "@dooboostore/core";
 import {Inject} from "@dooboostore/simple-boot";
@@ -16,7 +16,7 @@ export default (w: Window) => {
     #cartService: CartService;
     #cartUnsubscribe?:  Subscription;
 
-    @onInitialize
+    @onConnectedSwcApp
     async gg(@Inject({symbol: CartService.SYMBOL})cartService: CartService) {
       this.#cartService = cartService;
       console.log('[Header] CartService injected:', cartService);

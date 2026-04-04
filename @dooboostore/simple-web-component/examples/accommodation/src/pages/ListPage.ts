@@ -1,4 +1,4 @@
-import { onInitialize, addEventListener, applyInnerHtmlNode, elementDefine, onConnectedInnerHtml, updateClass } from '@dooboostore/simple-web-component';
+import { onConnectedSwcApp, onInitialize, addEventListener, applyInnerHtmlNode, elementDefine, onConnectedInnerHtml, updateClass } from '@dooboostore/simple-web-component';
 import { Inject } from '@dooboostore/simple-boot';
 import { Router } from '@dooboostore/core-web';
 import { Accommodation, AccommodationService } from '../services/AccommodationService';
@@ -20,13 +20,30 @@ export default (w: Window, container: symbol) => {
     private accommodationService: AccommodationService;
     private router: Router;
 
-    @onInitialize
+    @onConnectedSwcApp
     onInitialize(@Inject({ symbol: AccommodationService.SYMBOL }) accommodationService: AccommodationService, router: Router) {
       this.accommodationService = accommodationService;
       this.router = router;
       this.allAccommodations = this.accommodationService.getAccommodations();
       this.filteredAccommodations = [...this.allAccommodations];
+      this.setContentDisplay(this.filteredAccommodations);
     }
+
+
+    @applyInnerHtmlNode('.list-content')
+    setContentDisplay(filteredAccommodations: Accommodation[]) {
+      return `
+             <div class="header-info">
+              <h2>${filteredAccommodations.length}개의 엄선된 숙소</h2>
+              <p>최고의 경험을 위한 프리미엄 스테이 컬렉션</p>
+            </div>
+            
+            <div class="grid">
+              ${filteredAccommodations.length > 0 ? filteredAccommodations.map(acc => `<swc-example-accommodation-accommodation-card data-id="${acc.id}" class="card-item"></swc-example-accommodation-accommodation-card>`).join('') : `<div class="empty-state">...</div>`}
+            </div>
+            `;
+    }
+
 
     connectedCallback() {
       this.updateCardData();
@@ -240,14 +257,7 @@ export default (w: Window, container: symbol) => {
           </div>
           
           <div class="list-content">
-            <div class="header-info">
-              <h2>${this.filteredAccommodations.length}개의 엄선된 숙소</h2>
-              <p>최고의 경험을 위한 프리미엄 스테이 컬렉션</p>
-            </div>
-            
-            <div class="grid">
-              ${this.filteredAccommodations.length > 0 ? this.filteredAccommodations.map(acc => `<swc-example-accommodation-accommodation-card data-id="${acc.id}" class="card-item"></swc-example-accommodation-accommodation-card>`).join('') : `<div class="empty-state">...</div>`}
-            </div>
+     
           </div>
         </div>
 

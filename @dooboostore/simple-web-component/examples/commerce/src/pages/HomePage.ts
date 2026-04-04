@@ -1,4 +1,4 @@
-import { elementDefine, onConnectedInnerHtml, addEventListener, updateClass, applyInnerHtmlNode, onInitialize } from '@dooboostore/simple-web-component';
+import { onConnectedSwcApp, elementDefine, onConnectedInnerHtml, addEventListener, updateClass, applyInnerHtmlNode, onInitialize } from '@dooboostore/simple-web-component';
 import {Inject} from '@dooboostore/simple-boot';
 import { Router } from '@dooboostore/core-web';
 import { ProductService  } from '../services/ProductService';
@@ -21,13 +21,8 @@ export default (w: Window) => {
     private orderService: OrderService;
     private router: Router;
 
-    @onInitialize
-    onconstructor(
-      @Inject({symbol: ProductService.SYMBOL})productService: ProductService,
-      @Inject({symbol: CartService.SYMBOL})cartService: CartService,
-      @Inject({symbol: OrderService.SYMBOL})orderService: OrderService,
-      router: Router
-    ) {
+    @onConnectedSwcApp
+    onconstructor(@Inject({ symbol: ProductService.SYMBOL }) productService: ProductService, @Inject({ symbol: CartService.SYMBOL }) cartService: CartService, @Inject({ symbol: OrderService.SYMBOL }) orderService: OrderService, router: Router) {
       this.productService = productService;
       this.cartService = cartService;
       this.orderService = orderService;
@@ -41,6 +36,7 @@ export default (w: Window) => {
       if (category) {
         this.selectedCategory = category as string;
       }
+      this.renderProductCards();
     }
 
     updateCategoryQuery(category: string) {
@@ -62,20 +58,25 @@ export default (w: Window) => {
     @applyInnerHtmlNode('.products-grid')
     renderProductCards(): string {
       const filtered = this.getFilteredProducts();
-      return filtered.map(product => `
+      console.log('fffffffff', filtered);
+      return filtered
+        .map(
+          product => `
         <swc-example-commerce-product-card 
           data-product-id="${product.id}"
           on-add-to-cart="$host.onProductAddToCart(event,$data)"
           on-view-product="$host.onProductViewProduct(event,$data)"
         ></swc-example-commerce-product-card>
-      `).join('');
+      `
+        )
+        .join('');
     }
 
     @updateClass('.category-btn')
     private syncCategoryUI() {
-        return {
-            'active': (el: HTMLElement) => el.getAttribute('data-category') === this.selectedCategory
-        };
+      return {
+        active: (el: HTMLElement) => el.getAttribute('data-category') === this.selectedCategory
+      };
     }
 
     @addEventListener('.category-btn', 'click', { delegate: true })
@@ -83,17 +84,17 @@ export default (w: Window) => {
       const btn = event.target as HTMLElement;
       const category = btn.getAttribute('data-category') || 'All';
       this.selectedCategory = category;
-      
+
       this.updateCategoryQuery(category);
       this.syncCategoryUI();
       this.renderProductCards();
     }
 
-    onProductAddToCart(e: CustomEvent, set:any) {
+    onProductAddToCart(e: CustomEvent, set: any) {
       this.addToCart(e.detail.product);
     }
 
-    onProductViewProduct(e: CustomEvent, set:any) {
+    onProductViewProduct(e: CustomEvent, set: any) {
       this.navigateToProduct(e.detail.productId);
     }
 
@@ -108,7 +109,7 @@ export default (w: Window) => {
     @onConnectedInnerHtml
     render() {
       const categories = this.getCategories();
-      
+
       return `
         <style>
           :host {
@@ -248,17 +249,21 @@ export default (w: Window) => {
           <div class="filters-section">
             <h3 class="filter-title">📂 Filter by Category</h3>
             <div class="category-filters">
-              ${categories.map(cat => `
+              ${categories
+                .map(
+                  cat => `
                 <button class="category-btn ${cat === this.selectedCategory ? 'active' : ''}" data-category="${cat}">
                   ${cat}
                 </button>
-              `).join('')}
+              `
+                )
+                .join('')}
             </div>
           </div>
 
           <div class="products-section">
             <h2 class="section-title">✨ Featured Products</h2>
-            <div class="products-grid">${this.renderProductCards()}</div>
+            <div class="products-grid"></div>
           </div>
         </div>
       `;

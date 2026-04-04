@@ -92,6 +92,7 @@ export function attribute(selector: string, options: AttributeFieldOptions = {})
 
     const applySetAttribute = (inst: any, targets: HTMLElement[], attrName: string, nv: any) => {
       targets.forEach(it => {
+        // console.log('sssssssssssss', it, attrName, nv);
         if (it && typeof (it as any).setAttribute === 'function') {
           if (nv === null) {
             (it as any).removeAttribute(attrName);
@@ -112,6 +113,7 @@ export function attribute(selector: string, options: AttributeFieldOptions = {})
       
       Object.defineProperty(target, propertyKey, {
         get(this: any) {
+          // console.log('------>??gettttt', this,  propertyKey);
           // try {
             const attrName = options.name || String(propertyKey);
             const conf = getElementConfig(this);
@@ -136,7 +138,9 @@ export function attribute(selector: string, options: AttributeFieldOptions = {})
               return null;
             }
 
-            return convertValue(this[privateKey], targetType);
+            const data =  convertValue(this[privateKey], targetType);
+          // console.log('get rrr', data);
+            return data;
           // } catch (err) {
           //   console.error('Error in getter:', err);
           //   throw err;
@@ -144,6 +148,7 @@ export function attribute(selector: string, options: AttributeFieldOptions = {})
         },
         set(this: any, nv: any) {
           // this[propertyKey] = nv;
+          // console.log('------>??settttt', this, nv, propertyKey);
           const attrName = options.name || String(propertyKey);
           const conf = getElementConfig(this);
           const currentWin = this._resolveWindow?.(conf) || ((typeof window !== 'undefined' ? window : undefined) as any);

@@ -1,4 +1,4 @@
-import { addEventListener, applyNodeHost, attributeHost, elementDefine, onConnectedInnerHtml, onInitialize } from '@dooboostore/simple-web-component';
+import { onConnectedSwcApp, addEventListener, applyNodeHost, attributeHost, elementDefine, onConnectedInnerHtml, onInitialize } from '@dooboostore/simple-web-component';
 import { Inject, Sim } from '@dooboostore/simple-boot';
 import { EventService } from '../services/EventService';
 import { AccommodationService } from '../services/AccommodationService';
@@ -21,7 +21,7 @@ export default (w: Window, container: symbol) => {
     @attributeHost('event-id') eventId: string;
     router: Router<any>;
 
-    @onInitialize
+    @onConnectedSwcApp
     onInitialize(@Inject({ symbol: EventService.SYMBOL }) eventService: EventService, @Inject({ symbol: AccommodationService.SYMBOL }) accommodationService: AccommodationService, router: Router) {
       this.eventService = eventService;
       this.accommodationService = accommodationService;

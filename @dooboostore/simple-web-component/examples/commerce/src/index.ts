@@ -17,11 +17,7 @@ w.document.addEventListener('DOMContentLoaded', () => {
       path: path,
       routeType: 'path',
       container: container,
-      window: w,
-      onEngineStarted: () => {
-        console.log('[Commerce] Engine started');
-        appElement.innerHTML = '<commerce-root-router></commerce-root-router>';
-      }
+      window: w
     });
   }
 });

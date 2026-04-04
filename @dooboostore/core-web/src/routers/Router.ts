@@ -22,7 +22,7 @@ export type ChangeStateConfig = { noEventAndPublish?: boolean };
 export type StateOptions = { data?: any, title?: string, config?: ChangeStateConfig };
 export type RouterMethodOptions = { data?: any, title?: string, config?: ChangeStateConfig };
 
-export type RouterEventType = RouteData & { triggerPoint: 'start' | 'end' };
+export type RouterEventType = RouteData & { triggerPoint: 'start' | 'end' | 'first-end' };
 
 // popstate 이벤트 무시를 위한 마커
 const ROUTER_NO_EVENT_MARKER = '__ROUTER_NO_EVENT__';
@@ -44,12 +44,12 @@ export abstract class Router<T = any> {
         searchParams: urlSearchParams,
         router: this,
         search: urlSearchParams.size > 0 ? `?${urlSearchParams.toString()}` : '',
-        triggerPoint: 'end'
+        triggerPoint: 'first-end'
       }
       this.behaviorSubject = new BehaviorSubject<RouterEventType>(routeData);
       this.go(config.firstUrl);
     } else {
-      routeData = {...this.getRouteData(), triggerPoint: 'end'};
+      routeData = {...this.getRouteData(), triggerPoint: 'first-end'};
       this.behaviorSubject = new BehaviorSubject<RouterEventType>(routeData);
     }
     this.config.window.addEventListener('popstate', (event: PopStateEvent) => {

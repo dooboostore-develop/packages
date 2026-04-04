@@ -1,4 +1,4 @@
-import { elementDefine, onConnectedInnerHtml, onInitialize, addEventListener, attributeHost } from '@dooboostore/simple-web-component';
+import { onConnectedSwcApp, elementDefine, onConnectedInnerHtml, onInitialize, addEventListener, attributeHost } from '@dooboostore/simple-web-component';
 import {Inject} from '@dooboostore/simple-boot';
 import { ProductService  } from '../services/ProductService';
 import { CartService } from '../services/CartService';
@@ -15,31 +15,25 @@ export default (w: Window) => {
   class ProductPage extends w.HTMLElement {
     product: ProductService.Product | null = null;
     quantity: number = 1;
-    
+
     @attributeHost('product-id')
-    productId: string = '';
-    
+    productId: string;
+
     private productService: ProductService;
     private cartService: CartService;
     private orderService: OrderService;
 
-    @onInitialize
-    onconstructor(
-      @Inject({symbol: ProductService.SYMBOL})productService: ProductService,
-      @Inject({symbol: CartService.SYMBOL})cartService: CartService,
-      @Inject({symbol: OrderService.SYMBOL})orderService: OrderService,
-    ) {
+    @onConnectedSwcApp
+    onconstructor(@Inject({ symbol: ProductService.SYMBOL }) productService: ProductService, @Inject({ symbol: CartService.SYMBOL }) cartService: CartService, @Inject({ symbol: OrderService.SYMBOL }) orderService: OrderService) {
       this.productService = productService;
       this.cartService = cartService;
       this.orderService = orderService;
-      
+
       // Load product if productId attribute is set
       if (this.productId) {
         this.loadProduct(this.productId);
       }
     }
-
-
 
     async loadProduct(productId: string) {
       console.log('loadProduct called');
@@ -67,7 +61,7 @@ export default (w: Window) => {
       const qtyInput = this.querySelector('.quantity-input') as HTMLInputElement;
       console.log('qtyInput:', qtyInput);
       if (qtyInput) {
-        qtyInput.addEventListener('change', (e) => {
+        qtyInput.addEventListener('change', e => {
           this.quantity = Math.max(1, parseInt((e.target as HTMLInputElement).value) || 1);
         });
       }

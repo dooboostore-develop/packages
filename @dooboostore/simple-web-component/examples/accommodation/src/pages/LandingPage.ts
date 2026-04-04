@@ -1,7 +1,7 @@
-import { onInitialize, addEventListener, elementDefine, onConnectedInnerHtml } from '@dooboostore/simple-web-component';
+import { applyInnerHtmlNode, onConnectedSwcApp, onInitialize, addEventListener, elementDefine, onConnectedInnerHtml } from '@dooboostore/simple-web-component';
 import { Inject } from '@dooboostore/simple-boot';
 import { Router} from '@dooboostore/core-web';
-import { EventService } from '../services/EventService';
+import { EventService, LocalEvent } from '../services/EventService';
 
 export default (w: Window, container: symbol) => {
   const tagName = 'swc-example-accommodation-landing-page';
@@ -15,15 +15,47 @@ export default (w: Window, container: symbol) => {
   // @Sim({ container: container })
   @elementDefine(tagName, { window: w })
   class LandingPage extends w.HTMLElement {
-    private events: any[] = [];
+    // private events: any[] = [];
     private router: Router;
     private eventService: EventService;
 
-    @onInitialize
+    @onConnectedSwcApp
     onInitialize(router: Router, @Inject({ symbol: EventService.SYMBOL }) eventService: EventService) {
       this.router = router;
       this.eventService = eventService;
-      this.events = this.eventService.getAllEvents();
+      this.setEventDisplay(this.eventService.getAllEvents());
+    }
+
+    @applyInnerHtmlNode('.events-featured')
+    setEventDisplay(events: LocalEvent[]) {
+      return `
+               <div class="event-large-card" data-id="${events[0].id}">
+            <img src="${events[0].imageUrl}">
+            <div class="event-overlay">
+              <div style="background:#FF385C; display:inline-block; padding:4px 12px; border-radius:4px; font-size:12px; font-weight:700; margin-bottom:12px;">인기 급상승</div>
+              <h3>${events[0].title}</h3>
+              <p>${events[0].location} · ${events[0].date}</p>
+            </div>
+          </div>
+          
+          <div class="event-list-side">
+            ${events
+              .slice(1)
+              .map(
+                e => `
+              <div class="event-small-card" data-id="${e.id}">
+                <img src="${e.imageUrl}" class="event-small-img">
+                <div class="event-small-info">
+                  <h4>${e.title}</h4>
+                  <p>📍 ${e.location}</p>
+                  <p>📅 ${e.date}</p>
+                </div>
+              </div>
+            `
+              )
+              .join('')}
+          </div>
+          `;
     }
 
     @onConnectedInnerHtml({ useShadow: true })
@@ -225,32 +257,7 @@ export default (w: Window, container: symbol) => {
         </div>
 
         <div class="events-featured">
-          <div class="event-large-card" data-id="${this.events[0].id}">
-            <img src="${this.events[0].imageUrl}">
-            <div class="event-overlay">
-              <div style="background:#FF385C; display:inline-block; padding:4px 12px; border-radius:4px; font-size:12px; font-weight:700; margin-bottom:12px;">인기 급상승</div>
-              <h3>${this.events[0].title}</h3>
-              <p>${this.events[0].location} · ${this.events[0].date}</p>
-            </div>
-          </div>
-          
-          <div class="event-list-side">
-            ${this.events
-              .slice(1)
-              .map(
-                e => `
-              <div class="event-small-card" data-id="${e.id}">
-                <img src="${e.imageUrl}" class="event-small-img">
-                <div class="event-small-info">
-                  <h4>${e.title}</h4>
-                  <p>📍 ${e.location}</p>
-                  <p>📅 ${e.date}</p>
-                </div>
-              </div>
-            `
-              )
-              .join('')}
-          </div>
+ 
         </div>
       </div>
 

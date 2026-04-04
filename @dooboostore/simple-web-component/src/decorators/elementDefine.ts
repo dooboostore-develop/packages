@@ -172,14 +172,15 @@ const setupPrototype = (proto: any) => {
     return (typeof window !== 'undefined' ? window : undefined) as Window;
   };
 
-  proto._invokeLifecycleMethod = function (methodName: string | symbol, hostSet: HostSet, extraArgs: any[] = []) {
+  proto._invokeLifecycleMethod = function (methodName: string | symbol, hostSet?: HostSet, extraArgs: any[] = []) {
     ensureInit(this);
     if (typeof (this as any)[methodName] !== 'function') return;
-    const app = hostSet.$appHost?.simpleApplication;
-
+    const useHostSet = hostSet ?? SwcUtils.getHostSet(this);
+    const app = useHostSet?.$appHost.simpleApplication;
+    // console.log('---->hh',app, this, methodName);
     if (app) {
       const otherStorage = new Map<any, any>();
-      const situations = new SituationTypeContainers([new SituationTypeContainer({ situationType: InjectSituationType.HOST_SET, data: hostSet }), new SituationTypeContainer({ situationType: InjectSituationType.APP_HOST, data: hostSet.$appHost }), new SituationTypeContainer({ situationType: InjectSituationType.APP_HOSTS, data: hostSet.$appHosts }), new SituationTypeContainer({ situationType: InjectSituationType.HOST, data: hostSet.$host }), new SituationTypeContainer({ situationType: InjectSituationType.HOSTS, data: hostSet.$hosts }), new SituationTypeContainer({ situationType: InjectSituationType.FIRST_HOST, data: hostSet.$firstHost }), new SituationTypeContainer({ situationType: InjectSituationType.LAST_HOST, data: hostSet.$lastHost }), new SituationTypeContainer({ situationType: InjectSituationType.FIRST_APP_HOST, data: hostSet.$firstAppHost }), new SituationTypeContainer({ situationType: InjectSituationType.LAST_APP_HOST, data: hostSet.$lastAppHost })]);
+      const situations = new SituationTypeContainers([new SituationTypeContainer({ situationType: InjectSituationType.HOST_SET, data: useHostSet }), new SituationTypeContainer({ situationType: InjectSituationType.APP_HOST, data: useHostSet.$appHost }), new SituationTypeContainer({ situationType: InjectSituationType.APP_HOSTS, data: useHostSet.$appHosts }), new SituationTypeContainer({ situationType: InjectSituationType.HOST, data: useHostSet.$host }), new SituationTypeContainer({ situationType: InjectSituationType.HOSTS, data: useHostSet.$hosts }), new SituationTypeContainer({ situationType: InjectSituationType.FIRST_HOST, data: useHostSet.$firstHost }), new SituationTypeContainer({ situationType: InjectSituationType.LAST_HOST, data: useHostSet.$lastHost }), new SituationTypeContainer({ situationType: InjectSituationType.FIRST_APP_HOST, data: useHostSet.$firstAppHost }), new SituationTypeContainer({ situationType: InjectSituationType.LAST_APP_HOST, data: useHostSet.$lastAppHost })]);
       otherStorage.set(SituationTypeContainers, situations);
 
       return app.simstanceManager.executeBindParameterSimPromise(

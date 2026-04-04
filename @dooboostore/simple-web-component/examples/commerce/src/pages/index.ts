@@ -3,7 +3,7 @@ import ProductPage from './ProductPage';
 import CheckoutPage from './CheckoutPage';
 import HomePage from './HomePage';
 import OrdersPage from './OrdersPage';
-import { applyReplaceChildrenNodeHost, applyInnerHtmlNodeHost, subscribeSwcAppRouteChange, onInitialize, elementDefine, onConnectedInnerHtml } from '@dooboostore/simple-web-component';
+import { onConnectedSwcApp,applyReplaceChildrenNodeHost, applyInnerHtmlNodeHost, subscribeSwcAppRouteChange, onInitialize, elementDefine, onConnectedInnerHtml } from '@dooboostore/simple-web-component';
 import { Inject } from '@dooboostore/simple-boot';
 import { Router, type RouterEventType } from '@dooboostore/core-web';
 import { CartService } from '../services/CartService';
@@ -29,17 +29,13 @@ export const rootRouterFactory = (w: Window) => {
     private orderService: OrderService;
     private router: Router;
 
-    @onInitialize
-    onconstructor(
-      @Inject({ symbol: ProductService.SYMBOL }) productService: ProductService,
-      @Inject({ symbol: CartService.SYMBOL }) cartService: CartService,
-      @Inject({ symbol: OrderService.SYMBOL }) orderService: OrderService,
-      router: Router
-    ) {
+    @onConnectedSwcApp
+    onconstructor(@Inject({ symbol: ProductService.SYMBOL }) productService: ProductService, @Inject({ symbol: CartService.SYMBOL }) cartService: CartService, @Inject({ symbol: OrderService.SYMBOL }) orderService: OrderService, router: Router) {
       this.productService = productService;
       this.cartService = cartService;
       this.orderService = orderService;
       this.router = router;
+      // alert(1);
     }
 
     @subscribeSwcAppRouteChange(['', '/'])

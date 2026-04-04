@@ -48,4 +48,7 @@ export interface SwcAppInterface extends HTMLElement {
   router?: Router;
   connect(config?: SwcAttributeConfigType): Promise<void>;
   routing(path: string): Promise<void>;
+  reload(): void;
+  back(): void;
+  forward(): void;
 }

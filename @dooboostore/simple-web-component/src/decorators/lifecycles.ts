@@ -8,6 +8,7 @@ export const ON_AFTER_DISCONNECTED_METADATA_KEY = Symbol.for('simple-web-compone
 export const ON_BEFORE_ADOPTED_METADATA_KEY = Symbol.for('simple-web-component:on-before-adopted');
 export const ON_AFTER_ADOPTED_METADATA_KEY = Symbol.for('simple-web-component:on-after-adopted');
 export const ON_ADD_EVENT_LISTENER_METADATA_KEY = Symbol.for('simple-web-component:on-add-event-listener');
+export const ON_CONNECTED_SWC_APP_METADATA_KEY = Symbol.for('simple-web-component:on-connected-swc-app');
 export const INNER_HTML_METADATA_KEY = Symbol.for('simple-web-component:inner-html');
 
 export const ATTRIBUTE_CHANGED_WILDCARD = '*';
@@ -47,6 +48,8 @@ export const onAfterAdopted = createLifecycleDecorator(ON_AFTER_ADOPTED_METADATA
 export const onAdopted = onAfterAdopted;
 
 export const onAddEventListener = createLifecycleDecorator(ON_ADD_EVENT_LISTENER_METADATA_KEY);
+
+export const onConnectedSwcApp = createLifecycleDecorator(ON_CONNECTED_SWC_APP_METADATA_KEY);
 
 /**
  * @onConnectedInnerHtml decorator to define the initial HTML content when connected.

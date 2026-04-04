@@ -1,4 +1,4 @@
-import { elementDefine, onConnectedInnerHtml, addEventListener, applyInnerHtmlNode, applyNodeHost, attributeHost, onInitialize } from '@dooboostore/simple-web-component';
+import {onConnectedSwcApp, elementDefine, onConnectedInnerHtml, addEventListener, applyInnerHtmlNode, applyNodeHost, attributeHost, onInitialize } from '@dooboostore/simple-web-component';
 import { Inject } from '@dooboostore/simple-boot';
 import { StockService, Stock } from '../services/StockService';
 
@@ -17,12 +17,12 @@ export default (w: Window) => {
     private stockService: StockService;
 
     @attributeHost('stock-id')
-    stockId: string = '';
+    stockId: string;
 
-    @onInitialize
+    @onConnectedSwcApp
     onconstructor(@Inject({ symbol: StockService.SYMBOL }) stockService: StockService) {
       this.stockService = stockService;
-      
+
       // Load stock if stockId attribute is set
       if (this.stockId) {
         this.loadStock(this.stockId);

@@ -1,4 +1,4 @@
-import { setAttributeHost, applyAttributeHost, query, queryHost, onAfterConnected, attributeHost, attribute, changedAttributeHost, onInitialize, elementDefine, onConnectedInnerHtml, addEventListener, applyNodeHost, subscribeSwcAppRouteChange } from '@dooboostore/simple-web-component';
+import { onConnectedSwcApp, setAttributeHost, applyAttributeHost, query, queryHost, onAfterConnected, attributeHost, attribute, changedAttributeHost, onInitialize, elementDefine, onConnectedInnerHtml, addEventListener, applyNodeHost, subscribeSwcAppRouteChange } from '@dooboostore/simple-web-component';
 import { Sim, RouterAction, RoutingDataSet, Inject } from '@dooboostore/simple-boot';
 import { AccommodationService } from '../services/AccommodationService';
 import { EventService, LocalEvent } from '../services/EventService';
@@ -24,7 +24,7 @@ export default (w: Window, container: symbol) => {
     @query(':host')
     gg: HTMLElement = '' as any;
 
-    @onInitialize
+    @onConnectedSwcApp
     onconstructor(@Inject({ symbol: AccommodationService.SYMBOL }) accommodationService: AccommodationService, @Inject({ symbol: EventService.SYMBOL }) eventService: EventService, router: Router) {
       this.accommodationService = accommodationService;
       this.eventService = eventService;

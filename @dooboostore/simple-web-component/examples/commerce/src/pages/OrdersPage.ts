@@ -1,4 +1,4 @@
-import { parentHost, removeStyleHost,setAttributeHost,queryHost, queryAllHost,emitCustomEventHost, changedAttributeHost, toggleClassHost, applyNodeHost, attributeHost, applyNode, elementDefine, onConnectedInnerHtml, onInitialize } from '@dooboostore/simple-web-component';
+import { onConnectedSwcApp, parentHost, removeStyleHost, setAttributeHost, queryHost, queryAllHost, emitCustomEventHost, changedAttributeHost, toggleClassHost, applyNodeHost, attributeHost, applyNode, elementDefine, onConnectedInnerHtml, onInitialize } from '@dooboostore/simple-web-component';
 import {Inject} from '@dooboostore/simple-boot';
 import { SubscriptionLike } from '@dooboostore/core';
 import { OrderService } from '../services/OrderService';
@@ -21,14 +21,10 @@ export default (w: Window) => {
     private orderService: OrderService;
 
     @attributeHost
-    ra: string ='2'
+    ra: string = '2';
 
-    @onInitialize
-    onconstructor(
-      @Inject({symbol: ProductService.SYMBOL})productService: ProductService,
-      @Inject({symbol: CartService.SYMBOL})cartService: CartService,
-      @Inject({symbol: OrderService.SYMBOL})orderService: OrderService,
-    ) {
+    @onConnectedSwcApp
+    onconstructor(@Inject({ symbol: ProductService.SYMBOL }) productService: ProductService, @Inject({ symbol: CartService.SYMBOL }) cartService: CartService, @Inject({ symbol: OrderService.SYMBOL }) orderService: OrderService) {
       this.productService = productService;
       this.cartService = cartService;
       this.orderService = orderService;
@@ -37,11 +33,11 @@ export default (w: Window) => {
     setupOrders() {
       // Load orders from storage
       // orderService.load().then(() => {
-        // Subscribe to reactive store
-        this.subscription = this.orderService.store.subscribe(orders => {
-          this.orders = orders;
-          this.updateUI();
-        });
+      // Subscribe to reactive store
+      this.subscription = this.orderService.store.subscribe(orders => {
+        this.orders = orders;
+        this.updateUI();
+      });
       // });
     }
 
@@ -80,9 +76,7 @@ export default (w: Window) => {
         `;
       }
 
-      return this.orders
-        .map(order => this.renderOrderCard(order))
-        .join('');
+      return this.orders.map(order => this.renderOrderCard(order)).join('');
     }
 
     renderOrderCard(order: OrderService.Order): string {
@@ -150,7 +144,7 @@ export default (w: Window) => {
       `;
     }
 
-    @onConnectedInnerHtml({useShadow: true})
+    @onConnectedInnerHtml({ useShadow: true })
     render() {
       return `
         <style>

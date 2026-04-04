@@ -2,7 +2,8 @@ import { SwcAppEngine, SwcAttributeConfigType, SwcConfigType } from './SwcAppEng
 import { SwcAppInterface } from '../types';
 import { SwcUtils } from '../utils/Utils';
 import { FunctionUtils, Subscription } from '@dooboostore/core';
-import { RouterEventType } from '@dooboostore/core-web';
+import { Router, RouterEventType } from '@dooboostore/core-web';
+import { ON_CONNECTED_SWC_APP_METADATA_KEY, findAllLifecycleMetadata } from '../decorators/lifecycles';
 import { getSubscribeSwcAppRouteChangeMetadata } from '../decorators/subscribeSwcAppRouteChange';
 
 export function SwcAppMixin<T extends { new (...args: any[]): HTMLElement }>(Base: T) {
@@ -63,13 +64,14 @@ export function SwcAppMixin<T extends { new (...args: any[]): HTMLElement }>(Bas
     }
 
     _connected(instance: any) {
-      // console.log('------------------>', instance);
       if (instance) {
         this._swc_connected_instance.add(instance);
-
-        // Notify current route subscribers immediately after connection
-        if (this.router && this._lastRouterEvent) {
-          this._invokeRouteChangeSubscribers(instance, this._lastRouterEvent);
+        if (this.simpleApplication) {
+          this._invokeOnConnectedSwcAppStarted(instance);
+          // Notify current route subscribers immediately after connection
+          if (this.router && this._lastRouterEvent) {
+            this._invokeRouteChangeSubscribers(instance, this._lastRouterEvent);
+          }
         }
       }
     }
@@ -127,19 +129,33 @@ export function SwcAppMixin<T extends { new (...args: any[]): HTMLElement }>(Bas
         }
       }
 
-      // console.log('vvvvvvv222222', this.router);
+      // Invoke @onConnectedSwcApp lifecycle methods on all connected component instances
+      // const hostSet = SwcUtils.getHostSet(this as any);
+      this._swc_connected_instance.forEach((instance: any) => {
+        // console.log('-----rrrrrrrrrr', instance);
+        this._invokeOnConnectedSwcAppStarted(instance);
+      });
+
       // Subscribe to router changes after connect
       if (!this._routerSubscription && this.router) {
         this._routerSubscription = this.router.observable.subscribe((route: RouterEventType) => {
           // console.log('Route changed:', route);
           this._handleRouteChange(route);
         });
-
         // Navigate to initial path if specified
-        // const config = this.__swc_engine.config;
-        // if (config?.path) {
-        //   this.router.go(config.path);
-        // }
+        const config = this.__swc_engine.config;
+        if (config?.path) {
+          this.router.go(config.path);
+        }
+      }
+    }
+
+    _invokeOnConnectedSwcAppStarted(instance: any) {
+      const startedMethods = findAllLifecycleMetadata(instance, ON_CONNECTED_SWC_APP_METADATA_KEY);
+      if (startedMethods) {
+        for (const m of startedMethods) {
+          instance._invokeLifecycleMethod(m);
+        }
       }
     }
 
@@ -177,7 +193,19 @@ export function SwcAppMixin<T extends { new (...args: any[]): HTMLElement }>(Bas
     }
 
     async routing(path: string) {
-      await this.__swc_engine.router?.go(path);
+      await this.router?.go(path);
+    }
+
+    back(): void {
+      this.router?.back();
+    }
+
+    forward(): void {
+      this.router?.forward();
+    }
+
+    reload(): void {
+      this.router?.reload();
     }
   };
 }

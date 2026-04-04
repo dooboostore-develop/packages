@@ -1,6 +1,6 @@
 import MainPage from './MainPage';
 import DetailPage from './DetailPage';
-import { applyReplaceChildrenNodeHost, applyInnerHtmlNodeHost, subscribeSwcAppRouteChange, onInitialize, elementDefine, onConnectedInnerHtml } from '@dooboostore/simple-web-component';
+import { onConnectedSwcApp,applyReplaceChildrenNodeHost, applyInnerHtmlNodeHost, subscribeSwcAppRouteChange, onInitialize, elementDefine, onConnectedInnerHtml } from '@dooboostore/simple-web-component';
 import { Inject } from '@dooboostore/simple-boot';
 import { Router, type RouterEventType } from '@dooboostore/core-web';
 import { StockService } from '../services/StockService';
@@ -23,18 +23,16 @@ export const rootRouterFactory = (w: Window) => {
     private stockService: StockService;
     private router: Router;
 
-    @onInitialize
-    onconstructor(
-      @Inject({ symbol: StockService.SYMBOL }) stockService: StockService,
-      router: Router
-    ) {
+    @onConnectedSwcApp
+    onconstructor(@Inject({ symbol: StockService.SYMBOL }) stockService: StockService, router: Router) {
       this.stockService = stockService;
       this.router = router;
     }
 
-    @subscribeSwcAppRouteChange(['', '/'])
+    @subscribeSwcAppRouteChange('/')
     @applyInnerHtmlNodeHost({ root: 'light' })
     mainRoute(a: RouterEventType, pathData: any) {
+      console.log('mmmmmmmmmm', a,  a.path);
       return `<swc-example-stock-main-page/>`;
     }
 
