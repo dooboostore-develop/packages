@@ -54,3 +54,6 @@ export const targetExceptionHandler = (target: any, error: any, excludeMethods: 
         return undefined;
     }
 }
+
+// Alias for @exceptionHandler (lowercase)
+export const exceptionHandler = ExceptionHandler;

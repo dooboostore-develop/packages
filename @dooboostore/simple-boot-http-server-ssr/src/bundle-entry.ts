@@ -1,4 +1,3 @@
-export * from './decorators';
 export * from './filters';
 export * from './initializers';
 export * from './option';

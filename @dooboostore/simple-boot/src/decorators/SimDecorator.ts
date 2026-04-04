@@ -108,6 +108,9 @@ export function Sim(configOrTarget: SimConfig | ConstructorType<any> | Function)
   }
 }
 
+// Alias for @sim (lowercase)
+export const sim = Sim;
+
 export const getSim = (target: ConstructorType<any> | Function | any): SimConfig | undefined => {
   if (target != null && target !== undefined && typeof target === 'object') {
     // proxy 걸린거떄문에 이렇게 한다. 안걸린것도 잘된다.
@@ -133,3 +136,6 @@ export const PostConstruct = (target: any, propertyKey: string, descriptor: Prop
 export const getPostConstructs = (target: any): PostConstructMetaType[] => {
   return ReflectUtils.getMetadata(PostConstructMetadataKey, target) ?? [];
 }
+
+// Alias for @postConstruct (lowercase)
+export const postConstruct = PostConstruct;

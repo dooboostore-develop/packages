@@ -49,6 +49,10 @@ export const getValidator = (target: any, propertyKey: string): Validator | unde
     return ReflectUtils.getMetadata(ValidationMetadataKey, target, propertyKey);
 }
 
+// Aliases for lowercase
+export const valid = Valid;
+export const validation = Validation;
+
 export const getValidators = (target: any): SaveValidator[] => {
     if (target !== null && undefined !== target && typeof target === 'object') {
         target = target.constructor;

@@ -12,3 +12,6 @@ export const EventListener = (option: EventListenerOption) => {
 export const getEventListener = (target: any, propertyKey: string): EventListenerOption | undefined => {
     return ReflectUtils.getMetadata(EventListenerMetadataKey, target, propertyKey);
 }
+
+// Alias for @eventListener (lowercase)
+export const eventListener = EventListener;

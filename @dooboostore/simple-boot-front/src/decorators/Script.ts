@@ -34,3 +34,6 @@ export const getScript = (target: ConstructorType<any> | Function | any): Script
     } catch (e) {
     }
 }
+
+// Alias for @script (lowercase)
+export const script = Script;

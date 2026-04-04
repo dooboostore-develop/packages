@@ -1,5 +1,5 @@
 import { ReflectUtils } from '@dooboostore/core';
-import { SpecialSelector, SwcQueryOptions } from '../types';
+import { SpecialSelector, SwcQueryOptions, HelperHostSet } from '../types';
 
 export interface AddEventListenerBaseOptions extends EventListenerOptions {
   capture?: boolean;
@@ -10,6 +10,7 @@ export interface AddEventListenerBaseOptions extends EventListenerOptions {
   preventDefault?: boolean;
   removeOnDisconnected?: boolean;
   delegate?: boolean;
+  filter?: (target: Event | CustomEvent, helper: HelperHostSet) => boolean;
 }
 
 export interface AddEventListenerMetadata {
@@ -52,4 +53,13 @@ export const getAddEventListenerMetadata = (target: any): AddEventListenerMetada
  */
 export function addEventListenerHost(type: string, options?: AddEventListenerBaseOptions & SwcQueryOptions): MethodDecorator {
   return addEventListener(':host', type, options);
+}
+
+/**
+ * @addEventListenerAppHost decorator - simplified version of @addEventListener for :appHost selector
+ * Usage: @addEventListenerAppHost('click')
+ * Usage: @addEventListenerAppHost('click', { stopPropagation: true })
+ */
+export function addEventListenerAppHost(type: string, options?: AddEventListenerBaseOptions & SwcQueryOptions): MethodDecorator {
+  return addEventListener(':appHost', type, options);
 }

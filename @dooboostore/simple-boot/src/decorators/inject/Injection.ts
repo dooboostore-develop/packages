@@ -22,3 +22,6 @@ export function Injection(configOrTarget?: InjectionConfig | any, propertyKey?: 
 export const getInjection = (target: any, propertyKey: string | symbol): InjectionConfig | undefined => {
     return ReflectUtils.getMetadata(InjectionMetadataKey, target, propertyKey);
 }
+
+// Alias for @injection (lowercase)
+export const injection = Injection;

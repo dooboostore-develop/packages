@@ -128,3 +128,6 @@ export function Inject<T = any>(configOrTarget: Object | InjectConfig<T>, proper
 export const getInject = (target: any, propertyKey?: string | symbol): SaveInjectConfig[] => {
   return ReflectUtils.findMetadata(InjectMetadataKey, target, propertyKey) ?? [];
 };
+
+// Alias for @inject (lowercase)
+export const inject = Inject;

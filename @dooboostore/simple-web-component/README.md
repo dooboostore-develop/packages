@@ -74,12 +74,22 @@ replaceChildren(node: Node) {
 ### 4. **Event Handling**
 
 #### @addEventListener
-Attach event listeners to elements.
+Attach event listeners to elements with optional filter support.
 
 ```typescript
 @addEventListener('#submit-btn', 'click')
 onSubmit(event: Event) {
   console.log('Submitted');
+}
+
+// Filter events - only process matching events
+@addEventListener('button', 'click', {
+  filter: (event, helper) => {
+    return event.target?.id === 'critical-button';
+  }
+})
+onCriticalClick(event: Event) {
+  console.log('Critical action');
 }
 ```
 
@@ -101,6 +111,43 @@ Emit events from a method with custom event name mapping.
 @emitCustomEventHost('navigate', { attributeName: 'on-navigate' })
 onNavClick(e: any) {
   return { path: e.target.dataset.path };
+}
+```
+
+#### @addEventListenerHost
+Listen to events on the component element itself (`:host` selector).
+
+```typescript
+@addEventListenerHost('click')
+onHostClick(event: Event) {
+  console.log('Host element clicked');
+}
+```
+
+#### @addEventListenerAppHost
+Listen to events on the app root host element (`:appHost` selector). Enables selective event handling with filters.
+
+```typescript
+// Listen to all user-action events from :appHost
+@addEventListenerAppHost('user-action')
+onUserAction(e: CustomEvent) {
+  console.log('User action:', e.detail);
+}
+
+// Filter specific events - loose coupling pattern
+@addEventListenerAppHost('user-action', {
+  filter: (event, helper) => event.detail?.type === 'login'
+})
+onUserLogin(e: CustomEvent) {
+  console.log('User logged in:', e.detail.userName);
+}
+
+// Different component filtering same event differently
+@addEventListenerAppHost('user-action', {
+  filter: (event, helper) => event.detail?.type === 'logout'
+})
+onUserLogout(e: CustomEvent) {
+  console.log('User logged out');
 }
 ```
 

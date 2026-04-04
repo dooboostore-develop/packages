@@ -110,3 +110,8 @@ export const Around = (config: AroundOption): ReflectMethod => {
 export const getAround = (target: any, propertyKey: string): AroundOption | undefined => {
   return ReflectUtils.getMetadata(AroundMetadataKey, target, propertyKey);
 };
+
+// Aliases for lowercase
+export const after = After;
+export const before = Before;
+export const around = Around;

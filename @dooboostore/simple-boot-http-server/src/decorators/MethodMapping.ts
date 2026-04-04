@@ -234,3 +234,15 @@ export const getCONNECT = (target: any, propertyKey: string | symbol): MappingCo
 export const getCONNECTS = (target: any): SaveMappingConfig[] => {
     return getUrlMappings(target)?.filter(it => it.config?.method.toUpperCase() === HttpMethod.CONNECT);
 }
+
+// Aliases for lowercase
+export const urlMapping = UrlMapping;
+export const get = GET;
+export const post = POST;
+export const patch = PATCH;
+export const put = PUT;
+export const deleteMethod = DELETE;
+export const options = OPTIONS;
+export const head = HEAD;
+export const trace = TRACE;
+export const connect = CONNECT;

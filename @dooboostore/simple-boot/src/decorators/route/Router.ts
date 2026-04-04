@@ -85,3 +85,7 @@ export const getRoutes = (target: any): SaveRouteConfig[] | undefined => {
     }
     return ReflectUtils.getMetadata(RouteMetadataKey, target);
 }
+
+// Aliases for lowercase
+export const router = Router;
+export const route = Route;

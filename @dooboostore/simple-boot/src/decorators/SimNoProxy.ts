@@ -35,3 +35,6 @@ export const isSimNoProxy = (target: any, propertyKey?: string | symbol) => {
   }
   return getSimNoProxy(target, propertyKey) === true;
 };
+
+// Alias for @simNoProxy (lowercase)
+export const simNoProxy = SimNoProxy;

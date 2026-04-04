@@ -396,6 +396,13 @@ export const elementDefine =
               const { selector, options } = meta;
               const matchedEl = (event.target as HTMLElement).closest(selector);
               if (matchedEl && (br as any).contains(matchedEl)) {
+                // Apply filter if specified
+                if (options.filter) {
+                  const helper = SwcUtils.getHelperAndHostSet(currentWin, matchedEl);
+                  if (!options.filter(event, helper)) {
+                    continue;  // Skip this listener if filter returns false
+                  }
+                }
                 if (options.stopPropagation) event.stopPropagation();
                 if (options.stopImmediatePropagation) event.stopImmediatePropagation();
                 if (options.preventDefault) event.preventDefault();
@@ -454,6 +461,13 @@ export const elementDefine =
 
         bindTargets.forEach(t => {
           const handler = async (event: Event) => {
+            // Apply filter if specified
+            if (options.filter) {
+              const helper = SwcUtils.getHelperAndHostSet(currentWin, t as HTMLElement);
+              if (!options.filter(event, helper)) {
+                return;  // Skip if filter returns false
+              }
+            }
             if (options.stopPropagation) event.stopPropagation();
             if (options.stopImmediatePropagation) event.stopImmediatePropagation();
             if (options.preventDefault) event.preventDefault();

@@ -42,3 +42,6 @@ export const getComponent = (target: ConstructorType<any> | Function | any): Com
     } catch (e) {
     }
 }
+
+// Alias for @component (lowercase)
+export const component = Component;
