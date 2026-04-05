@@ -11,4 +11,6 @@ export * from './applyClass';
 export * from './applyStyle';
 export * from './applyAttribute';
 export * from './setProperty';
-export * from './subscribeSwcAppRouteChange';
+export * from './subscribeSwcAppRouteChangeWhileConnected';
+export * from './subscribeSwcAppMessageWhileConnected';
+export * from './publishSwcAppMessage';

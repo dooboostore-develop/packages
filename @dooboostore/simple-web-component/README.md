@@ -595,7 +595,7 @@ class CustomLoop extends HTMLElement {
 
 #### 8.5 **Declarative Routing with swc-choose**
 
-Combine `@subscribeSwcAppRouteChange` with `swc-choose` for clean, declarative routing without boilerplate.
+Combine `@subscribeSwcAppRouteChangeWhileConnected` with `swc-choose` for clean, declarative routing without boilerplate.
 
 ```typescript
 @elementDefine('root-router')
@@ -608,7 +608,7 @@ class RootRouter extends HTMLElement {
   }
 
   @setProperty('#router', 'value')
-  @subscribeSwcAppRouteChange(['/', '/users', '/users/{id}', '/products/{id}'])
+  @subscribeSwcAppRouteChangeWhileConnected(['/', '/users', '/users/{id}', '/products/{id}'])
   routeChanged(route: RouterEventType) {
     return route;
   }
@@ -659,7 +659,101 @@ class RootRouter extends HTMLElement {
 - ✅ **Cleaner DX** - single unified routing pattern
 - ✅ **Full expression support** - use `{{= }}` for complex parameter transformations
 
-### 9. **Accommodation Pattern**
+### 9. **Component Communication - Message Bus**
+
+SWC provides a powerful message bus system for inter-component communication through SwcApp. Components can publish and subscribe to typed messages while connected.
+
+#### @subscribeSwcAppMessageWhileConnected
+Subscribe to messages while component is connected to DOM.
+
+```typescript
+@elementDefine('notification-panel')
+class NotificationPanel extends HTMLElement {
+  @subscribeSwcAppMessageWhileConnected()
+  onAnyMessage(message: SwcAppMessage) {
+    console.log('Received message:', message);
+  }
+
+  @subscribeSwcAppMessageWhileConnected('user-login')
+  onUserLogin(message: SwcAppMessage<{ username: string }>) {
+    console.log(`Welcome ${message.data?.username}`);
+  }
+
+  @subscribeSwcAppMessageWhileConnected('user-login', {
+    filter: (msg) => msg.data?.username === 'admin'
+  })
+  onAdminLogin(message: SwcAppMessage) {
+    console.log('Admin logged in!');
+  }
+}
+```
+
+#### @publishSwcAppMessage
+Publish a message from a method's return value.
+
+```typescript
+@elementDefine('login-form')
+class LoginForm extends HTMLElement {
+  @publishSwcAppMessage()
+  async onSubmit() {
+    const user = await this.authService.login(
+      this.username,
+      this.password
+    );
+    return user;  // Published as message with data: user
+  }
+
+  @publishSwcAppMessage('user-profile-updated')
+  updateProfile() {
+    const profile = { name: this.name, email: this.email };
+    return profile;  // Published as message with type: 'user-profile-updated'
+  }
+}
+```
+
+**SwcAppMessage Structure:**
+```typescript
+type SwcAppMessage<T = any> = {
+  publisher?: any;        // Component that published the message
+  data?: T;              // Payload data
+  type?: string;         // Optional message type/category
+};
+```
+
+**Key Features:**
+- ✅ **Lifecycle-aware** - subscriptions only active while component is connected
+- ✅ **Type-safe** - specify message types for filtering
+- ✅ **Filter support** - use custom filter functions to handle specific conditions
+- ✅ **Auto-publishing** - return value automatically becomes message payload
+- ✅ **Async support** - works with async methods (promises)
+- ✅ **Centralized** - all messages routed through SwcApp host
+- ✅ **Decoupled** - components don't need to know about each other
+
+**Usage Example:**
+```typescript
+// Publisher component
+@elementDefine('product-list')
+class ProductList extends HTMLElement {
+  @publishSwcAppMessage('product-selected')
+  selectProduct(productId: string) {
+    const product = this.findProduct(productId);
+    return product;
+  }
+}
+
+// Subscriber component
+@elementDefine('product-detail')
+class ProductDetail extends HTMLElement {
+  @subscribeSwcAppMessageWhileConnected('product-selected')
+  onProductSelected(message: SwcAppMessage<Product>) {
+    this.displayProduct(message.data);
+  }
+}
+```
+
+---
+
+### 10. **Accommodation Pattern**
 Factory-based component registration with explicit DI.
 
 ```typescript
@@ -698,7 +792,7 @@ appElement.connect({
 });
 ```
 
-### 10. **Quickstart - Basic SPA Setup**
+### 11. **Quickstart - Basic SPA Setup**
 
 Complete example of setting up a production SPA with routing, services, and components.
 
@@ -774,7 +868,7 @@ export const serviceFactories = [userServiceFactory];
 #### Step 3. Router Configuration (Declarative with swc-choose)
 ```typescript
 // pages/RootRouter.ts
-import { elementDefine, subscribeSwcAppRouteChange, setProperty, onConnectedInnerHtml, onInitialize } from '@dooboostore/simple-web-component';
+import { elementDefine, subscribeSwcAppRouteChangeWhileConnected, setProperty, onConnectedInnerHtml, onInitialize } from '@dooboostore/simple-web-component';
 import { Router, RouterEventType } from '@dooboostore/core-web';
 
 const rootRouterFactory = (w: Window) => {
@@ -792,7 +886,7 @@ const rootRouterFactory = (w: Window) => {
     }
 
     @setProperty('#router', 'value')
-    @subscribeSwcAppRouteChange(['/', '/users', '/users/{id}'])
+    @subscribeSwcAppRouteChangeWhileConnected(['/', '/users', '/users/{id}'])
     routeChanged(route: RouterEventType) {
       return route;
     }
@@ -1076,7 +1170,7 @@ src/
 3. `bootFactory` registers services and components (including `rootRouterFactory`)
 4. App waits for `swc-app-body` to be defined
 5. `appElement.connect()` initializes routing & DI
-6. `<root-router>` becomes active with `@subscribeSwcAppRouteChange` + `swc-choose` template
+6. `<root-router>` becomes active with `@subscribeSwcAppRouteChangeWhileConnected` + `swc-choose` template
 7. Route changes automatically trigger `swc-choose` re-evaluation and template re-rendering
 8. Template attributes like `user-id="{{$value?.pathData?.id}}"` are dynamically populated with route params
 9. All components have access to injected services via `@onInitialize` or `@onConnectedSwcApp`

@@ -3,7 +3,7 @@ import ProductPage from './ProductPage';
 import CheckoutPage from './CheckoutPage';
 import HomePage from './HomePage';
 import OrdersPage from './OrdersPage';
-import { onConnectedSwcApp,applyReplaceChildrenNodeHost, applyInnerHtmlNodeHost, subscribeSwcAppRouteChange, onInitialize, elementDefine, onConnectedInnerHtml, setProperty } from '@dooboostore/simple-web-component';
+import { type SwcAppMessage, subscribeSwcAppMessageWhileConnected, publishSwcAppMessage, onConnectedSwcApp, applyReplaceChildrenNodeHost, applyInnerHtmlNodeHost, subscribeSwcAppRouteChangeWhileConnected, onInitialize, elementDefine, onConnectedInnerHtml, setProperty } from '@dooboostore/simple-web-component';
 import { Inject } from '@dooboostore/simple-boot';
 import { Router, type RouterEventType } from '@dooboostore/core-web';
 import { CartService } from '../services/CartService';
@@ -36,10 +36,23 @@ export const rootRouterFactory = (w: Window) => {
       this.orderService = orderService;
       this.router = router;
       // alert(1);
+      // setInterval(()=>{
+      //   this.publishMessage('Hello from RootRouter at ' + new Date().toLocaleTimeString());
+      // }, 1000)
     }
 
+    @publishSwcAppMessage
+    publishMessage(message: string) {
+      return message;
+    }
+
+    // @subscribeSwcAppMessageWhileConnected
+    // ttt(message: SwcAppMessage) {
+    //   console.log('RootRouter received message:', message);
+    // }
+
     @setProperty('#router', 'value')
-    @subscribeSwcAppRouteChange(['', '/', '/product/{id}', '/cart', '/checkout', '/orders'])
+    @subscribeSwcAppRouteChangeWhileConnected(['', '/', '/product/{id}', '/cart', '/checkout', '/orders'])
     routeChanged(re: RouterEventType) {
       return re;
     }

@@ -1,6 +1,6 @@
-import { onConnectedSwcApp,elementDefine, onInitialize, onConnectedInnerHtml, addEventListener, attributeHost, emitCustomEventHost, changedAttributeHost, onAfterConnected } from '@dooboostore/simple-web-component';
+import { type SwcAppMessage, applyNode,subscribeSwcAppMessageWhileConnected, onConnectedSwcApp, elementDefine, onInitialize, onConnectedInnerHtml, addEventListener, attributeHost, emitCustomEventHost, changedAttributeHost, onAfterConnected } from '@dooboostore/simple-web-component';
 import { ProductService} from '../services/ProductService';
-import {applyNodeHost} from "../../../../src";
+import { applyInnerHtmlNode, applyNodeHost} from "../../../../src";
 import {Inject} from "@dooboostore/simple-boot";
 
 /**
@@ -17,12 +17,19 @@ export default (w: Window) => {
     #productService?: ProductService;
 
     @attributeHost('data-product-id')
-    productId: string
+    productId: string;
 
     @onConnectedSwcApp
     ttt(@Inject({ symbol: ProductService.SYMBOL }) productService: ProductService) {
       this.#productService = productService;
       this.onProductIdChanged(this.productId, null, null, null);
+    }
+
+    @subscribeSwcAppMessageWhileConnected
+    tt(data: SwcAppMessage) {
+      // console.log('-------->', data);
+      // this.tttt(data.data);
+      // document.querySelector('.btn-add-cart').innerHTML = data.data;
     }
 
     @changedAttributeHost('data-product-id')

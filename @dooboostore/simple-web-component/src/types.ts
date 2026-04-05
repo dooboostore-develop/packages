@@ -42,6 +42,13 @@ export type HostSet = {
 };
 
 export type HelperHostSet = HelperSet & HostSet & {$this: any};
+
+export type SwcAppMessage<T = any> = {
+  publisher?: any;
+  data?: T;
+  type?: string;
+};
+
 export interface SwcChooseInterface extends HTMLTemplateElement {
   value: any;
   refresh(): void;
@@ -58,4 +65,5 @@ export interface SwcAppInterface extends HTMLElement {
   reload(): void;
   back(): void;
   forward(): void;
+  publishMessage(message: SwcAppMessage): void;
 }

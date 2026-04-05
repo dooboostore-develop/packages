@@ -3,7 +3,7 @@ import ListPage from './ListPage';
 import DetailPage from './DetailPage';
 import EventDetailPage from './EventDetailPage';
 import { Inject, RouterAction, RoutingDataSet } from '@dooboostore/simple-boot';
-import { onConnectedSwcApp, applyInnerHtmlNodeHost, subscribeSwcAppRouteChange, onInitialize, elementDefine, applyReplaceChildrenNodeHost, onConnectedInnerHtml, setProperty } from '@dooboostore/simple-web-component';
+import { onConnectedSwcApp, applyInnerHtmlNodeHost, subscribeSwcAppRouteChangeWhileConnected, onInitialize, elementDefine, applyReplaceChildrenNodeHost, onConnectedInnerHtml, setProperty } from '@dooboostore/simple-web-component';
 import { Router, type RouterEventType } from '@dooboostore/core-web';
 import { AccommodationService, EventService } from '../services';
 
@@ -42,7 +42,7 @@ const indexPageFactory = (w: Window) => {
     }
 
     @setProperty('#router', 'value')
-    @subscribeSwcAppRouteChange(['', '/', '/list', '/event/{eventId}', '/detail/{productId}'])
+    @subscribeSwcAppRouteChangeWhileConnected(['', '/', '/list', '/event/{eventId}', '/detail/{productId}'])
     routeChanged(re: RouterEventType) {
       console.log('----------------------!@@@@');
       return re;

@@ -22,6 +22,7 @@ export interface ElementConfig {
   observedAttributes?: string[];
   customElementRegistry?: any;
   window?: Window;
+  useShadow?: boolean;
 }
 
 export interface ElementMetadata extends Omit<ElementConfig, 'window'> {
@@ -316,7 +317,7 @@ export const elementDefine =
       const conf = getElementConfig(this);
       const currentWin = (this as any)._resolveWindow(conf);
 
-      if (connectedInnerHtmlList.some(it => it.options.useShadow === true) && !this.shadowRoot) {
+      if ((connectedInnerHtmlList.some(it => it.options.useShadow === true) || conf?.useShadow === true) && !this.shadowRoot) {
         this.attachShadow({ mode: 'open' });
       }
 

@@ -1,10 +1,11 @@
 import { SwcAppEngine, SwcAttributeConfigType, SwcConfigType } from './SwcAppEngine';
-import { SwcAppInterface } from '../types';
+import { SwcAppInterface, SwcAppMessage } from '../types';
 import { SwcUtils } from '../utils/Utils';
 import { FunctionUtils, Subscription } from '@dooboostore/core';
 import { Router, RouterEventType } from '@dooboostore/core-web';
 import { ON_CONNECTED_SWC_APP_METADATA_KEY, findAllLifecycleMetadata } from '../decorators/lifecycles';
-import { getSubscribeSwcAppRouteChangeMetadata } from '../decorators/subscribeSwcAppRouteChange';
+import { getSubscribeSwcAppRouteChangeWhileConnectedMetadata } from '../decorators/subscribeSwcAppRouteChangeWhileConnected';
+import { getSubscribeSwcAppMessageWhileConnectedMetadata } from '../decorators/subscribeSwcAppMessageWhileConnected';
 
 export function SwcAppMixin<T extends { new (...args: any[]): HTMLElement }>(Base: T) {
   //@ts-ignore
@@ -29,7 +30,7 @@ export function SwcAppMixin<T extends { new (...args: any[]): HTMLElement }>(Bas
     }
 
     _invokeRouteChangeSubscribers(instance: any, re: RouterEventType) {
-      const routeChangeSubscribers = getSubscribeSwcAppRouteChangeMetadata(instance);
+      const routeChangeSubscribers = getSubscribeSwcAppRouteChangeWhileConnectedMetadata(instance);
       if (routeChangeSubscribers && Array.isArray(routeChangeSubscribers)) {
         routeChangeSubscribers.forEach((metadata: any) => {
           const methodName = metadata.propertyKey || metadata;
@@ -220,6 +221,44 @@ export function SwcAppMixin<T extends { new (...args: any[]): HTMLElement }>(Bas
 
     reload(): void {
       this.router?.reload();
+    }
+
+    publishMessage(message: SwcAppMessage): void {
+      // 메시지를 모든 connected component instances로 분배
+      this._swc_connected_instance.forEach((instance: any) => {
+        this._invokeMessageSubscribers(instance, message);
+      });
+    }
+
+    _invokeMessageSubscribers(instance: any, message: SwcAppMessage) {
+      const messageSubscribers = getSubscribeSwcAppMessageWhileConnectedMetadata(instance);
+      if (messageSubscribers && Array.isArray(messageSubscribers)) {
+        messageSubscribers.forEach((metadata: any) => {
+          const methodName = metadata.propertyKey;
+          const messageType = metadata.messageType;
+          const filter = metadata.filter;
+
+          // 메시지 타입 확인
+          let typeMatched = false;
+          if (!messageType) {
+            // messageType이 없으면 모든 메시지 매칭 (와일드카드)
+            typeMatched = true;
+          } else if (message.type === messageType) {
+            typeMatched = true;
+          }
+
+          // 필터 적용
+          let filterMatched = true;
+          if (filter && typeMatched) {
+            filterMatched = filter(message);
+          }
+
+          // 조건을 만족하면 메서드 호출
+          if (typeMatched && filterMatched && typeof instance[methodName] === 'function') {
+            instance[methodName](message);
+          }
+        });
+      }
     }
   };
 }

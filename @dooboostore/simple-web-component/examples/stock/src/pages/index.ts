@@ -1,6 +1,6 @@
 import MainPage from './MainPage';
 import DetailPage from './DetailPage';
-import { onConnectedSwcApp,applyReplaceChildrenNodeHost, applyInnerHtmlNodeHost, subscribeSwcAppRouteChange, onInitialize, elementDefine, onConnectedInnerHtml, setProperty } from '@dooboostore/simple-web-component';
+import { onConnectedSwcApp,applyReplaceChildrenNodeHost, applyInnerHtmlNodeHost, subscribeSwcAppRouteChangeWhileConnected, onInitialize, elementDefine, onConnectedInnerHtml, setProperty } from '@dooboostore/simple-web-component';
 import { Inject } from '@dooboostore/simple-boot';
 import { Router, type RouterEventType } from '@dooboostore/core-web';
 import { StockService } from '../services/StockService';
@@ -34,7 +34,7 @@ export const rootRouterFactory = (w: Window) => {
     }
 
     @setProperty('#router', 'value')
-    @subscribeSwcAppRouteChange(['','/', '/detail/{id}'])
+    @subscribeSwcAppRouteChangeWhileConnected(['','/', '/detail/{id}'])
     routeChanged(re: RouterEventType) {
       return re;
     }

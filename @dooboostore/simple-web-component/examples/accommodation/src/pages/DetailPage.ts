@@ -1,4 +1,4 @@
-import { onConnectedSwcApp, setAttributeHost, applyAttributeHost, query, queryHost, onAfterConnected, attributeHost, attribute, changedAttributeHost, onInitialize, elementDefine, onConnectedInnerHtml, addEventListener, applyNodeHost, subscribeSwcAppRouteChange } from '@dooboostore/simple-web-component';
+import { onConnectedSwcApp, setAttributeHost, applyAttributeHost, query, queryHost, onAfterConnected, attributeHost, attribute, changedAttributeHost, onInitialize, elementDefine, onConnectedInnerHtml, addEventListener, applyNodeHost, subscribeSwcAppRouteChangeWhileConnected } from '@dooboostore/simple-web-component';
 import { Sim, RouterAction, RoutingDataSet, Inject } from '@dooboostore/simple-boot';
 import { AccommodationService } from '../services/AccommodationService';
 import { EventService, LocalEvent } from '../services/EventService';
@@ -58,12 +58,12 @@ export default (w: Window, container: symbol) => {
     //   return 'zzz'
     // }
 
-    @subscribeSwcAppRouteChange('/accommodation/{id}')
+    @subscribeSwcAppRouteChangeWhileConnected('/accommodation/{id}')
     onRouteChangeToDetailPage(router: any, pathData: any) {
       console.log('[DetailPage] onRouteChangeToDetailPage called', { pathData, currentPath: router.currentPath });
     }
 
-    @subscribeSwcAppRouteChange()
+    @subscribeSwcAppRouteChangeWhileConnected()
     onAnyRouteChange(router: any, pathData: any) {
       console.log('[DetailPage] onAnyRouteChange called', { currentPath: router.currentPath });
     }
