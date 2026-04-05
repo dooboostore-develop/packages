@@ -41,8 +41,13 @@ export type HostSet = {
   $lastAppHost: SwcAppInterface | null;
 };
 
-export type HelperHostSet = HelperSet & HostSet;
+export type HelperHostSet = HelperSet & HostSet & {$this: any};
 export interface SwcChooseInterface extends HTMLTemplateElement {
+  value: any;
+  refresh(): void;
+}
+export interface SwcIfInterface extends HTMLTemplateElement {
+  value: any;
   refresh(): void;
 }
 export interface SwcAppInterface extends HTMLElement {

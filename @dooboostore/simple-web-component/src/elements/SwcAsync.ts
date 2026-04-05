@@ -1,58 +1,86 @@
 import { changedAttributeHost } from '../decorators/changedAttributeHost';
 import { SwcUtils } from '../utils/Utils';
-import { FunctionUtils } from '@dooboostore/core';
+import { FunctionUtils, ActionExpression } from '@dooboostore/core';
+import { ConvertUtils } from '@dooboostore/core-web';
+import { attributeHost } from '../decorators';
 
 class SwcAsync extends HTMLTemplateElement {
-  private _nodes: Node[] = [];
-  private _value: any = null;
+  @attributeHost('value')
+  _value: any;
 
-  private _executeCloneCallback(attr: string, args: any) {
-    const script = this.getAttribute(attr);
-    if (!script) return;
-    FunctionUtils.execute({ script, context: this, args });
+  @attributeHost('replace-wrap')
+  _replaceWrap: string | null;
+
+  resultValue?: any;
+
+  get value(): boolean {
+    return this._value;
   }
 
+  set value(nv: any) {
+    this.executeAsync(nv);
+  }
+
+  private _nodes: Node[] = [];
+
   @changedAttributeHost('value')
-  private refresh(valueAttr?: string | null) {
-    valueAttr ??= this.getAttribute('value');
-    if (!valueAttr) {
-      this.render('default');
+  private setValue(valueAttr?: string | null) {
+    this.executeAsync(this._value);
+  }
+
+  @changedAttributeHost('replace-wrap')
+  private setReplaceWrap() {
+    this.executeAsync(this._value);
+  }
+
+  private executeAsync(result: any = this._value) {
+    if (result === undefined || result === null) {
+      this.refresh('default');
       return;
     }
 
-    // {{ }} 브레이스로 감싸진 값은 스크립트 실행
-    if (valueAttr.startsWith('{{') && valueAttr.endsWith('}}')) {
-      const script = valueAttr.slice(2, -2).trim();
-      const win = this.ownerDocument?.defaultView || window;
-      const result = FunctionUtils.executeReturn({ 
-        script, 
-        context: this, 
-        args: SwcUtils.getHelperAndHostSet(win, this) 
-      });
-
-      this.executeAsync(result);
-    } else {
-      // 일반 문자열 값 또는 직접 Promise 속성
-      this.executeAsync(valueAttr);
-    }
-  }
-
-  private executeAsync(result: any) {
     if (result instanceof Promise) {
-      this.render('loading');
+      this.refresh('loading');
       result
         .then(v => {
-          this._value = v;
-          this.render('success');
+          this.resultValue = v;
+          this.refresh('success');
         })
-        .catch(e => this.render('error'));
+        .catch(e => {
+          console.error('[SWC-ASYNC] Promise rejected:', e);
+          this.resultValue = e;
+          this.refresh('error');
+        });
     } else {
-      this._value = result;
-      this.render('success');
+      this.resultValue = result;
+      this.refresh('success');
     }
   }
 
-  private render(state: string) {
+  private replaceExpressions(html: string, groupArgs: any, context: any, wrap?: string | null): string {
+    const config = wrap ? { wrapExpression: wrap } : undefined;
+    const ae = new ActionExpression(html, config);
+    const filterOptions = wrap ? { type: 'replace' as const, wrap } : 'replace';
+    const win = this.ownerDocument?.defaultView || window;
+
+    // @ts-ignore
+    for (const expr of ae.getExpressions(filterOptions)) {
+      try {
+        const value = FunctionUtils.executeReturn({
+          script: ConvertUtils.decodeHtmlEntity(expr.script, win.document),
+          context,
+          args: groupArgs
+        });
+        ae.replace(expr, String(value));
+      } catch (e) {
+        console.error(`[SWC] Failed to execute ${expr.original}:`, e);
+      }
+    }
+    return ae.getUnprocessedTemplate();
+  }
+
+  refresh(state: string = 'default') {
+    console.log('rrrrrrrrrrrrrrrrr', state);
     this.cleanup();
     const portal = this.parentElement;
     if (!portal) return;
@@ -62,36 +90,17 @@ class SwcAsync extends HTMLTemplateElement {
 
     const t = this.content.querySelector(`template[is="swc-${state}"]`) as HTMLTemplateElement;
     if (t) {
-      const clone = t.content.cloneNode(true) as DocumentFragment;
-      this._nodes = Array.from(clone.childNodes);
-      const elements = this._nodes.filter(n => n.nodeType === 1) as HTMLElement[];
-      const groupArgs = { ...helperSet, $value: this._value, $nodes: this._nodes, $elements: elements, $firstElement: elements[0], $state: state };
+      let htmlString = t.innerHTML;
+      const groupArgs = { ...helperSet, $value: this._value, $state: state };
 
-      // 부모 체인을 정상적으로 유지하기 위해 __swc_host 할당 제거
-      this._nodes.forEach((n, nodeIdx) => {
-        // if (n instanceof HTMLElement) (n as any).__swc_host = this;  // 제거: 부모 체인 유지
-        this._executeCloneCallback('on-clone-node', { ...groupArgs, $node: n, $nodeIndex: nodeIdx, $isElement: n.nodeType === 1 });
+      htmlString = this.replaceExpressions(htmlString, groupArgs, this, this._replaceWrap);
 
-        // Attribute {{ }} 치환 - SwcChoose처럼 동적 치환
-        if (n instanceof HTMLElement) {
-          Array.from(n.attributes).forEach(attr => {
-            const value = attr.value || '';
-            if (value.startsWith('{{') && value.endsWith('}}')) {
-              const script = value.slice(2, -2).trim();
-              const result = FunctionUtils.executeReturn({
-                script,
-                context: n,
-                args: groupArgs
-              });
-              n.setAttribute(attr.name, String(result));
-            }
-          });
-        }
-      });
+      const temp = this.ownerDocument?.createElement('template') || document.createElement('template');
+      temp.innerHTML = htmlString;
+      const content = temp.content;
 
-      this._executeCloneCallback('on-clone-nodes', groupArgs);
-
-      portal.insertBefore(clone, this.nextSibling);
+      this._nodes = Array.from(content.childNodes);
+      portal.insertBefore(content, this.nextSibling);
     }
   }
 
@@ -100,9 +109,6 @@ class SwcAsync extends HTMLTemplateElement {
     this._nodes = [];
   }
 
-  connectedCallback() {
-    this.refresh();
-  }
   disconnectedCallback() {
     this.cleanup();
   }

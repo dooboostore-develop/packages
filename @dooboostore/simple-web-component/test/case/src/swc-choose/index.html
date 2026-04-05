@@ -54,15 +54,15 @@
     <p>Using <code>&lt;template is="swc-choose"&gt;</code> to render specific blocks based on values.</p>
 
     <div class="controls">
-      <button onclick="window.currentRole = 'admin'; document.getElementById('role-choose').setAttribute('value', '{{ currentRole }}')">Set Admin</button>
-      <button onclick="window.currentRole = 'user'; document.getElementById('role-choose').setAttribute('value', '{{ currentRole }}')">Set User</button>
-      <button onclick="window.currentRole = 'guest'; document.getElementById('role-choose').setAttribute('value', '{{ currentRole }}')">Set Guest</button>
-      <button onclick="window.currentRole = 'hacker'; document.getElementById('role-choose').setAttribute('value', '{{ currentRole }}')">Set Unknown</button>
+      <button onclick="window.currentRole = 'admin'; document.getElementById('role-choose').setAttribute('value', '{{= currentRole }}')">Set Admin</button>
+      <button onclick="window.currentRole = 'user'; document.getElementById('role-choose').setAttribute('value', '{{= currentRole }}')">Set User</button>
+      <button onclick="window.currentRole = 'guest'; document.getElementById('role-choose').setAttribute('value', '{{= currentRole }}')">Set Guest</button>
+      <button onclick="window.currentRole = 'hacker'; document.getElementById('role-choose').setAttribute('value', '{{= currentRole }}')">Set Unknown</button>
       <button onclick="window.currentRole = null; document.getElementById('role-choose').removeAttribute('value')">Clear Value</button>
     </div>
 
     <div style="border: 2px dashed #aaa; padding: 20px">
-      <template is="swc-choose" id="role-choose" skip-if-same value="{{ currentRole }}" on-clone-node="if($isElement && $node.querySelector('.val')) $node.querySelector('.val').textContent = $value">
+      <template is="swc-choose" id="role-choose" skip-if-same value="{{= currentRole }}">
 
         <template is="swc-when" value="admin">
           <div class="case-box admin">ACCESS GRANTED: ADMIN PANEL</div>

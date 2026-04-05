@@ -9,9 +9,8 @@ const targetFile = './src/elements/register.ts';
 const getCoreSource = (fileName: string, tagName: string, baseClassName: string, extendsTag?: string) => {
   const content = fs.readFileSync(`./src/elements/${fileName}.ts`, 'utf-8');
 
-  // Find the exact start of the class body after 'export class ... { 
-  // 이제 implements를 지원함
-  const match = content.match(/class\s+\w+\s+extends\s+\w+(?:\s+implements\s+[\w\s,]+)?\s+\{/);
+  // Find the exact start of the class body after 'class ... extends ... ['implements' ... ] '{'
+  const match = content.match(/class\s+\w+\s+extends\s+\w+(\s+(implements|&)\s+[^{]+)?\s+\{/);
   if (!match) throw new Error(`Could not find class definition in ${fileName}.ts`);
 
   const startIdx = match.index! + match[0].length;
@@ -43,11 +42,11 @@ baseClasses.forEach(cls => {
   extractionBlock += `  const ${cls} = _${cls} as typeof globalThis.${cls};\n`;
 });
 
-let registerContent = `import { elementDefine } from '../decorators/elementDefine';
+let registerContent = `import { elementDefine, attributeHost, changedAttributeHost } from '../decorators';
 import { SwcAppMixin } from './SwcAppMixin';
 import { SwcUtils } from '../utils/Utils';
-import { FunctionUtils } from '@dooboostore/core';
-import { changedAttributeHost } from '../decorators/changedAttributeHost';
+import { FunctionUtils,ActionExpression } from '@dooboostore/core';
+import { ConvertUtils } from '@dooboostore/core-web';
 
 type Constructor<T> = new (...args: any[]) => T;
 

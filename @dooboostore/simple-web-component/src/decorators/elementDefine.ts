@@ -1,5 +1,4 @@
-import { ReflectUtils } from '@dooboostore/core';
-import { FunctionUtils } from '@dooboostore/core';
+import { ReflectUtils, FunctionUtils, ActionExpression } from '@dooboostore/core';
 import { getAddEventListenerMetadata } from './addEventListener';
 import { ON_INITIALIZE_METADATA_KEY, ON_BEFORE_CONNECTED_METADATA_KEY, ON_AFTER_CONNECTED_METADATA_KEY, ON_BEFORE_DISCONNECTED_METADATA_KEY, ON_AFTER_DISCONNECTED_METADATA_KEY, ON_BEFORE_ADOPTED_METADATA_KEY, ON_AFTER_ADOPTED_METADATA_KEY, findAllLifecycleMetadata, getOnConnectedInnerHtmlMetadata } from './lifecycles';
 import { getEmitCustomEventMetadataList } from './emitCustomEvent';
@@ -12,6 +11,7 @@ import { SwcUtils } from '../utils/Utils';
 import { HTML_TAG_ENTRIES, DOM_EVENT_NAMES } from '../config/config';
 import { SituationTypeContainer, SituationTypeContainers } from '@dooboostore/simple-boot/decorators/inject/Inject';
 import { InjectSituationType, HostSet } from '../types';
+import { ConvertUtils } from '@dooboostore/core-web';
 
 // --- Core Interfaces & Types ---
 
@@ -214,8 +214,7 @@ const setupPrototype = (proto: any) => {
     if (oldHandler) el.removeEventListener(eventName, oldHandler);
 
     const handler = async (event: any) => {
-      const parent = SwcUtils.findNearestSwcHost(el);
-      const hostSet = SwcUtils.getHostSet(parent || el);
+      const hostSet = SwcUtils.getHostSet(el);
       const conf = getElementConfig(this);
       const currentWin = (this as any)._resolveWindow(conf);
       const helpers = SwcUtils.getHelperSet(currentWin);
@@ -237,8 +236,7 @@ const setupPrototype = (proto: any) => {
   proto.__swc_executeAttributeEvent = async function (el: HTMLElement, attrName: string, script: string, event: Event) {
     ensureInit(this);
 
-    const parent = SwcUtils.findNearestSwcHost(el);
-    const hostSet = SwcUtils.getHostSet(parent || el);
+    const hostSet = SwcUtils.getHostSet(el);
     const conf = getElementConfig(this);
     const currentWin = (this as any)._resolveWindow(conf);
     const currentHelpers = SwcUtils.getHelperSet(currentWin);
@@ -565,6 +563,27 @@ export const elementDefine =
 
       const hSet = SwcUtils.getHostSet(this as any);
 
+      // Process expression directive before passing to handlers
+      let processedVal = newVal;
+      if (newVal !== null) {
+        const ae = new ActionExpression(newVal);
+        const expr = ae.getFirstExpression('call-return');
+        if (expr) {
+          const win = (this as any)._resolveWindow?.() || ((typeof window !== 'undefined' ? window : undefined) as any);
+          try {
+            const result = FunctionUtils.executeReturn({
+              script: ConvertUtils.decodeHtmlEntity(expr.script, win.document),
+              context: this,
+              args: SwcUtils.getHelperAndHostSet(win,this as any)
+            });
+            processedVal = String(result);
+          } catch (e) {
+            console.error(`[SWC] Failed to execute directive {{= ${expr.script} }} on attribute ${name}:`, e);
+            processedVal = newVal;
+          }
+        }
+      }
+
       if (name.startsWith('swc-on-') && !swcLifecycleAttributes.includes(name)) {
         if (newVal !== null) {
           const eventName = name.substring(7);
@@ -579,7 +598,7 @@ export const elementDefine =
 
       const mKeys = attrChangeMap.get(name);
       if (mKeys && Array.isArray(mKeys)) {
-        for (const key of mKeys) (this as any)[key](newVal, old, name, hSet);
+        for (const key of mKeys) (this as any)[key](processedVal, old, name, hSet);
       }
     };
 

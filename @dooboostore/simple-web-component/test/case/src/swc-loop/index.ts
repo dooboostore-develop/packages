@@ -1,7 +1,7 @@
-import swcRegister, { elementDefine, onConnectedInnerHtml, addEventListener } from '@dooboostore/simple-web-component';
+import swcRegister, { elementDefine, onConnectedInnerHtml } from '@dooboostore/simple-web-component';
 
 swcRegister(window);
-// Define a parent to test context
+
 @elementDefine('loop-test-app', { window })
 class LoopTestApp extends HTMLElement {
   @onConnectedInnerHtml({ useShadow: true })
@@ -9,11 +9,13 @@ class LoopTestApp extends HTMLElement {
     return `<slot></slot>`;
   }
 
-  // Helper for children to trigger loop removal
+  // Handle deletion by updating the value property of the loop
   deleteItem(index: number) {
     const loop = document.getElementById('main-loop') as any;
-    console.log('>>> [Loop Test App] Request to remove index:', index);
-    loop.remove(index);
+    console.log('>>> [Loop Test App] Removing index:', index);
+    const newList = [...loop.value];
+    newList.splice(index, 1);
+    loop.value = newList;
   }
 }
 
@@ -32,11 +34,11 @@ document.getElementById('reset-btn')?.addEventListener('click', () => {
 document.getElementById('append-btn')?.addEventListener('click', () => {
   const name = 'Guest ' + Math.floor(Math.random() * 100);
   const age = Math.floor(Math.random() * 50) + 5;
-  console.log(`>>> [Loop Test] Appending: ${name} (age ${age})`);
-  loop.append({ name, age });
+  console.log(`>>> [Loop Test] Pushing: ${name} (age ${age})`);
+  loop.value = [...loop.value, { name, age }];
 });
 
-document.getElementById('remove-last-btn')?.addEventListener('click', () => {
-  console.log('>>> [Loop Test] Removing last row');
-  loop.remove();
+document.getElementById('clear-btn')?.addEventListener('click', () => {
+  console.log('>>> [Loop Test] Clearing list');
+  loop.value = [];
 });

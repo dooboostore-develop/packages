@@ -1,101 +1,79 @@
 import { changedAttributeHost } from '../decorators/changedAttributeHost';
 import { SwcUtils } from '../utils/Utils';
-import { FunctionUtils } from '@dooboostore/core';
+import { FunctionUtils, ActionExpression } from '@dooboostore/core';
+import { ConvertUtils } from '@dooboostore/core-web';
+import { SwcIfInterface } from '../types';
+import { attributeHost } from '../decorators';
 
-class SwcIf extends HTMLTemplateElement {
-  private _value = false;
+class SwcIf extends HTMLTemplateElement implements SwcIfInterface {
+  @attributeHost('value')
+  _value: any;
+
+  @attributeHost('replace-wrap')
+  _replaceWrap: string | null;
+
   private _nodes: Node[] = [];
 
   get value(): boolean {
     return this._value;
   }
+
   set value(nv: any) {
-    this._value = Boolean(nv);
-    this.render();
+    // this._value = nv;
+    this.refresh(nv);
   }
 
-  private _executeCloneCallback(attr: string, args: any) {
-    const script = this.getAttribute(attr);
-    if (!script) return;
-    FunctionUtils.execute({ script, context: this, args });
+  private replaceExpressions(html: string, groupArgs: any, context: any, wrap?: string | null): string {
+    const config = wrap ? { wrapExpression: wrap } : undefined;
+    const ae = new ActionExpression(html, config);
+    const filterOptions = wrap ? { type: 'replace' as const, wrap } : 'replace';
+    const win = this.ownerDocument?.defaultView || window;
+    
+    // @ts-ignore
+    for (const expr of ae.getExpressions(filterOptions)) {
+      try {
+        const value = FunctionUtils.executeReturn({
+          script: ConvertUtils.decodeHtmlEntity(expr.script, win.document),
+          context,
+          args: groupArgs
+        });
+        ae.replace(expr, String(value));
+      } catch (e) {
+        console.error(`[SWC] Failed to execute ${expr.original}:`, e);
+      }
+    }
+    return ae.getUnprocessedTemplate();
   }
 
   @changedAttributeHost('value')
-  private refreshValue(valueAttr?: string | null) {
-    valueAttr ??= this.getAttribute('value');
-    if (valueAttr === null) {
-      this.value = false;
-      return;
-    }
-
-    // {{ }} 브레이스로 감싸진 값은 스크립트 실행
-    if (valueAttr.startsWith('{{') && valueAttr.endsWith('}}')) {
-      const script = valueAttr.slice(2, -2).trim();
-      const win = this.ownerDocument?.defaultView || window;
-      const result = FunctionUtils.executeReturn({
-        script,
-        context: this,
-        args: SwcUtils.getHelperAndHostSet(win, this)
-      });
-      this.value = result;
-    } else {
-      // 일반 문자열 값
-      this.value = Boolean(valueAttr);
-    }
+  private setValue(valueAttr?: string | null) {
+    this.refresh();
   }
 
-  private render() {
+  @changedAttributeHost('replace-wrap')
+  private setReplaceWrap(replaceWrapAttr?: string | null) {
+    this.refresh();
+  }
+
+  refresh(value = this._value) {
     this.cleanup();
     const portal = this.parentElement;
-    if (!portal) return;
+    if (!portal || !value) return;
 
     const win = this.ownerDocument?.defaultView || window;
     const helperSet = SwcUtils.getHelperAndHostSet(win, this);
 
-    let targetTpl: HTMLTemplateElement | null = null;
-    if (this._value) {
-      targetTpl = this;
-    } else {
-      targetTpl = this.content.querySelector('template[is="swc-default"]') as HTMLTemplateElement;
-    }
+    let htmlString = this.innerHTML;
+    const groupArgs = { ...helperSet, $value: value };
 
-    if (targetTpl) {
-      const clone = targetTpl.content.cloneNode(true) as DocumentFragment;
-      // If it's the host template, remove sub-templates from clone
-      if (targetTpl === this) {
-        clone.querySelectorAll('template[is^="swc-"]').forEach(t => t.remove());
-      }
+    htmlString = this.replaceExpressions(htmlString, groupArgs, this, this._replaceWrap);
 
-      this._nodes = Array.from(clone.childNodes);
-      const elements = this._nodes.filter(n => n.nodeType === 1) as HTMLElement[];
-      const groupArgs = { ...helperSet, $value: this._value, $nodes: this._nodes, $elements: elements, $firstElement: elements[0] };
+    const result = this.ownerDocument?.createElement('template') || document.createElement('template');
+    result.innerHTML = htmlString;
+    const processedFragment = result.content;
 
-      // 부모 체인을 정상적으로 유지하기 위해 __swc_host 할당 제거
-      this._nodes.forEach((node, nodeIdx) => {
-        // if (node instanceof HTMLElement) (node as any).__swc_host = this;  // 제거: 부모 체인 유지
-        this._executeCloneCallback('on-clone-node', { ...groupArgs, $node: node, $nodeIndex: nodeIdx, $isElement: node.nodeType === 1 });
-
-        // Attribute {{ }} 치환 - SwcChoose처럼 동적 치환
-        if (node instanceof HTMLElement) {
-          Array.from(node.attributes).forEach(attr => {
-            const value = attr.value || '';
-            if (value.startsWith('{{') && value.endsWith('}}')) {
-              const script = value.slice(2, -2).trim();
-              const result = FunctionUtils.executeReturn({
-                script,
-                context: node,
-                args: { ...groupArgs, $value: this._value }
-              });
-              node.setAttribute(attr.name, String(result));
-            }
-          });
-        }
-      });
-
-      this._executeCloneCallback('on-clone-nodes', groupArgs);
-
-      portal.insertBefore(clone, this.nextSibling);
-    }
+    this._nodes = Array.from(processedFragment.childNodes);
+    portal.insertBefore(processedFragment, this.nextSibling);
   }
 
   private cleanup() {
@@ -103,9 +81,6 @@ class SwcIf extends HTMLTemplateElement {
     this._nodes = [];
   }
 
-  connectedCallback() {
-    this.refreshValue();
-  }
   disconnectedCallback() {
     this.cleanup();
   }

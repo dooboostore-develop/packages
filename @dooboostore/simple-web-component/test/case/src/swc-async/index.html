@@ -45,11 +45,16 @@
   </head>
   <body>
     <script>
-      window.fetchData = () => {
-        console.log('>>> [Global Script] fetchData called (Initial)');
-        return new Promise(resolve => {
+      // Redefine global fetchData to support mode switching for interactive testing
+      (window).fetchData = (mode) => {
+        console.log('>>> [Test] fetchData called with mode:', mode);
+        return new Promise((resolve, reject) => {
           setTimeout(() => {
-            resolve({ id: 0, title: 'Initial Data', timestamp: new Date().toISOString() });
+            if (mode === 'success') {
+              resolve({ id: Date.now(), title: 'Remote Data Loaded', timestamp: new Date().toLocaleTimeString() });
+            } else {
+              reject(new Error('Simulated Network Error!'));
+            }
           }, 1500);
         });
       };
@@ -58,21 +63,24 @@
     <p>Using <code>&lt;template is="swc-async"&gt;</code> to handle async states (loading, error, success).</p>
 
     <div class="controls">
-      <button id="success-btn">Fetch Success (2s)</button>
-      <button id="error-btn">Fetch Error (2s)</button>
-      <button onclick="document.getElementById('my-async').removeAttribute('on-get-value')">Remove Attr (Default State)</button>
+      <button onclick="
+        document.getElementById('my-async').value = window.fetchData('success');
+      ">Fetch Success (2s)</button>
+
+      <button onclick="
+        document.getElementById('my-async').value = window.fetchData('error');
+      ">Fetch Error (2s)</button>
+
+      <button onclick="
+      document.getElementById('my-async').removeAttribute('value')
+      ">Remove Attr (Default State)</button>
     </div>
 
     <div style="padding: 20px; border: 1px dashed #aaa">
       <template
         is="swc-async"
         id="my-async"
-        on-get-value="window.fetchData()"
-        on-clone-node="
-            if($isElement && $node.querySelector('.content')) {
-               $node.querySelector('.content').textContent = JSON.stringify($value || $error || '');
-            }
-          "
+        value="{{= window.fetchData('success') }}"
       >
         <!-- 0. Default State -->
         <template is="swc-default">

@@ -9,97 +9,111 @@
         font-family: sans-serif;
         padding: 40px;
         line-height: 1.6;
+        background: #f0f0f0;
       }
       .controls {
         margin-bottom: 20px;
         display: flex;
         gap: 10px;
         flex-wrap: wrap;
-        border: 1px solid #eee;
+        border: 1px solid #ddd;
+        background: white;
         padding: 15px;
         border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
       }
       .user-row {
         display: flex;
         align-items: center;
         gap: 15px;
-        padding: 8px;
+        padding: 12px;
         border-bottom: 1px solid #eee;
+        background: white;
       }
+      .user-row:last-child { border-bottom: none; }
       .user-row:hover {
-        background: #f9f9f9;
+        background: #fcfcfc;
       }
       .index {
         color: #888;
         font-family: monospace;
         width: 40px;
+        font-weight: bold;
       }
       .name {
         font-weight: bold;
         width: 150px;
+        color: #333;
       }
       .age {
         color: #666;
-        width: 80px;
+        width: 100px;
       }
       button {
-        padding: 5px 12px;
+        padding: 6px 16px;
         cursor: pointer;
+        border-radius: 6px;
+        border: 1px solid #ccc;
+        background: white;
+        font-weight: 600;
       }
+      button:hover { background: #f5f5f5; }
       .delete-btn {
         color: white;
-        background: #d93025;
+        background: #FF385C;
         border: none;
-        border-radius: 4px;
       }
       .delete-btn:hover {
-        background: #b71c1c;
+        background: #E31C5F;
+      }
+      .empty-box {
+        padding: 40px;
+        text-align: center;
+        background: #fffbe6;
+        border: 1px dashed #ffe58f;
+        border-radius: 12px;
+        color: #856404;
       }
     </style>
   </head>
   <body>
-  <script>
-    var initialUsers = [
-      { name: 'Alice', age: 25 },
-      { name: 'Bob', age: 8 },
-      { name: 'Charlie', age: 32 }
-    ];
-  </script>
-    <h1>SwcLoop: Pure Structural Directive</h1>
-    <p>Testing conditional rendering (<code>on-get-if</code>), surgical updates (<code>on-clone-node</code>), and index-preserving removal.</p>
+    <script>
+      window.initialUsers = [
+        { name: 'Alice', age: 25 },
+        { name: 'Bob', age: 8 },
+        { name: 'Charlie', age: 32 }
+      ];
+    </script>
+    <h1>SwcLoop: Declarative Structural Directive</h1>
+    <p>Testing new <code>{{ expression }}</code> syntax and <code>swc-default</code> template.</p>
 
     <div class="controls">
-      <button id="reset-btn">Reset List (value=)</button>
-      <button id="append-btn">Append Item (append())</button>
-      <button id="remove-last-btn">Remove Last (remove())</button>
-      <span style="margin-left: auto; color: #666">Check console for lifecycle logs.</span>
+      <button id="reset-btn">Set Value (Dave & Eve)</button>
+      <button id="append-btn">Push Item (State Update)</button>
+      <button id="clear-btn">Clear List (Show Default)</button>
     </div>
 
     <loop-test-app>
-      <button swc-on-click="console.log('vvvaaav', $host)">aaaavvavaaaaaa</button>
-    </loop-test-app>
-
-    <loop-test-app>
-      <button swc-on-click="console.log('vvv', $host)">aaaaaaaaa</button>
-      <div style="border: 2px solid #1a73e8; border-radius: 8px; padding: 10px; background: white">
+      <div style="border: 1px solid #ccc; border-radius: 12px; overflow: hidden; background: white; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
         <template
           is="swc-loop"
           id="main-loop"
-          on-get-value="initialUsers"
-          on-clone-nodes="
-              $firstElement.querySelector('.index').textContent = '[' + $index + ']';
-              $firstElement.querySelector('.name').textContent = $item.name;
-              $firstElement.querySelector('.age').textContent = 'Age: ' + $item.age;
-              $firstElement.querySelector('.delete-btn').index = $index;
-            "
+          value="{{= window.initialUsers }}"
         >
           <div class="user-row">
-            <span class="index"></span>
-            <span class="name"></span>
-            <span class="age"></span>
-            <button class="delete-btn" swc-on-click="$parentHost.deleteItem(this.index)">Delete</button>
-<!--            <button class="delete-btn" swc-on-click="console.log($host, $parentHost, this)">Delete</button>-->
+            <span class="index">[{{ $index }}]</span>
+            <span class="name">{{ $item.name }}</span>
+            <span class="age">Age: {{ $item.age }}</span>
+            <button class="delete-btn" swc-on-click="$parentHost.deleteItem($index)">Delete</button>
           </div>
+
+<!--          &lt;!&ndash; Default template when list is empty &ndash;&gt;-->
+<!--          <template is="swc-default">-->
+<!--            <div class="empty-box">-->
+<!--               <h3>📭 No Users Found</h3>-->
+<!--               <p>The list is currently empty. Try resetting or adding a new user!</p>-->
+<!--            </div>-->
+<!--          </template>-->
         </template>
       </div>
     </loop-test-app>

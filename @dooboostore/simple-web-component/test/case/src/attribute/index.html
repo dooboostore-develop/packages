@@ -1,0 +1,15 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@attribute & @attributeHost Test</title>
+</head>
+<body>
+    <h1>@attribute & @attributeHost Test</h1>
+    <p>Testing dynamic attribute synchronization with <code>{{ }}</code> substitution and <code>{{= }}</code> execution directives.</p>
+
+    <attribute-test-element stringvalue="{{= 'zzzzzzzzzz'+new Date().toISOString()}}"></attribute-test-element>
+</body>
+</html>
+

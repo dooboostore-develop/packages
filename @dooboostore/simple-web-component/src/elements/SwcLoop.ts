@@ -1,59 +1,61 @@
 import { changedAttributeHost } from '../decorators/changedAttributeHost';
 import { SwcUtils } from '../utils/Utils';
-import { FunctionUtils } from '@dooboostore/core';
+import { FunctionUtils, ActionExpression } from '@dooboostore/core';
+import { ConvertUtils } from '@dooboostore/core-web';
+import { attributeHost } from '../decorators';
 
 class SwcLoop extends HTMLTemplateElement {
-  private _value: any[] = [];
+  @attributeHost('value')
+  _value: any[];
+
+  @attributeHost('replace-wrap')
+  _replaceWrap: string | null;
+
   private _nodeGroups: Node[][] = [];
 
   get value(): any[] {
     return this._value;
   }
   set value(nv: any[]) {
-    this._value = Array.isArray(nv) ? [...nv] : [];
-    this.render();
-  }
-
-
-
-  private _executeCloneCallback(attr: string, args: any) {
-    const script = this.getAttribute(attr);
-    if (!script) return;
-    FunctionUtils.execute({ script, context: this, args });
-  }
-
-  private _cleanup() {
-    this._nodeGroups.forEach(nodes => nodes.forEach(n => n.parentElement?.removeChild(n)));
-    this._nodeGroups = [];
+    // this._value = Array.isArray(nv) ? [...nv] : [];
+    this.refresh(nv);
   }
 
   @changedAttributeHost('value')
-  private refreshValue() {
-    let script = this.getAttribute('value');
-    if (!script) {
-      this.value = [];
-      return;
-    }
-    // Parse {{ }} braces
-    if (script.startsWith('{{') && script.endsWith('}}')) {
-      script = script.slice(2, -2).trim();
-    }
-    const win = this.ownerDocument?.defaultView || window;
-    const res = FunctionUtils.executeReturn({
-      script,
-      context: this,
-      args: SwcUtils.getHelperAndHostSet(win, this)
-    });
-
-    if (res instanceof Promise) {
-      res.then(v => (this.value = v)).catch(() => (this.value = []));
-    } else {
-      this.value = res;
-    }
+  private setValue() {
+    this.refresh();
   }
 
-  render() {
-    this._cleanup();
+  @changedAttributeHost('replace-wrap')
+  private setReplaceWrap() {
+    this.refresh();
+  }
+
+  private replaceExpressions(html: string, groupArgs: any, context: any, wrap?: string | null): string {
+    const config = wrap ? { wrapExpression: wrap } : undefined;
+    const ae = new ActionExpression(html, config);
+    const filterOptions = wrap ? { type: 'replace' as const, wrap } : 'replace';
+    const win = this.ownerDocument?.defaultView || window;
+
+    // @ts-ignore
+    for (const expr of ae.getExpressions(filterOptions)) {
+      try {
+        const value = FunctionUtils.executeReturn({
+          script: ConvertUtils.decodeHtmlEntity(expr.script, win.document),
+          context,
+          args: groupArgs
+        });
+        ae.replace(expr, String(value));
+      } catch (e) {
+        console.error(`[SWC] Failed to execute ${expr.original}:`, e);
+      }
+    }
+    return ae.getUnprocessedTemplate();
+  }
+
+  refresh(value = this._value) {
+    this.cleanup();
+    if (value?.length<=0) return;
     const portal = this.parentElement;
     if (!portal) return;
 
@@ -61,63 +63,30 @@ class SwcLoop extends HTMLTemplateElement {
     const helperSet = SwcUtils.getHelperAndHostSet(win, this);
     const fragment = win.document.createDocumentFragment();
 
-    if (this._value.length === 0) {
-      const defaultTpl = this.content.querySelector('template[is="swc-default"]') as HTMLTemplateElement;
-      if (defaultTpl) {
-        const clone = defaultTpl.content.cloneNode(true);
-        const nodes = Array.from(clone.childNodes);
-        this._nodeGroups.push(nodes);
-        fragment.appendChild(clone);
-      }
-    } else {
-      this._value.forEach((item, index) => {
-        const clone = this.content.cloneNode(true) as DocumentFragment;
-        // Filter out sub-templates
-        const subTemplates = clone.querySelectorAll('template[is^="swc-"]');
-        subTemplates.forEach(t => t.remove());
+    value.forEach((item, index) => {
+      let htmlString = this.innerHTML;
+      const groupArgs = { ...helperSet, $item: item, $index: index, $value: this._value };
 
-        const nodes = Array.from(clone.childNodes);
-        const elements = nodes.filter(n => n.nodeType === 1) as HTMLElement[];
+      htmlString = this.replaceExpressions(htmlString, groupArgs, this, this._replaceWrap);
 
-        const groupArgs = { ...helperSet, $item: item, $index: index, $value: this._value, $nodes: nodes, $elements: elements, $firstElement: elements[0] };
+      const temp = this.ownerDocument?.createElement('template') || document.createElement('template');
+      temp.innerHTML = htmlString;
 
-        nodes.forEach((node, nodeIdx) => {
-          this._executeCloneCallback('on-clone-node', { ...groupArgs, $node: node, $nodeIndex: nodeIdx, $isElement: node.nodeType === 1 });
+      const content = temp.content;
+      const nodes = Array.from(content.childNodes);
+      this._nodeGroups.push(nodes);
+      fragment.appendChild(content);
+    });
 
-          // Attribute {{ }} 치환 - SwcChoose처럼 동적 치환
-          if (node instanceof HTMLElement) {
-            Array.from(node.attributes).forEach(attr => {
-              const value = attr.value || '';
-              if (value.startsWith('{{') && value.endsWith('}}')) {
-                const script = value.slice(2, -2).trim();
-                const result = FunctionUtils.executeReturn({
-                  script,
-                  context: node,
-                  args: groupArgs
-                });
-                node.setAttribute(attr.name, String(result));
-              }
-            });
-          }
-        });
-
-        this._executeCloneCallback('on-clone-nodes', groupArgs);
-        this._nodeGroups.push(nodes);
-        fragment.appendChild(clone);
-      });
-    }
-
-    if (portal === this.parentElement) {
-      portal.insertBefore(fragment, this.nextSibling);
-    } else {
-      portal.appendChild(fragment);
-    }
+    portal.insertBefore(fragment, this.nextSibling);
   }
 
-  connectedCallback() {
-    this.refreshValue();
+  private cleanup() {
+    this._nodeGroups.forEach(nodes => nodes.forEach(n => n.parentElement?.removeChild(n)));
+    this._nodeGroups = [];
   }
+
   disconnectedCallback() {
-    this._cleanup();
+    this.cleanup();
   }
 }

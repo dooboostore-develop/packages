@@ -251,6 +251,35 @@ onAppReady(router: Router) {
 
 Structural Directives allow declarative conditional rendering, list iteration, async handling, and routing with automatic attribute substitution and dynamic expressions.
 
+#### 8.0 **Expression Syntax - Dynamic Evaluation**
+
+SWC supports two types of expression syntax for dynamic value evaluation:
+
+**`{{ }} - Standard Expression Evaluation**
+- Used for boolean conditions and value comparisons
+- Syntax: `{{ expression }}`
+- Example: `{{ $value === 'pending' }}`, `{{ $host.isLoggedIn }}`
+- Context variables: `$value`, `$item`, `$index`, `$host`, `$parentHost`, `$appHost`, etc.
+
+**`{{= }} - Function Call & Return Expression**
+- Evaluates JavaScript expressions and returns result
+- Syntax: `{{= functionCall() }}`  or `{{= computedValue }}`
+- Automatically executes functions and captures return values
+- Example: `{{= $item.name }}`, `{{= $parentHost.getData() }}`, `{{= formatDate($item.date) }}`
+- Used in attributes for dynamic substitution
+- Result is converted to string for DOM attributes
+
+**Context Variables Available in All Directives:**
+- `$value` - the value passed to the template
+- `$host` - the current Web Component instance
+- `$parentHost` - parent component
+- `$appHost` - root application component
+- `$item` - current item (in SwcLoop)
+- `$index` - current index (in SwcLoop)
+- Helper functions - utility methods from `SwcUtils.getHelperAndHostSet()`
+
+---
+
 #### 8.1 **SwcChoose - Multi-Condition Rendering**
 
 Switch-case style conditional rendering with `swc-when` and `swc-otherwise` sub-templates.
@@ -271,17 +300,17 @@ class StatusDisplay extends HTMLElement {
   render() {
     return `
       <template id="status-template" is="swc-choose">
-        <!-- Pending State -->
+        <!-- Pending State: Using {{ }} for condition -->
         <template is="swc-when" value="{{ $value === 'pending' }}">
           <div style="color: orange;">⏳ Processing...</div>
         </template>
         
-        <!-- Success State -->
+        <!-- Success State: Using {{ }} for condition -->
         <template is="swc-when" value="{{ $value === 'success' }}">
           <div style="color: green;">✓ Completed</div>
         </template>
         
-        <!-- Error State -->
+        <!-- Error State: Using {{ }} for condition -->
         <template is="swc-when" value="{{ $value === 'error' }}">
           <div style="color: red;">✗ Failed</div>
         </template>
@@ -296,11 +325,31 @@ class StatusDisplay extends HTMLElement {
 }
 ```
 
-**Features:**
+**Expression Features:**
 - `{{ }} braces` for dynamic condition evaluation
 - `$value` contains the value passed to `swc-choose`
 - `skip-if-same` attribute prevents re-render when same template selected
-- Attribute substitution: `attribute-name="{{ expression }}"` automatically evaluated
+- **Attribute substitution with `{{= }}`**: `attribute-name="{{= expression }}"` automatically evaluated
+  
+**Attribute Substitution Example ({{= }} usage):**
+```html
+<template is="swc-choose">
+  <template is="swc-when" value="{{ $value?.type === 'user' }}">
+    <user-card 
+      data-username="{{= $value?.name }}" 
+      data-email="{{= $value?.email }}"
+      data-id="{{= $value?.id }}"
+    ></user-card>
+  </template>
+  
+  <template is="swc-when" value="{{ $value?.type === 'product' }}">
+    <product-card 
+      data-product-name="{{= $value?.title }}"
+      data-price="{{= $value?.price }}"
+    ></product-card>
+  </template>
+</template>
+```
 
 ---
 
@@ -312,6 +361,7 @@ If-then-else rendering with optional `swc-default` fallback.
 @elementDefine('user-profile')
 class UserProfile extends HTMLElement {
   private isLoggedIn = false;
+  private userData = { userName: 'Alice', userId: 123 };
 
   @setProperty('#content', 'value')
   checkAuth() {
@@ -321,10 +371,15 @@ class UserProfile extends HTMLElement {
   @onConnectedInnerHtml
   render() {
     return `
-      <!-- True condition: renders main template -->
+      <!-- True condition: renders main template using {{ }} -->
       <template id="content" is="swc-if" value="{{ $host.isLoggedIn }}">
+        <!-- Attribute substitution with {{= }} expressions -->
+        <user-card 
+          data-username="{{= $host.userData.userName }}"
+          data-userid="{{= $host.userData.userId }}"
+        ></user-card>
         <div>
-          <h2>Welcome, {{ $host.userName }}</h2>
+          <h2>Welcome, {{ $host.userData.userName }}</h2>
           <button on-click="logout">Logout</button>
         </div>
         
@@ -341,12 +396,13 @@ class UserProfile extends HTMLElement {
 }
 ```
 
-**Features:**
-- Binary true/false logic
+**Expression Features:**
+- Binary true/false logic with `{{ }} condition`
 - Main template renders when `value` is truthy
 - `swc-default` sub-template renders when value is falsy
-- Dynamic attribute substitution supported
+- Dynamic attribute substitution with `{{= }}` supported
 - Access `$host`, `$value`, and other context variables
+- `{{= functionCall() }}` executes functions and returns results for attributes
 
 ---
 
@@ -362,7 +418,7 @@ class DataLoader extends HTMLElement {
   async fetchData() {
     return new Promise((resolve, reject) => {
       setTimeout(() => {
-        resolve({ id: 1, name: 'Sample Data' });
+        resolve({ id: 1, name: 'Sample Data', description: 'API response' });
       }, 2000);
     });
   }
@@ -375,17 +431,23 @@ class DataLoader extends HTMLElement {
   @onConnectedInnerHtml
   render() {
     return `
-      <template id="async-content" is="swc-async" value="{{ $host.fetchData() }}">
+      <template id="async-content" is="swc-async" value="{{= $host.fetchData() }}">
         <!-- Loading State: Shows while Promise is pending -->
         <template is="swc-loading">
           <div>🔄 Loading data...</div>
         </template>
         
         <!-- Success State: Shows when Promise resolves -->
+        <!-- Using {{= }} to extract data from resolved Promise -->
         <template is="swc-success">
+          <data-card
+            data-id="{{= $value.id }}"
+            data-name="{{= $value.name }}"
+          ></data-card>
           <div>
             <p>Data ID: {{ $value.id }}</p>
             <p>Data Name: {{ $value.name }}</p>
+            <p>Description: {{= $value.description }}</p>
           </div>
         </template>
         
@@ -399,12 +461,14 @@ class DataLoader extends HTMLElement {
 }
 ```
 
-**Features:**
-- Automatically manages Promise lifecycle
+**Expression Features:**
+- Promise lifecycle management with `{{ }} conditions`
+- `{{= $host.fetchData() }}` - function call expression that executes and returns Promise
+- `{{= $value.propertyName }}` - extract properties from resolved value
 - `swc-loading` - displays during pending state
-- `swc-success` - displays on successful resolution, `$value` contains result
-- `swc-error` - displays on Promise rejection
-- Dynamic attribute substitution in all states
+- `swc-success` - displays on successful resolution, `$value` contains resolved result
+- `swc-error` - displays on Promise rejection, `$value` contains error
+- Dynamic attribute substitution with `{{= }}` in all states
 - `on-clone-node` and `on-clone-nodes` callbacks for DOM manipulation
 
 ---
@@ -417,9 +481,9 @@ Iterate over arrays and render templates for each item.
 @elementDefine('product-list')
 class ProductList extends HTMLElement {
   private products = [
-    { id: 1, name: 'Laptop', price: 1200 },
-    { id: 2, name: 'Phone', price: 800 },
-    { id: 3, name: 'Tablet', price: 500 }
+    { id: 1, name: 'Laptop', price: 1200, category: 'electronics' },
+    { id: 2, name: 'Phone', price: 800, category: 'electronics' },
+    { id: 3, name: 'Tablet', price: 500, category: 'electronics' }
   ];
 
   @setProperty('#products-list', 'value')
@@ -430,12 +494,26 @@ class ProductList extends HTMLElement {
   @onConnectedInnerHtml
   render() {
     return `
-      <template id="products-list" is="swc-loop" value="{{ $host.products }}">
+      <template id="products-list" is="swc-loop" value="{{= $host.products }}">
+        <!-- Loop iteration with {{ }} for display and {{= }} for attributes -->
         <div style="margin: 10px; padding: 10px; border: 1px solid #ddd;">
+          <!-- Using {{ }} for template content rendering -->
           <h3>{{ $item.name }}</h3>
           <p>Price: ${{ $item.price }}</p>
           <p>ID: {{ $item.id }} (Index: {{ $index }})</p>
-          <button data-id="{{ $item.id }}">Add to Cart</button>
+          
+          <!-- Using {{= }} for dynamic attribute substitution -->
+          <product-card
+            data-product-id="{{= $item.id }}"
+            data-product-name="{{= $item.name }}"
+            data-product-price="{{= $item.price }}"
+            data-product-category="{{= $item.category }}"
+          ></product-card>
+          
+          <!-- Computed expressions with {{= }} -->
+          <button data-id="{{= $item.id }}" data-price="{{= $item.price }}">
+            Add to Cart - \${{= $item.price }}
+          </button>
         </div>
         
         <!-- Empty fallback: renders when array is empty -->
@@ -448,20 +526,70 @@ class ProductList extends HTMLElement {
 }
 ```
 
-**Context variables:**
+**Context Variables (Available in loop):**
 - `$item` - current item in iteration
-- `$index` - zero-based index
-- `$value` - entire array
+- `$index` - zero-based index (0, 1, 2, ...)
+- `$value` - entire array being iterated
 - `$nodes` - cloned DOM nodes
 - `$elements` - cloned HTML elements
 - `$firstElement` - first element in cloned nodes
 
-**Features:**
-- Efficient DOM cloning for each item
+**Expression Features:**
+- `{{= $host.products }}` - function call expression that returns the array to iterate
+- `{{ $item.propertyName }}` - display item properties using standard `{{ }}` 
+- `{{= $item.propertyName }}` - extract item properties for attributes using `{{= }}`
+- `{{= computedValue }}` - compute values in attributes (e.g., calculations, method calls)
 - `swc-default` fallback renders when array is empty
-- All cloned attributes support `{{ }}` substitution
+- All cloned attributes support `{{ }}` and `{{= }}` substitution
 - `on-clone-node` callback fires for each cloned node
 - `on-clone-nodes` callback fires after all nodes cloned
+
+**Common Patterns:**
+```html
+<!-- Template functions with {{= }} -->
+<template is="swc-loop" value="{{= filterProducts($host.products) }}">
+  <!-- Dynamic calculations -->
+  <span>Total: {{= $item.price * $item.quantity }}</span>
+  
+  <!-- Conditional attributes -->
+  <div class="{{= $item.inStock ? 'available' : 'unavailable' }}"></div>
+  
+  <!-- Method calls as attributes -->
+  <button data-formatted="{{= formatPrice($item.price) }}">
+    Buy - {{ formatPrice($item.price) }}
+  </button>
+</template>
+```
+
+**Advanced: replace-wrap for Custom Expression Syntax**
+
+Override default `{{ }}` and `{{= }}` syntax with custom wrappers:
+
+```typescript
+@elementDefine('custom-loop')
+class CustomLoop extends HTMLElement {
+  private items = [{ id: 1, name: 'Item 1' }];
+
+  @onConnectedInnerHtml
+  render() {
+    return `
+      <!-- Using custom wrapper syntax [(= ... )] instead of {{= ... }} -->
+      <template id="items" is="swc-loop" replace-wrap="[(= )]" value="[(= $host.items )]">
+        <div>
+          <p>Name: [(= $item.name )]</p>
+          <button data-id="[(= $item.id )]">Click me</button>
+        </div>
+      </template>
+    `;
+  }
+}
+```
+
+**replace-wrap attribute options:**
+- Change expression wrapper from default `{{= }}` to custom pattern
+- Useful when `{{ }}` conflicts with template engines like EJS or Mustache
+- Supported on: `SwcLoop`, `SwcChoose`, `SwcIf`, `SwcAsync`, `register()` directives
+- Example patterns: `[(= )]`, `{[= ]}`, `<%= %>` (after escaping)
 
 ---
 
@@ -480,23 +608,37 @@ class RootRouter extends HTMLElement {
   }
 
   @setProperty('#router', 'value')
-  @subscribeSwcAppRouteChange(['/', '/product/{id}'])
-  routeChanged(router: RouterEventType) {
-    return router;
+  @subscribeSwcAppRouteChange(['/', '/users', '/users/{id}', '/products/{id}'])
+  routeChanged(route: RouterEventType) {
+    return route;
+  }
+
+  navigate(path: string): void {
+    this.router?.go(path);
   }
 
   @onConnectedInnerHtml
   render() {
     return `
       <template id="router" is="swc-choose">
-        <!-- Home -->
+        <!-- Home Page: Using {{ }} for condition -->
         <template is="swc-when" value="{{ ['', '/'].includes($value?.path) }}">
           <home-page/>
         </template>
         
-        <!-- Product Detail -->
-        <template is="swc-when" value="{{ $value?.path.startsWith('/product/') }}">
-          <product-page product-id="{{$value?.pathData?.id}}"/>
+        <!-- Users List Page -->
+        <template is="swc-when" value="{{ $value?.path === '/users' }}">
+          <users-list-page/>
+        </template>
+        
+        <!-- User Detail Page: Using {{= }} for dynamic attributes from route params -->
+        <template is="swc-when" value="{{ $value?.path.startsWith('/users/') }}">
+          <user-detail-page user-id="{{= $value?.pathData?.id }}"></user-detail-page>
+        </template>
+        
+        <!-- Product Detail Page: Using {{= }} for dynamic route parameters -->
+        <template is="swc-when" value="{{ $value?.path.startsWith('/products/') }}">
+          <product-detail-page product-id="{{= $value?.pathData?.id }}"></product-detail-page>
         </template>
         
         <!-- Not Found -->
@@ -511,10 +653,11 @@ class RootRouter extends HTMLElement {
 
 **Benefits:**
 - ✅ **No imperative route methods** - routes are declarative templates
-- ✅ **Automatic re-rendering** - attributes like `product-id` update automatically
+- ✅ **Automatic re-rendering** - attributes like `user-id` update automatically
 - ✅ **Performance optimization** - use `skip-if-same` on templates to prevent re-renders
-- ✅ **Dynamic path parameters** - use `{{$value?.pathData?.id}}` syntax to inject route params
+- ✅ **Dynamic path parameters** - use `{{= $value?.pathData?.id }}` syntax to inject route params with `{{= }}`
 - ✅ **Cleaner DX** - single unified routing pattern
+- ✅ **Full expression support** - use `{{= }}` for complex parameter transformations
 
 ### 9. **Accommodation Pattern**
 Factory-based component registration with explicit DI.

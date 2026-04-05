@@ -1,5 +1,6 @@
 import { SwcAppInterface, HostSet, HelperSet, HelperHostSet } from '../types';
 import {getElementConfig} from "../decorators";
+import { getExpression, ExpressionResult, GetExpressionConfig, GetExpressionResult } from '@dooboostore/core';
 
 export const SWC_NOT_FOUND = Symbol.for('simple-web-component:not-found');
 
@@ -185,7 +186,8 @@ export namespace SwcUtils {
     const hostSet = getHostSet(el);
     return {
       ...helperSet,
-      ...hostSet
+      ...hostSet,
+      $this: el,
     };
   };
 
@@ -307,22 +309,12 @@ export namespace SwcUtils {
   };
 
   export const getHostSet = (el: HTMLElement): HostSet => {
-    const isSwc = !!getElementConfig(el);
     const ancestors = findAllSwcHosts(el); // [root, ..., parent]
-
-    let $host: HTMLElement;
-    let $parentHost: HTMLElement | null;
-
-    if (isSwc) {
-      $host = el;
-      $parentHost = ancestors.length > 0 ? ancestors[ancestors.length - 1] : null;
-    } else {
-      $host = ancestors.length > 0 ? ancestors[ancestors.length - 1] : el;
-      $parentHost = ancestors.length > 1 ? ancestors[ancestors.length - 2] : null;
-    }
-
-    const $hosts = isSwc ? [...ancestors, el] : ancestors;
-    const $firstHost = $hosts.length > 0 ? $hosts[0] : null;
+    
+    const $host = ancestors.length > 0 ? ancestors[ancestors.length - 1] : null;
+    const $parentHost = ancestors.length > 1 ? ancestors[ancestors.length - 2] : null;
+    const $hosts = ancestors;
+    const $firstHost = ancestors.length > 0 ? ancestors[0] : null;
 
     // Collect loop contexts
     const loopContext: Record<string, any> = {};
@@ -386,4 +378,6 @@ export namespace SwcUtils {
     
     return result;
   };
-}
+
+
+};

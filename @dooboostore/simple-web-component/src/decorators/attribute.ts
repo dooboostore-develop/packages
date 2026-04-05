@@ -1,7 +1,8 @@
-import {ReflectUtils} from '@dooboostore/core';
+import {ReflectUtils, FunctionUtils, ActionExpression} from '@dooboostore/core';
 import {ensureInit, getElementConfig} from './elementDefine';
 import {SwcUtils} from '../utils/Utils';
 import {SpecialSelector, SwcQueryOptions} from '../types';
+import { ConvertUtils } from '@dooboostore/core-web';
 export interface AttributeFieldOptions extends SwcQueryOptions {
   name?: string;
   // connectedInitialize?: boolean;
@@ -113,38 +114,42 @@ export function attribute(selector: string, options: AttributeFieldOptions = {})
       
       Object.defineProperty(target, propertyKey, {
         get(this: any) {
-          // console.log('------>??gettttt', this,  propertyKey);
-          // try {
-            const attrName = options.name || String(propertyKey);
-            const conf = getElementConfig(this);
-            const currentWin = this._resolveWindow?.(conf) || ((typeof window !== 'undefined' ? window : undefined) as any);
-            const targetType = options.type || designType;
-          //
-            // connectedInitialize: true이면 privateKey 값만 반환 (DOM 무시)
-            // if (options.connectedInitialize === true && (this as any).__swc_syncing_init) {
-            //   console.log('cccccccc2');
-            //   return this[privateKey];
-            //   // return convertValue(this[privateKey], targetType);
-            // }
+          const attrName = options.name || String(propertyKey);
+          const conf = getElementConfig(this);
+          const currentWin = this._resolveWindow?.(conf) || ((typeof window !== 'undefined' ? window : undefined) as any);
+          const targetType = options.type || designType;
 
-            const targets = resolveTargetEls(this, selector, options, currentWin);
-            const primaryTarget = targets[0];
+          const targets = resolveTargetEls(this, selector, options, currentWin);
+          const primaryTarget = targets[0];
 
-            if (primaryTarget && typeof (primaryTarget as any).hasAttribute === 'function') {
-              if ((primaryTarget as any).hasAttribute(attrName)) {
-                const domVal = (primaryTarget as any).getAttribute(attrName);
-                return convertValue(domVal, targetType);
+          if (primaryTarget && typeof (primaryTarget as any).hasAttribute === 'function') {
+            if ((primaryTarget as any).hasAttribute(attrName)) {
+              let domVal = (primaryTarget as any).getAttribute(attrName);
+              
+              // 표현식 체크
+              const ae = new ActionExpression(domVal);
+              const expr = ae.getFirstExpression('call-return');
+              if (expr) {
+                try {
+                  const result = FunctionUtils.executeReturn({
+                    script: ConvertUtils.decodeHtmlEntity(expr.script, currentWin.document),
+                    context: this,
+                    args: SwcUtils.getHelperAndHostSet(currentWin, this)
+                  });
+                  return convertValue(result, targetType);
+                } catch (e) {
+                  console.error(`[SWC] Failed to execute directive {{= ${expr.script} }}:`, e);
+                  return convertValue(domVal, targetType);
+                }
               }
-              return null;
+              
+              return convertValue(domVal, targetType);
             }
+            return null;
+          }
 
-            const data =  convertValue(this[privateKey], targetType);
-          // console.log('get rrr', data);
-            return data;
-          // } catch (err) {
-          //   console.error('Error in getter:', err);
-          //   throw err;
-          // }
+          const data = convertValue(this[privateKey], targetType);
+          return data;
         },
         set(this: any, nv: any) {
           // this[propertyKey] = nv;

@@ -185,7 +185,7 @@ export function SwcAppMixin<T extends { new (...args: any[]): HTMLElement }>(Bas
           const userConfig = FunctionUtils.executeReturn({
             script: configStr,
             context: this,
-            args: SwcUtils.getHelperAndHostSet(win, SwcUtils.findNearestSwcHost(this))
+            args: SwcUtils.getHelperAndHostSet(win, this)
           });
           this.connect(userConfig);
         } catch (e) {

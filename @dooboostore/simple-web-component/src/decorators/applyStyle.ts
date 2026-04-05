@@ -34,7 +34,7 @@ function createStyleDecorator(action: StyleAction) {
         if (res !== undefined) {
           const win = (this as any).ownerDocument?.defaultView || window;
           const host = this as unknown as HTMLElement;
-          const hostSet = { ...SwcUtils.getHelperAndHostSet(win, host), $this: this };
+          const hostSet = SwcUtils.getHelperAndHostSet(win, host);
           const r = options.root || 'auto';
           const targetEls: HTMLElement[] = [];
 

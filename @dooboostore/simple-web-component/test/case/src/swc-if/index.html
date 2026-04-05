@@ -42,30 +42,47 @@
   </head>
   <body>
     <script>
-      var userData = null;
-      var showIndependent = true;
+      var userData = '222222';
+      var showIndependent = {user: '222222', age: 22, name: '222222'};
+      var showIndependentSub = {user: '222222', age: 22, name: '222222'};
     </script>
     <h1>SwcIf: Conditional Template</h1>
     <p>Testing nested templates inside a host AND independent templates directly in the body.</p>
 
     <div class="controls">
-      <button id="toggle-btn">Toggle User Data (Nested)</button>
-      <button onclick="
-      window.showIndependent = !window.showIndependent;
-      console.log(window.showIndependent);
-      document.getElementById('indep-if').removeAttribute('on-get-value');
-      document.getElementById('indep-if').setAttribute('on-get-value', 'window.showIndependent');
-      ">Toggle Independent If</button>
+      <button id="toggle-btn"
+      onclick="
+      showIndependent = !showIndependent;
+      const template = document.getElementById('indep-if');
+      // template.value = showIndependent;
+      console.log('-------->', window.showIndependent)
+      template.refresh();
+      "
+      >Toggle showIndependent</button>
+      <button
+      onclick="
+      const template = document.getElementById('indep-if');
+       showIndependent.user = new Date().toISOString();
+       showIndependentSub.user = '[zz '+new Date().toISOString()+']';
+      template.refresh();
+      "
+      >change showIndependent</button>
     </div>
 
     <!-- 1. Independent If (Directly in Body) -->
     <div style="margin-bottom: 30px">
       <h3>1. Independent If (No Parent Host)</h3>
-      <template is="swc-if" id="indep-if" on-get-value="window.showIndependent">
+      <template is="swc-if" id="indep-if" value="{{= window.showIndependent }}" replace-wrap="G">
         <div class="box independent">
-          <strong>I am Independent!</strong>
-          <p>I have no parent SWC host. My events should be handled by <code>document</code> delegation.</p>
+          <strong>I am Independent! G{{ JSON.stringify($value) }}G</strong>
+          <p attr="G{{$value.user}}G">I have no parent SWC host. My events should be handled by <code>document</code> delegation.</p>
           <button swc-on-click="alert('Global delegation works! hostId: ' + $host.id)">Test Global Event</button>
+        </div>
+        <div>
+          <template is="swc-if" id="indep-if-sub" value="{{= window.showIndependentSub }}"replace-wrap="S">
+            G{{$value.user}}G
+            S{{$value.user}}S
+          </template>
         </div>
       </template>
     </div>
@@ -79,7 +96,7 @@
         <template
           is="swc-if"
           id="my-if"
-          on-get-value="userData"
+          value="{{= window.userData }}"
           on-clone-nodes="
               if($firstElement) {
                  $firstElement.querySelector('h3').textContent = 'User Profile: ' + ($value?.name || 'Unknown');

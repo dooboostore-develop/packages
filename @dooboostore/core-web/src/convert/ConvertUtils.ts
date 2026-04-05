@@ -23,6 +23,7 @@ export namespace ConvertUtils {
   //   const context = canvas.getContext('2d');
   //   context?.drawImage(imageBitmap, 0, 0);
   //   return canvas.convertToBlob({ type: 'image/png' });
+  // export type ImageConvertConfig = { type: 'image/png' | 'image/jpeg' | string, quality?: number };
   export type ImageConvertConfig = { type: 'image/png' | 'image/jpeg' | string, quality?: number };
   export const isImageConvertConfig = (data: any): data is ImageConvertConfig => {
     return typeof data === 'object' && data !== null && typeof data.type === 'string';
@@ -182,5 +183,11 @@ export namespace ConvertUtils {
       }
     })
 
+  }
+
+  export function decodeHtmlEntity(html: string, doc: Document): string {
+    const textarea = doc.createElement('textarea');
+    textarea.innerHTML = html;
+    return textarea.value;
   }
 }
