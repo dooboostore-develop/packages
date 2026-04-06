@@ -237,12 +237,12 @@ export const getCONNECTS = (target: any): SaveMappingConfig[] => {
 
 // Aliases for lowercase
 export const urlMapping = UrlMapping;
-export const get = GET;
-export const post = POST;
-export const patch = PATCH;
-export const put = PUT;
+export const getMethod = GET;
+export const postMethod = POST;
+export const patchMethod = PATCH;
+export const putMethod = PUT;
 export const deleteMethod = DELETE;
-export const options = OPTIONS;
-export const head = HEAD;
-export const trace = TRACE;
-export const connect = CONNECT;
+export const optionsMethod = OPTIONS;
+export const headMethod = HEAD;
+export const traceMethod = TRACE;
+export const connectMethod = CONNECT;

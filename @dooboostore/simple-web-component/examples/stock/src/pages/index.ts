@@ -1,6 +1,6 @@
 import MainPage from './MainPage';
 import DetailPage from './DetailPage';
-import { onConnectedSwcApp,applyReplaceChildrenNodeHost, applyInnerHtmlNodeHost, subscribeSwcAppRouteChangeWhileConnected, onInitialize, elementDefine, onConnectedInnerHtml, setProperty } from '@dooboostore/simple-web-component';
+import { onConnectedBefore,applyReplaceChildrenNodeThis, applyInnerHtmlNodeThis, subscribeSwcAppRouteChangeWhileConnected, onInitialize, elementDefine, onConnectedInnerHtml, setProperty } from '@dooboostore/simple-web-component';
 import { Inject } from '@dooboostore/simple-boot';
 import { Router, type RouterEventType } from '@dooboostore/core-web';
 import { StockService } from '../services/StockService';
@@ -27,7 +27,7 @@ export const rootRouterFactory = (w: Window) => {
       console.log('stock-root-routerstock-root-routerstock-root-router');
     }
 
-    @onConnectedSwcApp
+    @onConnectedBefore
     onconstructor(@Inject({ symbol: StockService.SYMBOL }) stockService: StockService, router: Router) {
       this.stockService = stockService;
       this.router = router;
@@ -39,7 +39,7 @@ export const rootRouterFactory = (w: Window) => {
       return re;
     }
 
-    @applyReplaceChildrenNodeHost({
+    @applyReplaceChildrenNodeThis({
       root: 'light',
       filter: (host, newNode) => !host.contains(newNode)
     })

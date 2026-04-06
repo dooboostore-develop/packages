@@ -162,7 +162,29 @@ export class DocumentBase extends ParentNodeBase implements Document {
   }
 
   adoptNode<T extends Node>(node: T): T {
-    (node as any)._ownerDocument = this;
+    const nodeBase = node as any;
+    if (nodeBase.nodeType === 9) { // DOCUMENT_NODE
+      throw new Error('NotSupportedError: Cannot adopt document node');
+    }
+    
+    if (nodeBase._parentNodeInternal) {
+      nodeBase._parentNodeInternal.removeChild(nodeBase);
+    }
+    
+    const oldDocument = nodeBase._ownerDocument;
+    const newDocument = this;
+    const documentChanged = oldDocument && newDocument && oldDocument !== newDocument;
+
+    const updateDocument = (n: any) => {
+      const prevDoc = n._ownerDocument;
+      n._ownerDocument = newDocument;
+      if (documentChanged && prevDoc && prevDoc !== newDocument && n.nodeType === 1 && typeof n.adoptedCallback === 'function') {
+        n.adoptedCallback(prevDoc, newDocument);
+      }
+      for (const c of n._childNodesInternal || []) updateDocument(c);
+    };
+    updateDocument(nodeBase);
+    
     return node;
   }
 
@@ -296,7 +318,16 @@ export class DocumentBase extends ParentNodeBase implements Document {
 
   importNode<T extends Node>(node: T, _options?: boolean | ImportNodeOptions): T {
     const cloned = (node as any).cloneNode(typeof _options === 'boolean' ? _options : (_options as any)?.deep);
-    (cloned as any)._ownerDocument = this;
+    
+    // Recursively set _ownerDocument for the imported node
+    const setOwnerDoc = (n: any) => {
+      n._ownerDocument = this;
+      for (const c of n._childNodesInternal || []) {
+        setOwnerDoc(c);
+      }
+    };
+    setOwnerDoc(cloned);
+    
     return cloned;
   }
 
@@ -323,7 +354,7 @@ export class DocumentBase extends ParentNodeBase implements Document {
   }
 
   write(...text: string[]): void {
-    console.log('Document.write:', text.join(''));
+    // console.log('Document.write:', text.join(''));
   }
 
   writeln(...text: string[]): void {

@@ -1,7 +1,7 @@
 export * from './addEventListener';
 export * from './attribute';
 export * from './elementDefine';
-export * from './changedAttributeHost';
+export * from './changedAttributeThis';
 export * from './emitCustomEvent';
 export * from './applyNode';
 export * from './lifecycles';
@@ -14,3 +14,6 @@ export * from './setProperty';
 export * from './subscribeSwcAppRouteChangeWhileConnected';
 export * from './subscribeSwcAppMessageWhileConnected';
 export * from './publishSwcAppMessage';
+export * from './applySlot';
+export * from './state';
+

@@ -9,7 +9,8 @@
     "maneal:test": "webpack --config webpack.maneal.config.js && node dist/manealTest.js"
   },
   "dependencies": {
-    "reflect-metadata": "^0.2.2"
+    "reflect-metadata": "^0.2.2",
+    "@dooboostore/core": "workspace:*"
   },
   "devDependencies": {
     "@babel/core": "^7.24.0",

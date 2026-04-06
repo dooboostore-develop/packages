@@ -54,7 +54,9 @@ export class ResourceFilter implements Filter {
             }
 
             if (typeof it === 'string') {
-                return RegExp(it).test(url);
+              console.log('url!!!!!!!', url)
+                return it === url;
+                // return RegExp(it).test(url);
             }
 
             if (typeof it === 'function') {
@@ -67,7 +69,8 @@ export class ResourceFilter implements Filter {
                 } else if (it .request instanceof RegExp) {
                     return it.request.test(url);
                 } else {
-                  return RegExp(it.request).test(url);
+                  // return RegExp(it.request).test(url);
+                  return it.request === url
                 }
             }
         })??[]

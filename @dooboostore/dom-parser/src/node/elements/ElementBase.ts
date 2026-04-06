@@ -41,6 +41,25 @@ export abstract class ElementBase extends ParentNodeBase implements Element {
     ownerDocument?: any
   ) {
     super(ELEMENT_NODE, _tagName.toUpperCase(), ownerDocument);
+
+    // Check if we are being constructed by ElementFactory with pre-parsed attributes
+    // This is necessary for Custom Elements where constructor is called directly
+    // and needs to read attributes via getAttribute() right away (like innerHTML does in browsers)
+    const factory = (ElementBase.dependencies as any).ElementFactory;
+    if (factory && factory.constructionStack && factory.constructionStack.length > 0) {
+      const data = factory.constructionStack[factory.constructionStack.length - 1];
+      this._tagName = data.tagName;
+      this.nodeName = data.tagName;
+      this._ownerDocument = data.ownerDocument;
+
+      if (data.parsedAttributes) {
+        for (const [name, value] of data.parsedAttributes.entries()) {
+          this._attributes.set(name, value);
+          if (name === 'id') this._id = value;
+          else if (name === 'class') this._className = value;
+        }
+      }
+    }
   }
 
   ariaActiveDescendantElement: Element;
@@ -138,8 +157,14 @@ export abstract class ElementBase extends ParentNodeBase implements Element {
     let html = '';
     for (const child of this._childNodesInternal) {
       if (child.nodeType === TEXT_NODE) {
-        // For text nodes, use the escaped content stored in _nodeValue
-        html += (child as any)._nodeValue || '';
+        // For text nodes, escape their text content when serializing to innerHTML
+        const text = (child as any).textContent ?? (child as any)._nodeValue ?? '';
+        // For style and script tags, do not escape the text content — keep raw
+        if (this._tagName === 'style' || this._tagName === 'script') {
+          html += String(text);
+        } else {
+          html += this.escapeHTMLEntities(String(text));
+        }
       } else if (child.nodeType === ELEMENT_NODE) {
         // Generate outerHTML directly to avoid circular dependency
         html += this.generateChildElementHTML(child as any);
@@ -183,7 +208,8 @@ export abstract class ElementBase extends ParentNodeBase implements Element {
 
     // Parse HTML and create child nodes
     if (value.trim()) {
-      this.parseAndAppendHTML(value);
+      const isInert = (this as any)._isInertHTMLParsing === true;
+      this.parseAndAppendHTML(value, this, isInert);
     }
   }
 
@@ -212,9 +238,22 @@ export abstract class ElementBase extends ParentNodeBase implements Element {
         childHTML += `<template shadowrootmode="${element.shadowRoot.mode}">${element.shadowRoot.innerHTML}</template>`;
       }
 
-      for (const child of element._childNodesInternal || []) {
+      // Special handling for HTMLTemplateElement - use .content instead of _childNodesInternal
+      let nodesToIterate = element._childNodesInternal || [];
+      if (tagName === 'template' && (element as any).content) {
+        // For template elements, serialize content from the content fragment
+        nodesToIterate = (element as any).content.childNodes || [];
+      }
+
+        for (const child of nodesToIterate) {
         if (child.nodeType === TEXT_NODE) {
-          childHTML += (child as any)._nodeValue || '';
+          // For style/script children, preserve raw text. Otherwise escape.
+          const text = (child as any).textContent ?? (child as any)._nodeValue ?? '';
+          if (tagName === 'style' || tagName === 'script') {
+            childHTML += String(text);
+          } else {
+            childHTML += this.escapeHTMLEntities(String(text));
+          }
         } else if (child.nodeType === ELEMENT_NODE) {
           childHTML += this.generateChildElementHTML(child as any);
         } else if (child.nodeType === 8) {
@@ -229,7 +268,7 @@ export abstract class ElementBase extends ParentNodeBase implements Element {
   /**
    * Improved HTML parser for innerHTML using a stack-based approach
    */
-  private parseAndAppendHTML(html: string, targetNode: any = this): void {
+  private parseAndAppendHTML(html: string, targetNode: Node = this, isInert: boolean = false): void {
     const { ElementFactory, TextBase, Comment } = ElementBase.dependencies;
 
     if (!ElementFactory) {
@@ -277,14 +316,65 @@ export abstract class ElementBase extends ParentNodeBase implements Element {
         }
       }
 
+      const extractIsAttr = (attrStr: string) => {
+        const match = attrStr ? attrStr.match(/(?:^|\s)is=(?:(['"])(.*?)\1|([^\s>]+))/i) : null;
+        const options: any = match ? { is: match[2] || match[3] } : {};
+
+        options.inert = isInert; // Always set inert, regardless of attributes
+
+        if (!attrStr) return options; // If no attributes, return options with just inert flag
+
+        // Parse all attributes beforehand to pass into constructor
+        const parsedAttributes = new Map<string, string>();
+        let pos = 0;
+        const len = attrStr.length;
+
+        while (pos < len) {
+          while (pos < len && /\s/.test(attrStr[pos])) pos++;
+          if (pos >= len) break;
+          const nameStart = pos;
+          while (pos < len && /[\w:-]/.test(attrStr[pos])) pos++;
+          if (pos === nameStart) {
+            pos++;
+            continue;
+          }
+          const name = attrStr.substring(nameStart, pos);
+          while (pos < len && /\s/.test(attrStr[pos])) pos++;
+          let value = '';
+          if (pos < len && attrStr[pos] === '=') {
+            pos++;
+            while (pos < len && /\s/.test(attrStr[pos])) pos++;
+            if (pos < len) {
+              const quote = attrStr[pos];
+              if (quote === '"' || quote === "'") {
+                pos++;
+                const valueStart = pos;
+                while (pos < len && attrStr[pos] !== quote) pos++;
+                value = attrStr.substring(valueStart, pos);
+                if (pos < len && attrStr[pos] === quote) pos++;
+              } else {
+                const valueStart = pos;
+                while (pos < len && !/\s/.test(attrStr[pos])) pos++;
+                value = attrStr.substring(valueStart, pos);
+              }
+            }
+          }
+          parsedAttributes.set(name, this.decodeHTMLEntities(value));
+        }
+
+        options.parsedAttributes = parsedAttributes;
+        return options;
+      };
+
       // Handle self-closing tags
       if (tagContent.endsWith('/')) {
         const parts = tagContent.slice(0, -1).trim().split(/\s+/);
         const tagName = parts[0];
         const attributeString = tagContent.slice(tagName.length, -1).trim();
-        const element = ElementFactory.createElement(tagName, this._ownerDocument);
+        const options = extractIsAttr(attributeString);
+        const element = ElementFactory.createElement(tagName, this._ownerDocument, options);
         this.parseAttributes(element, attributeString);
-        targetNode.appendChild(element);
+        targetNode.appendChild(element); // Append LAST
         i = tagEnd + 1;
         continue;
       }
@@ -301,6 +391,7 @@ export abstract class ElementBase extends ParentNodeBase implements Element {
       const parts = tagContent.split(/\s+/);
       const tagName = parts[0];
       const attributeString = tagContent.slice(tagName.length).trim();
+      const options = extractIsAttr(attributeString);
 
       // Special handling for style and script tags
       if (tagName === 'style' || tagName === 'script') {
@@ -308,13 +399,18 @@ export abstract class ElementBase extends ParentNodeBase implements Element {
         const closingTagIndex = html.indexOf(closingTag, tagEnd + 1);
 
         if (closingTagIndex !== -1) {
-          const element = ElementFactory.createElement(tagName, this._ownerDocument);
+          const element = ElementFactory.createElement(tagName, this._ownerDocument, options);
           this.parseAttributes(element, attributeString);
+          
+          // IMPORTANT: Append element to parent FIRST
+          // This ensures we're part of the connected tree before adding text content
+          targetNode.appendChild(element);
+          
           const content = html.substring(tagEnd + 1, closingTagIndex);
+          // For style/script preserve raw content without escaping
           if (content && TextBase) {
             element.appendChild(new TextBase(content, this._ownerDocument));
           }
-          targetNode.appendChild(element);
           i = closingTagIndex + closingTag.length;
           continue;
         }
@@ -324,18 +420,30 @@ export abstract class ElementBase extends ParentNodeBase implements Element {
       const closingTagIndex = this.findMatchingClosingTag(html, tagName, tagEnd + 1);
 
       if (closingTagIndex !== -1) {
-        const element = ElementFactory.createElement(tagName, this._ownerDocument);
+        const element = ElementFactory.createElement(tagName, this._ownerDocument, options);
         this.parseAttributes(element, attributeString);
+        
+        // IMPORTANT: Append element to parent FIRST, before setting innerHTML.
+        // This ensures that when child elements are created via innerHTML, 
+        // they can find their parent in the DOM tree (for getRootNode().parentElement, etc.)
+        targetNode.appendChild(element);
+        
         const content = html.substring(tagEnd + 1, closingTagIndex);
         if (content.trim()) {
+          // Pass the inert state down to all recursive children
+          if (isInert) {
+            (element as any)._isInertHTMLParsing = true;
+          }
           element.innerHTML = content;
+          if (isInert) {
+            delete (element as any)._isInertHTMLParsing;
+          }
         }
-        targetNode.appendChild(element);
         i = closingTagIndex + (tagName.length + 3); // </tagName>
       } else {
-        const element = ElementFactory.createElement(tagName, this._ownerDocument);
+        const element = ElementFactory.createElement(tagName, this._ownerDocument, options);
         this.parseAttributes(element, attributeString);
-        targetNode.appendChild(element);
+        targetNode.appendChild(element); // Append LAST
         i = tagEnd + 1;
       }
     }
@@ -422,7 +530,31 @@ export abstract class ElementBase extends ParentNodeBase implements Element {
           }
         }
       }
-      element.setAttribute(name, this.decodeHTMLEntities(value));
+
+      const decodedValue = this.decodeHTMLEntities(value);
+      // Force trigger attributeChangedCallback if the element is already created
+      // Note: we can't just check if it's identical because the oldValue might be null
+      // in the context of attributeChangedCallback, but getAttribute() might return the value
+      // we already injected during construction.
+      const oldValue = element.getAttribute(name);
+
+      // If we already set it during construction, we still need to trigger the callback
+      // since the construction phase doesn't trigger callbacks (per web standard)
+      if (oldValue !== decodedValue) {
+        element.setAttribute(name, decodedValue);
+      } else {
+        // Values match, meaning it was pre-populated during constructor.
+        // We must manually trigger setAttribute to fire the callback.
+        // Instead of remove+set (which fires callback twice), we directly fire the callback
+        if (typeof element.attributeChangedCallback === 'function') {
+          const ctor = element.constructor;
+          const observedAttributes = ctor.observedAttributes || [];
+          if (observedAttributes.includes(name) || observedAttributes.includes(name.toLowerCase())) {
+            // 💡 Call without old value since it's the initial parsing
+            element.attributeChangedCallback(name, null, decodedValue);
+          }
+        }
+      }
     }
   }
 
@@ -467,15 +599,49 @@ export abstract class ElementBase extends ParentNodeBase implements Element {
   }
   setAttribute(qualifiedName: string, value: string): void {
     const name = qualifiedName.toLowerCase();
+    const oldValue = this.getAttribute(name);
+
     this._attributes.set(name, value);
     if (name === 'id') this._id = value;
     else if (name === 'class') this._className = value;
+
+    // Trigger attributeChangedCallback for custom elements
+    if (oldValue !== value && typeof (this as any).attributeChangedCallback === 'function') {
+      const ctor = this.constructor as any;
+      const observedAttributes = ctor.observedAttributes || [];
+
+      // 웹 표준을 엄격하게 지키기 위해 customElements 레지스트리에 등록된 컴포넌트인지 검증
+      const registry = this._ownerDocument?.defaultView?.customElements;
+      const isAttr = this.getAttribute('is');
+      const isRegistered = registry && (registry.get(this.localName) === ctor || (isAttr && registry.get(isAttr) === ctor));
+
+      if (isRegistered && (observedAttributes.includes(name) || observedAttributes.includes(qualifiedName))) {
+        (this as any).attributeChangedCallback(name, oldValue, value);
+      }
+    }
   }
   removeAttribute(qualifiedName: string): void {
     const name = qualifiedName.toLowerCase();
+    const oldValue = this.getAttribute(name);
+
     this._attributes.delete(name);
     if (name === 'id') this._id = '';
     else if (name === 'class') this._className = '';
+
+    // Trigger attributeChangedCallback for custom elements
+    if (oldValue !== null && typeof (this as any).attributeChangedCallback === 'function') {
+      const ctor = this.constructor as any;
+      const observedAttributes = ctor.observedAttributes || [];
+
+      // 웹 표준을 엄격하게 지키기 위해 customElements 레지스트리에 등록된 컴포넌트인지 검증
+      const registry = this._ownerDocument?.defaultView?.customElements;
+      const isAttr = this.getAttribute('is');
+      const isRegistered = registry && (registry.get(this.localName) === ctor || (isAttr && registry.get(isAttr) === ctor));
+
+      if (isRegistered && (observedAttributes.includes(name) || observedAttributes.includes(qualifiedName))) {
+        (this as any).attributeChangedCallback(name, oldValue, null);
+      }
+    }
   }
   hasAttribute(qualifiedName: string): boolean {
     return this._attributes.has(qualifiedName.toLowerCase());

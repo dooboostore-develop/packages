@@ -28,9 +28,9 @@ import {URLSearchParams} from 'url';
 import {HttpMethod} from './codes/HttpMethod';
 import {SessionManager} from './session/SessionManager';
 import {InjectSituationType} from './inject/InjectSituationType';
-import {ReqSearchParamsObj} from "./models/datas/search/ReqSearchParamsObj";
+import {ReqSearchParamsObj} from "./models/datas/path/ReqSearchParamsObj";
 import {SimConfig} from '@dooboostore/simple-boot';
-import {ReqPathData} from './models/datas/body/ReqPathData';
+import {ReqPathData} from './models/datas/path/ReqPathData';
 import {WebSocketEndPoint} from './endpoints/WebSocketEndPoint';
 
 export class SimpleBootHttpServer extends SimpleApplication {

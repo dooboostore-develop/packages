@@ -4,6 +4,7 @@ import { Comment } from './node/Comment';
 import { WindowBase } from './window/WindowBase';
 import { ElementBase } from './node/elements/ElementBase';
 import { ElementFactory } from './factory/ElementFactory';
+import {HTMLTemplateElement} from "./node";
 
 // Inject dependencies into ElementBase to break circular references
 // without using 'require' or 'global' injection magic.
@@ -22,7 +23,7 @@ export class DomParser {
   private _document: Document | null;
 
   constructor(html: string, option?: DomParserOptions) {
-    console.log('create DomParser==',html)
+    // console.log('create DomParser==',html)
     // Create WindowBase instance with the document
     const windowBase = new WindowBase({ initialUrl: option?.href });
     this._window = windowBase as unknown as Window;
@@ -126,27 +127,7 @@ export class DomParser {
 
     if (!html) return;
 
-    // Handle template tags specially
-    const templateRegex = /<template([^>]*)>(.*?)<\/template>/gs;
-    html = html.replace(templateRegex, (match, attributes, content) => {
-      const element = this.document.createElement('template');
-
-      // Parse attributes
-      if (attributes.trim()) {
-        this.parseAttributes(attributes, element);
-      }
-
-      // Parse content directly into the template's content fragment
-      if (content.trim()) {
-        // Use internal method to avoid appendChild side effects
-        this.parseHTMLString(content.trim(), element.content);
-      }
-
-      parent.appendChild(element);
-      return ''; // Remove from HTML string
-    });
-
-    // Improved HTML parsing with proper nesting support
+    // Parse HTML recursively - handles all elements including templates
     this.parseHTMLRecursive(html, parent);
   }
 
@@ -207,6 +188,53 @@ export class DomParser {
         break;
       }
 
+      const extractIsAttr = (attrStr: string) => {
+        if (!attrStr) return undefined;
+        const match = attrStr.match(/(?:^|\s)is=(?:(['"])(.*?)\1|([^\s>]+))/i);
+        const options: any = match ? { is: match[2] || match[3] } : {};
+
+        // Parse all attributes beforehand to pass into constructor
+        const parsedAttributes = new Map<string, string>();
+        let pos = 0;
+        const len = attrStr.length;
+
+        while (pos < len) {
+          while (pos < len && /\s/.test(attrStr[pos])) pos++;
+          if (pos >= len) break;
+          const nameStart = pos;
+          while (pos < len && /[\w:-]/.test(attrStr[pos])) pos++;
+          if (pos === nameStart) {
+            pos++;
+            continue;
+          }
+          const name = attrStr.substring(nameStart, pos);
+          while (pos < len && /\s/.test(attrStr[pos])) pos++;
+          let value = '';
+          if (pos < len && attrStr[pos] === '=') {
+            pos++;
+            while (pos < len && /\s/.test(attrStr[pos])) pos++;
+            if (pos < len) {
+              const quote = attrStr[pos];
+              if (quote === '"' || quote === "'") {
+                pos++;
+                const valueStart = pos;
+                while (pos < len && attrStr[pos] !== quote) pos++;
+                value = attrStr.substring(valueStart, pos);
+                if (pos < len && attrStr[pos] === quote) pos++;
+              } else {
+                const valueStart = pos;
+                while (pos < len && !/\s/.test(attrStr[pos])) pos++;
+                value = attrStr.substring(valueStart, pos);
+              }
+            }
+          }
+          parsedAttributes.set(name, this.decodeHTMLEntities(value));
+        }
+
+        options.parsedAttributes = parsedAttributes;
+        return options;
+      };
+
       // Check if it's a self-closing tag
       const isSelfClosing = tagContent.endsWith('/') || this.isSelfClosingTag(tagContent.split(/\s+/)[0]);
 
@@ -221,14 +249,15 @@ export class DomParser {
       }
 
       // Create element
-      const element = this.document.createElement(tagName.toLowerCase());
+      const element = this.document.createElement(tagName.toLowerCase(), extractIsAttr(attributes));
 
-      // Parse attributes
+      // 1. Append to parent FIRST so parentElement is available during attributeChangedCallback
+      parent.appendChild(element);
+
+      // 2. Parse attributes AFTER appending to DOM tree
       if (attributes.trim()) {
         this.parseAttributes(attributes, element);
       }
-
-      parent.appendChild(element);
 
       if (isSelfClosing) {
         position = tagEnd + 1;
@@ -240,7 +269,12 @@ export class DomParser {
         if (closingTagIndex !== -1) {
           const innerContent = html.substring(tagEnd + 1, closingTagIndex);
           if (innerContent.trim()) {
-            this.parseHTMLRecursive(innerContent, element);
+            // For template elements, parse content into the content fragment
+            if (tagName.toLowerCase() === 'template') {
+              this.parseHTMLRecursive(innerContent, (element as HTMLTemplateElement).content);
+            } else {
+              this.parseHTMLRecursive(innerContent, element);
+            }
           }
           position = closingTagIndex + closingTag.length;
         } else {
@@ -254,29 +288,61 @@ export class DomParser {
   private findMatchingClosingTag(html: string, startPos: number, tagName: string): number {
     const openTag = `<${tagName}`;
     const closeTag = `</${tagName}>`;
+    const commentStart = '<!--';
+    const commentEnd = '-->';
     let depth = 1;
     let pos = startPos;
 
     while (pos < html.length && depth > 0) {
+      // Find the next occurrence of open tag, close tag, or comment start
       const nextOpen = html.indexOf(openTag, pos);
       const nextClose = html.indexOf(closeTag, pos);
+      const nextComment = html.indexOf(commentStart, pos);
 
-      if (nextClose === -1) {
-        // No more closing tags
+      // Determine which one comes first
+      const targets = [
+        { type: 'open', index: nextOpen },
+        { type: 'close', index: nextClose },
+        { type: 'comment', index: nextComment }
+      ].filter(t => t.index !== -1).sort((a, b) => a.index - b.index);
+
+      if (targets.length === 0) {
+        // No more relevant tags or comments
         return -1;
       }
 
-      if (nextOpen !== -1 && nextOpen < nextClose) {
-        // Found another opening tag before the closing tag
-        depth++;
-        pos = nextOpen + openTag.length;
+      const first = targets[0];
+
+      if (first.type === 'comment') {
+        // Skip comment content
+        const endComment = html.indexOf(commentEnd, first.index + commentStart.length);
+        if (endComment !== -1) {
+          pos = endComment + commentEnd.length;
+        } else {
+          // Unclosed comment, treat rest as part of comment?
+          // Browser behavior varies, but skipping to end is safest for parser
+          return -1;
+        }
+        continue;
+      }
+
+      if (first.type === 'open') {
+        // Check if it's a real opening tag (followed by space or >)
+        const nextChar = html[first.index + openTag.length];
+        if (nextChar === ' ' || nextChar === '>' || nextChar === '/') {
+          depth++;
+          pos = first.index + openTag.length;
+        } else {
+          // Not a real opening tag, just a prefix (e.g. <body-part)
+          pos = first.index + openTag.length;
+        }
       } else {
         // Found a closing tag
         depth--;
         if (depth === 0) {
-          return nextClose;
+          return first.index;
         }
-        pos = nextClose + closeTag.length;
+        pos = first.index + closeTag.length;
       }
     }
 
@@ -357,7 +423,28 @@ export class DomParser {
       // Decode HTML entities in attribute values
       value = this.decodeHTMLEntities(value);
 
-      element.setAttribute(name, value);
+      // Force trigger attributeChangedCallback if the element is already created
+      // Note: we can't just check if it's identical because the oldValue might be null
+      // in the context of attributeChangedCallback, but getAttribute() might return the value
+      // we already injected during construction.
+      const oldValue = element.getAttribute(name);
+
+      // If we already set it during construction, we still need to trigger the callback
+      // since the construction phase doesn't trigger callbacks (per web standard)
+      if (oldValue !== value) {
+        element.setAttribute(name, value);
+      } else {
+        // Values match, meaning it was pre-populated during constructor.
+        // We must manually trigger setAttribute to fire the callback.
+        // Instead of remove+set (which fires callback twice), we directly fire the callback
+        if (typeof element.attributeChangedCallback === 'function') {
+          const ctor = element.constructor;
+          const observedAttributes = ctor.observedAttributes || [];
+          if (observedAttributes.includes(name) || observedAttributes.includes(name.toLowerCase())) {
+            element.attributeChangedCallback(name, null, value);
+          }
+        }
+      }
     }
   }
 

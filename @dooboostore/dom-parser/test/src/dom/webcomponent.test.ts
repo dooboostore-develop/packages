@@ -71,4 +71,46 @@ describe('Web Component Support', () => {
 
     console.log('✅ Customized Built-in Element (is="") works');
   });
+
+
+  test('web component in template lock', () => {
+    const parser = new DomParser('<html><body><div id="app"></div></body></html>');
+    const window = parser.window as any;
+    const document = parser.document as any;
+
+    // 1. Define custom element
+    class MyElement extends window.HTMLElement {
+      constructor() {
+        super();
+      }
+
+      get observedAttributes() {
+        return ['lock'];
+      }
+      attributeChangedCallback(name: string, oldValue: string, newValue: string) {
+        console.log(`Attribute ${name} changed from ${oldValue} to ${newValue}`);
+      }
+
+      connectedCallback() {
+        console.log('MyElement connectedCallback called!');
+        this.innerHTML = '<span>My Web Component</span>';
+      }
+    }
+
+    window.customElements.define('my-element', MyElement);
+
+    // 2. Create and append
+    const myEl = document.createElement('my-element');
+    const app = document.getElementById('app');
+    if (app) {
+      app.appendChild(myEl);
+    }
+    myEl.setAttribute('lock', 'true');
+
+    // 3. Verify
+    assert.equal(myEl.tagName, 'MY-ELEMENT', 'Tag name should match');
+    assert.equal(myEl.innerHTML, '<span>My Web Component</span>', 'connectedCallback should have run');
+
+    console.log('✅ Basic Custom Element works');
+  });
 });

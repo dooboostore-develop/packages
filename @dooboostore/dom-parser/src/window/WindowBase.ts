@@ -74,6 +74,8 @@ import {
   HTMLVideoElement
 } from '../node/elements';
 import { CustomElementRegistryImp } from './CustomElementRegistryImp';
+import {ShadowRootBase} from "../node/ShadowRootBase";
+import {NodeFilter} from "../node/NodeFilter";
 
 class LocationBase implements Location {
   private _href: string = 'about:blank';
@@ -429,6 +431,9 @@ export class WindowBase implements Window {
     else this._location.href = href.href;
   }
 
+
+  console = console;
+
   // Global constructors
   Event = class Event {
     constructor(public type: string) {}
@@ -509,6 +514,7 @@ export class WindowBase implements Window {
   HTMLTrElement = HTMLTrElement;
   HTMLUListElement = HTMLUListElement;
   HTMLVideoElement = HTMLVideoElement;
+  IntersectionObserver = function (){return {observe:()=>{}, unobserve: ()=>{},disconnect:()=>{}}}
 
   // Type Aliases
   HTMLImageElement = HTMLImgElement;
@@ -517,6 +523,8 @@ export class WindowBase implements Window {
   HTMLTableSectionElement = HTMLTbodyElement;
   HTMLTableCellElement = HTMLTdElement;
   HTMLTableRowElement = HTMLTrElement;
+  ShadowRoot = ShadowRootBase;
+  NodeFilter = NodeFilter;
 
   constructor(config?: { initialUrl?: string }) {
     const documentBase = new DocumentBase();
@@ -805,7 +813,7 @@ export class WindowBase implements Window {
   }
 
   setTimeout(callback: Function, delay?: number, ...args: any[]): number {
-    const id = setTimeout(() => {
+    const id = globalThis.setTimeout(() => {
       this._timers.delete(id as any);
       callback(...args);
     }, delay) as any;
@@ -813,17 +821,55 @@ export class WindowBase implements Window {
     return id;
   }
   clearTimeout(id: number): void {
-    clearTimeout(id);
+    globalThis.clearTimeout(id);
     this._timers.delete(id);
   }
+
+
+  // addInterval(id: any) {
+  //   this._intervals.add(id);
+  //   return id;
+  // }
+  /**
+   * setInterval
+   * @param callback
+   * @param delay
+   * @param args
+   */
   setInterval(callback: Function, delay?: number, ...args: any[]): number {
-    const id = setInterval(callback, delay, ...args) as any;
+    // return this.addInterval(globalThis.setInterval(callback, delay, ...args)) as any;
+    // console.log('setInterval--->')
+    // // 마이크로태스크 큐에 추가하여 콜백 실행을 보장
+    // // Promise.resolve().then(() => {
+    //   const intervals = this._intervals;
+    //   intervals.add(id);
+    // // });
+    // return id;
+
+    // console.log('----------> ', this, this._intervals)
+    const id = globalThis.setInterval(callback,delay,...args);
     this._intervals.add(id);
     return id;
+    // const id = globalThis.setInterval((a: any) => {
+    //   console.log('setInterval--->',id )
+    //   callback(a);
+    //   i.add(id);
+    // }, delay, ...args) as any;
+    // return id;
   }
+
+  /**
+   * clearInterval
+   * @param id
+   */
   clearInterval(id: number): void {
-    clearInterval(id);
+    globalThis.clearInterval(id);
+    // console.log('clearInterval--->')
+    // 마이크로태스크에서 처리되도록 defer
+    // Promise.resolve().then(() => {
+    //   const intervals = this._intervals;
     this._intervals.delete(id);
+    // });
   }
 
   addEventListener(type: string, listener: any, options?: any): void {
@@ -855,6 +901,7 @@ export class WindowBase implements Window {
     }
     return true;
   }
+
 
   private dispatchPopStateEvent(state: any, url?: string): void {
     this.dispatchEvent({ type: 'popstate', state, url });

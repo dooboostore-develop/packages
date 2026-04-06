@@ -1,6 +1,6 @@
 import { SimpleApplication } from '@dooboostore/simple-boot/SimpleApplication';
 import { Router } from '@dooboostore/core-web';
-import {SwcAttributeConfigType} from "./elements/SwcAppEngine";
+import {SwcAttributeConfigType, SwcConfigType} from "./SwcAppEngine";
 
 export enum InjectSituationType {
   HOST_SET = 'SIMPLE_WEB_COMPONENT://HOSTSET',
@@ -17,7 +17,7 @@ export enum InjectSituationType {
 
 export type SwcRootType = 'light' | 'shadow' | 'all' | 'auto';
 
-export type SpecialSelector = ':host' | ':window' | ':document' | ':parentHost' | ':appHost' | ':firstHost' | ':lastHost' | ':firstAppHost' | ':lastAppHost' | ':hosts' | ':appHosts';
+export type SpecialSelector = '$this' | '$window' | '$document' | '$host' | '$appHost' | '$firstHost' | '$lastHost' | '$firstAppHost' | '$lastAppHost' | '$hosts' | '$appHosts';
 
 export type SwcQueryOptions = { root?: SwcRootType };
 
@@ -30,11 +30,12 @@ export type HelperSet = {
 };
 
 export type HostSet = {
-  $host: HTMLElement; // Current component itself
-  $parentHost: HTMLElement | null; // Nearest parent SWC component
-  $hosts: HTMLElement[]; // [root, ..., parent, self]
+  $host: HTMLElement | null; // Nearest parent SWC component
+  $parentHost: HTMLElement | null; // Grandparent SWC ancestor
+  $hosts: HTMLElement[]; // All SWC ancestors [root, ..., parent]
   $firstHost: HTMLElement | null; // Top-most SWC ancestor
-  $lastHost: HTMLElement | null; // Same as $parentHost (for backward compatibility or clarity)
+  $lastHost: HTMLElement | null; // Same as $host
+  // $templateHost: HTMLTemplateElement | null | undefined;
   $appHost: SwcAppInterface | null;
   $appHosts: SwcAppInterface[];
   $firstAppHost: SwcAppInterface | null;
@@ -51,7 +52,7 @@ export type SwcAppMessage<T = any> = {
 
 export interface SwcChooseInterface extends HTMLTemplateElement {
   value: any;
-  refresh(): void;
+  refresh(a: any): void;
 }
 export interface SwcIfInterface extends HTMLTemplateElement {
   value: any;
@@ -59,6 +60,7 @@ export interface SwcIfInterface extends HTMLTemplateElement {
 }
 export interface SwcAppInterface extends HTMLElement {
   simpleApplication?: SimpleApplication;
+  config?:  SwcConfigType;
   router?: Router;
   connect(config?: SwcAttributeConfigType): Promise<void>;
   routing(path: string): Promise<void>;
@@ -66,4 +68,14 @@ export interface SwcAppInterface extends HTMLElement {
   back(): void;
   forward(): void;
   publishMessage(message: SwcAppMessage): void;
+}
+
+export interface SwcElement {
+  // _swcId: string;
+  createSlotString(id: string): string
+  createEaHtml(id: string, script: string): string
+  createEaText(id: string, script: string): string
+  createEaAttribute(id: string, attributeName: string): string
+  createEaEvent(id: string, eventName: string): string
+  createEaProperty(id: string, propertyName: string): string
 }

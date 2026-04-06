@@ -1,4 +1,4 @@
-import { onConnectedSwcApp,elementDefine, applyNode, onConnectedInnerHtml, addEventListener, onInitialize } from '@dooboostore/simple-web-component';
+import { onConnectedBefore,elementDefine, applyNode, onConnectedInnerHtml, addEventListener, onInitialize } from '@dooboostore/simple-web-component';
 import {Inject} from '@dooboostore/simple-boot';
 import { SubscriptionLike } from '@dooboostore/core';
 import { CartService  } from '../services/CartService';
@@ -24,7 +24,7 @@ export default (w: Window) => {
       itemCount: 0
     };
 
-    @onConnectedSwcApp
+    @onConnectedBefore
     setupCart(@Inject({ symbol: CartService.SYMBOL }) cartService: CartService, @Inject({ symbol: OrderService.SYMBOL }) orderService: OrderService) {
       this.cartService = cartService;
       this.orderService = orderService;
@@ -89,7 +89,7 @@ export default (w: Window) => {
     }
 
     @addEventListener('.btn-clear-cart', 'click', { stopPropagation: true, delegate: true })
-    // @emitCustomEventHost('cart-cleared', { bubbles: true })
+    // @emitCustomEventThis('cart-cleared', { bubbles: true })
     onClearCart() {
       if (this.cartService && confirm('Clear all items from cart?')) {
         this.cartService.clear();

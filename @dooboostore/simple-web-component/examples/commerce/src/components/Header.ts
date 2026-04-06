@@ -1,4 +1,4 @@
-import { onConnectedSwcApp, elementDefine, onInitialize, addEventListener, onConnectedInnerHtml, emitCustomEventHost, applyNode } from '@dooboostore/simple-web-component';
+import { onConnectedBefore, elementDefine, onInitialize, addEventListener, onConnectedInnerHtml, emitCustomEventThis, applyNode } from '@dooboostore/simple-web-component';
 import {CartService} from "../services/CartService";
 import {Subscription} from "@dooboostore/core";
 import {Inject} from "@dooboostore/simple-boot";
@@ -16,7 +16,7 @@ export default (w: Window) => {
     #cartService: CartService;
     #cartUnsubscribe?:  Subscription;
 
-    @onConnectedSwcApp
+    @onConnectedBefore
     async gg(@Inject({symbol: CartService.SYMBOL})cartService: CartService) {
       this.#cartService = cartService;
       console.log('[Header] CartService injected:', cartService);
@@ -33,26 +33,26 @@ export default (w: Window) => {
     }
 
     @addEventListener('.logo', 'click')
-    @emitCustomEventHost('navigate', { attributeName: 'on-navigate' })
+    @emitCustomEventThis('navigate', { attributeName: 'on-navigate' })
     onLogoClick() {
       return { path: '/' };
     }
 
     @addEventListener('#home-link', 'click')
-    @emitCustomEventHost('navigate', { attributeName: 'on-navigate' })
+    @emitCustomEventThis('navigate', { attributeName: 'on-navigate' })
     onHomeClick(event: Event,h : any) {
       console.log('-!!', event, h)
       return { path: '/' };
     }
 
     @addEventListener('#orders-link', 'click')
-    @emitCustomEventHost('navigate', { attributeName: 'on-navigate' })
+    @emitCustomEventThis('navigate', { attributeName: 'on-navigate' })
     onOrdersClick() {
       return { path: '/orders' };
     }
 
     @addEventListener('.cart-icon', 'click')
-    @emitCustomEventHost('navigate', { attributeName: 'on-navigate' })
+    @emitCustomEventThis('navigate', { attributeName: 'on-navigate' })
     onCartClick() {
       return { path: '/cart' };
     }

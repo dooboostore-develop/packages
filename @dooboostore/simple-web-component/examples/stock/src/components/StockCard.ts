@@ -1,4 +1,4 @@
-import { elementDefine, onConnectedInnerHtml, applyNodeHost } from '@dooboostore/simple-web-component';
+import { elementDefine, onConnectedInnerHtml, applyNodeThis } from '@dooboostore/simple-web-component';
 import type { Stock } from '../services/StockService';
 
 export default (w: Window) => {
@@ -11,7 +11,7 @@ export default (w: Window) => {
   class StockCard extends w.HTMLElement {
     private stock: Stock | null = null;
 
-    @applyNodeHost({ position: 'innerHtml' })
+    @applyNodeThis({ position: 'innerHtml' })
     setData(data: Stock) {
       this.stock = data;
       return this.render();

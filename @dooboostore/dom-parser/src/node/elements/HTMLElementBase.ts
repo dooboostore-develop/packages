@@ -258,7 +258,7 @@ export abstract class HTMLElementBase extends ElementBase implements HTMLElement
   // HTMLElement methods
   click(): void {
     // Simulate click event - in a real implementation, this would dispatch events
-    console.log(`Clicked on ${this.tagName} element`);
+    // console.log(`Clicked on ${this.tagName} element`);
   }
 
   focus(options?: FocusOptions): void {}
@@ -266,7 +266,7 @@ export abstract class HTMLElementBase extends ElementBase implements HTMLElement
   blur(): void {
     // Remove focus state
     this.removeAttribute('data-focused');
-    console.log(`Blurred ${this.tagName} element`);
+    // console.log(`Blurred ${this.tagName} element`);
   }
 
   // Override setAttribute to sync with properties

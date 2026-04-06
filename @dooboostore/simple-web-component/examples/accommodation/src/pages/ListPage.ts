@@ -1,4 +1,4 @@
-import { onConnectedSwcApp, onInitialize, addEventListener, applyInnerHtmlNode, elementDefine, onConnectedInnerHtml, updateClass } from '@dooboostore/simple-web-component';
+import { onConnectedBefore, onInitialize, addEventListener, applyInnerHtmlNode, elementDefine, onConnectedInnerHtml, updateClass } from '@dooboostore/simple-web-component';
 import { Inject } from '@dooboostore/simple-boot';
 import { Router } from '@dooboostore/core-web';
 import { Accommodation, AccommodationService } from '../services/AccommodationService';
@@ -20,7 +20,7 @@ export default (w: Window, container: symbol) => {
     private accommodationService: AccommodationService;
     private router: Router;
 
-    @onConnectedSwcApp
+    @onConnectedBefore
     onInitialize(@Inject({ symbol: AccommodationService.SYMBOL }) accommodationService: AccommodationService, router: Router) {
       this.accommodationService = accommodationService;
       this.router = router;

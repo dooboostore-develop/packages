@@ -15,6 +15,7 @@ export { DocumentFragmentBase } from './node/DocumentFragmentBase';
 export { ShadowRootBase } from './node/ShadowRootBase';
 export { WindowBase } from './window/WindowBase';
 export { ElementFactory } from './factory/ElementFactory';
+// export { HTMLTemplateElement } from './factory/HTMLTemplateElement';
 // Utility function to parse HTML and return window object
 export const parseHTML = (html: string, option?: DomParserOptions) => {
   const parser = new DomParser(html, option);

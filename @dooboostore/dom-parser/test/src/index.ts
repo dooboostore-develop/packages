@@ -29,6 +29,13 @@ if (!testName) {
   import('./dom/performance.test');
   import('./dom/attribute.test');
   import('./dom/webcomponent.test');
+  import('./dom/webcomponent-lifecycle.test');
+  import('./dom/TemplateParsing.test');
+  import('./dom/template-browser-parity.test');
+  import('./dom/simple-web-component.test');
+  import('./dom/dom-parser.test');
+  import('./dom/body.test');
+  import('./dom/textnode.test');
 } else {
   // 특정 테스트만 실행
   console.log(`🎯 Running ${testName} tests...\n`);
@@ -36,6 +43,9 @@ if (!testName) {
   switch (testName) {
     case 'webcomponent':
       import('./dom/webcomponent.test');
+      break;
+    case 'webcomponent-lifecycle':
+      import('./dom/webcomponent-lifecycle.test');
       break;
     case 'performance':
       import('./dom/performance.test');
@@ -90,6 +100,24 @@ if (!testName) {
       break;
     case 'nodeiterator':
       import('./dom/nodeiterator.test');
+      break;
+    case 'template':
+      import('./dom/TemplateParsing.test');
+      break;
+    case 'browser-parity':
+      import('./dom/template-browser-parity.test');
+      break;
+    case 'simple-web-component.test':
+      import('./dom/simple-web-component.test');
+      break;
+    case 'dom-parser.test':
+      import('./dom/dom-parser.test');
+      break;
+    case 'body.test':
+      import('./dom/body.test');
+      break;
+    case 'textnode.test':
+      import('./dom/textnode.test');
       break;
     default:
       console.error(`❌ Unknown test: ${testName}`);

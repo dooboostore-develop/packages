@@ -58,7 +58,7 @@ src/
 
 1. **DI (Dependency Injection):** `@Sim` 데코레이터를 통한 서비스 싱글톤 관리
 2. **Declarative Rendering:** `@onConnectedInnerHtml`을 이용한 선언적 UI 정의
-3. **Smart DOM Manipulation:** `@applyNodeHost`, `@setAttribute`, `@setClassList` 등을 이용한 정밀한 DOM 조작
+3. **Smart DOM Manipulation:** `@applyNodeThis`, `@setAttribute`, `@setClassList` 등을 이용한 정밀한 DOM 조작
 4. **SPA Routing:** `simple-boot`와 연동된 선언적 경로 관리
 5. **Shadow DOM:** 완벽한 스타일 캡슐화와 독립적 컴포넌트 구조
 

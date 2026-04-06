@@ -1,4 +1,4 @@
-import { elementDefine, onConnectedInnerHtml, applyNodeHost } from '@dooboostore/simple-web-component';
+import { elementDefine, onConnectedInnerHtml, applyNodeThis } from '@dooboostore/simple-web-component';
 import type { Accommodation } from '../services/AccommodationService';
 
 declare const L: any; // Leaflet Global from index.html
@@ -42,7 +42,7 @@ export default (w: Window) => {
       }, 300);
     }
 
-    @applyNodeHost({ position: 'innerHtml' })
+    @applyNodeThis({ position: 'innerHtml' })
     setMarkers(accommodations: Accommodation[], focus?: { lat: number; lng: number }) {
       if (!this.map) {
         setTimeout(() => this.setMarkers(accommodations, focus), 200);

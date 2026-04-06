@@ -41,7 +41,7 @@ export const getAttributeValue = (inst: any, attrName: string, options?: Attribu
 
     // 표현식 체크
     const ae = new ActionExpression(domVal);
-    const expr = ae.getFirstExpression('call-return');
+    const expr = ae.getFirstExpression('callReturn');
     if (expr) {
       try {
         const result = FunctionUtils.executeReturn({
@@ -77,20 +77,21 @@ export const resolveTargetEls = (inst: any, selector: string, options: Attribute
     }
   };
 
-  if (selector === ':host' || !selector) {
+  if (selector === '$this' || !selector) {
     applyRoot(inst);
-  } else if (selector === ':window') {
+  } else if (selector === '$window') {
     results.push(currentWin);
-  } else if (selector === ':document') {
+  } else if (selector === '$document') {
     results.push(currentWin.document);
   } else {
     const hostSet = SwcUtils.getHostSet(inst);
-    if (selector === ':parentHost') applyRoot(hostSet.$parentHost);
-    else if (selector === ':appHost') applyRoot(hostSet.$appHost as any);
-    else if (selector === ':firstHost') applyRoot(hostSet.$firstHost);
-    else if (selector === ':lastHost') applyRoot(hostSet.$lastHost);
-    else if (selector === ':firstAppHost') applyRoot(hostSet.$firstAppHost as any);
-    else if (selector === ':lastAppHost') applyRoot(hostSet.$lastAppHost as any);
+    if (selector === '$host') applyRoot(hostSet.$host);
+    else if (selector === '$parentHost') applyRoot(hostSet.$parentHost);
+    else if (selector === '$appHost') applyRoot(hostSet.$appHost as any);
+    else if (selector === '$firstHost') applyRoot(hostSet.$firstHost);
+    else if (selector === '$lastHost') applyRoot(hostSet.$lastHost);
+    else if (selector === '$firstAppHost') applyRoot(hostSet.$firstAppHost as any);
+    else if (selector === '$lastAppHost') applyRoot(hostSet.$lastAppHost as any);
     else {
       if (r === 'shadow') {
         const found = inst.shadowRoot?.querySelectorAll(selector);
@@ -189,29 +190,29 @@ export function attribute(selector: string, options: AttributeFieldOptions = {})
 }
 
 /**
- * @attributeHost decorator to sync a field value with the :host element's attribute.
+ * @attributeThis decorator to sync a field value with the $this element's attribute.
  */
-export function attributeHost(target: Object, propertyKey: string | symbol): void;
-export function attributeHost(options: AttributeFieldOptions): PropertyDecorator;
-export function attributeHost(attrName: string): PropertyDecorator;
-export function attributeHost(attrName: string, options: AttributeFieldOptions): PropertyDecorator;
-export function attributeHost(targetOrAttrOrOptions?: any, propertyKeyOrOptions?: any): any {
+export function attributeThis(target: Object, propertyKey: string | symbol): void;
+export function attributeThis(options: AttributeFieldOptions): PropertyDecorator;
+export function attributeThis(attrName: string): PropertyDecorator;
+export function attributeThis(attrName: string, options: AttributeFieldOptions): PropertyDecorator;
+export function attributeThis(targetOrAttrOrOptions?: any, propertyKeyOrOptions?: any): any {
   if (propertyKeyOrOptions !== undefined && (typeof propertyKeyOrOptions === 'string' || typeof propertyKeyOrOptions === 'symbol')) {
-    return attribute(':host', { name: String(propertyKeyOrOptions) })(targetOrAttrOrOptions, propertyKeyOrOptions);
+    return attribute('$this', { name: String(propertyKeyOrOptions) })(targetOrAttrOrOptions, propertyKeyOrOptions);
   }
 
   if (typeof targetOrAttrOrOptions === 'string') {
     const attrName = targetOrAttrOrOptions;
     const options = (typeof propertyKeyOrOptions === 'object' ? propertyKeyOrOptions : {}) as AttributeFieldOptions;
-    return attribute(':host', { ...options, name: attrName });
+    return attribute('$this', { ...options, name: attrName });
   } else if (typeof targetOrAttrOrOptions === 'object') {
     const options = targetOrAttrOrOptions as AttributeFieldOptions;
     return (target: Object, propertyKey: string | symbol) => {
-      return attribute(':host', { ...options, name: String(propertyKey) })(target, propertyKey);
+      return attribute('$this', { ...options, name: String(propertyKey) })(target, propertyKey);
     };
   } else {
     return (target: Object, propertyKey: string | symbol) => {
-      return attribute(':host', { name: String(propertyKey) })(target, propertyKey);
+      return attribute('$this', { name: String(propertyKey) })(target, propertyKey);
     };
   }
 }

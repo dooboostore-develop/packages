@@ -1,4 +1,5 @@
 import { Expression } from '@dooboostore/core';
+import { ConstructorType } from '@dooboostore/core';
 
 /* uri struct
     scheme uri example: mymodule://asd/asd/b?a=545&aa=33&wow=wow
@@ -17,13 +18,15 @@ import { Expression } from '@dooboostore/core';
     search : "?sca_esv=873f891b9c737763&sxsrf=ANbL-n4MYzsxgnVWYQYX_HFn_SDiF50gng:1773588779997&udm=2&fbs=ADc_l-bD_nyrjATWBKup7flJ4rea5XFXsPHwMjGsTekJ1HCohBAQ3Hh19DqzlO7wr7YUgTf11rdGODep1hjYV7VngF90iRfoKFoNV193gunAY5doENCEzhzHTAwBIK7uA_u7vWEPlSr2SNmvolDNY_BBTeC5a_VNbQUhGitQNtnOX1ZEZVe5iCML48JohpujnTYUreb8T0DRU1U5y-DNg1BBVMghmIfI7w&q=uri&sa=X&ved=2ahUKEwjlhdaJnaKTAxX-dPUHHW2sK6oQtKgLegQIHRAB&biw=1682&bih=997&dpr=1"
     searchParams : URLSearchParams {size: 10}
 */
-export class Intent<T = any, E = any> {
+export type IntentUri<T extends ConstructorType<any> = ConstructorType<any>> = string | { symbol: symbol | symbol[]; uri: `/${string}` } | { type: T; target: keyof InstanceType<T> };
+
+export class Intent<Data = any, TypeGeneric extends ConstructorType<any> = ConstructorType<any>> {
   public sessionData = new Map<string, any>();
 
   constructor(
-    public uri: string | { symbol: symbol | symbol[]; uri: `/${string}` },
-    public data?: T,
-    public event?: E
+    public uri: IntentUri<TypeGeneric>,
+    public data?: Data
+    // public event?: E
   ) {
     if (typeof uri === 'string') {
       const match = uri.match(/^Symbol\.for\((.+)\):\/(.*)$/);
@@ -31,16 +34,23 @@ export class Intent<T = any, E = any> {
         const symbol = Symbol.for(match[1] as string);
         this.uri = {
           symbol: symbol,
-          uri: match[2] as `/${string}`
+          uri: `/${match[2]}` as `/${string}`
         };
       }
     }
   }
 
   get symbols() {
-    if (typeof this.uri === 'object') {
+    if (typeof this.uri === 'object' && 'symbol' in this.uri) {
       // ensure symbol is always an array
       return Array.isArray(this.uri.symbol) ? this.uri.symbol : [this.uri.symbol];
+    }
+    return undefined;
+  }
+
+  get types() {
+    if (typeof this.uri === 'object' && 'type' in this.uri) {
+      return this.uri.type;
     }
     return undefined;
   }
@@ -58,11 +68,17 @@ export class Intent<T = any, E = any> {
   }
 
   get paths() {
+    if (typeof this.uri === 'object' && 'type' in this.uri && 'target' in this.uri) {
+      return [String(this.uri.target)];
+    }
     return this.pathname.split('/') ?? [];
   }
 
   get fullPath() {
-    const uri = typeof this.uri === 'string' ? this.uri : this.uri.uri;
+    if (typeof this.uri === 'object' && 'type' in this.uri && 'target' in this.uri) {
+      return `/${String(this.uri.target)}`;
+    }
+    const uri = typeof this.uri === 'string' ? this.uri : (this.uri as any).uri;
     const paths = uri.split('://');
     return paths[paths.length >= 2 ? 1 : 0] ?? '';
   }

@@ -11,8 +11,16 @@ export default (w: Window) => {
       super();
       console.log('UserRoute constructor called', w.customElements.get('index-router'));
     }
+
+
+
+    connectedCallback() {
+      console.log('-------user-route connectedCallback')
+    }
+
     @onConnectedInnerHtml
     render() {
+      console.log('UserRoute render called');
       return `
       <div>
         <h1>user!!!!</h1>

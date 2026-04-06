@@ -7,7 +7,7 @@
 // import './test/RxJSComparison.test';
 // import './test/BufferTimeMemory.test';
 // import './test/BufferTimeZero.test';
-import './test/ActionExpression.test';
+import './src/ActionExpression.test';
 // import './test/fetcher.test';
 // import './test/HttpFetcher.test';
 // import './test/HttpXmlFetcher.test';

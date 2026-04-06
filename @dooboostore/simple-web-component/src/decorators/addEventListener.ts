@@ -8,7 +8,7 @@ export interface AddEventListenerBaseOptions extends EventListenerOptions {
   stopPropagation?: boolean;
   stopImmediatePropagation?: boolean;
   preventDefault?: boolean;
-  removeOnDisconnected?: boolean;
+  // removeOnDisconnected?: boolean;
   delegate?: boolean;
   filter?: (target: Event | CustomEvent, meta:{currentThis: any, helper: HelperHostSet}) => boolean;
 }
@@ -41,25 +41,43 @@ export function addEventListener(selectorOrTarget: string, type: string, options
   };
 }
 
+
+export function addEventListenerDelegateLightDom(selector: string, type: string, options?: Omit<AddEventListenerBaseOptions, 'delegate'>): MethodDecorator {
+  return addEventListener(selector, type, {...options??{}, root:'light', delegate: true});
+}
+
+export function addEventListenerDelegateShadowDom(selector: string, type: string, options?: Omit<AddEventListenerBaseOptions, 'delegate'>): MethodDecorator {
+  return addEventListener(selector, type, {...options??{}, root:'shadow', delegate: true});
+}
+export function addEventListenerDelegateAllDom(selector: string, type: string, options?: Omit<AddEventListenerBaseOptions, 'delegate'>): MethodDecorator {
+  return addEventListener(selector, type, {...options??{}, root:'all', delegate: true});
+}
+export function addEventListenerDelegate(selector: string, type: string, options?: Omit<AddEventListenerBaseOptions, 'delegate'>): MethodDecorator {
+  return addEventListener(selector, type, {...options??{}, root:'auto', delegate: true});
+}
+
+/**
+ * @addEventListenerThis decorator - simplified version of @addEventListener for $this selector
+ */
+export function addEventListenerThis(type: string, options?: AddEventListenerBaseOptions & SwcQueryOptions): MethodDecorator {
+  return addEventListener('$this', type, options);
+}
+
+/**
+ * @addEventListenerAppHost decorator - simplified version of @addEventListener for $appHost selector
+ */
+export function addEventListenerAppHost(type: string, options?: AddEventListenerBaseOptions & SwcQueryOptions): MethodDecorator {
+  return addEventListener('$appHost', type, options);
+}
+
+export function addEventListenerWindow(type: string, options?: AddEventListenerBaseOptions & SwcQueryOptions): MethodDecorator {
+  return addEventListener('$window', type, options);
+}
+export function addEventListenerDocument(type: string, options?: AddEventListenerBaseOptions & SwcQueryOptions): MethodDecorator {
+  return addEventListener('$document', type, options);
+}
+
 export const getAddEventListenerMetadata = (target: any): AddEventListenerMetadata[] | undefined => {
   const constructor = target instanceof Function ? target : target.constructor;
   return ReflectUtils.getMetadata(ADD_EVENT_LISTENER_METADATA_KEY, constructor);
 };
-
-/**
- * @addEventListenerHost decorator - simplified version of @addEventListener for :host selector
- * Usage: @addEventListenerHost('click')
- * Usage: @addEventListenerHost('click', { stopPropagation: true })
- */
-export function addEventListenerHost(type: string, options?: AddEventListenerBaseOptions & SwcQueryOptions): MethodDecorator {
-  return addEventListener(':host', type, options);
-}
-
-/**
- * @addEventListenerAppHost decorator - simplified version of @addEventListener for :appHost selector
- * Usage: @addEventListenerAppHost('click')
- * Usage: @addEventListenerAppHost('click', { stopPropagation: true })
- */
-export function addEventListenerAppHost(type: string, options?: AddEventListenerBaseOptions & SwcQueryOptions): MethodDecorator {
-  return addEventListener(':appHost', type, options);
-}

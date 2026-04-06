@@ -69,12 +69,12 @@ export class HTMLFormElement extends HTMLElement {
     // Form methods
     submit(): void {
         // Form submission logic would go here
-        console.log('Form submitted');
+        // console.log('Form submitted');
     }
 
     reset(): void {
         // Form reset logic would go here
-        console.log('Form reset');
+        // console.log('Form reset');
     }
 
     checkValidity(): boolean {

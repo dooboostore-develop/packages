@@ -1,4 +1,4 @@
-import { onConnectedSwcApp, parentHost, removeStyleHost, setAttributeHost, queryHost, queryAllHost, emitCustomEventHost, changedAttributeHost, toggleClassHost, applyNodeHost, attributeHost, applyNode, elementDefine, onConnectedInnerHtml, onInitialize } from '@dooboostore/simple-web-component';
+import { onConnectedBefore, removeStyleThis, setAttributeThis, queryThis, queryAllThis, emitCustomEventThis, changedAttributeThis, toggleClassThis, applyNodeThis, attributeThis, applyNode, elementDefine, onConnectedInnerHtml, onInitialize } from '@dooboostore/simple-web-component';
 import {Inject} from '@dooboostore/simple-boot';
 import { SubscriptionLike } from '@dooboostore/core';
 import { OrderService } from '../services/OrderService';
@@ -20,10 +20,10 @@ export default (w: Window) => {
     private cartService: CartService;
     private orderService: OrderService;
 
-    @attributeHost
+    @attributeThis
     ra: string = '2';
 
-    @onConnectedSwcApp
+    @onConnectedBefore
     onconstructor(@Inject({ symbol: ProductService.SYMBOL }) productService: ProductService, @Inject({ symbol: CartService.SYMBOL }) cartService: CartService, @Inject({ symbol: OrderService.SYMBOL }) orderService: OrderService) {
       this.productService = productService;
       this.cartService = cartService;
@@ -41,23 +41,23 @@ export default (w: Window) => {
       // });
     }
 
-    // @changedAttributeHost('')
+    // @changedAttributeThis('')
     // test(){
     //
     // }
-    // @queryHost
-    // @queryAllHost
+    // @queryThis
+    // @queryAllThis
     // @parentHost
     // testzzs: HTMLElement | undefined;
     //
-    // @setAttributeHost('vv')
+    // @setAttributeThis('vv')
     // testsvvs(){
     // }
-    // @emitCustomEventHost('vv')
+    // @emitCustomEventThis('vv')
     // testss(){
     //
     // }
-    // @applyNodeHost
+    // @applyNodeThis
     // test(){
     // }
 
@@ -149,7 +149,7 @@ export default (w: Window) => {
       return `
         <style>
           * { box-sizing: border-box; }
-          :host {
+          :host
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             padding: 40px 20px;

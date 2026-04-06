@@ -1,4 +1,4 @@
-import { applyInnerHtmlNode, onConnectedSwcApp, onInitialize, addEventListener, elementDefine, onConnectedInnerHtml } from '@dooboostore/simple-web-component';
+import { applyInnerHtmlNode, onConnectedBefore, onInitialize, addEventListener, elementDefine, onConnectedInnerHtml } from '@dooboostore/simple-web-component';
 import { Inject } from '@dooboostore/simple-boot';
 import { Router} from '@dooboostore/core-web';
 import { EventService, LocalEvent } from '../services/EventService';
@@ -19,7 +19,7 @@ export default (w: Window, container: symbol) => {
     private router: Router;
     private eventService: EventService;
 
-    @onConnectedSwcApp
+    @onConnectedBefore
     onInitialize(router: Router, @Inject({ symbol: EventService.SYMBOL }) eventService: EventService) {
       this.router = router;
       this.eventService = eventService;

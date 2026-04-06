@@ -1,4 +1,4 @@
-import { elementDefine, onConnectedInnerHtml, onAfterConnected, addEventListener } from '@dooboostore/simple-web-component';
+import { elementDefine, onConnectedInnerHtml, onConnectedAfter, addEventListener } from '@dooboostore/simple-web-component';
 import { Sim } from '@dooboostore/simple-boot/decorators/SimDecorator';
 import { Router as WebRouter } from '@dooboostore/core-web/routers/Router';
 
@@ -44,7 +44,7 @@ export default (w: Window) => {
       `;
     }
 
-    @onAfterConnected
+    @onConnectedAfter
     init() {
       console.log('init2222', this.name);
     }

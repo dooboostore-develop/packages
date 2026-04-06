@@ -1,6 +1,6 @@
 {
   "name": "@dooboostore/simple-web-component",
-  "version": "1.0.33",
+  "version": "1.0.37",
   "license": "MIT",
   "type": "module",
   "main": "./dist/cjs/index.js",

@@ -26,7 +26,7 @@ src/
 ├── pages/
 │   ├── index.ts                # Exports: pageFactories, rootRouterFactory
 │   ├── MainPage.ts             # 대시보드 페이지
-│   └── DetailPage.ts           # 종목 상세 페이지 (@attributeHost)
+│   └── DetailPage.ts           # 종목 상세 페이지 (@attributeThis)
 └── services/
     ├── index.ts                # Exports: serviceFactories
     └── StockService.ts         # 주식 데이터 관리
@@ -92,14 +92,14 @@ export const rootRouterFactory = (w: Window) => {
 
     // 메인 페이지
     @subscribeSwcAppRouteChange('/')
-    @applyInnerHtmlNodeHost({ root: 'light' })
+    @applyInnerHtmlNodeThis({ root: 'light' })
     mainRoute(router: RouterEventType) {
       return `<stay-stock-main-page/>`;
     }
 
     // 상세 페이지 (경로 파라미터 포함)
     @subscribeSwcAppRouteChange('/stock/{id}')
-    @applyInnerHtmlNodeHost({ root: 'light' })
+    @applyInnerHtmlNodeThis({ root: 'light' })
     detailRoute(router: RouterEventType, pathData: any) {
       return `<stay-stock-detail-page stock-id="${pathData.id}"/>`;
     }
@@ -112,7 +112,7 @@ export const rootRouterFactory = (w: Window) => {
     render() {
       return `
         <style>
-          :host { display: flex; flex-direction: column; min-height: 100vh; background: #080808; }
+          :host display: flex; flex-direction: column; min-height: 100vh; background: #080808; }
           stay-stock-header { position: sticky; top: 0; z-index: 2000; }
           main { flex: 1; overflow-y: auto; }
         </style>
@@ -146,7 +146,7 @@ export default (w: Window) => {
     private stockService: StockService;
     private stockId: string = '';
 
-    @attributeHost('stock-id')
+    @attributeThis('stock-id')
     stockIdAttr: string = '';
 
     @onInitialize
@@ -191,7 +191,7 @@ export default (w: Window) => {
 
   @elementDefine(tagName, { window: w })
   class StockHeader extends w.HTMLElement {
-    @emitCustomEventHost('navigate')
+    @emitCustomEventThis('navigate')
     @addEventListener('.nav-link', 'click', { delegate: true })
     onNavClick(e: any) {
       const path = e.target.closest('[data-path]')?.dataset?.path;
@@ -245,7 +245,7 @@ rootRouterFactory (@subscribeSwcAppRouteChange)
     ↓
 페이지 (속성을 통한 데이터 수신)
     ↓
-컴포넌트 (@emitCustomEventHost로 이벤트 전파)
+컴포넌트 (@emitCustomEventThis로 이벤트 전파)
     ↓
 UI 렌더링 (순수 Web Components)
 ```
@@ -275,13 +275,13 @@ class RootRouter extends w.HTMLElement {
   onconstructor(service: StockService) { }
 
   @subscribeSwcAppRouteChange('/')
-  @applyInnerHtmlNodeHost({ root: 'light' })
+  @applyInnerHtmlNodeThis({ root: 'light' })
   mainRoute(router: RouterEventType) {
     return `<page-main/>`;
   }
 
   @subscribeSwcAppRouteChange('/stock/{id}')
-  @applyInnerHtmlNodeHost({ root: 'light' })
+  @applyInnerHtmlNodeThis({ root: 'light' })
   detailRoute(router: RouterEventType, pathData: any) {
     return `<page-detail stock-id="${pathData.id}"/>`;
   }
@@ -341,7 +341,7 @@ onconstructor(
 ### 3️⃣ **@subscribeSwcAppRouteChange로 라우팅**
 ```typescript
 @subscribeSwcAppRouteChange('/stock/{id}')
-@applyInnerHtmlNodeHost({ root: 'light' })
+@applyInnerHtmlNodeThis({ root: 'light' })
 routeMethod(router: RouterEventType, pathData: any) {
   return `<component-name stock-id="${pathData.id}" />`;
 }
@@ -352,7 +352,7 @@ routeMethod(router: RouterEventType, pathData: any) {
 
 ```typescript
 // 헤더 emit
-@emitCustomEventHost('navigate')
+@emitCustomEventThis('navigate')
 onNavClick() { return { path: '/stock/123' }; }
 
 // 루트라우터 수신

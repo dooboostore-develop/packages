@@ -3,7 +3,7 @@ import ProductPage from './ProductPage';
 import CheckoutPage from './CheckoutPage';
 import HomePage from './HomePage';
 import OrdersPage from './OrdersPage';
-import { type SwcAppMessage, subscribeSwcAppMessageWhileConnected, publishSwcAppMessage, onConnectedSwcApp, applyReplaceChildrenNodeHost, applyInnerHtmlNodeHost, subscribeSwcAppRouteChangeWhileConnected, onInitialize, elementDefine, onConnectedInnerHtml, setProperty } from '@dooboostore/simple-web-component';
+import { type SwcAppMessage, subscribeSwcAppMessageWhileConnected, publishSwcAppMessage, onConnectedBefore, applyReplaceChildrenNodeThis, applyInnerHtmlNodeThis, subscribeSwcAppRouteChangeWhileConnected, onInitialize, elementDefine, onConnectedInnerHtml, setProperty } from '@dooboostore/simple-web-component';
 import { Inject } from '@dooboostore/simple-boot';
 import { Router, type RouterEventType } from '@dooboostore/core-web';
 import { CartService } from '../services/CartService';
@@ -29,7 +29,7 @@ export const rootRouterFactory = (w: Window) => {
     private orderService: OrderService;
     private router: Router;
 
-    @onConnectedSwcApp
+    @onConnectedBefore
     onconstructor(@Inject({ symbol: ProductService.SYMBOL }) productService: ProductService, @Inject({ symbol: CartService.SYMBOL }) cartService: CartService, @Inject({ symbol: OrderService.SYMBOL }) orderService: OrderService, router: Router) {
       this.productService = productService;
       this.cartService = cartService;
@@ -57,7 +57,7 @@ export const rootRouterFactory = (w: Window) => {
       return re;
     }
 
-    @applyReplaceChildrenNodeHost({
+    @applyReplaceChildrenNodeThis({
       root: 'light',
       filter: (host, newNode) => !host.contains(newNode)
     })

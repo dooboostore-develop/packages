@@ -1,15 +1,16 @@
-import {ReflectUtils} from '@dooboostore/core';
+import { ReflectUtils } from '@dooboostore/core';
 
 export const ON_ATTRIBUTE_CHANGED_METADATA_KEY = Symbol.for('simple-web-component:on-attribute-changed');
 
-export interface ChangedAttributeHostOptions {
+export interface ChangedAttributeThisOptions {
   type?: typeof Number | typeof Boolean | typeof String;
+  while?: 'connected';
 }
 
-export interface ChangedAttributeHostMetadata {
+export interface ChangedAttributeThisMetadata {
   attributeName: string;
   propertyKey: string | symbol;
-  options: ChangedAttributeHostOptions;
+  options: ChangedAttributeThisOptions;
 }
 
 const convertValue = (val: any, type: any): any => {
@@ -20,14 +21,12 @@ const convertValue = (val: any, type: any): any => {
 };
 
 /**
- * @changedAttributeHost decorator - fires when any attribute on :host changes
- * Usage: @changedAttributeHost('data-product-id')
- *        @changedAttributeHost('count', { type: Number })
+ * @changedAttributeThis decorator - fires when any attribute on $this changes
  */
-export function changedAttributeHost(attributeName?: string, options: ChangedAttributeHostOptions = {}): MethodDecorator {
+export function changedAttributeThis(attributeName?: string, options: ChangedAttributeThisOptions = {}): MethodDecorator {
   return (target: Object, propertyKey: string | symbol) => {
     const constructor = target.constructor;
-    let metaList = ReflectUtils.getOwnMetadata(ON_ATTRIBUTE_CHANGED_METADATA_KEY, constructor) as ChangedAttributeHostMetadata[];
+    let metaList = ReflectUtils.getOwnMetadata(ON_ATTRIBUTE_CHANGED_METADATA_KEY, constructor) as ChangedAttributeThisMetadata[];
     if (!metaList) {
       metaList = [];
       ReflectUtils.defineMetadata(ON_ATTRIBUTE_CHANGED_METADATA_KEY, metaList, constructor);
@@ -42,16 +41,16 @@ export function changedAttributeHost(attributeName?: string, options: ChangedAtt
   };
 }
 
-export const getChangedAttributeMetadata = (target: any): ChangedAttributeHostMetadata[] | undefined => {
+export const getChangedAttributeMetadata = (target: any): ChangedAttributeThisMetadata[] | undefined => {
   const constructor = target instanceof Function ? target : target.constructor;
   return ReflectUtils.getMetadata(ON_ATTRIBUTE_CHANGED_METADATA_KEY, constructor);
 };
 
-export const findAllAttributeChangedMetadata = (target: any): Map<string, ChangedAttributeHostMetadata[]> => {
+export const findAllAttributeChangedMetadata = (target: any): Map<string, ChangedAttributeThisMetadata[]> => {
   const constructor = target instanceof Function ? target : target.constructor;
-  const metaList = ReflectUtils.findAllMetadata<ChangedAttributeHostMetadata[]>(ON_ATTRIBUTE_CHANGED_METADATA_KEY, constructor) || [];
-  
-  const result = new Map<string, ChangedAttributeHostMetadata[]>();
+  const metaList = ReflectUtils.findAllMetadata<ChangedAttributeThisMetadata[]>(ON_ATTRIBUTE_CHANGED_METADATA_KEY, constructor) || [];
+
+  const result = new Map<string, ChangedAttributeThisMetadata[]>();
   metaList.forEach(meta => {
     meta.forEach(item => {
       if (!result.has(item.attributeName)) {

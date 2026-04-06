@@ -1,4 +1,4 @@
-import { onConnectedSwcApp, elementDefine, onConnectedInnerHtml, onInitialize, addEventListener, attributeHost } from '@dooboostore/simple-web-component';
+import { onConnectedBefore, elementDefine, onConnectedInnerHtml, onInitialize, addEventListener, attributeThis } from '@dooboostore/simple-web-component';
 import {Inject} from '@dooboostore/simple-boot';
 import { ProductService  } from '../services/ProductService';
 import { CartService } from '../services/CartService';
@@ -16,14 +16,14 @@ export default (w: Window) => {
     product: ProductService.Product | null = null;
     quantity: number = 1;
 
-    @attributeHost('product-id')
+    @attributeThis('product-id')
     productId: string;
 
     private productService: ProductService;
     private cartService: CartService;
     private orderService: OrderService;
 
-    @onConnectedSwcApp
+    @onConnectedBefore
     onconstructor(@Inject({ symbol: ProductService.SYMBOL }) productService: ProductService, @Inject({ symbol: CartService.SYMBOL }) cartService: CartService, @Inject({ symbol: OrderService.SYMBOL }) orderService: OrderService) {
       this.productService = productService;
       this.cartService = cartService;

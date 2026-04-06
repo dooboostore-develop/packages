@@ -34,7 +34,7 @@ export namespace FunctionUtils {
   /**
    * Dynamically executes a script string with provided context and arguments.
    */
-  export const execute = (params: { script: string; context?: any; args?: Record<string, any> }) => {
+  export const execute = (params: { script: string; context?: any; args?: Record<string, any>  }) => {
     const { script, context, args = {} } = params;
     const argNames = Object.keys(args);
     const argValues = Object.values(args);

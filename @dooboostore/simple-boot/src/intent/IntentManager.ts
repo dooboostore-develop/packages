@@ -23,7 +23,10 @@ export type SymbolForPublishType = `Symbol.for(${string}):/${string}`;
 export type SchemePublishType = { scheme: string; path: string };
 export const isSchemePublishType = (it: any): it is SchemePublishType => typeof it === 'object' && it !== null && 'scheme' in it && 'path' in it;
 
-export type PublishData = Intent | string | RouterPublishType | SymbolPublishType | SymbolForPublishType | SchemePublishType;
+export type TypePublishType<T extends ConstructorType<any> = ConstructorType<any>> = { type: T; target: keyof InstanceType<T> };
+export const isTypePublishType = (it: any): it is TypePublishType => typeof it === 'object' && it !== null && 'type' in it && 'target' in it;
+
+export type PublishData<T extends ConstructorType<any> = ConstructorType<any>> = Intent | string | RouterPublishType | SymbolPublishType | SymbolForPublishType | SchemePublishType | TypePublishType<T>;
 
 // @Sim
 export class IntentManager {
@@ -40,7 +43,7 @@ export class IntentManager {
     return this.subject.asObservable();
   }
 
-  private async makeIntentData(it: PublishData, data?: any) {
+  private async makeIntentData<T extends ConstructorType<any>>(it: PublishData<T>, data?: any) {
     const target: SimAtomic<any> | any[] = [];
     const rootRouter = isRouterPublishType(it) ? it.rootRouter : this.simOption.rootRouter;
 
@@ -62,6 +65,8 @@ export class IntentManager {
       it = new Intent(actualPath, data);
     } else if (isSymbolPublishType(it)) {
       it = new Intent({ symbol: it.symbol, uri: it.path as any }, data);
+    } else if (isTypePublishType(it)) {
+      it = new Intent({ type: it.type, target: it.target as any }, data);
     } else if (isSchemePublishType(it)) {
       it = new Intent(`${it.scheme}://${it.path}`, data);
     } else if (typeof it === 'string') {
@@ -71,7 +76,9 @@ export class IntentManager {
     const intent = it as Intent;
 
     if (!routerMatch) {
-      if (intent.symbols) {
+      if (intent.types) {
+        target.push(...this.simstanceManager.findSims({ type: intent.types }));
+      } else if (intent.symbols) {
         target.push(...intent.symbols.map(sym => this.simstanceManager.findSims(sym)).flat());
       } else if (intent.scheme) {
         target.push(...this.simstanceManager.getSimConfig(intent.scheme));
@@ -83,7 +90,7 @@ export class IntentManager {
     return { intent, target };
   }
 
-  public async publishMeta(it: PublishData, data?: any): Promise<{ return: any[]; target: any[] }> {
+  public async publishMeta<T extends ConstructorType<any>>(it: PublishData<T>, data?: any): Promise<{ return: any[]; target: any[] }> {
     const { intent, target } = await this.makeIntentData(it, data);
     const r: any[] = [];
     const targetInstances = target.map(it => {
@@ -102,7 +109,7 @@ export class IntentManager {
         const filteredPaths = intent.paths.filter(i => i);
         if (filteredPaths.length > 0) {
           let callthis = orNewSim;
-          let lastProp = '';
+          let lastProp: string | symbol | number = '';
           // path '/' 로해서 계속 파고든다.
           filteredPaths.forEach(i => {
             callthis = orNewSim;
@@ -113,7 +120,7 @@ export class IntentManager {
             const intentData = Array.isArray(intent.data) ? intent.data : intent.data !== undefined ? [intent.data] : [];
             const result = await this.simstanceManager.executeBindParameterSimPromise({
               target: callthis,
-              targetKey: lastProp,
+              targetKey: String(lastProp),
               parameterCount: intentData.length,
               inputParameters: intentData,
               firstCheckMaker: [
@@ -143,7 +150,7 @@ export class IntentManager {
     return { return: r, target };
   }
 
-  public async publish(it: PublishData, data?: any): Promise<any[]> {
+  public async publish<T extends ConstructorType<any>>(it: PublishData<T>, data?: any): Promise<any[]> {
     const rdata = await this.publishMeta(it, data);
     return rdata.return;
   }

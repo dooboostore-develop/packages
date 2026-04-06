@@ -7,19 +7,19 @@ import { AlertAction } from './AlertAction';
 import { AlertType } from './AlertType';
 import { PostConstruct, Sim } from '../decorators/SimDecorator';
 import { ReplaySubject } from '@dooboostore/core';
+import {ApiService} from "../fetch";
 
 export namespace AlertService {
   // export const SYMBOL: Symbol | undefined = Symbol('AlertService');
   export type AlertActionContainer<T> = { action: AlertAction; alert: Alert<T> };
 }
 
-@Sim
 export class AlertService<T = any> implements Store<AlertService.AlertActionContainer<T>>{
   public name = new Date().toUTCString();
   private subject = new ReplaySubject<AlertService.AlertActionContainer<T>>();
   private alertFactory?: AlertFactory<T>;
   constructor(
-    @Inject({symbol: AlertFactory.SYMBOL}) alertFactory: AlertFactory<T>
+    alertFactory: AlertFactory<T>
   ) {
     this.alertFactory = alertFactory;
     // console.log('%c AlertService constructor 55555', 'color: #ff0000', this.alertFactory)
@@ -32,6 +32,11 @@ export class AlertService<T = any> implements Store<AlertService.AlertActionCont
   // postConstruct(
   // ) {
   //   this.alertFactory = alertFactory;
+  // }
+
+  // @PostConstruct
+  // postConstruct(apiService: ApiService) {
+  //   this.apiService = alertFactory;
   // }
 
   get observable() {

@@ -56,15 +56,22 @@ export function queryAll(selectorOrTarget: string, options: any = {}): PropertyD
 
         // --- Special Selectors: HostSet ---
         const hostSet = SwcUtils.getHostSet(this);
-        if (selector === ':hosts') return applyRoot(hostSet.$hosts);
-        if (selector === ':appHosts') return applyRoot(hostSet.$appHosts);
+        if (selector === '$hosts') return applyRoot(hostSet.$hosts);
+        if (selector === '$appHosts') return applyRoot(hostSet.$appHosts);
+        if (selector === '$host') return applyRoot(hostSet.$host);
+        if (selector === '$parentHost') return applyRoot(hostSet.$parentHost);
+        if (selector === '$appHost') return applyRoot(hostSet.$appHost);
+        if (selector === '$firstHost') return applyRoot(hostSet.$firstHost);
+        if (selector === '$lastHost') return applyRoot(hostSet.$lastHost);
+        if (selector === '$firstAppHost') return applyRoot(hostSet.$firstAppHost);
+        if (selector === '$lastAppHost') return applyRoot(hostSet.$lastAppHost);
 
         // --- Special Selectors: Env ---
         const config = getElementConfig(this);
         const win = config?.window || window;
-        if (selector === ':window') return [win];
-        if (selector === ':document') return [win.document];
-        if (selector === ':host') return applyRoot(this);
+        if (selector === '$window') return [win];
+        if (selector === '$document') return [win.document];
+        if (selector === '$this') return applyRoot(this);
 
         // --- Standard Selectors ---
         if (r === 'shadow') return this.shadowRoot ? Array.from(this.shadowRoot.querySelectorAll(selector)) : [];
@@ -81,7 +88,7 @@ export function queryAll(selectorOrTarget: string, options: any = {}): PropertyD
         ensureInit(this);
         if (nv === null || nv === undefined || (Array.isArray(nv) && nv.length === 0)) {
           const selector = selectorOrTarget;
-          if (selector.startsWith(':') && selector !== ':host') return;
+          if (selector.startsWith('$') && selector !== '$this') return;
 
           const r = options.root || 'auto';
           let targets: (Element | Node)[] = [];
@@ -102,164 +109,60 @@ export function queryAll(selectorOrTarget: string, options: any = {}): PropertyD
     });
   };
 }
+
 /**
- * @hostQueryAll decorator - simplified version of @queryAll for :host selector
- * Usage: @hostQueryAll()
- * Usage: @hostQueryAll({ root: 'shadow' })
+ * @queryAllThis decorator - simplified version of @queryAll for $this selector
  */
-/**
- * @queryAllHost decorator - simplified version of @queryAll for :host selector
- * Usage: @queryAllHost items: HTMLElement[];
- * Usage: @queryAllHost() items: HTMLElement[];
- * Usage: @queryAllHost({ root: 'shadow' }) items: HTMLElement[];
- */
-export function queryAllHost(target: Object, propertyKey: string | symbol): void;
-export function queryAllHost(): PropertyDecorator;
-export function queryAllHost(options: SwcQueryOptions): PropertyDecorator;
-export function queryAllHost(targetOrOptions?: any, propertyKey?: string | symbol): any {
-  // Direct decorator usage: @queryAllHost (no parentheses)
+export function queryAllThis(target: Object, propertyKey: string | symbol): void;
+export function queryAllThis(): PropertyDecorator;
+export function queryAllThis(options: SwcQueryOptions): PropertyDecorator;
+export function queryAllThis(targetOrOptions?: any, propertyKey?: string | symbol): any {
   if (propertyKey !== undefined && (typeof propertyKey === 'string' || typeof propertyKey === 'symbol')) {
-    return queryAll(':host', {})(targetOrOptions, propertyKey);
+    return queryAll('$this', {})(targetOrOptions, propertyKey);
   }
 
-  // @queryAllHost() or @queryAllHost(options)
   if (typeof targetOrOptions === 'object' && targetOrOptions !== null) {
-    return queryAll(':host', targetOrOptions as SwcQueryOptions);
+    return queryAll('$this', targetOrOptions as SwcQueryOptions);
   } else {
-    return queryAll(':host', {});
+    return queryAll('$this', {});
   }
 }
 
 /**
- * @allHost - Alias for @queryAllHost decorator
- * Usage: @allHost items: HTMLElement[];
- * Usage: @allHost() items: HTMLElement[];
- * Usage: @allHost({ root: 'shadow' }) items: HTMLElement[];
- */
-export const allHost = queryAllHost;
-/**
- * @allParentHost - Query all :parentHost (All parent SWC components)
- * Usage: @allParentHost parents: HTMLElement[];
- * Usage: @allParentHost() parents: HTMLElement[];
- * Usage: @allParentHost({ root: 'shadow' }) parents: HTMLElement[];
+ * @allParentHost - Query all parent SWC components
  */
 export function allParentHost(target: Object, propertyKey: string | symbol): void;
 export function allParentHost(): PropertyDecorator;
 export function allParentHost(options: SwcQueryOptions): PropertyDecorator;
 export function allParentHost(targetOrOptions?: any, propertyKey?: string | symbol): any {
   if (propertyKey !== undefined && (typeof propertyKey === 'string' || typeof propertyKey === 'symbol')) {
-    return queryAll(':parentHost', {})(targetOrOptions, propertyKey);
+    return queryAll('$host', {})(targetOrOptions, propertyKey);
   }
   if (typeof targetOrOptions === 'object' && targetOrOptions !== null) {
-    return queryAll(':parentHost', targetOrOptions as SwcQueryOptions);
+    return queryAll('$host', targetOrOptions as SwcQueryOptions);
   } else {
-    return queryAll(':parentHost', {});
+    return queryAll('$host', {});
   }
 }
 
 /**
- * @allAppHost - Query all :appHost (All <swc-app> instances)
- * Usage: @allAppHost apps: SwcAppInterface[];
- * Usage: @allAppHost() apps: SwcAppInterface[];
- * Usage: @allAppHost({ root: 'shadow' }) apps: SwcAppInterface[];
+ * @allAppHost - Query all $appHost (All <swc-app> instances)
  */
 export function allAppHost(target: Object, propertyKey: string | symbol): void;
 export function allAppHost(): PropertyDecorator;
 export function allAppHost(options: SwcQueryOptions): PropertyDecorator;
 export function allAppHost(targetOrOptions?: any, propertyKey?: string | symbol): any {
   if (propertyKey !== undefined && (typeof propertyKey === 'string' || typeof propertyKey === 'symbol')) {
-    return queryAll(':appHost', {})(targetOrOptions, propertyKey);
+    return queryAll('$appHost', {})(targetOrOptions, propertyKey);
   }
   if (typeof targetOrOptions === 'object' && targetOrOptions !== null) {
-    return queryAll(':appHost', targetOrOptions as SwcQueryOptions);
+    return queryAll('$appHost', targetOrOptions as SwcQueryOptions);
   } else {
-    return queryAll(':appHost', {});
+    return queryAll('$appHost', {});
   }
 }
-
-/**
- * @allFirstHost - Query all :firstHost (All first components in hierarchy)
- * Usage: @allFirstHost firsts: HTMLElement[];
- * Usage: @allFirstHost() firsts: HTMLElement[];
- * Usage: @allFirstHost({ root: 'shadow' }) firsts: HTMLElement[];
- */
-export function allFirstHost(target: Object, propertyKey: string | symbol): void;
-export function allFirstHost(): PropertyDecorator;
-export function allFirstHost(options: SwcQueryOptions): PropertyDecorator;
-export function allFirstHost(targetOrOptions?: any, propertyKey?: string | symbol): any {
-  if (propertyKey !== undefined && (typeof propertyKey === 'string' || typeof propertyKey === 'symbol')) {
-    return queryAll(':firstHost', {})(targetOrOptions, propertyKey);
-  }
-  if (typeof targetOrOptions === 'object' && targetOrOptions !== null) {
-    return queryAll(':firstHost', targetOrOptions as SwcQueryOptions);
-  } else {
-    return queryAll(':firstHost', {});
-  }
-}
-
-/**
- * @allLastHost - Query all :lastHost (All last components in hierarchy)
- * Usage: @allLastHost lasts: HTMLElement[];
- * Usage: @allLastHost() lasts: HTMLElement[];
- * Usage: @allLastHost({ root: 'shadow' }) lasts: HTMLElement[];
- */
-export function allLastHost(target: Object, propertyKey: string | symbol): void;
-export function allLastHost(): PropertyDecorator;
-export function allLastHost(options: SwcQueryOptions): PropertyDecorator;
-export function allLastHost(targetOrOptions?: any, propertyKey?: string | symbol): any {
-  if (propertyKey !== undefined && (typeof propertyKey === 'string' || typeof propertyKey === 'symbol')) {
-    return queryAll(':lastHost', {})(targetOrOptions, propertyKey);
-  }
-  if (typeof targetOrOptions === 'object' && targetOrOptions !== null) {
-    return queryAll(':lastHost', targetOrOptions as SwcQueryOptions);
-  } else {
-    return queryAll(':lastHost', {});
-  }
-}
-
-/**
- * @allFirstAppHost - Query all :firstAppHost (All first <swc-app> in hierarchy)
- * Usage: @allFirstAppHost apps: SwcAppInterface[];
- * Usage: @allFirstAppHost() apps: SwcAppInterface[];
- * Usage: @allFirstAppHost({ root: 'shadow' }) apps: SwcAppInterface[];
- */
-export function allFirstAppHost(target: Object, propertyKey: string | symbol): void;
-export function allFirstAppHost(): PropertyDecorator;
-export function allFirstAppHost(options: SwcQueryOptions): PropertyDecorator;
-export function allFirstAppHost(targetOrOptions?: any, propertyKey?: string | symbol): any {
-  if (propertyKey !== undefined && (typeof propertyKey === 'string' || typeof propertyKey === 'symbol')) {
-    return queryAll(':firstAppHost', {})(targetOrOptions, propertyKey);
-  }
-  if (typeof targetOrOptions === 'object' && targetOrOptions !== null) {
-    return queryAll(':firstAppHost', targetOrOptions as SwcQueryOptions);
-  } else {
-    return queryAll(':firstAppHost', {});
-  }
-}
-
-/**
- * @allLastAppHost - Query all :lastAppHost (All last <swc-app> in hierarchy)
- * Usage: @allLastAppHost apps: SwcAppInterface[];
- * Usage: @allLastAppHost() apps: SwcAppInterface[];
- * Usage: @allLastAppHost({ root: 'shadow' }) apps: SwcAppInterface[];
- */
-export function allLastAppHost(target: Object, propertyKey: string | symbol): void;
-export function allLastAppHost(): PropertyDecorator;
-export function allLastAppHost(options: SwcQueryOptions): PropertyDecorator;
-export function allLastAppHost(targetOrOptions?: any, propertyKey?: string | symbol): any {
-  if (propertyKey !== undefined && (typeof propertyKey === 'string' || typeof propertyKey === 'symbol')) {
-    return queryAll(':lastAppHost', {})(targetOrOptions, propertyKey);
-  }
-  if (typeof targetOrOptions === 'object' && targetOrOptions !== null) {
-    return queryAll(':lastAppHost', targetOrOptions as SwcQueryOptions);
-  } else {
-    return queryAll(':lastAppHost', {});
-  }
-}
-
 
 export const getQueryAllMetadata = (target: any): QueryAllMetadata[] | undefined => {
   const constructor = target instanceof Function ? target : target.constructor;
   return ReflectUtils.getMetadata(QUERY_ALL_METADATA_KEY, constructor);
 };
-

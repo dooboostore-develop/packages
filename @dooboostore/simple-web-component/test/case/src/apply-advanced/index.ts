@@ -7,7 +7,7 @@ import swcRegister, {
   updateAttribute,
   setClassHost,
   updateStyleHost,
-  applyInnerHtmlNode
+  applyNodeInnerHtml
 } from '@dooboostore/simple-web-component';
 
 swcRegister(window);
@@ -107,7 +107,7 @@ class ApplyAdvancedElement extends HTMLElement {
     `;
   }
 
-  @applyInnerHtmlNode('.container button')
+  @applyNodeInnerHtml('.container button')
   renderUpdate() {
     return `Step Interactions (${this.count})`;
   }

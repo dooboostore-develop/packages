@@ -1,5 +1,5 @@
 import 'reflect-metadata';
-import register, { elementDefine, onConnectedInnerHtml, applyReplaceChildrenNodeHost } from '@dooboostore/simple-web-component';
+import register, { elementDefine, onConnectedInnerHtml, applyReplaceChildrenNodeThis } from '@dooboostore/simple-web-component';
 import { Sim, Router, RouterAction, RoutingDataSet, RouterConfig, Inject } from '@dooboostore/simple-boot';
 import { Router as WebRouter } from '@dooboostore/core-web';
 

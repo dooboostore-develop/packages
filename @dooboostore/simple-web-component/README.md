@@ -49,25 +49,62 @@ render() {
 }
 ```
 
-#### @applyInnerHtmlNodeHost
+#### @applyNodeThisInnerHtml
 Apply HTML to specific host element.
 
 ```typescript
-@applyInnerHtmlNodeHost({ root: 'light' })
+@applyNodeThisInnerHtml({ root: 'light' })
 updateContent() {
   return `<p>Updated content</p>`;
 }
 ```
 
-#### @applyReplaceChildrenNodeHost
+#### @applyNodeThisReplaceChildren
 Replace child nodes with new content.
 
 ```typescript
-@applyReplaceChildrenNodeHost({ root: 'light' })
+@applyNodeThisReplaceChildren({ root: 'light' })
 replaceChildren(node: Node) {
   return node;
 }
 ```
+
+### slot
+```typescript
+ @applySlot('zzz')
+nodeSlot!: NodeSlot;
+
+@addEventListener('.test-btn', 'click' )
+@applySlotReplaceChildren('zzz')
+ttt() {
+  return '<div>zzzzz [[ zzz ]] zz</div>'
+}
+
+@addEventListener('.test-clear-btn', 'click' )
+// @applySlot('zzz', {position: 'clear'})
+@applySlotClear('zzz')
+ttct() {
+  return true;
+}
+
+@onConnectedAfter
+ttttt() {
+  console.log('vvvvvvvvvvvvvvv??', this.nodeSlot)
+  this.nodeSlot.appendText('zzz22zzz'+new Date().toISOString())
+}
+@onConnectedInnerHtml
+render()
+{
+
+  return `
+        [[ zzz ]]
+        <button class="test-btn">test222222222222222</button>
+        <button class="test-clear-btn">clear</button>
+        [[ zzz ]]
+  `
+}
+```
+
 
 ### 4. **Event Handling**
 
@@ -95,38 +132,38 @@ onCriticalClick(event: Event) {
 Emit custom events with data.
 
 ```typescript
-@emitCustomEvent(':appHost', 'user-login')
+@emitCustomEvent('$appHost', 'user-login')
 async onLogin() {
   const user = await this.authService.login();
   return { user };  // Sent as event detail
 }
 ```
 
-#### @emitCustomEventHost
+#### @emitCustomEventThis
 Emit events from a method with custom event name mapping.
 
 ```typescript
-@emitCustomEventHost('navigate', { attributeName: 'on-navigate' })
+@emitCustomEventThis('navigate', { attributeName: 'on-navigate' })
 onNavClick(e: any) {
   return { path: e.target.dataset.path };
 }
 ```
 
-#### @addEventListenerHost
-Listen to events on the component element itself (`:host` selector).
+#### @addEventListenerThis
+Listen to events on the component element itself (`@host` selector).
 
 ```typescript
-@addEventListenerHost('click')
+@addEventListenerThis('click')
 onHostClick(event: Event) {
   console.log('Host element clicked');
 }
 ```
 
 #### @addEventListenerAppHost
-Listen to events on the app root host element (`:appHost` selector). Enables selective event handling with filters.
+Listen to events on the app root host element (`$appHost` selector). Enables selective event handling with filters.
 
 ```typescript
-// Listen to all user-action events from :appHost
+// Listen to all user-action events from $appHost
 @addEventListenerAppHost('user-action')
 onUserAction(e: CustomEvent) {
   console.log('User action:', e.detail);
@@ -173,11 +210,11 @@ textInputs?: HTMLInputElement[];
 listItems?: HTMLLIElement[];
 ```
 
-#### @queryHost
+#### @queryThis
 Query the component element itself.
 
 ```typescript
-@queryHost
+@queryThis
 self?: HTMLElement;
 
 printTag() {
@@ -185,11 +222,11 @@ printTag() {
 }
 ```
 
-#### @queryAllHost
+#### @queryAllThis
 Query all direct children of the component.
 
 ```typescript
-@queryAllHost
+@queryAllThis
 children?: HTMLElement[];
 
 getChildCount() {
@@ -210,11 +247,11 @@ width: string = '100px';
 resourceId: string = '';
 ```
 
-#### @attributeHost
+#### @attributeThis
 Bind attributes on host element itself.
 
 ```typescript
-@attributeHost('product-id')
+@attributeThis('product-id')
 productId: string = '';
 
 @onInitialize
@@ -239,7 +276,7 @@ onDisconnected() {
 }
 
 
-@onConnectedSwcApp
+@onConnectedBefore
 onAppReady(router: Router) {
   // Called after SwcApp.connect() completes on all already-connected components
   // Full DI support available through hostSet
@@ -288,7 +325,7 @@ Switch-case style conditional rendering with `swc-when` and `swc-otherwise` sub-
 // Component with conditional rendering logic
 @elementDefine('status-display')
 class StatusDisplay extends HTMLElement {
-  @attributeHost('status')
+  @attributeThis('status')
   status: string = 'pending';
 
   @setProperty('#status-template', 'value')
@@ -300,18 +337,15 @@ class StatusDisplay extends HTMLElement {
   render() {
     return `
       <template id="status-template" is="swc-choose">
-        <!-- Pending State: Using {{ }} for condition -->
-        <template is="swc-when" value="{{ $value === 'pending' }}">
+        <template is="swc-when" test="$value === 'pending'">
           <div style="color: orange;">⏳ Processing...</div>
         </template>
         
-        <!-- Success State: Using {{ }} for condition -->
-        <template is="swc-when" value="{{ $value === 'success' }}">
+        <template is="swc-when" test="$value === 'success'">
           <div style="color: green;">✓ Completed</div>
         </template>
         
-        <!-- Error State: Using {{ }} for condition -->
-        <template is="swc-when" value="{{ $value === 'error' }}">
+        <template is="swc-when" test="$value === 'error'">
           <div style="color: red;">✗ Failed</div>
         </template>
         
@@ -326,7 +360,6 @@ class StatusDisplay extends HTMLElement {
 ```
 
 **Expression Features:**
-- `{{ }} braces` for dynamic condition evaluation
 - `$value` contains the value passed to `swc-choose`
 - `skip-if-same` attribute prevents re-render when same template selected
 - **Attribute substitution with `{{= }}`**: `attribute-name="{{= expression }}"` automatically evaluated
@@ -334,7 +367,7 @@ class StatusDisplay extends HTMLElement {
 **Attribute Substitution Example ({{= }} usage):**
 ```html
 <template is="swc-choose">
-  <template is="swc-when" value="{{ $value?.type === 'user' }}">
+  <template is="swc-when" test="$value?.type === 'user'">
     <user-card 
       data-username="{{= $value?.name }}" 
       data-email="{{= $value?.email }}"
@@ -342,7 +375,7 @@ class StatusDisplay extends HTMLElement {
     ></user-card>
   </template>
   
-  <template is="swc-when" value="{{ $value?.type === 'product' }}">
+  <template is="swc-when" value="$value?.type === 'product'">
     <product-card 
       data-product-name="{{= $value?.title }}"
       data-price="{{= $value?.price }}"
@@ -499,7 +532,7 @@ class ProductList extends HTMLElement {
         <div style="margin: 10px; padding: 10px; border: 1px solid #ddd;">
           <!-- Using {{ }} for template content rendering -->
           <h3>{{ $item.name }}</h3>
-          <p>Price: ${{ $item.price }}</p>
+          <p>Price: {{ $item.price }}</p>
           <p>ID: {{ $item.id }} (Index: {{ $index }})</p>
           
           <!-- Using {{= }} for dynamic attribute substitution -->
@@ -512,7 +545,7 @@ class ProductList extends HTMLElement {
           
           <!-- Computed expressions with {{= }} -->
           <button data-id="{{= $item.id }}" data-price="{{= $item.price }}">
-            Add to Cart - \${{= $item.price }}
+            Add to Cart - {{ $item.price }}
           </button>
         </div>
         
@@ -561,7 +594,7 @@ class ProductList extends HTMLElement {
 </template>
 ```
 
-**Advanced: replace-wrap for Custom Expression Syntax**
+**Advanced: replace-wrap-start replace-wrap-end  for Custom Expression Syntax**
 
 Override default `{{ }}` and `{{= }}` syntax with custom wrappers:
 
@@ -574,10 +607,10 @@ class CustomLoop extends HTMLElement {
   render() {
     return `
       <!-- Using custom wrapper syntax [(= ... )] instead of {{= ... }} -->
-      <template id="items" is="swc-loop" replace-wrap="[(= )]" value="[(= $host.items )]">
+      <template id="items" is="swc-loop" replace-wrap-start="[(" replace-wrap-end=")]" value="{{= $host.items }}">
         <div>
-          <p>Name: [(= $item.name )]</p>
-          <button data-id="[(= $item.id )]">Click me</button>
+          <p>Name: [( $item.name )]</p>
+          <button data-id="[( $item.id )]">Click me</button>
         </div>
       </template>
     `;
@@ -586,10 +619,8 @@ class CustomLoop extends HTMLElement {
 ```
 
 **replace-wrap attribute options:**
-- Change expression wrapper from default `{{= }}` to custom pattern
-- Useful when `{{ }}` conflicts with template engines like EJS or Mustache
+- Change expression wrapper from default `{#{ }#}` to custom pattern
 - Supported on: `SwcLoop`, `SwcChoose`, `SwcIf`, `SwcAsync`, `register()` directives
-- Example patterns: `[(= )]`, `{[= ]}`, `<%= %>` (after escaping)
 
 ---
 
@@ -621,23 +652,22 @@ class RootRouter extends HTMLElement {
   render() {
     return `
       <template id="router" is="swc-choose">
-        <!-- Home Page: Using {{ }} for condition -->
-        <template is="swc-when" value="{{ ['', '/'].includes($value?.path) }}">
+        <template is="swc-when" test="['', '/'].includes($value?.path)">
           <home-page/>
         </template>
         
         <!-- Users List Page -->
-        <template is="swc-when" value="{{ $value?.path === '/users' }}">
+        <template is="swc-when" test="$value?.path === '/users'">
           <users-list-page/>
         </template>
         
         <!-- User Detail Page: Using {{= }} for dynamic attributes from route params -->
-        <template is="swc-when" value="{{ $value?.path.startsWith('/users/') }}">
+        <template is="swc-when" test="$value?.path.startsWith('/users/')">
           <user-detail-page user-id="{{= $value?.pathData?.id }}"></user-detail-page>
         </template>
         
         <!-- Product Detail Page: Using {{= }} for dynamic route parameters -->
-        <template is="swc-when" value="{{ $value?.path.startsWith('/products/') }}">
+        <template is="swc-when" test="$value?.path.startsWith('/products/')">
           <product-detail-page product-id="{{= $value?.pathData?.id }}"></product-detail-page>
         </template>
         
@@ -900,17 +930,17 @@ const rootRouterFactory = (w: Window) => {
       return `
         <template id="router" is="swc-choose">
           <!-- Home Page -->
-          <template is="swc-when" value="{{ ['', '/'].includes($value?.path) }}">
+          <template is="swc-when" test="['', '/'].includes($value?.path)">
             <home-page/>
           </template>
           
           <!-- Users List -->
-          <template is="swc-when" value="{{ $value?.path === '/users' }}">
+          <template is="swc-when" test="$value?.path === '/users'">
             <users-list-page/>
           </template>
           
           <!-- User Detail -->
-          <template is="swc-when" value="{{ $value?.path.startsWith('/users/') }}">
+          <template is="swc-when" test="$value?.path.startsWith('/users/')">
             <user-detail-page user-id="{{$value?.pathData?.id}}"/>
           </template>
           
@@ -965,7 +995,7 @@ export default HomePage;
 
 ```typescript
 // pages/UsersListPage.ts
-import { elementDefine, onConnectedInnerHtml, onConnectedSwcApp } from '@dooboostore/simple-web-component';
+import { elementDefine, onConnectedInnerHtml, onConnectedBefore } from '@dooboostore/simple-web-component';
 import { Inject } from '@dooboostore/simple-boot';
 import { UserService } from '../services/UserService';
 
@@ -978,7 +1008,7 @@ const UsersListPage = (w: Window) => {
   class UsersListPage extends w.HTMLElement {
     private users: any[] = [];
 
-    @onConnectedSwcApp
+    @onConnectedBefore
     onconstructor(@Inject({ symbol: UserService.SYMBOL }) userService: UserService) {
       this.users = userService.getAllUsers();
     }
@@ -1022,10 +1052,10 @@ const UserCard = (w: Window) => {
 
   @elementDefine(tagName, { window: w })
   class UserCard extends w.HTMLElement {
-    @attributeHost('data-username')
+    @attributeThis('data-username')
     username: string;
 
-    @attributeHost('data-email')
+    @attributeThis('data-email')
     email: string;
 
     @onConnectedInnerHtml({ useShadow: true })
@@ -1173,7 +1203,7 @@ src/
 6. `<root-router>` becomes active with `@subscribeSwcAppRouteChangeWhileConnected` + `swc-choose` template
 7. Route changes automatically trigger `swc-choose` re-evaluation and template re-rendering
 8. Template attributes like `user-id="{{$value?.pathData?.id}}"` are dynamically populated with route params
-9. All components have access to injected services via `@onInitialize` or `@onConnectedSwcApp`
+9. All components have access to injected services via `@onInitialize`
 
 
 ---

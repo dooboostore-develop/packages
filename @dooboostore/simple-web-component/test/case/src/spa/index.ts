@@ -11,7 +11,7 @@ import { Router } from '@dooboostore/simple-boot/decorators/route/Router';
 import { RouterAction } from '@dooboostore/simple-boot/route/RouterAction';
 import { RoutingDataSet } from '@dooboostore/simple-boot/route/RouterManager';
 import createMyComponent from './MyComponent';
-import { SwcAttributeConfigType } from '@dooboostore/simple-web-component/elements/SwcAppEngine';
+import { SwcAttributeConfigType } from '@dooboostore/simple-web-component/SwcAppEngine';
 
 const w = window;
 const MyComponent = createMyComponent(w);

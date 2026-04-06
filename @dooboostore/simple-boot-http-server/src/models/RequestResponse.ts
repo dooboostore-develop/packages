@@ -20,6 +20,7 @@ import { RandomUtils } from '@dooboostore/core';
 import { FileUtils } from '@dooboostore/core-node';
 import { ConvertUtils as CoreConvertUtils } from '@dooboostore/core';
 import { ConvertUtils } from '@dooboostore/core-node';
+import {HttpMethod} from "../codes";
 
 type Config = { sessionManager?: SessionManager; option: HttpServerOption };
 
@@ -134,11 +135,32 @@ export class RequestResponse {
   }
 
   reqHasContentTypeHeader(mime: Mimes | string): boolean {
-    return (this.reqHeaderFirst(HttpHeaders.ContentType) ?? '').toLowerCase().indexOf(mime.toLocaleLowerCase()) > -1;
+    const contentType = this.reqHeader(HttpHeaders.ContentType);
+    if (!contentType) return false;
+    
+    const targetMime = mime.toString().toLowerCase();
+    const contentTypes = Array.isArray(contentType) ? contentType : [contentType];
+    
+    // 모든 Content-Type 헤더를 확인
+    return contentTypes.some(ct => {
+      // Content-Type은 보통 단일 값이지만, 파라미터가 붙을 수 있음 (charset=utf-8 등)
+      // 세미콜론으로 split해서 앞 부분(MIME 타입)만 비교
+      const [mimeType] = ct.split(';').map(m => m.trim());
+      return mimeType.toLowerCase() === targetMime || mimeType.toLowerCase().includes(targetMime);
+    });
   }
 
   reqHasAcceptHeader(mime: Mimes | string): boolean {
-    return (this.reqHeaderFirst(HttpHeaders.Accept) ?? '').toLowerCase().indexOf(mime.toLocaleLowerCase()) > -1;
+    const accept = this.reqHeader(HttpHeaders.Accept);
+    if (!accept) return false;
+
+    const targetMime = mime.toString().toLowerCase();
+    const acceptHeaders = Array.isArray(accept) ? accept : [accept];
+
+    return acceptHeaders.some(acceptHeader => {
+      const acceptMimes = acceptHeader.split(',').map(m => m.split(';')[0].trim().toLowerCase());
+      return acceptMimes.some(acceptMime => acceptMime.includes(targetMime));
+    });
   }
 
   reqBodyData(): Promise<Buffer> {
@@ -363,6 +385,10 @@ export class RequestResponse {
 
   reqMethod() {
     return this.req.method?.toUpperCase();
+  }
+
+  reqIsMethod(method: HttpMethod | string) {
+    return this.reqMethod().toUpperCase() === (method as string).toUpperCase();
   }
 
   reqHeader(key: keyof typeof HttpHeaders | string) {

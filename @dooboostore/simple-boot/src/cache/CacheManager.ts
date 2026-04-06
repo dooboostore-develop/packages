@@ -8,7 +8,7 @@ import {
   deleteCacheByKeyStartWith as CdeleteCacheByKeyStartWith, getCacheSet,
 } from '../decorators/cache/CacheDecorator';
 
-@Sim
+// @Sim
 export class CacheManager {
   constructor(private simpleApplication: SimpleApplication) {
     // console.log('CacheManager constructor', simpleApplication);

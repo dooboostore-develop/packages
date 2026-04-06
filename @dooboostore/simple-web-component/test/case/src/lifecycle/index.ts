@@ -1,4 +1,4 @@
-import swcRegister, { elementDefine, onConnectedInnerHtml, onBeforeConnected, onAfterConnected, onBeforeDisconnected, onAfterDisconnected, onBeforeAdopted, onAfterAdopted, onAddEventListener, onConnected, onDisconnected } from '@dooboostore/simple-web-component';
+import swcRegister, { elementDefine, onConnectedInnerHtml, onConnectedBefore, onConnectedAfter, onDisconnectedBefore, onDisconnectedAfter, onAdoptedBefore, onAdoptedAfter, onAddEventListener, onConnected, onDisconnected } from '@dooboostore/simple-web-component';
 
 swcRegister(window);
 @elementDefine('lifecycle-element', { window })
@@ -14,7 +14,7 @@ class LifecycleElement extends HTMLElement {
     `;
   }
 
-  @onBeforeConnected
+  @onConnectedBefore
   beforeConnected() {
     console.log('>>> [Lifecycle] 1. onBeforeConnected');
   }
@@ -24,7 +24,7 @@ class LifecycleElement extends HTMLElement {
     console.log('>>> [Lifecycle] 2. onConnected (alias for onAfterConnected)');
   }
 
-  @onBeforeDisconnected
+  @onDisconnectedBefore
   beforeDisconnected() {
     console.log('>>> [Lifecycle] 3. onBeforeDisconnected');
   }
@@ -34,12 +34,12 @@ class LifecycleElement extends HTMLElement {
     console.log('>>> [Lifecycle] 4. onDisconnected (alias for onAfterDisconnected)');
   }
 
-  @onBeforeAdopted
+  @onAdoptedBefore
   beforeAdopted() {
     console.log('>>> [Lifecycle] 5. onBeforeAdopted (Moved to new document)');
   }
 
-  @onAfterAdopted
+  @onAdoptedAfter
   afterAdopted() {
     console.log('>>> [Lifecycle] 6. onAfterAdopted');
   }

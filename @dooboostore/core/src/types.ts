@@ -1,3 +1,5 @@
+import {ValidUtils} from "./valid";
+
 export type WithRequiredProperty<Type, Key extends keyof Type> = Type & {
   [Property in Key]-?: Type[Property];
 };
@@ -315,7 +317,8 @@ export type MethodOnlyFieldPerFix<T, S extends string> = {
 };
 // export const isDefined = <T>(value: T | undefined | null): value is T => value !== undefined && value !== null;
 // export const isDefined = <T>(value: T | undefined | null): value is NonNullable<T> => value !== undefined && value !== null;
-export const isDefined = <T>(value: T | undefined | null): value is T => value !== undefined && value !== null;
+// export const isDefined = <T>(value: T | undefined | null): value is T => value !== undefined && value !== null;
+export const isDefined = ValidUtils.isDefined
 /*
 declare type ClassDecorator = <TFunction extends Function>(target: TFunction) => TFunction | void;
 declare type PropertyDecorator = (target: Object, propertyKey: string | symbol) => void;

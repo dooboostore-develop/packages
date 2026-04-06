@@ -1,6 +1,6 @@
 import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
-import { ActionExpression, getExpression } from '@dooboostore/core/expression/ActionExpression';
+import { ActionExpression, getExpression } from '@dooboostore/core';
 
 describe('ActionExpression', () => {
   describe('Constructor and Basic Setup', () => {
@@ -17,7 +17,7 @@ describe('ActionExpression', () => {
       const ae = new ActionExpression('Count: {{= count }}');
       const expr = ae.getFirstExpression();
       assert(expr);
-      assert.strictEqual(expr.type, 'call-return');
+      assert.strictEqual(expr.type, 'callReturn');
       assert.strictEqual(expr.script, 'count');
       assert.strictEqual(expr.original, '{{= count }}');
     });
@@ -49,7 +49,7 @@ describe('ActionExpression', () => {
       const exprs = ae.getExpressions();
       assert.strictEqual(exprs.length, 3);
       assert.strictEqual(exprs[0].type, 'replace');
-      assert.strictEqual(exprs[1].type, 'call-return');
+      assert.strictEqual(exprs[1].type, 'callReturn');
       assert.strictEqual(exprs[2].type, 'call');
     });
 
@@ -105,44 +105,99 @@ describe('ActionExpression', () => {
 
   describe('Wrap Expression Config', () => {
     test('should parse wrapped replace expression @{{ script }}@', () => {
-      const ae = new ActionExpression('Price: @{{ price }}@', { wrapExpression: '@' });
+      const ae = new ActionExpression('Price: @{{ price }}@', {
+        expression: { replace: { start: '@{{', end: '}}@' } }
+      });
       const expr = ae.getFirstExpression();
       assert(expr);
       assert.strictEqual(expr.type, 'replace');
       assert.strictEqual(expr.script, 'price');
-      assert.strictEqual(expr.wrap, '@');
       assert.strictEqual(expr.original, '@{{ price }}@');
     });
 
     test('should parse wrapped call-return expression @{{= script }}@', () => {
-      const ae = new ActionExpression('Value: @{{= getValue() }}@', { wrapExpression: '@' });
+      const ae = new ActionExpression('Value: @{{= getValue() }}@', {
+        expression: {
+          replace: { start: '@{{', end: '}}@' },
+          callReturn: { start: '@{{=', end: '}}@' },
+          call: { start: '@{{@', end: '}}@' }
+        }
+      });
       const expr = ae.getFirstExpression();
       assert(expr);
-      assert.strictEqual(expr.type, 'call-return');
-      assert.strictEqual(expr.wrap, '@');
+      assert.strictEqual(expr.type, 'callReturn');
     });
 
     test('should parse wrapped call expression @{{@ script }}@', () => {
-      const ae = new ActionExpression('Action: @{{@ doAction() }}@', { wrapExpression: '@' });
+      const ae = new ActionExpression('Action: @{{@ doAction() }}@', {
+        expression: {
+          replace: { start: '@{{', end: '}}@' },
+          callReturn: { start: '@{{=', end: '}}@' },
+          call: { start: '@{{@', end: '}}@' }
+        }
+      });
       const expr = ae.getFirstExpression();
       assert(expr);
       assert.strictEqual(expr.type, 'call');
-      assert.strictEqual(expr.wrap, '@');
     });
 
     test('should handle multiple wrap expressions', () => {
-      const ae = new ActionExpression('${{ a }}$ and @{{ b }}@', { wrapExpression: '@' });
+      const ae = new ActionExpression('${{ a }}$ and @{{ b }}@', {
+        expression: { replace: { start: '@{{', end: '}}@' } }
+      });
       const exprs = ae.getExpressions();
-      // Should parse @{{ b }}@ with wrap='@'
-      // ${{ a }}$ should not be parsed as it's not the wrap char
+      // ${{ a }}$ will still be parsed by DEFAULT config (which matches `{{` internally)
+      // wait, now default is overridden if you provide config, OR it merges.
+      // With our new logic, it merges, but for replace it will just use `@{{` `}}@`.
+      // The `{{ a }}` inside `${{ a }}$` won't be matched if `replace` is overridden!
+      // Actually, let's just check length.
       assert.strictEqual(exprs.length, 1);
       const expr = ae.getFirstExpression();
       assert(expr);
-      assert.strictEqual(expr.wrap, '@');
+      assert.strictEqual(expr.script, 'b');
+    });
+
+    test('should handle 중복 wrap expressions', () => {
+      const ae = new ActionExpression(
+        `
+            <center-thread-card thread="{{= $host?.getValue( # $index # ) }}">
+          </center-thread-card>`,
+        {
+          expression: {
+            replace: { start: '#', end: '#' },
+            callReturn: { start: '#=', end: '#' },
+            call: { start: '#@', end: '#' }
+          }
+        }
+      );
+      const exprs = ae.getExpressions();
+      exprs.forEach((expr, i) => {
+        ae.replace(expr, '1');
+      });
+      const processed = ae.getUnprocessedTemplate();
+      console.log(processed);
+      assert.strictEqual(exprs.length, 1);
+      assert.strictEqual(exprs[0].script, '$index');
+      assert.ok(processed.includes('{{= $host?.getValue( 1 ) }}'));
+    });
+
+    test('should handle replace expressions', () => {
+      const ae = new ActionExpression('@{{ a }}@ and @{{ b }}@', {
+        expression: { replace: { start: '@{{', end: '}}@' } }
+      });
+      const exprs = ae.getExpressions();
+      exprs.forEach((expr, i) => {
+        ae.replace(expr.id, 'x' + i);
+      });
+      console.log(ae.getUnprocessedTemplate());
+      assert.strictEqual(exprs.length, 2);
+      assert.strictEqual(ae.getUnprocessedTemplate(), 'x0 and x1');
     });
 
     test('should replace wrapped expressions', () => {
-      const ae = new ActionExpression('@{{ x }}@ and @{{ y }}@', { wrapExpression: '@' });
+      const ae = new ActionExpression('@{{ x }}@ and @{{ y }}@', {
+        expression: { replace: { start: '@{{', end: '}}@' } }
+      });
       const exprs = ae.getExpressions();
       let result = ae.replace(exprs[0].id, '10');
       assert.strictEqual(result, '10 and @{{ y }}@');
@@ -151,7 +206,9 @@ describe('ActionExpression', () => {
     });
 
     test('should handle special regex characters in wrap expression', () => {
-      const ae = new ActionExpression('${{ x }}$ and ${{ y }}$', { wrapExpression: '$' });
+      const ae = new ActionExpression('${{ x }}$ and ${{ y }}$', {
+        expression: { replace: { start: '${{', end: '}}$' } }
+      });
       const exprs = ae.getExpressions();
       assert.strictEqual(exprs.length, 2);
       const result = ae.replace(exprs[0].id, 'foo');
@@ -217,9 +274,10 @@ describe('ActionExpression', () => {
     });
 
     test('getExpression function with config', () => {
-      const result = getExpression('@{{ price }}@', { wrapExpression: '@' });
+      const result = getExpression('@{{ price }}@', {
+        expression: { replace: { start: '@{{', end: '}}@' } }
+      });
       assert.strictEqual(result.expressions.length, 1);
-      assert.strictEqual(result.expressions[0].wrap, '@');
     });
   });
 
@@ -246,14 +304,15 @@ describe('ActionExpression', () => {
     });
 
     test('should handle mixed wrap and standard expressions', () => {
-      const ae = new ActionExpression('Standard: {{ a }} and Wrapped: @{{ b }}@', { wrapExpression: '@' });
+      const ae = new ActionExpression('Standard: {{ a }} and Wrapped: @{{ b }}@', {
+        expression: {
+          replace: { start: '@{{', end: '}}@' }
+        }
+      });
       const exprs = ae.getExpressions();
-      // Should have exactly 2 expressions: one standard {{ a }} and one wrapped @{{ b }}@
-      assert.strictEqual(exprs.length, 2);
-      const wrapped = exprs.find(e => e.wrap === '@');
-      const standard = exprs.find(e => !e.wrap);
-      assert(wrapped, 'Should have wrapped expression with wrap="@"');
-      assert(standard, 'Should have standard expression without wrap');
+      // Since we overridden replace with `@{{`, the standard `{{ a }}` will NOT be parsed
+      assert.strictEqual(exprs.length, 1);
+      assert.strictEqual(exprs[0].script, 'b');
     });
 
     test('should maintain state across multiple replacements', () => {
@@ -271,17 +330,17 @@ describe('ActionExpression', () => {
   describe('Convenience Functions', () => {
     test('should filter expressions by type with getExpressions(type)', () => {
       const ae = new ActionExpression('Replace: {{ a }}, CallReturn: {{= b }}, Call: {{@ c }}');
-      
+
       const replaceExprs = ae.getExpressions('replace');
       assert.strictEqual(replaceExprs.length, 1);
       assert.strictEqual(replaceExprs[0].type, 'replace');
       assert.strictEqual(replaceExprs[0].script, 'a');
-      
-      const callReturnExprs = ae.getExpressions('call-return');
+
+      const callReturnExprs = ae.getExpressions('callReturn');
       assert.strictEqual(callReturnExprs.length, 1);
-      assert.strictEqual(callReturnExprs[0].type, 'call-return');
+      assert.strictEqual(callReturnExprs[0].type, 'callReturn');
       assert.strictEqual(callReturnExprs[0].script, 'b');
-      
+
       const callExprs = ae.getExpressions('call');
       assert.strictEqual(callExprs.length, 1);
       assert.strictEqual(callExprs[0].type, 'call');
@@ -290,14 +349,14 @@ describe('ActionExpression', () => {
 
     test('should return all expressions when no type specified', () => {
       const ae = new ActionExpression('Replace: {{ a }}, CallReturn: {{= b }}, Call: {{@ c }}');
-      
+
       const allExprs = ae.getExpressions();
       assert.strictEqual(allExprs.length, 3);
     });
 
     test('should get first expression with getFirstExpression()', () => {
       const ae = new ActionExpression('First: {{ a }}, Second: {{ b }}, Third: {{ c }}');
-      
+
       const first = ae.getFirstExpression();
       assert(first);
       assert.strictEqual(first.type, 'replace');
@@ -306,17 +365,17 @@ describe('ActionExpression', () => {
 
     test('should get first expression of specific type with getFirstExpression(type)', () => {
       const ae = new ActionExpression('Replace: {{ a }}, CallReturn: {{= b }}, Call: {{@ c }}');
-      
+
       const firstReplace = ae.getFirstExpression('replace');
       assert(firstReplace);
       assert.strictEqual(firstReplace.type, 'replace');
       assert.strictEqual(firstReplace.script, 'a');
-      
-      const firstCallReturn = ae.getFirstExpression('call-return');
+
+      const firstCallReturn = ae.getFirstExpression('callReturn');
       assert(firstCallReturn);
-      assert.strictEqual(firstCallReturn.type, 'call-return');
+      assert.strictEqual(firstCallReturn.type, 'callReturn');
       assert.strictEqual(firstCallReturn.script, 'b');
-      
+
       const firstCall = ae.getFirstExpression('call');
       assert(firstCall);
       assert.strictEqual(firstCall.type, 'call');
@@ -325,78 +384,12 @@ describe('ActionExpression', () => {
 
     test('should return undefined when no expression of type exists', () => {
       const ae = new ActionExpression('Only: {{ a }}');
-      
-      const callReturn = ae.getFirstExpression('call-return');
+
+      const callReturn = ae.getFirstExpression('callReturn');
       assert.strictEqual(callReturn, undefined);
-      
+
       const call = ae.getFirstExpression('call');
       assert.strictEqual(call, undefined);
-    });
-
-    test('should filter by wrap with getExpressions options', () => {
-      const ae = new ActionExpression('Standard: {{ a }} and Wrapped: @{{ b }}@', { wrapExpression: '@' });
-      
-      // wrap '@'인 표현식만 필터링
-      const wrapped = ae.getExpressions({ wrap: '@' });
-      assert.strictEqual(wrapped.length, 1);
-      assert.strictEqual(wrapped[0].wrap, '@');
-      assert.strictEqual(wrapped[0].script, 'b');
-      
-      // wrap 없는 표현식만 필터링
-      const standard = ae.getExpressions({ wrap: undefined });
-      assert.strictEqual(standard.length, 1);
-      assert.strictEqual(standard[0].wrap, undefined);
-      assert.strictEqual(standard[0].script, 'a');
-    });
-
-    test('should filter by type and wrap together with getExpressions options', () => {
-      const ae = new ActionExpression('Replace: {{ a }}, CallReturn: {{= b }}, Wrapped: @{{= c }}@', { wrapExpression: '@' });
-      
-      // call-return 타입 중 wrap 없는 것만
-      const callReturnStandard = ae.getExpressions({ type: 'call-return', wrap: undefined });
-      assert.strictEqual(callReturnStandard.length, 1);
-      assert.strictEqual(callReturnStandard[0].script, 'b');
-      assert.strictEqual(callReturnStandard[0].wrap, undefined);
-      
-      // call-return 타입 중 wrap이 '@'인 것만
-      const callReturnWrapped = ae.getExpressions({ type: 'call-return', wrap: '@' });
-      assert.strictEqual(callReturnWrapped.length, 1);
-      assert.strictEqual(callReturnWrapped[0].script, 'c');
-      assert.strictEqual(callReturnWrapped[0].wrap, '@');
-    });
-
-    test('should get first expression with wrap filter using getFirstExpression options', () => {
-      const ae = new ActionExpression('Standard: {{ a }}, Wrapped: @{{ b }}@', { wrapExpression: '@' });
-      
-      // 첫 번째 wrap='@' 표현식
-      const firstWrapped = ae.getFirstExpression({ wrap: '@' });
-      assert(firstWrapped);
-      assert.strictEqual(firstWrapped.wrap, '@');
-      assert.strictEqual(firstWrapped.script, 'b');
-      
-      // 첫 번째 wrap 없는 표현식
-      const firstStandard = ae.getFirstExpression({ wrap: undefined });
-      assert(firstStandard);
-      assert.strictEqual(firstStandard.wrap, undefined);
-      assert.strictEqual(firstStandard.script, 'a');
-    });
-
-    test('should get first expression with type and wrap filter combined', () => {
-      const ae = new ActionExpression('Replace: {{ a }}, CallReturn: {{= b }}, Wrapped: @{{= c }}@', { wrapExpression: '@' });
-      
-      // 첫 번째 call-return 타입 중 wrap이 '@'인 것
-      const firstCallReturnWrapped = ae.getFirstExpression({ type: 'call-return', wrap: '@' });
-      assert(firstCallReturnWrapped);
-      assert.strictEqual(firstCallReturnWrapped.type, 'call-return');
-      assert.strictEqual(firstCallReturnWrapped.wrap, '@');
-      assert.strictEqual(firstCallReturnWrapped.script, 'c');
-      
-      // 첫 번째 call-return 타입 중 wrap 없는 것
-      const firstCallReturnStandard = ae.getFirstExpression({ type: 'call-return', wrap: undefined });
-      assert(firstCallReturnStandard);
-      assert.strictEqual(firstCallReturnStandard.type, 'call-return');
-      assert.strictEqual(firstCallReturnStandard.wrap, undefined);
-      assert.strictEqual(firstCallReturnStandard.script, 'b');
     });
   });
 });

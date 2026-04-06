@@ -1,4 +1,4 @@
-import { onConnectedSwcApp, setAttributeHost, applyAttributeHost, query, queryHost, onAfterConnected, attributeHost, attribute, changedAttributeHost, onInitialize, elementDefine, onConnectedInnerHtml, addEventListener, applyNodeHost, subscribeSwcAppRouteChangeWhileConnected } from '@dooboostore/simple-web-component';
+import { onConnectedBefore, setAttributeThis, applyAttributeThis, query, queryThis, attributeThis, attribute, changedAttributeThis, onInitialize, elementDefine, onConnectedInnerHtml, addEventListener, applyNodeThis, subscribeSwcAppRouteChangeWhileConnected } from '@dooboostore/simple-web-component';
 import { Sim, RouterAction, RoutingDataSet, Inject } from '@dooboostore/simple-boot';
 import { AccommodationService } from '../services/AccommodationService';
 import { EventService, LocalEvent } from '../services/EventService';
@@ -19,12 +19,12 @@ export default (w: Window, container: symbol) => {
     private accommodationService: AccommodationService;
     private eventService: EventService;
     private router: Router;
-    @attributeHost('product-id') productId: string;
-    @attributeHost('product-id22') productId22: string = 'vvvvvvvvvV';
-    @query(':host')
+    @attributeThis('product-id') productId: string;
+    @attributeThis('product-id22') productId22: string = 'vvvvvvvvvV';
+    @query('$this')
     gg: HTMLElement = '' as any;
 
-    @onConnectedSwcApp
+    @onConnectedBefore
     onconstructor(@Inject({ symbol: AccommodationService.SYMBOL }) accommodationService: AccommodationService, @Inject({ symbol: EventService.SYMBOL }) eventService: EventService, router: Router) {
       this.accommodationService = accommodationService;
       this.eventService = eventService;
@@ -53,7 +53,7 @@ export default (w: Window, container: symbol) => {
     //   this.aa();
     // }
     //
-    // @setAttributeHost('ggg')
+    // @setAttributeThis('ggg')
     // aa() {
     //   return 'zzz'
     // }
@@ -68,7 +68,7 @@ export default (w: Window, container: symbol) => {
       console.log('[DetailPage] onAnyRouteChange called', { currentPath: router.currentPath });
     }
 
-    @applyNodeHost({ position: 'innerHtml' })
+    @applyNodeThis({ position: 'innerHtml' })
     @onConnectedInnerHtml({ useShadow: true })
     render() {
       if (!this.accommodation) return '<div>숙소를 찾을 수 없습니다.</div>';

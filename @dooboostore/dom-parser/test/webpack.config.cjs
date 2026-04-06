@@ -42,9 +42,11 @@ module.exports = {
     extensions: ['.ts', '.js'],
     plugins: [new TsconfigPathsPlugin()],
     alias: {
-      '@dooboostore/core': path.resolve(__dirname, '../../../../@dooboostore/core/src'),
-      '@dooboostore/core-node': path.resolve(__dirname, '../../../../@dooboostore/core-node/src'),
-      '@dooboostore/core-web': path.resolve(__dirname, '../../../../@dooboostore/core-web/src'),
+      '@dooboostore/core': path.resolve(__dirname, '../../../../packages/@dooboostore/core/src'),
+      '@dooboostore/core-node': path.resolve(__dirname, '../../../../packages/@dooboostore/core-node/src'),
+      '@dooboostore/core-web': path.resolve(__dirname, '../../../../packages/@dooboostore/core-web/src'),
+      '@dooboostore/simple-boot': path.resolve(__dirname, '../../../../packages/@dooboostore/simple-boot/src'),
+      '@dooboostore/simple-web-component': path.resolve(__dirname, '../../../../packages/@dooboostore/simple-web-component/src'),
       '@dooboostore/dom-parser': path.resolve(__dirname, '../src')
     },
     modules: ['node_modules', path.resolve(__dirname, '..'), path.resolve(__dirname, '../..'), path.resolve(__dirname, '../../..')]
@@ -56,6 +58,7 @@ module.exports = {
     // Prevent bundling of heavy DOM libraries in Node environment
     jsdom: 'commonjs jsdom',
     linkedom: 'commonjs linkedom',
+    playwright: 'commonjs playwright',
     // Ignore optional JSDOM dependencies
     canvas: 'commonjs canvas',
     bufferutil: 'commonjs bufferutil',

@@ -62,8 +62,9 @@ export type InjectByType<T> = {
   factory?: (caller: { instance?: any; methodName?: string | symbol; parameter: any[]; application: SimpleApplication; injectInstance?: T }) => any;
 };
 
+export type InjectFactoryCallerType<T = any> = { instance?: T; methodName?: string | symbol; parameter: any[]; application: SimpleApplication };
 export type InjectByFactory<T> = {
-  factory: (caller: { instance?: any; methodName?: string | symbol; parameter: any[]; application: SimpleApplication }) => T;
+  factory: (caller: InjectFactoryCallerType) => T;
 };
 
 export type InjectConfig<T = any> = InjectOptions & (InjectBySymbol | InjectByType<T> | InjectByFactory<T>);
@@ -115,12 +116,29 @@ const injectProcess = (config: InjectConfig, target: Object, propertyKey: string
 
 export function Inject(target: Object, propertyKey: string | symbol | undefined, parameterIndex: number): void;
 export function Inject<T = any>(config: InjectConfig<T>): ParameterDecorator;
-export function Inject<T = any>(configOrTarget: Object | InjectConfig<T>, propertyKey?: string | symbol | undefined, parameterIndex?: number): void | ParameterDecorator {
+export function Inject<T = any>(symbol: symbol): ParameterDecorator;
+export function Inject<T = any>(type: ConstructorType<T> | Function): ParameterDecorator;
+export function Inject<T = any>(configOrTargetOrSymbolOrType: Object | InjectConfig<T> | symbol | ConstructorType<T> | Function, propertyKey?: string | symbol | undefined, parameterIndex?: number): void | ParameterDecorator {
   if (propertyKey && parameterIndex !== undefined) {
-    injectProcess({} as any, configOrTarget, propertyKey, parameterIndex);
+    // 1. Used without parenthesis: @Inject
+    injectProcess({} as any, configOrTargetOrSymbolOrType, propertyKey, parameterIndex);
   } else {
-    return (target: Object, propertyKey: string | symbol | undefined, parameterIndex: number) => {
-      injectProcess(configOrTarget as InjectConfig, target, propertyKey, parameterIndex);
+    // Used as factory: @Inject(options) or @Inject(Symbol) or @Inject(Type)
+    return (target: Object, propKey: string | symbol | undefined, paramIndex: number) => {
+      let finalConfig: InjectConfig<T>;
+
+      if (typeof configOrTargetOrSymbolOrType === 'symbol') {
+        // 2. Used with symbol: @Inject(Symbol.for('...'))
+        finalConfig = { symbol: configOrTargetOrSymbolOrType } as InjectConfig<T>;
+      } else if (typeof configOrTargetOrSymbolOrType === 'function') {
+        // 3. Used with type: @Inject(MyService)
+        finalConfig = { type: configOrTargetOrSymbolOrType as ConstructorType<T> } as InjectConfig<T>;
+      } else {
+        // 4. Used with explicit config object: @Inject({ type: MyService, optional: true })
+        finalConfig = (configOrTargetOrSymbolOrType || {}) as InjectConfig<T>;
+      }
+
+      injectProcess(finalConfig, target, propKey, paramIndex);
     };
   }
 }

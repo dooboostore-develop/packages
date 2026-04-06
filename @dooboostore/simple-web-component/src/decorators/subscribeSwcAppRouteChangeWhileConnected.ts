@@ -1,17 +1,19 @@
 import { ReflectUtils } from '@dooboostore/core';
 import { Router } from '@dooboostore/core-web';
+import {HelperHostSet} from "../types";
 
 export const SUBSCRIBE_SWC_APP_ROUTE_CHANGE_WHILE_CONNECTED_METADATA_KEY = Symbol.for('simple-web-component:subscribe-swc-app-route-change-while-connected');
 
+export type RoutePathType = string | string[] | ((currentThis: any) => string | string[]);
+
 export interface SwcAppRouteChangeSubscriberMetadata {
   propertyKey: string | symbol;
-  pathPattern?: string | string[];
-  filter?: (router: Router, currentThis: any) => boolean;
+  options?: SwcAppRouteChangeOptions;
 }
 
 export interface SwcAppRouteChangeOptions {
-  path?: string | string[];
-  filter?: (router: Router, currentThis: any) => boolean;
+  path?: RoutePathType;
+  filter?: (router: Router, meta: {currentThis: any, helper: HelperHostSet}) => boolean;
 }
 
 function createSubscribeSwcAppRouteChangeWhileConnected(options?: SwcAppRouteChangeOptions): MethodDecorator {
@@ -25,8 +27,8 @@ function createSubscribeSwcAppRouteChangeWhileConnected(options?: SwcAppRouteCha
       list = [];
       ReflectUtils.defineMetadata(SUBSCRIBE_SWC_APP_ROUTE_CHANGE_WHILE_CONNECTED_METADATA_KEY, list, constructor);
     }
-    list.push({ propertyKey, pathPattern, filter });
-    
+    list.push({ propertyKey, options });
+
     return descriptor;
   };
 }
@@ -35,8 +37,7 @@ function createSubscribeSwcAppRouteChangeWhileConnected(options?: SwcAppRouteCha
 export function subscribeSwcAppRouteChangeWhileConnected(target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor): PropertyDescriptor | void;
 // 오버로드 시그니처 - 함수 호출 (괄호 있음)
 export function subscribeSwcAppRouteChangeWhileConnected(): MethodDecorator;
-export function subscribeSwcAppRouteChangeWhileConnected(pathPattern: string): MethodDecorator;
-export function subscribeSwcAppRouteChangeWhileConnected(pathPatterns: string[]): MethodDecorator;
+export function subscribeSwcAppRouteChangeWhileConnected(pathPattern: RoutePathType): MethodDecorator;
 export function subscribeSwcAppRouteChangeWhileConnected(options: SwcAppRouteChangeOptions): MethodDecorator;
 
 // 실제 구현 (이중 모드)
@@ -46,15 +47,15 @@ export function subscribeSwcAppRouteChangeWhileConnected(targetOrOptions?: any, 
   if (propertyKey && (typeof propertyKey === 'string' || typeof propertyKey === 'symbol')) {
     return createSubscribeSwcAppRouteChangeWhileConnected({})(targetOrOptions, propertyKey, descriptor);
   }
-  
+
   // 함수로 호출된 경우 (괄호 있음): @subscribeSwcAppRouteChangeWhileConnected() / @subscribeSwcAppRouteChangeWhileConnected('/path')
   let options: SwcAppRouteChangeOptions = {};
 
   if (Array.isArray(targetOrOptions)) {
     // 배열: @subscribeSwcAppRouteChangeWhileConnected(['/path1', '/path2'])
     options.path = targetOrOptions;
-  } else if (typeof targetOrOptions === 'string') {
-    // 문자열: @subscribeSwcAppRouteChangeWhileConnected('/path')
+  } else if (typeof targetOrOptions === 'string' || typeof targetOrOptions === 'function') {
+    // 문자열 또는 함수: @subscribeSwcAppRouteChangeWhileConnected('/path')
     options.path = targetOrOptions;
   } else if (targetOrOptions && typeof targetOrOptions === 'object') {
     // 객체: @subscribeSwcAppRouteChangeWhileConnected({ path: '/path', filter: ... })

@@ -27,7 +27,7 @@ src/
 ├── pages/
 │   ├── index.ts            # Exports: pageFactories, rootRouterFactory
 │   ├── HomePage.ts         # Factory returns tagName
-│   ├── ProductPage.ts      # @attributeHost('product-id')
+│   ├── ProductPage.ts      # @attributeThis('product-id')
 │   ├── CartPage.ts
 │   ├── CheckoutPage.ts
 │   └── OrdersPage.ts
@@ -101,19 +101,19 @@ export const rootRouterFactory = (w: Window) => {
 
     // Pattern 1: Simple route
     @subscribeSwcAppRouteChange(['', '/'])
-    @applyInnerHtmlNodeHost({ root: 'light' })
+    @applyInnerHtmlNodeThis({ root: 'light' })
     homeRoute(router: RouterEventType) {
       return `<swc-example-commerce-home-page/>`;
     }
 
     // Pattern 2: Route with path parameters
     @subscribeSwcAppRouteChange('/product/{id}')
-    @applyInnerHtmlNodeHost({ root: 'light' })
+    @applyInnerHtmlNodeThis({ root: 'light' })
     productRoute(router: RouterEventType, pathData: any) {
       return `<swc-example-commerce-product-page product-id="${pathData.id}"/>`;
     }
 
-    @applyReplaceChildrenNodeHost({
+    @applyReplaceChildrenNodeThis({
       root: 'light',
       filter: (host, newNode) => !host.contains(newNode)
     })
@@ -129,7 +129,7 @@ export const rootRouterFactory = (w: Window) => {
     render() {
       return `
         <style>
-          :host { display: flex; flex-direction: column; min-height: 100vh; background: #fff; }
+          :host display: flex; flex-direction: column; min-height: 100vh; background: #fff; }
         </style>
         <swc-example-commerce-header on-navigate="$host.navigate($data.path)"></swc-example-commerce-header>
         <main id="page-container">
@@ -166,7 +166,7 @@ export default (w: Window) => {
     private productService: ProductService;
     private productId: string = '';
 
-    @attributeHost('product-id')
+    @attributeThis('product-id')
     productIdAttr: string = '';
 
     @onInitialize
@@ -201,7 +201,7 @@ export default (w: Window) => {
 ```
 
 ### 4. Component Emitting Events (components/Header.ts)
-Components emit navigation events via `@emitCustomEventHost`:
+Components emit navigation events via `@emitCustomEventThis`:
 
 ```typescript
 export default (w: Window) => {
@@ -211,7 +211,7 @@ export default (w: Window) => {
 
   @elementDefine(tagName, { window: w })
   class Header extends w.HTMLElement {
-    @emitCustomEventHost('navigate')
+    @emitCustomEventThis('navigate')
     @addEventListener('.nav-link', 'click', { delegate: true })
     onNavClick(e: any) {
       const path = e.target.closest('[data-path]')?.dataset?.path;
@@ -266,7 +266,7 @@ rootRouterFactory (@subscribeSwcAppRouteChange)
     ↓
 Pages (receive data via attributes)
     ↓
-Components (emit events via @emitCustomEventHost)
+Components (emit events via @emitCustomEventThis)
     ↓
 UI Rendering (Pure Web Components)
 ```
@@ -296,13 +296,13 @@ class RootRouter extends w.HTMLElement {
   onconstructor(service: ProductService) { }
 
   @subscribeSwcAppRouteChange('/')
-  @applyInnerHtmlNodeHost({ root: 'light' })
+  @applyInnerHtmlNodeThis({ root: 'light' })
   homeRoute(router: RouterEventType) {
     return `<page-home/>`;
   }
 
   @subscribeSwcAppRouteChange('/product/{id}')
-  @applyInnerHtmlNodeHost({ root: 'light' })
+  @applyInnerHtmlNodeThis({ root: 'light' })
   productRoute(router: RouterEventType, pathData: any) {
     return `<page-product product-id="${pathData.id}"/>`;
   }
@@ -360,7 +360,7 @@ onconstructor(
 ### 3️⃣ **@subscribeSwcAppRouteChange for Routes**
 ```typescript
 @subscribeSwcAppRouteChange('/path/{param}')
-@applyInnerHtmlNodeHost({ root: 'light' })
+@applyInnerHtmlNodeThis({ root: 'light' })
 routeMethod(router: RouterEventType, pathData: any) {
   return `<component-name attribute="${pathData.param}" />`;
 }
@@ -371,7 +371,7 @@ Header → emit → RootRouter → navigate:
 
 ```typescript
 // Header emits
-@emitCustomEventHost('navigate')
+@emitCustomEventThis('navigate')
 onNavClick() { return { path: '/product/123' }; }
 
 // RootRouter receives

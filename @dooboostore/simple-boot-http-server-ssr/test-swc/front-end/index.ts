@@ -1,5 +1,5 @@
 import bootfactory from '@swc-src/bootfactory';
-import { SwcAttributeConfigType } from '@dooboostore/simple-web-component/elements/SwcAppEngine';
+import { SwcAttributeConfigType } from '@dooboostore/simple-web-component/SwcAppEngine';
 import { UrlUtils } from '@dooboostore/core';
 import { serviceFactories } from './services';
 import { SimpleApplication } from '@dooboostore/simple-boot';

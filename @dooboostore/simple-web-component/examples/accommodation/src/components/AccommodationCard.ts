@@ -1,4 +1,4 @@
-import { elementDefine, onConnectedInnerHtml, applyNodeHost } from '@dooboostore/simple-web-component';
+import { elementDefine, onConnectedInnerHtml, applyNodeThis } from '@dooboostore/simple-web-component';
 import type { Accommodation } from '../services/AccommodationService';
 
 export default (w: Window) => {
@@ -11,7 +11,7 @@ export default (w: Window) => {
   class AccommodationCard extends w.HTMLElement {
     private accommodation: Accommodation | null = null;
 
-    @applyNodeHost({ position: 'innerHtml' })
+    @applyNodeThis({ position: 'innerHtml' })
     setData(data: Accommodation) {
       this.accommodation = data;
       return this.render();
@@ -46,7 +46,7 @@ export default (w: Window) => {
           transition: transform 0.6s cubic-bezier(0.2, 0, 0, 1);
         }
         
-        :host(:hover) img { transform: scale(1.1); }
+        $this(:hover) img { transform: scale(1.1); }
         
         .info { display: flex; flex-direction: column; gap: 4px; }
         

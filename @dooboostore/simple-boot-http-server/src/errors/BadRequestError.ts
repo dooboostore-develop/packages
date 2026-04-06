@@ -2,7 +2,11 @@ import {HttpError} from './HttpError';
 import {HttpStatus} from '../codes/HttpStatus';
 
 export class BadRequestError extends HttpError {
-    constructor({status = HttpStatus.BadRequest, message = 'Bad Request'}: {status?: number, message?: string} = {}) {
-        super({status, message});
-    }
+  constructor(
+    input: { status?: number; message?: string } | string = {},
+  ) {
+    const {status = HttpStatus.BadRequest, message = 'Bad Request'} =
+      typeof input === 'string' ? {message: input} : input;
+    super({status, message});
+  }
 }

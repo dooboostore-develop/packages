@@ -1,4 +1,4 @@
-import {  ELEMENT_NODE, ATTRIBUTE_NODE, TEXT_NODE, CDATA_SECTION_NODE, ENTITY_REFERENCE_NODE, ENTITY_NODE, PROCESSING_INSTRUCTION_NODE, COMMENT_NODE, DOCUMENT_NODE, DOCUMENT_TYPE_NODE, DOCUMENT_FRAGMENT_NODE, NOTATION_NODE, DOCUMENT_POSITION_DISCONNECTED, DOCUMENT_POSITION_PRECEDING, DOCUMENT_POSITION_FOLLOWING, DOCUMENT_POSITION_CONTAINS, DOCUMENT_POSITION_CONTAINED_BY, DOCUMENT_POSITION_IMPLEMENTATION_SPECIFIC } from './Node';
+import { ELEMENT_NODE, ATTRIBUTE_NODE, TEXT_NODE, CDATA_SECTION_NODE, ENTITY_REFERENCE_NODE, ENTITY_NODE, PROCESSING_INSTRUCTION_NODE, COMMENT_NODE, DOCUMENT_NODE, DOCUMENT_TYPE_NODE, DOCUMENT_FRAGMENT_NODE, NOTATION_NODE, DOCUMENT_POSITION_DISCONNECTED, DOCUMENT_POSITION_PRECEDING, DOCUMENT_POSITION_FOLLOWING, DOCUMENT_POSITION_CONTAINS, DOCUMENT_POSITION_CONTAINED_BY, DOCUMENT_POSITION_IMPLEMENTATION_SPECIFIC } from './Node';
 import { NodeListOfImp } from './collection/NodeListOfImp';
 import { GetRootNodeOptions } from './GetRootNodeOptions';
 
@@ -144,6 +144,11 @@ export abstract class NodeBase implements Node {
     let node: Node | null = this;
     while (node) {
       if (node.nodeType === DOCUMENT_NODE) return true;
+      // Handle ShadowRoot traversal
+      if (node.nodeType === DOCUMENT_FRAGMENT_NODE && (node as any).host) {
+        node = (node as any).host;
+        continue;
+      }
       node = node.parentNode;
     }
     return false;
@@ -294,12 +299,53 @@ export abstract class NodeBase implements Node {
 
     this._childNodesInternal.push(nodeBase);
     nodeBase._parentNodeInternal = this;
-    nodeBase._ownerDocument = this._ownerDocument;
 
-    // Trigger connectedCallback if it's a custom element and connected to document
-    if (this.isConnected && (nodeBase as any).connectedCallback) {
-      console.log(`[NodeBase] Calling connectedCallback for <${nodeBase.nodeName}>`);
-      (nodeBase as any).connectedCallback();
+    // Update ownerDocument recursively and trigger adoptedCallback
+    const oldDocument = nodeBase._ownerDocument;
+    const newDocument = this._ownerDocument;
+    const documentChanged = oldDocument && newDocument && oldDocument !== newDocument;
+
+    const updateDocument = (n: any) => {
+      const prevDoc = n._ownerDocument;
+      n._ownerDocument = newDocument;
+      if (documentChanged && prevDoc && prevDoc !== newDocument && n.nodeType === 1 && typeof n.adoptedCallback === 'function') {
+        n.adoptedCallback(prevDoc, newDocument);
+      }
+      for (const c of n._childNodesInternal || []) updateDocument(c);
+    };
+    updateDocument(nodeBase);
+
+    // Trigger connectedCallback recursively if connected to document
+    if (this.isConnected) {
+      // console.log('[DEBUG] appendChild: Parent is connected, triggering connectedCallback for:', nodeBase.constructor.name);
+      const ELEMENT_NODE = 1;
+      const triggerConnected = (n: any) => {
+        // Upgrade custom element if it was created inertly
+        if (n.nodeType === ELEMENT_NODE && n.tagName && n.tagName.includes('-') && n.constructor.name === 'HTMLElement') {
+          const customElements = (this._ownerDocument as any)?.defaultView?.customElements;
+          if (customElements && typeof customElements.upgrade === 'function') {
+            // console.log(`[DEBUG] UPGRADING inert element: ${n.tagName}`);
+            customElements.upgrade(n);
+          }
+        }
+
+        if (n.nodeType === ELEMENT_NODE && typeof n.connectedCallback === 'function') {
+          // console.log('[DEBUG] appendChild: triggering connectedCallback for:', n.constructor.name);
+          const doc = this._ownerDocument as any;
+          if (doc && doc._isParsingHTML) {
+            // HTML 문자열 파싱 중에는 DOM 트리에 부착만 하고 콜백은 파싱이 100% 끝나면 실행되도록 지연시킵니다!
+            // 그래야 속성(attributes)이나 자식(childNodes)이 없는 상태에서 불리는 버그를 막을 수 있습니다.
+            if (!doc._connectedCallbackQueue) doc._connectedCallbackQueue = [];
+            doc._connectedCallbackQueue.push(() => n.connectedCallback());
+          } else {
+            n.connectedCallback();
+          }
+        }
+        for (const c of n._childNodesInternal || []) triggerConnected(c);
+      };
+      triggerConnected(nodeBase);
+    } else {
+      // console.log('[DEBUG] appendChild: Parent is NOT connected, skipping connectedCallback');
     }
 
     return node;
@@ -317,9 +363,15 @@ export abstract class NodeBase implements Node {
     this._childNodesInternal.splice(index, 1);
     childBase._parentNodeInternal = null;
 
-    // Trigger disconnectedCallback if it was connected
-    if (wasConnected && (childBase as any).disconnectedCallback) {
-      (childBase as any).disconnectedCallback();
+    // Trigger disconnectedCallback recursively if it was connected
+    if (wasConnected) {
+      const triggerDisconnected = (n: any) => {
+        if (n.nodeType === 1 && typeof n.disconnectedCallback === 'function') {
+          n.disconnectedCallback();
+        }
+        for (const c of n._childNodesInternal || []) triggerDisconnected(c);
+      };
+      triggerDisconnected(childBase);
     }
 
     return child;
@@ -354,6 +406,40 @@ export abstract class NodeBase implements Node {
         insertIndex++;
       }
 
+      // Trigger connectedCallback for fragment's children if parent is connected
+      if (this.isConnected) {
+        // console.log('[DEBUG] insertBefore: Parent is connected, triggering connectedCallback for fragment children');
+        const ELEMENT_NODE = 1;
+        const triggerConnected = (n: any) => {
+          // Upgrade custom element if it was created inertly
+          if (n.nodeType === ELEMENT_NODE && n.tagName && n.tagName.includes('-') && n.constructor.name === 'HTMLElement') {
+            const customElements = (this._ownerDocument as any)?.defaultView?.customElements;
+            if (customElements && typeof customElements.upgrade === 'function') {
+              // console.log(`[DEBUG] UPGRADING inert element: ${n.tagName}`);
+              customElements.upgrade(n);
+            }
+          }
+
+          if (n.nodeType === ELEMENT_NODE && typeof n.connectedCallback === 'function') {
+            // console.log('[DEBUG] triggering connectedCallback for:', n.constructor.name);
+            const doc = this._ownerDocument as any;
+            if (doc && doc._isParsingHTML) {
+              if (!doc._connectedCallbackQueue) doc._connectedCallbackQueue = [];
+              doc._connectedCallbackQueue.push(() => n.connectedCallback());
+            } else {
+              n.connectedCallback();
+            }
+          }
+          for (const c of n._childNodesInternal || []) triggerConnected(c);
+        };
+        for (const fragmentChild of children) {
+          // console.log('[DEBUG] Processing fragment child:', fragmentChild.constructor.name);
+          triggerConnected(fragmentChild);
+        }
+      } else {
+        // console.log('[DEBUG] insertBefore: Parent is NOT connected, skipping connectedCallback');
+      }
+
       return node;
     }
 
@@ -363,11 +449,51 @@ export abstract class NodeBase implements Node {
 
     this._childNodesInternal.splice(index, 0, nodeBase);
     nodeBase._parentNodeInternal = this;
-    nodeBase._ownerDocument = this._ownerDocument;
 
-    // Trigger connectedCallback if it's a custom element and connected to document
-    if (this.isConnected && (nodeBase as any).connectedCallback) {
-      (nodeBase as any).connectedCallback();
+    // Update ownerDocument recursively and trigger adoptedCallback
+    const oldDocument = nodeBase._ownerDocument;
+    const newDocument = this._ownerDocument;
+    const documentChanged = oldDocument && newDocument && oldDocument !== newDocument;
+
+    const updateDocument = (n: any) => {
+      const prevDoc = n._ownerDocument;
+      n._ownerDocument = newDocument;
+      if (documentChanged && prevDoc && prevDoc !== newDocument && n.nodeType === 1 && typeof n.adoptedCallback === 'function') {
+        n.adoptedCallback(prevDoc, newDocument);
+      }
+      for (const c of n._childNodesInternal || []) updateDocument(c);
+    };
+    updateDocument(nodeBase);
+
+    // Trigger connectedCallback recursively if connected to document
+    if (this.isConnected) {
+      // console.log('[DEBUG] insertBefore (non-fragment): Parent is connected, triggering connectedCallback for:', nodeBase.constructor.name);
+      const ELEMENT_NODE = 1;
+      const triggerConnected = (n: any) => {
+        // Upgrade custom element if it was created inertly
+        if (n.nodeType === ELEMENT_NODE && n.tagName && n.tagName.includes('-') && n.constructor.name === 'HTMLElement') {
+          const customElements = (this._ownerDocument as any)?.defaultView?.customElements;
+          if (customElements && typeof customElements.upgrade === 'function') {
+            // console.log(`[DEBUG] UPGRADING inert element: ${n.tagName}`);
+            customElements.upgrade(n);
+          }
+        }
+
+        if (n.nodeType === ELEMENT_NODE && typeof n.connectedCallback === 'function') {
+          // console.log('[DEBUG] insertBefore (non-fragment): triggering connectedCallback for:', n.constructor.name);
+          const doc = this._ownerDocument as any;
+          if (doc && doc._isParsingHTML) {
+            if (!doc._connectedCallbackQueue) doc._connectedCallbackQueue = [];
+            doc._connectedCallbackQueue.push(() => n.connectedCallback());
+          } else {
+            n.connectedCallback();
+          }
+        }
+        for (const c of n._childNodesInternal || []) triggerConnected(c);
+      };
+      triggerConnected(nodeBase);
+    } else {
+      // console.log('[DEBUG] insertBefore (non-fragment): Parent is NOT connected');
     }
 
     return node;
@@ -454,6 +580,10 @@ export abstract class NodeBase implements Node {
     let root: Node = this;
     while (root.parentNode) {
       root = root.parentNode;
+    }
+    // Handle composed option for crossing shadow boundaries
+    if (options?.composed && root.nodeType === DOCUMENT_FRAGMENT_NODE && (root as any).host) {
+      return (root as any).host.getRootNode(options);
     }
     return root;
   }

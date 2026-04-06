@@ -319,11 +319,15 @@ export class SimstanceManager implements Runnable<void, Map<ConstructorType<any>
 
   public async executeBindParameterSimPromise({ target, targetKey, firstCheckMaker, parameterCount, inputParameters }: { target: Object; targetKey?: string | symbol; firstCheckMaker?: FirstCheckMaker[]; parameterCount?: number; inputParameters?: any[] }, otherStorage?: Map<ConstructorType<any>, any>) {
     const binds = this.getParameterSim({ target, targetKey, firstCheckMaker, otherStorage, parameterCount, inputParameters });
+
+    // 비동기 팩토리(Promise)가 생성한 파라미터들이 모두 완료될 때까지 대기
+    const resolvedBinds = await Promise.all(binds);
+
     if (typeof target === 'object' && targetKey) {
       const targetMethod = (target as any)[targetKey];
-      return targetMethod?.bind(target)?.(...binds);
+      return targetMethod?.bind(target)?.(...resolvedBinds);
     } else if (typeof target === 'function' && !targetKey) {
-      return new (target as ConstructorType<any>)(...binds);
+      return new (target as ConstructorType<any>)(...resolvedBinds);
     }
   }
 
@@ -347,19 +351,23 @@ export class SimstanceManager implements Runnable<void, Map<ConstructorType<any>
     // this.storage map to json String
 
     const loopCount = Math.max(paramTypes.length, parameterCount ?? 0);
-    const loopArray = new Array(loopCount).fill(undefined);
 
-    injections = loopArray.map((_, idx: number) => {
+    injections = [];
+    for (let idx = 0; idx < loopCount; idx++) {
       const token = paramTypes[idx];
       const saveInject = injects?.find(it => it.index === idx);
 
       // firstCheckMaker should have the highest priority
+      let isFirstChecked = false;
       for (const f of firstCheckMaker ?? []) {
         const firstCheckObj = f({ target, targetKey }, token, idx, saveInject);
         if (undefined !== firstCheckObj) {
-          return firstCheckObj;
+          injections.push(firstCheckObj);
+          isFirstChecked = true;
+          break;
         }
       }
+      if (isFirstChecked) continue;
 
       if (saveInject) {
         const inject = saveInject.config;
@@ -387,7 +395,8 @@ export class SimstanceManager implements Runnable<void, Map<ConstructorType<any>
           if (isTargetScheme(inject)) {
             p.push(...this.getSimConfig(inject.scheme).map(it => it.getValue({ newInstanceCarrier: newInstanceCarrier })));
           }
-          return p;
+          injections.push(p);
+          continue;
         }
 
         // situational
@@ -416,10 +425,12 @@ export class SimstanceManager implements Runnable<void, Map<ConstructorType<any>
           const currentInstance = typeof target === 'object' ? target : undefined;
           if (isTargetFactory(inject)) {
             // Choice 3: 순수 Factory 전략
+            // **핵심 수정 부분**: 이전에 해석된 injections 또는 inputParameters를 모두 결합하여 전달
+            const combinedParameters = injections.length > 0 ? injections : inputParameters;
             obj = inject.factory({
               instance: currentInstance,
               methodName: String(targetKey),
-              parameter: inputParameters,
+              parameter: combinedParameters,
               application: this.simpleApplication
             });
           } else {
@@ -444,10 +455,11 @@ export class SimstanceManager implements Runnable<void, Map<ConstructorType<any>
               // Augmentation: 찾은 객체를 팩토리를 통해 가공
               if (inject.factory && obj) {
                 if (typeof inject.factory === 'function') {
+                  const combinedParameters = injections.length > 0 ? injections : inputParameters;
                   obj = inject.factory({
                     instance: currentInstance,
                     methodName: String(targetKey),
-                    parameter: inputParameters,
+                    parameter: combinedParameters,
                     application: this.simpleApplication,
                     injectInstance: obj
                   });
@@ -456,7 +468,8 @@ export class SimstanceManager implements Runnable<void, Map<ConstructorType<any>
             } catch (e) {
               // Inject optional 처리
               if (inject.optional) {
-                return undefined;
+                injections.push(undefined);
+                continue;
               } else {
                 throw e;
               }
@@ -483,11 +496,12 @@ export class SimstanceManager implements Runnable<void, Map<ConstructorType<any>
             }
           }
         }
-        return obj;
+        injections.push(obj);
       } else {
-        return otherStorage?.get(token) ?? (token ? this.resolve<any>({ targetKey: token, newInstanceCarrier }) : undefined);
+        const obj = otherStorage?.get(token) ?? (token ? this.resolve<any>({ targetKey: token, newInstanceCarrier }) : undefined);
+        injections.push(obj);
       }
-    });
+    }
     return injections;
   }
 
@@ -530,9 +544,9 @@ export class SimstanceManager implements Runnable<void, Map<ConstructorType<any>
   run(otherInstanceSim: Map<ConstructorType<any> | Function | SimConfig | symbol, any> = new Map()) {
     // this.otherInstanceSim = new Map();
     for (const [k, v] of Array.from(otherInstanceSim.entries())) {
-      const storageKey = (typeof k === 'object' && k !== null && 'type' in (k as any)) ? (k as any).type : k;
+      const storageKey = typeof k === 'object' && k !== null && 'type' in (k as any) ? (k as any).type : k;
       this.registerStore(storageKey, new Set([v]));
-      
+
       if (typeof k === 'object' && k !== null && 'symbol' in (k as any) && (k as any).symbol) {
         this.registerStore((k as any).symbol, new Set([v]));
       }
@@ -553,7 +567,13 @@ export class SimstanceManager implements Runnable<void, Map<ConstructorType<any>
 
         let isInclude = false;
         if (targetContainers.length <= 0) {
-          isInclude = true;
+          // 자기 자신(Global)에 해당되는 애들만 (myContainers 안에 SimpleApplication 본체만 있거나 옵션으로 준 컨테이너가 없을 때)
+          // 하지만 기본적으로 myContainers에는 항상 this.simpleApplication이 들어가 있음.
+          // 사용자가 option.container에 무언가를 넘겼다면(ex: Symbol('front')),
+          // targetContainers가 0개인 놈들은 그 특수 컨테이너(Symbol) 환경에는 끼어들면 안 된다는 요구사항 반영.
+          if (myContainers.length === 1 && myContainers[0] === this.simpleApplication) {
+            isInclude = true;
+          }
         } else {
           isInclude = myContainers.some(it => targetContainers.includes(it as any));
         }

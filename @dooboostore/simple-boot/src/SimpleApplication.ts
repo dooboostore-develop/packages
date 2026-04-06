@@ -8,11 +8,15 @@ import { RouterModule } from './route/RouterModule';
 import { SimAtomic } from './simstance/SimAtomic';
 import { SimNoSuch } from './throwable/SimNoSuch';
 import { containers, Sim, SimConfig } from './decorators/SimDecorator';
+import {CacheManager} from "./cache";
+import {ApiService} from "./fetch";
+import {AlertFactory, AlertService, DefaultAlertFactory} from "./alert";
 
 export class SimpleApplication {
   public simstanceManager: SimstanceManager;
   public intentManager: IntentManager;
   public routerManager: RouterManager;
+  public cacheManager: CacheManager;
   // public rootRouter?: ConstructorType<any>;
 
   // constructor();
@@ -21,6 +25,7 @@ export class SimpleApplication {
   // constructor(rootRouter?: ConstructorType<Object> | Function, option?: SimOption);
   // constructor(rootRouter?: (ConstructorType<Object> | Function) | SimOption, option = new SimOption()) {
   // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
+  // private alertService: AlertService<any>;
   constructor(public option: SimOption = new SimOption()) {
     // if (option.rootRouter instanceof SimOption) {
     //   option = rootRouter;
@@ -36,8 +41,16 @@ export class SimpleApplication {
     // this.intentManager = this.simstanceManager.proxy(new IntentManager(this.simstanceManager, this.routerManager, option));
     this.routerManager = new RouterManager(this, this.simstanceManager, option);
     this.intentManager = new IntentManager(this, this.simstanceManager, this.routerManager, option);
+    this.cacheManager = new CacheManager(this);
+    // this.simstanceManager.get
+    if (!this.simstanceManager.getStoreSet(AlertFactory)) {
+      this.simstanceManager.setStoreSet(AlertFactory, new DefaultAlertFactory())
+    }
+    Sim({container: this.option.container})(AlertService);
+    Sim({container: this.option.container})(ApiService);
     this.simstanceManager.setStoreSet(IntentManager, this.intentManager);
     this.simstanceManager.setStoreSet(RouterManager, this.routerManager);
+    this.simstanceManager.setStoreSet(CacheManager, this.cacheManager);
     containers.add(this);
   }
 

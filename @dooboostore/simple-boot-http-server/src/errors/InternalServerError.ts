@@ -2,7 +2,11 @@ import {HttpError} from './HttpError';
 import {HttpStatus} from '../codes/HttpStatus';
 
 export class InternalServerError extends HttpError {
-    constructor({status = HttpStatus.InternalServerError, message = 'Internal Server Error'}: {status?: number, message?: string} = {}) {
-        super({status, message});
-    }
+  constructor(
+    input: { status?: number; message?: string } | string = {},
+  ) {
+    const {status = HttpStatus.InternalServerError, message = 'Internal Server Error'} =
+      typeof input === 'string' ? {message: input} : input;
+    super({status, message});
+  }
 }

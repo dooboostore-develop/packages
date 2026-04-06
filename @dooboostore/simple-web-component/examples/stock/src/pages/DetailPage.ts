@@ -1,4 +1,4 @@
-import {onConnectedSwcApp, elementDefine, onConnectedInnerHtml, addEventListener, applyInnerHtmlNode, applyNodeHost, attributeHost, onInitialize } from '@dooboostore/simple-web-component';
+import {onConnectedBefore, elementDefine, onConnectedInnerHtml, addEventListener, applyInnerHtmlNode, applyNodeThis, attributeThis, onInitialize } from '@dooboostore/simple-web-component';
 import { Inject } from '@dooboostore/simple-boot';
 import { StockService, Stock } from '../services/StockService';
 
@@ -16,10 +16,10 @@ export default (w: Window) => {
     private timer: any;
     private stockService: StockService;
 
-    @attributeHost('stock-id')
+    @attributeThis('stock-id')
     stockId: string;
 
-    @onConnectedSwcApp
+    @onConnectedBefore
     onconstructor(@Inject({ symbol: StockService.SYMBOL }) stockService: StockService) {
       this.stockService = stockService;
 
@@ -57,7 +57,7 @@ export default (w: Window) => {
       if (this.timer) clearInterval(this.timer);
     }
 
-    @applyNodeHost({ position: 'innerHtml' })
+    @applyNodeThis({ position: 'innerHtml' })
     @onConnectedInnerHtml({ useShadow: true })
     render() {
       if (!this.stock) return '<div>종목을 찾을 수 없습니다.</div>';

@@ -1,4 +1,4 @@
-import { onConnectedSwcApp, elementDefine, onConnectedInnerHtml, addEventListener, updateClass, applyInnerHtmlNode, onInitialize } from '@dooboostore/simple-web-component';
+import { onConnectedBefore, elementDefine, onConnectedInnerHtml, addEventListener, updateClass, applyInnerHtmlNode, onInitialize } from '@dooboostore/simple-web-component';
 import {Inject} from '@dooboostore/simple-boot';
 import { Router } from '@dooboostore/core-web';
 import { ProductService  } from '../services/ProductService';
@@ -21,7 +21,7 @@ export default (w: Window) => {
     private orderService: OrderService;
     private router: Router;
 
-    @onConnectedSwcApp
+    @onConnectedBefore
     onconstructor(@Inject({ symbol: ProductService.SYMBOL }) productService: ProductService, @Inject({ symbol: CartService.SYMBOL }) cartService: CartService, @Inject({ symbol: OrderService.SYMBOL }) orderService: OrderService, router: Router) {
       this.productService = productService;
       this.cartService = cartService;

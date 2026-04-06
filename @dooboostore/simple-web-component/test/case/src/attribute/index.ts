@@ -1,4 +1,4 @@
-import swcRegister, { changedAttributeHost, elementDefine, onConnectedInnerHtml, attribute, attributeHost, query } from '@dooboostore/simple-web-component';
+import swcRegister, { changedAttributeThis, elementDefine, onConnectedInnerHtml, attribute, attributeHost, query } from '@dooboostore/simple-web-component';
 
 swcRegister(window);
 
@@ -114,7 +114,7 @@ class ExecutionTestElement extends HTMLElement {
     console.log('vvvvvvvvvvvv122', this.result);
     }, 1000)
   }
-  @changedAttributeHost('result')
+  @changedAttributeThis('result')
   ggg(z: string) {
     console.log('vvvvvvvvvvvv', z);
   }

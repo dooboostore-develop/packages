@@ -3,6 +3,7 @@ export * from './decorators';
 export * from './endpoints';
 export * from './errors';
 export * from './filters';
+export * from './proxy';
 export * from './inject';
 export * from './lifecycle';
 export * from './models';

@@ -30,75 +30,85 @@ function createStyleDecorator(action: StyleAction) {
       metaList.set(propertyKey, { propertyKey, selector, action, options });
 
       const original = descriptor.value;
-      descriptor.value = async function (...args: any[]) {
+      descriptor.value = function (...args: any[]) {
         ensureInit(this);
-        const res = await (original as any).apply(this, args);
-        if (res !== undefined) {
-          const win = (this as any).ownerDocument?.defaultView || window;
-          const host = this as unknown as HTMLElement;
-          const hostSet = SwcUtils.getHelperAndHostSet(win, host);
-          const r = options.root || 'auto';
-          const targetEls: HTMLElement[] = [];
+        const res = (original as any).apply(this, args);
 
-          const applyRoot = (t: any) => {
-            if (!t || !(t instanceof win.HTMLElement)) return;
-            targetEls.push(t);
-          };
+        const handleResult = (resolvedValue: any) => {
+          if (resolvedValue !== undefined) {
+            const win = (this as any).ownerDocument?.defaultView || window;
+            const host = this as unknown as HTMLElement;
+            const hostSet = { ...SwcUtils.getHelperAndHostSet(win, host), $this: this };
+            const r = options.root || 'auto';
+            const targetEls: HTMLElement[] = [];
 
-          if (selector === ':parentHost') applyRoot(hostSet.$parentHost);
-          else if (selector === ':appHost') applyRoot(hostSet.$appHost);
-          else if (selector === ':firstHost') applyRoot(hostSet.$firstHost);
-          else if (selector === ':lastHost') applyRoot(hostSet.$lastHost);
-          else if (selector === ':firstAppHost') applyRoot(hostSet.$firstAppHost);
-          else if (selector === ':lastAppHost') applyRoot(hostSet.$lastAppHost);
-          else if (selector === ':hosts') hostSet.$hosts.forEach(applyRoot);
-          else if (selector === ':appHosts') hostSet.$appHosts.forEach(applyRoot);
-          else if (selector === ':host' || !selector) applyRoot(host);
-          else {
-            const targetRoot = r === 'auto' ? (host.shadowRoot || host) : (r === 'shadow' ? host.shadowRoot : host);
-            if (targetRoot) {
-                const found = targetRoot.querySelectorAll(selector);
-                if (found) targetEls.push(...(Array.from(found) as HTMLElement[]));
+            const applyRoot = (t: any) => {
+              if (!t || !(t instanceof win.HTMLElement)) return;
+              targetEls.push(t);
+            };
+
+            if (selector === '$this' || !selector) applyRoot(host);
+            else if (selector === '$host') applyRoot(hostSet.$host);
+            else if (selector === '$parentHost') applyRoot(hostSet.$parentHost);
+            else if (selector === '$appHost') applyRoot(hostSet.$appHost);
+            else if (selector === '$firstHost') applyRoot(hostSet.$firstHost);
+            else if (selector === '$lastHost') applyRoot(hostSet.$lastHost);
+            else if (selector === '$firstAppHost') applyRoot(hostSet.$firstAppHost);
+            else if (selector === '$lastAppHost') applyRoot(hostSet.$lastAppHost);
+            else if (selector === '$hosts') hostSet.$hosts.forEach(applyRoot);
+            else if (selector === '$appHosts') hostSet.$appHosts.forEach(applyRoot);
+            else {
+              const targetRoot = r === 'auto' ? (host.shadowRoot || host) : (r === 'shadow' ? host.shadowRoot : host);
+              if (targetRoot) {
+                  const found = targetRoot.querySelectorAll(selector);
+                  if (found) targetEls.push(...(Array.from(found) as HTMLElement[]));
+              }
             }
+
+            targetEls.forEach(targetEl => {
+              if (options.filter && !options.filter(targetEl, resolvedValue, {currentThis: this, helper: hostSet})) {
+                return;
+              }
+              const resolvedRes = typeof resolvedValue === 'function' ? (resolvedValue as any)(targetEl, hostSet) : resolvedValue;
+
+              if (action === 'set' || action === 'update') {
+                if (action === 'set') targetEl.style.cssText = '';
+                
+                if (typeof resolvedRes === 'object' && resolvedRes !== null && !Array.isArray(resolvedRes)) {
+                  Object.entries(resolvedRes as any).forEach(([prop, val]) => {
+                    const finalVal = typeof val === 'function' ? val(targetEl, hostSet) : val;
+                    if (finalVal === null || finalVal === undefined) {
+                      targetEl.style.removeProperty(prop);
+                    } else {
+                      targetEl.style[prop as any] = String(finalVal);
+                    }
+                  });
+                } else if (typeof resolvedRes === 'string') {
+                  targetEl.style.cssText = resolvedRes;
+                }
+              } else if (action === 'remove') {
+                if (typeof resolvedRes === 'object' && resolvedRes !== null && !Array.isArray(resolvedRes)) {
+                  Object.entries(resolvedRes as any).forEach(([prop, val]) => {
+                    const shouldRemove = typeof val === 'function' ? val(targetEl, hostSet) : !!val;
+                    if (shouldRemove) {
+                      targetEl.style.removeProperty(prop);
+                    }
+                  });
+                } else {
+                  const props = Array.isArray(resolvedRes) ? resolvedRes : [resolvedRes];
+                  props.forEach(p => targetEl.style.removeProperty(String(p)));
+                }
+              }
+            });
           }
+          return resolvedValue;
+        };
 
-          targetEls.forEach(targetEl => {
-            if (options.filter && !options.filter(targetEl, res, {currentThis: this, helper: hostSet})) {
-              return;
-            }
-            const resolvedRes = typeof res === 'function' ? (res as any)(targetEl, hostSet) : res;
-
-            if (action === 'set' || action === 'update') {
-              if (action === 'set') targetEl.style.cssText = '';
-              
-              if (typeof resolvedRes === 'object' && resolvedRes !== null && !Array.isArray(resolvedRes)) {
-                Object.entries(resolvedRes as any).forEach(([prop, val]) => {
-                  const finalVal = typeof val === 'function' ? val(targetEl, hostSet) : val;
-                  if (finalVal === null || finalVal === undefined) {
-                    targetEl.style.removeProperty(prop);
-                  } else {
-                    targetEl.style[prop as any] = String(finalVal);
-                  }
-                });
-              } else if (typeof resolvedRes === 'string') {
-                targetEl.style.cssText = resolvedRes;
-              }
-            } else if (action === 'remove') {
-              if (typeof resolvedRes === 'object' && resolvedRes !== null && !Array.isArray(resolvedRes)) {
-                Object.entries(resolvedRes as any).forEach(([prop, val]) => {
-                  const shouldRemove = typeof val === 'function' ? val(targetEl, hostSet) : !!val;
-                  if (shouldRemove) {
-                    targetEl.style.removeProperty(prop);
-                  }
-                });
-              } else {
-                const props = Array.isArray(resolvedRes) ? resolvedRes : [resolvedRes];
-                props.forEach(p => targetEl.style.removeProperty(String(p)));
-              }
-            }
-          });
+        if (res instanceof Promise) {
+          return res.then(handleResult);
+        } else {
+          return handleResult(res);
         }
-        return res;
       };
       return descriptor;
     };
@@ -113,13 +123,13 @@ export const setStyle = (selector: string, options: StyleApplyOptions = {}) => c
 export const updateStyle = (selector: string, options: StyleApplyOptions = {}) => createStyleDecorator('update')(selector, options);
 export const removeStyle = (selector: string, options: StyleApplyOptions = {}) => createStyleDecorator('remove')(selector, options);
 
-// Host versions
-export function applyStyleHost(action: StyleAction = 'update', options: StyleApplyOptions = {}): MethodDecorator {
-  return createStyleDecorator(action)(':host', options);
+// This versions
+export function applyStyleThis(action: StyleAction = 'update', options: StyleApplyOptions = {}): MethodDecorator {
+  return createStyleDecorator(action)('$this', options);
 }
-export const setStyleHost = (options: StyleApplyOptions = {}) => createStyleDecorator('set')(':host', options);
-export const updateStyleHost = (options: StyleApplyOptions = {}) => createStyleDecorator('update')(':host', options);
-export const removeStyleHost = (options: StyleApplyOptions = {}) => createStyleDecorator('remove')(':host', options);
+export const setStyleThis = (options: StyleApplyOptions = {}) => createStyleDecorator('set')('$this', options);
+export const updateStyleThis = (options: StyleApplyOptions = {}) => createStyleDecorator('update')('$this', options);
+export const removeStyleThis = (options: StyleApplyOptions = {}) => createStyleDecorator('remove')('$this', options);
 
 export const findAllStyleMetadata = (target: any): Map<string | symbol, StyleApplyMetadata> => {
   const result = new Map<string | symbol, StyleApplyMetadata>();

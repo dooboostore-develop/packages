@@ -1,6 +1,6 @@
-import { type SwcAppMessage, applyNode,subscribeSwcAppMessageWhileConnected, onConnectedSwcApp, elementDefine, onInitialize, onConnectedInnerHtml, addEventListener, attributeHost, emitCustomEventHost, changedAttributeHost, onAfterConnected } from '@dooboostore/simple-web-component';
+import { type SwcAppMessage, applyNode,subscribeSwcAppMessageWhileConnected, onConnectedBefore, elementDefine, onInitialize, onConnectedInnerHtml, addEventListener, attributeThis, emitCustomEventThis, changedAttributeThis,  } from '@dooboostore/simple-web-component';
 import { ProductService} from '../services/ProductService';
-import { applyInnerHtmlNode, applyNodeHost} from "../../../../src";
+import { applyNodeInnerHtml, applyNodeThis} from "../../../../src";
 import {Inject} from "@dooboostore/simple-boot";
 
 /**
@@ -16,10 +16,10 @@ export default (w: Window) => {
     #product?: ProductService.Product;
     #productService?: ProductService;
 
-    @attributeHost('data-product-id')
+    @attributeThis('data-product-id')
     productId: string;
 
-    @onConnectedSwcApp
+    @onConnectedBefore
     ttt(@Inject({ symbol: ProductService.SYMBOL }) productService: ProductService) {
       this.#productService = productService;
       this.onProductIdChanged(this.productId, null, null, null);
@@ -32,8 +32,8 @@ export default (w: Window) => {
       // document.querySelector('.btn-add-cart').innerHTML = data.data;
     }
 
-    @changedAttributeHost('data-product-id')
-    @applyNodeHost({ position: 'innerHtml' })
+    @changedAttributeThis('data-product-id')
+    @applyNodeThis({ position: 'innerHtml' })
     async onProductIdChanged(productId: string, h: any, a: any, b: any) {
       if (!productId || !this.#productService) return;
       this.#product = (await this.#productService.getProductById(productId)) || undefined;
@@ -203,14 +203,14 @@ export default (w: Window) => {
     // }
 
     @addEventListener('.card', 'click', { delegate: true })
-    @emitCustomEventHost('view-product', { bubbles: true, attributeName: 'on-view-product' })
+    @emitCustomEventThis('view-product', { bubbles: true, attributeName: 'on-view-product' })
     onCardClick(event: Event) {
       console.log('vv');
       return { productId: this.#product?.id };
     }
 
     @addEventListener('.btn-add-cart', 'click', { stopPropagation: true, delegate: true })
-    @emitCustomEventHost('add-to-cart', { bubbles: true, attributeName: 'on-add-to-cart' })
+    @emitCustomEventThis('add-to-cart', { bubbles: true, attributeName: 'on-add-to-cart' })
     onAddToCart(event: Event) {
       return { product: this.#product };
     }

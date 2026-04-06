@@ -203,7 +203,7 @@ export class SimpleBootFront extends SimpleApplication {
     this.initDomRenderConfigSetting();
     this.option.window.addEventListener('intent', event => {
       const cevent = event as CustomEvent;
-      this.publishIntent(new Intent(cevent.detail.uri, cevent.detail.data, event));
+      this.publishIntent(new Intent(cevent.detail.uri, cevent.detail.data));
     });
 
     let targetElement = targetUserElement;

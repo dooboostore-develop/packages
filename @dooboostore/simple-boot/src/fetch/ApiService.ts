@@ -126,7 +126,7 @@ export const isStoreFinal = (data: ApiService.StoreData): data is ApiService.Sto
   return data.type === 'final';
 }
 
-@Sim
+// @Sim
 export class ApiService extends HttpJsonFetcher<ApiService.ApiServiceConfig, ApiService.PIPE> {
   private subject = new Subject<ApiService.StoreData>();
   private alertService?: AlertService<any>;

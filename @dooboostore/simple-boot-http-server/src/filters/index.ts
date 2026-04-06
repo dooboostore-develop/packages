@@ -5,3 +5,4 @@ export * from './HttpStatusFilter';
 export * from './OpenApi3Filter';
 export * from './ResourceFilter';
 export * from './ThrowFilter';
+export * from './IntentSchemeFilter'

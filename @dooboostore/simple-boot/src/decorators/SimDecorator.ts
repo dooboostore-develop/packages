@@ -116,6 +116,7 @@ export function Sim(configOrTarget: SimConfig | ConstructorType<any> | Function 
 
 // Alias for @sim (lowercase)
 export const sim = Sim;
+export const injectable = Sim;
 
 export const getSim = (target: ConstructorType<any> | Function | any): SimConfig | undefined => {
   if (target != null && target !== undefined && typeof target === 'object') {

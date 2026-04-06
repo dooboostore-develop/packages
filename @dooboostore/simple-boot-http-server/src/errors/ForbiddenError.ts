@@ -2,7 +2,11 @@ import {HttpError} from './HttpError';
 import {HttpStatus} from '../codes/HttpStatus';
 
 export class ForbiddenError extends HttpError {
-    constructor({status = HttpStatus.Forbidden, message = 'Forbidden'}: {status?: number, message?: string} = {}) {
-        super({status, message});
-    }
+  constructor(
+    input: { status?: number; message?: string } | string = {},
+  ) {
+    const {status = HttpStatus.Forbidden, message = 'Forbidden'} =
+      typeof input === 'string' ? {message: input} : input;
+    super({status, message});
+  }
 }
