@@ -3,10 +3,12 @@ import { SwcUtils } from '../utils/Utils';
 import { FunctionUtils, ActionExpression } from '@dooboostore/core';
 import { ConvertUtils } from '@dooboostore/core-web';
 import { SwcChooseInterface } from '../types';
-import { attributeHost } from '../decorators';
+import { attributeHost, getAttributeValue, getElementConfig } from '../decorators';
 
 class SwcChoose extends HTMLTemplateElement implements SwcChooseInterface {
-  @attributeHost('value')
+  // @attributeHost('value')
+  // fetchValue: any;
+
   _value: any;
 
   @attributeHost('replace-wrap')
@@ -20,12 +22,24 @@ class SwcChoose extends HTMLTemplateElement implements SwcChooseInterface {
   }
 
   set value(nv: any) {
-    this.refresh(nv);
+    this._value = nv;
+    this.refresh(this._value);
+  }
+
+  constructor() {
+    super();
+    console.log('swc chooooooooooooooooooooooooose constructor called!');
+  }
+
+  attributeChangedCallback(na,o,n){
+    console.log('-----------------choooooooose attr origin', na,o,n);
   }
 
   @changedAttributeHost('value')
-  private setValue() {
-    this.refresh();
+  private setValue(value: any, o: string, n: string) {
+    console.log('-----------------choooooooose attr setValue', value, o, n);
+    this._value = value;
+    this.refresh(this._value);
   }
 
   @changedAttributeHost('replace-wrap')
@@ -55,11 +69,13 @@ class SwcChoose extends HTMLTemplateElement implements SwcChooseInterface {
     return ae.getUnprocessedTemplate();
   }
 
-  refresh(value = this._value) {
+  refresh(value?: any) {
+    value = getAttributeValue(this,'value') ?? this._value;
+    console.log('chooooooooo refresh->', value);
     const portal = this.parentElement;
     if (!portal) return;
 
-    const win = this.ownerDocument?.defaultView || window;
+    const win = (getElementConfig(this).window ?? this.ownerDocument?.defaultView) || window;
     const helperSet = SwcUtils.getHelperAndHostSet(win, this);
     const groupArgs = { ...helperSet, $value: value };
 

@@ -48,18 +48,19 @@ export class SSRSimpleWebComponentFilter implements Filter {
       const domParserInitializer = new DomParserInitializer(this.config.frontDistPath, this.config.frontDistIndexFileName || 'index.html', { url: targetUrl });
       const window = await domParserInitializer.run();
 
+      // console.log('vvvv22aa');
       // web component 경우 자기 tagName을 생성자 에게 HTMLElementBase에넘겨줘야되기떄문에
-      const getTagName = (type: ConstructorType<any>) => {
-        const zz = getElementConfig(type);
-        return zz.name;
-      };
-      (window as any).HTMLElement = class extends HTMLElementBase {
-        constructor(...args: any[]) {
-          const ctor = new.target as any; // 이런 슈가 기능이...
-          const resolvedTagName = getTagName(ctor);
-          super(resolvedTagName, args[0]);
-        }
-      }
+      // const getTagName = (type: ConstructorType<any>) => {
+      //   const zz = getElementConfig(type);
+      //   return zz.name;
+      // };
+      // (window as any).HTMLElement = class extends HTMLElementBase {
+      //   constructor(...args: any[]) {
+      //     const ctor = new.target as any; // 이런 슈가 기능이...
+      //     const resolvedTagName = getTagName(ctor);
+      //     super(resolvedTagName, args[0]);
+      //   }
+      // }
 
 
       try {
@@ -69,6 +70,7 @@ export class SSRSimpleWebComponentFilter implements Filter {
           await this.config.registerComponents(window);
         }
 
+        await new Promise<void>((resolve, reject) => setTimeout(resolve, 5000));
         // 3. Generate Final HTML
         const html = this.makeHTML(window);
 

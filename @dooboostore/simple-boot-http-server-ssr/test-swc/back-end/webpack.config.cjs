@@ -4,11 +4,12 @@ const TsconfigPathsPlugin = require('tsconfig-paths-webpack-plugin');
 module.exports = {
   target: 'node',
   mode: 'development',
-  devtool: 'source-map',
+  devtool: 'cheap-module-source-map',
   entry: path.resolve(__dirname, 'index.ts'),
   output: {
     path: path.resolve(__dirname, '../dist-back-end'),
     filename: 'index.cjs',
+    sourceMapFilename: '[file].map',
     clean: true
   },
   module: {
@@ -36,6 +37,7 @@ module.exports = {
     ],
     alias: {
       '@swc-src': path.resolve(__dirname, '../src'),
+      '@swc-back-end': path.resolve(__dirname, './'),
       '@dooboostore/simple-boot': path.resolve(__dirname, '../../../simple-boot/src'),
       '@dooboostore/simple-boot-http-server': path.resolve(__dirname, '../../../simple-boot-http-server/src'),
       '@dooboostore/simple-boot-http-server-ssr': path.resolve(__dirname, '../../src'),

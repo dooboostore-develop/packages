@@ -1,26 +1,23 @@
 import { SimpleApplication } from '@dooboostore/simple-boot/SimpleApplication';
-import { PathRouter } from '@dooboostore/core-web';
-import { HashRouter } from '@dooboostore/core-web';
+import { HashRouter, PathRouter, Router, RouterEventType } from '@dooboostore/core-web';
 import { ElementRouter } from '../router/ElementRouter';
 import { SimOption } from '@dooboostore/simple-boot/SimOption';
-import { Router, RouterEventType } from '@dooboostore/core-web';
-import { Subscription } from '@dooboostore/core';
-import { ConstructorType, OptionalType } from '@dooboostore/core';
-import { FunctionUtils } from '@dooboostore/core';
-import { SwcUtils } from '../utils/Utils';
+import { ConstructorType, OptionalType, Subscription } from '@dooboostore/core';
 
 import { SwcAppInterface } from '../types';
-import {Intent} from "@dooboostore/simple-boot";
+import { SimConfig } from '@dooboostore/simple-boot';
 
 export type SwcConfigType = {
   routeType: 'path' | 'hash' | 'element';
   connectMode?: 'direct' | 'swap';
   container?: symbol;
+  otherInstanceSim?: Map<ConstructorType<any> | Function | SimConfig | symbol, any>;
   path?: string;
   window: Window;
   onEngineStarted?: (sp: SimpleApplication, app: SwcAppInterface) => void;
   onConnected?: (app: SwcAppInterface) => void;
   onDisconnected?: (app: SwcAppInterface) => void;
+  onRouteChanged?: (event: RouterEventType, app: SwcAppInterface) => void;
 };
 
 export type SwcAttributeConfigType = OptionalType<SwcConfigType, 'routeType' | 'window'>;
@@ -52,15 +49,17 @@ export class SwcAppEngine {
       // console.log('vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv', this.router)
 
       // App start
-      const containerSymbol = this._config.container || (this.host as any).getContainerSymbol?.();
       this.simpleApplication = new SimpleApplication(
         new SimOption({
           excludeProxys: [Node],
-          container: containerSymbol
+          container: this._config.container
         })
       );
 
       const otherInstanceSim = new Map<any, any>();
+      this.config.otherInstanceSim?.forEach((v, k) => {
+        otherInstanceSim.set(k, v);
+      });
       if (this.router) otherInstanceSim.set(Router, this.router);
       this.simpleApplication.run(otherInstanceSim);
 
@@ -68,7 +67,7 @@ export class SwcAppEngine {
         this._config.onEngineStarted(this.simpleApplication, this.host as unknown as SwcAppInterface);
       }
     } catch (e) {
-      console.error('[SWC-APP-ENGINE] Init failed:', e);
+      console.error('[SWC-APP-ENGINE] Init failed:', e, this._config);
     }
   }
 

@@ -1,5 +1,5 @@
 import { ReflectUtils } from '@dooboostore/core';
-import { SpecialSelector, SwcQueryOptions } from '../types';
+import { SpecialSelector, SwcQueryOptions, HelperHostSet } from '../types';
 import { ensureInit, getElementConfig } from './elementDefine';
 import { SwcUtils } from '../utils/Utils';
 
@@ -7,6 +7,7 @@ export interface EmitCustomEventBaseOptions {
   bubbles?: boolean;
   composed?: boolean;
   cancelable?: boolean;
+  filter?: (target: EventTarget, detail: any, meta: {currentThis: any, helper: HelperHostSet}) => boolean;
 }
 
 export interface EmitCustomEventMetadata {
@@ -90,7 +91,12 @@ export function emitCustomEvent(selectorOrTarget: string, type: string, options:
         });
       }
 
-      eventTargets.forEach(t => t.dispatchEvent(event));
+      eventTargets.forEach(t => {
+        if (fullOptions.filter && !fullOptions.filter(t, detail, {currentThis: this, helper: hostSet})) {
+          return;
+        }
+        t.dispatchEvent(event);
+      });
       return detail;
     };
   };

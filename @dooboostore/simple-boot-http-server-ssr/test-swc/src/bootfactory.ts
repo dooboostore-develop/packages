@@ -1,39 +1,42 @@
-import register, {SwcAppInterface} from '@dooboostore/simple-web-component';
+import register, { SwcAppInterface } from '@dooboostore/simple-web-component';
 import { componentFactories } from './component';
 import { pageFactories } from './pages';
-import { SwcAttributeConfigType } from '@dooboostore/simple-web-component/elements/SwcAppEngine';
-import {IndexRouter} from './pages/index.router';
-export default (w: Window, path?: string) => {
-  console.log('bootfactory');
+import { serviceFactories } from './services';
+import { ConstructorType, Promises } from '@dooboostore/core';
+
+export default (w: Window, other: Map<symbol, any> | ((c:symbol)=>void)[], path?: string) => {
+  console.log('bootfactory==');
+  const container = Symbol('container');
+  const otherServiceFactories = Array.isArray(other) ? other : [];
+  const otherInstanceSim = !Array.isArray(other) ? other : new Map<symbol, any>();
+  [...otherServiceFactories, ...serviceFactories].forEach(it => it(container));
   register(w, [...componentFactories, ...pageFactories]);
 
-  // w.document.addEventListener('DOMContentLoaded', () => {
-    const appBody = w.document.querySelector('#app') as SwcAppInterface;
-    if (appBody && (appBody as any).connect) {
-      const config: SwcAttributeConfigType = {
-        rootRouter: IndexRouter.SYMBOL,
-        routeType: 'path',
-        path: path ?? '/',
-        window: w
-      };
-
-      const isClientWindow = typeof window !== 'undefined' && w === window;
-      if (isClientWindow) {
-        (appBody as any).connect({ ...config, connectMode: 'swap' });
-      } else {
-        (appBody as any).connect(config);
+  const { promise, resolve, reject } = Promise.withResolvers();
+  const appElement = w.document.querySelector('#app') as SwcAppInterface;
+  if (appElement && typeof appElement.connect === 'function') {
+    appElement.connect({
+      path: path ?? '/',
+      routeType: 'path',
+      container: container,
+      window: w,
+      otherInstanceSim: otherInstanceSim,
+      onEngineStarted: (app, component) => {
+        component.innerHTML = `<index-router l="22"/>`;
+        // w.customElements.upgrade(component);
+        console.log('[Root] Engine started');
+        // console.log('Router:', component.router);
+      },
+      onRouteChanged: (route, app) => {
+        console.log('[Root] Route changed:', route);
+        w.document.querySelector('index-router')?.setAttribute('l', route.path);
+        resolve({app, route});
       }
-    }
-  // });
-
-
-  return appBody;
-  // (w as any).applicationConfig = (app: any): SwcAttributeConfigType => {
-  //   console.log('vvvvvvvvvvvvvvv')
-  //   return {
-  //     rootRouter: IndexRouter(w),
-  //     path: '/hello/good2',
-  //     window: w
-  //   };
-  // };
+    });
+  } else {
+    const error = new Error('[Root] Failed to initialize SWC App: appElement.connect is not a function. Check Safari polyfill.');
+    console.error(error);
+    reject(error);
+  }
+  return promise;
 };

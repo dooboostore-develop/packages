@@ -6,11 +6,11 @@ export const SUBSCRIBE_SWC_APP_MESSAGE_WHILE_CONNECTED_METADATA_KEY = Symbol.for
 export interface SwcAppMessageSubscriberMetadata {
   propertyKey: string | symbol;
   messageType?: string;
-  filter?: (message: SwcAppMessage) => boolean;
+  filter?: (message: SwcAppMessage, currentThis: any) => boolean;
 }
 
 export interface SwcAppMessageOptions {
-  filter?: (message: SwcAppMessage) => boolean;
+  filter?: (message: SwcAppMessage, currentThis: any) => boolean;
 }
 
 function createSubscribeSwcAppMessageWhileConnected(options?: SwcAppMessageOptions, messageType?: string): MethodDecorator {

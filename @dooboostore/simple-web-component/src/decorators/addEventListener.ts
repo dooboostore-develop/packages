@@ -10,7 +10,7 @@ export interface AddEventListenerBaseOptions extends EventListenerOptions {
   preventDefault?: boolean;
   removeOnDisconnected?: boolean;
   delegate?: boolean;
-  filter?: (target: Event | CustomEvent, helper: HelperHostSet) => boolean;
+  filter?: (target: Event | CustomEvent, meta:{currentThis: any, helper: HelperHostSet}) => boolean;
 }
 
 export interface AddEventListenerMetadata {

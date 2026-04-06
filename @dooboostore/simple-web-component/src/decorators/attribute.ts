@@ -1,7 +1,7 @@
-import {ReflectUtils, FunctionUtils, ActionExpression} from '@dooboostore/core';
-import {ensureInit, getElementConfig} from './elementDefine';
-import {SwcUtils} from '../utils/Utils';
-import {SpecialSelector, SwcQueryOptions} from '../types';
+import { ReflectUtils, FunctionUtils, ActionExpression } from '@dooboostore/core';
+import { ensureInit, getElementConfig } from './elementDefine';
+import { SwcUtils } from '../utils/Utils';
+import { SpecialSelector, SwcQueryOptions } from '../types';
 import { ConvertUtils } from '@dooboostore/core-web';
 export interface AttributeFieldOptions extends SwcQueryOptions {
   name?: string;
@@ -23,6 +23,44 @@ const convertValue = (val: string | null, type: any): any => {
   if (type === Number) return Number(val);
   if (type === Boolean) return val === 'false' || val === '0' ? false : true;
   return val;
+};
+
+export { convertValue };
+
+export const getAttributeValue = (inst: any, attrName: string, options?: AttributeFieldOptions & { selector?: string }): any => {
+  const conf = getElementConfig(inst);
+  const currentWin = inst._resolveWindow?.(conf) || ((typeof window !== 'undefined' ? window : undefined) as any);
+
+  // If selector is not provided, use inst itself
+  const targets = options?.selector ? resolveTargetEls(inst, options.selector, options, currentWin) : [inst];
+
+  const primaryTarget = targets[0];
+
+  if (primaryTarget && typeof (primaryTarget as any).hasAttribute === 'function' && (primaryTarget as any).hasAttribute(attrName)) {
+    let domVal = (primaryTarget as any).getAttribute(attrName);
+
+    // 표현식 체크
+    const ae = new ActionExpression(domVal);
+    const expr = ae.getFirstExpression('call-return');
+    if (expr) {
+      try {
+        const result = FunctionUtils.executeReturn({
+          script: ConvertUtils.decodeHtmlEntity(expr.script, currentWin.document),
+          context: inst,
+          args: SwcUtils.getHelperAndHostSet(currentWin, inst)
+        });
+        return convertValue(result, options?.type);
+      } catch (e) {
+        console.error(`[SWC] Failed to execute directive {{= ${expr.script} }}:`, e);
+        return convertValue(domVal, options?.type);
+      }
+    }
+
+    return convertValue(domVal, options?.type);
+  }
+
+  // If no target found, return null
+  return null;
 };
 
 export const resolveTargetEls = (inst: any, selector: string, options: AttributeFieldOptions, currentWin: any): HTMLElement[] => {
@@ -89,7 +127,7 @@ export function attribute(selector: string, options: AttributeFieldOptions = {})
       metaList = [];
       ReflectUtils.defineMetadata(ATTRIBUTE_FIELD_METADATA_KEY, metaList, constructor);
     }
-    metaList.push({propertyKey, selector, options, privateKey});
+    metaList.push({ propertyKey, selector, options, privateKey });
 
     const applySetAttribute = (inst: any, targets: HTMLElement[], attrName: string, nv: any) => {
       targets.forEach(it => {
@@ -111,45 +149,20 @@ export function attribute(selector: string, options: AttributeFieldOptions = {})
       // delete target[propertyKey];
 
       // const defineTarget = target instanceof Function ? target : (target as any).constructor;
-      
+
       Object.defineProperty(target, propertyKey, {
         get(this: any) {
           const attrName = options.name || String(propertyKey);
-          const conf = getElementConfig(this);
-          const currentWin = this._resolveWindow?.(conf) || ((typeof window !== 'undefined' ? window : undefined) as any);
-          const targetType = options.type || designType;
 
-          const targets = resolveTargetEls(this, selector, options, currentWin);
-          const primaryTarget = targets[0];
+          // Merge designType fallback into options once
+          const mergedOptions = {
+            ...options,
+            selector,
+            type: options.type || designType
+          };
 
-          if (primaryTarget && typeof (primaryTarget as any).hasAttribute === 'function') {
-            if ((primaryTarget as any).hasAttribute(attrName)) {
-              let domVal = (primaryTarget as any).getAttribute(attrName);
-              
-              // 표현식 체크
-              const ae = new ActionExpression(domVal);
-              const expr = ae.getFirstExpression('call-return');
-              if (expr) {
-                try {
-                  const result = FunctionUtils.executeReturn({
-                    script: ConvertUtils.decodeHtmlEntity(expr.script, currentWin.document),
-                    context: this,
-                    args: SwcUtils.getHelperAndHostSet(currentWin, this)
-                  });
-                  return convertValue(result, targetType);
-                } catch (e) {
-                  console.error(`[SWC] Failed to execute directive {{= ${expr.script} }}:`, e);
-                  return convertValue(domVal, targetType);
-                }
-              }
-              
-              return convertValue(domVal, targetType);
-            }
-            return null;
-          }
-
-          const data = convertValue(this[privateKey], targetType);
-          return data;
+          const result = getAttributeValue(this, attrName, mergedOptions);
+          return result !== null ? result : this[privateKey];
         },
         set(this: any, nv: any) {
           // this[propertyKey] = nv;
@@ -157,7 +170,6 @@ export function attribute(selector: string, options: AttributeFieldOptions = {})
           const attrName = options.name || String(propertyKey);
           const conf = getElementConfig(this);
           const currentWin = this._resolveWindow?.(conf) || ((typeof window !== 'undefined' ? window : undefined) as any);
-
 
           // if (!this.__swc_connected) {
           //   this[privateKey] = nv;
@@ -170,9 +182,9 @@ export function attribute(selector: string, options: AttributeFieldOptions = {})
         enumerable: true,
         configurable: true
       });
-  } catch (err) {
-    console.error('[SWC] defineProperty error:', err);
-  }
+    } catch (err) {
+      console.error('[SWC] defineProperty error:', err);
+    }
   };
 }
 

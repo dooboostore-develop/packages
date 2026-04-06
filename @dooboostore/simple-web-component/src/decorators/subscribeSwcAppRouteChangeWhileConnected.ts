@@ -6,12 +6,12 @@ export const SUBSCRIBE_SWC_APP_ROUTE_CHANGE_WHILE_CONNECTED_METADATA_KEY = Symbo
 export interface SwcAppRouteChangeSubscriberMetadata {
   propertyKey: string | symbol;
   pathPattern?: string | string[];
-  filter?: (router: Router) => boolean;
+  filter?: (router: Router, currentThis: any) => boolean;
 }
 
 export interface SwcAppRouteChangeOptions {
   path?: string | string[];
-  filter?: (router: Router) => boolean;
+  filter?: (router: Router, currentThis: any) => boolean;
 }
 
 function createSubscribeSwcAppRouteChangeWhileConnected(options?: SwcAppRouteChangeOptions): MethodDecorator {

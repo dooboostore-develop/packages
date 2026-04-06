@@ -2,7 +2,7 @@ import { ReflectUtils, FunctionUtils, ActionExpression } from '@dooboostore/core
 import { getAddEventListenerMetadata } from './addEventListener';
 import { ON_INITIALIZE_METADATA_KEY, ON_BEFORE_CONNECTED_METADATA_KEY, ON_AFTER_CONNECTED_METADATA_KEY, ON_BEFORE_DISCONNECTED_METADATA_KEY, ON_AFTER_DISCONNECTED_METADATA_KEY, ON_BEFORE_ADOPTED_METADATA_KEY, ON_AFTER_ADOPTED_METADATA_KEY, findAllLifecycleMetadata, getOnConnectedInnerHtmlMetadata } from './lifecycles';
 import { getEmitCustomEventMetadataList } from './emitCustomEvent';
-import { findAllAttributeChangedMetadata } from './changedAttributeHost';
+import { findAllAttributeChangedMetadata, convertAttributeValue } from './changedAttributeHost';
 import { findAllAttributeApplyMetadata } from './applyAttribute';
 import { findAllAttributeMetadata } from './attribute';
 import { getQueryMetadata } from './query';
@@ -22,7 +22,7 @@ export interface ElementConfig {
   observedAttributes?: string[];
   customElementRegistry?: any;
   window?: Window;
-  useShadow?: boolean;
+  useShadow?: boolean | 'open' | 'closed';
 }
 
 export interface ElementMetadata extends Omit<ElementConfig, 'window'> {
@@ -126,8 +126,8 @@ const handleGlobalSwcEvent = async (event: Event) => {
   }
 };
 
-function buildEnv(configWindow?: Window) {
-  const win: Window = configWindow || ((typeof window !== 'undefined' ? window : undefined) as any);
+function buildEnv(configWindow: Window) {
+  const win: Window = configWindow;
   const doc: Document = win?.document;
   const builtInTagMap = new Map<any, string>();
   for (const [cls, tag] of HTML_TAG_ENTRIES) {
@@ -293,8 +293,15 @@ export const elementDefine =
     // const attributeListNames = attributeList.map(it => it.options.name || String(it.propertyKey));
     const hostAttributes = attributeList.filter(it => it.selector === ':host').map(it=>it.options.name || String(it.propertyKey));
 
+    const proto = constructor.prototype;
+    
+    // Get original static observedAttributes before they're overwritten by Object.defineProperty
+    const originalStaticObservedAttributes = (constructor.observedAttributes ?? []) as string[];
+    
+    // proto.observedAttributes??[];
     const mergedObservedAttributes = [...new Set([
       ...(metadata.observedAttributes ?? []),
+      ...originalStaticObservedAttributes,
       ...attrChangeMap.keys(),
       ...attributeApplyNames,
       ...hostAttributes,
@@ -305,7 +312,6 @@ export const elementDefine =
 
     const connectedInnerHtmlList = getOnConnectedInnerHtmlMetadata(constructor) || [];
 
-    const proto = constructor.prototype;
     setupPrototype(proto);
 
     const originalConnected = proto.connectedCallback;
@@ -317,8 +323,10 @@ export const elementDefine =
       const conf = getElementConfig(this);
       const currentWin = (this as any)._resolveWindow(conf);
 
-      if ((connectedInnerHtmlList.some(it => it.options.useShadow === true) || conf?.useShadow === true) && !this.shadowRoot) {
-        this.attachShadow({ mode: 'open' });
+      const shadowMode = conf?.useShadow || connectedInnerHtmlList.find(it => it.options.useShadow)?.options.useShadow;
+      if (shadowMode && !this.shadowRoot) {
+        const mode = shadowMode === true ? 'open' : shadowMode;
+        this.attachShadow({ mode: mode as ShadowRootMode });
       }
 
       (this as any)._executeSwcScript('swc-on-before-connected', hostSet);
@@ -336,12 +344,16 @@ export const elementDefine =
           // console.log('------res0', res);
           // console.log('------res1', res1);
           if (res !== undefined) {
-            if (meta.options.useShadow) sContent += res;
+            if (meta.options.useShadow || conf?.useShadow) sContent += res;
             else lContent += res;
           }
         }
-        if (this.shadowRoot) this.shadowRoot.innerHTML = sContent;
-        if (lContent) this.innerHTML = lContent;
+        try {
+          if (this.shadowRoot) this.shadowRoot.innerHTML = sContent;
+          if (lContent) this.innerHTML = lContent;
+        } catch (e) {
+          console.error('[ElementDefine] innerHTML setting error:', e);
+        }
       }
 
       const root = this.getRootNode();
@@ -468,7 +480,7 @@ export const elementDefine =
             // Apply filter if specified
             if (options.filter) {
               const helper = SwcUtils.getHelperAndHostSet(currentWin, t as HTMLElement);
-              if (!options.filter(event, helper)) {
+              if (!options.filter(event, {currentThis: this,helper})) {
                 return;  // Skip if filter returns false
               }
             }
@@ -565,21 +577,23 @@ export const elementDefine =
       const hSet = SwcUtils.getHostSet(this as any);
 
       // Process expression directive before passing to handlers
-      let processedVal = newVal;
+      let processedVal: any = newVal;
       if (newVal !== null) {
         const ae = new ActionExpression(newVal);
         const expr = ae.getFirstExpression('call-return');
         if (expr) {
           const win = (this as any)._resolveWindow?.() || ((typeof window !== 'undefined' ? window : undefined) as any);
+          const helperAndHostSet = SwcUtils.getHelperAndHostSet(win,this as any);
           try {
             const result = FunctionUtils.executeReturn({
               script: ConvertUtils.decodeHtmlEntity(expr.script, win.document),
               context: this,
-              args: SwcUtils.getHelperAndHostSet(win,this as any)
+              args: helperAndHostSet
             });
-            processedVal = String(result);
+            // Pass the result object directly without serialization
+            processedVal = result;
           } catch (e) {
-            console.error(`[SWC] Failed to execute directive {{= ${expr.script} }} on attribute ${name}:`, e);
+            console.error(`[SWC] Failed to execute directive {{= ${expr.script} }} on attribute ${name}: ${helperAndHostSet}`, e);
             processedVal = newVal;
           }
         }
@@ -597,9 +611,12 @@ export const elementDefine =
         (this as any)._bindAttributeEvent(this as any, name, newVal, hostCustomEventMeta.type);
       }
 
-      const mKeys = attrChangeMap.get(name);
-      if (mKeys && Array.isArray(mKeys)) {
-        for (const key of mKeys) (this as any)[key](processedVal, old, name, hSet);
+      const metaList = attrChangeMap.get(name);
+      if (metaList && Array.isArray(metaList)) {
+        for (const meta of metaList) {
+          const convertedVal = convertAttributeValue(processedVal, meta.options.type);
+          (this as any)[meta.propertyKey](convertedVal, old, name, hSet);
+        }
       }
     };
 

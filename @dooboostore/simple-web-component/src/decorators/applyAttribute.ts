@@ -7,6 +7,7 @@ export type AttributeAction = 'set' | 'update' | 'remove';
 
 export interface AttributeApplyOptions extends SwcQueryOptions {
   name?: string;
+  filter?: (target: HTMLElement, value: any, meta: {currentThis: any, helper: HelperHostSet}) => boolean;
 }
 
 export interface AttributeApplyMetadata {
@@ -76,6 +77,9 @@ function createAttributeDecorator(action: AttributeAction) {
           }
 
           targetEls.forEach(targetEl => {
+            if (finalOptions.filter && !finalOptions.filter(targetEl, res, {currentThis: this, helper: hostSet})) {
+              return;
+            }
             const resolvedRes = typeof res === 'function' ? (res as any)(targetEl, hostSet) : res;
 
             if (action === 'set' || action === 'update') {

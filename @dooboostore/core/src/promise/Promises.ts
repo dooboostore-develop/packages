@@ -101,6 +101,7 @@ export namespace Promises {
     return new AbortablePromise(executor, signal);
   };
 
+  // const { promise, resolve, reject } = Promise.withResolvers<T>(); 공식 이거쓰셈
   export const withResolvers = <T>() => {
     let resolve!: (value: T | PromiseLike<T>) => void;
     let reject!: (reason?: any) => void;

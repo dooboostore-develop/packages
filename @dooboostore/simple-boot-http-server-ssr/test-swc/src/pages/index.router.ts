@@ -1,72 +1,86 @@
-import { Sim } from '@dooboostore/simple-boot';
-import { Router } from '@dooboostore/simple-boot';
-import { Router as WebRouter } from '@dooboostore/core-web';
-import {elementDefine, onConnectedInnerHtml, setAttribute} from '@dooboostore/simple-web-component';
-import { RouterAction } from '@dooboostore/simple-boot';
-import { RoutingDataSet } from '@dooboostore/simple-boot';
-import ww, { IndexRoute } from './index.route';
-import uu, { UserRoute } from './user.route';
+import { changedAttributeHost, elementDefine, onConnectedInnerHtml, onConnectedSwcApp, query, setAttribute, subscribeSwcAppRouteChangeWhileConnected, type SwcChooseInterface, SwcUtils } from '@dooboostore/simple-web-component';
+import { Router, type RouterEventType } from '@dooboostore/core-web';
 
-export namespace IndexRouter {
-  export const SYMBOL = Symbol.for('IndexRouter');
-}
-
-export interface IndexRouter {}
-
+export const tagName = 'index-router';
 export default (w: Window) => {
-  const HTMLElement = (w as any).HTMLElement as typeof globalThis.HTMLElement;
-
-  console.log('router factory called', HTMLElement)
-  @Sim({ symbol: IndexRouter.SYMBOL })
-  @Router({
-    path: '',
-    route: {
-      '': '/',
-      '/': IndexRoute.SYMBOL,
-      '/user': UserRoute.SYMBOL,
-      // '/': ww(w),
-      // '/user': uu(w) //UserRoute.SYMBOL,
-    }
-  })
+  const routePaths = ['/', '/user'];
+  const existing = w.customElements.get(tagName);
+  if (existing) return tagName;
   @elementDefine('index-router', { window: w })
-  class IndexRouterImp extends HTMLElement implements IndexRouter, RouterAction.CanActivate {
-    constructor(private router: WebRouter) {
-      super();
-      console.log('IndexRouter constructor called', router)
+  class IndexRouterImp extends w.HTMLElement {
+    private router?: Router;
+    private routerPathSet?: { path: string; pathData?: { [p: string]: string } };
+
+    @query('#router')
+    routerChooseTemplate!: SwcChooseInterface;
+
+    @onConnectedSwcApp
+    onConnectedSwcApp(router: Router) {
+      this.router = router;
+      // console.log('index.router onConnectedSwcApp', router.value);
     }
 
     @setAttribute('#url-text', 'value')
     go(url: string) {
-      this.router.go(url);
+      this.router?.go(url);
       return url;
     }
-    async canActivate(url: RoutingDataSet, data?: any): Promise<void> {
-      console.log('-------ac', data);
-      if (data instanceof Node && !this.contains(data)) {
-        // data.nodeName='RR-RR'
-        console.log('chgange-->', data.nodeName)
-        this.replaceChildren(data);
-      }
+
+    static get observedAttributes() {
+      return ['c', 'l'];
     }
 
+    attributeChangedCallback(na: any, o: any, n: any) {
+      console.log('-----------------index.router attr origin', na, o, n);
+    }
 
-    @onConnectedInnerHtml({ useShadow: true })
-    render() {
+    @changedAttributeHost('c')
+    tt22(tt: any) {
+      console.log('----->', tt);
+    }
+
+    @setAttribute('#url-text', 'value')
+    @subscribeSwcAppRouteChangeWhileConnected(routePaths)
+    routeChanged(router: RouterEventType) {
+      this.routerPathSet = router;
+      this.routerChooseTemplate?.refresh?.();
+      console.log('index.router rrrrrrrrrrrrrrrrrrrrrrrrr', this.routerChooseTemplate?.refresh);
+      setTimeout(() => {
+        console.log('!!', this.routerChooseTemplate?.refresh);
+      }, 1000);
+      return this.routerPathSet.path;
+    }
+
+    connectedCallback(){
+      console.log('index.router render  innerhtml origin');
+    };
+    @onConnectedInnerHtml//({ useShadow: true })
+    render(router?: Router) {
+      console.log('index.router render  innerhtml');
+      this.routerPathSet = SwcUtils.parsePathPatternsSet(routePaths, router?.value?.path ?? '/');
       return `
       <div>
         <h1>Hello from Simple Web Component SSR!</h1>
         <p><input id="url-text" type="text"></p>
-<nav>
-<button swc-on-click="$host.go('/')">/</button>
-<button swc-on-click="$host.go('/user')">/user</button>
-</nav>
-        <section>
-        <slot></slot>
-        </section>
+      <nav>
+        <button swc-on-click="$host.go('/')">/</button>
+        <button swc-on-click="$host.go('/user')">/user</button>
+      </nav>
+      <section>
+      <!--        <slot></slot>-->
+        <template id="router" value="{{= $host?.routerPathSet }}" is="swc-choose">
+          <template is="swc-when" value="{{ ['','/'].includes($value?.path) }}" skip-if-same>
+            <index-route />
+          </template>
+          <template is="swc-when" value="{{ ['/user'].includes($value?.path) }}" skip-if-same>
+            <user-route />
+          </template>
+        </template>
+      </section>
       </div>
     `;
     }
   }
 
-  return IndexRouterImp;
+  return tagName;
 };

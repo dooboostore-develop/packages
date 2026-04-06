@@ -1,18 +1,13 @@
 import { Sim } from '@dooboostore/simple-boot';
 import { elementDefine, onConnectedInnerHtml } from '@dooboostore/simple-web-component';
 
-export namespace IndexRoute {
-  export const SYMBOL = Symbol.for('IndexRoute');
-}
 
-export interface IndexRoute {}
-
+export const tagName = 'index-route';
 export default (w: Window) => {
-  const HTMLElement = (w as any).HTMLElement as typeof globalThis.HTMLElement;
-  console.log('-----asddddcccc', HTMLElement)
-  @Sim({ symbol: IndexRoute.SYMBOL })
-  @elementDefine('index-route', { window: w })
-  class IndexRouteImp extends HTMLElement implements IndexRoute {
+  const existing = w.customElements.get(tagName);
+  if (existing) return tagName;
+  @elementDefine(tagName, { window: w })
+  class IndexRouteImp extends w.HTMLElement {
     constructor() {
       super();
       console.log('IndexRouteImp constructor called');
@@ -21,11 +16,11 @@ export default (w: Window) => {
     render() {
       return `
       <div>
-        <h1>index route</h1>
+        <h1>index route!!</h1>
       </div>
     `;
     }
   }
 
-  return IndexRouteImp;
+  return tagName;
 };

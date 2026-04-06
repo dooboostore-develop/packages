@@ -12,7 +12,7 @@ export interface ApplyNodeOptions {
    * Filter function to determine whether to perform DOM operation.
    * If it returns false, the operation is skipped.
    */
-  filter?: (target: HTMLElement | ShadowRoot, newValue: any, helper: HelperHostSet) => boolean;
+  filter?: (target: HTMLElement | ShadowRoot, newValue: any, meta:{currentThis: any,helper: HelperHostSet}) => boolean;
   /**
    * Optional loading content to display while an async method is executing.
    */
@@ -113,17 +113,8 @@ export function applyNode(selector: string, options: ApplyNodeOptions = { positi
       const runApply = (target: any, val: any) => {
         const pos = options.position || 'beforeEnd';
         
-        // Intelligent Default Filter
-        const defaultFilter = (t: any, v: any) => {
-            if (v instanceof Node) return !t.contains(v);
-            if (pos === 'innerHtml' && typeof v === 'string') return t.innerHTML !== v;
-            if (pos === 'replaceChildren' && v instanceof Node) return !t.contains(v);
-            return true;
-        };
-        
-        const activeFilter = options.filter || defaultFilter;
-        
-        if (activeFilter(target, val, hostSet)) {
+        // 사용자가 filter를 명시하면 그 조건으로, 아니면 항상 적용
+        if (!options.filter || options.filter(target, val, {currentThis: this, helper: hostSet})) {
             applyToDom(target, val, pos, currentDoc);
         }
       };

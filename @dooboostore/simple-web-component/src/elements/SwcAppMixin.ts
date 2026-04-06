@@ -29,11 +29,11 @@ export function SwcAppMixin<T extends { new (...args: any[]): HTMLElement }>(Bas
       return this.__swc_engine.router;
     }
 
-    _invokeRouteChangeSubscribers(instance: any, re: RouterEventType) {
+    async _invokeRouteChangeSubscribers(instance: any, re: RouterEventType) {
       const routeChangeSubscribers = getSubscribeSwcAppRouteChangeWhileConnectedMetadata(instance);
       if (routeChangeSubscribers && Array.isArray(routeChangeSubscribers)) {
-        routeChangeSubscribers.forEach((metadata: any) => {
-          const methodName = metadata.propertyKey || metadata;
+        const ps = routeChangeSubscribers.map(async metadata => {
+          const methodName = metadata.propertyKey;
           const pathPattern = metadata.pathPattern;
           const filter = metadata.filter;
 
@@ -62,13 +62,14 @@ export function SwcAppMixin<T extends { new (...args: any[]): HTMLElement }>(Bas
           }
 
           // Filter validation
-          const filterPassed = !filter || filter(this.router!);
+          const filterPassed = !filter || filter(this.router!, instance);
 
           // Invoke method if conditions pass
-          if (pathMatched && filterPassed) {
-            instance[methodName]?.({...re, pathData: pathData});
+          if (pathMatched && filterPassed && instance[methodName]) {
+            await instance[methodName]({ ...re, pathData: pathData });
           }
         });
+        return await Promise.allSettled(ps);
       }
     }
 
@@ -92,16 +93,15 @@ export function SwcAppMixin<T extends { new (...args: any[]): HTMLElement }>(Bas
       }
     }
 
-    _handleRouteChange(route: RouterEventType) {
-      if (route.triggerPoint === 'end') {
-        // Iterate through all connected component instances
-        this._swc_connected_instance.forEach((instance: any) => {
-          this._invokeRouteChangeSubscribers(instance, route);
-        });
-      }
-
+    async _handleRouteChange(route: RouterEventType) {
       // Save last router event
       this._lastRouterEvent = route;
+      if (route.triggerPoint === 'end') {
+        // Iterate through all connected component instances
+        const swcConnectedInstance = Array.from(this._swc_connected_instance);
+        const ps = swcConnectedInstance.map((instance: any) => this._invokeRouteChangeSubscribers(instance, route));
+        await Promise.allSettled(ps);
+      }
     }
 
     async connect(config?: SwcAttributeConfigType) {
@@ -149,16 +149,17 @@ export function SwcAppMixin<T extends { new (...args: any[]): HTMLElement }>(Bas
         this._invokeOnConnectedSwcAppStarted(instance);
       });
 
-
       // Subscribe to router changes after connect
       if (!this._routerSubscription && this.router) {
+        const config = this.__swc_engine.config;
         this._routerSubscription = this.router.observable.subscribe((route: RouterEventType) => {
           //@ts-ignore
           // console.log('Route changed:', route, this._swcId);
-          this._handleRouteChange(route);
+          this._handleRouteChange(route).then(it => {
+            config?.onRouteChanged?.(route, this);
+          });
         });
         // Navigate to initial path if specified
-        const config = this.__swc_engine.config;
         // if (config?.path) {
         //   this.router.go(config.path);
         // }
@@ -233,7 +234,7 @@ export function SwcAppMixin<T extends { new (...args: any[]): HTMLElement }>(Bas
     _invokeMessageSubscribers(instance: any, message: SwcAppMessage) {
       const messageSubscribers = getSubscribeSwcAppMessageWhileConnectedMetadata(instance);
       if (messageSubscribers && Array.isArray(messageSubscribers)) {
-        messageSubscribers.forEach((metadata: any) => {
+        messageSubscribers.forEach(metadata => {
           const methodName = metadata.propertyKey;
           const messageType = metadata.messageType;
           const filter = metadata.filter;
@@ -250,7 +251,7 @@ export function SwcAppMixin<T extends { new (...args: any[]): HTMLElement }>(Bas
           // 필터 적용
           let filterMatched = true;
           if (filter && typeMatched) {
-            filterMatched = filter(message);
+            filterMatched = filter(message, instance);
           }
 
           // 조건을 만족하면 메서드 호출

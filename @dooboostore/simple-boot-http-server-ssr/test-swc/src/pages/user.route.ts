@@ -1,18 +1,12 @@
 import { Sim } from '@dooboostore/simple-boot';
 import { elementDefine, onConnectedInnerHtml } from '@dooboostore/simple-web-component';
 
-export namespace UserRoute {
-  export const SYMBOL = Symbol.for('UserRoute');
-}
-
-export interface UserRoute {}
-
+export const tagName = 'user-route';
 export default (w: Window) => {
-  const HTMLElement = (w as any).HTMLElement as typeof globalThis.HTMLElement;
-  console.log('UserRoute factory called', HTMLElement);
-  @Sim({ symbol: UserRoute.SYMBOL })
-  @elementDefine('user-route', { window: w })
-  class Imp extends HTMLElement implements UserRoute {
+  const existing = w.customElements.get(tagName);
+  if (existing) return tagName;
+  @elementDefine(tagName, { window: w })
+  class Imp extends w.HTMLElement {
     constructor() {
       super();
       console.log('UserRoute constructor called', w.customElements.get('index-router'));
@@ -26,6 +20,5 @@ export default (w: Window) => {
     `;
     }
   }
-
-  return Imp;
+  return tagName;
 };

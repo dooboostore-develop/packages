@@ -92,13 +92,19 @@ export const simProcess = (config: SimConfig, inputTarget: ConstructorType<any> 
 // const a = Math.random()+Date.now();
 export function Sim(target: ConstructorType<any> | Function): void;
 export function Sim(config: SimConfig): GenericClassDecorator<ConstructorType<any> | Function | any>;
-export function Sim(configOrTarget: SimConfig | ConstructorType<any> | Function): void | GenericClassDecorator<ConstructorType<any> | Function | any> {
+export function Sim(symbol: symbol): GenericClassDecorator<ConstructorType<any> | Function | any>;
+export function Sim(type: ConstructorType<any>): GenericClassDecorator<ConstructorType<any> | Function | any>;
+export function Sim(configOrTarget: SimConfig | ConstructorType<any> | Function | symbol): void | GenericClassDecorator<ConstructorType<any> | Function | any> {
   // console.group('sim')
   // sims.forEach((v,k) => {
   //   console.log('sssss->', v, k)
   // })
   // console.groupEnd()
-  if (typeof configOrTarget === 'function') {
+  if (typeof configOrTarget === 'symbol') {
+    return (target: ConstructorType<any> | Function | any) => {
+      simProcess({ symbol: configOrTarget }, target);
+    }
+  } else if (typeof configOrTarget === 'function') {
     simProcess({}, configOrTarget);
     // console.log('---!', Reflect.getMetadata('design:paramtypes', configOrTarget))
   } else {

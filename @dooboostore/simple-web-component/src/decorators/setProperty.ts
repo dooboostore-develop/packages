@@ -1,10 +1,11 @@
 import { ReflectUtils } from '@dooboostore/core';
 import { ensureInit } from './elementDefine';
 import { SwcUtils } from '../utils/Utils';
-import { SwcQueryOptions } from '../types';
+import { HelperHostSet, SwcQueryOptions } from '../types';
 
 export interface PropertySetOptions extends SwcQueryOptions {
   name?: string;
+  filter?: (target: HTMLElement, value: any, meta: {currentThis: any, helper: HelperHostSet}) => boolean;
 }
 
 export interface PropertySetMetadata {
@@ -71,6 +72,9 @@ export const setProperty = (selector: string, propertyNameOrOptions?: string | P
         }
 
         targetEls.forEach(targetEl => {
+          if (finalOptions.filter && !finalOptions.filter(targetEl, res, {currentThis: this, helper: hostSet})) {
+            return;
+          }
           const resolvedRes = typeof res === 'function' ? (res as any)(targetEl, hostSet) : res;
 
           if (propertyName) {

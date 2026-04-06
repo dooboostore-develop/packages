@@ -7,7 +7,9 @@ export const CLASS_METADATA_KEY = Symbol.for('simple-web-component:class');
 
 export type ClassAction = 'set' | 'update' | 'add' | 'remove' | 'toggle';
 
-export interface ClassApplyOptions extends SwcQueryOptions {}
+export interface ClassApplyOptions extends SwcQueryOptions {
+  filter?: (target: HTMLElement, value: any, meta: {currentThis: any, helper: HelperHostSet}) => boolean;
+}
 
 export interface ClassApplyMetadata {
   propertyKey: string | symbol;
@@ -71,6 +73,9 @@ function createClassDecorator(action: ClassAction) {
           }
 
           targetEls.forEach(targetEl => {
+            if (finalOptions.filter && !finalOptions.filter(targetEl, res, {currentThis: this, helper: hostSet})) {
+              return;
+            }
             const resolvedRes = typeof res === 'function' ? (res as any)(targetEl, hostSet) : res;
 
             if (action === 'set') {

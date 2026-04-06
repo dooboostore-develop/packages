@@ -42,7 +42,7 @@ baseClasses.forEach(cls => {
   extractionBlock += `  const ${cls} = _${cls} as typeof globalThis.${cls};\n`;
 });
 
-let registerContent = `import { elementDefine, attributeHost, changedAttributeHost } from '../decorators';
+let registerContent = `import { getElementConfig, elementDefine, attributeHost, changedAttributeHost, getAttributeValue } from '../decorators';
 import { SwcAppMixin } from './SwcAppMixin';
 import { SwcUtils } from '../utils/Utils';
 import { FunctionUtils,ActionExpression } from '@dooboostore/core';

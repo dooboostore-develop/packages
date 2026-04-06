@@ -249,8 +249,10 @@ export namespace SwcUtils {
   };
 
   export const getAppHosts = (el: HTMLElement): SwcAppInterface[] => {
-    const hosts = getHosts(el);
-    return hosts.filter(host => host.tagName.toLowerCase() === 'swc-app' || host.getAttribute('is')?.startsWith('swc-app-')) as SwcAppInterface[];
+    // const hosts = getHosts(el);
+    // return hosts.filter(host => host.tagName.toLowerCase() === 'swc-app' || host.getAttribute('is')?.startsWith('swc-app-')) as SwcAppInterface[];
+    const hosts = SwcUtils.findAllParentAppHostsDirect(el);
+    return hosts;
   };
 
   export const getAppHost = (el: HTMLElement): SwcAppInterface | undefined => {
@@ -277,7 +279,15 @@ export namespace SwcUtils {
    */
   export const findAllParentAppHostsDirect = (el: HTMLElement): SwcAppInterface[] => {
     const appHosts: SwcAppInterface[] = [];
-    
+
+    const w = el.ownerDocument?.defaultView || ((typeof window !== 'undefined' ? window : undefined) as any);
+
+    // Guard against SSR environment where window might be undefined
+    if (!w) {
+      return appHosts;
+    }
+
+    console.log('------?',w.ShadowRoot);
     // el 자체부터 시작 (el이 app host일 수도 있음)
     let current: HTMLElement | null = el;
 
@@ -296,9 +306,9 @@ export namespace SwcUtils {
       } else {
         // parentElement가 없음 = Shadow root의 직접 자식일 수 있음
         const root = current.getRootNode();
-        if (root instanceof ShadowRoot) {
+        if (w.ShadowRoot && root instanceof w.ShadowRoot) {
           // Shadow host로 올라가기
-          current = root.host as HTMLElement;
+          current = (root as ShadowRoot).host as HTMLElement;
         } else {
           // Document root 도달
           break;

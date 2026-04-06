@@ -5,7 +5,9 @@ import { SwcQueryOptions, HelperHostSet } from '../types';
 
 export type StyleAction = 'set' | 'update' | 'remove';
 
-export interface StyleApplyOptions extends SwcQueryOptions {}
+export interface StyleApplyOptions extends SwcQueryOptions {
+  filter?: (target: HTMLElement, value: any, meta: {currentThis: any, helper: HelperHostSet}) => boolean;
+}
 
 export interface StyleApplyMetadata {
   propertyKey: string | symbol;
@@ -61,6 +63,9 @@ function createStyleDecorator(action: StyleAction) {
           }
 
           targetEls.forEach(targetEl => {
+            if (options.filter && !options.filter(targetEl, res, {currentThis: this, helper: hostSet})) {
+              return;
+            }
             const resolvedRes = typeof res === 'function' ? (res as any)(targetEl, hostSet) : res;
 
             if (action === 'set' || action === 'update') {

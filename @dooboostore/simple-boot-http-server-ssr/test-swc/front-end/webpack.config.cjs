@@ -20,6 +20,7 @@ module.exports = {
     ],
     alias: {
       '@swc-src': path.resolve(__dirname, '../src'),
+      '@swc-front-end': path.resolve(__dirname, './'),
       '@dooboostore/simple-boot': path.resolve(__dirname, '../../../simple-boot/src'),
       '@dooboostore/simple-boot-http-server': path.resolve(__dirname, '../../../simple-boot-http-server/src'),
       '@dooboostore/simple-boot-http-server-ssr': path.resolve(__dirname, '../../src'),
@@ -57,5 +58,11 @@ module.exports = {
       template: path.resolve(__dirname, './index.html'),
       scriptLoading: 'defer'
     })
-  ]
+  ],
+  devServer: {
+    port: 8080,
+    hot: true,
+    host: 'localhost',
+    historyApiFallback: true
+  }
 };

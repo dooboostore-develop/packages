@@ -1,12 +1,13 @@
 import {SimpleBootHttpServer} from '@dooboostore/simple-boot-http-server';
 import {SSRSimpleWebComponentFilter} from '../../src/filters/SSRSimpleWebComponentFilter';
-import swcRegister from '@dooboostore/simple-web-component';
 import path from 'path';
 import bootfactory from "@swc-src/bootfactory";
 import {HttpSSRServerOption} from "@dooboostore/simple-boot-http-server-ssr";
 import {SimpleBootHttpSSRServer} from "@dooboostore/simple-boot-http-server-ssr";
 import {ResourceFilter} from "@dooboostore/simple-boot-http-server";
 import {UrlUtils} from "@dooboostore/core";
+import '@swc-back-end/services';
+import { UserService } from '@swc-src/services/UserService';
 
 const frontDistPath = path.resolve(__dirname, '../dist-front-end');
 const resourceFilter = new ResourceFilter(frontDistPath,
@@ -39,10 +40,11 @@ const swcFilter = new SSRSimpleWebComponentFilter({
   registerComponents: async (window: any) => {
     // window.
     // 1. Register Core SWC Elements
-    swcRegister(window);
     const urlPath = UrlUtils.getUrlPath(window.location);
-    console.log('vvvvvvvvvvvvvvv-', urlPath);
-    bootfactory(window, urlPath);
+    // console.log('vvvvvvvvvvvvvvv-', urlPath);
+    const otherInstance = new Map<symbol, any>();
+    otherInstance.set(UserService.SYMBOL, server.sim(UserService.SYMBOL));
+    await bootfactory(window, otherInstance, urlPath);
 
     console.log('✅ Registered components for request');
   }
@@ -50,15 +52,14 @@ const swcFilter = new SSRSimpleWebComponentFilter({
 
 // 2. Setup Server with Options
 const option = new HttpSSRServerOption({
-  listen: {port: 8080},
+  listen: {port: 3030},
   filters: [resourceFilter, swcFilter]
 });
 option.listen.hostname = '0.0.0.0'
 option.listen.listeningListener = (server: SimpleBootHttpServer) => {
-  console.log(`http server startUP! listening on ${server.option.address}`);
+  console.log(`🚀 SWC SSR Test Server startUP! listening on ${server.option.address}`);
 };
 const server = new SimpleBootHttpSSRServer(option);
 
 // 3. Run the server
 server.run();
-console.log('🚀 SWC SSR Test Server running on http://localhost:8080');

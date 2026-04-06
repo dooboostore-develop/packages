@@ -1,27 +1,18 @@
 import {addEventListener, elementDefine, onConnectedInnerHtml} from '@dooboostore/simple-web-component';
-import {Sim} from "@dooboostore/simple-boot";
-
-export namespace HelloComponent {
-  export const SYMBOL = Symbol.for('HelloComponent');
-}
-
-export interface HelloComponent {
-  say(): string;
-}
 
 
+
+export const tagName = 'hello-component';
 export default (w: Window) => {
-  const HTMLElement = (w as any).HTMLElement as typeof globalThis.HTMLElement;
-
-  @Sim({symbol: HelloComponent.SYMBOL})
-  @elementDefine('hello-component', {window: w})
-  class HelloComponentImp extends HTMLElement implements HelloComponent {
-
+  const existing = w.customElements.get(tagName);
+  if (existing) return tagName;
+  @elementDefine(tagName, { window: w })
+  class HelloComponentImp extends w.HTMLElement {
     say() {
       return 'hello';
     }
 
-    @onConnectedInnerHtml({useShadow: true})
+    @onConnectedInnerHtml({ useShadow: true })
     render() {
       return `
       <style>
@@ -43,12 +34,11 @@ export default (w: Window) => {
     `;
     }
 
-
-    @addEventListener('#btn', 'click', {root: 'light'})
+    @addEventListener('#btn', 'click', { root: 'light' })
     aa() {
       alert(1);
     }
   }
 
-  return HelloComponentImp;
+  return tagName;
 }
