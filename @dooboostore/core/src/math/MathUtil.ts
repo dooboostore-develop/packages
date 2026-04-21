@@ -716,16 +716,30 @@ export const distSqToLineSegment = (p: Point2D, v: Point2D, w: Point2D): number 
 //   const path3 = getPointsOnBezierPath(start, end, { controlPointOffsetFactor: -0.3, accelerationFactor: 0.5 }, steps);
 //   console.log("반대 곡선 + 감속 경로:", path3.map(p => `(${p.x.toFixed(1)}, ${p.y.toFixed(1)})`).join(" -> "));
 
-  export const rotatePoint = (point: Point2D, center: Point2D, angleInRadians: number): Point2D => {
-    // Translate point to origin so that center is the origin
-    const translatedX = point.x - center.x;
-    const translatedY = point.y - center.y;
+   export const rotatePoint = (point: Point2D, center: Point2D, angleInRadians: number): Point2D => {
+     // Translate point to origin so that center is the origin
+     const translatedX = point.x - center.x;
+     const translatedY = point.y - center.y;
 
-    // Rotate point
-    const rotatedX = translatedX * Math.cos(angleInRadians) - translatedY * Math.sin(angleInRadians);
-    const rotatedY = translatedX * Math.sin(angleInRadians) + translatedY * Math.cos(angleInRadians);
+     // Rotate point
+     const rotatedX = translatedX * Math.cos(angleInRadians) - translatedY * Math.sin(angleInRadians);
+     const rotatedY = translatedX * Math.sin(angleInRadians) + translatedY * Math.cos(angleInRadians);
 
-    // Translate point back
-    return new Point2D(rotatedX + center.x, rotatedY + center.y);
-  }
-}
+     // Translate point back
+     return new Point2D(rotatedX + center.x, rotatedY + center.y);
+   }
+
+   /**
+    * 2차 베지에 곡선 위의 특정 t 값에서의 점 좌표를 계산합니다.
+    * B(t) = (1-t)²P₀ + 2(1-t)tP₁ + t²P₂
+    * @param p0 시작점
+    * @param p1 제어점
+    * @param p2 끝점
+    * @param t 매개변수 (0에서 1 사이)
+    * @returns 계산된 점의 좌표
+    */
+   export const quadraticBezier = (p0: number, p1: number, p2: number, t: number): number => {
+     const mt = 1 - t;
+     return mt * mt * p0 + 2 * mt * t * p1 + t * t * p2;
+   };
+ }

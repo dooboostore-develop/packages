@@ -1,5 +1,6 @@
-import { elementDefine, onConnectedInnerHtml, applyNodeThis } from '@dooboostore/simple-web-component';
-import type { Accommodation } from '../services/AccommodationService';
+import {innerHtml, elementDefine, onConnected} from '@dooboostore/simple-web-component';
+
+import type {Accommodation} from '../services/AccommodationService';
 
 declare const L: any; // Leaflet Global from index.html
 
@@ -42,7 +43,7 @@ export default (w: Window) => {
       }, 300);
     }
 
-    @applyNodeThis({ position: 'innerHtml' })
+    @innerHtml
     setMarkers(accommodations: Accommodation[], focus?: { lat: number; lng: number }) {
       if (!this.map) {
         setTimeout(() => this.setMarkers(accommodations, focus), 200);
@@ -83,7 +84,7 @@ export default (w: Window) => {
       }
     }
 
-    @onConnectedInnerHtml({ useShadow: true })
+    @onConnected({ useShadow: true })
     render() {
       return `
       <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />

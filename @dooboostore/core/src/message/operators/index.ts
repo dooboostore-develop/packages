@@ -29,4 +29,5 @@ export * from './takeUntil';
 export * from './takeLast';
 export * from './skipWhile';
 export * from './throttle';
+export * from './throttleTime';
 export * from './interval';

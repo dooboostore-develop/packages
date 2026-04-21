@@ -1,4 +1,4 @@
-import { Runnable } from '@dooboostore/core/runs/Runnable';
+import { Runnable } from '@dooboostore/core';
 
 // --- Type Definitions ---
 type Point = { x: number; y: number };

@@ -1,6 +1,6 @@
 {
   "name": "@dooboostore/core",
-  "version": "1.0.31",
+  "version": "1.0.32",
   "license": "MIT",
   "type": "module",
   "main": "./dist/cjs/index.js",
@@ -29,6 +29,12 @@
       "import": "./dist/esm/index.js",
       "require": "./dist/cjs/index.js",
       "default": "./dist/esm/index.js"
+    },
+    "./message/operators": {
+      "types": "./dist/types/message/operators/index.d.ts",
+      "import": "./dist/esm/message/operators/index.js",
+      "require": "./dist/cjs/message/operators/index.js",
+      "default": "./dist/esm/message/operators/index.js"
     },
     "./bundle-entry": {
       "types": "./dist/types/bundle-entry.d.ts",

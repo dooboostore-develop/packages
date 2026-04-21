@@ -1,4 +1,4 @@
-import { elementDefine, onConnectedInnerHtml, addEventListener, emitCustomEventThis } from '@dooboostore/simple-web-component';
+import {addEventListener, elementDefine, emitCustomEvent, onConnectedShadow} from '@dooboostore/simple-web-component';
 
 export default (w: Window) => {
   const tagName = 'swc-example-stock-stock-header';
@@ -8,7 +8,7 @@ export default (w: Window) => {
 
   @elementDefine(tagName, { window: w })
   class StockHeader extends w.HTMLElement {
-    @onConnectedInnerHtml({ useShadow: true })
+    @onConnectedShadow
     render() {
       return `
       <style>
@@ -33,7 +33,7 @@ export default (w: Window) => {
     }
 
     @addEventListener('.nav-item, #logo', 'click', { delegate: true })
-    @emitCustomEventThis('navigate', { bubbles: true, attributeName: 'on-navigate' })
+    @emitCustomEvent('$this', 'navigate', { bubbles: true, attributeName: 'on-navigate' })
     onNavigate(e: any) {
       const target = e.target.closest('[data-path]');
       return { path: target?.dataset.path || '/' };

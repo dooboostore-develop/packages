@@ -28,16 +28,15 @@ export function state(nameOrTarget?: string | Object, propertyKey?: string | sym
     // console.log('ssssssssssssssss', storage, stateMetadata.propertyKey)
     Object.defineProperty(targetObj, stateMetadata.propertyKey, {
       set(this: any, nv: string) {
-        // console.log('sese', nv)
         storage = nv;
         const config = getElementConfig(this)
-        const ea = new ElementApply(this, {id: targetObj._swcId});
+        const ea = new ElementApply(this, {id: this._swcId});
         const helperHostSet = SwcUtils.getHelperAndHostSet(config.window, this);
         const stateContext: any = {...helperHostSet};
         findAllStateMetadata(this).forEach(it => {
           stateContext[it.name] = this[it.propertyKey]
         })
-        ea.apply({context:stateContext, targetVariableName: stateMetadata.name, bind: targetObj});
+        ea.apply({context:stateContext, targetVariableName: stateMetadata.name, bind: this});
       },
       get(this: any) {
         return storage;

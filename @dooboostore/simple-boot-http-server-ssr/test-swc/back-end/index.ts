@@ -1,40 +1,24 @@
-import {SimpleBootHttpServer} from '@dooboostore/simple-boot-http-server';
-import {SSRSimpleWebComponentFilter} from '../../src/filters/SSRSimpleWebComponentFilter';
+import {IntentSchemeFilter, ResourceFilter, SimpleBootHttpServer} from '@dooboostore/simple-boot-http-server';
 import path from 'path';
 import bootfactory from "@swc-src/bootfactory";
-import {HttpSSRServerOption} from "@dooboostore/simple-boot-http-server-ssr";
-import {SimpleBootHttpSSRServer} from "@dooboostore/simple-boot-http-server-ssr";
-import {ResourceFilter} from "@dooboostore/simple-boot-http-server";
+import {HttpSSRServerOption, SimpleBootHttpSSRServer, SSRSimpleWebComponentDomParserFilter} from "@dooboostore/simple-boot-http-server-ssr";
 import {UrlUtils} from "@dooboostore/core";
 import '@swc-back-end/services';
-import { UserService } from '@swc-src/services/UserService';
+import {UserService} from '@swc-src/services/UserService';
+import {services} from "@swc-back-end/services";
 
 const frontDistPath = path.resolve(__dirname, '../dist-front-end');
 const resourceFilter = new ResourceFilter(frontDistPath,
   [
-    'assets/privacy.html', 'assets/.*', '\.js$', '\.json$', '\.map$', '\.ico$', '\.png$', '\.jpg$', '\.jpeg$', '\.gif$', 'offline\.html$', 'webmanifest$', 'manifest\.json', 'service-worker\.js$', 'googlebe4b1abe81ab7cf3\.html$',
-    {request: 'afdbb6c5792b6c672142773e362326ee.txt', dist: 'assets/afdbb6c5792b6c672142773e362326ee.txt'},
-    {request: 'robots.txt', dist: 'assets/robots.txt'},
-    {request: 'sitemap.xml', dist: 'assets/sitemap.xml'},
-    {request: 'naverf7a766d54ed77440fcb1e98032fd97b5.html', dist: 'assets/naverf7a766d54ed77440fcb1e98032fd97b5.xml'},
-    {request: 'naverc6b5be8b7be28510abeabc458c6c40fe.html', dist: 'assets/naverc6b5be8b7be28510abeabc458c6c40fe.html'},
-    {request: 'Ads.txt', dist: 'assets/Ads.txt'},
-    {request: 'ads.txt', dist: 'assets/Ads.txt'},
-    {request: '/worlds/.*', dist: 'index.html'},
-    // {request:'/', dist:'index.html'},
-    // {
-    //   request: (rr) => {
-    //     if (RegExp('/api/.*').test(rr.reqUrlPathName)) {
-    //       return false;
-    //     }
-    //     return RegExp('/.*').test(rr.reqUrlPathName) && rr.reqMethod()?.toUpperCase() === 'GET';
-    //   },
-    //   dist: 'index.html'
-    // }
+    /\.ico/,
+    /\.png$/,
+    /\.map$/,
+    /\.json$/,
+    '/bundle.js',
   ]
 );
 // 1. Configure the SWC SSR Filter
-const swcFilter = new SSRSimpleWebComponentFilter({
+const swcFilter = new SSRSimpleWebComponentDomParserFilter({
   frontDistPath: frontDistPath,
   frontDistIndexFileName: 'index.html',
   registerComponents: async (window: any) => {
@@ -43,7 +27,10 @@ const swcFilter = new SSRSimpleWebComponentFilter({
     const urlPath = UrlUtils.getUrlPath(window.location);
     // console.log('vvvvvvvvvvvvvvv-', urlPath);
     const otherInstance = new Map<symbol, any>();
-    otherInstance.set(UserService.SYMBOL, server.sim(UserService.SYMBOL));
+    services.forEach(it => {
+      // @ts-ignore
+      otherInstance.set(it.symbol, server.sim(it.symbol));
+    })
     await bootfactory(window, otherInstance, urlPath);
 
     console.log('✅ Registered components for request');
@@ -53,7 +40,7 @@ const swcFilter = new SSRSimpleWebComponentFilter({
 // 2. Setup Server with Options
 const option = new HttpSSRServerOption({
   listen: {port: 3030},
-  filters: [resourceFilter, swcFilter]
+  filters: [resourceFilter, IntentSchemeFilter, swcFilter]
 });
 option.listen.hostname = '0.0.0.0'
 option.listen.listeningListener = (server: SimpleBootHttpServer) => {

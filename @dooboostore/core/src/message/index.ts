@@ -7,9 +7,8 @@ export * from './Observable';
 export * from './Subscription';
 export * from './AutoCloseSubscription'
 
-// Internal utilities
-export * as MessageInternal from './internal';
-export * as MessageOperator from './operators';
+// Internal utilities (namespace)
+export * from './internal';
 
 export interface TimerConfig {
   setTimeout?: (callback: () => void, ms: number) => any;

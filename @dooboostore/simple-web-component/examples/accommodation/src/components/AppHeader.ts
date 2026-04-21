@@ -1,4 +1,5 @@
-import { elementDefine, onConnectedInnerHtml, addEventListener, emitCustomEventThis } from '@dooboostore/simple-web-component';
+import {addEventListener, elementDefine, emitCustomEvent, onConnected} from '@dooboostore/simple-web-component';
+
 
 export default (w: Window) => {
   const tagName = 'swc-example-accommodation-header';
@@ -9,7 +10,7 @@ export default (w: Window) => {
 
   @elementDefine(tagName, { window: w })
   class AppHeader extends w.HTMLElement {
-    @onConnectedInnerHtml({ useShadow: true })
+    @onConnected({ useShadow: true })
     render() {
       return `
       <style>
@@ -53,7 +54,7 @@ export default (w: Window) => {
     }
 
     @addEventListener('.nav-item, #logo', 'click', { delegate: true })
-    @emitCustomEventThis('navigate', { bubbles: true, attributeName: 'on-navigate' })
+    @emitCustomEvent('navigate', { bubbles: true, attributeName: 'on-navigate' })
     onNavigate(e: any) {
       const target = e.target.closest('[data-path]');
       return { path: target?.dataset.path || '/' };

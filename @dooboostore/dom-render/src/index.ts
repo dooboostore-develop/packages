@@ -16,6 +16,7 @@ export {
 	A,
 	ComponentSet,
 	ComponentRouterBase,
+	attribute,
 	ComponentBase
 } from './components';
 export type { ComponentBaseConfig, ChildrenSet, ComponentRouterBaseConfig } from './components';

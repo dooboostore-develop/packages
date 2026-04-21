@@ -1,7 +1,8 @@
 import { RequestResponse } from '@dooboostore/simple-boot-http-server/models/RequestResponse';
 import { HttpHeaders } from '@dooboostore/simple-boot-http-server/codes/HttpHeaders';
 import { SimpleBootHttpSSRFactory } from '../SimpleBootHttpSSRFactory';
-import { ConstructorType, AsyncBlockingQueue, RandomUtils, MessageOperator, MessageInternal } from '@dooboostore/core';
+import { ConstructorType, AsyncBlockingQueue, RandomUtils, firstValueFrom } from '@dooboostore/core';
+import { first } from '@dooboostore/core/message/operators';
 import { JsdomInitializer } from '../initializers/JsdomInitializer';
 import { Filter } from '@dooboostore/simple-boot-http-server/filters/Filter';
 import { Mimes } from '@dooboostore/simple-boot-http-server/codes/Mimes';
@@ -142,7 +143,7 @@ export class SSRLinkDomFilter implements Filter {
         //   }
         // })
 
-        const data = await MessageInternal.firstValueFrom(
+        const data = await firstValueFrom(
           // @ts-ignore
           simpleBootFront.routingObservable.pipe(
           // @ts-ignore
@@ -153,7 +154,7 @@ export class SSRLinkDomFilter implements Filter {
                 targetUrl.endsWith(it.routerModule.intent.uri)
             ),
             // delay(1000),
-            MessageOperator.first()
+            first()
           )
         );
         // console.log('???????done');

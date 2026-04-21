@@ -1,10 +1,10 @@
-import { onConnectedBefore, setAttributeThis, applyAttributeThis, query, queryThis, attributeThis, attribute, changedAttributeThis, onInitialize, elementDefine, onConnectedInnerHtml, addEventListener, applyNodeThis, subscribeSwcAppRouteChangeWhileConnected } from '@dooboostore/simple-web-component';
-import { Sim, RouterAction, RoutingDataSet, Inject } from '@dooboostore/simple-boot';
-import { AccommodationService } from '../services/AccommodationService';
-import { EventService, LocalEvent } from '../services/EventService';
-import { Router  } from '@dooboostore/core-web';
+import {addEventListener, innerHtml, attribute, elementDefine, onConnected, onConnectedBefore, query, subscribeSwcAppRouteChangeWhileConnected} from '@dooboostore/simple-web-component';
+import {Inject} from '@dooboostore/simple-boot';
+import {AccommodationService} from '../services/AccommodationService';
+import {EventService, LocalEvent} from '../services/EventService';
+import {Router} from '@dooboostore/core-web';
 
-export default (w: Window, container: symbol) => {
+export default (w: Window) => {
   const tagName = 'swc-example-accommodation-detail-page';
   const existing = w.customElements.get(tagName);
   if (existing) {
@@ -19,8 +19,8 @@ export default (w: Window, container: symbol) => {
     private accommodationService: AccommodationService;
     private eventService: EventService;
     private router: Router;
-    @attributeThis('product-id') productId: string;
-    @attributeThis('product-id22') productId22: string = 'vvvvvvvvvV';
+    @attribute('product-id') productId: string;
+    @attribute('product-id22') productId22: string = 'vvvvvvvvvV';
     @query('$this')
     gg: HTMLElement = '' as any;
 
@@ -30,6 +30,7 @@ export default (w: Window, container: symbol) => {
       this.eventService = eventService;
       this.router = router;
 
+      console.log('------->', this.productId);
       // console.log('onInit detail', this.productId, this.productId22, this.gg);
       // setInterval(()=>{
       //   this.productId=new Date().toDateString() as any;
@@ -63,13 +64,13 @@ export default (w: Window, container: symbol) => {
       console.log('[DetailPage] onRouteChangeToDetailPage called', { pathData, currentPath: router.currentPath });
     }
 
-    @subscribeSwcAppRouteChangeWhileConnected()
+    @subscribeSwcAppRouteChangeWhileConnected
     onAnyRouteChange(router: any, pathData: any) {
       console.log('[DetailPage] onAnyRouteChange called', { currentPath: router.currentPath });
     }
 
-    @applyNodeThis({ position: 'innerHtml' })
-    @onConnectedInnerHtml({ useShadow: true })
+    @innerHtml
+    @onConnected({ useShadow: true })
     render() {
       if (!this.accommodation) return '<div>숙소를 찾을 수 없습니다.</div>';
       const { name, images, rating, reviewCount, price, description, amenities, hostName, reviews, category, floorPlanImage } = this.accommodation;

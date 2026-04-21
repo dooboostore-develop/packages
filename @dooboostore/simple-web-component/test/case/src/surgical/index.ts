@@ -1,4 +1,4 @@
-import swcRegister, { elementDefine, onConnectedInnerHtml, applyNode, applyNodeReplaceChildren, addEventListener, htmlFragment, textNode, htmlDivElement, htmlSpanElement, createElement, HostSet, setStyle, updateStyle, setClass, updateClass } from '@dooboostore/simple-web-component';
+import swcRegister, { elementDefine, onConnectedInnerHtml, applyNode, replaceChildrenNode, addEventListener, htmlFragment, textNode, htmlDivElement, htmlSpanElement, createElement, HostSet, setStyle, updateStyle, setClass, updateClass } from '@dooboostore/simple-web-component';
 
 swcRegister(window);
 @elementDefine('surgical-element', { window })
@@ -6,7 +6,7 @@ class SurgicalElement extends HTMLElement {
   isActive = false;
 
   // --- 1. htmlFragment & replaceChildren ---
-  @applyNodeReplaceChildren('#display-outlet')
+  @replaceChildrenNode('#display-outlet')
   testHtmlFragment() {
     console.log('>>> [Surgical Test] htmlFragment called');
     return htmlFragment(`

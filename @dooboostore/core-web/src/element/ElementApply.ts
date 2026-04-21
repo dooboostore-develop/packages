@@ -192,26 +192,46 @@ export class ElementApply {
 
       if (!config?.targetVariableName || (config?.targetVariableName && variables.has(config?.targetVariableName))) {
         if (it.nodeType === 'comment') {
-          const data = new Function('ctx', `with(ctx) { return (${this.stripWrap(it.script)}) }`)(context);
+          const data: Function = (new Function('ctx', `
+                  with(ctx) {
+                    return function(){
+                      return (${this.stripWrap(it.script)});
+                    }
+                  }
+              `)(context)).bind(it.start);
+          // const data = new Function('ctx', `with(ctx) { return (${this.stripWrap(it.script)}) }`)(context);
           if (config?.exclude?.html && it.type === 'html') continue;
           if (config?.exclude?.text && it.type === 'text') continue;
-          this.replaceChildren(it, data);
+          this.replaceChildren(it, data());
 
         } else if (it.nodeType === 'element') {
           for (const tit of it.types) {
             if (!config?.targetVariableName || (config?.targetVariableName && tit.variables.find(v => v === config?.targetVariableName))) {
-              const data = new Function('ctx', `with(ctx) { return (${this.stripWrap(tit.script)}) }`)(context);
+              const data: Function = (new Function('ctx', `
+                  with(ctx) {
+                    return function(event){
+                      return (${this.stripWrap(tit.script)});
+                    }
+                  }
+              `)(context)).bind(it.node);
+
+              // if (typeof data === 'function') {
+              //   data = data.bind(it.node);
+              // }
+
+              console.log('------------------->',it, tit)
               if (tit.type === 'attribute' && !config?.exclude?.attribute) {
-                it.node.setAttribute(tit.name, data);
+                it.node.setAttribute(tit.name, data());
               } else if (tit.type === 'property' && !config?.exclude?.property) {
-                it.node[tit.name] = data;
+                it.node[tit.name] = data();
               } else if (tit.type === 'event' && !config?.exclude?.event) {
                 if (it.node[`__ea_event_${tit.name}-callback`]) {
                   it.node.removeEventListener(tit.name, it.node[`__ea_event_${tit.name}-callback`]);
                 }
                 if (data) {
+
                   it.node[`__ea_event_${tit.name}-callback`] = data;
-                  it.node.addEventListener(tit.name, data);
+                  it.node.addEventListener(tit.name, data as any);
                 }
               }
             }

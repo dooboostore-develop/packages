@@ -1,5 +1,5 @@
-import { elementDefine, onConnectedInnerHtml, applyNodeThis } from '@dooboostore/simple-web-component';
-import type { Stock } from '../services/StockService';
+import { innerHtml, elementDefine } from '@dooboostore/simple-web-component';
+import type {Stock} from '../services/StockService';
 
 export default (w: Window) => {
   const tagName = 'swc-example-stock-stock-card';
@@ -11,7 +11,7 @@ export default (w: Window) => {
   class StockCard extends w.HTMLElement {
     private stock: Stock | null = null;
 
-    @applyNodeThis({ position: 'innerHtml' })
+    @innerHtml
     setData(data: Stock) {
       this.stock = data;
       return this.render();

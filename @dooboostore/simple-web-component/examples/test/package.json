@@ -1,0 +1,33 @@
+{
+  "name": "@dooboostore/swc-test-example",
+  "version": "1.0.0",
+  "description": "E-commerce SPA example using @dooboostore/simple-web-component with SwcApp",
+  "scripts": {
+    "dev": "webpack serve --mode development --config webpack.config.cjs",
+    "build": "webpack --mode production --config webpack.config.cjs"
+  },
+  "keywords": [
+    "web-components",
+    "spa",
+    "e-commerce",
+    "swc"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@dooboostore/core": "workspace:*",
+    "@dooboostore/core-web": "workspace:*",
+    "@dooboostore/simple-boot": "workspace:*",
+    "@dooboostore/simple-boot-front": "workspace:*",
+    "@dooboostore/simple-web-component": "workspace:*",
+    "reflect-metadata": "^0.1.13"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.9.2",
+    "webpack": "^5.88.0",
+    "webpack-cli": "^5.1.4",
+    "webpack-dev-server": "^4.15.1",
+    "ts-loader": "^9.4.4"
+  }
+}

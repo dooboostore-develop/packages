@@ -1,24 +1,23 @@
-import { onConnectedBefore,addEventListener, applyNodeThis, attributeThis, elementDefine, onConnectedInnerHtml, onInitialize } from '@dooboostore/simple-web-component';
-import { Inject, Sim } from '@dooboostore/simple-boot';
-import { EventService } from '../services/EventService';
-import { AccommodationService } from '../services/AccommodationService';
-import { Router } from '@dooboostore/core-web';
+import {addEventListener, innerHtml, attribute, elementDefine, onConnected, onConnectedBefore} from '@dooboostore/simple-web-component';
+import {Inject} from '@dooboostore/simple-boot';
+import {EventService} from '../services/EventService';
+import {AccommodationService} from '../services/AccommodationService';
+import {Router} from '@dooboostore/core-web';
 
-export default (w: Window, container: symbol) => {
+export default (w: Window) => {
   const tagName = 'swc-example-accommodation-event-detail-page';
   const existing = w.customElements.get(tagName);
   if (existing) {
     return tagName;
   }
 
-  @Sim({ container: container })
   @elementDefine(tagName, { window: w })
   class EventDetailPage extends w.HTMLElement {
     private event: any = null;
     private nearbyAccommodations: any[] = [];
     private eventService: EventService;
     private accommodationService: AccommodationService;
-    @attributeThis('event-id') eventId: string;
+    @attribute('event-id') eventId: string;
     router: Router<any>;
 
     @onConnectedBefore
@@ -34,8 +33,8 @@ export default (w: Window, container: symbol) => {
       this.render();
     }
 
-    @applyNodeThis({ position: 'innerHtml' })
-    @onConnectedInnerHtml({ useShadow: true })
+    @innerHtml
+    @onConnected({ useShadow: true })
     render() {
       if (!this.event) return '<div>행사를 찾을 수 없습니다.</div>';
       const { title, location, date, description, imageUrl, tags, category } = this.event;

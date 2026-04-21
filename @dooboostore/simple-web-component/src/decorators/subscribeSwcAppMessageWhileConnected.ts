@@ -1,5 +1,5 @@
 import { ReflectUtils } from '@dooboostore/core';
-import { SwcAppMessage } from '../types';
+import { SwcAppMessage, SpecialSelector, SwcQueryOptions, HelperHostSet } from '../types';
 
 export const SUBSCRIBE_SWC_APP_MESSAGE_WHILE_CONNECTED_METADATA_KEY = Symbol.for('simple-web-component:subscribe-swc-app-message-while-connected');
 
@@ -66,6 +66,7 @@ export function subscribeSwcAppMessageWhileConnected(targetOrMessageTypeOrOption
   return createSubscribeSwcAppMessageWhileConnected(options, messageType);
 }
 
+export const receiveMessage = subscribeSwcAppMessageWhileConnected;
 // Helper function to retrieve message subscribers metadata
 export const getSubscribeSwcAppMessageWhileConnectedMetadata = (target: any): SwcAppMessageSubscriberMetadata[] | undefined => {
   const constructor = target instanceof Function ? target : target.constructor;

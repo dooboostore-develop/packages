@@ -49,7 +49,9 @@ module.exports = {
   externals: {
     canvas: 'commonjs canvas',
     'utf-8-validate': 'commonjs utf-8-validate',
-    bufferutil: 'commonjs bufferutil'
+    bufferutil: 'commonjs bufferutil',
+    playwright: 'commonjs playwright',
+    'playwright-core': 'commonjs playwright-core'
   },
   optimization: {
     minimize: false

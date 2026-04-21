@@ -1,7 +1,8 @@
 import { RequestResponse } from '@dooboostore/simple-boot-http-server/models/RequestResponse';
 import { HttpHeaders } from '@dooboostore/simple-boot-http-server/codes/HttpHeaders';
 import { SimpleBootHttpSSRFactory } from '../SimpleBootHttpSSRFactory';
-import { ConstructorType, AsyncBlockingQueue, RandomUtils, MessageOperator, MessageInternal, Promises } from '@dooboostore/core';
+import { ConstructorType, AsyncBlockingQueue, RandomUtils, firstValueFrom } from '@dooboostore/core';
+import { filter, first } from '@dooboostore/core/message/operators';
 import { Filter } from '@dooboostore/simple-boot-http-server/filters/Filter';
 import { Mimes } from '@dooboostore/simple-boot-http-server/codes/Mimes';
 import { HttpStatus } from '@dooboostore/simple-boot-http-server/codes/HttpStatus';
@@ -144,15 +145,15 @@ export class SSRDomParserFilter implements Filter {
           }
         }
 
-        const data = await MessageInternal.firstValueFrom(
+        const data = await firstValueFrom(
           simpleBootFront.routingObservable.pipe(
-            MessageOperator.filter(it => {
+            filter(it => {
 
               const sw = it.triggerPoint === 'end' && typeof it.routerModule.intent.uri === 'string' && targetUrl.endsWith(it.routerModule.intent.uri);
               return sw;
             }),
             // delay(1000),
-            MessageOperator.first()
+            first()
           )
         );
 

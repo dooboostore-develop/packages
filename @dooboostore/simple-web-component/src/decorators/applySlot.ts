@@ -1,9 +1,8 @@
-import { ReflectUtils } from '@dooboostore/core';
-import { ensureInit, getElementConfig } from './elementDefine';
-import { HelperHostSet, SwcRootType } from '../types';
-import { SwcUtils } from "../utils/Utils";
-import {ElementApply, NodeSlot} from "@dooboostore/core-web";
-import {findAllStateMetadata} from "./state";
+import {OptionalType, ReflectUtils} from '@dooboostore/core';
+import {ensureInit, getElementConfig} from './elementDefine';
+import {SwcUtils} from "../utils/Utils";
+import {NodeSlot} from "@dooboostore/core-web";
+import {HelperHostSet} from "../types";
 /*
 <!-- beforebegin -->
 <p> <-- it's me
@@ -13,26 +12,23 @@ import {findAllStateMetadata} from "./state";
 </p>
 <!-- afterend -->
  */
-export type ApplySlotPosition = 'prependHtml' | 'prependText' | 'appendHtml' | 'appendText' | 'replaceChildrenHtml' | 'replaceChildrenText' | 'clear';
+export type ApplySlotPosition = 'prepend' | 'prependHtml' | 'prependText' | 'append' | 'appendHtml' | 'appendText' | 'replaceChildren' | 'replaceChildrenHtml' | 'replaceChildrenText' | 'clear';
 
 export interface ApplySlotOptions {
-  position?: ApplySlotPosition;
-  // root?: SwcRootType;
+  position: ApplySlotPosition;
+  fallback?: (helper: HelperHostSet) => string | Node;
   /**
-   * Filter function to determine whether to perform DOM operation.
-   * If it returns false, the operation is skipped.
+   * Custom key to extract value from return object.
+   * If not provided, uses APPLY_SLOT_METADATA_KEY by default.
+   * Useful when multiple @applySlot decorators are on the same method.
    */
-  // filter?: (target: HTMLElement | ShadowRoot, newValue: any, meta:{currentThis: any,helper: HelperHostSet}) => boolean;
-  /**
-   * Optional loading content to display while an async method is executing.
-   */
-  // loading?: (helper: HelperHostSet) => any;
+  valueKey?: symbol | string;
 }
 
 export interface ApplySlotMetadata {
   propertyKey: string | symbol;
-  id: string;
-  type: 'method' | 'property';
+  targetId: string;
+  // type: 'method' | 'property';
   options: ApplySlotOptions;
 }
 
@@ -77,33 +73,28 @@ export const APPLY_SLOT_METADATA_KEY = Symbol.for('simple-web-component:apply-sl
 //     }
 // };
 
+const applyToDom = (swcId: string, id: string, pos: ApplySlotPosition, nodes: Node[]) => {
+  const nodeSlot = new NodeSlot(this, swcId);
+  if (pos === 'replaceChildrenText' || pos === 'replaceChildren' || pos === 'replaceChildrenHtml') {
+    nodeSlot.replaceChildren(id, ...nodes);
+  } else if (pos === 'appendHtml' || pos === 'append' || pos === 'appendText') {
+    nodeSlot.append(id, ...nodes);
+  } else if (pos === 'prependHtml' || pos === 'prepend' || pos === 'prependText') {
+    nodeSlot.prepend(id, ...nodes);
+  } else if (pos === 'clear') {
+    nodeSlot.clear(id);
+  }
+}
+
 /**
  * @applyNode decorator to surgically add/replace nodes to a target element.
  */
-export function applySlot(id: string, options: ApplySlotOptions = { position: 'replaceChildrenHtml' }): MethodDecorator & PropertyDecorator {
-  return (targetObj: Object, propertyKey: string | symbol, descriptor?: PropertyDescriptor) => {
-    const type = descriptor === undefined ? 'property' : 'method';
+export function applySlot(targetId: string, opt: OptionalType<ApplySlotOptions, 'position'>): MethodDecorator {
+  return (targetObj: Object, propertyKey: string | symbol, descriptor: TypedPropertyDescriptor<any>) => {
 
-    if (type === 'property') {
-            Object.defineProperty(targetObj, propertyKey, {
-              get(this: any) {
-                const nodeSlot = new NodeSlot(this, `${this._swcId}-${id}`);
-                return nodeSlot;
-              },
-              set(this: any, nv: any) {
-                if(nv) {
-                  // 있을때 아무일도안함
-                } else {
-                  const nodeSlot = new NodeSlot(this, `${this._swcId}-${id}`);
-                  nodeSlot.clear();
-                }
-              },
-              configurable: true,
-              enumerable: true,
-            })
-     // return nodeSlot;
-     //  return;
-    }
+
+    const options: ApplySlotOptions = {position: 'replaceChildren', ...opt};
+
 
     const constructor = targetObj.constructor;
     let metaList = ReflectUtils.getOwnMetadata(APPLY_SLOT_METADATA_KEY, constructor) as ApplySlotMetadata[];
@@ -111,51 +102,115 @@ export function applySlot(id: string, options: ApplySlotOptions = { position: 'r
       metaList = []
       ReflectUtils.defineMetadata(APPLY_SLOT_METADATA_KEY, metaList, constructor);
     }
-    metaList.push({ propertyKey, id, type, options });
+    metaList.push({propertyKey, targetId, options});
 
 
+    const original = descriptor.value;
+    descriptor.value = function (...args: any[]) {
+      ensureInit(this);
 
-    if (type === 'method') {
-      const original = descriptor.value;
-      descriptor.value = function (...args: any[]) {
-        ensureInit(this);
+      const conf = getElementConfig(this);
+      const currentWin = conf.window;
+      const swcId = this._swcId;
+      const currentDoc = currentWin.document;
+      const hostSet = SwcUtils.getHelperAndHostSet(currentWin, this);
+      const pos = options.position;
 
-        const conf = getElementConfig(this);
-        const currentWin = (this as any)._resolveWindow?.(conf) || ((typeof window !== 'undefined' ? window : undefined) as Window);
-        const currentDoc = currentWin.document;
-        const hostSet = SwcUtils.getHelperAndHostSet(currentWin, this);
-        let res = original.apply(this, args);
-        if (res) {
-          // res = SwcUtils.projectProcessHtml(this, res)
-          const nodeSlot = new NodeSlot(this, this._swcId);
-          const pos = options.position || 'replaceChildrenHtml';
-          const doc = currentWin.document;
-          if (pos === 'replaceChildrenHtml') {
-            nodeSlot.replaceChildrenHtml(id, res);
-          } else if (pos === 'replaceChildrenText') {
-            nodeSlot.replaceChildrenText(id, res);
-          } else if (pos === 'appendHtml') {
-            nodeSlot.appendHtml(id, res);
-          } else if (pos === 'appendText') {
-            nodeSlot.appendText(id, res);
-          } else if (pos === 'prependHtml') {
-            nodeSlot.prependHtml(id, res);
-          } else if (pos === 'prependText') {
-            nodeSlot.prependText(id, res);
-          } else if (pos === 'clear') {
-            nodeSlot.clear(id);
-          }
+      const resToNodes = (res: string | Node) => {
+        const nodes: Node[] = [];
 
-          // const stateContext: any = {...hostSet};
-          // getStateMetadata(this).forEach(it => {
-          //   stateContext[it.name] = this[it.propertyKey]
-          // })
-          // new ElementApply(this, {id: this._swcId}).apply({target:'noInitialized', context: stateContext, bind: this});
+        if (typeof res === 'string' && (pos === 'replaceChildrenHtml' || pos === 'appendHtml' || pos === 'prependHtml')) {
+          const t = currentWin.document.createElement('template');
+          t.innerHTML = res;
+          nodes.push(...Array.from(t.content.childNodes));
+        } else if (typeof res === 'string' && (pos === 'replaceChildrenText' || pos === 'prependText' || pos === 'appendText')) {
+          nodes.push(currentWin.document.createTextNode(res));
+        } else if (typeof res === 'object') {
+          nodes.push(res);
         }
-        return res;
+        SwcUtils.projectProcessHtml(swcId, nodes, currentDoc);
+        return nodes;
+      }
+
+      const fallbackNodes: Node[] = [];
+      if (options.fallback) {
+        const res: string | Node = options.fallback.call(this, hostSet);
+        const nodes: Node[] = resToNodes(res);
+        fallbackNodes.push(...nodes);
+        applyToDom(swcId, targetId, options.position, nodes);
+      }
+
+      /**
+       * Extract value for this decorator from method return value
+       * 
+       * If return value is an object with this decorator's key,
+       * use that value. Otherwise use the entire return value.
+       * 
+       * Uses valueKey from options if provided, otherwise uses APPLY_SLOT_METADATA_KEY.
+       */
+      const extractValue = (v: any) => {
+        const keyToUse = options.valueKey ?? APPLY_SLOT_METADATA_KEY;
+        if (v && typeof v === 'object' && keyToUse in v) {
+          return v[keyToUse];
+        }
+        return v;
       };
-    }
+
+      let res = original.apply(this, args);
+      if (res instanceof Promise) {
+        return res.then(asyncRes => {
+          const extracted = extractValue(asyncRes);
+          const nodes = resToNodes(extracted)
+          fallbackNodes.forEach((it: any) => it.remove());
+          applyToDom(swcId, targetId, options.position, nodes);
+        })
+      } else {
+        const extracted = extractValue(res);
+        const nodes: Node[] = resToNodes(extracted);
+        applyToDom(swcId, targetId, options.position, nodes);
+      }
+    };
   };
+}
+
+export function clearSlot(targetId: string): MethodDecorator {
+  return applySlot(targetId, {position: 'clear'});
+}
+
+export function prependHtmlSlot(targetId: string): MethodDecorator {
+  return applySlot(targetId, {position: 'prependHtml'});
+}
+
+export function prependSlot(targetId: string): MethodDecorator {
+  return applySlot(targetId, {position: 'prepend'});
+}
+
+export function prependTextSlot(targetId: string): MethodDecorator {
+  return applySlot(targetId, {position: 'prependText'});
+}
+
+export function appendHtmlSlot(targetId: string): MethodDecorator {
+  return applySlot(targetId, {position: 'appendHtml'});
+}
+
+export function appendTextSlot(targetId: string): MethodDecorator {
+  return applySlot(targetId, {position: 'appendText'});
+}
+
+export function appendSlot(targetId: string): MethodDecorator {
+  return applySlot(targetId, {position: 'append'});
+}
+
+export function replaceChildrenHtmlSlot(targetId: string): MethodDecorator {
+  return applySlot(targetId, {position: 'replaceChildrenHtml'});
+}
+
+export function replaceChildrenSlot(targetId: string): MethodDecorator {
+  return applySlot(targetId, {position: 'replaceChildren'});
+}
+
+export function replaceChildrenTextSlot(targetId: string): MethodDecorator {
+  return applySlot(targetId, {position: 'replaceChildrenText'});
 }
 
 // export const findAllApplySlotMetadata = (target: any): Map<string | symbol, ApplySlotMetadata> => {
@@ -163,28 +218,3 @@ export const findAllApplySlotMetadata = (target: any): ApplySlotMetadata[] => {
   const constructor = target instanceof Function ? target : target.constructor;
   return ReflectUtils.getMetadata(APPLY_SLOT_METADATA_KEY, constructor);
 };
-
-export function applySlotClear(id: string): MethodDecorator {
-  return applySlot(id, { position: 'clear' });
-}
-export function applySlotPrependHtml(id: string): MethodDecorator {
-  return applySlot(id, { position: 'prependHtml' });
-}
-export const applySlotPrepend = applySlotPrependHtml;
-export function applySlotPrependText(id: string): MethodDecorator {
-  return applySlot(id, { position: 'prependText' });
-}
-export function applySlotAppendHtml(id: string): MethodDecorator {
-  return applySlot(id, { position: 'appendHtml' });
-}
-export function applySlotAppendText(id: string): MethodDecorator {
-  return applySlot(id, { position: 'appendText' });
-}
-export const applySlotAppend = applySlotAppendHtml;
-export function applySlotReplaceChildrenHtml(id: string): MethodDecorator {
-  return applySlot(id, { position: 'replaceChildrenHtml' });
-}
-export const applySlotReplaceChildren = applySlotReplaceChildrenHtml;
-export function applySlotReplaceChildrenText(id: string): MethodDecorator {
-  return applySlot(id, { position: 'replaceChildrenText' });
-}

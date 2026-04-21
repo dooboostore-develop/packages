@@ -6,18 +6,19 @@
     "declaration": true,
     "declarationMap": true,
     "stripInternal": true,
-    "noEmit": true,
     "target": "es2020",
+    "noEmit": true,
     "lib": ["dom", "dom.iterable", "esnext"],
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "baseUrl": ".",
     "paths": {
-//      "@dooboostore/core/*": ["../core/*"]
-    }
+      //      "@dooboostore/core/*": ["../core/*"]
+    },
+    "module": "esnext"
   },
   "include": ["src/**/*.ts"],
   "exclude": ["node_modules", "**/*.spec.ts", "**/*.test.ts", "example", "test"]

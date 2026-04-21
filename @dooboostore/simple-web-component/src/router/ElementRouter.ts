@@ -7,6 +7,10 @@ export class ElementRouter extends Router {
 
   constructor(config: RouterConfig) {
     super(config);
+    if (config.firstUrl) {
+      this._history.push({ url: config.firstUrl, data: null, title: undefined });
+      this._currentIndex = 0;
+    }
   }
 
   // Override pushState to manage internal history

@@ -5,12 +5,18 @@ import {HTMLDialogElement} from "@dooboostore/dom-parser";
  */
 declare global {
   interface Window {
+    Node: typeof Node;
+    NodeList: typeof NodeList;
+    Element: typeof Element;
     HTMLElement: typeof HTMLElement;
     HTMLDivElement: typeof HTMLDivElement;
     HTMLButtonElement: typeof HTMLButtonElement;
     HTMLTemplateElement: typeof HTMLTemplateElement;
     HTMLAnchorElement: typeof HTMLAnchorElement;
     HTMLDialogElement: typeof HTMLDialogElement;
+    HTMLBodyElement: typeof HTMLBodyElement;
+    HTMLSectionElement: typeof HTMLSectionElement;
+    HTMLMainElement: typeof HTMLMainElement;
     ShadowRoot: typeof ShadowRoot;
     location: Location;
     document: Document;

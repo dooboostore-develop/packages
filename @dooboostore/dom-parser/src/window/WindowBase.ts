@@ -76,6 +76,7 @@ import {
 import { CustomElementRegistryImp } from './CustomElementRegistryImp';
 import {ShadowRootBase} from "../node/ShadowRootBase";
 import {NodeFilter} from "../node/NodeFilter";
+import { NodeList } from '../node';
 
 class LocationBase implements Location {
   private _href: string = 'about:blank';
@@ -449,6 +450,7 @@ export class WindowBase implements Window {
 
   // All HTML element constructors
   Node = NodeBase;
+  NodeList = NodeList;
   Element = ElementBase;
   HTMLElement = HTMLElement;
   HTMLAnchorElement = HTMLAnchorElement;

@@ -14,7 +14,7 @@ import type { Render } from '../rawsets/Render';
 import { ReflectUtils } from '@dooboostore/core';
 import { DomRenderConfig } from '../configs/DomRenderConfig';
 import { Subject } from '@dooboostore/core';
-import { MessageOperator } from '@dooboostore/core';
+import { debounceTime, bufferTime } from '@dooboostore/core/message/operators';
 import type { Subscription } from '@dooboostore/core';
 import { OnRawSetRendered, OnRawSetRenderedOtherData } from "../lifecycle/OnRawSetRendered";
 import {OnChildRawSetRendered} from "../lifecycle/OnChildRawSetRendered";
@@ -712,7 +712,7 @@ getAttributeNames(attribute = this._attribute): string[] {
     // console.log('onInitRender ComponentBase', this.constructor.name, rawSet?.uuid);
     const window = rawSet.dataSet?.config?.window;
     this.createChildrenDebounceSubscription = this.childrenSetSubject.pipe(
-      MessageOperator.debounceTime(this.componentConfig?.createChildrenDebounce??1, {
+      debounceTime(this.componentConfig?.createChildrenDebounce??1, {
         setTimeout: window ? window.setTimeout.bind(window) : undefined,
         clearTimeout: window ? window.clearTimeout.bind(window) : undefined,
       })
@@ -721,7 +721,7 @@ getAttributeNames(attribute = this._attribute): string[] {
       this.onCreatedThisChildDebounce(it);
     });
     this.onRawSetRenderedOtherDataSubjectSubscription = this.onRawSetRenderedOtherDataSubject.pipe(
-      MessageOperator.bufferTime(this.componentConfig?.onRawSetRenderedOtherDataDebounce??1, {
+      bufferTime(this.componentConfig?.onRawSetRenderedOtherDataDebounce??1, {
         skipEmpty: true,
         setInterval: window ? window.setInterval.bind(window) : undefined,
         clearInterval: window ? window.clearInterval.bind(window) : undefined,
@@ -732,7 +732,7 @@ getAttributeNames(attribute = this._attribute): string[] {
       this.onRawSetRenderedDebounce(it);
     });
     this.onChildRawSetRenderedOtherDataSubjectSubscription = this.onChildRawSetRenderedOtherDataSubject.pipe(
-      MessageOperator.debounceTime(this.componentConfig?.onChildRawSetRenderedOtherDataDebounce??10, {
+      debounceTime(this.componentConfig?.onChildRawSetRenderedOtherDataDebounce??10, {
         setTimeout: window ? window.setTimeout.bind(window) : undefined,
         clearTimeout: window ? window.clearTimeout.bind(window) : undefined,
       })
