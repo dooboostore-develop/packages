@@ -1,2 +1,2 @@
-import helloComponentFactory  from "./hello.component";
-export const componentFactories = [helloComponentFactory]
+import UserCardFactory  from "./UserCard";
+export const componentFactories = [UserCardFactory]

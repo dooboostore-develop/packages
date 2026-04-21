@@ -1,4 +1,9 @@
-import { onConnectedBefore, elementDefine, onInitialize, addEventListener, onConnectedInnerHtml, emitCustomEventThis, applyNode } from '@dooboostore/simple-web-component';
+import {addEventListener, applyNode, elementDefine, emitCustomEventThis, onConnected, onConnectedBefore} from '@dooboostore/simple-web-component';
+import {CartService} from "../services/CartService";
+import {Subscription} from "@dooboostore/core";
+import {inject} from "@dooboostore/simple-boot";
+
+/**
 import {CartService} from "../services/CartService";
 import {Subscription} from "@dooboostore/core";
 import {Inject} from "@dooboostore/simple-boot";
@@ -17,7 +22,7 @@ export default (w: Window) => {
     #cartUnsubscribe?:  Subscription;
 
     @onConnectedBefore
-    async gg(@Inject({symbol: CartService.SYMBOL})cartService: CartService) {
+    async gg(@inject({symbol: CartService.SYMBOL})cartService: CartService) {
       this.#cartService = cartService;
       console.log('[Header] CartService injected:', cartService);
       // Wait for cart to load from storage
@@ -67,7 +72,7 @@ export default (w: Window) => {
       }
     }
 
-    @onConnectedInnerHtml({useShadow: true})
+    @onConnected({useShadow: true})
     render() {
       return `
         <style>

@@ -2,7 +2,7 @@ import { ReflectUtils } from '@dooboostore/core';
 
 export const ON_ATTRIBUTE_CHANGED_METADATA_KEY = Symbol.for('simple-web-component:on-attribute-changed');
 
-export interface ChangedAttributeThisOptions {
+export interface ChangedAttributeThisOptions  {
   type?: typeof Number | typeof Boolean | typeof String;
   while?: 'connected';
 }

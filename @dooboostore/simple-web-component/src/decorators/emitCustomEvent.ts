@@ -1,5 +1,5 @@
 import {ReflectUtils} from '@dooboostore/core';
-import {SpecialSelector, SwcQueryOptions, HelperHostSet} from '../types';
+import { SpecialSelector, SwcQueryOptions, HelperHostSet } from '../types';
 import {ensureInit, getElementConfig} from './elementDefine';
 import {SwcUtils} from '../utils/Utils';
 
@@ -8,6 +8,22 @@ export interface EmitCustomEventBaseOptions {
   composed?: boolean;
   cancelable?: boolean;
   filter?: (target: EventTarget, detail: any, meta: { currentThis: any, helper: HelperHostSet }) => boolean;
+  /**
+   * Custom key to extract value from return object.
+   * If not provided, uses EMIT_CUSTOM_EVENT_METADATA_KEY by default.
+   * Useful when multiple @emitCustomEvent decorators are on the same method.
+   * 
+   * Example:
+   * @emitCustomEvent('$appHost', 'event1', { valueKey: 'detail1' })
+   * @emitCustomEvent('$appHost', 'event2', { valueKey: 'detail2' })
+   * myMethod() {
+   *   return {
+   *     detail1: { type: 'event1', data: 'value1' },
+   *     detail2: { type: 'event2', data: 'value2' }
+   *   };
+   * }
+   */
+  valueKey?: symbol | string;
 }
 
 type Options = (EmitCustomEventBaseOptions & SwcQueryOptions) | (EmitCustomEventBaseOptions & SwcQueryOptions & { attributeName?: string });
@@ -121,6 +137,9 @@ export const getEmitCustomEventMetadataList = (target: any): EmitCustomEventMeta
   const constructor = target instanceof Function ? target : target.constructor;
   return ReflectUtils.getMetadata(EMIT_CUSTOM_EVENT_METADATA_KEY, constructor);
 };
+
+// --- Aliases: emit... ---
+export const emit = emitCustomEvent;
 
 /**
  * @emitCustomEventThis decorator - simplified version of @emitCustomEvent for $this selector

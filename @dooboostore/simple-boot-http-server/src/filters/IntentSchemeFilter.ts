@@ -1,6 +1,6 @@
 import { Filter } from './Filter';
 import { HttpHeaders } from '../codes/HttpHeaders';
-import { Intent } from '@dooboostore/simple-boot';
+import {Intent, sim} from '@dooboostore/simple-boot';
 import { IntentManager } from '@dooboostore/simple-boot';
 import { Sim } from '@dooboostore/simple-boot';
 import { HttpStatus } from '../codes/HttpStatus';
@@ -9,7 +9,7 @@ import { SimpleBootHttpServer } from '../SimpleBootHttpServer';
 import { Mimes } from '../codes/Mimes';
 import { NotFoundError } from '../errors/NotFoundError';
 
-@Sim
+@sim
 export class IntentSchemeFilter implements Filter {
   constructor(private intentManager: IntentManager) {}
 

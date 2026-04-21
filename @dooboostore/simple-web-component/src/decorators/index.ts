@@ -1,5 +1,5 @@
 export * from './addEventListener';
-export * from './attribute';
+export * from './applyAttribute';
 export * from './elementDefine';
 export * from './changedAttributeThis';
 export * from './emitCustomEvent';
@@ -10,10 +10,9 @@ export * from './queryAll';
 export * from './applyClass';
 export * from './applyStyle';
 export * from './applyAttribute';
-export * from './setProperty';
+export * from './applyProperty';
 export * from './subscribeSwcAppRouteChangeWhileConnected';
 export * from './subscribeSwcAppMessageWhileConnected';
 export * from './publishSwcAppMessage';
 export * from './applySlot';
 export * from './state';
-

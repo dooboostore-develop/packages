@@ -1,9 +1,9 @@
-import { onConnectedBefore, onInitialize, addEventListener, applyInnerHtmlNode, elementDefine, onConnectedInnerHtml, updateClass } from '@dooboostore/simple-web-component';
-import { Inject } from '@dooboostore/simple-boot';
-import { Router } from '@dooboostore/core-web';
-import { Accommodation, AccommodationService } from '../services/AccommodationService';
+import {appendHtmlSlot, innerHtmlNode, state, addEventListener, elementDefine, onConnected, onConnectedAfter, updateClass} from '@dooboostore/simple-web-component';
+import {Inject} from '@dooboostore/simple-boot';
+import {Router} from '@dooboostore/core-web';
+import {type Accommodation, AccommodationService} from '../services/AccommodationService';
 
-export default (w: Window, container: symbol) => {
+export default (w: Window) => {
   const tagName = 'swc-example-accommodation-list-page';
   const existing = w.customElements.get(tagName);
   if (existing) {
@@ -20,8 +20,8 @@ export default (w: Window, container: symbol) => {
     private accommodationService: AccommodationService;
     private router: Router;
 
-    @onConnectedBefore
-    onInitialize(@Inject({ symbol: AccommodationService.SYMBOL }) accommodationService: AccommodationService, router: Router) {
+    @onConnectedAfter
+    onInitialize(@Inject(AccommodationService.SYMBOL) accommodationService: AccommodationService, router: Router) {
       this.accommodationService = accommodationService;
       this.router = router;
       this.allAccommodations = this.accommodationService.getAccommodations();
@@ -29,8 +29,7 @@ export default (w: Window, container: symbol) => {
       this.setContentDisplay(this.filteredAccommodations);
     }
 
-
-    @applyInnerHtmlNode('.list-content')
+    @innerHtmlNode('.list-content')
     setContentDisplay(filteredAccommodations: Accommodation[]) {
       return `
              <div class="header-info">
@@ -43,6 +42,20 @@ export default (w: Window, container: symbol) => {
             </div>
             `;
     }
+
+    // @applyNodeInnerHtml('.list-content')
+    // setContentDisplay(filteredAccommodations: Accommodation[]) {
+    //   return `
+    //          <div class="header-info">
+    //           <h2>${filteredAccommodations.length}개의 엄선된 숙소</h2>
+    //           <p>최고의 경험을 위한 프리미엄 스테이 컬렉션</p>
+    //         </div>
+    //
+    //         <div class="grid">
+    //           ${filteredAccommodations.length > 0 ? filteredAccommodations.map(acc => `<swc-example-accommodation-accommodation-card data-id="${acc.id}" class="card-item"></swc-example-accommodation-accommodation-card>`).join('') : `<div class="empty-state">...</div>`}
+    //         </div>
+    //         `;
+    // }
 
 
     connectedCallback() {
@@ -70,7 +83,7 @@ export default (w: Window, container: symbol) => {
       }, 0);
     }
 
-    @applyInnerHtmlNode('.grid')
+    @innerHtmlNode('.grid')
     private renderGrid() {
       if (this.filteredAccommodations.length > 0) {
         return this.filteredAccommodations.map(acc => `<swc-example-accommodation-accommodation-card data-id="${acc.id}" class="card-item"></swc-example-accommodation-accommodation-card>`).join('');
@@ -86,7 +99,7 @@ export default (w: Window, container: symbol) => {
       }
     }
 
-    @applyInnerHtmlNode('.header-info h2')
+    @innerHtmlNode('.header-info h2')
     private renderCount() {
       return `${this.filteredAccommodations.length}개의 엄선된 숙소`;
     }
@@ -123,7 +136,22 @@ export default (w: Window, container: symbol) => {
       this.updateMapMarkers();
     }
 
-    @onConnectedInnerHtml({ useShadow: true })
+    @addEventListener('.c-btn', 'click')
+    wow(){
+      alert(1)
+      this.ww = '<i>aaaaaaa</i>'
+    }
+
+    @state('ww')
+    ww="<b>dddddddddd</b>"
+
+    @appendHtmlSlot('zzz')
+    zzz(){
+      return '<b>aa</b>'
+    }
+
+
+    @onConnected({ useShadow: true })
     render() {
       return `
       <style>
@@ -178,7 +206,7 @@ export default (w: Window, container: symbol) => {
           color: white; 
           border-color: #222; 
         }
-
+        
         .list-content { padding: 40px; }
         .header-info { margin-bottom: 40px; }
         .header-info h2 { font-size: 32px; margin: 0 0 12px 0; font-weight: 850; letter-spacing: -1.5px; color: #1a1a1a; }
@@ -243,7 +271,6 @@ export default (w: Window, container: symbol) => {
           .list-content { padding: 32px 20px; }
         }
       </style>
-
       <div class="layout">
         <div class="list-panel">
           <div class="filter-header">
@@ -255,9 +282,7 @@ export default (w: Window, container: symbol) => {
               <div class="filter-chip" data-filter="무선 인터넷">Wi-Fi</div>
             </div>
           </div>
-          
           <div class="list-content">
-     
           </div>
         </div>
 

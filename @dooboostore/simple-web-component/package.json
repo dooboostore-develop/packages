@@ -1,6 +1,6 @@
 {
   "name": "@dooboostore/simple-web-component",
-  "version": "1.0.37",
+  "version": "1.0.43",
   "license": "MIT",
   "type": "module",
   "main": "./dist/cjs/index.js",
@@ -76,10 +76,6 @@
     "@babel/plugin-transform-private-property-in-object": "^7.25.9",
     "@babel/preset-env": "^7.24.0",
     "@babel/preset-typescript": "^7.24.0",
-    "@dooboostore/core": "workspace:*",
-    "@dooboostore/core-node": "workspace:*",
-    "@dooboostore/core-web": "workspace:*",
-    "@dooboostore/simple-boot": "workspace:*",
     "@types/jest": "^26.0.22",
     "@types/node": "^20",
     "@typescript-eslint/eslint-plugin": "^4.16.1",
@@ -95,7 +91,11 @@
     "typescript": "^5.9.2",
     "webpack": "^5.93.0",
     "webpack-cli": "^5.1.4",
-    "webpack-dev-server": "^5.2.0"
+    "webpack-dev-server": "^5.2.0",
+    "@dooboostore/core": "workspace:*",
+    "@dooboostore/core-node": "workspace:*",
+    "@dooboostore/core-web": "workspace:*",
+    "@dooboostore/simple-boot": "workspace:*"
   },
   "scripts": {
     "clean": "rm -rf dist",
@@ -113,8 +113,6 @@
     "publish:npm": "pnpm run build && cp package.json package.json.back && pnpm pack && TARBALL_NAME=$(ls dooboostore-simple-web-component-*.tgz | head -n 1) && tar -xzf \"$TARBALL_NAME\" -C . --strip-components=1 package/package.json && rm \"$TARBALL_NAME\" && (pnpm publish --no-git-checks || true) && cp package.json.back package.json && rm -rf package.json.back  ",
     "ts:clean": "find . -name '*.js' -o -name '*.map' -o -name '*.d.ts' | xargs rm -f",
     "typecheck": "pnpm exec tsc --noEmit",
-    "generate:is": "tsx generate-is.ts",
-    "generate:is:watch": "node --import tsx --watch --watch-path=./src/elements/SwcIf.ts --watch-path=./src/elements/SwcLoop.ts --watch-path=./src/elements/SwcChoose.ts --watch-path=./src/elements/SwcAsync.ts --watch-path=./src/elements/SwcAppMixin.ts --watch-path=./generate-is.ts generate-is.ts",
     "test": "echo test",
     "test:bundle": "pnpm --filter @dooboostore/simple-web-component-bundle-test dev"
   }

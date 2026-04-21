@@ -102,7 +102,6 @@ export class RouterManager {
     const callCheckOnRouting = option?.noOnRouting !== true; // 기본값은 false, 즉 onRouting 호출
 
     if (!targetRouter) {
-      debugger;
       throw new Error('no router');
     }
     // await new Promise((r)=> setTimeout(r, 0)); // <-- 이거 넣어야지 두번불러지는게 없어지는듯? 뭐지 event loop 변경된건가?

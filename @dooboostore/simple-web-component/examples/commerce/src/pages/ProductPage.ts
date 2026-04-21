@@ -1,8 +1,8 @@
-import { onConnectedBefore, elementDefine, onConnectedInnerHtml, onInitialize, addEventListener, attributeThis } from '@dooboostore/simple-web-component';
+import {attributeThis, elementDefine, onConnected, onConnectedBefore} from '@dooboostore/simple-web-component';
 import {Inject} from '@dooboostore/simple-boot';
-import { ProductService  } from '../services/ProductService';
-import { CartService } from '../services/CartService';
-import { OrderService } from '../services/OrderService';
+import {ProductService} from '../services/ProductService';
+import {CartService} from '../services/CartService';
+import {OrderService} from '../services/OrderService';
 
 export default (w: Window) => {
   const tagName = 'swc-example-commerce-product-page';
@@ -18,6 +18,8 @@ export default (w: Window) => {
 
     @attributeThis('product-id')
     productId: string;
+
+
 
     private productService: ProductService;
     private cartService: CartService;
@@ -89,7 +91,7 @@ export default (w: Window) => {
       }
     }
 
-    @onConnectedInnerHtml
+    @onConnected
     render() {
       console.log('ProductPage render called, product:', this.product?.name);
       if (!this.product) {

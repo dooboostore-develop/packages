@@ -26,7 +26,16 @@ module.exports = {
   resolve: {
     extensions: ['.ts', '.tsx', '.js'],
     alias: {
-      '@': path.resolve(__dirname, 'src')
+      '@': path.resolve(__dirname, 'src'),
+      '@dooboostore/simple-boot': path.resolve(__dirname, '../../../simple-boot/src'),
+      '@dooboostore/simple-boot-http-server': path.resolve(__dirname, '../../../simple-boot-http-server/src'),
+      '@dooboostore/simple-boot-http-server-ssr': path.resolve(__dirname, '../../../simple-boot-http-server-ssr/src'),
+      '@dooboostore/core': path.resolve(__dirname, '../../../core/src'),
+      '@dooboostore/core-web': path.resolve(__dirname, '../../../core-web/src'),
+      '@dooboostore/dom-parser': path.resolve(__dirname, '../../../dom-parser/src'),
+      '@dooboostore/simple-web-component': path.resolve(__dirname, '../../../simple-web-component/src')
+
+
     }
   },
   devServer: {

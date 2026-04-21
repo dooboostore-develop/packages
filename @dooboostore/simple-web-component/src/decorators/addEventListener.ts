@@ -59,6 +59,13 @@ export function addEventListenerDelegate(selector: string, type: string, options
 /**
  * @addEventListenerThis decorator - simplified version of @addEventListener for $this selector
  */
+
+// --- Aliases: event... ---
+export const event = addEventListener;
+export const eventDelegateLightDom = addEventListenerDelegateLightDom;
+export const eventDelegateShadowDom = addEventListenerDelegateShadowDom;
+export const eventDelegateAllDom = addEventListenerDelegateAllDom;
+export const eventDelegate = addEventListenerDelegate;
 export function addEventListenerThis(type: string, options?: AddEventListenerBaseOptions & SwcQueryOptions): MethodDecorator {
   return addEventListener('$this', type, options);
 }

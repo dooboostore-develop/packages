@@ -8,7 +8,7 @@ import { SimConfig } from '@dooboostore/simple-boot';
 
 export type SwcConfigType = {
   routeType: 'path' | 'hash' | 'element';
-  connectMode?: 'direct' | 'swap' | 'clear-swap'; // hydrate 아직 개발중
+  // connectMode?: 'direct' | 'swap' | 'clear-swap'; // hydrate 아직 개발중
   container?: symbol;
   otherInstanceSim?: Map<ConstructorType<any> | Function | SimConfig | symbol, any>;
   path?: string;
@@ -21,7 +21,7 @@ export type SwcConfigType = {
   onConnected?: (app: SwcAppInterface) => void;
   onDisconnected?: (app: SwcAppInterface) => void;
   ssr?: boolean;
-  onStartedLazyComponent?: ((w: Window)=> Promise<CustomElementConstructor> | void | string | any | CustomElementConstructor)[];
+  onStartedLazyDefineComponent?: ((w: Window)=> Promise<CustomElementConstructor> | void | string | any | CustomElementConstructor)[];
 
   onChildrenConnectedDone?: (app: SwcAppInterface) => void;
   // onChildrenSwcAppStartedDone?: (app: SwcAppInterface) => void;
@@ -76,8 +76,9 @@ export class SwcAppEngine {
       this.simpleApplication.run(otherInstanceSim);
 
 
-      if (this._config.onStartedLazyComponent) {
-        await Promise.all(this._config.onStartedLazyComponent.map(it => it(this._config.window)))
+      if (this._config.onStartedLazyDefineComponent) {
+        // console.log('-------->', this._config.onStartedLazyDefineComponent)
+        await Promise.all(this._config.onStartedLazyDefineComponent.map(it => it(this._config.window)))
       }
       if (this._config.onEngineStarted) {
         await this._config.onEngineStarted(this.simpleApplication, this.host as unknown as SwcAppInterface);

@@ -1,9 +1,10 @@
 import MainPage from './MainPage';
 import DetailPage from './DetailPage';
-import { onConnectedBefore,applyReplaceChildrenNodeThis, applyInnerHtmlNodeThis, subscribeSwcAppRouteChangeWhileConnected, onInitialize, elementDefine, onConnectedInnerHtml, setProperty } from '@dooboostore/simple-web-component';
-import { Inject } from '@dooboostore/simple-boot';
-import { Router, type RouterEventType } from '@dooboostore/core-web';
-import { StockService } from '../services/StockService';
+import {replaceChildrenNodeThis, elementDefine, onConnectedBefore, onConnectedShadow, setProperty, subscribeSwcAppRouteChangeWhileConnected} from '@dooboostore/simple-web-component';
+import {Inject} from '@dooboostore/simple-boot';
+import {Router, type RouterEventType} from '@dooboostore/core-web';
+import {StockService} from '../services/StockService';
+import {innerHtmlLightNodeThis} from "../../../../src";
 
 export * from './MainPage';
 export * from './DetailPage';
@@ -33,13 +34,25 @@ export const rootRouterFactory = (w: Window) => {
       this.router = router;
     }
 
-    @setProperty('#router', 'value')
+    @innerHtmlLightNodeThis
     @subscribeSwcAppRouteChangeWhileConnected(['','/', '/detail/{id}'])
-    routeChanged(re: RouterEventType) {
-      return re;
+    routeChanged(routerPathSet: RouterEventType) {
+      if (['', '/'].includes(routerPathSet.path)) {
+        return `<swc-example-stock-main-page/>`
+      } else if (routerPathSet.path.startsWith('/detail/')) {
+        return `<swc-example-stock-detail-page stock-id="${routerPathSet.pathData.id}"/>`
+      } else {
+        return `<div style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 400px; padding: 40px; text-align: center; color: #666;">
+                <h2 style="font-size: 24px; margin: 0 0 10px 0; color: #333;">404 - Page Not Found</h2>
+                <p style="margin: 0 0 20px 0; color: #999;">The page you're looking for doesn't exist.</p>
+                <a href="/" style="padding: 12px 24px; background: #1976d2; color: white; text-decoration: none; border-radius: 4px; font-weight: 600; transition: background 0.3s;">Go Home</a>
+              </div>`
+      }
+
+
     }
 
-    @applyReplaceChildrenNodeThis({
+    @replaceChildrenNodeThis({
       root: 'light',
       filter: (host, newNode) => !host.contains(newNode)
     })
@@ -51,7 +64,7 @@ export const rootRouterFactory = (w: Window) => {
       this.router.go(path);
     }
 
-    @onConnectedInnerHtml({ useShadow: true })
+    @onConnectedShadow
     render() {
       return `
         <style>
@@ -61,26 +74,7 @@ export const rootRouterFactory = (w: Window) => {
         </style>
         <swc-example-stock-stock-header on-navigate="$host.navigate($data.path)"></swc-example-stock-stock-header>
         <main id="page-container">
-          <template id="router" is="swc-choose" skip-if-same>
-            <!-- Main -->
-            <template is="swc-when" value="{{ $value?.path === '/' }}">
-              <swc-example-stock-main-page/>
-            </template>
-            
-            <!-- Detail -->
-            <template is="swc-when" value="{{ $value?.path.startsWith('/detail/') }}">
-              <swc-example-stock-detail-page stock-id="{{$value.pathData.id}}"/>
-            </template>
-            
-            <!-- Not Found -->
-            <template is="swc-otherwise">
-              <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 400px; padding: 40px; text-align: center; color: #666;">
-                <h2 style="font-size: 24px; margin: 0 0 10px 0; color: #333;">404 - Page Not Found</h2>
-                <p style="margin: 0 0 20px 0; color: #999;">The page you're looking for doesn't exist.</p>
-                <a href="/" style="padding: 12px 24px; background: #1976d2; color: white; text-decoration: none; border-radius: 4px; font-weight: 600; transition: background 0.3s;">Go Home</a>
-              </div>
-            </template>
-          </template>
+          <slot></slot>
         </main>
       `;
     }

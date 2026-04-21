@@ -197,6 +197,7 @@ async function runOpenApiTests() {
         // 🎯 테스트 1: GET /users - 기본 GET 요청 테스트
         console.log('📋 테스트 1: GET /users - 기본 GET 요청');
         const server1 = OpenApi.createProvider(TestSpec, {
+
             "/users": {
                 get: {
                     void: {
@@ -281,6 +282,8 @@ async function runOpenApiTests() {
                 }
             }
         });
+
+        const result0 = await server1({path:'/users/{id}', method: 'get',  responseContentType: 'application/json'}, {parameters:{path: {id: '123'}}} );
 
         const result1 = await server1(
             {

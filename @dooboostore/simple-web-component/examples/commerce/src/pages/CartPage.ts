@@ -1,8 +1,8 @@
-import { onConnectedBefore,elementDefine, applyNode, onConnectedInnerHtml, addEventListener, onInitialize } from '@dooboostore/simple-web-component';
+import {addEventListener, applyNode, elementDefine, onConnected, onConnectedBefore} from '@dooboostore/simple-web-component';
 import {Inject} from '@dooboostore/simple-boot';
-import { SubscriptionLike } from '@dooboostore/core';
-import { CartService  } from '../services/CartService';
-import { OrderService } from '../services/OrderService';
+import {SubscriptionLike} from '@dooboostore/core';
+import {CartService} from '../services/CartService';
+import {OrderService} from '../services/OrderService';
 
 export default (w: Window) => {
   const tagName = 'swc-example-commerce-cart-page';
@@ -198,7 +198,7 @@ export default (w: Window) => {
       `;
     }
 
-    @onConnectedInnerHtml({ useShadow: true })
+    @onConnected({ useShadow: true })
     render() {
       return `
         <style>

@@ -1,10 +1,18 @@
-import { elementDefine, onConnectedInnerHtml, applyNodeThis } from '@dooboostore/simple-web-component';
-import type { Accommodation } from '../services/AccommodationService';
+import {applyNodeThis, createElement, CreateElementConfig, elementDefine} from '@dooboostore/simple-web-component';
 
+import type {Accommodation} from '../services/AccommodationService';
+
+const tagName = 'swc-example-accommodation-accommodation-card';
+export interface AccommodationCard extends HTMLElement {
+  accommodation: Accommodation | null;
+}
+export const AccommodationCard = (w: Window, data?: CreateElementConfig) => {
+  return createElement<AccommodationCard>(w, tagName, data);
+}
 export default (w: Window) => {
-  const tagName = 'swc-example-accommodation-accommodation-card';
   const existing = w.customElements.get(tagName);
   if (existing) return existing;
+
 
 
   @elementDefine(tagName, { window: w })
@@ -46,7 +54,6 @@ export default (w: Window) => {
           transition: transform 0.6s cubic-bezier(0.2, 0, 0, 1);
         }
         
-        $this(:hover) img { transform: scale(1.1); }
         
         .info { display: flex; flex-direction: column; gap: 4px; }
         
@@ -105,6 +112,7 @@ export default (w: Window) => {
           <div class="category-badge">${category}</div>
           <img src="${images[0]}" alt="${name}" loading="lazy">
         </div>
+
         <div class="info">
           <div class="header">
             <div class="title">${name}</div>

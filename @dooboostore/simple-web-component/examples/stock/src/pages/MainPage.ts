@@ -1,7 +1,8 @@
-import { onConnectedBefore,elementDefine, onConnectedInnerHtml, addEventListener, updateClass, applyInnerHtmlNode, onInitialize } from '@dooboostore/simple-web-component';
-import { Inject } from '@dooboostore/simple-boot';
-import { Router } from '@dooboostore/core-web';
-import { StockService, Stock } from '../services/StockService';
+import {addEventListener, innerHtmlNode, elementDefine, onConnectedBefore, onConnectedShadow, updateClass} from '@dooboostore/simple-web-component';
+import {Inject} from '@dooboostore/simple-boot';
+import {Router} from '@dooboostore/core-web';
+import {Stock, StockService} from '../services/StockService';
+import {onConnectedAfter} from "../../../../src";
 
 export default (w: Window) => {
   const tagName = 'swc-example-stock-main-page';
@@ -20,8 +21,8 @@ export default (w: Window) => {
     private stockService: StockService;
     private router: Router;
 
-    @onConnectedBefore
-    onconstructor(@Inject({ symbol: StockService.SYMBOL }) stockService: StockService, router: Router) {
+    @onConnectedAfter
+    onconstructor(@Inject(StockService.SYMBOL) stockService: StockService, router: Router) {
       this.stockService = stockService;
       this.router = router;
       this.stocks = this.stockService.getStocks();
@@ -58,7 +59,7 @@ export default (w: Window) => {
       };
     }
 
-    @applyInnerHtmlNode('.falling-container .stock-list')
+    @innerHtmlNode('.falling-container .stock-list')
     fallingStockDisplay(falling: Stock[] = []) {
       return `
       ${falling
@@ -67,21 +68,21 @@ export default (w: Window) => {
         .join('')}
         `;
     }
-    @applyInnerHtmlNode('.bookmark-container .category-scroll')
+    @innerHtmlNode('.bookmark-container .category-scroll')
     bookMarkCategoryDisplay(categories: string[] = []) {
       return `
       ${categories.map(c => `<div class="cat-chip ${this.selectedCategory === c ? 'active' : ''}" data-cat="${c}">${c}</div>`).join('')}
       `;
     }
 
-    @applyInnerHtmlNode('.bookmark-container .stock-list')
+    @innerHtmlNode('.bookmark-container .stock-list')
     bookMarkCategoryStockDisplay(selectedCategory: string, stocks: Stock[] = []) {
       return `
       ${(selectedCategory === 'All' ? stocks : this.stockService.getStocksByCategory(this.selectedCategory)).map(s => `<swc-example-stock-stock-card data-id="${s.id}" class="card-item"></swc-example-stock-stock-card>`).join('')}
       `;
     }
 
-    @applyInnerHtmlNode('.rising-container .stock-list')
+    @innerHtmlNode('.rising-container .stock-list')
     risingDisplay(rising: Stock[] = []) {
       return `
              ${rising
@@ -90,13 +91,13 @@ export default (w: Window) => {
                .join('')}
       `;
     }
-    @applyInnerHtmlNode('.section:nth-child(2) .stock-list')
+    @innerHtmlNode('.section:nth-child(2) .stock-list')
     private renderInterestStocks() {
       const displayStocks = this.selectedCategory === 'All' ? this.stocks : this.stockService.getStocksByCategory(this.selectedCategory);
       return displayStocks.map(s => `<swc-example-stock-stock-card data-id="${s.id}" class="card-item"></swc-example-stock-stock-card>`).join('');
     }
 
-    @onConnectedInnerHtml({ useShadow: true })
+    @onConnectedShadow
     render() {
       return `
       <style>

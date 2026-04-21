@@ -1,9 +1,10 @@
-import { onConnectedBefore, elementDefine, onConnectedInnerHtml, addEventListener, updateClass, applyInnerHtmlNode, onInitialize } from '@dooboostore/simple-web-component';
+import {innerHtmlNode, addEventListener, elementDefine, onConnected, onConnectedBefore, updateClass} from '@dooboostore/simple-web-component';
 import {Inject} from '@dooboostore/simple-boot';
-import { Router } from '@dooboostore/core-web';
-import { ProductService  } from '../services/ProductService';
-import { CartService } from '../services/CartService';
+import {Router} from '@dooboostore/core-web';
+import {ProductService} from '../services/ProductService';
+import {CartService} from '../services/CartService';
 import {OrderService} from "../services/OrderService";
+import {onConnectedAfter} from "../../../../src";
 
 export default (w: Window) => {
   const tagName = 'swc-example-commerce-home-page';
@@ -21,8 +22,8 @@ export default (w: Window) => {
     private orderService: OrderService;
     private router: Router;
 
-    @onConnectedBefore
-    onconstructor(@Inject({ symbol: ProductService.SYMBOL }) productService: ProductService, @Inject({ symbol: CartService.SYMBOL }) cartService: CartService, @Inject({ symbol: OrderService.SYMBOL }) orderService: OrderService, router: Router) {
+    @onConnectedAfter
+    onconstructor(@Inject(ProductService.SYMBOL) productService: ProductService, @Inject({ symbol: CartService.SYMBOL }) cartService: CartService, @Inject({ symbol: OrderService.SYMBOL }) orderService: OrderService, router: Router) {
       this.productService = productService;
       this.cartService = cartService;
       this.orderService = orderService;
@@ -55,7 +56,7 @@ export default (w: Window) => {
       return this.products.filter(p => p.category === this.selectedCategory);
     }
 
-    @applyInnerHtmlNode('.products-grid')
+    @innerHtmlNode('.products-grid')
     renderProductCards(): string {
       const filtered = this.getFilteredProducts();
       console.log('fffffffff', filtered);
@@ -106,7 +107,7 @@ export default (w: Window) => {
       this.cartService.addItem(product, 1);
     }
 
-    @onConnectedInnerHtml
+    @onConnected
     render() {
       const categories = this.getCategories();
 

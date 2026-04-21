@@ -1,6 +1,6 @@
 import { ReflectUtils } from '@dooboostore/core';
 import { ensureInit, getElementConfig } from './elementDefine';
-import { HelperHostSet, SwcRootType } from '../types';
+import {SpecialSelector, SwcQueryOptions, HelperHostSet, SwcRootType} from '../types';
 import { SwcUtils} from "../utils/Utils";
 import {findAllStateMetadata} from "./state";
 import {ElementApply} from "@dooboostore/core-web";
@@ -13,7 +13,7 @@ import {ElementApply} from "@dooboostore/core-web";
 </p>
 <!-- afterend -->
  */
-export type ApplyNodePosition = 'beforeBegin' | 'afterBegin' | 'beforeEnd' | 'afterEnd' | 'replace' | 'replaceChildren' | 'innerHtml' | 'innerText' | 'remove';
+export type ApplyNodePosition = 'beforeBegin' | 'afterBegin' | 'beforeEnd' | 'afterEnd' | 'replace' | 'replaceChildren' | 'innerHtml' | 'innerText' | 'remove' | 'clearChildren';
 
 export interface ApplyNodeOptions {
   position?: ApplyNodePosition;
@@ -26,7 +26,13 @@ export interface ApplyNodeOptions {
   /**
    * Optional loading content to display while an async method is executing.
    */
-  loading?: (helper: HelperHostSet) => any;
+  fallback?: (helper: HelperHostSet) => any;
+  /**
+   * Custom key to extract value from return object.
+   * If not provided, uses APPLY_NODE_METADATA_KEY by default.
+   * Useful when multiple @applyNode decorators are on the same method.
+   */
+  valueKey?: symbol | string;
 }
 
 export interface ApplyNodeMetadata {
@@ -37,65 +43,64 @@ export interface ApplyNodeMetadata {
 
 export const APPLY_NODE_METADATA_KEY = Symbol.for('simple-web-component:apply-node');
 
-const normalizeNodes = (res: any, doc: Document): Node[] => {
-  const items = Array.isArray(res) ? res : [res];
-  return items.map(it => {
-    if (it instanceof Node) return it;
-    return doc.createTextNode(it !== undefined && it !== null ? String(it) : '');
-  });
-};
+// const normalizeNodes = (res: any, doc: Document): Node[] => {
+//   const items = Array.isArray(res) ? res : [res];
+//   return items.map(it => {
+//     if (it instanceof Node) return it;
+//     return doc.createTextNode(it !== undefined && it !== null ? String(it) : '');
+//   });
+// };
 
-const applyToDom = (currentThis: any, targetEl: HTMLElement, res: any, pos: ApplyNodePosition, win: Window, host?: any) => {
+const applyToDom = (currentThis: any, targetEl: HTMLElement, res: Node | string, pos: ApplyNodePosition, win: Window, host?: any) => {
   if (!targetEl) return;
-
-  // console.log('------------',currentThis.tagName, res)
+  
+  // Handle clearChildren - ignore return value and always clear
+  if (pos === 'clearChildren') {
+    targetEl.replaceChildren();
+    return [];
+  }
+  
   const doc = win.document;
   const hostSet = SwcUtils.getHelperAndHostSet(win, currentThis);
   const id = currentThis._swcId;
-  // Allow processHtml to run here so all DOM insertions go through a single
-  // processing point. processHtml may mutate Node[] in-place or return a
-  // transformed string result for text processing.
-  try {
-    if (typeof res === 'string') {
-      const processed = SwcUtils.projectProcessHtml(id, res as string, doc);
-      if (processed !== undefined) res = processed;
-    } else if (Array.isArray(res)) {
-      SwcUtils.projectProcessHtml(id, res as Node[], doc);
-    }
-  } catch (e) {
-    // swallow and proceed with original res
+
+  const nodes: Node[] = [];
+
+  if (typeof res === 'string' && pos === 'innerHtml') {
+    const t = win.document.createElement('template');
+    t.innerHTML = res;
+    nodes.push(...Array.from(t.content.childNodes));
+  } else if (typeof res === 'string' && pos === 'innerText') {
+    nodes.push(win.document.createTextNode(res));
   }
 
-  if (pos === 'innerHtml') {
-    targetEl.innerHTML = res !== undefined && res !== null ? String(res) : '';
-    return;
-  }
+  SwcUtils.projectProcessHtml(id, nodes, doc);
 
-  if (pos === 'innerText') {
-    if (targetEl.innerText !== undefined) {
-      targetEl.innerText = res !== undefined && res !== null ? String(res) : '';
+  const isShadowRoot = targetEl instanceof win.ShadowRoot;
+  // const nodes = normalizeNodes(res, doc);
+  if (pos === 'replace') {
+    if (!isShadowRoot) targetEl.replaceWith(...nodes);
+  } else if (pos === 'innerHtml') {
+    targetEl.replaceChildren(...nodes);
+  } else if (pos === 'innerText') {
+    targetEl.replaceChildren(...nodes);
+  } else if (pos === 'replaceChildren') {
+    targetEl.replaceChildren(...nodes);
+  } else {
+    if (pos === 'beforeEnd') {
+      targetEl.append(...nodes)
     }
-    return;
+    else if (pos === 'afterBegin') targetEl.prepend(...nodes);
+    else if (pos === 'beforeBegin' && !isShadowRoot) targetEl.before(...nodes);
+    else if (pos === 'afterEnd' && !isShadowRoot) targetEl.after(...nodes);
   }
 
   const stateContext: any = {...hostSet};
   findAllStateMetadata(currentThis).forEach(it => {
     stateContext[it.name] = currentThis[it.propertyKey]
   })
-  new ElementApply(currentThis, {id: currentThis._swcId}).apply({target: 'noInitialized', context: stateContext, bind: currentThis});
-
-  const isShadowRoot = targetEl instanceof win.ShadowRoot;
-  const nodes = normalizeNodes(res, doc);
-  if (pos === 'replace') {
-    if (!isShadowRoot) targetEl.replaceWith(...nodes);
-  } else if (pos === 'replaceChildren') {
-    targetEl.replaceChildren(...nodes);
-  } else {
-    if (pos === 'beforeEnd') targetEl.append(...nodes);
-    else if (pos === 'afterBegin') targetEl.prepend(...nodes);
-    else if (pos === 'beforeBegin' && !isShadowRoot) targetEl.before(...nodes);
-    else if (pos === 'afterEnd' && !isShadowRoot) targetEl.after(...nodes);
-  }
+  new ElementApply(targetEl, {id: id}).apply({target: 'noInitialized', context: stateContext, bind: currentThis});
+  return nodes;
 };
 
 /**
@@ -145,6 +150,22 @@ export function applyNode(selector: string, options: ApplyNodeOptions = {positio
       const targetEl = getTarget();
       const res = original.apply(this, args);
 
+      /**
+       * Extract value for this decorator from method return value
+       * 
+       * If return value is an object with this decorator's key,
+       * use that value. Otherwise use the entire return value.
+       * 
+       * Uses valueKey from options if provided, otherwise uses APPLY_NODE_METADATA_KEY.
+       */
+      const extractValue = (v: any) => {
+        const keyToUse = options.valueKey ?? APPLY_NODE_METADATA_KEY;
+        if (v && typeof v === 'object' && keyToUse in v) {
+          return v[keyToUse];
+        }
+        return v;
+      };
+
       const runApply = (target: any, val: any) => {
         const pos = options.position || 'beforeEnd';
         // Delegate HTML/node processing to applyToDom which centralizes
@@ -158,25 +179,230 @@ export function applyNode(selector: string, options: ApplyNodeOptions = {positio
         }
       };
 
-      if (res instanceof Promise) {
-        // 비동기일 때만 로딩 표시
-        if (targetEl && options.loading) {
-          const loadingRes = options.loading.call(this, hostSet);
-          // applyToDom expects a Window as the 4th argument
-          applyToDom(this, targetEl, loadingRes, options.position || 'beforeEnd', currentWin);
-        }
 
+        const fallbackNodes: Node[] = [];
+      if (targetEl && options.fallback) {
+        const loadingRes = options.fallback.call(this, hostSet);
+        // applyToDom expects a Window as the 4th argument
+        fallbackNodes.push(...applyToDom(this, targetEl, loadingRes, options.position || 'beforeEnd', currentWin));
+      }
+
+      if (res instanceof Promise) {
         return res.then(finalRes => {
-          if (finalRes !== undefined && targetEl) runApply(targetEl, finalRes);
+          const extracted = extractValue(finalRes);
+          fallbackNodes.forEach((it: any)=>it.remove());
+          if (extracted !== undefined && targetEl) runApply(targetEl, extracted);
           return finalRes;
         });
       } else {
-        if (res !== undefined && targetEl) runApply(targetEl, res);
+        const extracted = extractValue(res);
+        if (extracted !== undefined && targetEl) runApply(targetEl, extracted);
         return res;
       }
     };
   };
 }
+
+export function applyNodeThis(options: ApplyNodeOptions): MethodDecorator;
+export function applyNodeThis(target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor): void;
+export function applyNodeThis(targetOrOptions?: any, propertyKey?: string | symbol, descriptor?: PropertyDescriptor): any {
+  const option: ApplyNodeOptions = {position: 'replaceChildren'};
+  if (propertyKey !== undefined) return applyNode('$this', option)(targetOrOptions, propertyKey, descriptor);
+  const opt = targetOrOptions || {};
+  return applyNode('$this', {...option, ...opt});
+}
+
+export function replaceChildrenNodeThis(options: Omit<ApplyNodeOptions, 'position'>): MethodDecorator;
+export function replaceChildrenNodeThis(target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor): void;
+export function replaceChildrenNodeThis(targetOrOptions?: any, propertyKey?: string | symbol, descriptor?: PropertyDescriptor): any {
+  const option: ApplyNodeOptions = {position: 'replaceChildren'};
+  if (propertyKey !== undefined) return applyNode('$this', option)(targetOrOptions, propertyKey, descriptor);
+  const opt = targetOrOptions || {};
+  return applyNode('$this', {...opt, ...option});
+}
+
+// Wrapper for clearChildren - always returns empty array regardless of method return value
+export function clearChildrenNodeThis(options: Omit<ApplyNodeOptions, 'position'>): MethodDecorator;
+export function clearChildrenNodeThis(target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor): void;
+export function clearChildrenNodeThis(targetOrOptions?: any, propertyKey?: string | symbol, descriptor?: PropertyDescriptor): any {
+  const option: ApplyNodeOptions = {position: 'clearChildren'};
+  if (propertyKey !== undefined) return applyNode('$this', option)(targetOrOptions, propertyKey, descriptor);
+  const opt = targetOrOptions || {};
+  return applyNode('$this', {...opt, ...option});
+}
+
+// Alias for clearChildrenNodeThis
+export const clearNodeThis = clearChildrenNodeThis;
+
+
+
+export function beforeEndNodeThis(options: Omit<ApplyNodeOptions, 'position'>): MethodDecorator;
+export function beforeEndNodeThis(target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor): void;
+export function beforeEndNodeThis(targetOrOptions?: any, propertyKey?: string | symbol, descriptor?: PropertyDescriptor): any {
+  const options: ApplyNodeOptions = {position: 'beforeEnd'};
+  if (propertyKey !== undefined) return applyNode('$this', options)(targetOrOptions, propertyKey, descriptor);
+  const opt = targetOrOptions || {};
+  return applyNode('$this', {...opt, ...options});
+}
+
+// Alias for beforeEndNodeThis
+export const appendNodeThis = beforeEndNodeThis;
+
+export function beforeEndLightNodeThis(options: Omit<ApplyNodeOptions, 'position' | 'root'>): MethodDecorator;
+export function beforeEndLightNodeThis(target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor): void;
+export function beforeEndLightNodeThis(targetOrOptions?: any, propertyKey?: string | symbol, descriptor?: PropertyDescriptor): any {
+  const option: ApplyNodeOptions = {position: 'beforeEnd', root: 'light'}
+  if (propertyKey !== undefined) return applyNode('$this', option)(targetOrOptions, propertyKey, descriptor);
+  const opt = targetOrOptions || {};
+  return applyNode('$this', {...opt, ...option});
+}
+
+// Alias for beforeEndLightNodeThis
+export const appendLightNodeThis = beforeEndLightNodeThis;
+
+export function beforeEndShadowNodeThis(options: Omit<ApplyNodeOptions, 'position' | 'root'>): MethodDecorator;
+export function beforeEndShadowNodeThis(target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor): void;
+export function beforeEndShadowNodeThis(targetOrOptions?: any, propertyKey?: string | symbol, descriptor?: PropertyDescriptor): any {
+  const option: ApplyNodeOptions = {position: 'beforeEnd', root: 'shadow'}
+  if (propertyKey !== undefined) return applyNode('$this', option)(targetOrOptions, propertyKey, descriptor);
+  const opt = targetOrOptions || {};
+  return applyNode('$this', {...opt, ...option});
+}
+
+// Alias for beforeEndShadowNodeThis
+export const appendShadowNodeThis = beforeEndShadowNodeThis;
+
+export function afterBeginNodeThis(options: Omit<ApplyNodeOptions, 'position'>): MethodDecorator;
+export function afterBeginNodeThis(target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor): void;
+export function afterBeginNodeThis(targetOrOptions?: any, propertyKey?: string | symbol, descriptor?: PropertyDescriptor): any {
+  const option: ApplyNodeOptions = {position: 'afterBegin'};
+  if (propertyKey !== undefined) return applyNode('$this', option)(targetOrOptions, propertyKey, descriptor);
+  const opt = targetOrOptions || {};
+  return applyNode('$this', {...opt, ...option});
+}
+
+// Alias for afterBeginNodeThis
+export const prependNodeThis = afterBeginNodeThis;
+
+export function afterBeginLightNodeThis(options: Omit<ApplyNodeOptions, 'position' | 'root'>): MethodDecorator;
+export function afterBeginLightNodeThis(target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor): void;
+export function afterBeginLightNodeThis(targetOrOptions?: any, propertyKey?: string | symbol, descriptor?: PropertyDescriptor): any {
+  const option: ApplyNodeOptions = {position: 'afterBegin', root: 'light'}
+  if (propertyKey !== undefined) return applyNode('$this', option)(targetOrOptions, propertyKey, descriptor);
+  const opt = targetOrOptions || {};
+  return applyNode('$this', {...opt, ...option});
+}
+
+// Alias for afterBeginLightNodeThis
+export const prependLightNodeThis = afterBeginLightNodeThis;
+
+export function innerHtmlNodeThis(options: Omit<ApplyNodeOptions, 'position'>): MethodDecorator;
+export function innerHtmlNodeThis(target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor): void;
+export function innerHtmlNodeThis(targetOrOptions?: any, propertyKey?: string | symbol, descriptor?: PropertyDescriptor): any {
+  const option: ApplyNodeOptions = {position: 'innerHtml'}
+  if (propertyKey !== undefined) return applyNode('$this', option)(targetOrOptions, propertyKey, descriptor);
+  const opt = targetOrOptions || {};
+  return applyNode('$this', {...opt, ...option});
+}
+
+// Alias for innerHtmlNodeThis
+export const setHtmlNodeThis = innerHtmlNodeThis;
+
+export function innerTextNodeThis(options: Omit<ApplyNodeOptions, 'position'>): MethodDecorator;
+export function innerTextNodeThis(target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor): void;
+export function innerTextNodeThis(targetOrOptions?: any, propertyKey?: string | symbol, descriptor?: PropertyDescriptor): any {
+  const option: ApplyNodeOptions = {position: 'innerText'}
+  if (propertyKey !== undefined) return applyNode('$this', option)(targetOrOptions, propertyKey, descriptor);
+  const opt = targetOrOptions || {};
+  return applyNode('$this', {...opt, ...option});
+}
+
+// Alias for innerTextNodeThis
+export const setTextNodeThis = innerTextNodeThis;
+
+export function innerHtmlLightNodeThis(options: Omit<ApplyNodeOptions, 'position' | 'root'>): MethodDecorator;
+export function innerHtmlLightNodeThis(target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor): void;
+export function innerHtmlLightNodeThis(targetOrOptions?: any, propertyKey?: string | symbol, descriptor?: PropertyDescriptor): any {
+  const option: ApplyNodeOptions = {position: 'innerHtml', root: 'light'};
+  if (propertyKey !== undefined) return applyNode('$this', option)(targetOrOptions, propertyKey, descriptor);
+  const opt = targetOrOptions || {};
+  return applyNode('$this', {...opt, ...option});
+}
+
+// Alias for innerHtmlLightNodeThis
+export const setHtmlLightNodeThis = innerHtmlLightNodeThis;
+
+export function replaceChildrenLightNodeThis(options: Omit<ApplyNodeOptions, 'position' | 'root'>): MethodDecorator;
+export function replaceChildrenLightNodeThis(target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor): void;
+export function replaceChildrenLightNodeThis(targetOrOptions?: any, propertyKey?: string | symbol, descriptor?: PropertyDescriptor): any {
+  const option: ApplyNodeOptions = {position: 'replaceChildren', root: 'light'};
+  if (propertyKey !== undefined) return applyNode('$this', option)(targetOrOptions, propertyKey, descriptor);
+  const opt = targetOrOptions || {};
+  return applyNode('$this', {...opt, ...option});
+}
+
+// Wrapper for clearChildrenLightNodeThis - always returns empty array regardless of method return value
+export function clearChildrenLightNodeThis(options: Omit<ApplyNodeOptions, 'position' | 'root'>): MethodDecorator;
+export function clearChildrenLightNodeThis(target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor): void;
+export function clearChildrenLightNodeThis(targetOrOptions?: any, propertyKey?: string | symbol, descriptor?: PropertyDescriptor): any {
+  const option: ApplyNodeOptions = {position: 'clearChildren', root: 'light'};
+  if (propertyKey !== undefined) return applyNode('$this', option)(targetOrOptions, propertyKey, descriptor);
+  const opt = targetOrOptions || {};
+  return applyNode('$this', {...opt, ...option});
+}
+
+// Alias for clearChildrenLightNodeThis
+export const clearLightNodeThis = clearChildrenLightNodeThis;
+
+export function replaceChildrenNode(selector: string, options: Omit<ApplyNodeOptions, 'position'> = {}): MethodDecorator {
+  return applyNode(selector, {...options, position: 'replaceChildren'});
+}
+
+// Wrapper for clearChildrenNode - always returns empty array regardless of method return value
+export function clearChildrenNode(selector: string, options: Omit<ApplyNodeOptions, 'position'> = {}): MethodDecorator {
+  return applyNode(selector, {...options, position: 'clearChildren'});
+}
+
+// Alias for clearChildrenNode
+export const clearNode = clearChildrenNode;
+
+export function innerHtmlNode(selector: string, options: Omit<ApplyNodeOptions, 'position'> = {}): MethodDecorator {
+  return applyNode(selector, {...options, position: 'innerHtml'});
+}
+
+// Alias for innerHtmlNode
+export const setHtmlNode = innerHtmlNode;
+
+export function innerHtmlLightNode(selector: string, options: Omit<ApplyNodeOptions, 'position' | 'root'> = {}): MethodDecorator {
+  return applyNode(selector, {...options, position: 'innerHtml', root: 'light'});
+}
+
+// Alias for innerHtmlLightNode
+export const setHtmlLightNode = innerHtmlLightNode;
+
+export function innerHtmlShadowNode(selector: string, options: Omit<ApplyNodeOptions, 'position' | 'root'> = {}): MethodDecorator {
+  return applyNode(selector, {...options, position: 'innerHtml', root: 'shadow'});
+}
+
+// Alias for innerHtmlShadowNode
+export const setHtmlShadowNode = innerHtmlShadowNode;
+
+export function innerTextNode(selector: string, options: Omit<ApplyNodeOptions, 'position'> = {}): MethodDecorator {
+  return applyNode(selector, {...options, position: 'innerText'});
+}
+
+// Alias for innerTextNode
+export const setTextNode = innerTextNode;
+
+export function innerTextLightNode(selector: string, options: Omit<ApplyNodeOptions, 'position' | 'root'> = {}): MethodDecorator {
+  return applyNode(selector, {...options, position: 'innerText', root: 'light'});
+}
+
+export function innerTextShadowNode(selector: string, options: Omit<ApplyNodeOptions, 'position' | 'root'> = {}): MethodDecorator {
+  return applyNode(selector, {...options, position: 'innerText', root: 'shadow'});
+}
+
+
 
 export const findAllApplyNodeMetadata = (target: any): Map<string | symbol, ApplyNodeMetadata> => {
   const result = new Map<string | symbol, ApplyNodeMetadata>();
@@ -188,96 +414,3 @@ export const findAllApplyNodeMetadata = (target: any): Map<string | symbol, Appl
   });
   return result;
 };
-
-export function applyNodeThis(options: ApplyNodeOptions): MethodDecorator;
-export function applyNodeThis(target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor): void;
-export function applyNodeThis(targetOrOptions?: any, propertyKey?: string | symbol, descriptor?: PropertyDescriptor): any {
-  const option: ApplyNodeOptions = {position: 'replaceChildren'};
-  if (propertyKey !== undefined) return applyNode('$this', option)(targetOrOptions, propertyKey, descriptor);
-  const opt = targetOrOptions || {};
-  return applyNode('$this', {...option, ...opt});
-}
-
-export function applyNodeThisReplaceChildren(options: Omit<ApplyNodeOptions, 'position'>): MethodDecorator;
-export function applyNodeThisReplaceChildren(target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor): void;
-export function applyNodeThisReplaceChildren(targetOrOptions?: any, propertyKey?: string | symbol, descriptor?: PropertyDescriptor): any {
-  const option: ApplyNodeOptions = {position: 'replaceChildren'};
-  if (propertyKey !== undefined) return applyNode('$this', option)(targetOrOptions, propertyKey, descriptor);
-  const opt = targetOrOptions || {};
-  return applyNode('$this', {...opt, ...option});
-}
-
-export function applyNodeThisReplaceChildrenLightDom(options: Omit<ApplyNodeOptions, 'position' | 'root'>): MethodDecorator;
-export function applyNodeThisReplaceChildrenLightDom(target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor): void;
-export function applyNodeThisReplaceChildrenLightDom(targetOrOptions?: any, propertyKey?: string | symbol, descriptor?: PropertyDescriptor): any {
-  const options: ApplyNodeOptions = {position: 'replaceChildren', root: 'light'};
-  if (propertyKey !== undefined) return applyNode('$this', options)(targetOrOptions, propertyKey, descriptor);
-  const opt = targetOrOptions || {};
-  return applyNode('$this', {...opt, ...options});
-}
-
-export function applyNodeThisBeforeEnd(options: Omit<ApplyNodeOptions, 'position'>): MethodDecorator;
-export function applyNodeThisBeforeEnd(target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor): void;
-export function applyNodeThisBeforeEnd(targetOrOptions?: any, propertyKey?: string | symbol, descriptor?: PropertyDescriptor): any {
-  const options: ApplyNodeOptions = {position: 'beforeEnd'};
-  if (propertyKey !== undefined) return applyNode('$this', options)(targetOrOptions, propertyKey, descriptor);
-  const opt = targetOrOptions || {};
-  return applyNode('$this', {...opt, ...options});
-}
-
-export function applyNodeThisBeforeEndLightDom(options: Omit<ApplyNodeOptions, 'position' | 'root'>): MethodDecorator;
-export function applyNodeThisBeforeEndLightDom(target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor): void;
-export function applyNodeThisBeforeEndLightDom(targetOrOptions?: any, propertyKey?: string | symbol, descriptor?: PropertyDescriptor): any {
-  const option: ApplyNodeOptions = {position: 'beforeEnd', root: 'light'}
-  if (propertyKey !== undefined) return applyNode('$this', option)(targetOrOptions, propertyKey, descriptor);
-  const opt = targetOrOptions || {};
-  return applyNode('$this', {...opt, ...option});
-}
-
-export function applyNodeThisAfterBegin(options: Omit<ApplyNodeOptions, 'position'>): MethodDecorator;
-export function applyNodeThisAfterBegin(target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor): void;
-export function applyNodeThisAfterBegin(targetOrOptions?: any, propertyKey?: string | symbol, descriptor?: PropertyDescriptor): any {
-  const option: ApplyNodeOptions = {position: 'afterBegin'};
-  if (propertyKey !== undefined) return applyNode('$this', option)(targetOrOptions, propertyKey, descriptor);
-  const opt = targetOrOptions || {};
-  return applyNode('$this', {...opt, ...option});
-}
-
-export function applyNodeThisAfterBeginLightDom(options: Omit<ApplyNodeOptions, 'position' | 'root'>): MethodDecorator;
-export function applyNodeThisAfterBeginLightDom(target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor): void;
-export function applyNodeThisAfterBeginLightDom(targetOrOptions?: any, propertyKey?: string | symbol, descriptor?: PropertyDescriptor): any {
-  const option: ApplyNodeOptions = {position: 'afterBegin', root: 'light'}
-  if (propertyKey !== undefined) return applyNode('$this', option)(targetOrOptions, propertyKey, descriptor);
-  const opt = targetOrOptions || {};
-  return applyNode('$this', {...opt, ...option});
-}
-
-export function applyThisInnerHtmlNode(options: Omit<ApplyNodeOptions, 'position'>): MethodDecorator;
-export function applyThisInnerHtmlNode(target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor): void;
-export function applyThisInnerHtmlNode(targetOrOptions?: any, propertyKey?: string | symbol, descriptor?: PropertyDescriptor): any {
-  const option: ApplyNodeOptions = {position: 'innerHtml'}
-  if (propertyKey !== undefined) return applyNode('$this', option)(targetOrOptions, propertyKey, descriptor);
-  const opt = targetOrOptions || {};
-  return applyNode('$this', {...opt, ...option});
-}
-
-export function applyThisInnerHtmlNodeLightDom(options: Omit<ApplyNodeOptions, 'position' | 'root'>): MethodDecorator;
-export function applyThisInnerHtmlNodeLightDom(target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor): void;
-export function applyThisInnerHtmlNodeLightDom(targetOrOptions?: any, propertyKey?: string | symbol, descriptor?: PropertyDescriptor): any {
-  const option: ApplyNodeOptions = {position: 'innerHtml', root: 'light'};
-  if (propertyKey !== undefined) return applyNode('$this', option)(targetOrOptions, propertyKey, descriptor);
-  const opt = targetOrOptions || {};
-  return applyNode('$this', {...opt, ...option});
-}
-
-export function applyNodeReplaceChildren(selector: string, options: Omit<ApplyNodeOptions, 'position'> = {}): MethodDecorator {
-  return applyNode(selector, {...options, position: 'replaceChildren'});
-}
-
-export function applyNodeInnerHtml(selector: string, options: Omit<ApplyNodeOptions, 'position'> = {}): MethodDecorator {
-  return applyNode(selector, {...options, position: 'innerHtml'});
-}
-
-export function applyNodeInnerText(selector: string, options: Omit<ApplyNodeOptions, 'position'> = {}): MethodDecorator {
-  return applyNode(selector, {...options, position: 'innerText'});
-}

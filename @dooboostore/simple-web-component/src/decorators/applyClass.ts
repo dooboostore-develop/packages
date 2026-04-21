@@ -1,7 +1,7 @@
 import { ReflectUtils } from '@dooboostore/core';
 import { ensureInit } from './elementDefine';
 import { SwcUtils } from '../utils/Utils';
-import { SwcQueryOptions, HelperHostSet } from '../types';
+import { SpecialSelector, SwcQueryOptions, HelperHostSet } from '../types';
 
 export const CLASS_METADATA_KEY = Symbol.for('simple-web-component:class');
 
@@ -9,6 +9,12 @@ export type ClassAction = 'set' | 'update' | 'add' | 'remove' | 'toggle';
 
 export interface ClassApplyOptions extends SwcQueryOptions {
   filter?: (target: HTMLElement, value: any, meta: {currentThis: any, helper: HelperHostSet}) => boolean;
+  /**
+   * Custom key to extract value from return object.
+   * If not provided, uses CLASS_METADATA_KEY by default.
+   * Useful when multiple @applyClass decorators are on the same method.
+   */
+  valueKey?: symbol | string;
 }
 
 export interface ClassApplyMetadata {
@@ -43,6 +49,22 @@ function createClassDecorator(action: ClassAction) {
       descriptor.value = function (...args: any[]) {
         ensureInit(this);
         const res = (original as any).apply(this, args);
+
+        /**
+         * Extract value for this decorator from method return value
+         * 
+         * If return value is an object with this decorator's key,
+         * use that value. Otherwise use the entire return value.
+         * 
+         * Uses valueKey from options if provided, otherwise uses CLASS_METADATA_KEY.
+         */
+        const extractValue = (v: any) => {
+          const keyToUse = finalOptions.valueKey ?? CLASS_METADATA_KEY;
+          if (v && typeof v === 'object' && keyToUse in v) {
+            return v[keyToUse];
+          }
+          return v;
+        };
 
         const handleResult = (resolvedValue: any) => {
           if (resolvedValue !== undefined) {
@@ -131,9 +153,9 @@ function createClassDecorator(action: ClassAction) {
         };
 
         if (res instanceof Promise) {
-          return res.then(handleResult);
+          return res.then((v: any) => handleResult(extractValue(v)));
         } else {
-          return handleResult(res);
+          return handleResult(extractValue(res));
         }
       };
       return descriptor;

@@ -10,10 +10,9 @@ export const html = (str: string, document: Document) => {
   return [...document.createRange().createContextualFragment(str).childNodes];
 }
 // DOM Creation Utilities
-export const htmlFragment = (html: string | Node | Node[], doc?: Document): DocumentFragment => {
-  const d = doc || (typeof document !== 'undefined' ? document : undefined);
-  if (!d) throw new Error('Document is not available');
-  const template = d.createElement('template');
+export const htmlFragment = (html: string | Node | Node[], doc: Document): DocumentFragment => {
+  if (!doc) throw new Error('Document is not available');
+  const template = doc.createElement('template');
   if (typeof html === 'string') {
     template.innerHTML = html.trim();
   } else if (html instanceof Node) {
@@ -37,7 +36,7 @@ export const commentNode = (comment: string | any, doc?: Document): Comment => {
   return d.createComment(comment !== undefined && comment !== null ? String(comment) : '');
 };
 
-export type CreateElementConfig = { innerHtml?: string; property?: Record<string, any>, attrs?: Record<string, string>; };
+export type CreateElementConfig = { innerHtml?: string; property?: Record<string, any>, attrs?: Record<string, any>; };
 export const createElement = <T extends HTMLElement>(
   documentOrWindow: Document | Window,
   tagName: string,
@@ -48,7 +47,7 @@ export const createElement = <T extends HTMLElement>(
   const el = doc.createElement(tagName) as T;
   if (options?.innerHtml) el.innerHTML = options.innerHtml;
   if (options?.attrs) {
-    Object.entries(options.attrs).forEach(([k, v]) => el.setAttribute(k, String(v)));
+    Object.entries(options.attrs).filter(([k,v])=>v).forEach(([k, v]) => el.setAttribute(k, String(v)));
   }
   if (options?.property) {
     Object.entries(options.property).forEach(([k, v]) => el[k] = v);
@@ -283,13 +282,13 @@ export namespace SwcUtils {
 
 
   export function projectProcessHtml(id: string, htmlOrNode: string, document: Document): string;
-  export function projectProcessHtml(id: string, htmlOrNode: (Node)[], document: Document): (Node)[];
-  export function projectProcessHtml(id: string, htmlOrNode: string | (Node)[], document: Document): string | (Node)[] {
+  export function projectProcessHtml(id: string, htmlOrNode: ((Node)[]) | Node, document: Document): (Node)[];
+  export function projectProcessHtml(id: string, htmlOrNode: string | ((Node)[]) | Node, document: Document): string | (Node)[] {
     if (typeof htmlOrNode === 'string') {
       // slot
       let t = htmlOrNode;
       // if (!config?.excludeSlot) {
-      t = SwcUtils.processHtml(id, t, {document: document, replaceWrap: {start: '<!--[[', end: ']]-->'}, replacer: (id, script) => NodeSlot.slot(`${id}-${script}`)});
+      t = SwcUtils.processHtml(id, t, {document: document, replaceWrap: {start: '<!--[[', end: ']]-->'}, replacer: (id, script) => NodeSlot.slot(id, script)});
       // }
       // if (!config?.excludeHtml) {
       // Ea html
@@ -338,10 +337,10 @@ export namespace SwcUtils {
         }
       });
       return t;
-    } else if (Array.isArray(htmlOrNode)) {
+    } else if (htmlOrNode) {
 
       // 아래 node일떄도 처리하도록 만듬 아직테스트는 안해봄 테스트후 주석지울것.
-      const nodes = htmlOrNode;
+      const nodes = Array.isArray(htmlOrNode) ? htmlOrNode : [htmlOrNode];
       const window = document.defaultView;
       nodes.forEach(node => {
         // TextNode 합치기
@@ -349,14 +348,14 @@ export namespace SwcUtils {
         const nodes = document.createTreeWalker(node, window.NodeFilter.SHOW_ELEMENT | window.NodeFilter.SHOW_COMMENT)
 
         const getSlotData = (s: string) => {
-          return s.match(/^\[\[([\s\S]+)\]\]$/)?.[1];
+          return s.match(/^\[\[([\s\S]+)\]\]$/)?.[1]?.trim();
         }
         const getHtmlData = (s: string) => {
-          return s.match(/^\[html([\s\S]+)\]$/)?.[1];
+          return s.match(/^\[html([\s\S]+)\]$/)?.[1]?.trim();
           // return s.startsWith('[html') && s.endsWith(']');
         }
         const getTextData = (s: string) => {
-          return s.match(/^\[text([\s\S]+)\]$/)?.[1];
+          return s.match(/^\[text([\s\S]+)\]$/)?.[1]?.trim();
           // return s.startsWith('[text') && s.endsWith(']');
         }
         while (nodes.nextNode()) {
@@ -368,7 +367,7 @@ export namespace SwcUtils {
             const htmlData = getHtmlData(v);
             const textData = getTextData(v);
             if (v && slotData) {
-              const res = NodeSlot.slotIds(`${id}-${slotData}`)
+              const res = NodeSlot.slotIds(id, slotData)
               targetNode.data = res.start;
               const end = document.createComment(res.end)
               targetNode.parentNode?.insertBefore(end, targetNode.nextSibling);
@@ -413,7 +412,7 @@ export namespace SwcUtils {
 
       })
 
-      return htmlOrNode;
+      return nodes;
     }
     // }
 
@@ -444,7 +443,7 @@ export namespace SwcUtils {
     const runActionExpression = (source: string) => {
       const actionExpression = new ActionExpression(source, actionConfig);
       actionExpression.getExpressions().filter(it => it.type === 'replace').forEach(it => {
-        actionExpression.replace(it, config.replacer(id, it.script, it));
+        actionExpression.replace(it, config.replacer(id, it.script?.trim(), it));
       });
       return actionExpression.toResult();
     };

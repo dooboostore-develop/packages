@@ -1,28 +1,48 @@
-import { changedAttributeThis, elementDefine, onConnectedInnerHtml, onConnectedSwcApp, query, setAttribute, subscribeSwcAppRouteChangeWhileConnected, type SwcChooseInterface, SwcUtils } from '@dooboostore/simple-web-component';
+import {
+  setAttribute,
+  publishSwcAppMessage,
+  subscribeSwcAppMessageWhileConnected,
+  type SwcAppMessage,
+  changedAttributeThis,
+  applyNode,
+  addEventListenerThis,
+  emitCustomEventThis,
+  updateClass,
+  innerHtmlNode,
+  addEventListener,
+  applyNodeThis,
+  attributeThis,
+  query,
+  replaceChildrenNodeThis,
+  onConnected,
+  elementDefine,
+  onConnectedBefore,
+  setProperty,
+  subscribeSwcAppRouteChangeWhileConnected,
+  SwcChooseInterface,
+  SwcUtils,
+  innerHtmlLightNodeThis, replaceChildrenLightNodeThis, htmlFragment
+} from '@dooboostore/simple-web-component';
 import { Router, type RouterEventType } from '@dooboostore/core-web';
-import { Promises } from '@dooboostore/core';
-import { inject, Inject } from '@dooboostore/simple-boot';
-import { UserService } from '../services/UserService';
+import {IndexRoute} from "./indexRoute";
+import {UserRoute} from "./userRoute";
 
 export const tagName = 'index-router';
 export default (w: Window) => {
-  const routePaths = ['/', '/user'];
+  const routePaths = ['/', '/user', '/{other:.*}'];
   const existing = w.customElements.get(tagName);
   if (existing) return tagName;
   @elementDefine('index-router', { window: w })
   class IndexRouterImp extends w.HTMLElement {
     private router?: Router;
-    private routerPathSet?: { path: string; pathData?: { [p: string]: string } };
 
-    @query('#router',{ root: 'light' })
-    routerChooseTemplate!: SwcChooseInterface;
 
     constructor() {
       super();
       console.log('index.router constructor called');
     }
 
-    @onConnectedSwcApp
+    @onConnectedBefore
     async onConnectedSwcApp(router: Router
                             // , @inject(UserService.SYMBOL) gg: UserService
     ) {
@@ -59,27 +79,28 @@ export default (w: Window) => {
       // console.log('----->', tt);
     }
 
-    @setAttribute('#url-text', 'value')
     @subscribeSwcAppRouteChangeWhileConnected(routePaths)
+    @replaceChildrenLightNodeThis
     async routeChanged(router: RouterEventType) {
-      // await Promises.sleep(2000);
-      this.routerPathSet = router;
-      this.routerChooseTemplate?.refresh?.();
-      // console.log('index.router rrrrrrrrrrrrrrrrrrrrrrrrr', this.routerChooseTemplate?.refresh);
-      // setTimeout(() => {
-      //   console.log('!!', this.routerChooseTemplate?.refresh);
-      // }, 1000);
-
-      return this.routerPathSet.path;
+      console.log('rrrrrrrrrrrr', router);
+      if (['','/'].includes(router.path)) {
+        return IndexRoute(w);
+      } else if (['/user'].includes(router.path)) {
+        return UserRoute(w)
+      } else {
+        return htmlFragment(`<div class="aa-error">
+        <i class="fa-solid fa-compass aa-error-icon" aria-hidden="true"></i>
+        <h1>404</h1>
+        <p>요청한 경로가 없습니다.</p>
+        `, w.document)
+      }
     }
 
     connectedCallback(){
       // console.log('index.router render  innerhtml origin');
     };
-    @onConnectedInnerHtml({ useShadow: true })
-    render(router?: Router) {
-      // console.log('index.router render  innerhtml');
-      this.routerPathSet = SwcUtils.parsePathPatternsSet(routePaths, router?.value?.path ?? '/');
+    @onConnected({ ssrFirst: true, useShadow: true })
+    render() {
       return `
       <div>
         <h1>Hello from Simple Web Component SSR!</h1>
@@ -96,19 +117,6 @@ export default (w: Window) => {
     `;
     }
 
-    @onConnectedInnerHtml
-    slotHTML() {
-      return `
-        <template id="router" value="{{= $host?.routerPathSet }}" is="swc-choose">
-          <template is="swc-when" value="{{ ['','/'].includes($value?.path) }}" skip-if-same>
-            <index-route />
-          </template>
-          <template is="swc-when" value="{{ ['/user'].includes($value?.path) }}" skip-if-same>
-            <user-route />
-          </template>
-        </template>
-      `
-    }
   }
 
   return tagName;

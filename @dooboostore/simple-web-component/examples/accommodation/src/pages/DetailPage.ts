@@ -1,10 +1,10 @@
-import { onConnectedBefore, setAttributeThis, applyAttributeThis, query, queryThis, attributeThis, attribute, changedAttributeThis, onInitialize, elementDefine, onConnectedInnerHtml, addEventListener, applyNodeThis, subscribeSwcAppRouteChangeWhileConnected } from '@dooboostore/simple-web-component';
-import { Sim, RouterAction, RoutingDataSet, Inject } from '@dooboostore/simple-boot';
-import { AccommodationService } from '../services/AccommodationService';
-import { EventService, LocalEvent } from '../services/EventService';
-import { Router  } from '@dooboostore/core-web';
+import {addEventListener, applyNodeThis, attributeThis, elementDefine, onConnected, onConnectedBefore, query, subscribeSwcAppRouteChangeWhileConnected} from '@dooboostore/simple-web-component';
+import {Inject} from '@dooboostore/simple-boot';
+import {AccommodationService} from '../services/AccommodationService';
+import {EventService, LocalEvent} from '../services/EventService';
+import {Router} from '@dooboostore/core-web';
 
-export default (w: Window, container: symbol) => {
+export default (w: Window) => {
   const tagName = 'swc-example-accommodation-detail-page';
   const existing = w.customElements.get(tagName);
   if (existing) {
@@ -69,7 +69,7 @@ export default (w: Window, container: symbol) => {
     }
 
     @applyNodeThis({ position: 'innerHtml' })
-    @onConnectedInnerHtml({ useShadow: true })
+    @onConnected({ useShadow: true })
     render() {
       if (!this.accommodation) return '<div>숙소를 찾을 수 없습니다.</div>';
       const { name, images, rating, reviewCount, price, description, amenities, hostName, reviews, category, floorPlanImage } = this.accommodation;

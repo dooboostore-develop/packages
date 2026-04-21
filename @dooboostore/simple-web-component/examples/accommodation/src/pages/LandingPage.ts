@@ -1,32 +1,30 @@
-import { applyInnerHtmlNode, onConnectedBefore, onInitialize, addEventListener, elementDefine, onConnectedInnerHtml } from '@dooboostore/simple-web-component';
-import { Inject } from '@dooboostore/simple-boot';
-import { Router} from '@dooboostore/core-web';
-import { EventService, LocalEvent } from '../services/EventService';
+import {innerHtmlNode, onConnectedAfter, addEventListener,  elementDefine, onConnected, onConnectedBefore} from '@dooboostore/simple-web-component';
+import {Inject} from '@dooboostore/simple-boot';
+import {Router} from '@dooboostore/core-web';
+import {EventService, LocalEvent} from '../services/EventService';
 
-export default (w: Window, container: symbol) => {
-  const tagName = 'swc-example-accommodation-landing-page';
+const tagName = 'swc-example-accommodation-landing-page';
+
+export default (w: Window) => {
   const existing = w.customElements.get(tagName);
   if (existing) {
-    // Sim({ container: container })(existing);
     return tagName;
-    // return existing;
   }
 
   // @Sim({ container: container })
   @elementDefine(tagName, { window: w })
   class LandingPage extends w.HTMLElement {
-    // private events: any[] = [];
     private router: Router;
     private eventService: EventService;
 
-    @onConnectedBefore
-    onInitialize(router: Router, @Inject({ symbol: EventService.SYMBOL }) eventService: EventService) {
+    @onConnectedAfter
+    onInitialize(router: Router, @Inject(EventService.SYMBOL) eventService: EventService) {
       this.router = router;
       this.eventService = eventService;
       this.setEventDisplay(this.eventService.getAllEvents());
     }
 
-    @applyInnerHtmlNode('.events-featured')
+    @innerHtmlNode('.events-featured')
     setEventDisplay(events: LocalEvent[]) {
       return `
                <div class="event-large-card" data-id="${events[0].id}">
@@ -58,7 +56,7 @@ export default (w: Window, container: symbol) => {
           `;
     }
 
-    @onConnectedInnerHtml({ useShadow: true })
+    @onConnected({ useShadow: true })
     render() {
       return `
       <style>
@@ -231,7 +229,7 @@ export default (w: Window, container: symbol) => {
         </div>
         <button class="search-btn" id="start-discovery">축제 찾기</button>
       </div>
-
+      
       <div class="section">
         <div class="section-header">
           <div>

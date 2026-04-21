@@ -1,12 +1,18 @@
-import { ReflectUtils } from '@dooboostore/core';
-import { ensureInit } from './elementDefine';
-import { SwcUtils } from '../utils/Utils';
-import { SwcQueryOptions, HelperHostSet } from '../types';
+import {ReflectUtils} from '@dooboostore/core';
+import {ensureInit} from './elementDefine';
+import {SwcUtils} from '../utils/Utils';
+import { SpecialSelector, SwcQueryOptions, HelperHostSet } from '../types';
 
 export type StyleAction = 'set' | 'update' | 'remove';
 
 export interface StyleApplyOptions extends SwcQueryOptions {
   filter?: (target: HTMLElement, value: any, meta: {currentThis: any, helper: HelperHostSet}) => boolean;
+  /**
+   * Custom key to extract value from return object.
+   * If not provided, uses STYLE_METADATA_KEY by default.
+   * Useful when multiple @applyStyle decorators are on the same method.
+   */
+  valueKey?: symbol | string;
 }
 
 export interface StyleApplyMetadata {
@@ -33,6 +39,22 @@ function createStyleDecorator(action: StyleAction) {
       descriptor.value = function (...args: any[]) {
         ensureInit(this);
         const res = (original as any).apply(this, args);
+
+        /**
+         * Extract value for this decorator from method return value
+         * 
+         * If return value is an object with this decorator's key,
+         * use that value. Otherwise use the entire return value.
+         * 
+         * Uses valueKey from options if provided, otherwise uses STYLE_METADATA_KEY.
+         */
+        const extractValue = (v: any) => {
+          const keyToUse = options.valueKey ?? STYLE_METADATA_KEY;
+          if (v && typeof v === 'object' && keyToUse in v) {
+            return v[keyToUse];
+          }
+          return v;
+        };
 
         const handleResult = (resolvedValue: any) => {
           if (resolvedValue !== undefined) {
@@ -105,9 +127,9 @@ function createStyleDecorator(action: StyleAction) {
         };
 
         if (res instanceof Promise) {
-          return res.then(handleResult);
+          return res.then((v: any) => handleResult(extractValue(v)));
         } else {
-          return handleResult(res);
+          return handleResult(extractValue(res));
         }
       };
       return descriptor;

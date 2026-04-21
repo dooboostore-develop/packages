@@ -1,7 +1,7 @@
 import { ReflectUtils } from '@dooboostore/core';
 import { getElementConfig, ensureInit } from './elementDefine';
 import { SwcUtils } from '../utils/Utils';
-import { SpecialSelector, SwcQueryOptions } from '../types';
+import { SpecialSelector, SwcQueryOptions, HelperHostSet } from '../types';
 
 export interface QueryAllMetadata {
   propertyKey: string | symbol;

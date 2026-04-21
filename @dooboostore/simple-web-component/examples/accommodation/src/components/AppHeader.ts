@@ -1,4 +1,5 @@
-import { elementDefine, onConnectedInnerHtml, addEventListener, emitCustomEventThis } from '@dooboostore/simple-web-component';
+import {addEventListener, elementDefine, emitCustomEventThis, onConnected} from '@dooboostore/simple-web-component';
+
 
 export default (w: Window) => {
   const tagName = 'swc-example-accommodation-header';
@@ -9,7 +10,7 @@ export default (w: Window) => {
 
   @elementDefine(tagName, { window: w })
   class AppHeader extends w.HTMLElement {
-    @onConnectedInnerHtml({ useShadow: true })
+    @onConnected({ useShadow: true })
     render() {
       return `
       <style>

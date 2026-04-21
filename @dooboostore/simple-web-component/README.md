@@ -30,7 +30,7 @@ Inject services into Web Components using the `@onInitialize` decorator.
 class Dashboard extends HTMLElement {
   @onInitialize
   onconstructor(
-    @Inject({ symbol: UserService.SYMBOL }) userService: UserService
+    @inject(UserService.SYMBOL) userService: UserService
   ) {
     this.userService = userService;
   }
@@ -39,72 +39,240 @@ class Dashboard extends HTMLElement {
 
 ### 3. **Declarative DOM Updates**
 
-#### @onConnectedInnerHtml
+#### @onConnectedShadow
 Render HTML automatically when component connects to DOM.
 
 ```typescript
-@onConnectedInnerHtml({ useShadow: true })
+@onConnectedShadow
 render() {
   return `<div>Hello, <span>${this.name}</span>!</div>`;
 }
 ```
 
-#### @applyNodeThisInnerHtml
+#### @innerHtmlLightNodeThis
 Apply HTML to specific host element.
 
 ```typescript
-@applyNodeThisInnerHtml({ root: 'light' })
+@innerHtmlLightNodeThis
 updateContent() {
   return `<p>Updated content</p>`;
 }
 ```
 
-#### @applyNodeThisReplaceChildren
+#### @replaceChildrenLightNodeThis
 Replace child nodes with new content.
 
 ```typescript
-@applyNodeThisReplaceChildren({ root: 'light' })
+@replaceChildrenLightNodeThis
 replaceChildren(node: Node) {
   return node;
 }
 ```
+### 3.5 **Slot Management with @applySlot**
 
-### slot
+Manage dynamic content insertion into named slots using slot decorators. Slots are placeholders in templates that can be updated dynamically.
+
 ```typescript
- @applySlot('zzz')
-nodeSlot!: NodeSlot;
+@elementDefine('content-manager')
+class ContentManager extends HTMLElement {
+  // Method: Replace children in slot with HTML
+  @addEventListener('.update-btn', 'click')
+  @replaceChildrenHtmlSlot('main-content')
+  updateContent() {
+    return '<div>Updated content here</div>';
+  }
 
-@addEventListener('.test-btn', 'click' )
-@applySlotReplaceChildren('zzz')
-ttt() {
-  return '<div>zzzzz [[ zzz ]] zz</div>'
-}
+  // Method: Append HTML to slot
+  @appendHtmlSlot('main-content')
+  addMoreContent() {
+    return '<p>Additional content</p>';
+  }
 
-@addEventListener('.test-clear-btn', 'click' )
-// @applySlot('zzz', {position: 'clear'})
-@applySlotClear('zzz')
-ttct() {
-  return true;
-}
+  // Method: Append text to slot
+  @appendTextSlot('sidebar')
+  addSidebarText() {
+    return 'Sidebar text: ' + new Date().toISOString();
+  }
 
-@onConnectedAfter
-ttttt() {
-  console.log('vvvvvvvvvvvvvvv??', this.nodeSlot)
-  this.nodeSlot.appendText('zzz22zzz'+new Date().toISOString())
-}
-@onConnectedInnerHtml
-render()
-{
+  // Method: Clear slot content
+  @addEventListener('.clear-btn', 'click')
+  @clearSlot('main-content')
+  clearContent() {
+    return true;
+  }
 
-  return `
-        [[ zzz ]]
-        <button class="test-btn">test222222222222222</button>
-        <button class="test-clear-btn">clear</button>
-        [[ zzz ]]
-  `
+  @onConnectedLight
+  render() {
+    return `
+      <div>
+        <h2>Main Content</h2>
+        <!--[[ main-content ]]-->
+        
+        <aside>
+          <h3>Sidebar</h3>
+          <!--[[ sidebar ]]-->
+        </aside>
+        
+        <button class="update-btn">Update Content</button>
+        <button class="clear-btn">Clear Content</button>
+      </div>
+    `;
+  }
 }
 ```
 
+**Slot Syntax in Templates:**
+- `<!--[[ slot-id ]]-->` - Named slot placeholder (HTML comment syntax)
+
+**@applySlot Decorator Variants:**
+- `clearSlot(slotId)` - Clear all content
+- `prependHtmlSlot(slotId)` - Add HTML at beginning
+- `prependTextSlot(slotId)` - Add text at beginning
+- `appendHtmlSlot(slotId)` - Add HTML at end
+- `appendTextSlot(slotId)` - Add text at end
+- `replaceChildrenHtmlSlot(slotId)` - Replace all with HTML
+- `replaceChildrenTextSlot(slotId)` - Replace all with text
+
+**Position Options:**
+```typescript
+export type ApplySlotPosition = 
+  | 'prepend'
+  | 'prependHtml'        // Add HTML at beginning
+  | 'prependText'        // Add text at beginning
+  | 'append'         
+  | 'appendHtml'         // Add HTML at end
+  | 'appendText'         // Add text at end
+  | 'replaceChildren'
+  | 'replaceChildrenHtml' // Replace all with HTML
+  | 'replaceChildrenText' // Replace all with text
+  | 'clear';             // Clear all content
+```
+
+
+### 3.6 **State Management with @state**
+
+Reactive state management with automatic DOM updates when state changes. State values are accessible in templates and scripts using special syntax.
+
+```typescript
+@elementDefine('counter-app')
+class CounterApp extends HTMLElement {
+  // Declare reactive state
+  @state('count')
+  count: number = 0;
+
+  @state('message')
+  message: string = 'Hello';
+
+  @state('isActive')
+  isActive: boolean = false;
+
+  @addEventListener('button', 'click')
+  increment() {
+    this.count++;  // Triggers automatic DOM update
+  }
+
+  @onConnectedInnerHtml
+  render() {
+    return `
+      <div>
+        <!-- HTML directive: render HTML content -->
+        <!--[html @message@ ]-->
+        
+        <!-- Text directive: render as text -->
+        <!--[text Count: @count@ ]-->
+        
+        <!-- Attribute binding with a: prefix -->
+        <div a:title="'Count is'+@count@"></div>
+        
+        <!-- Event binding with e: prefix -->
+        <button e:click="@increment@()">Increment (@count@)</button>
+        
+        <!-- Conditional rendering -->
+        <div a:style="@isActive@ ? 'color: green' : 'color: red'">
+        </div>
+      </div>
+    `;
+  }
+}
+```
+
+**State Syntax in Templates:**
+
+**Reading State Values(read only):**
+- `@stateName@` - Read state value as text/attribute
+- `@stateName@()` - Call state property as function (if it's a function)
+- `@expression@` - Evaluate expressions with state variables
+
+**Template Directives:**
+- `<!--[html @state@ ]-->` - Render state value as HTML
+- `<!--[text @state@ ]-->` - Render state value as text
+- `a:attributeName="@state@"` - Bind state to HTML attributes
+- `e:eventName="@methodName@()"` - Bind events to methods
+
+**How @state Works:**
+1. Declare property with `@state('stateName')`
+2. When property value changes via `this.count++`, setter is triggered
+3. Setter automatically applies state context to templates
+4. All `@stateName@` expressions in templates are re-evaluated
+5. DOM updates automatically with new values
+
+**State Context Available:**
+- `@propertyName@` - Access state properties
+- `@methodName@()` - Call methods
+- `@expression@` - Evaluate JavaScript expressions
+- All state variables available in template expressions
+
+**Important: State Properties are Read-Only in Templates**
+State values accessed in templates via `@stateName@` syntax are read-only. You cannot assign values to state properties from within template expressions. State must be updated from component methods:
+
+```typescript
+// ✅ CORRECT - Update state from method
+@addEventListener('button', 'click')
+increment() {
+  this.count++;  // Direct property assignment in code
+}
+
+// ❌ WRONG - Cannot assign in template
+<!--[text @count = 5@ ]-->  // This won't work - read-only in templates
+
+// ✅ CORRECT - Call method from template
+<button e:click="@increment@()">Increment</button>
+```
+
+**Advanced Example:**
+```typescript
+@elementDefine('user-profile')
+class UserProfile extends HTMLElement {
+  @state('user')
+  user = { name: 'Alice', age: 30, email: 'alice@example.com' };
+
+  @state('isEditing')
+  isEditing = false;
+
+  @addEventListener('.edit-btn', 'click')
+  toggleEdit() {
+    this.isEditing = !this.isEditing;
+  }
+
+  @onConnectedShadow
+  render() {
+    return `
+      <div>
+        <!-- Display user info -->
+        <h2><!--[text @user.name@ ]--></h2>
+        <p a:title="Email: @user.email@">Age: @user.age@</p>
+        
+        <!-- Conditional rendering based on state -->
+        <div a:style="@isEditing@ ? 'border: 1px solid blue' : 'border: none'">
+          <!--[html @isEditing@ ? '<input type="text" />' : '<span>View Mode</span>' ]-->
+        </div>
+        
+        <button e:click="toggleEdit"> toggleEdit </button>
+      </div>
+    `;
+  }
+}
+```
 
 ### 4. **Event Handling**
 
@@ -128,6 +296,22 @@ onCriticalClick(event: Event) {
 }
 ```
 
+**@addEventListener Decorator Variants:**
+- `addEventListener(selector, type, options)` - Full form
+- `event(selector, type, options)` - Short alias
+- `addEventListenerThis(type, options)` - Listen on $this element
+- `addEventListenerAppHost(type, options)` - Listen on $appHost
+- `addEventListenerWindow(type, options)` - Listen on window
+- `addEventListenerDocument(type, options)` - Listen on document
+- `addEventListenerDelegate(selector, type, options)` - Event delegation
+- `eventDelegate(selector, type, options)` - Short alias
+- `addEventListenerDelegateLightDom(selector, type, options)` - Delegate in light DOM
+- `eventDelegateLightDom(selector, type, options)` - Short alias
+- `addEventListenerDelegateShadowDom(selector, type, options)` - Delegate in shadow DOM
+- `eventDelegateShadowDom(selector, type, options)` - Short alias
+- `addEventListenerDelegateAllDom(selector, type, options)` - Delegate in all DOM
+- `eventDelegateAllDom(selector, type, options)` - Short alias
+
 #### @emitCustomEvent
 Emit custom events with data.
 
@@ -136,6 +320,50 @@ Emit custom events with data.
 async onLogin() {
   const user = await this.authService.login();
   return { user };  // Sent as event detail
+}
+```
+
+**@emitCustomEvent Decorator Variants:**
+- `emitCustomEvent(target, type, options)` - Full form
+- `emit(target, type, options)` - Short alias
+- `emitCustomEventThis(type, options)` - Emit from $this element
+
+#### @publishSwcAppMessage
+Publish messages through the message bus when method completes.
+
+```typescript
+@publishSwcAppMessage()
+async onLogin() {
+  const user = await this.authService.login();
+  return user;  // Published as message with data: user
+}
+
+@publishSwcAppMessage('user-profile-updated')
+updateProfile() {
+  const profile = { name: this.name, email: this.email };
+  return profile;  // Published as message with type: 'user-profile-updated'
+}
+```
+
+**@publishSwcAppMessage Decorator Variants:**
+- `publishSwcAppMessage()` - Publish without message type
+- `publishSwcAppMessage(messageType)` - Publish with specific message type
+- `publishSwcAppMessage(messageType, { valueKey: 'customKey' })` - Publish with custom value extraction
+- `publishSwcAppMessage({ messageType: 'type', valueKey: 'customKey' })` - Publish with options object
+- `publish()` - Short alias
+- `publish(messageType)` - Short alias with message type
+- `publish(messageType, options)` - Short alias with options
+
+**Using valueKey for Multiple Decorators:**
+
+```typescript
+@publishSwcAppMessage('event1', { valueKey: 'detail1' })
+@publishSwcAppMessage('event2', { valueKey: 'detail2' })
+handleMultipleEvents() {
+  return {
+    detail1: { type: 'event1', data: 'value1' },
+    detail2: { type: 'event2', data: 'value2' }
+  };
 }
 ```
 
@@ -150,7 +378,7 @@ onNavClick(e: any) {
 ```
 
 #### @addEventListenerThis
-Listen to events on the component element itself (`@host` selector).
+Listen to events on the component element itself (`$this` selector).
 
 ```typescript
 @addEventListenerThis('click')
@@ -211,7 +439,7 @@ listItems?: HTMLLIElement[];
 ```
 
 #### @queryThis
-Query the component element itself.
+Query the component element itself.  == this
 
 ```typescript
 @queryThis
@@ -222,29 +450,17 @@ printTag() {
 }
 ```
 
-#### @queryAllThis
-Query all direct children of the component.
-
-```typescript
-@queryAllThis
-children?: HTMLElement[];
-
-getChildCount() {
-  return this.children?.length ?? 0;
-}
-```
-
 ### 6. **Attribute Binding**
 
 #### @attribute
 Bind HTML attributes to properties (automatic sync).
 
 ```typescript
-@attribute
-width: string = '100px';
+@attributeThis
+width: string = '100px';  // Bind to this.width
 
 @attribute('data-id')
-resourceId: string = '';
+resourceId: string;  // element attribute first 
 ```
 
 #### @attributeThis
@@ -252,7 +468,7 @@ Bind attributes on host element itself.
 
 ```typescript
 @attributeThis('product-id')
-productId: string = '';
+productId?: string;
 
 @onInitialize
 onconstructor() {
@@ -262,26 +478,202 @@ onconstructor() {
 }
 ```
 
-### 7. **Lifecycle Hooks**
+### 7. **DOM Manipulation with applyNode**
+
+Surgically add, replace, or remove nodes in the DOM with fine-grained control.
 
 ```typescript
-@onConnected
-onConnected() {
-  // Called when element enters DOM
-}
+@elementDefine('content-updater')
+class ContentUpdater extends HTMLElement {
+  @addEventListener('button', 'click')
+  @replaceChildrenLightNodeThis
+  updateContent() {
+    return `<div>New content</div>`;
+  }
 
-@onDisconnected
-onDisconnected() {
-  // Called when element leaves DOM
-}
+  @addEventListener('.append-btn', 'click')
+  @beforeEndLightNodeThis
+  appendContent() {
+    return `<p>Appended content</p>`;
+  }
 
+  @addEventListener('.prepend-btn', 'click')
+  @afterBeginLightNodeThis
+  prependContent() {
+    return `<p>Prepended content</p>`;
+  }
 
-@onConnectedBefore
-onAppReady(router: Router) {
-  // Called after SwcApp.connect() completes on all already-connected components
-  // Full DI support available through hostSet
-  console.log('Application initialization complete!');
+  @onConnectedLight
+  render() {
+    return `
+      <div>
+        <button class="append-btn">Append</button>
+        <button class="prepend-btn">Prepend</button>
+        <button>Replace</button>
+      </div>
+    `;
+  }
 }
+```
+
+**@applyNode Decorator Variants:**
+- `replaceChildrenNodeThis()` - Replace all children
+- `replaceChildrenLightNodeThis()` - Replace children in light DOM
+- `beforeEndNodeThis()` - Append to end
+- `beforeEndLightNodeThis()` - Append to light DOM end
+- `afterBeginNodeThis()` - Prepend to beginning
+- `afterBeginLightNodeThis()` - Prepend to light DOM beginning
+- `innerHtmlNodeThis()` - Set innerHTML
+- `innerHtmlLightNodeThis()` - Set innerHTML in light DOM
+- `innerTextNodeThis()` - Set innerText
+
+**Position Options:**
+```typescript
+export type ApplyNodePosition = 
+  | 'beforeBegin'      // Before element
+  | 'afterBegin'       // After element opens
+  | 'beforeEnd'        // Before element closes
+  | 'afterEnd'         // After element closes
+  | 'replace'          // Replace element
+  | 'replaceChildren'  // Replace children
+  | 'innerHtml'        // Set innerHTML
+  | 'innerText'        // Set innerText
+  | 'remove';          // Remove element
+```
+
+### 7.5 **Style & Class Management**
+
+Apply styles and classes dynamically with `@applyStyle` and `@applyClass`.
+
+```typescript
+@elementDefine('styled-component')
+class StyledComponent extends HTMLElement {
+  @state('isActive')
+  isActive = false;
+
+  @addEventListener('button', 'click')
+  @updateStyleThis
+  toggleStyle() {
+    return {
+      color: this.isActive ? 'green' : 'red',
+      fontSize: '16px'
+    };
+  }
+
+  @addEventListener('.toggle-btn', 'click')
+  @updateClassThis
+  toggleClass() {
+    return {
+      'active': this.isActive,
+      'disabled': !this.isActive
+    };
+  }
+
+  @onConnectedLight
+  render() {
+    return `
+      <div>
+        <button class="toggle-btn">Toggle</button>
+        <button>Update Style</button>
+      </div>
+    `;
+  }
+}
+```
+
+**@applyStyle Variants:**
+- `setStyleThis()` - Clear and set styles
+- `updateStyleThis()` - Update/merge styles
+- `removeStyleThis()` - Remove specific styles
+
+**@applyClass Variants:**
+- `setClassThis()` - Replace all classes
+- `updateClassThis()` - Toggle classes
+- `addClassThis()` - Add classes
+- `removeClassThis()` - Remove classes
+- `toggleClassThis()` - Toggle classes
+
+### 7.6 **Lifecycle Hooks**
+
+Lifecycle hooks allow you to execute code at specific points in a component's lifecycle. All lifecycle decorators support optional `order` parameter for execution ordering.
+
+```typescript
+@elementDefine('my-component')
+class MyComponent extends HTMLElement {
+  @onInitialize({ order: 0 })
+  onInit() {
+    // Called during component construction
+    console.log('Component initialized');
+  }
+
+  @onConnectedBefore({ order: 0 })
+  beforeConnected() {
+    // Called before element connects to DOM
+  }
+
+  @onConnectedAfter({ order: 1 })
+  afterConnected() {
+    // Called after element connects to DOM
+  }
+
+  @onConnected
+  onConnected() {
+    // Called when element enters DOM
+  }
+
+  @onDisconnectedBefore
+  beforeDisconnected() {
+    // Called before element disconnects from DOM
+  }
+
+  @onDisconnected
+  onDisconnected() {
+    // Called when element leaves DOM
+  }
+
+  @onAdoptedBefore
+  beforeAdopted() {
+    // Called before element is adopted into new document
+  }
+
+  @onAdopted
+  onAdopted() {
+    // Called when element is adopted into new document
+  }
+
+  @onConnectedSwcApp({ order: 0 })
+  onSwcAppConnected() {
+    // Called after SwcApp.connect() completes
+    // Full DI support available through hostSet
+  }
+
+  @onConnectedCompleted({ order: 0 })
+  onConnectedCompleted() {
+    // Called after all connected lifecycle hooks complete
+  }
+}
+```
+
+**Lifecycle Execution Order:**
+- `@onInitialize` - Component construction
+- `@onConnectedBefore` - Before DOM connection
+- `@onConnectedAfter` - After DOM connection
+- `@onConnected` - DOM connection (with HTML rendering)
+- `@onConnectedSwcApp` - After SwcApp initialization
+- `@onConnectedCompleted` - All connected hooks done
+- `@onDisconnectedBefore` - Before DOM disconnection
+- `@onDisconnected` - DOM disconnection
+- `@onAdoptedBefore` - Before document adoption
+- `@onAdopted` - Document adoption
+
+**Order Parameter:**
+All lifecycle decorators support `order?: number` for controlling execution sequence:
+```typescript
+@onConnectedBefore({ order: 0 })  // Runs first
+onFirst() { }
+
+@onConnectedBefore({ order: 1 })  // Runs second
+onSecond() { }
 ```
 
 ### 8. **Structural Directives**
@@ -317,378 +709,6 @@ SWC supports two types of expression syntax for dynamic value evaluation:
 
 ---
 
-#### 8.1 **SwcChoose - Multi-Condition Rendering**
-
-Switch-case style conditional rendering with `swc-when` and `swc-otherwise` sub-templates.
-
-```typescript
-// Component with conditional rendering logic
-@elementDefine('status-display')
-class StatusDisplay extends HTMLElement {
-  @attributeThis('status')
-  status: string = 'pending';
-
-  @setProperty('#status-template', 'value')
-  getStatus() {
-    return this.status;
-  }
-
-  @onConnectedInnerHtml
-  render() {
-    return `
-      <template id="status-template" is="swc-choose">
-        <template is="swc-when" test="$value === 'pending'">
-          <div style="color: orange;">⏳ Processing...</div>
-        </template>
-        
-        <template is="swc-when" test="$value === 'success'">
-          <div style="color: green;">✓ Completed</div>
-        </template>
-        
-        <template is="swc-when" test="$value === 'error'">
-          <div style="color: red;">✗ Failed</div>
-        </template>
-        
-        <!-- Fallback -->
-        <template is="swc-otherwise">
-          <div style="color: gray;">Unknown status</div>
-        </template>
-      </template>
-    `;
-  }
-}
-```
-
-**Expression Features:**
-- `$value` contains the value passed to `swc-choose`
-- `skip-if-same` attribute prevents re-render when same template selected
-- **Attribute substitution with `{{= }}`**: `attribute-name="{{= expression }}"` automatically evaluated
-  
-**Attribute Substitution Example ({{= }} usage):**
-```html
-<template is="swc-choose">
-  <template is="swc-when" test="$value?.type === 'user'">
-    <user-card 
-      data-username="{{= $value?.name }}" 
-      data-email="{{= $value?.email }}"
-      data-id="{{= $value?.id }}"
-    ></user-card>
-  </template>
-  
-  <template is="swc-when" value="$value?.type === 'product'">
-    <product-card 
-      data-product-name="{{= $value?.title }}"
-      data-price="{{= $value?.price }}"
-    ></product-card>
-  </template>
-</template>
-```
-
----
-
-#### 8.2 **SwcIf - Binary Conditional**
-
-If-then-else rendering with optional `swc-default` fallback.
-
-```typescript
-@elementDefine('user-profile')
-class UserProfile extends HTMLElement {
-  private isLoggedIn = false;
-  private userData = { userName: 'Alice', userId: 123 };
-
-  @setProperty('#content', 'value')
-  checkAuth() {
-    return this.isLoggedIn;
-  }
-
-  @onConnectedInnerHtml
-  render() {
-    return `
-      <!-- True condition: renders main template using {{ }} -->
-      <template id="content" is="swc-if" value="{{ $host.isLoggedIn }}">
-        <!-- Attribute substitution with {{= }} expressions -->
-        <user-card 
-          data-username="{{= $host.userData.userName }}"
-          data-userid="{{= $host.userData.userId }}"
-        ></user-card>
-        <div>
-          <h2>Welcome, {{ $host.userData.userName }}</h2>
-          <button on-click="logout">Logout</button>
-        </div>
-        
-        <!-- Fallback template: renders if condition is false -->
-        <template is="swc-default">
-          <div>
-            <p>Please log in</p>
-            <button on-click="login">Login</button>
-          </div>
-        </template>
-      </template>
-    `;
-  }
-}
-```
-
-**Expression Features:**
-- Binary true/false logic with `{{ }} condition`
-- Main template renders when `value` is truthy
-- `swc-default` sub-template renders when value is falsy
-- Dynamic attribute substitution with `{{= }}` supported
-- Access `$host`, `$value`, and other context variables
-- `{{= functionCall() }}` executes functions and returns results for attributes
-
----
-
-#### 8.3 **SwcAsync - Promise/Loading State**
-
-Automatically handle async operations with loading, success, and error states.
-
-```typescript
-@elementDefine('data-loader')
-class DataLoader extends HTMLElement {
-  private data: any = null;
-
-  async fetchData() {
-    return new Promise((resolve, reject) => {
-      setTimeout(() => {
-        resolve({ id: 1, name: 'Sample Data', description: 'API response' });
-      }, 2000);
-    });
-  }
-
-  @setProperty('#async-content', 'value')
-  loadData() {
-    return this.fetchData();
-  }
-
-  @onConnectedInnerHtml
-  render() {
-    return `
-      <template id="async-content" is="swc-async" value="{{= $host.fetchData() }}">
-        <!-- Loading State: Shows while Promise is pending -->
-        <template is="swc-loading">
-          <div>🔄 Loading data...</div>
-        </template>
-        
-        <!-- Success State: Shows when Promise resolves -->
-        <!-- Using {{= }} to extract data from resolved Promise -->
-        <template is="swc-success">
-          <data-card
-            data-id="{{= $value.id }}"
-            data-name="{{= $value.name }}"
-          ></data-card>
-          <div>
-            <p>Data ID: {{ $value.id }}</p>
-            <p>Data Name: {{ $value.name }}</p>
-            <p>Description: {{= $value.description }}</p>
-          </div>
-        </template>
-        
-        <!-- Error State: Shows if Promise rejects -->
-        <template is="swc-error">
-          <div style="color: red;">❌ Failed to load data</div>
-        </template>
-      </template>
-    `;
-  }
-}
-```
-
-**Expression Features:**
-- Promise lifecycle management with `{{ }} conditions`
-- `{{= $host.fetchData() }}` - function call expression that executes and returns Promise
-- `{{= $value.propertyName }}` - extract properties from resolved value
-- `swc-loading` - displays during pending state
-- `swc-success` - displays on successful resolution, `$value` contains resolved result
-- `swc-error` - displays on Promise rejection, `$value` contains error
-- Dynamic attribute substitution with `{{= }}` in all states
-- `on-clone-node` and `on-clone-nodes` callbacks for DOM manipulation
-
----
-
-#### 8.4 **SwcLoop - List Rendering**
-
-Iterate over arrays and render templates for each item.
-
-```typescript
-@elementDefine('product-list')
-class ProductList extends HTMLElement {
-  private products = [
-    { id: 1, name: 'Laptop', price: 1200, category: 'electronics' },
-    { id: 2, name: 'Phone', price: 800, category: 'electronics' },
-    { id: 3, name: 'Tablet', price: 500, category: 'electronics' }
-  ];
-
-  @setProperty('#products-list', 'value')
-  getProducts() {
-    return this.products;
-  }
-
-  @onConnectedInnerHtml
-  render() {
-    return `
-      <template id="products-list" is="swc-loop" value="{{= $host.products }}">
-        <!-- Loop iteration with {{ }} for display and {{= }} for attributes -->
-        <div style="margin: 10px; padding: 10px; border: 1px solid #ddd;">
-          <!-- Using {{ }} for template content rendering -->
-          <h3>{{ $item.name }}</h3>
-          <p>Price: {{ $item.price }}</p>
-          <p>ID: {{ $item.id }} (Index: {{ $index }})</p>
-          
-          <!-- Using {{= }} for dynamic attribute substitution -->
-          <product-card
-            data-product-id="{{= $item.id }}"
-            data-product-name="{{= $item.name }}"
-            data-product-price="{{= $item.price }}"
-            data-product-category="{{= $item.category }}"
-          ></product-card>
-          
-          <!-- Computed expressions with {{= }} -->
-          <button data-id="{{= $item.id }}" data-price="{{= $item.price }}">
-            Add to Cart - {{ $item.price }}
-          </button>
-        </div>
-        
-        <!-- Empty fallback: renders when array is empty -->
-        <template is="swc-default">
-          <p>No products available</p>
-        </template>
-      </template>
-    `;
-  }
-}
-```
-
-**Context Variables (Available in loop):**
-- `$item` - current item in iteration
-- `$index` - zero-based index (0, 1, 2, ...)
-- `$value` - entire array being iterated
-- `$nodes` - cloned DOM nodes
-- `$elements` - cloned HTML elements
-- `$firstElement` - first element in cloned nodes
-
-**Expression Features:**
-- `{{= $host.products }}` - function call expression that returns the array to iterate
-- `{{ $item.propertyName }}` - display item properties using standard `{{ }}` 
-- `{{= $item.propertyName }}` - extract item properties for attributes using `{{= }}`
-- `{{= computedValue }}` - compute values in attributes (e.g., calculations, method calls)
-- `swc-default` fallback renders when array is empty
-- All cloned attributes support `{{ }}` and `{{= }}` substitution
-- `on-clone-node` callback fires for each cloned node
-- `on-clone-nodes` callback fires after all nodes cloned
-
-**Common Patterns:**
-```html
-<!-- Template functions with {{= }} -->
-<template is="swc-loop" value="{{= filterProducts($host.products) }}">
-  <!-- Dynamic calculations -->
-  <span>Total: {{= $item.price * $item.quantity }}</span>
-  
-  <!-- Conditional attributes -->
-  <div class="{{= $item.inStock ? 'available' : 'unavailable' }}"></div>
-  
-  <!-- Method calls as attributes -->
-  <button data-formatted="{{= formatPrice($item.price) }}">
-    Buy - {{ formatPrice($item.price) }}
-  </button>
-</template>
-```
-
-**Advanced: replace-wrap-start replace-wrap-end  for Custom Expression Syntax**
-
-Override default `{{ }}` and `{{= }}` syntax with custom wrappers:
-
-```typescript
-@elementDefine('custom-loop')
-class CustomLoop extends HTMLElement {
-  private items = [{ id: 1, name: 'Item 1' }];
-
-  @onConnectedInnerHtml
-  render() {
-    return `
-      <!-- Using custom wrapper syntax [(= ... )] instead of {{= ... }} -->
-      <template id="items" is="swc-loop" replace-wrap-start="[(" replace-wrap-end=")]" value="{{= $host.items }}">
-        <div>
-          <p>Name: [( $item.name )]</p>
-          <button data-id="[( $item.id )]">Click me</button>
-        </div>
-      </template>
-    `;
-  }
-}
-```
-
-**replace-wrap attribute options:**
-- Change expression wrapper from default `{#{ }#}` to custom pattern
-- Supported on: `SwcLoop`, `SwcChoose`, `SwcIf`, `SwcAsync`, `register()` directives
-
----
-
-#### 8.5 **Declarative Routing with swc-choose**
-
-Combine `@subscribeSwcAppRouteChangeWhileConnected` with `swc-choose` for clean, declarative routing without boilerplate.
-
-```typescript
-@elementDefine('root-router')
-class RootRouter extends HTMLElement {
-  private router: Router;
-
-  @onInitialize
-  onconstructor(router: Router) {
-    this.router = router;
-  }
-
-  @setProperty('#router', 'value')
-  @subscribeSwcAppRouteChangeWhileConnected(['/', '/users', '/users/{id}', '/products/{id}'])
-  routeChanged(route: RouterEventType) {
-    return route;
-  }
-
-  navigate(path: string): void {
-    this.router?.go(path);
-  }
-
-  @onConnectedInnerHtml
-  render() {
-    return `
-      <template id="router" is="swc-choose">
-        <template is="swc-when" test="['', '/'].includes($value?.path)">
-          <home-page/>
-        </template>
-        
-        <!-- Users List Page -->
-        <template is="swc-when" test="$value?.path === '/users'">
-          <users-list-page/>
-        </template>
-        
-        <!-- User Detail Page: Using {{= }} for dynamic attributes from route params -->
-        <template is="swc-when" test="$value?.path.startsWith('/users/')">
-          <user-detail-page user-id="{{= $value?.pathData?.id }}"></user-detail-page>
-        </template>
-        
-        <!-- Product Detail Page: Using {{= }} for dynamic route parameters -->
-        <template is="swc-when" test="$value?.path.startsWith('/products/')">
-          <product-detail-page product-id="{{= $value?.pathData?.id }}"></product-detail-page>
-        </template>
-        
-        <!-- Not Found -->
-        <template is="swc-otherwise">
-          <not-found-page/>
-        </template>
-      </template>
-    `;
-  }
-}
-```
-
-**Benefits:**
-- ✅ **No imperative route methods** - routes are declarative templates
-- ✅ **Automatic re-rendering** - attributes like `user-id` update automatically
-- ✅ **Performance optimization** - use `skip-if-same` on templates to prevent re-renders
-- ✅ **Dynamic path parameters** - use `{{= $value?.pathData?.id }}` syntax to inject route params with `{{= }}`
-- ✅ **Cleaner DX** - single unified routing pattern
-- ✅ **Full expression support** - use `{{= }}` for complex parameter transformations
-
 ### 9. **Component Communication - Message Bus**
 
 SWC provides a powerful message bus system for inter-component communication through SwcApp. Components can publish and subscribe to typed messages while connected.
@@ -699,7 +719,7 @@ Subscribe to messages while component is connected to DOM.
 ```typescript
 @elementDefine('notification-panel')
 class NotificationPanel extends HTMLElement {
-  @subscribeSwcAppMessageWhileConnected()
+  @subscribeSwcAppMessageWhileConnected
   onAnyMessage(message: SwcAppMessage) {
     console.log('Received message:', message);
   }
@@ -738,6 +758,28 @@ class LoginForm extends HTMLElement {
     const profile = { name: this.name, email: this.email };
     return profile;  // Published as message with type: 'user-profile-updated'
   }
+}
+```
+
+**@publishSwcAppMessage Decorator Variants:**
+- `publishSwcAppMessage()` - Publish without message type
+- `publishSwcAppMessage(messageType)` - Publish with specific message type
+- `publishSwcAppMessage(messageType, { valueKey: 'customKey' })` - Publish with custom value extraction
+- `publishSwcAppMessage({ messageType: 'type', valueKey: 'customKey' })` - Publish with options object
+- `publishMessage()` - Short alias
+- `publishMessage(messageType)` - Short alias with message type
+- `publishMessage(messageType, options)` - Short alias with options
+
+**Using valueKey for Multiple Decorators:**
+
+```typescript
+@publishSwcAppMessage('event1', { valueKey: 'detail1' })
+@publishSwcAppMessage('event2', { valueKey: 'detail2' })
+handleMultipleEvents() {
+  return {
+    detail1: { type: 'event1', data: 'value1' },
+    detail2: { type: 'event2', data: 'value2' }
+  };
 }
 ```
 
@@ -783,7 +825,380 @@ class ProductDetail extends HTMLElement {
 
 ---
 
-### 10. **Accommodation Pattern**
+### 10. **SwcApp - Multiple Element Types with Mixin Pattern**
+
+SWC provides a flexible Mixin-based architecture for creating SwcApp elements that extend different HTMLElement types. This enables building SPAs with any semantic HTML element as the root.
+
+#### Available SwcApp Variants
+
+```typescript
+import {
+  SwcApp,           // swc-app (HTMLElement)
+  SwcAppBody,       // swc-app-body (HTMLBodyElement, is="body")
+  SwcAppDiv,        // swc-app-div (HTMLDivElement, is="div")
+  SwcAppSection,    // swc-app-section (HTMLElement, is="section")
+  SwcAppMain,       // swc-app-main (HTMLElement, is="main")
+  SwcAppArticle,    // swc-app-article (HTMLElement, is="article")
+  SwcAppHeader,     // swc-app-header (HTMLElement, is="header")
+  SwcAppFooter,     // swc-app-footer (HTMLElement, is="footer")
+  SwcAppNav,        // swc-app-nav (HTMLElement, is="nav")
+  SwcAppAside,      // swc-app-aside (HTMLElement, is="aside")
+  defineSwcAppAll,  // Register all SwcApp variants at once
+  swcAppFactories   // Array of all definition functions
+} from '@dooboostore/simple-web-component';
+```
+
+#### Using SwcAppBody (Recommended for SPAs)
+
+```html
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>My SPA</title>
+</head>
+<!-- Use is="swc-app-body" for semantic HTML -->
+<body id="app" is="swc-app-body">
+  <root-router></root-router>
+</body>
+<script src="bundle.js"></script>
+</html>
+```
+
+```typescript
+// index.ts
+import 'reflect-metadata';
+import { defineSwcAppBody, SwcAppInterface, defineSwcAppAll } from '@dooboostore/simple-web-component';
+import bootFactory from './bootFactory';
+
+const w = window;
+
+w.document.addEventListener('DOMContentLoaded', async () => {
+  const container = Symbol('app');
+  
+  // Initialize services and components
+  await defineSwcAppBody(w);
+
+
+  // Get app root element
+  const appElement = w.document.querySelector('#app') as SwcAppInterface;
+  
+  if (appElement && typeof appElement.connect === 'function') {
+    appElement.connect({
+      path: '/',
+      routeType: 'path',
+      container: container,
+      onStartedLazyDefineComponent: [yourComponentFactory1, yourComponentFactor2],
+      window: w,
+      onEngineStarted: () => {
+        console.log('🚀 Application started successfully');
+      }
+    });
+  }
+});
+```
+
+#### Factory Pattern - Component Registration
+
+```typescript
+// Component factory
+export default (w: Window) => {
+  const tagName = 'my-component';
+  const existing = w.customElements.get(tagName);
+  if (existing) return tagName;
+
+  @elementDefine(tagName, { window: w })
+  class MyComponent extends w.HTMLElement {
+    @onInitialize
+    onconstructor(@inject(MyService.SYMBOL) service: MyService) {
+      this.service = service;
+    }
+  }
+
+  return tagName;
+};
+
+// Boot factory
+export default (w: Window, container: symbol) => {
+  serviceFactories.forEach(s => s(container));
+};
+
+// Entry point
+const container = Symbol('app');
+await defineSwcAppBody(w);
+const appElement = w.document.querySelector('#app') as SwcAppInterface;
+appElement.connect({
+  container,
+  window: w,
+  onStartedLazyDefineComponent: [...pageFactories, ...componentFactories],
+  onEngineStarted: () => {
+    appElement.innerHTML = '<root-router></root-router>';
+  }
+});
+```
+
+#### 11. **Routing with @subscribeSwcAppRouteChangeWhileConnected**
+
+SWC provides declarative routing with automatic path matching, order-based execution, and optional propagation control.
+
+#### Basic Routing Setup
+
+```typescript
+@elementDefine('root-router')
+class RootRouter extends HTMLElement {
+  @subscribeSwcAppRouteChangeWhileConnected(['', '/'], { order: 0 })
+  @innerHtmlLightNodeThis
+  handleHome(routerPathSet: RouterEventType) {
+    return `<landing-page/>`;
+  }
+
+  @subscribeSwcAppRouteChangeWhileConnected(['/products'], { order: 1 })
+  @innerHtmlLightNodeThis
+  handleProducts(routerPathSet: RouterEventType) {
+    return `<products-list/>`;
+  }
+
+  @subscribeSwcAppRouteChangeWhileConnected(['/product/{id}'], { order: 2 })
+  @innerHtmlLightNodeThis
+  handleProductDetail(routerPathSet: RouterEventType) {
+    const { id } = routerPathSet.pathData;
+    return `<product-detail product-id="${id}"/>`;
+  }
+
+  @subscribeSwcAppRouteChangeWhileConnected(['/{tail:.*}'], { order: 999 })
+  @innerHtmlLightNodeThis
+  handle404(routerPathSet: RouterEventType) {
+    return `<not-found-page/>`;
+  }
+}
+```
+
+#### Route Handler Features
+
+**1. Path Matching**
+- **No path pattern** (omit path): `@subscribeSwcAppRouteChangeWhileConnected({ order: -1 })` - matches all routes
+- **Exact match**: `['', '/']` - matches home route only
+- **Prefix match**: `['/products']` - matches `/products` and `/products/...`
+- **Dynamic segments**: `['/product/{id}']` - captures `id` parameter
+- **Wildcard**: `['/{tail:.*}']` - matches any remaining path (use for 404)
+
+**2. Order-Based Execution**
+Routes are executed in order of `order` value (lowest first). First matching route with a return value stops propagation:
+
+```typescript
+@subscribeSwcAppRouteChangeWhileConnected(['', '/'], { order: 0 })  // Checked first
+@subscribeSwcAppRouteChangeWhileConnected(['/admin'], { order: 1 })  // Checked second
+@subscribeSwcAppRouteChangeWhileConnected(['/{tail:.*}'], { order: 999 })  // Checked last (404)
+```
+
+**3. Propagation Control**
+- **Return a value** (HTML string) → Stops propagation to next handlers
+- **Return undefined/null** → Continues to next handler
+
+```typescript
+// This handler stops propagation (returns HTML)
+@subscribeSwcAppRouteChangeWhileConnected(['/admin'], { order: 1 })
+@innerHtmlLightNodeThis
+handleAdmin(routerPathSet: RouterEventType) {
+  return `<admin-panel/>`; // ✅ Stops here
+}
+
+// This handler continues propagation (no return value)
+@subscribeSwcAppRouteChangeWhileConnected({ order: -1 })
+onRouteChange(routerPathSet: RouterEventType) {
+  console.log('Route changed:', routerPathSet.path);
+  // No return value → continues to next handler
+}
+```
+
+#### Advanced Example with Logging
+
+```typescript
+@elementDefine('accommodation-router')
+class AccommodationRouter extends HTMLElement {
+  // Global route logger (order: -1 runs first, no path pattern = matches all routes)
+  @subscribeSwcAppRouteChangeWhileConnected({ order: -1 })
+  onRouteChange(routerPathSet: RouterEventType) {
+    console.log('[Route Change]', {
+      path: routerPathSet.path,
+      pathData: routerPathSet.pathData,
+      timestamp: new Date().toISOString()
+    });
+    // No return → continues to route handlers
+  }
+
+  // Home route
+  @subscribeSwcAppRouteChangeWhileConnected(['', '/'], { order: 0 })
+  @innerHtmlLightNodeThis
+  handleHome(routerPathSet: RouterEventType) {
+    console.log('[Route Handler] Home');
+    return `<landing-page/>`;
+  }
+
+  // List route
+  @subscribeSwcAppRouteChangeWhileConnected(['/list'], { order: 1 })
+  @innerHtmlLightNodeThis
+  handleList(routerPathSet: RouterEventType) {
+    console.log('[Route Handler] List');
+    return `<list-page/>`;
+  }
+
+  // Detail route with dynamic parameter
+  @subscribeSwcAppRouteChangeWhileConnected(['/detail/{productId}'], { order: 2 })
+  @innerHtmlLightNodeThis
+  handleDetail(routerPathSet: RouterEventType) {
+    const { productId } = routerPathSet.pathData;
+    console.log('[Route Handler] Detail', { productId });
+    return `<detail-page product-id="${productId}"/>`;
+  }
+
+  // 404 fallback (order: 999 runs last)
+  @subscribeSwcAppRouteChangeWhileConnected(['/{tail:.*}'], { order: 999 })
+  @innerHtmlLightNodeThis
+  handle404(routerPathSet: RouterEventType) {
+    console.log('[Route Handler] 404 Not Found', routerPathSet.path);
+    return `<not-found-page/>`;
+  }
+}
+```
+
+#### Router Configuration Options
+
+```typescript
+interface SwcAppRouteChangeOptions {
+  path?: RoutePathType;  // Route path pattern(s)
+  order?: number;        // Execution order (default: 0)
+  filter?: (router: Router, meta: {currentThis: any, helper: HelperHostSet}) => boolean;
+}
+```
+
+**Usage:**
+```typescript
+@subscribeSwcAppRouteChangeWhileConnected(
+  ['/admin/{section}'],
+  {
+    order: 5,
+    filter: (router, meta) => meta.currentThis.isAdmin === true
+  }
+)
+@innerHtmlLightNodeThis
+handleAdminSection(routerPathSet: RouterEventType) {
+  const { section } = routerPathSet.pathData;
+  return `<admin-${section}/>`;
+}
+```
+
+#### RouterEventType Structure
+
+```typescript
+type RouterEventType = {
+  path: string;           // Current route path
+  pathData: Record<string, any>;  // Extracted path parameters
+  triggerPoint: 'start' | 'end';  // Route change phase
+};
+```
+
+**Example with path parameters:**
+```
+Route: /product/{id}
+URL: /product/123
+pathData: { id: '123' }
+```
+
+#### Multiple Decorators with Shared Return Value
+
+When using multiple decorators on the same method, each decorator can extract its own value from the return object using its symbol key or custom `valueKey` option.
+
+**How It Works:**
+1. Each decorator has a default symbol key (e.g., `ATTRIBUTE_METADATA_KEY`, `PROPERTY_METADATA_KEY`)
+2. When a method returns an object, each decorator checks if its key exists in the object
+3. If the key exists, the decorator uses that value; otherwise uses the entire return value
+4. This allows multiple decorators to extract different values from the same return object
+
+**Method 1: Using Default Symbol Keys**
+
+```typescript
+import {
+  ATTRIBUTE_METADATA_KEY,
+  PROPERTY_METADATA_KEY,
+  STYLE_METADATA_KEY,
+  CLASS_METADATA_KEY
+} from '@dooboostore/simple-web-component';
+
+@elementDefine('multi-decorator-example')
+class MultiDecoratorExample extends HTMLElement {
+  @setAttribute('selector')
+  @setProperty('selector')
+  @updateStyleThis
+  @updateClassThis
+  handleUpdate() {
+    return {
+      [ATTRIBUTE_METADATA_KEY]: 'attribute-value',
+      [PROPERTY_METADATA_KEY]: 'property-value',
+      [STYLE_METADATA_KEY]: { color: 'red', fontSize: '16px' },
+      [CLASS_METADATA_KEY]: { 'active': true, 'disabled': false }
+    };
+  }
+}
+```
+
+**Method 2: Using Custom valueKey Option**
+
+For more readable code, use the `valueKey` option to specify custom keys:
+
+```typescript
+@elementDefine('custom-key-example')
+class CustomKeyExample extends HTMLElement {
+  @setAttribute('selector', { valueKey: 'attrValue' })
+  @setProperty('selector', { valueKey: 'propValue' })
+  @updateStyleThis({ valueKey: 'styleValue' })
+  @updateClassThis({ valueKey: 'classValue' })
+  handleUpdate() {
+    return {
+      attrValue: 'attribute-value',
+      propValue: 'property-value',
+      styleValue: { color: 'red', fontSize: '16px' },
+      classValue: { 'active': true, 'disabled': false }
+    };
+  }
+}
+```
+
+**Method 3: Mixing Symbol Keys and Custom Keys**
+
+You can mix both approaches in the same method:
+
+```typescript
+@elementDefine('mixed-keys-example')
+class MixedKeysExample extends HTMLElement {
+  @setAttribute('selector')  // Uses default ATTRIBUTE_METADATA_KEY
+  @setProperty('selector', { valueKey: 'customProp' })  // Uses custom key
+  @updateStyleThis({ valueKey: 'styles' })  // Uses custom key
+  handleUpdate() {
+    return {
+      [ATTRIBUTE_METADATA_KEY]: 'attr-value',
+      customProp: 'prop-value',
+      styles: { color: 'blue' }
+    };
+  }
+}
+```
+
+**Supported Decorators with valueKey:**
+- `@applyAttribute` / `@setAttribute` / `@setAttributeThis`
+- `@applyProperty` / `@setProperty` / `@setPropertyThis`
+- `@applySlot` / `@clearSlot` / `@appendHtmlSlot` / etc.
+- `@applyNode` / `@replaceChildrenNodeThis` / etc.
+- `@applyStyle` / `@updateStyleThis` / etc.
+- `@applyClass` / `@updateClassThis` / etc.
+- `@emitCustomEvent` / `@emit` / `@emitCustomEventThis`
+- `@publishSwcAppMessage` / `@publish`
+
+Each decorator will use only its corresponding value from the return object, preventing conflicts and allowing clean separation of concerns.
+
+---
+
+### 12. **Accommodation Pattern**
 Factory-based component registration with explicit DI.
 
 ```typescript
@@ -796,448 +1211,64 @@ export default (w: Window) => {
   @elementDefine(tagName, { window: w })
   class MyComponent extends w.HTMLElement {
     @onInitialize
-    onconstructor(service: MyService) {
+    onconstructor(@inject(MyService.SYMBOL) service: MyService) {
       this.service = service;
     }
   }
-  
+
   return tagName;
 };
 
 // Boot factory
 export default (w: Window, container: symbol) => {
   serviceFactories.forEach(s => s(container));
-  register(w, [...pageFactories, ...componentFactories]);
 };
 
 // Entry point
 const container = Symbol('app');
-bootFactory(w, container);
+await defineSwcAppBody(w);
+const appElement = w.document.querySelector('#app') as SwcAppInterface;
 appElement.connect({
   container,
   window: w,
+  onStartedLazyDefineComponent: [...pageFactories, ...componentFactories],
   onEngineStarted: () => {
     appElement.innerHTML = '<root-router></root-router>';
   }
 });
 ```
-
-### 11. **Quickstart - Basic SPA Setup**
-
-Complete example of setting up a production SPA with routing, services, and components.
-
-#### Step 1. HTML Entry Point
-```html
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>My SPA</title>
-  <!-- Web Components polyfill for older browsers -->
-  <script src="https://unpkg.com/@ungap/custom-elements"></script>
-</head>
-<body id="app" is="swc-app-body">
-  <!-- Root router will render pages here -->
-  <root-router></root-router>
-</body>
-<script src="bundle.js"></script>
-</html>
-```
-
-#### Step 2. Services (Dependency Injection)
-```typescript
-// services/UserService.ts
-import { Sim } from '@dooboostore/simple-boot';
-import { ConstructorType } from '@dooboostore/core';
-
-export namespace UserService {
-  export const SYMBOL = Symbol('UserService');
-
-  export interface User {
-    id: number;
-    name: string;
-    email: string;
-  }
-
-  const users: User[] = [
-    { id: 1, name: 'Alice', email: 'alice@example.com' },
-    { id: 2, name: 'Bob', email: 'bob@example.com' }
-  ];
-}
-
-export interface UserService {
-  getUser(id: number): UserService.User | undefined;
-  getAllUsers(): UserService.User[];
-}
-
-// Factory function: accepts container and returns service class
-export default (container: symbol): ConstructorType<any> => {
-  @Sim({ symbol: UserService.SYMBOL, container: container })
-  class UserServiceImpl implements UserService {
-    getUser(id: number) {
-      return UserService.users.find(u => u.id === id);
-    }
-
-    getAllUsers() {
-      return [...UserService.users];
-    }
-  }
-
-  return UserServiceImpl;
-};
-```
-
-```typescript
-// services/index.ts
-import userServiceFactory from './UserService';
-
-export const serviceFactories = [userServiceFactory];
-```
-
-#### Step 3. Router Configuration (Declarative with swc-choose)
-```typescript
-// pages/RootRouter.ts
-import { elementDefine, subscribeSwcAppRouteChangeWhileConnected, setProperty, onConnectedInnerHtml, onInitialize } from '@dooboostore/simple-web-component';
-import { Router, RouterEventType } from '@dooboostore/core-web';
-
-const rootRouterFactory = (w: Window) => {
-  const tagName = 'root-router';
-  const existing = w.customElements.get(tagName);
-  if (existing) return tagName;
-
-  @elementDefine(tagName, { window: w })
-  class RootRouter extends w.HTMLElement {
-    private router: Router;
-
-    @onInitialize
-    onconstructor(router: Router) {
-      this.router = router;
-    }
-
-    @setProperty('#router', 'value')
-    @subscribeSwcAppRouteChangeWhileConnected(['/', '/users', '/users/{id}'])
-    routeChanged(route: RouterEventType) {
-      return route;
-    }
-
-    navigate(path: string): void {
-      this.router?.go(path);
-    }
-
-    @onConnectedInnerHtml
-    render() {
-      return `
-        <template id="router" is="swc-choose">
-          <!-- Home Page -->
-          <template is="swc-when" test="['', '/'].includes($value?.path)">
-            <home-page/>
-          </template>
-          
-          <!-- Users List -->
-          <template is="swc-when" test="$value?.path === '/users'">
-            <users-list-page/>
-          </template>
-          
-          <!-- User Detail -->
-          <template is="swc-when" test="$value?.path.startsWith('/users/')">
-            <user-detail-page user-id="{{$value?.pathData?.id}}"/>
-          </template>
-          
-          <!-- Not Found -->
-          <template is="swc-otherwise">
-            <not-found-page/>
-          </template>
-        </template>
-      `;
-    }
-  }
-
-  return tagName;
-};
-
-export default rootRouterFactory;
-```
-
-#### Step 4. Page Components
-```typescript
-// pages/HomePage.ts
-import { elementDefine, onConnectedInnerHtml } from '@dooboostore/simple-web-component';
-
-const HomePage = (w: Window) => {
-  const tagName = 'home-page';
-  const existing = w.customElements.get(tagName);
-  if (existing) return tagName;
-
-  @elementDefine(tagName, { window: w })
-  class HomePage extends w.HTMLElement {
-    @onConnectedInnerHtml({ useShadow: true })
-    render() {
-      return `
-        <style>
-          :host { display: block; padding: 20px; }
-          h1 { color: #333; }
-          a { color: #0066cc; text-decoration: none; margin-right: 20px; }
-        </style>
-        <h1>Welcome to My SPA</h1>
-        <nav>
-          <a href="/users">View All Users</a>
-        </nav>
-      `;
-    }
-  }
-
-  return tagName;
-};
-
-export default HomePage;
-```
-
-```typescript
-// pages/UsersListPage.ts
-import { elementDefine, onConnectedInnerHtml, onConnectedBefore } from '@dooboostore/simple-web-component';
-import { Inject } from '@dooboostore/simple-boot';
-import { UserService } from '../services/UserService';
-
-const UsersListPage = (w: Window) => {
-  const tagName = 'users-list-page';
-  const existing = w.customElements.get(tagName);
-  if (existing) return tagName;
-
-  @elementDefine(tagName, { window: w })
-  class UsersListPage extends w.HTMLElement {
-    private users: any[] = [];
-
-    @onConnectedBefore
-    onconstructor(@Inject({ symbol: UserService.SYMBOL }) userService: UserService) {
-      this.users = userService.getAllUsers();
-    }
-
-    @onConnectedInnerHtml({ useShadow: true })
-    render() {
-      const usersList = this.users
-        .map(u => `<li><a href="/users/${u.id}">${u.name}</a></li>`)
-        .join('');
-      
-      return `
-        <style>
-          :host { display: block; padding: 20px; }
-          h1 { color: #333; }
-          ul { list-style: none; padding: 0; }
-          li { margin: 10px 0; }
-          a { color: #0066cc; text-decoration: none; }
-        </style>
-        <h1>Users</h1>
-        <ul>${usersList}</ul>
-        <a href="/">Back to Home</a>
-      `;
-    }
-  }
-
-  return tagName;
-};
-
-export default UsersListPage;
-```
-
-#### Step 4-1. Reusable Components
-```typescript
-// components/UserCard.ts
-import { elementDefine, onConnectedInnerHtml, attributeHost } from '@dooboostore/simple-web-component';
-
-const UserCard = (w: Window) => {
-  const tagName = 'user-card';
-  const existing = w.customElements.get(tagName);
-  if (existing) return tagName;
-
-  @elementDefine(tagName, { window: w })
-  class UserCard extends w.HTMLElement {
-    @attributeThis('data-username')
-    username: string;
-
-    @attributeThis('data-email')
-    email: string;
-
-    @onConnectedInnerHtml({ useShadow: true })
-    render() {
-      return `
-        <style>
-          :host { display: block; }
-          .card { border: 1px solid #ddd; border-radius: 4px; padding: 12px; }
-          .name { font-weight: bold; font-size: 14px; }
-          .email { color: #666; font-size: 12px; }
-        </style>
-        <div class="card">
-          <div class="name">${this.username}</div>
-          <div class="email">${this.email}</div>
-        </div>
-      `;
-    }
-  }
-
-  return tagName;
-};
-
-export default UserCard;
-```
-
-#### Step 5. Export Factories
-
-**services/index.ts** - Export all service factories
-```typescript
-// services/index.ts
-import userServiceFactory from './UserService';
-
-export const serviceFactories = [userServiceFactory];
-```
-
-**components/index.ts** - Export all component factories
-```typescript
-// components/index.ts
-import UserCard from './UserCard';
-
-export const componentFactories = [
-  UserCard,
-];
-```
-
-**pages/index.ts** - Export all page factories with router
-```typescript
-// pages/index.ts
-import rootRouterFactory from './RootRouter';
-import HomePage from './HomePage';
-import UsersListPage from './UsersListPage';
-import UserDetailPage from './UserDetailPage';
-
-export const pageFactories = [
-  rootRouterFactory,      // Router first
-  HomePage,
-  UsersListPage,
-  UserDetailPage
-];
-```
-
-#### Step 6. Application Bootstrap
-```typescript
-// bootFactory.ts
-import { register } from '@dooboostore/simple-web-component';
-import { serviceFactories } from './services';
-import { componentFactories } from './components';
-import { pageFactories } from './pages';
-
-export default (w: Window, container: symbol) => {
-  // Initialize services with container (dependency injection)
-  // Each factory receives the container symbol and registers its service in the DI container
-  serviceFactories.forEach(serviceFactory => serviceFactory(container));
-
-  // Register pages and components
-  register(w, [...pageFactories, ...componentFactories]);
-};
-```
-
-#### Step 7. Application Entry Point
-```typescript
-// index.ts
-import 'reflect-metadata';
-import { SwcAppInterface } from '@dooboostore/simple-web-component';
-import bootFactory from './bootFactory';
-
-const w = window;
-
-w.document.addEventListener('DOMContentLoaded', async () => {
-  const container = Symbol('app');
-  
-  // Initialize services and components
-  bootFactory(w, container);
-
-  // Wait for customized built-in element to be defined
-  await w.customElements.whenDefined('swc-app-body');
-
-  // Get app root element
-  const appElement = w.document.querySelector('#app') as SwcAppInterface;
-  
-  if (appElement && typeof appElement.connect === 'function') {
-    // Connect SPA with routing and DI
-    appElement.connect({
-      path: '/',
-      routeType: 'path',
-      container: container,
-      window: w,
-      onEngineStarted: () => {
-        console.log('🚀 Application started successfully');
-        // Root router automatically initialized via @elementDefine
-      }
-    });
-  } else {
-    console.error('Failed to initialize SPA');
-  }
-});
-```
-
-#### Resulting Application Structure
-```
-src/
-  ├── index.ts                 # Entry point
-  ├── index.html              # HTML root with <root-router>
-  ├── bootFactory.ts          # Bootstrap services & components via register()
-  ├── services/
-  │   ├── UserService.ts      # Service factory (export default)
-  │   └── index.ts            # Export serviceFactories
-  ├── pages/
-  │   ├── RootRouter.ts       # Router factory (export default)
-  │   ├── HomePage.ts         # Page factory (export default)
-  │   ├── UsersListPage.ts    # Page factory (export default)
-  │   ├── UserDetailPage.ts   # Page factory (export default)
-  │   └── index.ts            # Export pageFactories
-  └── components/
-      ├── UserCard.ts         # Component factory (export default)
-      └── index.ts            # Export componentFactories
-```
-
-**Key Flow:**
-1. HTML loads → `<root-router>` element already in DOM
-2. `index.ts` executes → calls `bootFactory`
-3. `bootFactory` registers services and components (including `rootRouterFactory`)
-4. App waits for `swc-app-body` to be defined
-5. `appElement.connect()` initializes routing & DI
-6. `<root-router>` becomes active with `@subscribeSwcAppRouteChangeWhileConnected` + `swc-choose` template
-7. Route changes automatically trigger `swc-choose` re-evaluation and template re-rendering
-8. Template attributes like `user-id="{{$value?.pathData?.id}}"` are dynamically populated with route params
-9. All components have access to injected services via `@onInitialize`
-
-
 ---
 
 ## ⚠️ Critical Rules
 
 ### DO NOT Use @Sim on Web Components
-`@Sim` is for **Services only**. Web Components should use `@elementDefine`.
+`@sim` is for **Services only**. Web Components should use `@elementDefine`.
 
 ```typescript
 // ✅ CORRECT
-@Sim
+@sim
 export class UserService { }
 
 @elementDefine(tagName, { window: w })
 class UserWidget extends w.HTMLElement { }
 
 // ❌ WRONG
-@Sim
+@sim
 @elementDefine(tagName, { window: w })
 class UserWidget extends w.HTMLElement { }
 ```
 
-### Factory Always Returns tagName (String)
+### Factory Always Returns 
 ```typescript
 export default (w: Window) => {
   const tagName = 'my-element';
   const existing = w.customElements.get(tagName);
-  if (existing) return tagName;  // ← Return string!
+  if (existing) return existing;  
 
   @elementDefine(tagName, { window: w })
   class MyElement extends w.HTMLElement { }
   
-  return tagName;  // ← Always return tagName, never class
+  return existing; 
 };
 ```
 
@@ -1245,7 +1276,7 @@ export default (w: Window) => {
 ```typescript
 // ✅ CORRECT
 @onInitialize
-onconstructor(@Inject({ symbol: Service.SYMBOL }) service: Service) {
+onconstructor(@inject(Service.SYMBOL) service: Service) {
   this.service = service;
 }
 
@@ -1257,19 +1288,20 @@ constructor(private service: Service) { super(); }  // Web Components can't have
 
 ## 📚 Examples
 
-- **[Commerce (E-Commerce SPA)](./examples/commerce)** - Full shopping cart example
-- **[Stock (Market Dashboard)](./examples/stock)** - Real-time data with routing
-- **[Accommodation (Reference Pattern)](./examples/accommodation)** - Standard setup pattern
+- **[Commerce (E-Commerce SPA)](https://github.com/dooboostore-develop/packages/tree/main/%40dooboostore/simple-web-component/examples/commerce)** - Full shopping cart example
+- **[Stock (Market Dashboard)](https://github.com/dooboostore-develop/packages/tree/main/%40dooboostore/simple-web-component/examples/stock)** - Real-time data with routing
+- **[Accommodation (Reference Pattern)](https://github.com/dooboostore-develop/packages/tree/main/%40dooboostore/simple-web-component/examples/accommodation)** - Standard setup pattern
 
 ---
 
 ## 🔗 Related Packages
 
-- **[@dooboostore/simple-boot](../simple-boot)** - DI & AOP Container
-- **[@dooboostore/core-web](../core-web)** - Web Utilities & Router
-- **[@dooboostore/dom-parser](../dom-parser)** - HTML Parsing & AST
+- **[@dooboostore/simple-boot](https://github.com/dooboostore-develop/packages/tree/main/%40dooboostore/simple-boot)** - DI & AOP Container
+- **[@dooboostore/core-web](https://github.com/dooboostore-develop/packages/tree/main/%40dooboostore/core-web)** - Web Utilities & Router
+- **[@dooboostore/dom-parser](https://github.com/dooboostore-develop/packages/tree/main/%40dooboostore/dom-parser)** - HTML Parsing & AST
 
 ---
 
 ## 📄 License
-MIT © 2024 dooboostore-develop
+[MIT License](https://github.com/dooboostore-develop/packages/tree/main/%40dooboostore/simple-web-component/LICENSE.md)
+

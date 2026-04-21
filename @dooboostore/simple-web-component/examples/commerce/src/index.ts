@@ -1,14 +1,17 @@
 import 'reflect-metadata';
 import { SwcAppInterface } from '@dooboostore/simple-web-component';
 import { UrlUtils } from "@dooboostore/core";
-import bootFactory from "./bootFactory";
-
+import { componentFactories } from "./components";
+import { pageFactories  } from "./pages";
+import {defineSwcAppBody} from "@dooboostore/simple-web-component";
+import {serviceFactories} from "./services";
 const w = window;
 
-w.document.addEventListener('DOMContentLoaded', () => {
+w.document.addEventListener('DOMContentLoaded', async () => {
   const container = Symbol('container');
-  bootFactory(w, container);
-  
+
+  serviceFactories.forEach(it=>it(container));
+  await defineSwcAppBody(w)
   const appElement = w.document.querySelector('#app') as SwcAppInterface;
   const path = UrlUtils.getUrlPath(w.location) ?? '/';
   
@@ -16,6 +19,7 @@ w.document.addEventListener('DOMContentLoaded', () => {
     appElement.connect({
       path: path,
       routeType: 'path',
+      onStartedLazyDefineComponent: [...componentFactories, ...pageFactories],
       container: container,
       window: w
     });

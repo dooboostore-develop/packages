@@ -1,12 +1,12 @@
 import { ReflectUtils } from '@dooboostore/core';
 import { getElementConfig, ensureInit } from './elementDefine';
 import { SwcUtils } from '../utils/Utils';
-import { SpecialSelector, SwcQueryOptions } from '../types';
+import { SpecialSelector, SwcQueryOptions, HelperHostSet } from '../types';
 
 export interface QueryMetadata {
   propertyKey: string | symbol;
   selector: string;
-  options: SwcQueryOptions;
+  options: SwcQueryOptions ;
 }
 
 export const QUERY_METADATA_KEY = Symbol.for('simple-web-component:query');

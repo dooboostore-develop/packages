@@ -1,6 +1,6 @@
-import { SimpleApplication } from '@dooboostore/simple-boot/SimpleApplication';
+import { SimpleApplication } from '@dooboostore/simple-boot';
 import { Router } from '@dooboostore/core-web';
-import {SwcAttributeConfigType, SwcConfigType} from "./SwcAppEngine";
+import {SwcAttributeConfigType, SwcConfigType} from "../SwcAppEngine";
 
 export enum InjectSituationType {
   HOST_SET = 'SIMPLE_WEB_COMPONENT://HOSTSET',
@@ -50,14 +50,7 @@ export type SwcAppMessage<T = any> = {
   type?: string;
 };
 
-export interface SwcChooseInterface extends HTMLTemplateElement {
-  value: any;
-  refresh(a: any): void;
-}
-export interface SwcIfInterface extends HTMLTemplateElement {
-  value: any;
-  refresh(): void;
-}
+
 export interface SwcAppInterface extends HTMLElement {
   simpleApplication?: SimpleApplication;
   config?:  SwcConfigType;
@@ -71,11 +64,11 @@ export interface SwcAppInterface extends HTMLElement {
 }
 
 export interface SwcElement {
-  // _swcId: string;
-  createSlotString(id: string): string
-  createEaHtml(id: string, script: string): string
-  createEaText(id: string, script: string): string
-  createEaAttribute(id: string, attributeName: string): string
-  createEaEvent(id: string, eventName: string): string
-  createEaProperty(id: string, propertyName: string): string
+  _swcId: string;
+  // createSlotString(id: string): string
+  // createEaHtml(id: string, script: string): string
+  // createEaText(id: string, script: string): string
+  // createEaAttribute(id: string, attributeName: string): string
+  // createEaEvent(id: string, eventName: string): string
+  // createEaProperty(id: string, propertyName: string): string
 }

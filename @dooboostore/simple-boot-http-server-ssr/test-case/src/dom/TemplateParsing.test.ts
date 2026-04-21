@@ -2,7 +2,7 @@ import {describe, test} from 'node:test';
 import assert from 'node:assert/strict';
 import {DomParser} from '@dooboostore/dom-parser';
 import register, {onConnectedSwcApp, elementDefine, onConnectedInnerHtml, setAttribute, subscribeSwcAppRouteChangeWhileConnected, SwcAppInterface, SwcUtils, query, type SwcChooseInterface, changedAttributeThis} from '@dooboostore/simple-web-component';
-import {tagName} from "../../../test-swc/src/pages/index.route";
+import {tagName} from "../../../test-swc/src/pages/indexRoute";
 import {Router, type RouterEventType} from '@dooboostore/core-web'
 import {inject} from "@dooboostore/simple-boot/decorators/inject/Inject";
 import {UserService} from "../../../test-swc/src/services/UserService";

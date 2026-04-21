@@ -1,6 +1,6 @@
-import {onConnectedBefore, elementDefine, onConnectedInnerHtml, addEventListener, applyInnerHtmlNode, applyNodeThis, attributeThis, onInitialize } from '@dooboostore/simple-web-component';
-import { Inject } from '@dooboostore/simple-boot';
-import { StockService, Stock } from '../services/StockService';
+import {applyNodeThis, attributeThis, elementDefine, innerHtmlNode, onConnectedBefore, onConnectedShadow} from '@dooboostore/simple-web-component';
+import {Inject} from '@dooboostore/simple-boot';
+import {Stock, StockService} from '../services/StockService';
 
 export default (w: Window) => {
   const tagName = 'swc-example-stock-detail-page';
@@ -20,9 +20,8 @@ export default (w: Window) => {
     stockId: string;
 
     @onConnectedBefore
-    onconstructor(@Inject({ symbol: StockService.SYMBOL }) stockService: StockService) {
+    onconstructor(@Inject(StockService.SYMBOL) stockService: StockService) {
       this.stockService = stockService;
-
       // Load stock if stockId attribute is set
       if (this.stockId) {
         this.loadStock(this.stockId);
@@ -48,7 +47,7 @@ export default (w: Window) => {
       }, 2000);
     }
 
-    @applyInnerHtmlNode('#current-price')
+    @innerHtmlNode('#current-price')
     private updatePriceUI() {
       return `${Math.floor(this.realTimePrice).toLocaleString()}원`;
     }
@@ -58,7 +57,7 @@ export default (w: Window) => {
     }
 
     @applyNodeThis({ position: 'innerHtml' })
-    @onConnectedInnerHtml({ useShadow: true })
+    @onConnectedShadow
     render() {
       if (!this.stock) return '<div>종목을 찾을 수 없습니다.</div>';
       const { name, code, change, changePercent, description, marketCap, volume, history } = this.stock;

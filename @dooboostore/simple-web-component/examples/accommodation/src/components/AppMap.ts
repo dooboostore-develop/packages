@@ -1,5 +1,6 @@
-import { elementDefine, onConnectedInnerHtml, applyNodeThis } from '@dooboostore/simple-web-component';
-import type { Accommodation } from '../services/AccommodationService';
+import {applyNodeThis, elementDefine, onConnected} from '@dooboostore/simple-web-component';
+
+import type {Accommodation} from '../services/AccommodationService';
 
 declare const L: any; // Leaflet Global from index.html
 
@@ -83,7 +84,7 @@ export default (w: Window) => {
       }
     }
 
-    @onConnectedInnerHtml({ useShadow: true })
+    @onConnected({ useShadow: true })
     render() {
       return `
       <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />

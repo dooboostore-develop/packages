@@ -11,6 +11,9 @@ declare global {
     HTMLTemplateElement: typeof HTMLTemplateElement;
     HTMLAnchorElement: typeof HTMLAnchorElement;
     HTMLDialogElement: typeof HTMLDialogElement;
+    HTMLBodyElement: typeof HTMLBodyElement;
+    HTMLSectionElement: typeof HTMLSectionElement;
+    HTMLMainElement: typeof HTMLMainElement;
     ShadowRoot: typeof ShadowRoot;
     location: Location;
     document: Document;

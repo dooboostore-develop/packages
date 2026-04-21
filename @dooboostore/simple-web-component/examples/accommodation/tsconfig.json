@@ -6,7 +6,7 @@
     "jsx": "react-jsx",
     "declaration": false,
     "outDir": "./dist",
-    "rootDir": "./src",
+    "rootDir": "../../../",
     "strict": false,
     "noImplicitAny": false,
     "esModuleInterop": true,
@@ -22,7 +22,10 @@
     "emitDecoratorMetadata": true,
     "allowJs": true,
     "importHelpers": true,
-    "useDefineForClassFields": true
+    "useDefineForClassFields": true,
+    "paths": {
+      "@dooboostore/*": ["../../../@dooboostore/*/src/index.ts", "../../../@dooboostore/*/src"]
+    }
   },
   "include": ["src"],
   "exclude": ["node_modules", "dist"]

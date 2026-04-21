@@ -1,7 +1,7 @@
-import { onConnectedBefore, removeStyleThis, setAttributeThis, queryThis, queryAllThis, emitCustomEventThis, changedAttributeThis, toggleClassThis, applyNodeThis, attributeThis, applyNode, elementDefine, onConnectedInnerHtml, onInitialize } from '@dooboostore/simple-web-component';
+import {applyNode, attributeThis, elementDefine, onConnected, onConnectedBefore} from '@dooboostore/simple-web-component';
 import {Inject} from '@dooboostore/simple-boot';
-import { SubscriptionLike } from '@dooboostore/core';
-import { OrderService } from '../services/OrderService';
+import {SubscriptionLike} from '@dooboostore/core';
+import {OrderService} from '../services/OrderService';
 import {ProductService} from "../services/ProductService";
 import {CartService} from "../services/CartService";
 
@@ -20,8 +20,6 @@ export default (w: Window) => {
     private cartService: CartService;
     private orderService: OrderService;
 
-    @attributeThis
-    ra: string = '2';
 
     @onConnectedBefore
     onconstructor(@Inject({ symbol: ProductService.SYMBOL }) productService: ProductService, @Inject({ symbol: CartService.SYMBOL }) cartService: CartService, @Inject({ symbol: OrderService.SYMBOL }) orderService: OrderService) {
@@ -144,7 +142,7 @@ export default (w: Window) => {
       `;
     }
 
-    @onConnectedInnerHtml({ useShadow: true })
+    @onConnected({ useShadow: true })
     render() {
       return `
         <style>
