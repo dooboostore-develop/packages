@@ -15,12 +15,31 @@ const resourceFilter = new ResourceFilter(frontDistPath,
     /\.map$/,
     /\.json$/,
     '/bundle.js',
+    // {
+    //   request: (rr) => {
+    //     // API 경로는 제외 (현재는 없지만 미래를 위해)
+    //     if (RegExp('/api/.*').test(rr.reqUrlPathName)) {
+    //       return false;
+    //     }
+    //     // 정적 파일 확장자가 포함된 경로는 index.html로 보내지 않음
+    //     if (/\.(js|css|map|ico|png|jpg|jpeg|gif|json|xml|txt)$/.test(rr.reqUrlPathName)) {
+    //       return false;
+    //     }
+    //     // 그 외 모든 GET 요청은 index.html로 (SPA 라우팅)
+    //     return RegExp('/.+').test(rr.reqUrlPathName) && rr.reqMethod()?.toUpperCase() === 'GET';
+    //   },
+    //   dist: 'index.html'
+    // }
   ]
 );
 // 1. Configure the SWC SSR Filter
 const swcFilter = new SSRSimpleWebComponentDomParserFilter({
   frontDistPath: frontDistPath,
   frontDistIndexFileName: 'index.html',
+  ssrExcludeFilter: (rr) => {
+    // 정적 자원에 대해서는 SSR을 시도하지 않음
+    return /\.(js|css|map|ico|png|jpg|jpeg|gif|json|xml|txt)$/.test(rr.reqUrlPathName);
+  },
   registerComponents: async (window: any) => {
     // window.
     // 1. Register Core SWC Elements
@@ -50,3 +69,5 @@ const server = new SimpleBootHttpSSRServer(option);
 
 // 3. Run the server
 server.run();
+
+// console.log('vvvv1111vvvv')

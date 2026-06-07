@@ -40,12 +40,12 @@ export class SSRSimpleWebComponentDomParserFilter implements Filter {
     if (rr.reqHasAcceptHeader(Mimes.TextHtml) || rr.reqHasAcceptHeader(Mimes.All)) {
       const url = rr.reqUrlObj({ host: 'localhost' });
       const targetUrl = url.toString() ?? this.welcomUrl;
+      console.log('SSRSimpleWebComponentDomParserFilter start');
 
       // 1. Initialize Virtual DOM Environment
       const domParserInitializer = new DomParserInitializer(this.config.frontDistPath, this.config.frontDistIndexFileName || 'index.html', { url: targetUrl });
       const window = await domParserInitializer.run();
 
-      console.log('vvvv22aa');
       // web component 경우 자기 tagName을 생성자 에게 HTMLElementBase에넘겨줘야되기떄문에
       // const getTagName = (type: ConstructorType<any>) => {
       //   const zz = getElementConfig(type);

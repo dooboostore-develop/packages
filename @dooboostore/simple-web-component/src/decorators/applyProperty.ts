@@ -301,6 +301,7 @@ export function applyProperty(selector: PropertySelector, targetPropertyKeyOrOpt
  * 
  * Note: This decorator is for FIELDS ONLY. For methods, use @setProperty.
  */
+export function property(target: Object, propertyKey: string | symbol): void;
 export function property(target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor): PropertyDescriptor | void;
 export function property(selector: PropertySelector, targetPropertyKey: string | symbol, options?: PropertyOptions): PropertyDecorator;
 export function property(selector: PropertySelector, options?: PropertyOptions): PropertyDecorator;

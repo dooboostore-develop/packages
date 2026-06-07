@@ -3,9 +3,13 @@
   "version": "1.0.6",
   "license": "MIT",
   "type": "module",
+  "sideEffects": false,
   "main": "./dist/cjs/index.js",
   "module": "./dist/esm/index.js",
   "types": "./dist/types/index.d.ts",
+  "browser": "./dist/esm-bundle/dooboostore-lib-web.esm.js",
+  "unpkg": "./dist/umd-bundle/dooboostore-lib-web.umd.js",
+  "jsdelivr": "./dist/umd-bundle/dooboostore-lib-web.umd.js",
   "typesVersions": {
     "*": {
       "*": [
@@ -34,24 +38,28 @@
     "node"
   ],
   "exports": {
-      ".": {
-        "types": "./dist/types/index.d.ts",
-        "import": "./dist/esm/index.js",
-        "require": "./dist/cjs/index.js",
-        "default": "./dist/esm/index.js"
-      },
-      "./bundle-entry": {
-        "types": "./dist/types/bundle-entry.d.ts",
-        "import": "./dist/esm/bundle-entry.js",
-        "require": "./dist/cjs/bundle-entry.js",
-        "default": "./dist/esm/bundle-entry.js"
-      },
-      "./*": {
-        "types": "./dist/types/*.d.ts",
-        "import": "./dist/esm/*.js",
-        "require": "./dist/cjs/*.js"
-      }
+    ".": {
+      "types": "./dist/types/index.d.ts",
+      "import": "./dist/esm/index.js",
+      "require": "./dist/cjs/index.js"
     },
+    "./bundle-entry": {
+      "types": "./dist/types/bundle-entry.d.ts",
+      "import": "./dist/esm/bundle-entry.js",
+      "require": "./dist/cjs/bundle-entry.js"
+    },
+    "./cjs": {
+      "types": "./dist/types/index.d.ts",
+      "require": "./dist/cjs/index.js"
+    },
+    "./esm": {
+      "types": "./dist/types/index.d.ts",
+      "import": "./dist/esm/index.js"
+    },
+    "./umd": "./dist/umd-bundle/dooboostore-lib-web.umd.js",
+    "./esm-bundle": "./dist/esm-bundle/dooboostore-lib-web.esm.js",
+    "./package.json": "./package.json"
+  },
   "author": "dooboostore <dooboostore@gmail.com> (https://github.com/dooboostore)",
   "contributors": [
     "sewoo <sewooimda@nate.com> (https://github.com/sewoo)",

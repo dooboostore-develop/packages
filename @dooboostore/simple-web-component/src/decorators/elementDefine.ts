@@ -1,6 +1,5 @@
-import {ActionExpression, FunctionUtils, ReflectUtils} from '@dooboostore/core';
-import {Observable, Subject} from '@dooboostore/core';
-import {debounceTime, throttleTime, distinctUntilChanged} from '@dooboostore/core/message/operators';
+import {ActionExpression, FunctionUtils, ReflectUtils, Subject} from '@dooboostore/core';
+import {debounceTime, distinctUntilChanged, throttleTime} from '@dooboostore/core/message/operators';
 import {getAddEventListenerMetadata} from './addEventListener';
 import {findAllLifecycleMetadata, findAllOnConnectedAfterMetadata, findAllOnConnectedBeforeMetadata, findAllOnConnectedMetadata, ON_AFTER_ADOPTED_METADATA_KEY, ON_AFTER_DISCONNECTED_METADATA_KEY, ON_BEFORE_ADOPTED_METADATA_KEY, ON_BEFORE_DISCONNECTED_METADATA_KEY, ON_CONNECTED_COMPLETED_METADATA_KEY, ON_INITIALIZE_METADATA_KEY} from './lifecycles';
 import {getEmitCustomEventMetadataList} from './emitCustomEvent';
@@ -12,9 +11,8 @@ import {SwcUtils} from '../utils/Utils';
 import {DOM_EVENT_NAMES, HTML_TAG_ENTRIES} from '../config/config';
 import {SituationTypeContainer, SituationTypeContainers} from '@dooboostore/simple-boot/decorators/inject/Inject';
 import {HelperHostSet, HostSet, InjectSituationType} from '../types';
-import {ConvertUtils, ElementApply, NodeSlot} from '@dooboostore/core-web';
+import {ConvertUtils, ElementApply} from '@dooboostore/core-web';
 import {isSSR} from "../elements/SwcAppMixin";
-import {findAllApplySlotMetadata} from "./applySlot";
 import {findAllStateMetadata} from "./state";
 import {findAllPropertyMetadata} from "./applyProperty";
 
@@ -385,14 +383,15 @@ export const elementDefine =
           const conf = getElementConfig(this);
           const currentWin = (this as any)._resolveWindow(conf);
 
-          const bMethods = findAllOnConnectedBeforeMetadata(this).filter(it => useSsr ? !it.options.ssrFirst : true);
+          const bMethods = findAllOnConnectedBeforeMetadata(this);//.filter(it => useSsr ? !it.options.ssrFirst : true);
           // console.log('beforeConnected', bMethods)
           for (const m of bMethods) await (this as any)._invokeLifecycleMethod(m.propertyKey, helperHostSet);
           (this as any)._executeSwcScript('swc-on-before-connected', helperHostSet);
 
           // console.log('vvvvvvvvvvvvvvvu-seSsr-vvvvvvvvvv>', useSsr, this.tagName, this.getAttribute('seq'))
           //   // ssr 처리라서 이미 내려준거그대로 상요하면된다 따라서 호출안한다
-          const targetConnectedList = findAllOnConnectedMetadata(constructor).filter(it => useSsr ? !it.options.ssrFirst : true);
+          // const targetConnectedList = findAllOnConnectedMetadata(constructor).filter(it => useSsr ? !it.options.ssrFirst : true);
+          const targetConnectedList = useSsr ? [] : findAllOnConnectedMetadata(constructor);
           const shadowMode = conf?.useShadow || targetConnectedList.find(it => it.options.useShadow)?.options.useShadow;
           // console.log('--------->', this.tagName, shadowMode && !this.shadowRoot)
           if (shadowMode && !this.shadowRoot) {
@@ -655,9 +654,7 @@ export const elementDefine =
 
           if (originalConnected) await (originalConnected.apply(this));
 
-          const aMethods = findAllOnConnectedAfterMetadata(this).filter(it => {
-            return useSsr ? !it.options.ssrFirst : true;
-          });
+          const aMethods = findAllOnConnectedAfterMetadata(this); //.filter(it => { return useSsr ? !it.options.ssrFirst : true; });
           // console.log('afterConnected', this.tagName, aMethods,  getOnConnectedAfterMetadata(this))
           for (const m of aMethods) await (this as any)._invokeLifecycleMethod(m.propertyKey, helperHostSet);
           (this as any)._executeSwcScript('swc-on-connected', helperHostSet);

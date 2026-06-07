@@ -1,7 +1,7 @@
 import { Inject } from '@dooboostore/simple-boot/decorators/inject/Inject';
 
 console.log('rootstart');
-import swcRegister, { addEventListener, elementDefine, HostSet, InjectSituationType, onConnectedInnerHtml, onAdopted, onConnected, onDisconnected, query } from '@dooboostore/simple-web-component';
+import swcRegister, { addEventListener, elementDefine, HostSet, InjectSituationType, onConnectedInnerHtml, onAdopted, onConnectedBody, onDisconnected, query } from '@dooboostore/simple-web-component';
 
 swcRegister(window);
 import { SimpleApplication } from '@dooboostore/simple-boot/SimpleApplication';
@@ -121,7 +121,7 @@ class TestComponent extends HTMLElement {
     console.log('TestComponent onDisconnected', hostSet, router);
   }
 
-  @onConnected
+  @onConnectedBody
   good(@Inject({ situationType: InjectSituationType.HOST_SET }) hostSet: HostSet, @Inject({ type: WebRouter }) router: WebRouter) {
     console.log('TestComponent onConnected', hostSet, router);
   }

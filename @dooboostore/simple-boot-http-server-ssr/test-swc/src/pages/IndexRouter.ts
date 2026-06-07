@@ -1,122 +1,103 @@
 import {
-  setAttribute,
-  publishSwcAppMessage,
-  subscribeSwcAppMessageWhileConnected,
-  type SwcAppMessage,
-  changedAttribute,
-  applyNode,
-  addEventListenerThis,
-  emitCustomEventThis,
-  updateClass,
-  innerHtml,
-  addEventListener,
-  applyNodeThis,
-  attributeThis,
-  query,
-  replaceChildrenNodeThis,
-  onConnected,
   elementDefine,
+  onConnectedBodyShadow,
   onConnectedBefore,
-  setProperty,
   subscribeSwcAppRouteChangeWhileConnected,
-  SwcChooseInterface,
-  SwcUtils,
-  innerHtmlLightNodeThis, replaceChildrenLightNodeThis, htmlFragment
+  replaceChildrenLight,
+  htmlFragment, onInitialize
 } from '@dooboostore/simple-web-component';
 import { Router, type RouterEventType } from '@dooboostore/core-web';
-import {IndexRoute} from "./indexRoute";
-import {UserRoute} from "./userRoute";
+import { IndexRoute } from './indexRoute';
+import { UserRoute } from './userRoute';
 
 export const tagName = 'index-router';
+
 export default (w: Window) => {
-  const routePaths = ['/', '/user', '/{other:.*}'];
   const existing = w.customElements.get(tagName);
   if (existing) return tagName;
-  @elementDefine('index-router', { window: w })
+
+  @elementDefine(tagName, { window: w })
   class IndexRouterImp extends w.HTMLElement {
     private router?: Router;
 
-
-    constructor() {
-      super();
-      console.log('index.router constructor called');
+    @onInitialize
+    onInit(router: Router) {
+      this.router = router;
     }
 
     @onConnectedBefore
-    async onConnectedSwcApp(router: Router
-                            // , @inject(UserService.SYMBOL) gg: UserService
-    ) {
-      this.router = router;
-      // this.titlea(new Date().toISOString());
-      // await Promises.sleep(0);
-      // gg?.sayHello();
-      // console.log('vvvvvvvvvvvvvvvvvvvvv', gg);
-
-      // console.log('index.router onConnectedSwcApp', router.value);
+    async onConnectedSwcApp() {
+      console.log('[test-swc] IndexRouter connected (SSR)');
     }
 
-    @setAttribute('#title', 'value')
-    titlea(title: string) {
-      return title;
+    @replaceChildrenLight
+    @subscribeSwcAppRouteChangeWhileConnected(['', '/'])
+    handleHome() {
+      console.log('[test-swc] IndexRouter handleHome');
+      return IndexRoute(w);
     }
 
-    @setAttribute('#url-text', 'value')
+    @replaceChildrenLight
+    @subscribeSwcAppRouteChangeWhileConnected('/user')
+    handleUser() {
+      console.log('[test-swc] IndexRouter handleUser');
+      return UserRoute(w);
+    }
+
+    @replaceChildrenLight
+    @subscribeSwcAppRouteChangeWhileConnected(['/{tail:.*}'], { order: 999 })
+    handle404(routerPathSet: RouterEventType) {
+      console.log('[test-swc] IndexRouter handle404:', routerPathSet.path);
+      return htmlFragment(`
+        <div style="padding: 40px; text-align: center;">
+          <h1 style="font-size: 64px; color: #ff385c;">404</h1>
+          <p>Page Not Found: ${routerPathSet.path}</p>
+          <button swc-on-click="$host.go('/')" style="margin-top: 20px; padding: 10px 20px; border-radius: 8px; border: none; background: #222; color: white; cursor: pointer;">Go Home</button>
+        </div>
+      `, w.document);
+    }
+
     go(url: string) {
+      console.log('------>', url)
       this.router?.go(url);
-      return url;
     }
 
-    static get observedAttributes() {
-      return ['c', 'l'];
-    }
-
-    attributeChangedCallback(na: any, o: any, n: any) {
-      // console.log('-----------------index.router attr origin', na, o, n);
-    }
-
-    @changedAttribute('c')
-    tt22(tt: any) {
-      // console.log('----->', tt);
-    }
-
-    @subscribeSwcAppRouteChangeWhileConnected(routePaths)
-    @replaceChildrenLightNodeThis
-    async routeChanged(router: RouterEventType) {
-      console.log('rrrrrrrrrrrr', router);
-      if (['','/'].includes(router.path)) {
-        return IndexRoute(w);
-      } else if (['/user'].includes(router.path)) {
-        return UserRoute(w)
-      } else {
-        return htmlFragment(`<div class="aa-error">
-        <i class="fa-solid fa-compass aa-error-icon" aria-hidden="true"></i>
-        <h1>404</h1>
-        <p>요청한 경로가 없습니다.</p>
-        `, w.document)
-      }
-    }
-
-    connectedCallback(){
-      // console.log('index.router render  innerhtml origin');
-    };
-    @onConnected({ ssrFirst: true, useShadow: true })
+    @onConnectedBodyShadow
     render() {
+      console.log('vvvvvvvvvvvvvvv')
       return `
-      <div>
-        <h1>Hello from Simple Web Component SSR!</h1>
-        <p><input id="title" type="text"></p>
-        <p><input id="url-text" type="text"></p>
-      <nav>
-        <button swc-on-click="$host.go('/')">/</button>
-        <button swc-on-click="$host.go('/user')">/user</button>
-      </nav>
-      <section>
+      <style>
+        :host { display: block; min-height: 100vh; background: #f7f7f7; }
+        header { 
+          display: flex; 
+          align-items: center; 
+          justify-content: space-between; 
+          padding: 0 40px; 
+          height: 80px; 
+          background: #fff; 
+          border-bottom: 1px solid #eee; 
+          position: sticky; 
+          top: 0; 
+          z-index: 10;
+        }
+        .logo { font-size: 24px; font-weight: 800; color: #ff385c; cursor: pointer; }
+        nav { display: flex; gap: 24px; }
+        nav button { background: none; border: none; font-size: 16px; font-weight: 600; cursor: pointer; color: #222; }
+        nav button:hover { color: #ff385c; }
+        main { padding: 40px; }
+      </style>
+      <header>
+        <div class="logo" swc-on-click="$host.go('/')">SWC-SSR</div>
+        <nav>
+          <button swc-on-click="$host.go('/')">Home</button>
+          <button swc-on-click="$host.go('/user')">Users</button>
+        </nav>
+      </header>
+      <main>
         <slot></slot>
-      </section>
-      </div>
+      </main>
     `;
     }
-
   }
 
   return tagName;

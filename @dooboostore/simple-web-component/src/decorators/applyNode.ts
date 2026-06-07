@@ -95,7 +95,9 @@ const applyToDom = (currentThis: any, targetEl: HTMLElement, res: Node | string,
 
   const nodes: Node[] = [];
 
-  if (typeof res === 'string' && pos === 'innerHtml') {
+  if (res instanceof win.Node) {
+    nodes.push(res);
+  } else if (typeof res === 'string' && pos === 'innerHtml') {
     const t = win.document.createElement('template');
     t.innerHTML = res;
     nodes.push(...Array.from(t.content.childNodes));

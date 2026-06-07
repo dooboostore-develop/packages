@@ -224,8 +224,25 @@ export class TradeChart {
   private minVisibleCount: number = 5;
   private isDragging: boolean = false;
   private lastMouseX: number = 0;
+  private lastMouseY: number = 0;
   private lastTouchX: number = 0;
+  private lastTouchY: number = 0;
   private lastPinchDist: number | null = null;
+
+  // Manual Scaling State
+  private yRanges: Map<string, { min: number; max: number; isAuto: boolean }> =
+    new Map();
+  private isScalingY: boolean = false;
+  private scalingYType: string | null = null;
+  private draggingChartType: string | null = null;
+  private isScalingX: boolean = false;
+  private currentChartPositions: {
+    type: string;
+    top: number;
+    height: number;
+    priceMin: number;
+    priceMax: number;
+  }[] = [];
 
   private eventSubject = new Subject<{
     type: "zoom" | "pan" | "click";
@@ -718,31 +735,96 @@ export class TradeChart {
     this.resizeObserver.observe(this.canvas);
 
     this.canvas.addEventListener("mousemove", (e) => {
-      if (this.config.enableZoom && this.isDragging) {
-        this.handleDrag(e.clientX);
+      const rect = this.canvas.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+
+      if (this.config.enableZoom) {
+        if (this.isScalingY && this.scalingYType) {
+          this.handleYScale(e.clientY);
+        } else if (this.isScalingX) {
+          this.handleXScale(e.clientX);
+        } else if (this.isDragging) {
+          this.handleDrag(e.clientX, e.clientY);
+        }
       }
       this.handleMouseMove(e);
     });
+
     this.canvas.addEventListener("mousedown", (e) => {
       if (!this.config.enableZoom) return;
       const rect = this.canvas.getBoundingClientRect();
       const x = e.clientX - rect.left;
       const y = e.clientY - rect.top;
-      if (x < this.padding.left || x > this.width - this.padding.right) return;
-      if (y < this.padding.top || y > this.height - this.padding.bottom) return;
-      this.isDragging = true;
+
       this.lastMouseX = e.clientX;
+      this.lastMouseY = e.clientY;
+
+      // Identify region
+      const chart = this.getChartAtY(y);
+      const isYAxis =
+        x < this.padding.left || x > this.width - this.padding.right;
+      const isXAxis =
+        chart === null &&
+        y > this.padding.top &&
+        y > this.height - this.padding.bottom;
+
+      if (isYAxis && chart) {
+        this.isScalingY = true;
+        this.scalingYType = chart.type;
+        const range = this.yRanges.get(chart.type);
+        if (range) range.isAuto = false;
+      } else if (isXAxis || (y > this.height - this.padding.bottom && x > this.padding.left && x < this.width - this.padding.right)) {
+        this.isScalingX = true;
+      } else if (x >= this.padding.left && x <= this.width - this.padding.right) {
+        if (chart) {
+          this.isDragging = true;
+          this.draggingChartType = chart.type;
+        }
+      }
     });
+
     this.canvas.addEventListener("mouseup", () => {
       this.isDragging = false;
+      this.isScalingY = false;
+      this.isScalingX = false;
+      this.scalingYType = null;
+      this.draggingChartType = null;
     });
+
     this.canvas.addEventListener("mouseleave", () => {
       this.isDragging = false;
+      this.isScalingY = false;
+      this.isScalingX = false;
+      this.scalingYType = null;
+      this.draggingChartType = null;
       this.handleMouseLeave();
     });
-    this.canvas.addEventListener("click", (e) => {
-      if (!this.isDragging) this.handleClick(e);
+
+    this.canvas.addEventListener("dblclick", (e) => {
+      const rect = this.canvas.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+
+      if (x < this.padding.left || x > this.width - this.padding.right) {
+        const chart = this.getChartAtY(y);
+        if (chart) {
+          const range = this.yRanges.get(chart.type);
+          if (range) {
+            range.isAuto = true;
+            this.draw();
+          }
+        }
+      } else if (y > this.height - this.padding.bottom) {
+        // Reset X-axis zoom? Maybe?
+      }
     });
+
+    this.canvas.addEventListener("click", (e) => {
+      if (!this.isDragging && !this.isScalingY && !this.isScalingX)
+        this.handleClick(e);
+    });
+
     this.canvas.addEventListener("wheel", (e) => this.handleWheel(e), {
       passive: false,
     });
@@ -758,21 +840,101 @@ export class TradeChart {
     this.canvas.addEventListener("touchend", () => this.handleTouchEnd());
   }
 
+  private getChartAtY(y: number) {
+    return (
+      this.currentChartPositions.find(
+        (p) => y >= p.top && y <= p.top + p.height,
+      ) || null
+    );
+  }
+
+  private handleYScale(clientY: number) {
+    if (!this.scalingYType) return;
+    const deltaY = clientY - this.lastMouseY;
+    this.lastMouseY = clientY;
+
+    const range = this.yRanges.get(this.scalingYType);
+    if (!range) return;
+
+    const currentRange = range.max - range.min || 1;
+    // Dragging down usually stretches (zooms in), dragging up compresses (zooms out) in some apps, 
+    // but in TradingView dragging DOWN on Y-axis compresses (zooms out) and UP stretches (zooms in).
+    // Let's follow TradingView: drag up = zoom in, drag down = zoom out.
+    // clientY increases downwards. So deltaY > 0 means dragging down.
+    const factor = 1 + deltaY / 200; 
+    const mid = (range.max + range.min) / 2;
+
+    const newRange = currentRange * factor;
+    range.min = mid - newRange / 2;
+    range.max = mid + newRange / 2;
+    this.draw();
+  }
+
+  private handleXScale(clientX: number) {
+    const deltaX = clientX - this.lastMouseX;
+    this.lastMouseX = clientX;
+
+    const factor = 1 - deltaX / 200;
+    let newCount = this.visibleDataCount * factor;
+    newCount = Math.max(
+      this.minVisibleCount,
+      Math.min(this.data.length, newCount),
+    );
+
+    this.updateVisibleRange(this.visibleStartIndex, newCount);
+    this.draw();
+    this.publishEvent("zoom");
+  }
+
   private handleWheel(e: WheelEvent) {
     if (!this.config.enableZoom) return;
     const rect = this.canvas.getBoundingClientRect();
     const mouseX = e.clientX - rect.left;
     const mouseY = e.clientY - rect.top;
-    if (mouseX < this.padding.left || mouseX > this.width - this.padding.right)
-      return;
-    if (mouseY < this.padding.top || mouseY > this.height - this.padding.bottom)
-      return;
 
     e.preventDefault();
     if (this.data.length === 0) return;
+
+    const isYAxis =
+      mouseX < this.padding.left || mouseX > this.width - this.padding.right;
+    const isXAxis = mouseY > this.height - this.padding.bottom;
+    const chart = this.getChartAtY(mouseY);
+
     const zoomIntensity = 0.1;
     const direction = e.deltaY > 0 ? 1 : -1;
     const zoomFactor = 1 + direction * zoomIntensity;
+
+    if (isYAxis && chart) {
+      const range = this.yRanges.get(chart.type);
+      if (range) {
+        range.isAuto = false;
+        const mid = (range.max + range.min) / 2;
+        const newRange = (range.max - range.min) * zoomFactor;
+        range.min = mid - newRange / 2;
+        range.max = mid + newRange / 2;
+        this.draw();
+      }
+    } else if (isXAxis) {
+      this.zoomX(zoomFactor, mouseX);
+    } else if (chart) {
+      // Chart Area: Zoom both X and Y
+      this.zoomX(zoomFactor, mouseX);
+      const range = this.yRanges.get(chart.type);
+      if (range) {
+        // Zoom Y centered at mouse cursor
+        const currentRange = range.max - range.min;
+        const mouseRelativeY = (mouseY - chart.top) / chart.height; // 0 at top, 1 at bottom
+        const valAtMouse = range.max - mouseRelativeY * currentRange;
+
+        const newRange = currentRange * zoomFactor;
+        range.min = valAtMouse - (1 - mouseRelativeY) * newRange;
+        range.max = valAtMouse + mouseRelativeY * newRange;
+        this.draw();
+      }
+    }
+  }
+
+  private zoomX(zoomFactor: number, mouseX: number) {
     const chartWidth = this.width - this.padding.left - this.padding.right;
     const mouseRatio = Math.max(
       0,
@@ -791,10 +953,13 @@ export class TradeChart {
     this.publishEvent("zoom");
   }
 
-  private handleDrag(clientX: number) {
+  private handleDrag(clientX: number, clientY: number) {
     if (this.data.length === 0) return;
     const deltaX = clientX - this.lastMouseX;
+    const deltaY = clientY - this.lastMouseY;
     this.lastMouseX = clientX;
+    this.lastMouseY = clientY;
+
     const chartWidth = this.width - this.padding.left - this.padding.right;
     const deltaIndex = (deltaX / chartWidth) * this.visibleDataCount;
     this.updateVisibleRange(
@@ -802,6 +967,21 @@ export class TradeChart {
       this.visibleDataCount,
       true,
     );
+
+    // Pan Y for the chart that is being dragged (if it's not in auto mode)
+    if (this.draggingChartType) {
+      const p = this.currentChartPositions.find(pos => pos.type === this.draggingChartType);
+      if (p) {
+        const range = this.yRanges.get(p.type);
+        if (range && !range.isAuto) {
+          const currentRange = range.max - range.min;
+          const deltaVal = (deltaY / p.height) * currentRange;
+          range.min += deltaVal;
+          range.max += deltaVal;
+        }
+      }
+    }
+
     this.draw();
     this.publishEvent("pan");
   }
@@ -812,10 +992,33 @@ export class TradeChart {
     if (e.touches.length === 1) {
       const x = e.touches[0].clientX - rect.left;
       const y = e.touches[0].clientY - rect.top;
-      if (x < this.padding.left || x > this.width - this.padding.right) return;
-      if (y < this.padding.top || y > this.height - this.padding.bottom) return;
-      this.isDragging = true;
+
       this.lastTouchX = e.touches[0].clientX;
+      this.lastTouchY = e.touches[0].clientY;
+      this.lastMouseX = e.touches[0].clientX;
+      this.lastMouseY = e.touches[0].clientY;
+
+      const chart = this.getChartAtY(y);
+      const isYAxis =
+        x < this.padding.left || x > this.width - this.padding.right;
+      const isXAxis =
+        chart === null &&
+        y > this.padding.top &&
+        y > this.height - this.padding.bottom;
+
+      if (isYAxis && chart) {
+        this.isScalingY = true;
+        this.scalingYType = chart.type;
+        const range = this.yRanges.get(chart.type);
+        if (range) range.isAuto = false;
+      } else if (isXAxis || (y > this.height - this.padding.bottom && x > this.padding.left && x < this.width - this.padding.right)) {
+        this.isScalingX = true;
+      } else {
+        this.isDragging = true;
+        if (chart) {
+          this.draggingChartType = chart.type;
+        }
+      }
     } else if (e.touches.length === 2) {
       const x1 = e.touches[0].clientX - rect.left,
         y1 = e.touches[0].clientY - rect.top;
@@ -823,11 +1026,10 @@ export class TradeChart {
         y2 = e.touches[1].clientY - rect.top;
       const cx = (x1 + x2) / 2,
         cy = (y1 + y2) / 2;
-      if (cx < this.padding.left || cx > this.width - this.padding.right)
-        return;
-      if (cy < this.padding.top || cy > this.height - this.padding.bottom)
-        return;
+
       this.isDragging = false;
+      this.isScalingY = false;
+      this.isScalingX = false;
       const dx = e.touches[0].clientX - e.touches[1].clientX,
         dy = e.touches[0].clientY - e.touches[1].clientY;
       this.lastPinchDist = Math.sqrt(dx * dx + dy * dy);
@@ -837,40 +1039,40 @@ export class TradeChart {
   private handleTouchMove(e: TouchEvent) {
     if (!this.config.enableZoom) return;
     if (e.cancelable) e.preventDefault();
-    if (e.touches.length === 1 && this.isDragging) {
-      const clientX = e.touches[0].clientX;
-      const deltaX = clientX - this.lastTouchX;
-      this.lastTouchX = clientX;
-      const chartWidth = this.width - this.padding.left - this.padding.right;
-      const deltaIndex = (deltaX / chartWidth) * this.visibleDataCount;
-      this.updateVisibleRange(
-        this.visibleStartIndex - deltaIndex,
-        this.visibleDataCount,
-        true,
-      );
-      this.draw();
-      this.publishEvent("pan");
+    if (e.touches.length === 1) {
+      if (this.isScalingY && this.scalingYType) {
+        this.handleYScale(e.touches[0].clientY);
+      } else if (this.isScalingX) {
+        this.handleXScale(e.touches[0].clientX);
+      } else if (this.isDragging) {
+        this.handleDrag(e.touches[0].clientX, e.touches[0].clientY);
+      }
     } else if (e.touches.length === 2 && this.lastPinchDist !== null) {
       const dx = e.touches[0].clientX - e.touches[1].clientX,
         dy = e.touches[0].clientY - e.touches[1].clientY;
       const dist = Math.sqrt(dx * dx + dy * dy);
       const zoomFactor = this.lastPinchDist / dist;
       const cx = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+      const cy = (e.touches[0].clientY + e.touches[1].clientY) / 2;
       const rect = this.canvas.getBoundingClientRect();
-      const chartWidth = this.width - this.padding.left - this.padding.right;
-      const centerRatio = Math.max(
-        0,
-        Math.min(1, (cx - rect.left - this.padding.left) / chartWidth),
-      );
-      const currentCount = this.visibleDataCount;
-      let newCount = currentCount * zoomFactor;
-      newCount = Math.max(
-        this.minVisibleCount,
-        Math.min(this.data.length, newCount),
-      );
-      const indexAtCenter = this.visibleStartIndex + currentCount * centerRatio;
-      let newStartIndex = indexAtCenter - newCount * centerRatio;
-      this.updateVisibleRange(newStartIndex, newCount);
+
+      // Pinch zoom: Scale both X and Y if in chart area
+      this.zoomX(zoomFactor, cx - rect.left);
+
+      const chart = this.getChartAtY(cy - rect.top);
+      if (chart) {
+        const range = this.yRanges.get(chart.type);
+        if (range) {
+          range.isAuto = false;
+          const currentRange = range.max - range.min;
+          const mouseRelativeY = (cy - rect.top - chart.top) / chart.height;
+          const valAtCenter = range.max - mouseRelativeY * currentRange;
+          const newRange = currentRange * zoomFactor;
+          range.min = valAtCenter - (1 - mouseRelativeY) * newRange;
+          range.max = valAtCenter + mouseRelativeY * newRange;
+        }
+      }
+
       this.lastPinchDist = dist;
       this.draw();
       this.publishEvent("zoom");
@@ -879,6 +1081,10 @@ export class TradeChart {
 
   private handleTouchEnd() {
     this.isDragging = false;
+    this.isScalingY = false;
+    this.isScalingX = false;
+    this.scalingYType = null;
+    this.draggingChartType = null;
     this.lastPinchDist = null;
   }
 
@@ -1862,17 +2068,19 @@ export class TradeChart {
     ctx.fillStyle = "#ffffff";
     ctx.fillRect(0, 0, width, height);
 
+    this.currentChartPositions = [];
+
     const basePriceVisible = renderData[0].close;
-    let priceMin = Infinity,
-      priceMax = -Infinity;
+    let priceMinAuto = Infinity,
+      priceMaxAuto = -Infinity;
     renderData.forEach((d) => {
       // 캔들의 High, Low 포함
-      priceMin = Math.min(priceMin, d.low);
-      priceMax = Math.max(priceMax, d.high);
+      priceMinAuto = Math.min(priceMinAuto, d.low);
+      priceMaxAuto = Math.max(priceMaxAuto, d.high);
       d.ma.forEach((maData) => {
         if (maData.close !== undefined && isFinite(maData.close)) {
-          priceMin = Math.min(priceMin, maData.close);
-          priceMax = Math.max(priceMax, maData.close);
+          priceMinAuto = Math.min(priceMinAuto, maData.close);
+          priceMaxAuto = Math.max(priceMaxAuto, maData.close);
         }
       });
     });
@@ -1883,41 +2091,76 @@ export class TradeChart {
     if (priceBBConfig) {
       bbData = this.calculateBollingerBands(renderData, "price", priceBBConfig);
       bbData.upper.forEach((v) => {
-        if (v !== null && isFinite(v)) priceMax = Math.max(priceMax, v);
+        if (v !== null && isFinite(v)) priceMaxAuto = Math.max(priceMaxAuto, v);
       });
       bbData.lower.forEach((v) => {
-        if (v !== null && isFinite(v)) priceMin = Math.min(priceMin, v);
+        if (v !== null && isFinite(v)) priceMinAuto = Math.min(priceMinAuto, v);
       });
     }
 
-    // 패딩 적용 전 순수 데이터 범위 (분모용)
-    const priceDataRange = priceMax - priceMin || 1;
+    // Auto range with padding
+    const priceRangeAuto = priceMaxAuto - priceMinAuto || 1;
+    priceMinAuto -= priceRangeAuto * 0.1;
+    priceMaxAuto += priceRangeAuto * 0.1;
 
-    const priceRange = priceMax - priceMin || 1;
-    priceMin -= priceRange * 0.1;
-    priceMax += priceRange * 0.1;
+    let priceRangeObj = this.yRanges.get("price");
+    if (!priceRangeObj || priceRangeObj.isAuto) {
+      priceRangeObj = {
+        min: priceMinAuto,
+        max: priceMaxAuto,
+        isAuto: true,
+      };
+      this.yRanges.set("price", priceRangeObj);
+    }
+    const priceMin = priceRangeObj.min;
+    const priceMax = priceRangeObj.max;
 
-    let volMax = 0;
-    renderData.forEach((d) => {
-      if (d.volume > volMax) volMax = d.volume;
+    this.currentChartPositions.push({
+      type: "price",
+      top: priceChartTop,
+      height: priceChartHeight,
+      priceMin,
+      priceMax,
     });
-    volMax = volMax || 1;
 
-    let obvMin = Infinity,
-      obvMax = -Infinity;
+    let volMaxAuto = 0;
+    renderData.forEach((d) => {
+      if (d.volume > volMaxAuto) volMaxAuto = d.volume;
+    });
+    volMaxAuto = volMaxAuto || 1;
+    const volMaxWithPadding = volMaxAuto * 1.1;
+
+    let volRangeObj = this.yRanges.get("volume");
+    if (!volRangeObj || volRangeObj.isAuto) {
+      volRangeObj = { min: 0, max: volMaxWithPadding, isAuto: true };
+      this.yRanges.set("volume", volRangeObj);
+    }
+    const volMax = volRangeObj.max;
+    const volMin = volRangeObj.min;
+
+    let obvMinAuto = Infinity,
+      obvMaxAuto = -Infinity;
     renderData.forEach((d) => {
       if (d.obv?.value !== undefined) {
-        obvMin = Math.min(obvMin, d.obv.value);
-        obvMax = Math.max(obvMax, d.obv.value);
+        obvMinAuto = Math.min(obvMinAuto, d.obv.value);
+        obvMaxAuto = Math.max(obvMaxAuto, d.obv.value);
       }
     });
-    if (!isFinite(obvMin)) {
-      obvMin = 0;
-      obvMax = 1;
+    if (!isFinite(obvMinAuto)) {
+      obvMinAuto = 0;
+      obvMaxAuto = 1;
     }
-    const obvRange = obvMax - obvMin || 1;
-    obvMin -= obvRange * 0.1;
-    obvMax += obvRange * 0.1;
+    const obvRangeAuto = obvMaxAuto - obvMinAuto || 1;
+    obvMinAuto -= obvRangeAuto * 0.1;
+    obvMaxAuto += obvRangeAuto * 0.1;
+
+    let obvRangeObj = this.yRanges.get("obv");
+    if (!obvRangeObj || obvRangeObj.isAuto) {
+      obvRangeObj = { min: obvMinAuto, max: obvMaxAuto, isAuto: true };
+      this.yRanges.set("obv", obvRangeObj);
+    }
+    const obvMin = obvRangeObj.min;
+    const obvMax = obvRangeObj.max;
 
     const startOffset =
       this.visibleStartIndex - Math.floor(this.visibleStartIndex);
@@ -1930,11 +2173,75 @@ export class TradeChart {
       priceChartHeight -
       ((v - priceMin) / (priceMax - priceMin)) * priceChartHeight;
 
+    // 패딩 적용 전 순수 데이터 범위 (분모용) - labelsOnly에서 사용됨
+    const priceDataRange = priceMaxAuto - priceMinAuto || 1;
+
+
     // --- 차트 테두리 ---
     ctx.strokeStyle = "#aaaaaa";
     ctx.lineWidth = 1;
     ctx.strokeRect(padding.left, priceChartTop, chartWidth, priceChartHeight);
-    chartPositions.forEach(({ top, height: ch }) => {
+    chartPositions.forEach(({ type, top, height: ch }) => {
+      let subMin = 0, subMax = 1;
+      if (type === "volume") {
+          subMin = 0; subMax = volMax;
+      } else if (type === "obv") {
+          subMin = obvMin; subMax = obvMax;
+      } else if (type === "vosc") {
+        const { sp, lp } = this.getVOSCParams();
+        let vMinAuto = Infinity, vMaxAuto = -Infinity;
+        const sIdx = Math.floor(this.visibleStartIndex);
+        renderData.forEach((_, i) => {
+          const val = this.calculateVOSCValue(sIdx + i, sp, lp);
+          if (val !== null) {
+            vMinAuto = Math.min(vMinAuto, val);
+            vMaxAuto = Math.max(vMaxAuto, val);
+          }
+        });
+        const absMaxAuto = Math.max(Math.abs(vMinAuto === Infinity ? 0 : vMinAuto), Math.abs(vMaxAuto === -Infinity ? 0 : vMaxAuto)) || 1;
+        const vMaxAutoPadded = absMaxAuto * 1.2;
+
+        let voscRangeObj = this.yRanges.get("vosc");
+        if (!voscRangeObj || voscRangeObj.isAuto) {
+            voscRangeObj = { min: -vMaxAutoPadded, max: vMaxAutoPadded, isAuto: true };
+            this.yRanges.set("vosc", voscRangeObj);
+        }
+        subMin = voscRangeObj.min; subMax = voscRangeObj.max;
+      } else if (type === "rsi") {
+          let rsiRangeObj = this.yRanges.get("rsi");
+          if (!rsiRangeObj || rsiRangeObj.isAuto) {
+              rsiRangeObj = { min: 0, max: 100, isAuto: true };
+              this.yRanges.set("rsi", rsiRangeObj);
+          }
+          subMin = rsiRangeObj.min; subMax = rsiRangeObj.max;
+      } else if (type === "macd") {
+          let mMinAuto = Infinity, mMaxAuto = -Infinity;
+          renderData.forEach((d) => {
+            if (d.macd) {
+              mMinAuto = Math.min(mMinAuto, d.macd.histogram, d.macd.macd, d.macd.signal);
+              mMaxAuto = Math.max(mMaxAuto, d.macd.histogram, d.macd.macd, d.macd.signal);
+            }
+          });
+          if (mMinAuto === Infinity) { mMinAuto = -1; mMaxAuto = 1; }
+          const rangeAuto = mMaxAuto - mMinAuto || 1;
+          mMinAuto -= rangeAuto * 0.1; mMaxAuto += rangeAuto * 0.1;
+
+          let macdRangeObj = this.yRanges.get("macd");
+          if (!macdRangeObj || macdRangeObj.isAuto) {
+              macdRangeObj = { min: mMinAuto, max: mMaxAuto, isAuto: true };
+              this.yRanges.set("macd", macdRangeObj);
+          }
+          subMin = macdRangeObj.min; subMax = macdRangeObj.max;
+      }
+
+      this.currentChartPositions.push({
+        type,
+        top,
+        height: ch,
+        priceMin: subMin,
+        priceMax: subMax,
+      });
+
       ctx.strokeRect(padding.left, top, chartWidth, ch);
     });
 
@@ -2001,10 +2308,7 @@ export class TradeChart {
       ctx.clip();
 
       if (type === "volume") {
-        // 볼륨 차트에 상단 여백 추가 (10%)
-        const volumeChartPadding = 0.1;
-        const vYScale = (p: number) =>
-          top + ch - (p / (100 * (1 + volumeChartPadding))) * ch;
+        const vYScale = (v: number) => top + ch - ((v - volMin) / (volMax - volMin)) * ch;
         this.drawVolumeGrid(volMax, vYScale);
 
         // Volume 볼린저 밴드 그리기
@@ -2015,27 +2319,23 @@ export class TradeChart {
             "volume",
             volumeBBConfig,
           );
-          this.drawBollingerBands(
-            xScale,
-            (v: number) =>
-              top + ch - (v / (volMax * (1 + volumeChartPadding))) * ch,
-            volumeBBData,
-          );
+          this.drawBollingerBands(xScale, vYScale, volumeBBData);
         }
 
         // Volume 막대 그리기
         renderData.forEach((d, i) => {
-          const x = xScale(i),
-            p = (d.volume / volMax) * 100;
+          const x = xScale(i);
           ctx.fillStyle =
             d.close >= d.open
               ? "rgba(211, 47, 47, 0.6)"
               : "rgba(25, 118, 210, 0.6)";
+          const y = vYScale(d.volume);
+          const zeroY = vYScale(0);
           ctx.fillRect(
             x - candleWidth / 2,
-            vYScale(p),
+            y,
             candleWidth,
-            vYScale(0) - vYScale(p),
+            Math.max(1, zeroY - y),
           );
         });
 
@@ -2052,8 +2352,7 @@ export class TradeChart {
               const volumeMA = maData?.volume;
               if (volumeMA !== undefined && volumeMA !== null) {
                 const x = xScale(i);
-                const p = (volumeMA / volMax) * 100;
-                const y = vYScale(p);
+                const y = vYScale(volumeMA);
                 if (!started) {
                   ctx.moveTo(x, y);
                   started = true;
@@ -2162,24 +2461,18 @@ export class TradeChart {
         const { sp, lp } = this.getVOSCParams();
 
         const voscValues: (number | null)[] = [];
-        let vMin = Infinity,
-          vMax = -Infinity;
         const sIdx = Math.floor(this.visibleStartIndex);
         renderData.forEach((_, i) => {
           const val = this.calculateVOSCValue(sIdx + i, sp, lp);
           voscValues.push(val);
-          if (val !== null) {
-            vMin = Math.min(vMin, val);
-            vMax = Math.max(vMax, val);
-          }
         });
-        const absMax =
-          Math.max(
-            Math.abs(vMin === Infinity ? 0 : vMin),
-            Math.abs(vMax === -Infinity ? 0 : vMax),
-          ) || 1;
+
+        const voscRangeObj = this.yRanges.get("vosc")!;
+        const vMin = voscRangeObj.min;
+        const vMax = voscRangeObj.max;
+
         const voscYScale = (v: number) =>
-          top + ch / 2 - (v / absMax) * ((ch / 2) * 0.8);
+          top + ch - ((v - vMin) / (vMax - vMin)) * ch;
 
         // VOSC 볼린저 밴드 그리기
         const voscBBConfig = this.shouldShowBollingerBands("vosc");
@@ -2197,8 +2490,9 @@ export class TradeChart {
         ctx.strokeStyle = "#dddddd";
         ctx.setLineDash([2, 2]);
         ctx.beginPath();
-        ctx.moveTo(padding.left, top + ch / 2);
-        ctx.lineTo(padding.left + chartWidth, top + ch / 2);
+        const zeroY = voscYScale(0);
+        ctx.moveTo(padding.left, zeroY);
+        ctx.lineTo(padding.left + chartWidth, zeroY);
         ctx.stroke();
         ctx.setLineDash([]);
 
@@ -2209,7 +2503,6 @@ export class TradeChart {
 
           const x = xScale(i);
           const y = voscYScale(val);
-          const zeroY = top + ch / 2;
 
           // 0 이상이면 빨강, 이하면 파랑
           ctx.fillStyle =
@@ -2232,9 +2525,6 @@ export class TradeChart {
             ctx.lineWidth = 1;
             ctx.beginPath();
             let started = false;
-
-            // VOSC 이동평균 계산을 위한 배열
-            const voscMAValues: number[] = [];
 
             renderData.forEach((_, i) => {
               const dataIndex = sIdx + i;
@@ -2270,13 +2560,18 @@ export class TradeChart {
         const rsiConfig =
           typeof config.show?.rsi === "object" ? config.show.rsi : {};
         const period = rsiConfig?.period ?? 14;
-        const signalPeriod = rsiConfig?.signalPeriod ?? 14; // Default to 14 if not set? Or typically same as period or 9? SMA on RSI often uses 14.
+        const signalPeriod = rsiConfig?.signalPeriod ?? 14; 
         const overbought = rsiConfig?.overbought ?? 70;
         const oversold = rsiConfig?.oversold ?? 30;
 
         this.calculateRSI(period, signalPeriod);
 
-        const rsiYScale = (v: number) => top + ch - (v / 100) * ch;
+        const rsiRangeObj = this.yRanges.get("rsi")!;
+        const rMin = rsiRangeObj.min;
+        const rMax = rsiRangeObj.max;
+
+        const rsiYScale = (v: number) =>
+          top + ch - ((v - rMin) / (rMax - rMin)) * ch;
 
         // RSI Grid (30/70 lines)
         ctx.strokeStyle = "#dddddd";
@@ -2391,28 +2686,9 @@ export class TradeChart {
 
         this.calculateMACD(fast, slow, signal);
 
-        // Calculate min/max for MACD scale (considering histogram, macd line, signal line)
-        let mMin = Infinity,
-          mMax = -Infinity;
-        renderData.forEach((d) => {
-          if (d.macd) {
-            mMin = Math.min(mMin, d.macd.histogram, d.macd.macd, d.macd.signal);
-            mMax = Math.max(mMax, d.macd.histogram, d.macd.macd, d.macd.signal);
-          }
-        });
-
-        if (mMin === Infinity) {
-          mMin = -1;
-          mMax = 1;
-        }
-        // Add some padding
-        const range = mMax - mMin || 1;
-        mMin -= range * 0.1;
-        mMax += range * 0.1;
-
-        // Zero-centered if possible, or just standard range?
-        // Standard MACD usually just fits data. But zero line is important.
-        // Let's ensure 0 is in range if it's close? No, standard range is fine, just draw 0 line.
+        const macdRangeObj = this.yRanges.get("macd")!;
+        const mMin = macdRangeObj.min;
+        const mMax = macdRangeObj.max;
 
         const macdYScale = (v: number) =>
           top + ch - ((v - mMin) / (mMax - mMin)) * ch;
@@ -2433,13 +2709,10 @@ export class TradeChart {
           const h = d.macd.histogram;
           const y = macdYScale(h);
 
-          // Color: Green if increasing/positive, Red if decreasing/negative?
-          // Simple: Positive = Green, Negative = Red
           ctx.fillStyle =
             h >= 0 ? "rgba(76, 175, 80, 0.5)" : "rgba(244, 67, 54, 0.5)";
 
           const barHeight = Math.abs(y - zeroY);
-          // Prevent zero-height bars drawing weirdly
           if (barHeight > 0) {
             ctx.fillRect(
               x - candleWidth / 2,
@@ -2482,6 +2755,7 @@ export class TradeChart {
         });
         ctx.stroke();
       }
+
       ctx.restore();
     });
 
@@ -2500,7 +2774,7 @@ export class TradeChart {
     ctx.fillText(this.title, width / 2, 30);
     this.drawLegend();
     this.drawSummary();
-    this.drawVerticalTitle("PRICE", priceChartTop + priceChartHeight / 2);
+    this.drawVerticalTitle("price", priceChartTop + priceChartHeight / 2);
     chartPositions.forEach(({ type, top, height: ch }) => {
       this.drawVerticalTitle(type, top + ch / 2);
     });
@@ -2511,6 +2785,8 @@ export class TradeChart {
       priceMax,
       basePriceVisible,
       priceYScale,
+      priceChartTop,
+      priceChartHeight,
       volMax,
       obvMin,
       obvMax,
@@ -2572,7 +2848,9 @@ export class TradeChart {
     pMax: number,
     bPrice: number,
     pyScale: (v: number) => number,
-    vMax: number,
+    pt: number,
+    ph: number,
+    volMax: number,
     oMin: number,
     oMax: number,
     chartPositions: Array<{
@@ -2667,15 +2945,13 @@ export class TradeChart {
 
     chartPositions.forEach(({ type, top, height: ch }) => {
       const renderData = this.getRenderData();
-
       const chartLabels = this.getYAxisLabelCount(type);
+      const range = this.yRanges.get(type)!;
+      const cMin = range.min;
+      const cMax = range.max;
 
       if (type === "volume") {
-        // 볼륨 차트 여백을 고려한 라벨 계산
-        const volumeChartPadding = 0.1;
-        const vYScale = (p: number) =>
-          top + ch - (p / (100 * (1 + volumeChartPadding))) * ch;
-
+        const vYScale = (v: number) => top + ch - ((v - cMin) / (cMax - cMin)) * ch;
         const baseVol = renderData.length > 0 ? renderData[0].volume || 1 : 1;
 
         // 현재 보이는 데이터의 volume min, max 찾기
@@ -2688,10 +2964,8 @@ export class TradeChart {
 
         for (let i = 0; i < chartLabels.left; i++) {
           const divisor = Math.max(1, chartLabels.left - 1);
-          const p = i * (100 / divisor),
-            y = vYScale(p);
-
-          const val = (p / 100) * vMax;
+          const val = cMin + (cMax - cMin) * (i / divisor),
+            y = vYScale(val);
 
           ctx.textAlign = "right";
           ctx.font = "10px Arial";
@@ -2704,10 +2978,8 @@ export class TradeChart {
 
         for (let i = 0; i < chartLabels.right; i++) {
           const divisor = Math.max(1, chartLabels.right - 1);
-          const p = i * (100 / divisor),
-            y = vYScale(p);
-
-          const val = (p / 100) * vMax;
+          const val = cMin + (cMax - cMin) * (i / divisor),
+            y = vYScale(val);
 
           // 최대값을 +100%, 최소값을 -100%로 고정
           let percentage;
@@ -2744,21 +3016,22 @@ export class TradeChart {
       } else if (type === "obv") {
         const baseOBV =
           renderData.length > 0 ? renderData[0].obv?.value || 1 : 1;
+        const oYScale = (v: number) => top + ch - ((v - cMin) / (cMax - cMin)) * ch;
 
         // 현재 보이는 데이터의 OBV min, max 찾기 (패딩 제외한 원본 값)
-        let obvMin = Infinity,
-          obvMax = -Infinity;
+        let obvMinData = Infinity,
+          obvMaxData = -Infinity;
         renderData.forEach((d) => {
           if (d.obv?.value !== undefined) {
-            obvMin = Math.min(obvMin, d.obv.value);
-            obvMax = Math.max(obvMax, d.obv.value);
+            obvMinData = Math.min(obvMinData, d.obv.value);
+            obvMaxData = Math.max(obvMaxData, d.obv.value);
           }
         });
 
         for (let i = 0; i < chartLabels.left; i++) {
           const divisor = Math.max(1, chartLabels.left - 1);
-          const v = oMin + (oMax - oMin) * (i / divisor),
-            y = top + ch - ((v - oMin) / (oMax - oMin)) * ch;
+          const v = cMin + (cMax - cMin) * (i / divisor),
+            y = oYScale(v);
 
           ctx.textAlign = "right";
           ctx.font = "10px Arial";
@@ -2771,86 +3044,29 @@ export class TradeChart {
 
         for (let i = 0; i < chartLabels.right; i++) {
           const divisor = Math.max(1, chartLabels.right - 1);
-          const v = oMin + (oMax - oMin) * (i / divisor),
-            y = top + ch - ((v - oMin) / (oMax - oMin)) * ch;
-
-          // 최대값을 +100%, 최소값을 -100%로 고정
-          let percentage;
-          if (v >= baseOBV) {
-            const maxDistance = obvMax - baseOBV || 1;
-            percentage = ((v - baseOBV) / maxDistance) * 100;
-          } else {
-            const minDistance = baseOBV - obvMin || 1;
-            percentage = -((baseOBV - v) / minDistance) * 100;
-          }
-
-          // 절대적 변화율 계산
-          const absChange =
-            baseOBV !== 0 ? ((v - baseOBV) / Math.abs(baseOBV)) * 100 : 0;
+          const v = cMin + (cMax - cMin) * (i / divisor),
+            y = oYScale(v);
 
           ctx.textAlign = "left";
           ctx.font = "10px Arial";
-          ctx.fillText(
-            `${percentage >= 0 ? "+" : ""}${percentage.toFixed(1)}%`,
-            width - padding.right + 8,
-            y - 2,
-          );
-          ctx.font = "8px Arial";
-          ctx.fillText(
-            `(${absChange >= 0 ? "+" : ""}${absChange.toFixed(1)}%)`,
-            width - padding.right + 8,
-            y + 8,
-          );
+          ctx.fillText(this.formatVolume(v), width - padding.right + 8, y + 3);
+
           ctx.beginPath();
           ctx.moveTo(width - padding.right, y);
           ctx.lineTo(width - padding.right + 4, y);
           ctx.stroke();
         }
-      } else if (type === "vosc") {
+        } else if (type === "vosc") {
         const { sp, lp } = this.getVOSCParams();
 
-        let vMin = Infinity,
-          vMax = -Infinity;
-        let firstValidVOSC: number | null = null;
-
-        renderData.forEach((_, i) => {
-          const sIdx = Math.floor(this.visibleStartIndex) + i;
-          const val = this.calculateVOSCValue(sIdx, sp, lp);
-          if (val !== null) {
-            if (firstValidVOSC === null) firstValidVOSC = val;
-            vMin = Math.min(vMin, val);
-            vMax = Math.max(vMax, val);
-          }
-        });
-
-        const absMax =
-          Math.max(
-            Math.abs(vMin === Infinity ? 0 : vMin),
-            Math.abs(vMax === -Infinity ? 0 : vMax),
-          ) || 1;
-        const voscYScale = (v: number) =>
-          top + ch / 2 - (v / absMax) * ((ch / 2) * 0.8);
-        const baseVOSC = firstValidVOSC !== null ? firstValidVOSC : 0;
+        const voscYScale = (v: number) => top + ch - ((v - cMin) / (cMax - cMin)) * ch;
 
         const pts = [
-          { v: absMax, y: voscYScale(absMax) },
-          { v: 0, y: voscYScale(0) },
-          { v: -absMax, y: voscYScale(-absMax) },
+          { v: cMax, y: voscYScale(cMax) },
+          { v: (cMax + cMin) / 2, y: voscYScale((cMax + cMin) / 2) },
+          { v: cMin, y: voscYScale(cMin) },
         ];
         pts.forEach((p) => {
-          // 최대값을 +100%, 최소값을 -100%로 고정
-          let percentage;
-          if (p.v >= baseVOSC) {
-            const maxDistance = vMax - baseVOSC || 1;
-            percentage = ((p.v - baseVOSC) / maxDistance) * 100;
-          } else {
-            const minDistance = baseVOSC - vMin || 1;
-            percentage = -((baseVOSC - p.v) / minDistance) * 100;
-          }
-
-          // 절대적 변화율 계산 (VOSC는 이미 백분율이므로 차이만 계산하거나 상황에 맞게 처리)
-          const absChange = p.v - baseVOSC;
-
           ctx.textAlign = "right";
           ctx.font = "10px Arial";
           ctx.fillText(`${p.v.toFixed(1)}%`, padding.left - 8, p.y + 3);
@@ -2861,29 +3077,19 @@ export class TradeChart {
 
           ctx.textAlign = "left";
           ctx.font = "10px Arial";
-          ctx.fillText(
-            `${percentage >= 0 ? "+" : ""}${percentage.toFixed(1)}%`,
-            width - padding.right + 8,
-            p.y - 2,
-          );
-          ctx.font = "8px Arial";
-          ctx.fillText(
-            `(${absChange >= 0 ? "+" : ""}${absChange.toFixed(1)}%)`,
-            width - padding.right + 8,
-            p.y + 8,
-          );
+          ctx.fillText(`${p.v.toFixed(1)}%`, width - padding.right + 8, p.y + 3);
           ctx.beginPath();
           ctx.moveTo(width - padding.right, p.y);
           ctx.lineTo(width - padding.right + 4, p.y);
           ctx.stroke();
         });
+
       } else if (type === "rsi") {
-        const rsiYScale = (v: number) => top + ch - (v / 100) * ch;
-        const chartLabels = this.getYAxisLabelCount(type);
+        const rsiYScale = (v: number) => top + ch - ((v - cMin) / (cMax - cMin)) * ch;
 
         for (let i = 0; i < chartLabels.left; i++) {
           const divisor = Math.max(1, chartLabels.left - 1);
-          const v = i * (100 / divisor);
+          const v = cMin + (cMax - cMin) * (i / divisor);
           const y = rsiYScale(v);
 
           ctx.textAlign = "right";
@@ -2900,20 +3106,12 @@ export class TradeChart {
 
         for (let i = 0; i < chartLabels.right; i++) {
           const divisor = Math.max(1, chartLabels.right - 1);
-          const v = i * (100 / divisor);
+          const v = cMin + (cMax - cMin) * (i / divisor);
           const y = rsiYScale(v);
-
-          const diff = v - baseRSI;
 
           ctx.textAlign = "left";
           ctx.font = "10px Arial";
-          ctx.fillText(v.toFixed(0), width - padding.right + 8, y - 2);
-          ctx.font = "8px Arial";
-          ctx.fillText(
-            `(${diff >= 0 ? "+" : ""}${diff.toFixed(1)})`,
-            width - padding.right + 8,
-            y + 8,
-          );
+          ctx.fillText(v.toFixed(0), width - padding.right + 8, y + 3);
 
           ctx.beginPath();
           ctx.moveTo(width - padding.right, y);
@@ -2921,30 +3119,12 @@ export class TradeChart {
           ctx.stroke();
         }
       } else if (type === "macd") {
-        const renderData = this.getRenderData();
-        let mMin = Infinity,
-          mMax = -Infinity;
-        renderData.forEach((d) => {
-          if (d.macd) {
-            mMin = Math.min(mMin, d.macd.histogram, d.macd.macd, d.macd.signal);
-            mMax = Math.max(mMax, d.macd.histogram, d.macd.macd, d.macd.signal);
-          }
-        });
-        if (mMin === Infinity) {
-          mMin = -1;
-          mMax = 1;
-        }
-        const range = mMax - mMin || 1;
-        mMin -= range * 0.1;
-        mMax += range * 0.1;
-
         const macdYScale = (v: number) =>
-          top + ch - ((v - mMin) / (mMax - mMin)) * ch;
-        const chartLabels = this.getYAxisLabelCount(type);
+          top + ch - ((v - cMin) / (cMax - cMin)) * ch;
 
         for (let i = 0; i < chartLabels.left; i++) {
           const divisor = Math.max(1, chartLabels.left - 1);
-          const v = mMin + (mMax - mMin) * (i / divisor);
+          const v = cMin + (cMax - cMin) * (i / divisor);
           const y = macdYScale(v);
 
           ctx.textAlign = "right";
@@ -2956,10 +3136,9 @@ export class TradeChart {
           ctx.stroke();
         }
 
-        // Right side labels (optional, maybe just mirror left)
         for (let i = 0; i < chartLabels.right; i++) {
           const divisor = Math.max(1, chartLabels.right - 1);
-          const v = mMin + (mMax - mMin) * (i / divisor);
+          const v = cMin + (cMax - cMin) * (i / divisor);
           const y = macdYScale(v);
 
           ctx.textAlign = "left";
@@ -2972,6 +3151,7 @@ export class TradeChart {
         }
       }
     });
+
 
     ctx.font = "10px Arial";
 
@@ -2995,6 +3175,10 @@ export class TradeChart {
         // 영역 채우기 (볼린저 밴드 스타일)
         if (this.shouldShowPercentageLineFill("price")) {
           ctx.save();
+          // Clipping: Only draw within the price chart area
+          ctx.beginPath();
+          ctx.rect(padding.left, pt, width - padding.left - padding.right, ph);
+          ctx.clip();
 
           // 첫번째틱에서 최대값까지 영역 (빨강)
           ctx.fillStyle = "rgba(255, 0, 0, 0.1)";
@@ -3019,8 +3203,13 @@ export class TradeChart {
 
         // 점선 그리기
         if (this.shouldShowPercentageLineLines("price")) {
-          // 첫번째값 점선 (0%)
           ctx.save();
+          // Clipping: Only draw within the price chart area
+          ctx.beginPath();
+          ctx.rect(padding.left, pt, width - padding.left - padding.right, ph);
+          ctx.clip();
+
+          // 첫번째값 점선 (0%)
           ctx.strokeStyle = "#FF00FF";
           ctx.setLineDash([4, 4]);
           ctx.lineWidth = 1;
@@ -3028,24 +3217,14 @@ export class TradeChart {
           ctx.moveTo(padding.left, firstY);
           ctx.lineTo(width - padding.right, firstY);
           ctx.stroke();
-          ctx.restore();
 
           // 최대값 점선 (+100%)
-          ctx.save();
-          ctx.strokeStyle = "#FF00FF";
-          ctx.setLineDash([4, 4]);
-          ctx.lineWidth = 1;
           ctx.beginPath();
           ctx.moveTo(padding.left, maxY);
           ctx.lineTo(width - padding.right, maxY);
           ctx.stroke();
-          ctx.restore();
 
           // 최소값 점선 (-100%)
-          ctx.save();
-          ctx.strokeStyle = "#FF00FF";
-          ctx.setLineDash([4, 4]);
-          ctx.lineWidth = 1;
           ctx.beginPath();
           ctx.moveTo(padding.left, minY);
           ctx.lineTo(width - padding.right, minY);
@@ -3059,9 +3238,11 @@ export class TradeChart {
         if (!this.shouldShowPercentageLines(type)) return;
 
         if (type === "volume") {
-          const volumeChartPadding = 0.1;
-          const vYScale = (p: number) =>
-            top + ch - (p / (100 * (1 + volumeChartPadding))) * ch;
+          const voscRangeObj = this.yRanges.get("volume")!;
+          const vMinRange = voscRangeObj.min;
+          const vMaxRange = voscRangeObj.max;
+
+          const vYScale = (v: number) => top + ch - ((v - vMinRange) / (vMaxRange - vMinRange)) * ch;
 
           const firstVol = renderData[0].volume;
           let minVol = Infinity,
@@ -3072,13 +3253,17 @@ export class TradeChart {
           });
 
           // Volume 차트 영역 채우기
-          const firstVolY = vYScale((firstVol / maxVol) * 100);
-          const maxVolY = vYScale((maxVol / maxVol) * 100);
-          const minVolY = vYScale((minVol / maxVol) * 100);
+          const firstVolY = vYScale(firstVol);
+          const maxVolY = vYScale(maxVol);
+          const minVolY = vYScale(minVol);
 
           // 영역 채우기
           if (this.shouldShowPercentageLineFill("volume")) {
             ctx.save();
+            ctx.beginPath();
+            ctx.rect(padding.left, top, width - padding.left - padding.right, ch);
+            ctx.clip();
+
             // 첫번째틱에서 최대값까지 영역 (빨강)
             ctx.fillStyle = "rgba(255, 0, 0, 0.1)";
             ctx.fillRect(
@@ -3101,8 +3286,12 @@ export class TradeChart {
 
           // Volume 차트 점선들
           if (this.shouldShowPercentageLineLines("volume")) {
+            ctx.save();
+            ctx.beginPath();
+            ctx.rect(padding.left, top, width - padding.left - padding.right, ch);
+            ctx.clip();
+
             [firstVolY, maxVolY, minVolY].forEach((y) => {
-              ctx.save();
               ctx.strokeStyle = "#FF00FF";
               ctx.setLineDash([4, 4]);
               ctx.lineWidth = 1;
@@ -3110,12 +3299,15 @@ export class TradeChart {
               ctx.moveTo(padding.left, y);
               ctx.lineTo(width - padding.right, y);
               ctx.stroke();
-              ctx.restore();
             });
+            ctx.restore();
           }
         } else if (type === "obv") {
+          const obvRangeObj = this.yRanges.get("obv")!;
+          const obvMinRange = obvRangeObj.min;
+          const obvMaxRange = obvRangeObj.max;
           const oYScale = (v: number) =>
-            top + ch - ((v - oMin) / (oMax - oMin)) * ch;
+            top + ch - ((v - obvMinRange) / (obvMaxRange - obvMinRange)) * ch;
           const firstOBV = renderData[0].obv?.value || 0;
           let minOBV = Infinity,
             maxOBV = -Infinity;
@@ -3134,6 +3326,10 @@ export class TradeChart {
           // 영역 채우기
           if (this.shouldShowPercentageLineFill("obv")) {
             ctx.save();
+            ctx.beginPath();
+            ctx.rect(padding.left, top, width - padding.left - padding.right, ch);
+            ctx.clip();
+
             // 첫번째틱에서 최대값까지 영역 (빨강)
             ctx.fillStyle = "rgba(255, 0, 0, 0.1)";
             ctx.fillRect(
@@ -3156,8 +3352,12 @@ export class TradeChart {
 
           // OBV 차트 점선들
           if (this.shouldShowPercentageLineLines("obv")) {
+            ctx.save();
+            ctx.beginPath();
+            ctx.rect(padding.left, top, width - padding.left - padding.right, ch);
+            ctx.clip();
+
             [firstOBVY, maxOBVY, minOBVY].forEach((y) => {
-              ctx.save();
               ctx.strokeStyle = "#FF00FF";
               ctx.setLineDash([4, 4]);
               ctx.lineWidth = 1;
@@ -3165,18 +3365,12 @@ export class TradeChart {
               ctx.moveTo(padding.left, y);
               ctx.lineTo(width - padding.right, y);
               ctx.stroke();
-              ctx.restore();
             });
+            ctx.restore();
           }
         } else if (type === "vosc") {
           // VOSC 값들 계산
-          let sp = 5,
-            lp = 10;
-          if (this.maPeriods.length >= 2) {
-            const s = [...this.maPeriods].sort((a, b) => a - b);
-            sp = s[0];
-            lp = s[s.length - 1];
-          }
+          const { sp, lp } = this.getVOSCParams();
 
           const voscValues: number[] = [];
           renderData.forEach((_, i) => {
@@ -3193,9 +3387,12 @@ export class TradeChart {
           if (voscValues.length > 0) {
             const minVOSC = Math.min(...voscValues);
             const maxVOSC = Math.max(...voscValues);
-            const absMax = Math.max(Math.abs(minVOSC), Math.abs(maxVOSC)) || 1;
-            const voscYScale = (v: number) =>
-              top + ch / 2 - (v / absMax) * ((ch / 2) * 0.8);
+            
+            const voscRangeObj = this.yRanges.get("vosc")!;
+            const vMinRange = voscRangeObj.min;
+            const vMaxRange = voscRangeObj.max;
+
+            const voscYScale = (v: number) => top + ch - ((v - vMinRange) / (vMaxRange - vMinRange)) * ch;
 
             const firstVOSC = voscValues[0];
 
@@ -3207,6 +3404,10 @@ export class TradeChart {
             // 영역 채우기
             if (this.shouldShowPercentageLineFill("vosc")) {
               ctx.save();
+              ctx.beginPath();
+              ctx.rect(padding.left, top, width - padding.left - padding.right, ch);
+              ctx.clip();
+
               // 첫번째틱에서 최대값까지 영역 (빨강)
               ctx.fillStyle = "rgba(255, 0, 0, 0.1)";
               ctx.fillRect(
@@ -3229,8 +3430,12 @@ export class TradeChart {
 
             // VOSC 차트 점선들 (중앙 기준)
             if (this.shouldShowPercentageLineLines("vosc")) {
+              ctx.save();
+              ctx.beginPath();
+              ctx.rect(padding.left, top, width - padding.left - padding.right, ch);
+              ctx.clip();
+
               [firstVOSCY, maxVOSCY, minVOSCY].forEach((y) => {
-                ctx.save();
                 ctx.strokeStyle = "#FF00FF";
                 ctx.setLineDash([4, 4]);
                 ctx.lineWidth = 1;
@@ -3238,8 +3443,8 @@ export class TradeChart {
                 ctx.moveTo(padding.left, y);
                 ctx.lineTo(width - padding.right, y);
                 ctx.stroke();
-                ctx.restore();
               });
+              ctx.restore();
             }
           }
         }
@@ -3860,36 +4065,36 @@ export class TradeChart {
     }
     chartPositions.forEach(({ type, top, height: ch }) => {
       if (this.mouseY && this.mouseY >= top && this.mouseY <= top + ch) {
+        const range = this.yRanges.get(type)!;
+        const cMin = range.min;
+        const cMax = range.max;
+        const valAtMouseY = cMax - ((this.mouseY - top) / ch) * (cMax - cMin);
+
         if (type === "volume") {
-          // 볼륨 차트 여백을 고려한 값 계산
-          const volumeChartPadding = 0.1;
-          const vp =
-              ((top + ch - this.mouseY) / ch) * 100 * (1 + volumeChartPadding),
-            vol = (vp / 100) * volMax;
           const baseVol = renderData[0].volume || 1;
 
           // 현재 보이는 데이터의 volume min, max 찾기
-          let volMin = Infinity,
+          let volMinData = Infinity,
             maxVolLocal = -Infinity;
           renderData.forEach((d) => {
-            volMin = Math.min(volMin, d.volume);
+            volMinData = Math.min(volMinData, d.volume);
             maxVolLocal = Math.max(maxVolLocal, d.volume);
           });
 
           // 최대값을 +100%, 최소값을 -100%로 고정
           let percentage;
-          if (vol >= baseVol) {
+          if (valAtMouseY >= baseVol) {
             const maxDistance = maxVolLocal - baseVol || 1;
-            percentage = ((vol - baseVol) / maxDistance) * 100;
+            percentage = ((valAtMouseY - baseVol) / maxDistance) * 100;
           } else {
-            const minDistance = baseVol - volMin || 1;
-            percentage = -((baseVol - vol) / minDistance) * 100;
+            const minDistance = baseVol - volMinData || 1;
+            percentage = -((baseVol - valAtMouseY) / minDistance) * 100;
           }
 
           const absChange =
-            baseVol !== 0 ? ((vol - baseVol) / baseVol) * 100 : 0;
+            baseVol !== 0 ? ((valAtMouseY - baseVol) / baseVol) * 100 : 0;
 
-          const lt = this.formatVolume(vol),
+          const lt = this.formatVolume(valAtMouseY),
             lw = ctx.measureText(lt).width + 10;
           ctx.fillStyle = bc;
           ctx.fillRect(padding.left - lw, this.mouseY - 10, lw, 20);
@@ -3911,7 +4116,6 @@ export class TradeChart {
           ctx.font = "8px Arial";
           ctx.fillText(rt2, width - padding.right + 5, this.mouseY + 9);
         } else if (type === "obv") {
-          const val = obvMax - ((this.mouseY - top) / ch) * (obvMax - obvMin);
           const baseOBV = renderData[0].obv?.value || 1;
 
           // 현재 보이는 데이터의 OBV min, max 찾기 (패딩 제외한 원본 값)
@@ -3926,18 +4130,18 @@ export class TradeChart {
 
           // 최대값을 +100%, 최소값을 -100%로 고정
           let percentage;
-          if (val >= baseOBV) {
+          if (valAtMouseY >= baseOBV) {
             const maxDistance = obvMaxData - baseOBV || 1;
-            percentage = ((val - baseOBV) / maxDistance) * 100;
+            percentage = ((valAtMouseY - baseOBV) / maxDistance) * 100;
           } else {
             const minDistance = baseOBV - obvMinData || 1;
-            percentage = -((baseOBV - val) / minDistance) * 100;
+            percentage = -((baseOBV - valAtMouseY) / minDistance) * 100;
           }
 
           const absChange =
-            baseOBV !== 0 ? ((val - baseOBV) / Math.abs(baseOBV)) * 100 : 0;
+            baseOBV !== 0 ? ((valAtMouseY - baseOBV) / Math.abs(baseOBV)) * 100 : 0;
 
-          const lt = this.formatVolume(val),
+          const lt = this.formatVolume(valAtMouseY),
             lw = ctx.measureText(lt).width + 10;
           ctx.fillStyle = bc;
           ctx.fillRect(padding.left - lw, this.mouseY - 10, lw, 20);
@@ -3960,27 +4164,19 @@ export class TradeChart {
           ctx.fillText(rt2, width - padding.right + 5, this.mouseY + 9);
         } else if (type === "vosc") {
           const { sp, lp } = this.getVOSCParams();
-          const sIdx = Math.floor(this.visibleStartIndex);
 
-          let vMin = Infinity,
-            vMax = -Infinity;
+          let vMinData = Infinity,
+            vMaxData = -Infinity;
           let firstValidVOSC: number | null = null;
           renderData.forEach((_, i) => {
             const si = Math.floor(this.visibleStartIndex) + i;
             const v = this.calculateVOSCValue(si, sp, lp);
             if (v !== null) {
               if (firstValidVOSC === null) firstValidVOSC = v;
-              vMin = Math.min(vMin, v);
-              vMax = Math.max(vMax, v);
+              vMinData = Math.min(vMinData, v);
+              vMaxData = Math.max(vMaxData, v);
             }
           });
-          const absMax =
-            Math.max(
-              Math.abs(vMin === Infinity ? 0 : vMin),
-              Math.abs(vMax === -Infinity ? 0 : vMax),
-            ) || 1;
-          const valAtMouseY =
-            (-(this.mouseY - top - ch / 2) * absMax) / ((ch / 2) * 0.8);
 
           const lt = `${valAtMouseY.toFixed(1)}%`,
             lw = ctx.measureText(lt).width + 10;
@@ -3995,10 +4191,10 @@ export class TradeChart {
           // 최대값을 +100%, 최소값을 -100%로 고정
           let percentage;
           if (valAtMouseY >= baseVOSC) {
-            const maxDistance = vMax - baseVOSC || 1;
+            const maxDistance = vMaxData - baseVOSC || 1;
             percentage = ((valAtMouseY - baseVOSC) / maxDistance) * 100;
           } else {
-            const minDistance = baseVOSC - vMin || 1;
+            const minDistance = baseVOSC - vMinData || 1;
             percentage = -((baseVOSC - valAtMouseY) / minDistance) * 100;
           }
 
@@ -4018,8 +4214,6 @@ export class TradeChart {
           ctx.font = "8px Arial";
           ctx.fillText(rt2, width - padding.right + 5, this.mouseY + 9);
         } else if (type === "rsi") {
-          const valAtMouseY = 100 - ((this.mouseY - top) / ch) * 100;
-
           const lt = `${valAtMouseY.toFixed(1)}`,
             lw = ctx.measureText(lt).width + 10;
           ctx.fillStyle = bc;
@@ -4049,34 +4243,6 @@ export class TradeChart {
           ctx.font = "8px Arial";
           ctx.fillText(rt2, width - padding.right + 5, this.mouseY + 9);
         } else if (type === "macd") {
-          let mMin = Infinity,
-            mMax = -Infinity;
-          renderData.forEach((d) => {
-            if (d.macd) {
-              mMin = Math.min(
-                mMin,
-                d.macd.histogram,
-                d.macd.macd,
-                d.macd.signal,
-              );
-              mMax = Math.max(
-                mMax,
-                d.macd.histogram,
-                d.macd.macd,
-                d.macd.signal,
-              );
-            }
-          });
-          if (mMin === Infinity) {
-            mMin = -1;
-            mMax = 1;
-          }
-          const range = mMax - mMin || 1;
-          mMin -= range * 0.1;
-          mMax += range * 0.1;
-
-          const valAtMouseY = mMax - ((this.mouseY - top) / ch) * (mMax - mMin);
-
           const lt = `${valAtMouseY.toFixed(2)}`,
             lw = ctx.measureText(lt).width + 10;
           ctx.fillStyle = bc;
@@ -4084,10 +4250,6 @@ export class TradeChart {
           ctx.fillStyle = tc;
           ctx.textAlign = "right";
           ctx.fillText(lt, padding.left - 5, this.mouseY + 4);
-
-          // For MACD, percentage change isn't very meaningful relative to a base value like Price or Volume start.
-          // Just showing value is enough. Or maybe difference from 0?
-          // Let's just show value on right too for consistency.
 
           ctx.fillStyle = bc;
           const boxWidth = ctx.measureText(lt).width + 10;
@@ -4099,6 +4261,7 @@ export class TradeChart {
         }
       }
     });
+
   }
 
   private formatTime(d: Date): string {

@@ -381,6 +381,7 @@ export function applyAttribute(selector: AttributeSelector, targetAttributeNameO
  * 
  * Note: This decorator is for FIELDS ONLY. For methods, use @setAttribute.
  */
+export function attribute(target: Object, propertyKey: string | symbol):  void;
 export function attribute(target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor): PropertyDescriptor | void;
 export function attribute(attributeName: string, options?: AttributeOptions): PropertyDecorator;
 export function attribute(selector: AttributeSelector, attributeName: string, options?: AttributeOptions): PropertyDecorator;

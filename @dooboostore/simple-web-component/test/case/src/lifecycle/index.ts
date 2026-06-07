@@ -1,4 +1,4 @@
-import swcRegister, { elementDefine, onConnectedInnerHtml, onConnectedBefore, onConnectedAfter, onDisconnectedBefore, onDisconnectedAfter, onAdoptedBefore, onAdoptedAfter, onAddEventListener, onConnected, onDisconnected } from '@dooboostore/simple-web-component';
+import swcRegister, { elementDefine, onConnectedInnerHtml, onConnectedBefore, onConnectedAfter, onDisconnectedBefore, onDisconnectedAfter, onAdoptedBefore, onAdoptedAfter, onAddEventListener, onConnectedBody, onDisconnected } from '@dooboostore/simple-web-component';
 
 swcRegister(window);
 @elementDefine('lifecycle-element', { window })
@@ -19,7 +19,7 @@ class LifecycleElement extends HTMLElement {
     console.log('>>> [Lifecycle] 1. onBeforeConnected');
   }
 
-  @onConnected
+  @onConnectedBody
   onConnected() {
     console.log('>>> [Lifecycle] 2. onConnected (alias for onAfterConnected)');
   }

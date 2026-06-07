@@ -2,7 +2,7 @@ import { SwcAppInterface, SwcAppMessage } from '../types';
 import { APPLY_NODE_METADATA_KEY, findAllLifecycleMetadata, getSubscribeSwcAppMessageWhileConnectedMetadata, getSubscribeSwcAppRouteChangeWhileConnectedMetadata, ON_CONNECTED_SWC_APP_METADATA_KEY, SUBSCRIBE_SWC_APP_ROUTE_CHANGE_WHILE_CONNECTED_METADATA_KEY } from '../decorators';
 import { SwcAppEngine, SwcAttributeConfigType, SwcConfigType } from '../SwcAppEngine';
 import { debounceTimeIntervalLock, FunctionUtils, Subscription } from '@dooboostore/core';
-import { RouterEventType } from '@dooboostore/core-web';
+import {RouterEventType, ValidUtils} from '@dooboostore/core-web';
 import { SwcUtils } from '../utils/Utils';
 
 export const isSSR = (i: HTMLElement) => {
@@ -137,7 +137,9 @@ export function SwcAppMixin<T extends { new (...args: any[]): HTMLElement }>(Bas
           }
         }
       } finally {
-        if (this.config?.ssr) {
+        // this.config?.window
+        const isBrowser = ValidUtils.isBrowser();
+        if (!isBrowser && this.config?.ssr) {
           setSSRAttribute(instance);
         } else {
           removeSSRAttribute(instance);
@@ -188,7 +190,9 @@ export function SwcAppMixin<T extends { new (...args: any[]): HTMLElement }>(Bas
           }
         }
 
-        if (this.config?.ssr) {
+        const isBrowser = ValidUtils.isBrowser();
+        console.log('------>', isBrowser, this.config?.ssr)
+        if (!isBrowser && this.config?.ssr) {
           setSSRAttribute(instance);
         } else {
           removeSSRAttribute(instance);

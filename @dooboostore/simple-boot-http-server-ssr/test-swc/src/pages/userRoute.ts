@@ -1,91 +1,73 @@
-import { Sim } from '@dooboostore/simple-boot';
 import {
-  publishSwcAppMessage,
-  subscribeSwcAppMessageWhileConnected,
-  type SwcAppMessage,
-  changedAttribute,
-  applyNode,
-  addEventListenerThis,
-  emitCustomEventThis,
-  updateClass,
-  innerHtml,
   addEventListener,
   appendHtmlSlot,
-  applyNodeThis,
-  attributeThis,
-  query,
-  replaceChildrenNodeThis,
-  onConnected,
   elementDefine,
-  onConnectedBefore,
-  setProperty,
-  subscribeSwcAppRouteChangeWhileConnected,
-  CreateElementConfig,
+  onConnectedBodyShadow,
+  state,
   createElement,
-  onConnectedLight,
-  onConnectedShadow, state,
+  CreateElementConfig
 } from '@dooboostore/simple-web-component';
-import {IndexRoute} from "./indexRoute";
 
 export const tagName = 'user-route';
-export interface UserRoute extends HTMLElement {
 
-}
+export interface UserRoute extends HTMLElement {}
+
 export const UserRoute = (w: Window, data?: CreateElementConfig) => {
   return createElement<UserRoute>(w, tagName, data);
 }
+
 export default (w: Window) => {
   const existing = w.customElements.get(tagName);
   if (existing) return tagName;
+
   @elementDefine(tagName, { window: w })
-  class Imp extends w.HTMLElement implements UserRoute{
-    constructor() {
-      super();
-      console.log('UserRoute constructor called', w.customElements.get('index-router'));
-    }
+  class Imp extends w.HTMLElement implements UserRoute {
+    @state
+    private counter = 0;
 
-
-
-    @addEventListener('.test-btn', 'click')
-    // @applyNodeThis
-    @appendHtmlSlot('zzz')
+    @addEventListener('.test-btn', 'click', { root: 'shadow' })
     onTestClick() {
-      console.log('test button clicked');
-      this.ggg = new Date().toISOString()+'----------'
-      return '<div>aaaaaaaa</div>'
+      this.counter++;
+      console.log('Counter increased:', this.counter);
     }
 
-    connectedCallback() {
-      console.log('-------user-route connectedCallback')
-    }
-
-    @state
-    ggg = 'zzzzz';
-
-    @state
-    ccc(a: any) {
-      console.log('------>',a, this)
-    }
-
-    @onConnectedLight
-    gg(){
-      return `
-      <div>777777777777777777</div>
-      `
-    }
-
-
-    @onConnectedShadow
+    @onConnectedBodyShadow
     render() {
-      console.log('UserRoute render called');
       return `
-      <div>
-        <h1>user!!!!</h1>
-        <button class="test-btn">dddddddddddddd</button>
-        <!--[[ zzz ]] -->
-        [<slot></slot>]
-        <!--[text @ggg@]-->
-        <input type="text" size="5555"  a::value="@ggg@" e::click="@$this@.ggg = (11+this)" >
+      <style>
+        .user-container {
+          padding: 24px;
+          background: white;
+          border-radius: 12px;
+          border: 1px solid #eee;
+        }
+        .test-btn {
+          padding: 10px 20px;
+          border-radius: 6px;
+          border: 1px solid #ddd;
+          background: #f0f0f0;
+          cursor: pointer;
+        }
+        .test-btn:hover { background: #e0e0e0; }
+        .counter-display {
+          margin-top: 16px;
+          font-size: 18px;
+          font-weight: 600;
+        }
+      </style>
+      <div class="user-container">
+        <h1>User Dashboard</h1>
+        <p>This page demonstrates @state and @addEventListener decorators.</p>
+        
+        <button class="test-btn">Click Me!</button>
+        
+        <div class="counter-display">
+          Count: <span>{{= @counter@ }}</span>
+        </div>
+
+        <div style="margin-top: 24px; padding: 16px; background: #fff9db; border-radius: 8px;">
+          <slot name="extra"></slot>
+        </div>
       </div>
     `;
     }

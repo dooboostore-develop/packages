@@ -8,24 +8,25 @@ export const ON_AFTER_DISCONNECTED_METADATA_KEY = Symbol.for('simple-web-compone
 export const ON_BEFORE_ADOPTED_METADATA_KEY = Symbol.for('simple-web-component:on-before-adopted');
 export const ON_AFTER_ADOPTED_METADATA_KEY = Symbol.for('simple-web-component:on-after-adopted');
 export const ON_ADD_EVENT_LISTENER_METADATA_KEY = Symbol.for('simple-web-component:on-add-event-listener');
-export const ON_CONNECTED_METADATA_KEY = Symbol.for('simple-web-component');
+export const ON_CONNECTED_BODY_METADATA_KEY = Symbol.for('simple-web-component:on-connected-body');
 export const ON_CONNECTED_SWC_APP_METADATA_KEY = Symbol.for('simple-web-component:on-connected-swc-app');
 export const ON_CONNECTED_COMPLETED_METADATA_KEY = Symbol.for('simple-web-component:on-completed');
 
 export const ATTRIBUTE_CHANGED_WILDCARD = '*';
 
-export interface InnerHtmlOptions {
-  ssrFirst?: boolean;
+export interface OnConnectedAppendChildOptions {
+  // ssrFirst?: boolean;
   // replaceWrap?:{ start: string, end:string},
   useShadow?: boolean;
+  order?: number;
 }
-export interface InnerHtmlMetadata {
+export interface OnConnectedAppendChildOptionsMetadata {
   propertyKey: string | symbol;
-  options: InnerHtmlOptions;
+  options: OnConnectedAppendChildOptions;
 }
 
 export interface OnConnectedOptions {
-  ssrFirst?: boolean;
+  // ssrFirst?: boolean;
   order?: number;
 }
 export interface OnConnectedMetadata {
@@ -87,33 +88,33 @@ export function onConnectedAfter(arg1?: OnConnectedOptions | Object, arg2?: stri
 }
 
 
-function createLifecycleDecorator(metadataKey: symbol): ((options?: LifecycleOptions) => MethodDecorator) & MethodDecorator {
-  const decorator = (options?: LifecycleOptions): MethodDecorator => {
-    return (target: Object, propertyKey: string | symbol) => {
-      const constructor = target.constructor;
-      let list = ReflectUtils.getOwnMetadata(metadataKey, constructor) as LifecycleMetadata[];
-      if (!list) {
-        list = [];
-        ReflectUtils.defineMetadata(metadataKey, list, constructor);
-      }
-      list.push({ propertyKey, order: options?.order ?? 0 });
-    };
-  };
-
-  // Support both @decorator and @decorator() syntax
-  return Object.assign(
-    (target: Object, propertyKey: string | symbol) => {
-      const constructor = target.constructor;
-      let list = ReflectUtils.getOwnMetadata(metadataKey, constructor) as LifecycleMetadata[];
-      if (!list) {
-        list = [];
-        ReflectUtils.defineMetadata(metadataKey, list, constructor);
-      }
-      list.push({ propertyKey, order: 0 });
-    },
-    { __isDecorator: true, __decorator: decorator }
-  ) as any;
-}
+// function createLifecycleDecorator(metadataKey: symbol): ((options?: LifecycleOptions) => MethodDecorator) & MethodDecorator {
+//   const decorator = (options?: LifecycleOptions): MethodDecorator => {
+//     return (target: Object, propertyKey: string | symbol) => {
+//       const constructor = target.constructor;
+//       let list = ReflectUtils.getOwnMetadata(metadataKey, constructor) as LifecycleMetadata[];
+//       if (!list) {
+//         list = [];
+//         ReflectUtils.defineMetadata(metadataKey, list, constructor);
+//       }
+//       list.push({ propertyKey, order: options?.order ?? 0 });
+//     };
+//   };
+//
+//   // Support both @decorator and @decorator() syntax
+//   return Object.assign(
+//     (target: Object, propertyKey: string | symbol) => {
+//       const constructor = target.constructor;
+//       let list = ReflectUtils.getOwnMetadata(metadataKey, constructor) as LifecycleMetadata[];
+//       if (!list) {
+//         list = [];
+//         ReflectUtils.defineMetadata(metadataKey, list, constructor);
+//       }
+//       list.push({ propertyKey, order: 0 });
+//     },
+//     { __isDecorator: true, __decorator: decorator }
+//   ) as any;
+// }
 
 // Helper to handle both @decorator and @decorator() syntax
 function createLifecycleDecoratorWithOptions(metadataKey: symbol) {
@@ -193,19 +194,19 @@ export function onConnectedCompleted(optionOrTarget?: LifecycleOptions | Object,
 
 
 
-const decorator = (options: InnerHtmlOptions, target: Object, propertyKey: string | symbol) => {
+const decorator = (options: OnConnectedAppendChildOptions, target: Object, propertyKey: string | symbol) => {
   const constructor = target.constructor;
-  let list = ReflectUtils.getMetadata<InnerHtmlMetadata[]>(ON_CONNECTED_METADATA_KEY, constructor);
+  let list = ReflectUtils.getMetadata<OnConnectedAppendChildOptionsMetadata[]>(ON_CONNECTED_BODY_METADATA_KEY, constructor);
   if (!list) {
     list = [];
-    ReflectUtils.defineMetadata(ON_CONNECTED_METADATA_KEY, list, constructor);
+    ReflectUtils.defineMetadata(ON_CONNECTED_BODY_METADATA_KEY, list, constructor);
   }
   list.push({ propertyKey, options });
 };
 
-export function onConnectedShadow(options: Omit<InnerHtmlOptions, 'useShadow'>): MethodDecorator; // 파라미터있음
-export function onConnectedShadow(target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor): void; // 파라미터없음
-export function onConnectedShadow(optionOrTarget: Omit<InnerHtmlOptions, 'useShadow'> | Object, propertyKey?: string | symbol, arg3?: PropertyDescriptor): MethodDecorator | void {
+export function onConnectedBodyShadow(options: Omit<OnConnectedAppendChildOptions, 'useShadow'>): MethodDecorator; // 파라미터있음
+export function onConnectedBodyShadow(target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor): void; // 파라미터없음
+export function onConnectedBodyShadow(optionOrTarget: Omit<OnConnectedAppendChildOptions, 'useShadow'> | Object, propertyKey?: string | symbol, arg3?: PropertyDescriptor): MethodDecorator | void {
   if (propertyKey) { // no parameter option  @decorator
     return decorator({useShadow: true}, optionOrTarget!, propertyKey);
   }
@@ -215,9 +216,9 @@ export function onConnectedShadow(optionOrTarget: Omit<InnerHtmlOptions, 'useSha
   };
 }
 
-export function onConnectedLight(options: Omit<InnerHtmlOptions, 'useShadow'>): MethodDecorator; // 파라미터있음
-export function onConnectedLight(target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor): void; // 파라미터없음
-export function onConnectedLight(optionOrTarget: Omit<InnerHtmlOptions, 'useShadow'> | Object, propertyKey?: string | symbol, arg3?: PropertyDescriptor): MethodDecorator | void {
+export function onConnectedBodyLight(options: Omit<OnConnectedAppendChildOptions, 'useShadow'>): MethodDecorator; // 파라미터있음
+export function onConnectedBodyLight(target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor): void; // 파라미터없음
+export function onConnectedBodyLight(optionOrTarget: Omit<OnConnectedAppendChildOptions, 'useShadow'> | Object, propertyKey?: string | symbol, arg3?: PropertyDescriptor): MethodDecorator | void {
   if (propertyKey) { // no parameter option  @decorator
     return decorator({useShadow: false}, optionOrTarget!, propertyKey);
   }
@@ -226,15 +227,15 @@ export function onConnectedLight(optionOrTarget: Omit<InnerHtmlOptions, 'useShad
     decorator({...optionOrTarget??{}, useShadow: false}, target, propertyKey);
   };
 }
-export function onConnected(options: InnerHtmlOptions): MethodDecorator;
-export function onConnected(target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor): void;
-export function onConnected(optionOrTarget: InnerHtmlOptions | Object, propertyKey?: string | symbol, arg3?: PropertyDescriptor): MethodDecorator | void {
+export function onConnectedBody(options: OnConnectedAppendChildOptions): MethodDecorator;
+export function onConnectedBody(target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor): void;
+export function onConnectedBody(optionOrTarget: OnConnectedAppendChildOptions | Object, propertyKey?: string | symbol, arg3?: PropertyDescriptor): MethodDecorator | void {
   if (propertyKey) { // no parameter option  @decorator
     return decorator({}, optionOrTarget!, propertyKey);
   }
   // parameter option @decorator()
   return (target: Object, propertyKey: string | symbol) => {
-    decorator((optionOrTarget as InnerHtmlOptions) || {}, target, propertyKey);
+    decorator((optionOrTarget as OnConnectedAppendChildOptions) || {}, target, propertyKey);
   };
 }
 
@@ -248,27 +249,27 @@ export const findAllLifecycleMetadata = (target: any, metadataKey: symbol): Life
   return [...results].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
 };
 
-export const findAllOnConnectedMetadata = (target: any): InnerHtmlMetadata[] => {
+export const findAllOnConnectedMetadata = (target: any): OnConnectedAppendChildOptionsMetadata[] => {
   const constructor = target instanceof Function ? target : target.constructor;
-  const results = ReflectUtils.getMetadata(ON_CONNECTED_METADATA_KEY, constructor) ?? [];
+  const results = ReflectUtils.getMetadata<OnConnectedAppendChildOptionsMetadata[]>(ON_CONNECTED_BODY_METADATA_KEY, constructor) ?? [];
   // Sort by order (default 0 if not specified)
   return [...results].sort((a, b) => {
-    const orderA = (a.options as any)?.order ?? 0;
-    const orderB = (b.options as any)?.order ?? 0;
+    const orderA = a.options?.order ?? 0;
+    const orderB = b.options?.order ?? 0;
     return orderA - orderB;
   });
 };
 
 export const findAllOnConnectedBeforeMetadata = (target: any): OnConnectedMetadata[] => {
   const constructor = target instanceof Function ? target : target.constructor;
-  const results = ReflectUtils.getMetadata(ON_BEFORE_CONNECTED_METADATA_KEY, constructor) ?? [];
+  const results = ReflectUtils.getMetadata<OnConnectedMetadata[]>(ON_BEFORE_CONNECTED_METADATA_KEY, constructor) ?? [];
   // Sort by order
   return [...results].sort((a, b) => (a.options?.order ?? 0) - (b.options?.order ?? 0));
 };
 
 export const findAllOnConnectedAfterMetadata = (target: any): OnConnectedMetadata[] => {
   const constructor = target instanceof Function ? target : target.constructor;
-  const results = ReflectUtils.getMetadata(ON_AFTER_CONNECTED_METADATA_KEY, constructor) ?? [];
+  const results = ReflectUtils.getMetadata<OnConnectedMetadata[]>(ON_AFTER_CONNECTED_METADATA_KEY, constructor) ?? [];
   // Sort by order
   return [...results].sort((a, b) => (a.options?.order ?? 0) - (b.options?.order ?? 0));
 };
