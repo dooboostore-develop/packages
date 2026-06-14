@@ -33,12 +33,14 @@ export type SessionOption = {
   };
 };
 
+export type FilterSupportType = { filter: Filter | ConstructorType<Filter>, isSupport: boolean | ((rr: RequestResponse) => boolean) | RegExp };
+
 export class HttpServerOption extends SimOption {
   public static readonly DEFAULT_PORT = 8081;
   public static readonly DEFAULT_HOSTNAME = '127.0.0.1';
   public serverOption?: ServerOptions | HttpsServerOption;
   public listen: ListenData;
-  public filters?: (Filter | ConstructorType<Filter>)[];
+  public filters?: FilterSupportType[];
   public fileUploadTempPath?: string;
   public requestEndPoints?: (EndPoint | ConstructorType<EndPoint>)[];
   public webSocketEndPoints?: (WebSocketEndPoint | ConstructorType<WebSocketEndPoint>)[];
@@ -66,7 +68,7 @@ export class HttpServerOption extends SimOption {
     }: {
       serverOption?: ServerOptions | HttpsServerOption;
       listen?: Listen;
-      filters?: (Filter | ConstructorType<Filter>)[];
+      filters?: (FilterSupportType)[];
       requestEndPoints?: (EndPoint | ConstructorType<EndPoint>)[];
       closeEndPoints?: (EndPoint | ConstructorType<EndPoint>)[];
       errorEndPoints?: (EndPoint | ConstructorType<EndPoint>)[];
