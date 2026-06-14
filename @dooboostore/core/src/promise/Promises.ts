@@ -18,7 +18,8 @@ export namespace Promises {
     } catch (e) {
       const targetHas = Array.isArray(has) ? has : [has];
       for (let ha of targetHas) {
-        if (ValidUtils.isConstructor(ha)) {
+        // if (ValidUtils.isConstructor(ha)) {
+        if (ValidUtils.isFunctionType(ha)) {
           if (e instanceof ha) {
             return e;
           }

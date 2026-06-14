@@ -1,8 +1,8 @@
-import { ConstructorType, FilterFalsy, FilterNullish, NonNullable, Nullable, Nullish, NullOrUndefined } from '../types';
+import {ClassType, ConstructorType, FilterFalsy, FilterNullish, NonNullable, Nullable, Nullish, NullOrUndefined} from '../types';
 
 export namespace ValidUtils {
 
-  export const  isArrowFunction = (fn: any): fn is Function  => {
+  export const isArrowFunction = (fn: any): fn is Function => {
     // 1. 함수가 아니면 false
     if (typeof fn !== 'function') {
       return false;
@@ -34,7 +34,7 @@ export namespace ValidUtils {
   export const isFrozen = (obj: any): boolean => {
     return Object.isFrozen(obj);
   }
-  export const isSealed= (obj: any): boolean => {
+  export const isSealed = (obj: any): boolean => {
     return Object.isSealed(obj)
   }
   export const isFrozenOrSealed = (obj: any): boolean => {
@@ -57,19 +57,29 @@ export namespace ValidUtils {
   }
 
   export const isNullOrUndefined = (data: unknown): data is (null | undefined) => {
-  return data == null || undefined === data;
-}
+    return data == null || undefined === data;
+  }
 
-  export const isConstructor = (obj: ConstructorType<any> | Function | ((e: any) => void)): obj is ConstructorType<any> => {
-    // 함수이면서 prototype 속성이 있고 prototype이 객체인지 확인
-    return typeof obj === 'function'
-      && obj.prototype !== undefined
-      && obj.prototype.constructor === obj
-      // && Object.getOwnPropertyNames(obj.prototype).length > 1; // constructor 외에 다른 속성이 있는지 확인
+  // 구분 함수
+  export const isClassType = (obj: any): obj is ClassType => {
+    return typeof obj === 'function' && /^\s*class\s+/.test(obj.toString());
+  };
+
+  // 뭔가.. 이거 좀 수정해야될것같은데 그냥 function() 이것도 true가 나오는게 맞나?맞을라나훔..
+  // export const isConstructor = (obj: ConstructorType<any> | Function | ((e: any) => void)): obj is ConstructorType<any> => {
+  //   // 함수이면서 prototype 속성이 있고 prototype이 객체인지 확인
+  //   return typeof obj === 'function'
+  //     && obj.prototype !== undefined
+  //     && obj.prototype.constructor === obj
+  //   // && Object.getOwnPropertyNames(obj.prototype).length > 1; // constructor 외에 다른 속성이 있는지 확인
+  // }
+  export const isFunctionType = (obj: ConstructorType<any> | Function | ((e: any) => void)): obj is ((e: any) => void) => {
+    return typeof obj === 'function';
   }
-  export const isFunction = (obj: ConstructorType<any> | Function | ((e: any) => void)): obj is ((e: any) => void) => {
-    return typeof obj === 'function' && !isConstructor(obj);
-  }
+  // 이것도 수정이되어야 하나? function(){} 넣으면 false나올것같은데
+  // export const isFunction = (obj: ConstructorType<any> | Function | ((e: any) => void)): obj is ((e: any) => void) => {
+  //   return typeof obj === 'function' && !isConstructor(obj);
+  // }
   export const isNullish = <T = any>(data: T | null | undefined): data is null | undefined => {
     return ValidUtils.isNotNullish(data);
   }

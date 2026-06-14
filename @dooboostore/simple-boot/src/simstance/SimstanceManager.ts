@@ -276,7 +276,7 @@ export class SimstanceManager implements Runnable<void, Map<ConstructorType<any>
       newInstanceCarrier: newInstanceCarrier
     });
     // @ts-ignore
-    const r = ValidUtils.isFunction(target) && !target.prototype ? (target as Function)(...parameters) : new (target as ConstructorType<any>)(...parameters);
+    const r = ValidUtils.isFunctionType(target) && !target.prototype ? (target as Function)(...parameters) : new (target as ConstructorType<any>)(...parameters);
     let p = this.proxy(r);
     const config = getSim(target);
     if (config?.proxy) {
@@ -479,7 +479,7 @@ export class SimstanceManager implements Runnable<void, Map<ConstructorType<any>
 
         if (inject.proxy && obj) {
           // [아키텍트님의 정석] 통합 프록시 전략 (클래스 또는 팩토리 함수)
-          if (ValidUtils.isConstructor(inject.proxy)) {
+          if (ValidUtils.isClassType(inject.proxy)) {
             // Choice A: 클래스 프록시
             const handler = getSim(inject.proxy) ? this.getOrNewSim({ target: inject.proxy as ConstructorType<any> }) : new (inject.proxy as any)();
             if (handler) {

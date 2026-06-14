@@ -509,7 +509,7 @@ export const elementDefine =
               const unifiedHandler = async (event: Event) => {
                 for (const meta of sortedMetaList) {
                   const {selector, options} = meta;
-                  const matchedEl = (event.target as HTMLElement).closest(selector);
+                  const matchedEl = (event.target as HTMLElement)?.closest(selector);
                   if (matchedEl && (br as any).contains(matchedEl)) {
                     // Apply filter if specified
                     if (options.filter) {

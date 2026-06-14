@@ -48,7 +48,7 @@ export class SimpleBootHttpServer extends SimpleApplication {
     otherInstanceSim ??= new Map<ConstructorType<any> | Function | SimConfig | symbol, any>();
     otherInstanceSim.set(SimpleBootHttpServer, this);
     super.run(otherInstanceSim);
-    const targets = [...this.option.closeEndPoints ?? [], ...this.option.errorEndPoints ?? [], ...this.option.requestEndPoints ?? [], ...this.option.filters ?? []];
+    const targets = [...this.option.closeEndPoints ?? [], ...this.option.errorEndPoints ?? [], ...this.option.requestEndPoints ?? [], ...(this.option.filters ?? []).map(it=>it.filter)];
     Promise.all(targets.map(it => (typeof it === 'function' ? this.simstanceManager.getOrNewSim({target: it as ConstructorType<any>}) : it) as OnInit).map(it => it.onInit(this))).then(it => {
       this.startServer();
     });
@@ -158,8 +158,22 @@ export class SimpleBootHttpServer extends SimpleApplication {
         };
         for (let i = 0; this.option.filters && i < this.option.filters.length; i++) {
           const it = this.option.filters[i];
-          const execute = (typeof it === 'function' ? this.simstanceManager.getOrNewSim({target: it}) : it) as Filter;
+
+          let isSkip = false;
+          if (typeof it.isSupport === 'boolean') {
+            isSkip = !it.isSupport;
+          } else if (typeof it.isSupport === 'object') {
+            isSkip = !it.isSupport.test(rr.reqUrlPathName)
+          } else if (typeof it.isSupport === 'function') {
+            isSkip = !it.isSupport(rr);
+          }
+          if(isSkip) {
+            continue;
+          }
+
           let sw = true;
+          const itFilter = it.filter;
+          const execute = (typeof itFilter === 'function' ? this.simstanceManager.getOrNewSim({target: itFilter}) : itFilter) as Filter;
           if (execute?.proceedBefore) {
             sw = await execute.proceedBefore({rr, app: this, carrier: filter.carrier});
             filter.filters.push({filter: execute, sw});

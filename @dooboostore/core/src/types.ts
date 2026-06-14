@@ -1,8 +1,10 @@
 import {ValidUtils} from "./valid";
-
+// 클래스 타입 정의
+export type ClassType<T = any> = abstract new (...args: any[]) => T;
 export type WithRequiredProperty<Type, Key extends keyof Type> = Type & {
   [Property in Key]-?: Type[Property];
 };
+
 export type OptionalType<T, K extends keyof T> = Pick<Partial<T>, K> & Omit<T, K>;
 export type KeysWithValsOfType<T, V> = keyof { [P in keyof T as T[P] extends V ? P : never]: P };
 export type PropType<T> = {
