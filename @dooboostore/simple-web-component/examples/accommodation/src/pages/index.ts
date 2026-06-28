@@ -3,7 +3,7 @@ import ListPage from './ListPage';
 import DetailPage from './DetailPage';
 import EventDetailPage from './EventDetailPage';
 import {Inject} from '@dooboostore/simple-boot';
-import { innerHtmlLight, replaceChildren, elementDefine, onConnectedBefore, onConnectedShadow, subscribeSwcAppRouteChangeWhileConnected } from '@dooboostore/simple-web-component';
+import { innerHtmlLight, replaceChildren, elementDefine, onConnectedBefore, onConnectedBodyShadow, subscribeSwcAppRouteChangeWhileConnected } from '@dooboostore/simple-web-component';
 import {Router, type RouterEventType} from '@dooboostore/core-web';
 import {AccommodationService, EventService} from '../services';
 
@@ -91,7 +91,7 @@ const indexPageFactory = (w: Window) => {
       return node;
     }
 
-    @onConnectedShadow
+    @onConnectedBodyShadow
     render() {
       return `
           <style>

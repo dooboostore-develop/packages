@@ -1,4 +1,4 @@
-import {addEventListener, elementDefine, emitCustomEvent, onConnectedShadow} from '@dooboostore/simple-web-component';
+import {addEventListener, elementDefine, emitCustomEvent, onConnectedBodyShadow} from '@dooboostore/simple-web-component';
 
 export default (w: Window) => {
   const tagName = 'swc-example-stock-stock-header';
@@ -8,7 +8,7 @@ export default (w: Window) => {
 
   @elementDefine(tagName, { window: w })
   class StockHeader extends w.HTMLElement {
-    @onConnectedShadow
+    @onConnectedBodyShadow
     render() {
       return `
       <style>

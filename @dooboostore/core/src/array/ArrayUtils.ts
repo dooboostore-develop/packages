@@ -5,6 +5,14 @@ export namespace ArrayUtils {
   //     index === self.findIndex((other) => predicate(item, other))
   //   );
   // };
+  export const split = <T>(data: T[], length: number) => {
+    const result: T[][] = [];
+    for (let i = 0; i < data.length; i += length) {
+      result.push(data.slice(i, i + length));
+    }
+    return result;
+  }
+
   export const create2DArray = <T>(rows: number, cols: number, initialValue: T | ((row: number, cols: number) => T)): T[][] => {
     const array: T[][] = [];
     for (let row = 0; row < rows; row++) {

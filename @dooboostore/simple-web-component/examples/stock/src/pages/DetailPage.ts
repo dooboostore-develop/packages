@@ -1,4 +1,4 @@
-import { attribute, elementDefine, innerHtml, onConnectedBefore, onConnectedShadow } from '@dooboostore/simple-web-component';
+import { attribute, elementDefine, innerHtml, onConnectedBefore, onConnectedBodyShadow } from '@dooboostore/simple-web-component';
 import {Inject} from '@dooboostore/simple-boot';
 import {Stock, StockService} from '../services/StockService';
 
@@ -57,7 +57,7 @@ export default (w: Window) => {
     }
 
     @innerHtml
-    @onConnectedShadow
+    @onConnectedBodyShadow
     render() {
       if (!this.stock) return '<div>종목을 찾을 수 없습니다.</div>';
       const { name, code, change, changePercent, description, marketCap, volume, history } = this.stock;

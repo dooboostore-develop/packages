@@ -51,19 +51,19 @@ export class ElementApply {
   getTarget(node: Node, id: string): EaTarget | undefined {
     if (
       node.nodeType === this.window.Node.COMMENT_NODE ||
-      (node as Comment).data?.trim()?.startsWith(`ea:${this.id}:start:html`) ||
-      (node as Comment).data?.trim()?.startsWith(`ea:${this.id}:start:text`)
+      (node as Comment).data?.trim?.()?.startsWith(`ea:${this.id}:start:html`) ||
+      (node as Comment).data?.trim?.()?.startsWith(`ea:${this.id}:start:text`)
     ) {
-      const fullStr = (node as Comment).data?.trim();
+      const fullStr = (node as Comment).data?.trim?.();
       let [prefix, ...rest] = fullStr?.split(' ') ?? [];
-      prefix = prefix.trim();
+      prefix = prefix.trim?.();
       const script = rest.join(' ');
       const [eaPrefix, eaId, startEnd, type] = prefix?.split(':') ?? [];
 
       const endPrefix = `${eaPrefix}:${eaId}:end:${type}`;
       let next = node.nextSibling;
       while (next) {
-        if (next.nodeType === Node.COMMENT_NODE && (next as Comment).data?.trim()?.startsWith(endPrefix)) {
+        if (next.nodeType === Node.COMMENT_NODE && (next as Comment).data?.trim?.()?.startsWith(endPrefix)) {
           return {nodeType: 'comment', type: type as 'html' | 'text', start: node as Comment, end: next as Comment, script: script ?? '', variables: this.findVariables(script)};
         }
         next = next.nextSibling;

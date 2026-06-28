@@ -1,4 +1,4 @@
-import {addEventListener, innerHtml, elementDefine, onConnectedBefore, onConnectedShadow, updateClass} from '@dooboostore/simple-web-component';
+import {addEventListener, innerHtml, elementDefine, onConnectedBefore, onConnectedBodyShadow, updateClass} from '@dooboostore/simple-web-component';
 import {Inject} from '@dooboostore/simple-boot';
 import {Router} from '@dooboostore/core-web';
 import {Stock, StockService} from '../services/StockService';
@@ -97,7 +97,7 @@ export default (w: Window) => {
       return displayStocks.map(s => `<swc-example-stock-stock-card data-id="${s.id}" class="card-item"></swc-example-stock-stock-card>`).join('');
     }
 
-    @onConnectedShadow
+    @onConnectedBodyShadow
     render() {
       return `
       <style>
