@@ -1,19 +1,8 @@
 import 'reflect-metadata';
-export * as Core from '@dooboostore/core/bundle-entry'
-export { SimpleApplication } from './SimpleApplication';
-export { SimOption } from './SimOption';
-export type { InitOptionType, ProxyHandlerType } from './SimOption';
 
-// Subdirectories
-export * from './alert';
-export * from './cache';
-export * from './decorators';
-export * from './errors';
-export * from './fetch';
-export * from './intent';
-export * from './lifecycle';
-export * from './proxy';
-export * from './route';
-export * from './simstance';
-export * from './throwable';
-export * from './types';
+// simple-boot itself
+export * from './index';
+
+// Re-export peer dependency so bundle consumers can access it
+// without separately importing each package
+export * as Core from '@dooboostore/core';

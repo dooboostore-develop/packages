@@ -1,2 +1,2 @@
+// dom-parser itself (no peer dependencies)
 export * from './index';
-export * as DomParserModule from './index';

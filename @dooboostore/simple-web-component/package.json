@@ -1,6 +1,6 @@
 {
   "name": "@dooboostore/simple-web-component",
-  "version": "1.0.46",
+  "version": "1.0.47",
   "license": "MIT",
   "type": "module",
   "main": "./dist/cjs/index.js",
@@ -67,7 +67,10 @@
   },
   "author": "dooboostore <dooboostore@gmail.com> (https://github.com/dooboostore)",
   "peerDependencies": {
-    "reflect-metadata": "^0.2.2"
+    "reflect-metadata": "^0.2.2",
+    "@dooboostore/core": "workspace:*",
+    "@dooboostore/core-web": "workspace:*",
+    "@dooboostore/simple-boot": "workspace:*"
   },
   "devDependencies": {
     "@babel/core": "^7.24.0",
@@ -91,11 +94,7 @@
     "typescript": "^5.9.2",
     "webpack": "^5.93.0",
     "webpack-cli": "^5.1.4",
-    "webpack-dev-server": "^5.2.0",
-    "@dooboostore/core": "workspace:*",
-    "@dooboostore/core-node": "workspace:*",
-    "@dooboostore/core-web": "workspace:*",
-    "@dooboostore/simple-boot": "workspace:*"
+    "webpack-dev-server": "^5.2.0"
   },
   "scripts": {
     "clean": "rm -rf dist",

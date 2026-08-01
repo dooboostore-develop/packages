@@ -1,6 +1,6 @@
 {
   "name": "@dooboostore/lib-node",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "description": "dooboostore library for node",
   "license": "MIT",
   "type": "module",
@@ -61,11 +61,11 @@
     "url": "https://github.com/dooboostore-develop/packages"
   },
   "peerDependencies": {
-    "reflect-metadata": "^0.2.2"
+    "reflect-metadata": "^0.2.2",
+    "@dooboostore/core": "workspace:*",
+    "@dooboostore/core-node": "workspace:*"
   },
   "devDependencies": {
-    "@dooboostore/core": "workspace:*",
-    "@dooboostore/core-node": "workspace:*",
     "@types/node": "^20",
     "typescript": "^5.9.2",
     "esbuild-plugin-tsc": "^0.5.0",

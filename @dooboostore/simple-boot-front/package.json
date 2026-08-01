@@ -1,6 +1,6 @@
 {
   "name": "@dooboostore/simple-boot-front",
-  "version": "1.0.131",
+  "version": "1.0.132",
   "license": "MIT",
   "type": "module",
   "main": "./dist/cjs/index.js",
@@ -71,15 +71,13 @@
     "url": "https://github.com/dooboostore-develop/packages"
   },
   "peerDependencies": {
-    "reflect-metadata": "^0.2.2"
-  },
-
-  "devDependencies": {
+    "reflect-metadata": "^0.2.2",
     "@dooboostore/core": "workspace:*",
-    "@dooboostore/core-node": "workspace:*",
     "@dooboostore/core-web": "workspace:*",
     "@dooboostore/dom-render": "workspace:*",
-    "@dooboostore/simple-boot": "workspace:*",
+    "@dooboostore/simple-boot": "workspace:*"
+  },
+  "devDependencies": {
     "@babel/core": "^7.24.0",
     "@babel/plugin-proposal-class-properties": "^7.18.6",
     "@babel/plugin-proposal-decorators": "^7.24.0",

@@ -1,6 +1,6 @@
 {
   "name": "@dooboostore/dom-render",
-  "version": "1.0.113",
+  "version": "1.0.114",
   "license": "MIT",
   "type": "module",
   "main": "./dist/cjs/index.js",
@@ -43,6 +43,17 @@
       "import": "./dist/esm/index.js",
       "require": "./dist/cjs/index.js",
       "default": "./dist/esm/index.js"
+    },
+    "./bundle-entry": {
+      "types": "./dist/types/bundle-entry.d.ts",
+      "import": "./dist/esm/bundle-entry.js",
+      "require": "./dist/cjs/bundle-entry.js",
+      "default": "./dist/esm/bundle-entry.js"
+    },
+    "./*": {
+      "types": "./dist/types/*.d.ts",
+      "import": "./dist/esm/*.js",
+      "require": "./dist/cjs/*.js"
     }
   },
   "author": "dooboostore <dooboostore@gmail.com> (https://github.com/dooboostore)",
@@ -63,12 +74,11 @@
     "url": "https://github.com/dooboostore-develop/packages"
   },
   "peerDependencies": {
-    "reflect-metadata": "^0.2.2"
+    "reflect-metadata": "^0.2.2",
+    "@dooboostore/core": "workspace:*",
+    "@dooboostore/core-web": "workspace:*"
   },
   "devDependencies": {
-    "@dooboostore/core": "workspace:*",
-    "@dooboostore/core-web": "workspace:*",
-    "@dooboostore/core-node": "workspace:*",
     "@babel/core": "^7.24.0",
     "@babel/plugin-proposal-class-properties": "^7.18.6",
     "@babel/plugin-proposal-decorators": "^7.24.0",

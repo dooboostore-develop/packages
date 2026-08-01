@@ -1,12 +1,12 @@
-export * from './codes';
-export * from './decorators';
-export * from './endpoints';
-export * from './errors';
-export * from './filters';
-export * from './inject';
-export * from './lifecycle';
-export * from './models';
-export * from './option';
-export * from './resolvers';
-export * from './session';
-export * from './SimpleBootHttpServer';
+import 'reflect-metadata';
+
+// simple-boot-http-server itself
+export * from './index';
+
+// Re-export peer dependencies so bundle consumers can access them
+// without separately importing each package
+export * as Core from '@dooboostore/core';
+export * as CoreNode from '@dooboostore/core-node';
+export * as CoreWeb from '@dooboostore/core-web';
+export * as DomRender from '@dooboostore/dom-render';
+export * as SimpleBoot from '@dooboostore/simple-boot';

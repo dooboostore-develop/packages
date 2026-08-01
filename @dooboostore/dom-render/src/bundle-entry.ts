@@ -1,18 +1,9 @@
 import 'reflect-metadata';
-export * as Core from '@dooboostore/core/bundle-entry';
-export * as CoreWeb from '@dooboostore/core-web/bundle-entry';
-// export { DomRender, type DomRenderRunConfig, type CreateComponentParam } from './DomRender';
-// export { DomRenderProxy, getDomRenderConfig, getDomRenderOriginObject, getDomRenderProxy, isWrapProxyDomRenderProxy } from './DomRenderProxy';
 
-export * from './DomRender';
-export * from './DomRenderProxy';
-export * from './configs';
-export * from './decorators';
-export * from './events';
-export * from '@dooboostore/core';
-export * from './lifecycle';
-export * from './messenger';
-export * from './operators';
-export * from './rawsets';
-export * from './types';
-export { drComponent, If, This, Appender as AppenderComponent, PromiseSwitch, Choose, CheckBox, Radio, Select, Timer, Details, Input, Route, RouterOutlet, A } from './components';
+// dom-render itself
+export * from './index';
+
+// Re-export peer dependencies so bundle consumers can access them
+// without separately importing each package
+export * as Core from '@dooboostore/core';
+export * as CoreWeb from '@dooboostore/core-web';

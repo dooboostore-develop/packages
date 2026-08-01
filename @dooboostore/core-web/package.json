@@ -1,6 +1,6 @@
 {
   "name": "@dooboostore/core-web",
-  "version": "1.0.12",
+  "version": "1.0.13",
   "license": "MIT",
   "type": "module",
   "main": "./dist/cjs/index.js",
@@ -60,10 +60,10 @@
     "node"
   ],
   "peerDependencies": {
-    "reflect-metadata": "^0.2.2"
+    "reflect-metadata": "^0.2.2",
+    "@dooboostore/core": "workspace:*"
   },
   "devDependencies": {
-    "@dooboostore/core": "workspace:*",
     "esbuild-plugin-tsc": "^0.5.0",
     "tslib": "^2.8.1",
     "@types/node": "^20",

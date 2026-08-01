@@ -1,2 +1,2 @@
+// dom-editor itself (no peer dependencies)
 export * from './index';
-export * as DomEditorModule from './index';

@@ -1,6 +1,6 @@
 {
   "name": "@dooboostore/simple-boot-http-server",
-  "version": "1.0.25",
+  "version": "1.0.26",
   "license": "MIT",
   "type": "module",
   "main": "./dist/cjs/index.js",
@@ -67,7 +67,12 @@
     "url": "https://github.com/dooboostore-develop/packages"
   },
   "peerDependencies": {
-    "reflect-metadata": "^0.2.2"
+    "reflect-metadata": "^0.2.2",
+    "@dooboostore/core": "workspace:*",
+    "@dooboostore/core-node": "workspace:*",
+    "@dooboostore/core-web": "workspace:*",
+    "@dooboostore/dom-render": "workspace:*",
+    "@dooboostore/simple-boot": "workspace:*"
   },
   "devDependencies": {
     "@babel/core": "^7.24.0",
@@ -76,11 +81,6 @@
     "@babel/plugin-transform-private-property-in-object": "^7.25.9",
     "@babel/preset-env": "^7.24.0",
     "@babel/preset-typescript": "^7.24.0",
-    "@dooboostore/core": "workspace:*",
-    "@dooboostore/core-node": "workspace:*",
-    "@dooboostore/core-web": "workspace:*",
-    "@dooboostore/dom-render": "workspace:*",
-    "@dooboostore/simple-boot": "workspace:*",
     "@types/jest": "^26.0.22",
     "@types/node": "^20",
     "@types/node-gzip": "^1.1.0",
