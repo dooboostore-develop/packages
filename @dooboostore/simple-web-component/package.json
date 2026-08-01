@@ -13,7 +13,7 @@
       ]
     }
   },
-  "description": "Simple Web Component library based on dom-render philosophy",
+  "description": "Simple Web Component library",
   "sideEffects": [
     "./dist/esm/elements/*.js",
     "./dist/esm/elements/is/*.js",

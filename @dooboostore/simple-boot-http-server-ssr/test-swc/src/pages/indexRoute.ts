@@ -44,7 +44,7 @@ export default (w: Window) => {
       this.load();
     }
 
-    @onConnectedBefore({ ssrFirst: true })
+    @onConnectedBefore
     @insertBeforeEndLight()
     async load() {
       if (!this.userService) return;
@@ -63,7 +63,7 @@ export default (w: Window) => {
       return userElements;
     }
 
-    @onConnectedBodyShadow({ ssrFirst: true })
+    @onConnectedBodyShadow
     render() {
       return `
       <style>

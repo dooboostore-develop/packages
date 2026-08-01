@@ -181,14 +181,14 @@ class CounterApp extends HTMLElement {
         <!-- Text directive: render as text -->
         <!--[text Count: @count@ ]-->
         
-        <!-- Attribute binding with a: prefix -->
-        <div a:title="'Count is'+@count@"></div>
+        <!-- Attribute binding with a:: prefix -->
+        <div a::title="'Count is'+@count@"></div>
         
-        <!-- Event binding with e: prefix -->
-        <button e:click="@increment@()">Increment (@count@)</button>
+        <!-- Event binding with e:: prefix -->
+        <button e::click="@increment@()">Increment (@count@)</button>
         
         <!-- Conditional rendering -->
-        <div a:style="@isActive@ ? 'color: green' : 'color: red'">
+        <div a::style="@isActive@ ? 'color: green' : 'color: red'">
         </div>
       </div>
     `;
@@ -206,8 +206,8 @@ class CounterApp extends HTMLElement {
 **Template Directives:**
 - `<!--[html @state@ ]-->` - Render state value as HTML
 - `<!--[text @state@ ]-->` - Render state value as text
-- `a:attributeName="@state@"` - Bind state to HTML attributes
-- `e:eventName="@methodName@()"` - Bind events to methods
+- `a::attributeName="@state@"` - Bind state to HTML attributes
+- `e::eventName="@methodName@()"` - Bind events to methods
 
 **How @state Works:**
 1. Declare property with `@state('stateName')`
@@ -236,7 +236,7 @@ increment() {
 <!--[text @count = 5@ ]-->  // This won't work - read-only in templates
 
 // ✅ CORRECT - Call method from template
-<button e:click="@increment@()">Increment</button>
+<button e::click="@increment@()">Increment</button>
 ```
 
 **Advanced Example:**
@@ -260,14 +260,14 @@ class UserProfile extends HTMLElement {
       <div>
         <!-- Display user info -->
         <h2><!--[text @user.name@ ]--></h2>
-        <p a:title="Email: @user.email@">Age: @user.age@</p>
+        <p a::title="Email: @user.email@">Age: @user.age@</p>
         
         <!-- Conditional rendering based on state -->
-        <div a:style="@isEditing@ ? 'border: 1px solid blue' : 'border: none'">
+        <div a::style="@isEditing@ ? 'border: 1px solid blue' : 'border: none'">
           <!--[html @isEditing@ ? '<input type="text" />' : '<span>View Mode</span>' ]-->
         </div>
         
-        <button e:click="toggleEdit"> toggleEdit </button>
+        <button e::click="toggleEdit"> toggleEdit </button>
       </div>
     `;
   }
