@@ -11,6 +11,8 @@ export interface AddEventListenerBaseOptions<TEvent extends Event = Event> exten
   // removeOnDisconnected?: boolean;
   delegate?: boolean;
   filter?: (target: Event | CustomEvent, meta:{currentThis: any, helper: HelperHostSet}) => boolean;
+  // 리스너 제거(disconnected 또는 unmount) 시 호출되는 콜백. 첫 번째 인자는 바인딩된 타겟 element, 두 번째는 이 옵션이 속한 전체 옵션 객체(Base + SwcQuery + delegate).
+  removeListener?: (target: Element, optionValue: AddEventListenerBaseOptions<TEvent> & SwcQueryOptions & { delegate?: boolean }) => void;
   // RxJS operator options
   debounceTime?: number;
   throttleTime?: number;
@@ -31,10 +33,30 @@ export const ADD_EVENT_LISTENER_METADATA_KEY = Symbol.for('simple-web-component:
 export function addEventListener<TEvent extends Event = Event>(target: SpecialSelector, type: string, options?: AddEventListenerBaseOptions<TEvent>): MethodDecorator;
 export function addEventListener<TEvent extends Event = Event>(selector: EventListenerSelector, type: string, options?: AddEventListenerBaseOptions<TEvent> & SwcQueryOptions & { delegate?: boolean }): MethodDecorator;
 /**
+ * @addEventListener(type, options?) — 셀렉터 생략 시 $this(컴포넌트 자신)로 바인딩
+ */
+export function addEventListener<TEvent extends Event = Event>(type: string, options?: AddEventListenerBaseOptions<TEvent> & SwcQueryOptions & { delegate?: boolean }): MethodDecorator;
+/**
  * @addEventListener decorator to bind events to elements.
  */
-export function addEventListener<TEvent extends Event = Event>(selectorOrTarget: EventListenerSelector, type: string, options: any = {}): MethodDecorator {
+export function addEventListener<TEvent extends Event = Event>(selectorOrType: EventListenerSelector | string, typeOrOptions?: string | (AddEventListenerBaseOptions<TEvent> & SwcQueryOptions & { delegate?: boolean }), maybeOptions?: AddEventListenerBaseOptions<TEvent> & SwcQueryOptions & { delegate?: boolean }): MethodDecorator {
   return (targetObj: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor) => {
+    let selector: EventListenerSelector;
+    let type: string;
+    let opts: any = {};
+
+    if (typeof typeOrOptions === 'string') {
+      // (selector, type[, options]) form — 기존 호환
+      selector = selectorOrType as EventListenerSelector;
+      type = typeOrOptions;
+      opts = maybeOptions ?? {};
+    } else {
+      // (type[, options]) form — selector 기본값 $this
+      selector = '$this';
+      type = selectorOrType as string;
+      opts = typeOrOptions ?? {};
+    }
+
     const constructor = targetObj.constructor;
 
     let listeners = ReflectUtils.getMetadata<AddEventListenerMetadata<TEvent>[]>(ADD_EVENT_LISTENER_METADATA_KEY, constructor);
@@ -43,7 +65,7 @@ export function addEventListener<TEvent extends Event = Event>(selectorOrTarget:
       ReflectUtils.defineMetadata(ADD_EVENT_LISTENER_METADATA_KEY, listeners, constructor);
     }
 
-    listeners.push({ propertyKey, selector: selectorOrTarget, type, options });
+    listeners.push({ propertyKey, selector, type, options: opts });
   };
 }
 
@@ -62,16 +84,23 @@ export function addEventListenerDelegate<TEvent extends Event = Event>(selector:
   return addEventListener<TEvent>(selector, type, {...options??{}, root:'auto', delegate: true});
 }
 
+// ─── root별 일반 헬퍼 (delegate 없음) ───
+
+export function addEventListenerLightDom<TEvent extends Event = Event>(selector: EventListenerSelector, type: string, options?: AddEventListenerBaseOptions<TEvent>): MethodDecorator {
+  return addEventListener<TEvent>(selector, type, {...options??{}, root:'light'});
+}
+
+export function addEventListenerShadowDom<TEvent extends Event = Event>(selector: EventListenerSelector, type: string, options?: AddEventListenerBaseOptions<TEvent>): MethodDecorator {
+  return addEventListener<TEvent>(selector, type, {...options??{}, root:'shadow'});
+}
+
+export function addEventListenerAllDom<TEvent extends Event = Event>(selector: EventListenerSelector, type: string, options?: AddEventListenerBaseOptions<TEvent>): MethodDecorator {
+  return addEventListener<TEvent>(selector, type, {...options??{}, root:'all'});
+}
+
 /**
  * @addEventListenerThis decorator - simplified version of @addEventListener for $this selector
  */
-
-// --- Aliases: event... ---
-export const event = addEventListener;
-export const eventDelegateLightDom = addEventListenerDelegateLightDom;
-export const eventDelegateShadowDom = addEventListenerDelegateShadowDom;
-export const eventDelegateAllDom = addEventListenerDelegateAllDom;
-export const eventDelegate = addEventListenerDelegate;
 export function addEventListenerThis<TEvent extends Event = Event>(type: string, options?: AddEventListenerBaseOptions<TEvent> & SwcQueryOptions): MethodDecorator {
   return addEventListener<TEvent>('$this', type, options);
 }
@@ -89,6 +118,20 @@ export function addEventListenerWindow<TEvent extends Event = Event>(type: strin
 export function addEventListenerDocument<TEvent extends Event = Event>(type: string, options?: AddEventListenerBaseOptions<TEvent> & SwcQueryOptions): MethodDecorator {
   return addEventListener<TEvent>('$document', type, options);
 }
+
+// --- Aliases: event... ---
+export const event = addEventListener;
+export const eventDelegateLightDom = addEventListenerDelegateLightDom;
+export const eventDelegateShadowDom = addEventListenerDelegateShadowDom;
+export const eventDelegateAllDom = addEventListenerDelegateAllDom;
+export const eventDelegate = addEventListenerDelegate;
+export const eventLightDom = addEventListenerLightDom;
+export const eventShadowDom = addEventListenerShadowDom;
+export const eventAllDom = addEventListenerAllDom;
+export const eventAppHost = addEventListenerAppHost;
+export const eventWindow = addEventListenerWindow;
+export const eventDocument = addEventListenerDocument;
+export const eventThis = addEventListenerThis;
 
 export const getAddEventListenerMetadata = (target: any): AddEventListenerMetadata<Event>[] | undefined => {
   const constructor = target instanceof Function ? target : target.constructor;

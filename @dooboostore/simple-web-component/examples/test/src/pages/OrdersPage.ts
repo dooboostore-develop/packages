@@ -1,4 +1,5 @@
-import {applyNode, attributeThis, elementDefine, onConnected, onConnectedBefore} from '@dooboostore/simple-web-component';
+import { addEventListener, applyNode, elementDefine, emitCustomEvent, onConnectedBefore, onConnectedBodyShadow, addEventListenerThis } from '@dooboostore/simple-web-component';
+
 import {Inject} from '@dooboostore/simple-boot';
 import {SubscriptionLike} from '@dooboostore/core';
 import {OrderService} from '../services/OrderService';
@@ -142,7 +143,7 @@ export default (w: Window) => {
       `;
     }
 
-    @onConnected({ useShadow: true })
+    @onConnectedBodyShadow
     render() {
       return `
         <style>

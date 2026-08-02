@@ -613,6 +613,104 @@ class FormHandler extends HTMLElement {
 - `@setProperty('#selector', 'propertyName', options)` - Set property on selector with options
 - `@setProperty` - Bare decorator (uses method name as property on $this)
 
+### 6.6 **DOM Observers (@mutationObserver, @resizeObserver)**
+
+Observe DOM mutations and element size changes declaratively. Both decorators share the same pattern as `@event` — they support optional selector (defaults to `$this`), root-based helpers, and `delegate` mode.
+
+#### @mutationObserver
+Detect DOM changes (child add/remove, attribute changes, text changes) and react automatically.
+
+```typescript
+@elementDefine('list-observer')
+class ListObserver extends HTMLElement {
+  // Observe all changes under this component (light DOM)
+  @mutationObserverLight({ childList: true, attributes: true, subtree: true })
+  onDomChanged(matchedEls: HTMLElement[], mutations: MutationRecord[], observer: MutationObserver) {
+    console.log('DOM changed:', matchedEls.length, mutations);
+  }
+
+  // Observe a specific selector (delegate mode - catches dynamically added nodes too)
+  @mutationObserverDelegateShadow('.item', { childList: true })
+  onItemChanged(matchedEls: HTMLElement[], mutations: MutationRecord[], observer: MutationObserver) {
+    console.log('Item changed:', matchedEls);
+  }
+}
+```
+
+**Callback signature:**
+- `matchedEls: HTMLElement[]` - Elements matching the selector (1st arg)
+- `mutations: MutationRecord[]` - Original mutation records (2nd arg)
+- `observer: MutationObserver` - The observer instance (3rd arg)
+
+**How delegate works:**
+- **delegate=true** - Observes the root with `subtree: true`; dynamically added/removed elements matching the selector are detected in the callback
+- **delegate=false** (default) - Observes only the elements matching the selector at connect time
+
+**@mutationObserver Options:**
+- Standard `MutationObserverInit` options: `childList`, `attributes`, `characterData`, `subtree`, `attributeFilter`, `attributeOldValue`, `characterDataOldValue`
+- `delegate` - Observe root and filter by selector in callback
+- `root` - `'light' | 'shadow' | 'all' | 'auto'`
+- `filter` - Additional callback filter
+- `removeObserver` - Cleanup callback called on disconnect `(target, options)`
+
+**@mutationObserver Decorator Variants:**
+- `mutationObserver(selector?, options?)` - Full form (selector defaults to `$this`)
+- `mutationObserverLight(selector?, options?)` - Observe light DOM
+- `mutationObserverShadow(selector?, options?)` - Observe shadow DOM
+- `mutationObserverAll(selector?, options?)` - Observe both light & shadow
+- `mutationObserverDelegate(selector?, options?)` - Delegate mode (root observe)
+- `mutationObserverDelegateLight(selector?, options?)` - Delegate in light DOM
+- `mutationObserverDelegateShadow(selector?, options?)` - Delegate in shadow DOM
+- `mutationObserverDelegateAll(selector?, options?)` - Delegate in all DOM
+
+#### @resizeObserver
+Detect element size changes and react automatically.
+
+```typescript
+@elementDefine('chart-widget')
+class ChartWidget extends HTMLElement {
+  // Re-render when component size changes (selector defaults to $this)
+  @resizeObserverLight()
+  onResize(matchedEls: HTMLElement[], entries: ResizeObserverEntry[], observer: ResizeObserver) {
+    this.redraw(entries[0]?.contentRect);
+  }
+
+  // Watch specific elements (delegate mode tracks dynamically added ones)
+  @resizeObserverDelegateShadow('.card')
+  onCardResize(matchedEls: HTMLElement[], entries: ResizeObserverEntry[], observer: ResizeObserver) {
+    console.log('Card resized:', matchedEls[0]?.clientWidth);
+  }
+}
+```
+
+**Callback signature:**
+- `matchedEls: HTMLElement[]` - Elements that were resized (1st arg)
+- `entries: ResizeObserverEntry[]` - Original observer entries (2nd arg)
+- `observer: ResizeObserver` - The observer instance (3rd arg)
+
+**@resizeObserver Options:**
+- `box` - `'content-box' | 'border-box' | 'device-pixel-content-box'`
+- `delegate` - Track dynamically added/removed matching elements
+- `root` - `'light' | 'shadow' | 'all' | 'auto'`
+- `filter` - Additional callback filter
+- `removeObserver` - Cleanup callback called on disconnect `(target, options)`
+
+**@resizeObserver Decorator Variants:**
+- `resizeObserver(selector?, options?)` - Full form (selector defaults to `$this`)
+- `resizeObserverLight(selector?, options?)` - Observe light DOM
+- `resizeObserverShadow(selector?, options?)` - Observe shadow DOM
+- `resizeObserverAll(selector?, options?)` - Observe both light & shadow
+- `resizeObserverDelegate(selector?, options?)` - Delegate mode (root observe)
+- `resizeObserverDelegateLight(selector?, options?)` - Delegate in light DOM
+- `resizeObserverDelegateShadow(selector?, options?)` - Delegate in shadow DOM
+- `resizeObserverDelegateAll(selector?, options?)` - Delegate in all DOM
+
+**Combining with @resizeObserver delegate (dynamic tracking):**
+When `delegate: true`, an internal `MutationObserver` automatically observes the root so that elements matching the selector are tracked even after being dynamically added/removed from the DOM.
+
+**Cleanup:**
+Both observers are automatically disconnected when the component is removed from the DOM. `removeObserver` callbacks (if provided) are invoked during cleanup.
+
 ### 7. **DOM Manipulation with applyNode**
 
 Surgically add, replace, or remove nodes in the DOM with fine-grained control.

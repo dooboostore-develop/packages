@@ -1,4 +1,4 @@
-import {addEventListenerThis, applyNode, elementDefine, emitCustomEvent, onConnected} from '@dooboostore/simple-web-component';
+import { addEventListener, applyNode, elementDefine, emitCustomEvent, onConnectedBefore, onConnectedBodyShadow, addEventListenerThis } from '@dooboostore/simple-web-component';
 
 /**
  * Cart Button Component Factory - Custom built-in button element
@@ -32,7 +32,7 @@ export default (w: Window) => {
     return this.#count > 0 ? this.#count.toString() : '';
   }
 
-  @onConnected({ useShadow: true })
+  @onConnectedBodyShadow
   render() {
     return `
       <style>

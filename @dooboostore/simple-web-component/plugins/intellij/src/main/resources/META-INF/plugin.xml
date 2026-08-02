@@ -1,0 +1,23 @@
+<idea-plugin>
+    <id>io.dooboostore.swc.lsp</id>
+    <name>Dooboo Store SWC LSP</name>
+    <vendor>Dooboo Store</vendor>
+    <description><![CDATA[
+        LSP-based language support for Simple Web Component template syntax
+        (<code>{{ }}</code>, <code>@var@</code>, <code>swc-on-*</code>, <code>ea:</code>,
+        reserved <code>$</code> variables) inside backtick template strings.
+    ]]></description>
+
+    <depends>com.intellij.modules.platform</depends>
+    <depends>com.intellij.modules.lang</depends>
+    <depends>com.intellij.modules.lsp</depends>
+    <depends>JavaScript</depends>
+
+    <extensions defaultExtensionNs="com.intellij.platform.lsp">
+        <integrationProvider implementation="io.dooboostore.swc.lsp.SwcLspIntegrationProvider"/>
+    </extensions>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <editorFactoryListener implementation="io.dooboostore.swc.lsp.SwcHighlightingListener"/>
+    </extensions>
+</idea-plugin>

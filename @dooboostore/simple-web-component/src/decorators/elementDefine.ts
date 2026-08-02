@@ -1,6 +1,10 @@
 import {ActionExpression, FunctionUtils, ReflectUtils, Subject} from '@dooboostore/core';
 import {debounceTime, distinctUntilChanged, throttleTime} from '@dooboostore/core/message/operators';
 import {getAddEventListenerMetadata} from './addEventListener';
+import {getMutationObserverMetadata} from './mutationObserver';
+import type {MutationObserverBaseOptions, MutationObserverMetadata} from './mutationObserver';
+import {getResizeObserverMetadata} from './resizeObserver';
+import type {ResizeObserverMetadata} from './resizeObserver';
 import {findAllLifecycleMetadata, findAllOnConnectedAfterMetadata, findAllOnConnectedBeforeMetadata, findAllOnConnectedMetadata, ON_AFTER_ADOPTED_METADATA_KEY, ON_AFTER_DISCONNECTED_METADATA_KEY, ON_BEFORE_ADOPTED_METADATA_KEY, ON_BEFORE_DISCONNECTED_METADATA_KEY, ON_CONNECTED_COMPLETED_METADATA_KEY, ON_INITIALIZE_METADATA_KEY} from './lifecycles';
 import {getEmitCustomEventMetadataList} from './emitCustomEvent';
 import {convertAttributeValue, findAllAttributeChangedMetadata} from './changedAttribute';
@@ -19,6 +23,16 @@ import {findAllPropertyMetadata} from "./applyProperty";
 // --- Core Interfaces & Types ---
 
 export const ELEMENT_CONFIG_KEY = Symbol.for('simple-web-component:element-config');
+
+/** 바인딩된 이벤트 리스너 한 건 */
+export interface BoundListener {
+  target: EventTarget;
+  type: string;
+  handler: EventListener;
+  options: AddEventListenerOptions;
+  onRemoves?: Array<{ fn: (target: EventTarget, optionValue: unknown) => void; opts: unknown }>;
+  subscription?: { unsubscribe: () => void };
+}
 
 export interface ElementConfig {
   extends?: string;
@@ -42,7 +56,6 @@ export const ensureInit = (inst: any) => { // HTMLElement
   if (!inst.__swc_initialized) {
     inst._swcId = inst?.getAttribute?.('swc-use-ssr') ?? 's' + Math.random().toString(36).substring(2, 11).toLowerCase();
     inst._emitHandlers = new Map();
-    inst._boundListeners = [];
     inst.__swc_initialized = true;
     // const attributeList = findAllQ(inst);
     // attributeList.forEach(meta => {
@@ -318,8 +331,8 @@ const setupPrototype = (proto: any, win: Window) => {
 export const elementDefine =
   (name: string, config: Partial<ElementConfig> = {}): ClassDecorator =>
     (constructor: any) => {
-      const {win, doc, builtInTagMap: BUILT_IN_TAG_MAP, domHelpers: SWC_DOM_HELPERS} = buildEnv(config.window);
-      const metadata: ElementMetadata = {...config, name, window: win};
+      const { win, doc, builtInTagMap: BUILT_IN_TAG_MAP, domHelpers: SWC_DOM_HELPERS } = buildEnv(config.window);
+      const metadata: ElementMetadata = { ...config, name, window: win };
 
       if (!metadata.window) {
         throw new Error('window is required');
@@ -340,6 +353,8 @@ export const elementDefine =
       const emitCustomEventList = getEmitCustomEventMetadataList(constructor) || [];
       const emitHostCustomEventList = emitCustomEventList.filter(meta => meta.selector === '$this' || meta.selector === '');
       const addEventListenerList = getAddEventListenerMetadata(constructor) || [];
+      const mutationObserverList = getMutationObserverMetadata(constructor) || [];
+      const resizeObserverList = getResizeObserverMetadata(constructor) || [];
       const attrChangeMap = findAllAttributeChangedMetadata(constructor);
       const attributeList = findAllAttributeMetadata(constructor);
       const applyAttributeMap = findAllAttributeApplyMetadata(constructor);
@@ -361,9 +376,19 @@ export const elementDefine =
 
       // 값을 기대하지않는다.
       let helperHostSet: HelperHostSet | null = null;
+      // 이벤트 리스너 / MutationObserver / ResizeObserver 인스턴스 (클로저 변수 — connected/disconnected 공유)
+      let boundListeners: BoundListener[] = [];
+      let shadowMutationObserver: MutationObserver | null = null;
+      let lightMutationObserver: MutationObserver | null = null;
+      let resizeObserver: ResizeObserver | null = null;
+      // 메타별 removeObserver 콜백 목록 (disconnected 시 호출)
+      let removeObserverCallbacks: Array<{ fn: (target: Element, optionValue: unknown) => void; target: any; opts: unknown }> = [];
       const originalConnected = proto.connectedCallback;
       proto.connectedCallback = async function () {
         ensureInit(this);
+        // 재연결 시 누적 방지 — 클로저 변수 리셋
+        boundListeners = [];
+        removeObserverCallbacks = [];
         // connected 됐을시 최신화
         helperHostSet = SwcUtils.getHelperAndHostSet(win, this as any);
         const appHost = helperHostSet.$appHost;
@@ -383,7 +408,7 @@ export const elementDefine =
           const conf = getElementConfig(this);
           const currentWin = (this as any)._resolveWindow(conf);
 
-          const bMethods = findAllOnConnectedBeforeMetadata(this);//.filter(it => useSsr ? !it.options.ssrFirst : true);
+          const bMethods = findAllOnConnectedBeforeMetadata(this); //.filter(it => useSsr ? !it.options.ssrFirst : true);
           // console.log('beforeConnected', bMethods)
           for (const m of bMethods) await (this as any)._invokeLifecycleMethod(m.propertyKey, helperHostSet);
           (this as any)._executeSwcScript('swc-on-before-connected', helperHostSet);
@@ -398,19 +423,19 @@ export const elementDefine =
             const mode = shadowMode === true ? 'open' : shadowMode;
             console.log('tagName=', this.tagName, 'mode', mode, this.shadowRoot);
             // if (this.tagName!=='INDEX-ROUTER') {
-              this.attachShadow({mode: mode as ShadowRootMode});
+            this.attachShadow({ mode: mode as ShadowRootMode });
             // }
           }
 
-          const stateContext: any = {...helperHostSet};
+          const stateContext: any = { ...helperHostSet };
           findAllStateMetadata(this).forEach(it => {
-            stateContext[it.name] = this[it.propertyKey]
-          })
+            stateContext[it.name] = this[it.propertyKey];
+          });
 
           const shadowChildren: Node[] = [];
           const lightChildren: Node[] = [];
 
-          console.log('targetConnectList', this.tagName, targetConnectedList.length)
+          console.log('targetConnectList', this.tagName, targetConnectedList.length);
           if (targetConnectedList.length > 0) {
             // let sContent = '',
             //   lContent = '';
@@ -420,7 +445,7 @@ export const elementDefine =
               // res = SwcUtils.projectProcessHtml(this, res);
               if (typeof res === 'string') {
                 const htmlTemplateElement = doc.createElement('template');
-                htmlTemplateElement.innerHTML = res;//SwcUtils.projectProcessHtml(this._swcId, res, doc);
+                htmlTemplateElement.innerHTML = res; //SwcUtils.projectProcessHtml(this._swcId, res, doc);
                 res = htmlTemplateElement.content;
               }
 
@@ -428,7 +453,7 @@ export const elementDefine =
                 const nodes = Array.isArray(res) ? res : [res];
                 if (meta.options.useShadow || conf?.useShadow) {
                   shadowChildren.push(...nodes);
-                }else {
+                } else {
                   lightChildren.push(...nodes);
                 }
               }
@@ -436,30 +461,28 @@ export const elementDefine =
             try {
               if (this.shadowRoot) {
                 const applyShadowChildren = SwcUtils.projectProcessHtml(this._swcId, shadowChildren, doc);
-                this.shadowRoot.replaceChildren(...applyShadowChildren)
+                this.shadowRoot.replaceChildren(...applyShadowChildren);
               }
               if (lightChildren.length) {
                 const applyLightChildren = SwcUtils.projectProcessHtml(this._swcId, lightChildren, doc);
-                this.replaceChildren(...applyLightChildren)
+                this.replaceChildren(...applyLightChildren);
               }
-
             } catch (e) {
               console.error('[ElementDefine] innerHTML setting error:', e);
             }
-            new ElementApply(this, {id: this._swcId}).apply({context: stateContext, bind: this});
+            new ElementApply(this, { id: this._swcId }).apply({ context: stateContext, bind: this });
           } else {
-            new ElementApply(this, {id: this._swcId}).apply({exclude: {html: true, text: true, attribute: true}, context: stateContext, bind: this});
+            new ElementApply(this, { id: this._swcId }).apply({ exclude: { html: true, text: true, attribute: true }, context: stateContext, bind: this });
           }
 
           // global delegate event
-          const root = this.getRootNode()
+          const root = this.getRootNode();
           if (!globalDelegatedRoots.has(root)) {
             DOM_EVENT_NAMES.forEach(type => {
               root.addEventListener(type, handleGlobalSwcEvent);
             });
             globalDelegatedRoots.add(root);
           }
-
 
           // Separate delegate and non-delegate listeners
           const delegateListeners: typeof addEventListenerList = [];
@@ -488,7 +511,7 @@ export const elementDefine =
           delegatesByTypeAndRoot.forEach((metaList, typeRootKey) => {
             const [type, rStr] = typeRootKey.split(':');
             const r = rStr === 'auto' ? 'auto' : rStr;
-            const opts = {capture: metaList[0].options.capture, once: metaList[0].options.once, passive: metaList[0].options.passive};
+            const opts = { capture: metaList[0].options.capture, once: metaList[0].options.once, passive: metaList[0].options.passive };
 
             const bindRoots: (HTMLElement | ShadowRoot)[] = [];
             if (r === 'auto') bindRoots.push(this.shadowRoot || (this as any));
@@ -508,7 +531,7 @@ export const elementDefine =
 
               const unifiedHandler = async (event: Event) => {
                 for (const meta of sortedMetaList) {
-                  const {selector, options} = meta;
+                  const { selector, options } = meta;
                   const matchedEl = (event.target as HTMLElement)?.closest(selector);
                   if (matchedEl && (br as any).contains(matchedEl)) {
                     // Apply filter if specified
@@ -522,23 +545,30 @@ export const elementDefine =
                     if (options.stopImmediatePropagation) event.stopImmediatePropagation();
                     if (options.preventDefault) event.preventDefault();
                     const currentHostSet = SwcUtils.getHostSet(this as any);
-                    const args = {event, ...currentHostSet, $el: matchedEl, $root: br};
-                    await (this as any)[meta.propertyKey](event, {...currentHostSet, $matchedElement: matchedEl}, args);
+                    const args = { event, ...currentHostSet, $el: matchedEl, $root: br };
+                    await (this as any)[meta.propertyKey](event, { ...currentHostSet, $matchedElement: matchedEl }, args);
                     if ((event as any).cancelBubble) break;
                   }
                 }
               };
               br.addEventListener(type, unifiedHandler, opts);
-              (this as any)._boundListeners.push({target: br, type, handler: unifiedHandler, options: opts});
+              // 각 메타의 removeListener를 메타 옵션과 함께 보관 (delegate 그룹은 여러 메타 가능)
+              const onRemoves: Array<{ fn: (target: Element, optionValue: any) => void; opts: any }> = [];
+              for (const m of sortedMetaList) {
+                if (m.options.removeListener) {
+                  onRemoves.push({ fn: m.options.removeListener, opts: m.options });
+                }
+              }
+              boundListeners.push({ target: br, type, handler: unifiedHandler, options: opts, onRemoves });
             });
           });
 
           nonDelegateListeners.forEach(meta => {
-            const {selector, type, options} = meta;
-            const opts = {capture: options.capture, once: options.once, passive: options.passive};
+            const { selector, type, options } = meta;
+            const opts = { capture: options.capture, once: options.once, passive: options.passive };
             const bindTargets: EventTarget[] = [];
             const r = options.root || 'auto';
-            
+
             // Resolve selector if it's a function
             let resolvedSelector: string | null = null;
             if (typeof selector === 'function') {
@@ -556,7 +586,7 @@ export const elementDefine =
             } else {
               resolvedSelector = selector;
             }
-            
+
             const applyRootOption = (target: any) => {
               if (!target) return;
               if (r === 'auto') {
@@ -601,7 +631,7 @@ export const elementDefine =
                 // Apply filter if specified
                 if (options.filter) {
                   const helper = SwcUtils.getHelperAndHostSet(currentWin, t as HTMLElement);
-                  if (!options.filter(event, {currentThis: this, helper})) {
+                  if (!options.filter(event, { currentThis: this, helper })) {
                     return; // Skip if filter returns false
                   }
                 }
@@ -609,23 +639,23 @@ export const elementDefine =
                 if (options.stopImmediatePropagation) event.stopImmediatePropagation();
                 if (options.preventDefault) event.preventDefault();
                 const currentHostSet = SwcUtils.getHostSet(this as any);
-                const args = {event, ...currentHostSet, $el: t, $root: t};
-                await (this as any)[meta.propertyKey](event, {currentHostSet, $matchedElement: event.currentTarget}, args);
+                const args = { event, ...currentHostSet, $el: t, $root: t };
+                await (this as any)[meta.propertyKey](event, { currentHostSet, $matchedElement: event.currentTarget }, args);
               };
-              
+
               // Create event stream with Observable-based operators
               const eventSubject = new Subject<Event>();
               let eventStream = eventSubject as any;
-              
+
               // Apply operators from @dooboostore/core/operators
               if (options.debounceTime !== undefined && options.debounceTime > 0) {
                 eventStream = eventStream.pipe(debounceTime(options.debounceTime));
               }
-              
+
               if (options.throttleTime !== undefined && options.throttleTime > 0) {
                 eventStream = eventStream.pipe(throttleTime(options.throttleTime));
               }
-              
+
               if (options.distinctUntilChanged !== undefined && options.distinctUntilChanged !== false) {
                 if (typeof options.distinctUntilChanged === 'function') {
                   eventStream = eventStream.pipe(distinctUntilChanged(options.distinctUntilChanged));
@@ -633,7 +663,7 @@ export const elementDefine =
                   eventStream = eventStream.pipe(distinctUntilChanged());
                 }
               }
-              
+
               // Subscribe to the event stream
               const subscription = eventStream.subscribe({
                 next: (event: Event) => {
@@ -641,18 +671,229 @@ export const elementDefine =
                 },
                 error: (err: any) => console.error('Event stream error:', err)
               });
-              
+
               // Create wrapper handler that emits to the subject
               const wrappedHandler = (event: Event) => {
                 eventSubject.next(event);
               };
-              
+
               t.addEventListener(type, wrappedHandler, opts);
-              (this as any)._boundListeners.push({target: t, type, handler: wrappedHandler, options: opts, subscription});
+              const onRemoves: Array<{ fn: (target: Element, optionValue: any) => void; opts: any }> = options.removeListener ? [{ fn: options.removeListener, opts }] : [];
+              boundListeners.push({ target: t, type, handler: wrappedHandler, options: opts, subscription, onRemoves });
             });
           });
 
-          if (originalConnected) await (originalConnected.apply(this));
+          // ─── MutationObserver / ResizeObserver 처리 ───
+          // shadow/light 루트별로 각각 observer를 두고, 해당 루트에 데코레이터 메타가 있으면 observer를 생성한다.
+          // 두 루트 모두 있으면 observer 2개, 한쪽만 있으면 1개, 없으면 0개.
+          shadowMutationObserver = null;
+          lightMutationObserver = null;
+          resizeObserver = null;
+
+          // ResizeObserver: @resizeObserver 데코레이터가 하나라도 있으면 observer 하나 생성 (shadow 있으면 shadow 루트, 없으면 light)
+          if (resizeObserverList.length > 0) {
+            const root: HTMLElement | ShadowRoot = this.shadowRoot || (this as any);
+            resizeObserver = new ResizeObserver((entries: ResizeObserverEntry[], obs: ResizeObserver) => {
+              for (const m of resizeObserverList) {
+                let matchedEls: HTMLElement[] = [];
+                if (m.options.delegate && typeof m.selector === 'string') {
+                  const isThis = m.selector === '$this' || m.selector === '';
+                  const matchesSel = (node: any): boolean => {
+                    if (!node || node.nodeType !== 1) return false;
+                    if (isThis) return true;
+                    const el = node as HTMLElement;
+                    return el.matches?.(m.selector as string) || !!el.closest?.(m.selector as string);
+                  };
+                  matchedEls = entries.map(e => e.target as HTMLElement).filter(matchesSel);
+                } else {
+                  matchedEls = entries.map(e => e.target as HTMLElement).filter(t => t && t.nodeType === 1);
+                }
+                if (matchedEls.length === 0) continue;
+                if (m.options.filter) {
+                  const helper = SwcUtils.getHelperAndHostSet(currentWin, this);
+                  if (!m.options.filter(matchedEls, { currentThis: this, helper })) continue;
+                }
+                const hostSet = SwcUtils.getHostSet(this as any);
+                (this as any)[m.propertyKey](matchedEls, entries, obs, { ...hostSet, $root: root });
+              }
+            });
+            // resizeObserver 메타별 removeObserver 수집
+            for (const m of resizeObserverList) {
+              if (m.options.removeObserver) {
+                removeObserverCallbacks.push({ fn: m.options.removeObserver, target: root, opts: m.options });
+              }
+            }
+          }
+          // MutationObserver: shadow/light 루트별 그룹핑
+          const shadowMetas = mutationObserverList.filter(m => {
+            const r = m.options.root || 'auto';
+            return this.shadowRoot && (r === 'shadow' || r === 'all' || r === 'auto');
+          });
+          const lightMetas = mutationObserverList.filter(m => {
+            const r = m.options.root || 'auto';
+            return r === 'light' || r === 'all' || (!this.shadowRoot && r === 'auto');
+          });
+
+          const setupMutationObserver = (root: HTMLElement | ShadowRoot, metas: MutationObserverMetadata[], resizeDelegates: ResizeObserverMetadata[] = []): MutationObserver | null => {
+            // mutation 메타가 없으면 observer 생성 안 함 (resize delegate는 보조)
+            if (metas.length === 0) return null;
+
+            // 사용자가 입력한 옵션 그대로 (아무것도 안 주면 childList 기본)
+            const initFrom = (o: MutationObserverBaseOptions): MutationObserverInit => {
+              const init: MutationObserverInit = {
+                childList: o.childList,
+                attributes: o.attributes,
+                characterData: o.characterData,
+                subtree: o.subtree,
+                attributeFilter: o.attributeFilter,
+                attributeOldValue: o.attributeOldValue,
+                characterDataOldValue: o.characterDataOldValue
+              };
+              // MutationObserver는 최소 1개는 true여야 함
+              if (!init.childList && !init.attributes && !init.characterData) init.childList = true;
+              return init;
+            };
+
+            const observer = new MutationObserver((mutations: MutationRecord[], obs: MutationObserver) => {
+              for (const meta of metas) {
+                const { selector, options } = meta;
+                let matchedEls: HTMLElement[] = [];
+
+                if (options.delegate && typeof selector === 'string') {
+                  const isThis = selector === '$this' || selector === '';
+                  const matchesSel = (node: any): boolean => {
+                    if (!node || node.nodeType !== 1) return false;
+                    if (isThis) return true;
+                    const el = node as HTMLElement;
+                    return el.matches?.(selector as string) || !!el.closest?.(selector as string);
+                  };
+                  matchedEls = mutations.flatMap(m => {
+                    const els: HTMLElement[] = [];
+                    if (matchesSel(m.target)) els.push(m.target as HTMLElement);
+                    Array.from(m.addedNodes || [])
+                      .filter(matchesSel)
+                      .forEach(n => els.push(n as HTMLElement));
+                    Array.from(m.removedNodes || [])
+                      .filter(matchesSel)
+                      .forEach(n => els.push(n as HTMLElement));
+                    return els;
+                  });
+                } else if (typeof selector === 'string') {
+                  // non-delegate: observe 대상이 매칭 요소들이므로 그들의 mutation 대상 + 추가/제거 노드
+                  const isThis = selector === '$this' || selector === '';
+                  const matchesSel = (node: any): boolean => {
+                    if (!node || node.nodeType !== 1) return false;
+                    if (isThis) return true;
+                    return (node as HTMLElement).matches?.(selector as string);
+                  };
+                  matchedEls = mutations.flatMap(m => {
+                    const els: HTMLElement[] = [];
+                    if (matchesSel(m.target)) els.push(m.target as HTMLElement);
+                    Array.from(m.addedNodes || [])
+                      .filter(matchesSel)
+                      .forEach(n => els.push(n as HTMLElement));
+                    Array.from(m.removedNodes || [])
+                      .filter(matchesSel)
+                      .forEach(n => els.push(n as HTMLElement));
+                    return els;
+                  });
+                } else {
+                  matchedEls = mutations.map(m => m.target as HTMLElement).filter(t => t && t.nodeType === 1);
+                }
+
+                if (matchedEls.length === 0) continue;
+                if (options.filter) {
+                  const helper = SwcUtils.getHelperAndHostSet(currentWin, this);
+                  if (!options.filter(matchedEls, { currentThis: this, helper })) continue;
+                }
+                const hostSet = SwcUtils.getHostSet(this as any);
+                // 1번째: 매치된 element 배열, 2번째: 원본 mutations, 3번째: observer
+                (this as any)[meta.propertyKey](matchedEls, mutations, obs, { ...hostSet, $root: root });
+              }
+
+              // ─── resizeObserver delegate 동적 추적 ───
+              // 추가/삭제된 요소가 delegate 셀렉터와 매칭되면 resizeObserver에 observe/unobserve
+              if (resizeDelegates.length > 0 && resizeObserver) {
+                const handle = (n: Node, observe: boolean) => {
+                  if (n.nodeType !== 1) return;
+                  const el = n as HTMLElement;
+                  for (const m of resizeDelegates) {
+                    if (typeof m.selector !== 'string') continue;
+                    const isThis = m.selector === '$this' || m.selector === '';
+                    const matchesSel = (node: any): boolean => {
+                      if (!node || node.nodeType !== 1) return false;
+                      if (isThis) return true;
+                      const e = node as HTMLElement;
+                      return e.matches?.(m.selector as string) || !!e.closest?.(m.selector as string);
+                    };
+                    if (matchesSel(el)) {
+                      if (observe) resizeObserver.observe(el, m.options.box ? { box: m.options.box } : undefined);
+                      else resizeObserver.unobserve(el);
+                    } else if (!isThis) {
+                      el.querySelectorAll(m.selector).forEach(sub => {
+                        if (observe) resizeObserver.observe(sub as HTMLElement, m.options.box ? { box: m.options.box } : undefined);
+                        else resizeObserver.unobserve(sub as HTMLElement);
+                      });
+                    }
+                  }
+                };
+                for (const m of mutations) {
+                  Array.from(m.addedNodes || []).forEach(n => handle(n, true));
+                  Array.from(m.removedNodes || []).forEach(n => handle(n, false));
+                }
+              }
+            });
+
+            // delegate 메타(mutation 또는 resize)가 하나라도 있으면 → 루트에 subtree observe 1개로 전부 감지 (콜백에서 메타별 매칭 처리)
+            const hasDelegate = metas.some(m => m.options.delegate) || resizeDelegates.some(m => m.options.delegate);
+            if (hasDelegate) {
+              observer.observe(root, { childList: true, subtree: true });
+            }
+
+            // non-delegate 메타: 셀렉터 매칭 요소들을 사용자 옵션 그대로 observe
+            const nonDelegateMetas = metas.filter(m => !m.options.delegate);
+            for (const m of nonDelegateMetas) {
+              const { selector, options } = m;
+              const mInit = initFrom(options);
+              if (typeof selector === 'string') {
+                if (selector === '$this' || selector === '') {
+                  observer.observe(root, mInit);
+                } else {
+                  root.querySelectorAll(selector).forEach(el => observer.observe(el as HTMLElement, mInit));
+                }
+              } else if (typeof selector === 'function') {
+                // 함수 셀렉터는 루트 관찰로 대체 (매칭 평가 불가)
+                observer.observe(root, mInit);
+              }
+            }
+
+            return observer;
+          };
+
+          // resizeObserver delegate 메타도 루트별로 필터해서 넘김
+          const shadowResizeDelegateMetas = resizeObserverList.filter(m => {
+            if (!m.options.delegate) return false;
+            const r = m.options.root || 'auto';
+            return this.shadowRoot && (r === 'shadow' || r === 'all' || r === 'auto');
+          });
+          const lightResizeDelegateMetas = resizeObserverList.filter(m => {
+            if (!m.options.delegate) return false;
+            const r = m.options.root || 'auto';
+            return r === 'light' || r === 'all' || (!this.shadowRoot && r === 'auto');
+          });
+
+          if (this.shadowRoot) shadowMutationObserver = setupMutationObserver(this.shadowRoot, shadowMetas, shadowResizeDelegateMetas);
+          lightMutationObserver = setupMutationObserver(this as any, lightMetas, lightResizeDelegateMetas);
+
+          // mutationObserver 메타별 removeObserver 수집
+          for (const m of mutationObserverList) {
+            if (m.options.removeObserver) {
+              const rootForM = this.shadowRoot && (m.options.root === 'shadow' || m.options.root === 'all' || (m.options.root === 'auto' && this.shadowRoot)) ? this.shadowRoot : (this as any);
+              removeObserverCallbacks.push({ fn: m.options.removeObserver, target: rootForM, opts: m.options });
+            }
+          }
+
+          if (originalConnected) await originalConnected.apply(this);
 
           const aMethods = findAllOnConnectedAfterMetadata(this); //.filter(it => { return useSsr ? !it.options.ssrFirst : true; });
           // console.log('afterConnected', this.tagName, aMethods,  getOnConnectedAfterMetadata(this))
@@ -665,9 +906,9 @@ export const elementDefine =
           for (let [name, metaList] of Array.from(attrChangeMap)) {
             for (const meta of metaList) {
               if (meta.options.while === 'connected') {
-                const val = getAttributeValue(this, name, {type: meta.options.type});
+                const val = getAttributeValue(this, name, { type: meta.options.type });
                 if (val !== null) {
-                  await ((this as any)[meta.propertyKey](val, null, name, helperHostSet));
+                  await (this as any)[meta.propertyKey](val, null, name, helperHostSet);
                 }
               }
             }
@@ -682,6 +923,9 @@ export const elementDefine =
         }
       };
 
+      /////////////////////////////////////////////////
+      // disconnectedCallback
+      ////////////////////////////////////////////////
       const originalDisconnected = proto.disconnectedCallback;
       proto.disconnectedCallback = function () {
         // const helperHostSet = SwcUtils.getHelperAndHostSet(win, this as any);
@@ -695,19 +939,53 @@ export const elementDefine =
         (this as any)._executeSwcScript('swc-on-before-disconnected', helperHostSet);
         const bMethods = findAllLifecycleMetadata(this, ON_BEFORE_DISCONNECTED_METADATA_KEY);
         for (const m of bMethods) (this as any)._invokeLifecycleMethod(m.propertyKey, helperHostSet);
-
-        if ((this as any)._boundListeners) {
-          (this as any)._boundListeners.forEach((l: any) => {
+        // event listener 정리
+        if (boundListeners.length > 0) {
+          boundListeners.forEach((l: BoundListener) => {
             l.target.removeEventListener(l.type, l.handler, l.options);
             // Cleanup Observable subscription if present
             if (l.subscription && typeof l.subscription.unsubscribe === 'function') {
               l.subscription.unsubscribe();
             }
+            // 사용자 정의 정리 콜백 호출
+            if (Array.isArray(l.onRemoves)) {
+              for (const r of l.onRemoves) {
+                try {
+                  r.fn(l.target, r.opts);
+                } catch (e) {
+                  console.error('[SWC] removeListener error:', e);
+                }
+              }
+            }
           });
-          (this as any)._boundListeners = [];
+          boundListeners = [];
         }
 
-        new ElementApply(this, {id: this._swcId}).removeAllEventListener();
+        // MutationObserver / ResizeObserver 정리
+        const _obs: Array<MutationObserver | ResizeObserver | null> = [shadowMutationObserver, lightMutationObserver, resizeObserver];
+        for (const o of _obs) {
+          try {
+            (o as any)?.disconnect?.();
+          } catch (e) {
+            console.error('[SWC] observer disconnect error:', e);
+          }
+        }
+        shadowMutationObserver = null;
+        lightMutationObserver = null;
+        resizeObserver = null;
+
+        // 메타별 removeObserver 콜백 호출
+        for (const cb of removeObserverCallbacks) {
+          try {
+            cb.fn(cb.target, cb.opts);
+          } catch (e) {
+            console.error('[SWC] removeObserver error:', e);
+          }
+        }
+        removeObserverCallbacks = [];
+
+        // elementApply event listener 정리
+        new ElementApply(this, { id: this._swcId }).removeAllEventListener();
 
         // globalDelegatedRoots remove
         // const roots = [this, this.getRootNode()];
@@ -807,7 +1085,7 @@ export const elementDefine =
       ReflectUtils.defineMetadata(ELEMENT_CONFIG_KEY, metadata, constructor);
       const registry = metadata.customElementRegistry || (win as any)?.customElements;
       if (registry && !registry.get(metadata.name)) {
-        registry.define(metadata.name, constructor as any, metadata.extends ? {extends: metadata.extends} : undefined);
+        registry.define(metadata.name, constructor as any, metadata.extends ? { extends: metadata.extends } : undefined);
       }
       return constructor;
     };

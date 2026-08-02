@@ -1,10 +1,9 @@
-import { innerHtml, addEventListener, elementDefine, onConnected, onConnectedBefore, updateClass } from '@dooboostore/simple-web-component';
+import { event, innerHtml, onConnectedAfter, onConnectedBody, updateClass, addEventListener, applyNode, elementDefine, emitCustomEvent, onConnectedBefore, onConnectedBodyShadow, addEventListenerThis, mutationObserverDelegateShadow, eventDelegate, eventShadowDom, eventDelegateShadowDom, mutationObserverShadow, insertBeforeEndShadow, resizeObserverShadow, resizeObserverDelegateShadow } from '@dooboostore/simple-web-component';
 import {Inject} from '@dooboostore/simple-boot';
 import {Router} from '@dooboostore/core-web';
 import {ProductService} from '../services/ProductService';
 import {CartService} from '../services/CartService';
 import {OrderService} from "../services/OrderService";
-import {onConnectedAfter} from "../../../../src";
 
 export default (w: Window) => {
   const tagName = 'swc-example-commerce-home-page';
@@ -56,6 +55,62 @@ export default (w: Window) => {
       return this.products.filter(p => p.category === this.selectedCategory);
     }
 
+    // ─── MutationObserver 테스트 ───
+    mutationCards: number = 0;
+
+    @eventShadowDom('.btn-add-card', 'click')
+    @insertBeforeEndShadow('.mutation-test-grid')
+    onAddCardClick() {
+      this.mutationCards++;
+      const tpl = document.createElement('template');
+      tpl.innerHTML = `<div class="mutation-card" style="width:120px;height:40px"><span>카드 #${this.mutationCards}</span><button class="btn-del-card">삭제</button></div>`;
+      return tpl.content.firstChild as Node;
+    }
+
+    @eventDelegateShadowDom('.btn-del-card', 'click')
+    onDelCardClick(e: Event) {
+      const btn = (e.target as HTMLElement).closest('.btn-del-card') as HTMLElement;
+      const card = btn?.closest('.mutation-card') as HTMLElement | null;
+      card?.remove();
+    }
+
+    // 카드 클릭 시 크기 랜덤 변경 (resizeObserver 테스트용)
+    @eventDelegateShadowDom('.mutation-card', 'click')
+    onCardClick(e: Event) {
+      const card = (e.target as HTMLElement).closest('.mutation-card') as HTMLElement | null;
+      if (!card || (e.target as HTMLElement).closest('.btn-del-card')) return;
+      const w = 100 + Math.round(Math.random() * 150);
+      const h = 30 + Math.round(Math.random() * 80);
+      card.style.width = `${w}px`;
+      card.style.height = `${h}px`;
+    }
+
+    // non-delegate: .mutation-card 직접 observe → 크기 변화 감지
+    @resizeObserverShadow('.mutation-card')
+    onCardResize(matchedEls: HTMLElement[], entries: ResizeObserverEntry[], observer: ResizeObserver) {
+      const e = entries[0];
+      console.log('[ResizeObserver non-delegate] target:', matchedEls, matchedEls[0]?.className, 'size:', e?.contentRect.width, 'x', e?.contentRect.height);
+    }
+
+    // delegate: 동적 추가된 .mutation-card 크기 변화도 감지
+    @resizeObserverDelegateShadow('.mutation-card')
+    onCardResizeDelegate(matchedEls: HTMLElement[], entries: ResizeObserverEntry[], observer: ResizeObserver) {
+      const e = entries[0];
+      console.log('[ResizeObserver delegate] target:', matchedEls, matchedEls[0]?.className, 'size:', e?.contentRect.width, 'x', e?.contentRect.height);
+    }
+
+    // non-delegate: .mutation-test-grid 컨테이너 직접 observe → 자식 추가/삭제 감지
+    @mutationObserverShadow('.mutation-test-grid', { childList: true, subtree: true })
+    onCardMutated(matchedEls: HTMLElement[], mutations: MutationRecord[], observer: MutationObserver) {
+      console.log('[MutationObserver non-delegate] matched:',matchedEls, matchedEls.length, '| target:', matchedEls[0]?.className, '| total:', mutations.length);
+    }
+
+    // delegate: shadow 루트에 subtree observe → 동적 추가된 .mutation-card 감지
+    @mutationObserverDelegateShadow('.mutation-card', { childList: true })
+    onCardMutatedDelegate(matchedEls: HTMLElement[], mutations: MutationRecord[], observer: MutationObserver) {
+      console.log('[MutationObserver delegate] matched:', matchedEls, matchedEls.length, '| target:', matchedEls[0]?.className, '| total:', mutations.length);
+    }
+
     @innerHtml('.products-grid')
     renderProductCards(): string {
       const filtered = this.getFilteredProducts();
@@ -80,7 +135,13 @@ export default (w: Window) => {
       };
     }
 
-    @addEventListener('.category-btn', 'click', { delegate: true })
+    // @event('.hero', 'click', {removeListener: () =>{alert(2)}, delegate: true})
+    // @event('click', {removeListener: ()=>alert(2)})
+    // @event('click', { delegate: true, root: 'shadow' })
+    wow() {
+      alert(1);
+    }
+    @eventDelegate('.category-btn', 'click')
     onCategorySelect(event: Event) {
       const btn = event.target as HTMLElement;
       const category = btn.getAttribute('data-category') || 'All';
@@ -107,7 +168,7 @@ export default (w: Window) => {
       this.cartService.addItem(product, 1);
     }
 
-    @onConnected
+    @onConnectedBodyShadow
     render() {
       const categories = this.getCategories();
 
@@ -239,6 +300,62 @@ export default (w: Window) => {
           .empty-state p {
             font-size: 18px;
           }
+
+          .mutation-test-section {
+            margin-top: 40px;
+            padding: 20px;
+            background: #fff;
+            border: 2px dashed #ccc;
+            border-radius: 12px;
+          }
+
+          .btn-add-card {
+            padding: 8px 16px;
+            background: #667eea;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+          }
+
+          .btn-add-card:hover {
+            background: #5a67d8;
+          }
+
+          .mutation-test-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 12px;
+          }
+
+          .mutation-card {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            padding: 12px 16px;
+            background: #f3f4f6;
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+            box-sizing: border-box;
+          }
+
+          .btn-del-card {
+            padding: 4px 8px;
+            background: #ef4444;
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+          }
+
+          .btn-del-card:hover {
+            background: #dc2626;
+          }
         </style>
 
         <div class="home-container">
@@ -265,6 +382,12 @@ export default (w: Window) => {
           <div class="products-section">
             <h2 class="section-title">✨ Featured Products</h2>
             <div class="products-grid"></div>
+          </div>
+
+          <div class="mutation-test-section">
+            <h3 class="section-title">🧪 MutationObserver Test</h3>
+            <button class="btn-add-card">카드 추가</button>
+            <div class="mutation-test-grid"></div>
           </div>
         </div>
       `;

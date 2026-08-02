@@ -177,3 +177,26 @@ export const getQueryMetadata = (target: any): QueryMetadata[]  => {
   const constructor = target instanceof Function ? target : target.constructor;
   return ReflectUtils.getMetadata(QUERY_METADATA_KEY, constructor) ?? [];
 };
+
+// ─── root별 편의 데코레이터 ───
+
+/**
+ * @queryShadow(selector, options?) — shadow DOM에서 단일 요소를 쿼리
+ */
+export function queryShadow(selector: string | ((currentThis: any, helper: HelperHostSet) => Node | NodeList | Element | Element[] | null), options?: Omit<QueryOptions, 'root'>): PropertyDecorator {
+  return query(selector, {...options ?? {}, root: 'shadow'});
+}
+
+/**
+ * @queryLight(selector, options?) — light DOM에서 단일 요소를 쿼리
+ */
+export function queryLight(selector: string | ((currentThis: any, helper: HelperHostSet) => Node | NodeList | Element | Element[] | null), options?: Omit<QueryOptions, 'root'>): PropertyDecorator {
+  return query(selector, {...options ?? {}, root: 'light'});
+}
+
+/**
+ * @queryAll(selector, options?) — shadow+light 모두에서 요소를 쿼리
+ */
+export function queryAllRoots(selector: string | ((currentThis: any, helper: HelperHostSet) => Node | NodeList | Element | Element[] | null), options?: Omit<QueryOptions, 'root'>): PropertyDecorator {
+  return query(selector, {...options ?? {}, root: 'all'});
+}

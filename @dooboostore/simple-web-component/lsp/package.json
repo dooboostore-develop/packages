@@ -1,0 +1,48 @@
+{
+  "name": "@dooboostore/simple-web-component-lsp",
+  "version": "0.0.1",
+  "description": "LSP server + VSCode client for Simple Web Component (SWC) template syntax",
+  "type": "module",
+  "private": true,
+  "main": "./out/client/extension.js",
+  "publisher": "dooboostore",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "activationEvents": [
+    "onLanguage:typescript",
+    "onLanguage:javascript"
+  ],
+  "contributes": {
+    "configuration": {
+      "title": "Simple Web Component LSP",
+      "properties": {
+        "simpleWebComponentLsp.trace.server": {
+          "scope": "window",
+          "type": "string",
+          "enum": [
+            "off",
+            "messages",
+            "verbose"
+          ],
+          "default": "off"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "compile": "tsc -p .",
+    "watch": "tsc -w -p .",
+    "build": "tsc -p ."
+  },
+  "dependencies": {
+    "vscode-languageclient": "^9.0.1",
+    "vscode-languageserver": "^9.0.1",
+    "vscode-languageserver-textdocument": "^1.0.11"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/vscode": "^1.85.0",
+    "typescript": "^5.9.2"
+  }
+}
