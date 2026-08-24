@@ -1,4 +1,4 @@
-import { event, innerHtml, onConnectedAfter, onConnectedBody, updateClass, addEventListener, applyNode, elementDefine, emitCustomEvent, onConnectedBefore, onConnectedBodyShadow, addEventListenerThis, mutationObserverDelegateShadow, eventDelegate, eventShadowDom, eventDelegateShadowDom, mutationObserverShadow, insertBeforeEndShadow, resizeObserverShadow, resizeObserverDelegateShadow } from '@dooboostore/simple-web-component';
+import { event, innerHtml, onConnectedAfter, onConnectedBody, updateClass, applyNode, elementDefine, emitCustomEvent, onConnectedBefore, onConnectedBodyShadow, addEventListenerThis, mutationObserverDelegateShadow, eventDelegate, eventShadowDom, eventDelegateShadowDom, mutationObserverShadow, insertBeforeEndShadow, resizeObserverShadow, resizeObserverDelegateShadow } from '@dooboostore/simple-web-component';
 import {Inject} from '@dooboostore/simple-boot';
 import {Router} from '@dooboostore/core-web';
 import {ProductService} from '../services/ProductService';
@@ -109,6 +109,47 @@ export default (w: Window) => {
     @mutationObserverDelegateShadow('.mutation-card', { childList: true })
     onCardMutatedDelegate(matchedEls: HTMLElement[], mutations: MutationRecord[], observer: MutationObserver) {
       console.log('[MutationObserver delegate] matched:', matchedEls, matchedEls.length, '| target:', matchedEls[0]?.className, '| total:', mutations.length);
+    }
+
+    // ─── event(delegate:'mutation') 테스트 ───
+    // focus는 비버블링 이벤트 → closest 델리게이션으로는 안 잡힘. mutation 모드는 직접 바인딩이라 동작해야 함.
+    focusCards: number = 0;
+
+    @eventShadowDom('.btn-add-focus', 'click')
+    @insertBeforeEndShadow('.focus-test-grid')
+    onAddFocusInput() {
+      this.focusCards++;
+      const tpl = document.createElement('template');
+      tpl.innerHTML = `<div class="focus-card"><input class="focus-input" placeholder="focus #${this.focusCards}" /><span class="focus-status">-</span></div>`;
+      return tpl.content.firstChild as Node;
+    }
+
+    @event('.focus-input', 'focus', {
+      delegate: 'mutation',
+      root: 'shadow',
+      removeListener: (target, opts) => {
+        console.log('[event delegate:mutation][removeListener] focus target:', target, '| opts:', opts);
+      }
+    })
+    onFocusInput(e: Event) {
+      const input = e.target as HTMLInputElement;
+      const status = input.closest('.focus-card')?.querySelector('.focus-status');
+      if (status) status.textContent = 'focus!';
+      console.log('[event delegate:mutation] focus →', input.placeholder, input.className);
+    }
+
+    @event('.focus-input', 'blur', {
+      delegate: 'mutation',
+      root: 'shadow',
+      removeListener: (target, opts) => {
+        console.log('[event delegate:mutation][removeListener] blur target:', target, '| opts:', opts);
+      }
+    })
+    onBlurInput(e: Event) {
+      const input = e.target as HTMLInputElement;
+      const status = input.closest('.focus-card')?.querySelector('.focus-status');
+      if (status) status.textContent = 'blur';
+      console.log('[event delegate:mutation] blur →', input.placeholder);
     }
 
     @innerHtml('.products-grid')
@@ -356,6 +397,67 @@ export default (w: Window) => {
           .btn-del-card:hover {
             background: #dc2626;
           }
+
+          .focus-test-section {
+            margin-top: 40px;
+            padding: 20px;
+            background: #fff;
+            border: 2px dashed #34d399;
+            border-radius: 12px;
+          }
+
+          .btn-add-focus {
+            padding: 8px 16px;
+            background: #10b981;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+          }
+
+          .btn-add-focus:hover {
+            background: #059669;
+          }
+
+          .focus-test-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 12px;
+          }
+
+          .focus-card {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            background: #ecfdf5;
+            border: 1px solid #d1fae5;
+            border-radius: 8px;
+            font-size: 12px;
+          }
+
+          .focus-input {
+            padding: 6px 10px;
+            border: 1px solid #a7f3d0;
+            border-radius: 6px;
+            font-size: 13px;
+            outline: none;
+            width: 130px;
+          }
+
+          .focus-input:focus {
+            border-color: #10b981;
+            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
+          }
+
+          .focus-status {
+            min-width: 36px;
+            text-align: center;
+            font-weight: 700;
+            color: #10b981;
+          }
         </style>
 
         <div class="home-container">
@@ -388,6 +490,16 @@ export default (w: Window) => {
             <h3 class="section-title">🧪 MutationObserver Test</h3>
             <button class="btn-add-card">카드 추가</button>
             <div class="mutation-test-grid"></div>
+          </div>
+
+          <div class="focus-test-section">
+            <h3 class="section-title">🎯 event(delegate: 'mutation') Test</h3>
+            <button class="btn-add-focus">포커스 인풋 추가</button>
+            <div class="focus-test-grid"></div>
+            <p style="font-size:12px;color:#888;margin-top:10px;">
+              동적 추가된 <code>input</code>에 <code>focus</code>/<code>blur</code>(비버블링) 이벤트를
+              MutationObserver(subtree)로 직접 바인딩하는 테스트. 인풋을 클릭/벗어나면 상태가 바뀌고 콘솔에 로그가 남습니다.
+            </p>
           </div>
         </div>
       `;

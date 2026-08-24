@@ -1,6 +1,6 @@
 import {ActionExpression, FunctionUtils, ReflectUtils, Subject} from '@dooboostore/core';
 import {debounceTime, distinctUntilChanged, throttleTime} from '@dooboostore/core/message/operators';
-import {getAddEventListenerMetadata} from './addEventListener';
+import {getAddEventListenerMetadata, type AddEventListenerMetadata} from './addEventListener';
 import {getMutationObserverMetadata} from './mutationObserver';
 import type {MutationObserverBaseOptions, MutationObserverMetadata} from './mutationObserver';
 import {getResizeObserverMetadata} from './resizeObserver';
@@ -32,6 +32,7 @@ export interface BoundListener {
   options: AddEventListenerOptions;
   onRemoves?: Array<{ fn: (target: EventTarget, optionValue: unknown) => void; opts: unknown }>;
   subscription?: { unsubscribe: () => void };
+  meta?: AddEventListenerMetadata<Event>;
 }
 
 export interface ElementConfig {
@@ -486,13 +487,21 @@ export const elementDefine =
 
           // Separate delegate and non-delegate listeners
           const delegateListeners: typeof addEventListenerList = [];
+          const mutationDelegateListeners: typeof addEventListenerList = [];
           const nonDelegateListeners: typeof addEventListenerList = [];
+
+          const isSpecialSelector = (sel: any) => sel === '$window' || sel === '$document' || sel === '$host' || sel === '$appHost' || sel === '$firstHost' || sel === '$lastHost' || sel === '$firstAppHost' || sel === '$lastAppHost' || sel === '$hosts' || sel === '$appHosts' || sel === '$this' || sel === '';
 
           addEventListenerList.forEach(meta => {
             // Function-based selectors cannot be used with delegate listeners
             const isStringSelector = typeof meta.selector === 'string';
-            if (meta.options.delegate && isStringSelector && meta.selector !== '$window' && meta.selector !== '$document' && meta.selector !== '$host' && meta.selector !== '$appHost' && meta.selector !== '$firstHost' && meta.selector !== '$lastHost' && meta.selector !== '$firstAppHost' && meta.selector !== '$lastAppHost' && meta.selector !== '$hosts' && meta.selector !== '$appHosts' && meta.selector !== '$this' && meta.selector !== '') {
-              delegateListeners.push(meta);
+            const delegateMode = meta.options.delegate;
+            if (delegateMode && isStringSelector && !isSpecialSelector(meta.selector)) {
+              if (delegateMode === 'mutation') {
+                mutationDelegateListeners.push(meta);
+              } else {
+                delegateListeners.push(meta);
+              }
             } else {
               nonDelegateListeners.push(meta);
             }
@@ -563,9 +572,92 @@ export const elementDefine =
             });
           });
 
-          nonDelegateListeners.forEach(meta => {
-            const { selector, type, options } = meta;
+          // ─── 직접 바인딩 헬퍼 (non-delegate + delegate:'mutation' 공용) ───
+          const bindDirect = (target: EventTarget, meta: AddEventListenerMetadata) => {
+            const { type, options } = meta;
             const opts = { capture: options.capture, once: options.once, passive: options.passive };
+
+            const handler = async (event: Event) => {
+              // Apply filter if specified
+              if (options.filter) {
+                const helper = SwcUtils.getHelperAndHostSet(currentWin, target as HTMLElement);
+                if (!options.filter(event, { currentThis: this, helper })) {
+                  return; // Skip if filter returns false
+                }
+              }
+              if (options.stopPropagation) event.stopPropagation();
+              if (options.stopImmediatePropagation) event.stopImmediatePropagation();
+              if (options.preventDefault) event.preventDefault();
+              const currentHostSet = SwcUtils.getHostSet(this as any);
+              const args = { event, ...currentHostSet, $el: target, $root: target };
+              await (this as any)[meta.propertyKey](event, { currentHostSet, $matchedElement: event.currentTarget }, args);
+            };
+
+            // Create event stream with Observable-based operators
+            const eventSubject = new Subject<Event>();
+            let eventStream = eventSubject as any;
+
+            if (options.debounceTime !== undefined && options.debounceTime > 0) {
+              eventStream = eventStream.pipe(debounceTime(options.debounceTime));
+            }
+            if (options.throttleTime !== undefined && options.throttleTime > 0) {
+              eventStream = eventStream.pipe(throttleTime(options.throttleTime));
+            }
+            if (options.distinctUntilChanged !== undefined && options.distinctUntilChanged !== false) {
+              if (typeof options.distinctUntilChanged === 'function') {
+                eventStream = eventStream.pipe(distinctUntilChanged(options.distinctUntilChanged));
+              } else {
+                eventStream = eventStream.pipe(distinctUntilChanged());
+              }
+            }
+
+            const subscription = eventStream.subscribe({
+              next: (event: Event) => {
+                handler(event).catch((err: any) => console.error('Event handler error:', err));
+              },
+              error: (err: any) => console.error('Event stream error:', err)
+            });
+
+            // Create wrapper handler that emits to the subject
+            const wrappedHandler = (event: Event) => {
+              eventSubject.next(event);
+            };
+
+            target.addEventListener(type, wrappedHandler, opts);
+            const onRemoves: Array<{ fn: (target: Element, optionValue: any) => void; opts: any }> = options.removeListener ? [{ fn: options.removeListener, opts: options }] : [];
+            boundListeners.push({ target, type, handler: wrappedHandler, options: opts, subscription, onRemoves, meta });
+          };
+
+          const unbindDirect = (target: EventTarget, meta: AddEventListenerMetadata) => {
+            for (let i = boundListeners.length - 1; i >= 0; i--) {
+              const l = boundListeners[i];
+              if (l.target === target && l.type === meta.type && l.meta === meta) {
+                try {
+                  l.target.removeEventListener(l.type, l.handler, l.options);
+                  l.subscription?.unsubscribe?.();
+                } catch (e) {
+                  console.error('[SWC] unbindDirect error:', e);
+                }
+                // 사용자 정의 정리 콜백 (removeListener) — 요소 unmount 시에도 호출
+                if (Array.isArray(l.onRemoves)) {
+                  for (const r of l.onRemoves) {
+                    try {
+                      r.fn(l.target, r.opts);
+                    } catch (e) {
+                      console.error('[SWC] unbindDirect removeListener error:', e);
+                    }
+                  }
+                }
+                boundListeners.splice(i, 1);
+              }
+            }
+          };
+
+          // delegate:'mutation' 이 바인딩한 요소 추적 (중복 바인딩 방지)
+          const eventBoundSets = new Map<AddEventListenerMetadata, WeakSet<Element>>();
+
+          nonDelegateListeners.forEach(meta => {
+            const { selector, options } = meta;
             const bindTargets: EventTarget[] = [];
             const r = options.root || 'auto';
 
@@ -626,61 +718,7 @@ export const elementDefine =
               }
             }
 
-            bindTargets.forEach(t => {
-              const handler = async (event: Event) => {
-                // Apply filter if specified
-                if (options.filter) {
-                  const helper = SwcUtils.getHelperAndHostSet(currentWin, t as HTMLElement);
-                  if (!options.filter(event, { currentThis: this, helper })) {
-                    return; // Skip if filter returns false
-                  }
-                }
-                if (options.stopPropagation) event.stopPropagation();
-                if (options.stopImmediatePropagation) event.stopImmediatePropagation();
-                if (options.preventDefault) event.preventDefault();
-                const currentHostSet = SwcUtils.getHostSet(this as any);
-                const args = { event, ...currentHostSet, $el: t, $root: t };
-                await (this as any)[meta.propertyKey](event, { currentHostSet, $matchedElement: event.currentTarget }, args);
-              };
-
-              // Create event stream with Observable-based operators
-              const eventSubject = new Subject<Event>();
-              let eventStream = eventSubject as any;
-
-              // Apply operators from @dooboostore/core/operators
-              if (options.debounceTime !== undefined && options.debounceTime > 0) {
-                eventStream = eventStream.pipe(debounceTime(options.debounceTime));
-              }
-
-              if (options.throttleTime !== undefined && options.throttleTime > 0) {
-                eventStream = eventStream.pipe(throttleTime(options.throttleTime));
-              }
-
-              if (options.distinctUntilChanged !== undefined && options.distinctUntilChanged !== false) {
-                if (typeof options.distinctUntilChanged === 'function') {
-                  eventStream = eventStream.pipe(distinctUntilChanged(options.distinctUntilChanged));
-                } else {
-                  eventStream = eventStream.pipe(distinctUntilChanged());
-                }
-              }
-
-              // Subscribe to the event stream
-              const subscription = eventStream.subscribe({
-                next: (event: Event) => {
-                  handler(event).catch((err: any) => console.error('Event handler error:', err));
-                },
-                error: (err: any) => console.error('Event stream error:', err)
-              });
-
-              // Create wrapper handler that emits to the subject
-              const wrappedHandler = (event: Event) => {
-                eventSubject.next(event);
-              };
-
-              t.addEventListener(type, wrappedHandler, opts);
-              const onRemoves: Array<{ fn: (target: Element, optionValue: any) => void; opts: any }> = options.removeListener ? [{ fn: options.removeListener, opts }] : [];
-              boundListeners.push({ target: t, type, handler: wrappedHandler, options: opts, subscription, onRemoves });
-            });
+            bindTargets.forEach(t => bindDirect(t, meta));
           });
 
           // ─── MutationObserver / ResizeObserver 처리 ───
@@ -734,9 +772,9 @@ export const elementDefine =
             return r === 'light' || r === 'all' || (!this.shadowRoot && r === 'auto');
           });
 
-          const setupMutationObserver = (root: HTMLElement | ShadowRoot, metas: MutationObserverMetadata[], resizeDelegates: ResizeObserverMetadata[] = []): MutationObserver | null => {
-            // mutation 메타가 없으면 observer 생성 안 함 (resize delegate는 보조)
-            if (metas.length === 0) return null;
+          const setupMutationObserver = (root: HTMLElement | ShadowRoot, metas: MutationObserverMetadata[], resizeDelegates: ResizeObserverMetadata[] = [], eventDelegates: AddEventListenerMetadata[] = []): MutationObserver | null => {
+            // 처리할 메타가 하나도 없으면 observer 생성 안 함 (루트당 1개로 공유)
+            if (metas.length === 0 && resizeDelegates.length === 0 && eventDelegates.length === 0) return null;
 
             // 사용자가 입력한 옵션 그대로 (아무것도 안 주면 childList 기본)
             const initFrom = (o: MutationObserverBaseOptions): MutationObserverInit => {
@@ -842,10 +880,62 @@ export const elementDefine =
                   Array.from(m.removedNodes || []).forEach(n => handle(n, false));
                 }
               }
+
+              // ─── addEventListener(delegate:'mutation') 동적 바인딩/해제 ───
+              // 비버블링 이벤트(focus/blur/... 등)는 closest 델리게이션으로 안 잡히므로,
+              // 매칭 요소에 직접 리스너를 바인딩하고 추가/제거를 MutationObserver로 추적한다.
+              if (eventDelegates.length > 0) {
+                for (const m of eventDelegates) {
+                  let boundSet = eventBoundSets.get(m);
+                  if (!boundSet) {
+                    boundSet = new WeakSet<Element>();
+                    eventBoundSets.set(m, boundSet);
+                  }
+                  const isThis = m.selector === '$this' || m.selector === '';
+                  const matchesSel = (node: any): boolean => {
+                    if (!node || node.nodeType !== 1) return false;
+                    if (isThis) return true;
+                    return typeof m.selector === 'string' && (node as HTMLElement).matches?.(m.selector as string);
+                  };
+
+                  const bindEl = (el: Element) => {
+                    if (!boundSet!.has(el)) {
+                      bindDirect(el, m);
+                      boundSet!.add(el);
+                    }
+                  };
+                  const unbindEl = (el: Element) => {
+                    if (boundSet!.has(el)) {
+                      unbindDirect(el, m);
+                      boundSet!.delete(el);
+                    }
+                  };
+
+                  for (const mut of mutations) {
+                    Array.from(mut.addedNodes || []).forEach(n => {
+                      if (n.nodeType !== 1) return;
+                      if (matchesSel(n)) {
+                        bindEl(n as Element);
+                      } else if (!isThis && typeof m.selector === 'string') {
+                        (n as Element).querySelectorAll?.(m.selector as string).forEach(bindEl);
+                      }
+                    });
+                    Array.from(mut.removedNodes || []).forEach(n => {
+                      if (n.nodeType !== 1) return;
+                      const el = n as Element;
+                      if (matchesSel(el)) {
+                        unbindEl(el);
+                      } else if (!isThis && typeof m.selector === 'string') {
+                        el.querySelectorAll?.(m.selector as string).forEach(unbindEl);
+                      }
+                    });
+                  }
+                }
+              }
             });
 
-            // delegate 메타(mutation 또는 resize)가 하나라도 있으면 → 루트에 subtree observe 1개로 전부 감지 (콜백에서 메타별 매칭 처리)
-            const hasDelegate = metas.some(m => m.options.delegate) || resizeDelegates.some(m => m.options.delegate);
+            // delegate 메타(mutation, resize, addEventListener:'mutation')가 하나라도 있으면 → 루트에 subtree observe 1개로 전부 감지 (콜백에서 메타별 매칭 처리)
+            const hasDelegate = metas.some(m => m.options.delegate) || resizeDelegates.some(m => m.options.delegate) || eventDelegates.length > 0;
             if (hasDelegate) {
               observer.observe(root, { childList: true, subtree: true });
             }
@@ -867,6 +957,27 @@ export const elementDefine =
               }
             }
 
+            // ─── addEventListener(delegate:'mutation') 초기 바인딩 (connect 시점에 이미 존재하는 요소) ───
+            for (const m of eventDelegates) {
+              let boundSet = eventBoundSets.get(m);
+              if (!boundSet) {
+                boundSet = new WeakSet<Element>();
+                eventBoundSets.set(m, boundSet);
+              }
+              if (typeof m.selector !== 'string') continue;
+              if (m.selector === '$this' || m.selector === '') {
+                bindDirect(root as EventTarget, m);
+                boundSet.add(root as Element);
+              } else {
+                root.querySelectorAll(m.selector).forEach(el => {
+                  if (!boundSet.has(el)) {
+                    bindDirect(el, m);
+                    boundSet.add(el);
+                  }
+                });
+              }
+            }
+
             return observer;
           };
 
@@ -882,8 +993,18 @@ export const elementDefine =
             return r === 'light' || r === 'all' || (!this.shadowRoot && r === 'auto');
           });
 
-          if (this.shadowRoot) shadowMutationObserver = setupMutationObserver(this.shadowRoot, shadowMetas, shadowResizeDelegateMetas);
-          lightMutationObserver = setupMutationObserver(this as any, lightMetas, lightResizeDelegateMetas);
+          // addEventListener(delegate:'mutation') 메타도 루트별로 필터해서 같은 observer에 넘김
+          const shadowEventDelegateMetas = mutationDelegateListeners.filter(m => {
+            const r = m.options.root || 'auto';
+            return this.shadowRoot && (r === 'shadow' || r === 'all' || r === 'auto');
+          });
+          const lightEventDelegateMetas = mutationDelegateListeners.filter(m => {
+            const r = m.options.root || 'auto';
+            return r === 'light' || r === 'all' || (!this.shadowRoot && r === 'auto');
+          });
+
+          if (this.shadowRoot) shadowMutationObserver = setupMutationObserver(this.shadowRoot, shadowMetas, shadowResizeDelegateMetas, shadowEventDelegateMetas);
+          lightMutationObserver = setupMutationObserver(this as any, lightMetas, lightResizeDelegateMetas, lightEventDelegateMetas);
 
           // mutationObserver 메타별 removeObserver 수집
           for (const m of mutationObserverList) {

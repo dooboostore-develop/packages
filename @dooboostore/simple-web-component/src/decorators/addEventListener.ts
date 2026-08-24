@@ -9,7 +9,9 @@ export interface AddEventListenerBaseOptions<TEvent extends Event = Event> exten
   stopImmediatePropagation?: boolean;
   preventDefault?: boolean;
   // removeOnDisconnected?: boolean;
-  delegate?: boolean;
+  // true/'this' → closest() 기반 이벤트 델리게이션 (루트 1개 리스너)
+  // 'mutation' → MutationObserver(subtree)로 동적 요소 감지 → 직접 바인딩 (비버블링 이벤트도 지원)
+  delegate?: boolean | 'this' | 'mutation';
   filter?: (target: Event | CustomEvent, meta:{currentThis: any, helper: HelperHostSet}) => boolean;
   // 리스너 제거(disconnected 또는 unmount) 시 호출되는 콜백. 첫 번째 인자는 바인딩된 타겟 element, 두 번째는 이 옵션이 속한 전체 옵션 객체(Base + SwcQuery + delegate).
   removeListener?: (target: Element, optionValue: AddEventListenerBaseOptions<TEvent> & SwcQueryOptions & { delegate?: boolean }) => void;
@@ -25,21 +27,23 @@ export interface AddEventListenerMetadata<TEvent extends Event = Event> {
   propertyKey: string | symbol;
   selector: EventListenerSelector;
   type: string;
-  options: AddEventListenerBaseOptions<TEvent> & SwcQueryOptions & { delegate?: boolean };
+  options: AddEventListenerBaseOptions<TEvent> & SwcQueryOptions & { delegate?: boolean | 'this' | 'mutation' };
 }
 
 export const ADD_EVENT_LISTENER_METADATA_KEY = Symbol.for('simple-web-component:add-event-listener');
 
+export type AddEventListenerOptions<TEvent extends Event = Event> = AddEventListenerBaseOptions<TEvent> & SwcQueryOptions & { delegate?: boolean | 'this' | 'mutation' };
+
 export function addEventListener<TEvent extends Event = Event>(target: SpecialSelector, type: string, options?: AddEventListenerBaseOptions<TEvent>): MethodDecorator;
-export function addEventListener<TEvent extends Event = Event>(selector: EventListenerSelector, type: string, options?: AddEventListenerBaseOptions<TEvent> & SwcQueryOptions & { delegate?: boolean }): MethodDecorator;
+export function addEventListener<TEvent extends Event = Event>(selector: EventListenerSelector, type: string, options?: AddEventListenerOptions<TEvent>): MethodDecorator;
 /**
  * @addEventListener(type, options?) — 셀렉터 생략 시 $this(컴포넌트 자신)로 바인딩
  */
-export function addEventListener<TEvent extends Event = Event>(type: string, options?: AddEventListenerBaseOptions<TEvent> & SwcQueryOptions & { delegate?: boolean }): MethodDecorator;
+export function addEventListener<TEvent extends Event = Event>(type: string, options?: AddEventListenerOptions<TEvent>): MethodDecorator;
 /**
  * @addEventListener decorator to bind events to elements.
  */
-export function addEventListener<TEvent extends Event = Event>(selectorOrType: EventListenerSelector | string, typeOrOptions?: string | (AddEventListenerBaseOptions<TEvent> & SwcQueryOptions & { delegate?: boolean }), maybeOptions?: AddEventListenerBaseOptions<TEvent> & SwcQueryOptions & { delegate?: boolean }): MethodDecorator {
+export function addEventListener<TEvent extends Event = Event>(selectorOrType: EventListenerSelector | string, typeOrOptions?: string | AddEventListenerOptions<TEvent>, maybeOptions?: AddEventListenerOptions<TEvent>): MethodDecorator {
   return (targetObj: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor) => {
     let selector: EventListenerSelector;
     let type: string;
