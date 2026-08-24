@@ -74,14 +74,14 @@ export function addEventListener<TEvent extends Event = Event>(selectorOrType: E
 }
 
 
-export function addEventListenerDelegateLightDom<TEvent extends Event = Event>(selector: EventListenerSelector, type: string, options?: Omit<AddEventListenerBaseOptions<TEvent>, 'delegate'>): MethodDecorator {
+export function addEventListenerDelegateLight<TEvent extends Event = Event>(selector: EventListenerSelector, type: string, options?: Omit<AddEventListenerBaseOptions<TEvent>, 'delegate'>): MethodDecorator {
   return addEventListener<TEvent>(selector, type, {...options??{}, root:'light', delegate: true});
 }
 
-export function addEventListenerDelegateShadowDom<TEvent extends Event = Event>(selector: EventListenerSelector, type: string, options?: Omit<AddEventListenerBaseOptions<TEvent>, 'delegate'>): MethodDecorator {
+export function addEventListenerDelegateShadow<TEvent extends Event = Event>(selector: EventListenerSelector, type: string, options?: Omit<AddEventListenerBaseOptions<TEvent>, 'delegate'>): MethodDecorator {
   return addEventListener<TEvent>(selector, type, {...options??{}, root:'shadow', delegate: true});
 }
-export function addEventListenerDelegateAllDom<TEvent extends Event = Event>(selector: EventListenerSelector, type: string, options?: Omit<AddEventListenerBaseOptions<TEvent>, 'delegate'>): MethodDecorator {
+export function addEventListenerDelegateAll<TEvent extends Event = Event>(selector: EventListenerSelector, type: string, options?: Omit<AddEventListenerBaseOptions<TEvent>, 'delegate'>): MethodDecorator {
   return addEventListener<TEvent>(selector, type, {...options??{}, root:'all', delegate: true});
 }
 export function addEventListenerDelegate<TEvent extends Event = Event>(selector: EventListenerSelector, type: string, options?: Omit<AddEventListenerBaseOptions<TEvent>, 'delegate'>): MethodDecorator {
@@ -90,15 +90,15 @@ export function addEventListenerDelegate<TEvent extends Event = Event>(selector:
 
 // ─── root별 일반 헬퍼 (delegate 없음) ───
 
-export function addEventListenerLightDom<TEvent extends Event = Event>(selector: EventListenerSelector, type: string, options?: AddEventListenerBaseOptions<TEvent>): MethodDecorator {
+export function addEventListenerLight<TEvent extends Event = Event>(selector: EventListenerSelector, type: string, options?: AddEventListenerBaseOptions<TEvent>): MethodDecorator {
   return addEventListener<TEvent>(selector, type, {...options??{}, root:'light'});
 }
 
-export function addEventListenerShadowDom<TEvent extends Event = Event>(selector: EventListenerSelector, type: string, options?: AddEventListenerBaseOptions<TEvent>): MethodDecorator {
+export function addEventListenerShadow<TEvent extends Event = Event>(selector: EventListenerSelector, type: string, options?: AddEventListenerBaseOptions<TEvent>): MethodDecorator {
   return addEventListener<TEvent>(selector, type, {...options??{}, root:'shadow'});
 }
 
-export function addEventListenerAllDom<TEvent extends Event = Event>(selector: EventListenerSelector, type: string, options?: AddEventListenerBaseOptions<TEvent>): MethodDecorator {
+export function addEventListenerAll<TEvent extends Event = Event>(selector: EventListenerSelector, type: string, options?: AddEventListenerBaseOptions<TEvent>): MethodDecorator {
   return addEventListener<TEvent>(selector, type, {...options??{}, root:'all'});
 }
 
@@ -125,13 +125,13 @@ export function addEventListenerDocument<TEvent extends Event = Event>(type: str
 
 // --- Aliases: event... ---
 export const event = addEventListener;
-export const eventDelegateLightDom = addEventListenerDelegateLightDom;
-export const eventDelegateShadowDom = addEventListenerDelegateShadowDom;
-export const eventDelegateAllDom = addEventListenerDelegateAllDom;
+export const eventDelegateLight = addEventListenerDelegateLight;
+export const eventDelegateShadow = addEventListenerDelegateShadow;
+export const eventDelegateAll = addEventListenerDelegateAll;
 export const eventDelegate = addEventListenerDelegate;
-export const eventLightDom = addEventListenerLightDom;
-export const eventShadowDom = addEventListenerShadowDom;
-export const eventAllDom = addEventListenerAllDom;
+export const eventLight = addEventListenerLight;
+export const eventShadow = addEventListenerShadow;
+export const eventAll = addEventListenerAll;
 export const eventAppHost = addEventListenerAppHost;
 export const eventWindow = addEventListenerWindow;
 export const eventDocument = addEventListenerDocument;

@@ -25,4 +25,4 @@ export { TreeWalker } from './TreeWalker';
 export * from './elements';
 
 // Options and interfaces
-export { GetRootNodeOptions } from './GetRootNodeOptions';
+export { type GetRootNodeOptions } from './GetRootNodeOptions';

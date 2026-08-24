@@ -437,6 +437,10 @@ export function attribute(selectorOrAttributeOrTarget?: AttributeSelector | Obje
 export function setAttribute(selector: AttributeSelector, attributeName: string, options?: AttributeOptions): MethodDecorator;
 export function setAttribute(attributeName: string, options?: AttributeOptions): MethodDecorator;
 export function setAttribute(selectorOrAttributeOrOptions?: AttributeSelector | AttributeOptions, attributeNameOrOptions?: any, optionsOrUndefined?: AttributeOptions): MethodDecorator {
+  // Function selector: @setAttribute((c, helper) => ..., 'attr', options?)
+  if (typeof selectorOrAttributeOrOptions === 'function') {
+    return applyAttribute(selectorOrAttributeOrOptions as AttributeSelector, attributeNameOrOptions as any, optionsOrUndefined as AttributeOptions) as MethodDecorator;
+  }
   // With string as first parameter
   if (typeof selectorOrAttributeOrOptions === 'string') {
     // Check if first parameter is a CSS selector or attribute name
