@@ -8,7 +8,6 @@ export * from './emitCustomEvent';
 export * from './applyNode';
 export * from './lifecycles';
 export * from './query';
-export * from './queryAll';
 export * from './applyClass';
 export * from './applyStyle';
 export * from './applyAttribute';

@@ -1,6 +1,6 @@
 import { ReflectUtils } from '@dooboostore/core';
 import { ensureInit, getElementConfig } from './elementDefine';
-import {SpecialSelector, SwcQueryOptions, HelperHostSet, SwcRootType} from '../types';
+import {SpecialSelector, SwcQueryOptions, SwcFnSelector, SwcSelector, HelperHostSet, SwcRootType} from '../types';
 import { SwcUtils} from "../utils/Utils";
 import {findAllStateMetadata} from "./state";
 import {ElementApply} from "@dooboostore/core-web";
@@ -15,27 +15,25 @@ import {ElementApply} from "@dooboostore/core-web";
  */
 export type ApplyNodePosition = 'beforeBegin' | 'afterBegin' | 'beforeEnd' | 'afterEnd' | 'replace' | 'replaceChildren' | 'innerHtml' | 'innerText' | 'remove' | 'clearChildren';
 
-export type ApplyNodeSelector = string | ((currentThis: any, helper: HelperHostSet) => NodeList | Element | Element[] | null);
+export type ApplyNodeFnSelector = SwcFnSelector;
+export type ApplyNodeSelector = SwcSelector;
 
-export interface ApplyNodeOptions {
+// 공통 옵션 — root 없음
+export interface ApplyNodeBaseOptions {
   position?: ApplyNodePosition;
-  root?: SwcRootType;
-  /**
-   * Filter function to determine whether to perform DOM operation.
-   * If it returns false, the operation is skipped.
-   */
   filter?: (target: HTMLElement | ShadowRoot, newValue: any, meta: { currentThis: any, helper: HelperHostSet }) => boolean;
-  /**
-   * Optional loading content to display while an async method is executing.
-   */
   fallback?: (helper: HelperHostSet) => any;
-  /**
-   * Custom key to extract value from return object.
-   * If not provided, uses APPLY_NODE_METADATA_KEY by default.
-   * Useful when multiple @applyNode decorators are on the same method.
-   */
   valueKey?: symbol | string;
 }
+
+// 문자열 셀렉터 전용 — root 허용
+export type ApplyNodeQueryOptions = ApplyNodeBaseOptions & { root?: SwcRootType };
+// 함수 셀렉터 전용 — root 금지
+export type ApplyNodeNonQueryOptions = ApplyNodeBaseOptions;
+export type ApplyNodeOptions = ApplyNodeQueryOptions;
+
+// 셀렉터 종류에 따라 옵션 타입 분기
+export type ApplyNodeOptionsOf<S extends ApplyNodeSelector> = S extends string ? ApplyNodeQueryOptions : ApplyNodeNonQueryOptions;
 
 export interface ApplyNodeMetadata {
   propertyKey: string | symbol;
@@ -141,8 +139,9 @@ const applyToDom = (currentThis: any, targetEl: HTMLElement, res: Node | string,
  * - applyNode(selector, options) - Apply to specific selector
  * - applyNode(options) - Apply to $this (current element)
  */
-export function applyNode(selector: ApplyNodeSelector, options?: ApplyNodeOptions): MethodDecorator;
-export function applyNode(options: ApplyNodeOptions): MethodDecorator;
+export function applyNode(selector: string, options?: ApplyNodeQueryOptions): MethodDecorator;
+export function applyNode(selector: ApplyNodeFnSelector, options?: ApplyNodeNonQueryOptions): MethodDecorator;
+export function applyNode(options: ApplyNodeQueryOptions): MethodDecorator;
 export function applyNode(selectorOrOptions: ApplyNodeSelector | ApplyNodeOptions, maybeOptions?: ApplyNodeOptions): MethodDecorator {
   // Determine selector and options based on overload
   let selector: ApplyNodeSelector;
@@ -278,8 +277,13 @@ export function applyNode(selectorOrOptions: ApplyNodeSelector | ApplyNodeOption
  * - replaceChildrenNode(options) - Replace children of $this (current element)
  * - @replaceChildrenNode - Bare decorator, replaces children of $this
  */
-export function replaceChildren(selector: ApplyNodeSelector, options?: Omit<ApplyNodeOptions, 'position'>): MethodDecorator;
-export function replaceChildren(options: Omit<ApplyNodeOptions, 'position'>): MethodDecorator;
+export type ApplyNodeQueryOptionsNoPos = Omit<ApplyNodeQueryOptions, 'position'>;
+export type ApplyNodeNonQueryOptionsNoPos = Omit<ApplyNodeNonQueryOptions, 'position'>;
+export type ApplyNodeOptionsOfNoPos<S extends ApplyNodeSelector> = S extends string ? ApplyNodeQueryOptionsNoPos : ApplyNodeNonQueryOptionsNoPos;
+
+export function replaceChildren(selector: string, options?: ApplyNodeQueryOptionsNoPos): MethodDecorator;
+export function replaceChildren(selector: ApplyNodeFnSelector, options?: ApplyNodeNonQueryOptionsNoPos): MethodDecorator;
+export function replaceChildren(options: ApplyNodeQueryOptionsNoPos): MethodDecorator;
 export function replaceChildren(target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor): PropertyDescriptor | void;
 export function replaceChildren(selectorOrOptions?: ApplyNodeSelector | Omit<ApplyNodeOptions, 'position'> | Object, maybeOptions?: Omit<ApplyNodeOptions, 'position'> | string | symbol, descriptor?: PropertyDescriptor): MethodDecorator | PropertyDescriptor | void {
   // Bare decorator usage: @replaceChildrenNode
@@ -288,7 +292,7 @@ export function replaceChildren(selectorOrOptions?: ApplyNodeSelector | Omit<App
   }
   
   if (typeof selectorOrOptions === 'string' || typeof selectorOrOptions === 'function') {
-    return applyNode(selectorOrOptions as ApplyNodeSelector, {...maybeOptions as Omit<ApplyNodeOptions, 'position'>, position: 'replaceChildren'});
+    return applyNode(selectorOrOptions as any, {...maybeOptions as Omit<ApplyNodeOptions, 'position'>, position: 'replaceChildren'});
   }
   return applyNode({...selectorOrOptions as Omit<ApplyNodeOptions, 'position'>, position: 'replaceChildren'});
 }
@@ -311,7 +315,7 @@ export function clearChildrenNode(selectorOrOptions?: ApplyNodeSelector | Omit<A
   }
   
   if (typeof selectorOrOptions === 'string' || typeof selectorOrOptions === 'function') {
-    return applyNode(selectorOrOptions as ApplyNodeSelector, {...maybeOptions as Omit<ApplyNodeOptions, 'position'>, position: 'clearChildren'});
+    return applyNode(selectorOrOptions as any, {...maybeOptions as Omit<ApplyNodeOptions, 'position'>, position: 'clearChildren'});
   }
   return applyNode({...selectorOrOptions as Omit<ApplyNodeOptions, 'position'>, position: 'clearChildren'});
 }
@@ -337,7 +341,7 @@ export function innerHtml(selectorOrOptions?: ApplyNodeSelector | Omit<ApplyNode
   }
   
   if (typeof selectorOrOptions === 'string' || typeof selectorOrOptions === 'function') {
-    return applyNode(selectorOrOptions as ApplyNodeSelector, {...maybeOptions as Omit<ApplyNodeOptions, 'position'>, position: 'innerHtml'});
+    return applyNode(selectorOrOptions as any, {...maybeOptions as Omit<ApplyNodeOptions, 'position'>, position: 'innerHtml'});
   }
   return applyNode({...selectorOrOptions as Omit<ApplyNodeOptions, 'position'>, position: 'innerHtml'});
 }
@@ -363,7 +367,7 @@ export function innerHtmlLight(selectorOrOptions?: ApplyNodeSelector | Omit<Appl
   }
   
   if (typeof selectorOrOptions === 'string' || typeof selectorOrOptions === 'function') {
-    return applyNode(selectorOrOptions as ApplyNodeSelector, {...maybeOptions as Omit<ApplyNodeOptions, 'position' | 'root'>, position: 'innerHtml', root: 'light'});
+    return applyNode(selectorOrOptions as any, {...maybeOptions as Omit<ApplyNodeOptions, 'position' | 'root'>, position: 'innerHtml', root: 'light'});
   }
   return applyNode({...selectorOrOptions as Omit<ApplyNodeOptions, 'position' | 'root'>, position: 'innerHtml', root: 'light'});
 }
@@ -387,7 +391,7 @@ export function innerHtmlShadow(selectorOrOptions?: ApplyNodeSelector | Omit<App
   }
   
   if (typeof selectorOrOptions === 'string' || typeof selectorOrOptions === 'function') {
-    return applyNode(selectorOrOptions as ApplyNodeSelector, {...maybeOptions as Omit<ApplyNodeOptions, 'position' | 'root'>, position: 'innerHtml', root: 'shadow'});
+    return applyNode(selectorOrOptions as any, {...maybeOptions as Omit<ApplyNodeOptions, 'position' | 'root'>, position: 'innerHtml', root: 'shadow'});
   }
   return applyNode({...selectorOrOptions as Omit<ApplyNodeOptions, 'position' | 'root'>, position: 'innerHtml', root: 'shadow'});
 }
@@ -411,7 +415,7 @@ export function innerText(selectorOrOptions?: ApplyNodeSelector | Omit<ApplyNode
   }
   
   if (typeof selectorOrOptions === 'string' || typeof selectorOrOptions === 'function') {
-    return applyNode(selectorOrOptions as ApplyNodeSelector, {...maybeOptions as Omit<ApplyNodeOptions, 'position'>, position: 'innerText'});
+    return applyNode(selectorOrOptions as any, {...maybeOptions as Omit<ApplyNodeOptions, 'position'>, position: 'innerText'});
   }
   return applyNode({...selectorOrOptions as Omit<ApplyNodeOptions, 'position'>, position: 'innerText'});
 }
@@ -435,7 +439,7 @@ export function innerTextLight(selectorOrOptions?: ApplyNodeSelector | Omit<Appl
   }
   
   if (typeof selectorOrOptions === 'string' || typeof selectorOrOptions === 'function') {
-    return applyNode(selectorOrOptions as ApplyNodeSelector, {...maybeOptions as Omit<ApplyNodeOptions, 'position' | 'root'>, position: 'innerText', root: 'light'});
+    return applyNode(selectorOrOptions as any, {...maybeOptions as Omit<ApplyNodeOptions, 'position' | 'root'>, position: 'innerText', root: 'light'});
   }
   return applyNode({...selectorOrOptions as Omit<ApplyNodeOptions, 'position' | 'root'>, position: 'innerText', root: 'light'});
 }
@@ -458,7 +462,7 @@ export function innerTextShadow(selectorOrOptions?: ApplyNodeSelector | Omit<App
   }
   
   if (typeof selectorOrOptions === 'string' || typeof selectorOrOptions === 'function') {
-    return applyNode(selectorOrOptions as ApplyNodeSelector, {...maybeOptions as Omit<ApplyNodeOptions, 'position' | 'root'>, position: 'innerText', root: 'shadow'});
+    return applyNode(selectorOrOptions as any, {...maybeOptions as Omit<ApplyNodeOptions, 'position' | 'root'>, position: 'innerText', root: 'shadow'});
   }
   return applyNode({...selectorOrOptions as Omit<ApplyNodeOptions, 'position' | 'root'>, position: 'innerText', root: 'shadow'});
 }
@@ -481,7 +485,7 @@ export function insertBeforeEnd(selectorOrOptions?: ApplyNodeSelector | Omit<App
   }
   
   if (typeof selectorOrOptions === 'string' || typeof selectorOrOptions === 'function') {
-    return applyNode(selectorOrOptions as ApplyNodeSelector, {...maybeOptions as Omit<ApplyNodeOptions, 'position'>, position: 'beforeEnd'});
+    return applyNode(selectorOrOptions as any, {...maybeOptions as Omit<ApplyNodeOptions, 'position'>, position: 'beforeEnd'});
   }
   return applyNode({...selectorOrOptions as Omit<ApplyNodeOptions, 'position'>, position: 'beforeEnd'});
 }
@@ -505,7 +509,7 @@ export function insertBeforeEndLight(selectorOrOptions?: ApplyNodeSelector | Omi
   }
   
   if (typeof selectorOrOptions === 'string' || typeof selectorOrOptions === 'function') {
-    return applyNode(selectorOrOptions as ApplyNodeSelector, {...maybeOptions as Omit<ApplyNodeOptions, 'position' | 'root'>, position: 'beforeEnd', root: 'light'});
+    return applyNode(selectorOrOptions as any, {...maybeOptions as Omit<ApplyNodeOptions, 'position' | 'root'>, position: 'beforeEnd', root: 'light'});
   }
   return applyNode({...selectorOrOptions as Omit<ApplyNodeOptions, 'position' | 'root'>, position: 'beforeEnd', root: 'light'});
 }
@@ -529,7 +533,7 @@ export function insertBeforeEndShadow(selectorOrOptions?: ApplyNodeSelector | Om
   }
   
   if (typeof selectorOrOptions === 'string' || typeof selectorOrOptions === 'function') {
-    return applyNode(selectorOrOptions as ApplyNodeSelector, {...maybeOptions as Omit<ApplyNodeOptions, 'position' | 'root'>, position: 'beforeEnd', root: 'shadow'});
+    return applyNode(selectorOrOptions as any, {...maybeOptions as Omit<ApplyNodeOptions, 'position' | 'root'>, position: 'beforeEnd', root: 'shadow'});
   }
   return applyNode({...selectorOrOptions as Omit<ApplyNodeOptions, 'position' | 'root'>, position: 'beforeEnd', root: 'shadow'});
 }
@@ -553,7 +557,7 @@ export function insertAfterBegin(selectorOrOptions?: ApplyNodeSelector | Omit<Ap
   }
   
   if (typeof selectorOrOptions === 'string' || typeof selectorOrOptions === 'function') {
-    return applyNode(selectorOrOptions as ApplyNodeSelector, {...maybeOptions as Omit<ApplyNodeOptions, 'position'>, position: 'afterBegin'});
+    return applyNode(selectorOrOptions as any, {...maybeOptions as Omit<ApplyNodeOptions, 'position'>, position: 'afterBegin'});
   }
   return applyNode({...selectorOrOptions as Omit<ApplyNodeOptions, 'position'>, position: 'afterBegin'});
 }
@@ -577,7 +581,7 @@ export function insertAfterBeginLight(selectorOrOptions?: ApplyNodeSelector | Om
   }
   
   if (typeof selectorOrOptions === 'string' || typeof selectorOrOptions === 'function') {
-    return applyNode(selectorOrOptions as ApplyNodeSelector, {...maybeOptions as Omit<ApplyNodeOptions, 'position' | 'root'>, position: 'afterBegin', root: 'light'});
+    return applyNode(selectorOrOptions as any, {...maybeOptions as Omit<ApplyNodeOptions, 'position' | 'root'>, position: 'afterBegin', root: 'light'});
   }
   return applyNode({...selectorOrOptions as Omit<ApplyNodeOptions, 'position' | 'root'>, position: 'afterBegin', root: 'light'});
 }
@@ -601,7 +605,7 @@ export function replaceChildrenLight(selectorOrOptions?: ApplyNodeSelector | Omi
   }
   
   if (typeof selectorOrOptions === 'string' || typeof selectorOrOptions === 'function') {
-    return applyNode(selectorOrOptions as ApplyNodeSelector, {...maybeOptions as Omit<ApplyNodeOptions, 'position' | 'root'>, position: 'replaceChildren', root: 'light'});
+    return applyNode(selectorOrOptions as any, {...maybeOptions as Omit<ApplyNodeOptions, 'position' | 'root'>, position: 'replaceChildren', root: 'light'});
   }
   return applyNode({...selectorOrOptions as Omit<ApplyNodeOptions, 'position' | 'root'>, position: 'replaceChildren', root: 'light'});
 }
@@ -624,13 +628,35 @@ export function clearChildrenLight(selectorOrOptions?: ApplyNodeSelector | Omit<
   }
   
   if (typeof selectorOrOptions === 'string' || typeof selectorOrOptions === 'function') {
-    return applyNode(selectorOrOptions as ApplyNodeSelector, {...maybeOptions as Omit<ApplyNodeOptions, 'position' | 'root'>, position: 'clearChildren', root: 'light'});
+    return applyNode(selectorOrOptions as any, {...maybeOptions as Omit<ApplyNodeOptions, 'position' | 'root'>, position: 'clearChildren', root: 'light'});
   }
   return applyNode({...selectorOrOptions as Omit<ApplyNodeOptions, 'position' | 'root'>, position: 'clearChildren', root: 'light'});
 }
 
 
 
+
+// ─── Aliases ───
+export const apply = applyNode;
+export const node = applyNode;
+
+// ─── 편의 헬퍼 (selector/root 생략) ───
+
+export function applyThis(options?: ApplyNodeQueryOptions): MethodDecorator {
+  return applyNode('$this', options);
+}
+export function applyAppHost(options?: ApplyNodeQueryOptions): MethodDecorator {
+  return applyNode('$appHost', options);
+}
+export function applyLight(selector: string, options?: Omit<ApplyNodeQueryOptions, 'root'>): MethodDecorator {
+  return applyNode(selector, {...options ?? {}, root: 'light'});
+}
+export function applyShadow(selector: string, options?: Omit<ApplyNodeQueryOptions, 'root'>): MethodDecorator {
+  return applyNode(selector, {...options ?? {}, root: 'shadow'});
+}
+export function applyAll(selector: string, options?: Omit<ApplyNodeQueryOptions, 'root'>): MethodDecorator {
+  return applyNode(selector, {...options ?? {}, root: 'all'});
+}
 
 export const findAllApplyNodeMetadata = (target: any): Map<string | symbol, ApplyNodeMetadata> => {
   const result = new Map<string | symbol, ApplyNodeMetadata>();

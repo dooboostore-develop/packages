@@ -1,21 +1,28 @@
 import {ReflectUtils} from '@dooboostore/core';
 import {ensureInit} from './elementDefine';
 import {SwcUtils} from '../utils/Utils';
-import { SpecialSelector, SwcQueryOptions, HelperHostSet } from '../types';
+import { SpecialSelector, SwcQueryOptions, SwcFnSelector, SwcSelector, HelperHostSet } from '../types';
 
 export type StyleAction = 'set' | 'update' | 'remove';
 
-export interface StyleApplyOptions extends SwcQueryOptions {
+// 공통 옵션 — root 없음
+export interface StyleBaseOptions {
   filter?: (target: HTMLElement, value: any, meta: {currentThis: any, helper: HelperHostSet}) => boolean;
-  /**
-   * Custom key to extract value from return object.
-   * If not provided, uses STYLE_METADATA_KEY by default.
-   * Useful when multiple @applyStyle decorators are on the same method.
-   */
   valueKey?: symbol | string;
 }
 
-export type StyleSelector = string | ((currentThis: any, helper: HelperHostSet) => NodeList | Element | Element[] | null);
+// 문자열 셀렉터 전용 — root 허용
+export type StyleQueryOptions = StyleBaseOptions & SwcQueryOptions;
+// 함수 셀렉터 전용 — root 금지
+export type StyleNonQueryOptions = StyleBaseOptions;
+// 내부 저장/해석용
+export type StyleApplyOptions = StyleQueryOptions;
+
+export type StyleFnSelector = SwcFnSelector;
+export type StyleSelector = SwcSelector;
+
+// 셀렉터 종류에 따라 옵션 타입 분기
+export type StyleOptionsOf<S extends StyleSelector> = S extends string ? StyleQueryOptions : StyleNonQueryOptions;
 
 export interface StyleApplyMetadata {
   propertyKey: string | symbol;
@@ -45,6 +52,9 @@ const resolveSelector = (selector: StyleSelector, inst: any, win: Window): strin
       return result as HTMLElement[];
     }
     if (result === null) {
+      return [];
+    }
+    if (result instanceof win.Node) {
       return [];
     }
     return result as string;
@@ -184,14 +194,15 @@ function createStyleDecorator(action: StyleAction) {
 }
 
 export function applyStyle(target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor): PropertyDescriptor | void;
-export function applyStyle(selector: StyleSelector, action?: StyleAction, options?: StyleApplyOptions): MethodDecorator;
+export function applyStyle(selector: string, action?: StyleAction, options?: StyleQueryOptions): MethodDecorator;
+export function applyStyle(selector: StyleFnSelector, action?: StyleAction, options?: StyleNonQueryOptions): MethodDecorator;
 export function applyStyle(selectorOrTarget?: any, actionOrPropertyKey?: any, optionsOrDescriptor?: any): any {
   // Bare decorator: @applyStyle
-  if (optionsOrDescriptor !== undefined && (typeof actionOrPropertyKey === 'string' || typeof actionOrPropertyKey === 'symbol')) {
+  if (optionsOrDescriptor !== undefined && typeof selectorOrTarget !== 'string' && typeof selectorOrTarget !== 'function' && (typeof actionOrPropertyKey === 'string' || typeof actionOrPropertyKey === 'symbol')) {
     return createStyleDecorator('update')('$this', {})(selectorOrTarget as Object, actionOrPropertyKey, optionsOrDescriptor as PropertyDescriptor);
   }
   // With selector
-  if (typeof selectorOrTarget === 'string') {
+  if (typeof selectorOrTarget === 'string' || typeof selectorOrTarget === 'function') {
     const action = (typeof actionOrPropertyKey === 'string' ? actionOrPropertyKey : 'update') as StyleAction;
     const options = (typeof actionOrPropertyKey === 'object' ? actionOrPropertyKey : optionsOrDescriptor) as StyleApplyOptions | undefined;
     return createStyleDecorator(action)(selectorOrTarget, options);
@@ -203,14 +214,15 @@ export function applyStyle(selectorOrTarget?: any, actionOrPropertyKey?: any, op
 }
 
 export function setStyle(target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor): PropertyDescriptor | void;
-export function setStyle(selector: StyleSelector, options?: StyleApplyOptions): MethodDecorator;
+export function setStyle(selector: string, options?: StyleQueryOptions): MethodDecorator;
+export function setStyle(selector: StyleFnSelector, options?: StyleNonQueryOptions): MethodDecorator;
 export function setStyle(selectorOrTarget?: any, optionsOrPropertyKey?: any, descriptor?: any): any {
   // Bare decorator: @setStyle
   if (descriptor !== undefined && (typeof optionsOrPropertyKey === 'string' || typeof optionsOrPropertyKey === 'symbol')) {
     return createStyleDecorator('set')('$this', {})(selectorOrTarget as Object, optionsOrPropertyKey, descriptor as PropertyDescriptor);
   }
   // With selector
-  if (typeof selectorOrTarget === 'string') {
+  if (typeof selectorOrTarget === 'string' || typeof selectorOrTarget === 'function') {
     return createStyleDecorator('set')(selectorOrTarget, optionsOrPropertyKey as StyleApplyOptions);
   }
   // Without selector (defaults to $this)
@@ -218,14 +230,15 @@ export function setStyle(selectorOrTarget?: any, optionsOrPropertyKey?: any, des
 }
 
 export function updateStyle(target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor): PropertyDescriptor | void;
-export function updateStyle(selector: StyleSelector, options?: StyleApplyOptions): MethodDecorator;
+export function updateStyle(selector: string, options?: StyleQueryOptions): MethodDecorator;
+export function updateStyle(selector: StyleFnSelector, options?: StyleNonQueryOptions): MethodDecorator;
 export function updateStyle(selectorOrTarget?: any, optionsOrPropertyKey?: any, descriptor?: any): any {
   // Bare decorator: @updateStyle
   if (descriptor !== undefined && (typeof optionsOrPropertyKey === 'string' || typeof optionsOrPropertyKey === 'symbol')) {
     return createStyleDecorator('update')('$this', {})(selectorOrTarget as Object, optionsOrPropertyKey, descriptor as PropertyDescriptor);
   }
   // With selector
-  if (typeof selectorOrTarget === 'string') {
+  if (typeof selectorOrTarget === 'string' || typeof selectorOrTarget === 'function') {
     return createStyleDecorator('update')(selectorOrTarget, optionsOrPropertyKey as StyleApplyOptions);
   }
   // Without selector (defaults to $this)
@@ -233,18 +246,52 @@ export function updateStyle(selectorOrTarget?: any, optionsOrPropertyKey?: any, 
 }
 
 export function removeStyle(target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor): PropertyDescriptor | void;
-export function removeStyle(selector: StyleSelector, options?: StyleApplyOptions): MethodDecorator;
+export function removeStyle(selector: string, options?: StyleQueryOptions): MethodDecorator;
+export function removeStyle(selector: StyleFnSelector, options?: StyleNonQueryOptions): MethodDecorator;
 export function removeStyle(selectorOrTarget?: any, optionsOrPropertyKey?: any, descriptor?: any): any {
   // Bare decorator: @removeStyle
   if (descriptor !== undefined && (typeof optionsOrPropertyKey === 'string' || typeof optionsOrPropertyKey === 'symbol')) {
     return createStyleDecorator('remove')('$this', {})(selectorOrTarget as Object, optionsOrPropertyKey, descriptor as PropertyDescriptor);
   }
   // With selector
-  if (typeof selectorOrTarget === 'string') {
+  if (typeof selectorOrTarget === 'string' || typeof selectorOrTarget === 'function') {
     return createStyleDecorator('remove')(selectorOrTarget, optionsOrPropertyKey as StyleApplyOptions);
   }
   // Without selector (defaults to $this)
   return createStyleDecorator('remove')('$this', selectorOrTarget as StyleApplyOptions);
+}
+
+// ─── Aliases ───
+export const style = applyStyle;
+
+// ─── 편의 헬퍼 (selector/root 생략) ───
+
+export function styleThis(action?: StyleAction, options?: StyleQueryOptions): MethodDecorator {
+  return applyStyle('$this', action, options);
+}
+export function styleAppHost(action?: StyleAction, options?: StyleQueryOptions): MethodDecorator {
+  return applyStyle('$appHost', action, options);
+}
+export function styleLight(selector: string, action?: StyleAction, options?: Omit<StyleQueryOptions, 'root'>): MethodDecorator;
+export function styleLight(selector: string, options?: Omit<StyleQueryOptions, 'root'>): MethodDecorator;
+export function styleLight(selector: string, actionOrOptions?: StyleAction | Omit<StyleQueryOptions, 'root'>, options?: Omit<StyleQueryOptions, 'root'>): MethodDecorator {
+  const action = (typeof actionOrOptions === 'string' ? actionOrOptions : undefined) as StyleAction | undefined;
+  const opts = (typeof actionOrOptions === 'object' ? actionOrOptions : options) as Omit<StyleQueryOptions, 'root'> | undefined;
+  return applyStyle(selector, action, {...opts ?? {}, root: 'light'});
+}
+export function styleShadow(selector: string, action?: StyleAction, options?: Omit<StyleQueryOptions, 'root'>): MethodDecorator;
+export function styleShadow(selector: string, options?: Omit<StyleQueryOptions, 'root'>): MethodDecorator;
+export function styleShadow(selector: string, actionOrOptions?: StyleAction | Omit<StyleQueryOptions, 'root'>, options?: Omit<StyleQueryOptions, 'root'>): MethodDecorator {
+  const action = (typeof actionOrOptions === 'string' ? actionOrOptions : undefined) as StyleAction | undefined;
+  const opts = (typeof actionOrOptions === 'object' ? actionOrOptions : options) as Omit<StyleQueryOptions, 'root'> | undefined;
+  return applyStyle(selector, action, {...opts ?? {}, root: 'shadow'});
+}
+export function styleAll(selector: string, action?: StyleAction, options?: Omit<StyleQueryOptions, 'root'>): MethodDecorator;
+export function styleAll(selector: string, options?: Omit<StyleQueryOptions, 'root'>): MethodDecorator;
+export function styleAll(selector: string, actionOrOptions?: StyleAction | Omit<StyleQueryOptions, 'root'>, options?: Omit<StyleQueryOptions, 'root'>): MethodDecorator {
+  const action = (typeof actionOrOptions === 'string' ? actionOrOptions : undefined) as StyleAction | undefined;
+  const opts = (typeof actionOrOptions === 'object' ? actionOrOptions : options) as Omit<StyleQueryOptions, 'root'> | undefined;
+  return applyStyle(selector, action, {...opts ?? {}, root: 'all'});
 }
 
 export const findAllStyleMetadata = (target: any): Map<string | symbol, StyleApplyMetadata> => {

@@ -1,9 +1,10 @@
 import {ReflectUtils} from '@dooboostore/core';
-import { SpecialSelector, SwcQueryOptions, HelperHostSet } from '../types';
+import { SpecialSelector, SwcQueryOptions, SwcFnSelector, SwcSelector, HelperHostSet } from '../types';
 import {ensureInit, getElementConfig} from './elementDefine';
 import {SwcUtils} from '../utils/Utils';
 
-export type EmitCustomEventSelector = string | ((currentThis: any, helper: HelperHostSet) => NodeList | Element | Element[] | null);
+export type EmitCustomEventFnSelector = SwcFnSelector;
+export type EmitCustomEventSelector = SwcSelector;
 
 export interface EmitCustomEventBaseOptions {
   bubbles?: boolean;
@@ -30,6 +31,13 @@ export interface EmitCustomEventBaseOptions {
 
 type Options = (EmitCustomEventBaseOptions & SwcQueryOptions) | (EmitCustomEventBaseOptions & SwcQueryOptions & { attributeName?: string });
 
+// 문자열 셀렉터 전용 — root 허용
+export type EmitCustomEventQueryOptions = Options;
+// 함수 셀렉터 전용 — root 금지
+export type EmitCustomEventNonQueryOptions = EmitCustomEventBaseOptions | (EmitCustomEventBaseOptions & { attributeName?: string });
+// 셀렉터 종류에 따라 옵션 타입 분기
+export type EmitCustomEventOptionsOf<S extends EmitCustomEventSelector> = S extends string ? EmitCustomEventQueryOptions : EmitCustomEventNonQueryOptions;
+
 export interface EmitCustomEventMetadata {
   propertyKey: string | symbol;
   selector: EmitCustomEventSelector;
@@ -39,9 +47,10 @@ export interface EmitCustomEventMetadata {
 
 export const EMIT_CUSTOM_EVENT_METADATA_KEY = Symbol.for('simple-web-component:emit-custom-event');
 
+export function emitCustomEvent(selector: string, type: string, options?: EmitCustomEventQueryOptions): MethodDecorator;
+export function emitCustomEvent(selector: EmitCustomEventFnSelector, type: string, options?: EmitCustomEventNonQueryOptions): MethodDecorator;
+export function emitCustomEvent(type: string, options?: EmitCustomEventQueryOptions): MethodDecorator;
 export function emitCustomEvent(target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor): PropertyDescriptor | void;
-export function emitCustomEvent(selector: EmitCustomEventSelector, type: string, options?: Options): MethodDecorator;
-export function emitCustomEvent(type: string, options?: Options): MethodDecorator;
 /**
  * @emitCustomEvent decorator to dispatch custom events to a target.
  * 
@@ -108,7 +117,7 @@ function createEmitDecorator(selector: EmitCustomEventSelector, type: string, op
         const eventTargets: EventTarget[] = [];
         
         // Resolve selector if it's a function
-        let resolvedSelector: string | Element | NodeList | Element[] | null = selector as any;
+        let resolvedSelector: string | Node | Element | NodeList | Element[] | null = selector as any;
         if (typeof selector === 'function') {
           resolvedSelector = selector(this, hostSet);
         }
@@ -191,3 +200,27 @@ export const getEmitCustomEventMetadataList = (target: any): EmitCustomEventMeta
 
 // --- Aliases: emit... ---
 export const emit = emitCustomEvent;
+
+// ─── 편의 헬퍼 (selector/root 생략) ───
+
+export function emitThis(type: string, options?: EmitCustomEventQueryOptions): MethodDecorator {
+  return emitCustomEvent('$this', type, options);
+}
+export function emitAppHost(type: string, options?: EmitCustomEventQueryOptions): MethodDecorator {
+  return emitCustomEvent('$appHost', type, options);
+}
+export function emitWindow(type: string, options?: EmitCustomEventQueryOptions): MethodDecorator {
+  return emitCustomEvent('$window', type, options);
+}
+export function emitDocument(type: string, options?: EmitCustomEventQueryOptions): MethodDecorator {
+  return emitCustomEvent('$document', type, options);
+}
+export function emitLight(selector: string, type: string, options?: Omit<EmitCustomEventQueryOptions, 'root'>): MethodDecorator {
+  return emitCustomEvent(selector, type, {...options ?? {}, root: 'light'} as any);
+}
+export function emitShadow(selector: string, type: string, options?: Omit<EmitCustomEventQueryOptions, 'root'>): MethodDecorator {
+  return emitCustomEvent(selector, type, {...options ?? {}, root: 'shadow'} as any);
+}
+export function emitAll(selector: string, type: string, options?: Omit<EmitCustomEventQueryOptions, 'root'>): MethodDecorator {
+  return emitCustomEvent(selector, type, {...options ?? {}, root: 'all'} as any);
+}

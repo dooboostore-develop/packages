@@ -9,8 +9,7 @@ import {findAllLifecycleMetadata, findAllOnConnectedAfterMetadata, findAllOnConn
 import {getEmitCustomEventMetadataList} from './emitCustomEvent';
 import {convertAttributeValue, findAllAttributeChangedMetadata} from './changedAttribute';
 import {findAllAttributeApplyMetadata, findAllAttributeMetadata, getAttributeValue} from './applyAttribute';
-import {getQueryMetadata} from './query';
-import {getQueryAllMetadata} from './queryAll';
+import {getQueryMetadata, getQueryAllMetadata} from './query';
 import {SwcUtils} from '../utils/Utils';
 import {DOM_EVENT_NAMES, HTML_TAG_ENTRIES} from '../config/config';
 import {SituationTypeContainer, SituationTypeContainers} from '@dooboostore/simple-boot/decorators/inject/Inject';
@@ -761,6 +760,42 @@ export const elementDefine =
                 removeObserverCallbacks.push({ fn: m.options.removeObserver, target: root, opts: m.options });
               }
             }
+
+            // ─── non-delegate 메타 초기 observe ───
+            // delegate 메타는 mutation 동적 추적이 담당하므로 제외.
+            // 함수 셀렉터는 selector를 직접 호출해 반환 요소를 observe (mutation 경로 아님).
+            // 문자열 셀렉터는 meta.options.root에 따라 scope에서 querySelectorAll.
+            for (const m of resizeObserverList) {
+              if (m.options.delegate) continue;
+              const hostSet = SwcUtils.getHelperAndHostSet(currentWin, this);
+              let targets: HTMLElement[] = [];
+
+              if (typeof m.selector === 'function') {
+                const res = (m.selector as any)(this, hostSet);
+                if (res instanceof currentWin.HTMLElement) targets = [res as HTMLElement];
+                else if (res instanceof currentWin.NodeList) targets = Array.from(res as NodeList).filter(e => e instanceof currentWin.HTMLElement) as HTMLElement[];
+                else if (Array.isArray(res)) targets = res.filter((e: any) => e instanceof currentWin.HTMLElement) as HTMLElement[];
+              } else if (typeof m.selector === 'string') {
+                if (m.selector === '$this' || m.selector === '') {
+                  targets = [this as HTMLElement];
+                } else {
+                  const r: any = m.options.root || 'auto';
+                  const scopes: any[] = [];
+                  if (r === 'auto') scopes.push(this.shadowRoot || this);
+                  else if (r === 'light') scopes.push(this);
+                  else if (r === 'shadow' && this.shadowRoot) scopes.push(this.shadowRoot);
+                  else if (r === 'all') { scopes.push(this); if (this.shadowRoot) scopes.push(this.shadowRoot); }
+                  for (const scope of scopes) {
+                    const found = scope?.querySelectorAll?.(m.selector as string) as NodeListOf<HTMLElement> | undefined;
+                    if (found?.length) targets.push(...Array.from(found));
+                  }
+                }
+              }
+
+              for (const el of targets) {
+                resizeObserver.observe(el, m.options.box ? { box: m.options.box } : undefined);
+              }
+            }
           }
           // MutationObserver: shadow/light 루트별 그룹핑
           const shadowMetas = mutationObserverList.filter(m => {
@@ -792,10 +827,22 @@ export const elementDefine =
               return init;
             };
 
+            // 함수 셀렉터 메타가 observe한 요소 집합 (콜백에서 m.target 포함 여부 체크용)
+            const fnObservedSets = new Map<MutationObserverMetadata, WeakSet<Element>>();
+
             const observer = new MutationObserver((mutations: MutationRecord[], obs: MutationObserver) => {
               for (const meta of metas) {
                 const { selector, options } = meta;
                 let matchedEls: HTMLElement[] = [];
+
+                // 이 메타가 관심 있는 mutation 타입인지 (공유 observer라 타입이 섞여 들어올 수 있음)
+                const mutationTypeMatches = (m: MutationRecord): boolean => {
+                  const hasExplicit = !!(options.childList || options.attributes || options.characterData);
+                  if (m.type === 'childList') return hasExplicit ? !!options.childList : true; // 명시 없으면 childList 기본
+                  if (m.type === 'attributes') return !!options.attributes;
+                  if (m.type === 'characterData') return !!options.characterData;
+                  return true;
+                };
 
                 if (options.delegate && typeof selector === 'string') {
                   const isThis = selector === '$this' || selector === '';
@@ -806,6 +853,7 @@ export const elementDefine =
                     return el.matches?.(selector as string) || !!el.closest?.(selector as string);
                   };
                   matchedEls = mutations.flatMap(m => {
+                    if (!mutationTypeMatches(m)) return [];
                     const els: HTMLElement[] = [];
                     if (matchesSel(m.target)) els.push(m.target as HTMLElement);
                     Array.from(m.addedNodes || [])
@@ -825,6 +873,7 @@ export const elementDefine =
                     return (node as HTMLElement).matches?.(selector as string);
                   };
                   matchedEls = mutations.flatMap(m => {
+                    if (!mutationTypeMatches(m)) return [];
                     const els: HTMLElement[] = [];
                     if (matchesSel(m.target)) els.push(m.target as HTMLElement);
                     Array.from(m.addedNodes || [])
@@ -835,8 +884,15 @@ export const elementDefine =
                       .forEach(n => els.push(n as HTMLElement));
                     return els;
                   });
+                } else if (typeof selector === 'function') {
+                  // 함수 셀렉터: 초기 observe에서 호출해 저장한 요소 집합에 m.target이 있는지 참조 비교
+                  const observedSet = fnObservedSets.get(meta);
+                  matchedEls = mutations
+                    .filter(m => mutationTypeMatches(m))
+                    .map(m => m.target as HTMLElement)
+                    .filter(t => t && t.nodeType === 1 && (observedSet ? observedSet.has(t) : false));
                 } else {
-                  matchedEls = mutations.map(m => m.target as HTMLElement).filter(t => t && t.nodeType === 1);
+                  matchedEls = mutations.filter(m => mutationTypeMatches(m)).map(m => m.target as HTMLElement).filter(t => t && t.nodeType === 1);
                 }
 
                 if (matchedEls.length === 0) continue;
@@ -952,9 +1008,21 @@ export const elementDefine =
                   root.querySelectorAll(selector).forEach(el => observer.observe(el as HTMLElement, mInit));
                 }
               } else if (typeof selector === 'function') {
-                // 함수 셀렉터는 루트 관찰로 대체 (매칭 평가 불가)
-                observer.observe(root, mInit);
-              }
+                  // 함수 셀렉터: 함수를 한 번 호출해 반환 요소들을 observe + 집합에 저장 (콜백에서 target 비교)
+                  const hostSet = SwcUtils.getHelperAndHostSet(currentWin, this);
+                  const res = (selector as any)(this, hostSet);
+                  let targets: HTMLElement[] = [];
+                  if (res instanceof currentWin.HTMLElement) targets = [res as HTMLElement];
+                  else if (res instanceof currentWin.NodeList) targets = Array.from(res as NodeList).filter((e: any) => e instanceof currentWin.HTMLElement) as HTMLElement[];
+                  else if (Array.isArray(res)) targets = res.filter((e: any) => e instanceof currentWin.HTMLElement) as HTMLElement[];
+
+                  const set = new WeakSet<Element>();
+                  for (const el of targets) {
+                    set.add(el);
+                    observer.observe(el as HTMLElement, mInit);
+                  }
+                  fnObservedSets.set(m, set);
+                }
             }
 
             // ─── addEventListener(delegate:'mutation') 초기 바인딩 (connect 시점에 이미 존재하는 요소) ───

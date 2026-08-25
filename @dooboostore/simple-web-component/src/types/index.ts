@@ -44,6 +44,11 @@ export type HostSet = {
 
 export type HelperHostSet = HelperSet & HostSet & {$this: any};
 
+// 공통 셀렉터 함수 — 요소/노드를 직접 반환하는 함수 셀렉터 (query는 Node까지 반환 가능)
+export type SwcFnSelector = (currentThis: any, helper: HelperHostSet) => Node | NodeList | Element | Element[] | null;
+// 공통 셀렉터 — 문자열(CSS/특수) 또는 함수
+export type SwcSelector = string | SwcFnSelector;
+
 export type SwcAppMessage<T = any> = {
   publisher?: any;
   data?: T;

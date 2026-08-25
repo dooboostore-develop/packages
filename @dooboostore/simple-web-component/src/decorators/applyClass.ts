@@ -1,7 +1,7 @@
 import { ReflectUtils } from '@dooboostore/core';
 import { ensureInit } from './elementDefine';
 import { SwcUtils } from '../utils/Utils';
-import { SpecialSelector, SwcQueryOptions, HelperHostSet } from '../types';
+import { SpecialSelector, SwcQueryOptions, SwcFnSelector, SwcSelector, HelperHostSet } from '../types';
 
 export const CLASS_METADATA_KEY = Symbol.for('simple-web-component:class');
 
@@ -26,6 +26,9 @@ const resolveSelector = (selector: ClassSelector, inst: any, win: Window): strin
       return result as HTMLElement[];
     }
     if (result === null) {
+      return [];
+    }
+    if (result instanceof win.Node) {
       return [];
     }
     return result as string;
@@ -74,17 +77,24 @@ const getTargetElements = (selector: ClassSelector, inst: any, win: Window, root
   return targetEls;
 };
 
-export interface ClassApplyOptions extends SwcQueryOptions {
+// 공통 옵션 — root 없음
+export interface ClassBaseOptions {
   filter?: (target: HTMLElement, value: any, meta: {currentThis: any, helper: HelperHostSet}) => boolean;
-  /**
-   * Custom key to extract value from return object.
-   * If not provided, uses CLASS_METADATA_KEY by default.
-   * Useful when multiple @applyClass decorators are on the same method.
-   */
   valueKey?: symbol | string;
 }
 
-export type ClassSelector = string | ((currentThis: any, helper: HelperHostSet) => NodeList | Element | Element[] | null);
+// 문자열 셀렉터 전용 — root 허용 (classMapOrOptions 판별을 위해 root 필요)
+export type ClassQueryOptions = ClassBaseOptions & SwcQueryOptions;
+// 함수 셀렉터 전용 — root 금지. 단, classMapOrOptions의 options 자리에 올 수 없음(root가 없어 classMap과 판별 불가)
+export type ClassNonQueryOptions = ClassBaseOptions;
+export type ClassApplyOptions = ClassQueryOptions;
+
+export type ClassFnSelector = SwcFnSelector;
+export type ClassSelector = SwcSelector;
+export type ClassMapType = { [className: string]: (el: HTMLElement, value: any, helper: HelperHostSet & { $this: any }) => boolean };
+
+// 셀렉터 종류에 따라 옵션 타입 분기
+export type ClassOptionsOf<S extends ClassSelector> = S extends string ? ClassQueryOptions : ClassNonQueryOptions;
 
 export interface ClassApplyMetadata {
   propertyKey: string | symbol;
@@ -210,14 +220,15 @@ function createClassDecorator(action: ClassAction) {
 }
 
 export function applyClass(target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor): PropertyDescriptor | void;
-export function applyClass(selector: ClassSelector, action?: ClassAction, options?: ClassApplyOptions): MethodDecorator;
+export function applyClass(selector: string, action?: ClassAction, options?: ClassQueryOptions): MethodDecorator;
+export function applyClass(selector: ClassFnSelector, action?: ClassAction, options?: ClassNonQueryOptions): MethodDecorator;
 export function applyClass(selectorOrTarget?: any, actionOrPropertyKey?: any, optionsOrDescriptor?: any): any {
   // Bare decorator: @applyClass
-  if (optionsOrDescriptor !== undefined && (typeof actionOrPropertyKey === 'string' || typeof actionOrPropertyKey === 'symbol')) {
+  if (optionsOrDescriptor !== undefined && typeof selectorOrTarget !== 'string' && typeof selectorOrTarget !== 'function' && (typeof actionOrPropertyKey === 'string' || typeof actionOrPropertyKey === 'symbol')) {
     return createClassDecorator('update')('$this', {})(selectorOrTarget as Object, actionOrPropertyKey, optionsOrDescriptor as PropertyDescriptor);
   }
   // With selector
-  if (typeof selectorOrTarget === 'string') {
+  if (typeof selectorOrTarget === 'string' || typeof selectorOrTarget === 'function') {
     const action = (typeof actionOrPropertyKey === 'string' ? actionOrPropertyKey : 'update') as ClassAction;
     const options = (typeof actionOrPropertyKey === 'object' ? actionOrPropertyKey : optionsOrDescriptor) as ClassApplyOptions | undefined;
     return createClassDecorator(action)(selectorOrTarget, options);
@@ -229,14 +240,15 @@ export function applyClass(selectorOrTarget?: any, actionOrPropertyKey?: any, op
 }
 
 export function setClass(target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor): PropertyDescriptor | void;
-export function setClass(selector: ClassSelector, classMapOrOptions?: string | { [className: string]: (el: HTMLElement, value: any, helper: HelperHostSet & { $this: any }) => boolean } | ClassApplyOptions, options?: ClassApplyOptions): MethodDecorator;
+export function setClass(selector: string, classMapOrOptions?: string | ClassMapType | ClassQueryOptions, options?: ClassQueryOptions): MethodDecorator;
+export function setClass(selector: ClassFnSelector, classMap: string | ClassMapType): MethodDecorator;
 export function setClass(selectorOrTarget?: any, classMapOrOptionsOrPropertyKey?: any, optionsOrDescriptor?: any): any {
   // Bare decorator: @setClass
-  if (optionsOrDescriptor !== undefined && (typeof classMapOrOptionsOrPropertyKey === 'string' || typeof classMapOrOptionsOrPropertyKey === 'symbol')) {
+  if (optionsOrDescriptor !== undefined && typeof selectorOrTarget !== 'string' && typeof selectorOrTarget !== 'function' && (typeof classMapOrOptionsOrPropertyKey === 'string' || typeof classMapOrOptionsOrPropertyKey === 'symbol')) {
     return createClassDecorator('set')('$this', {})(selectorOrTarget as Object, classMapOrOptionsOrPropertyKey, optionsOrDescriptor as PropertyDescriptor);
   }
   // With selector
-  if (typeof selectorOrTarget === 'string') {
+  if (typeof selectorOrTarget === 'string' || typeof selectorOrTarget === 'function') {
     return createClassDecorator('set')(selectorOrTarget, classMapOrOptionsOrPropertyKey, optionsOrDescriptor as ClassApplyOptions);
   }
   // Without selector (defaults to $this)
@@ -244,14 +256,15 @@ export function setClass(selectorOrTarget?: any, classMapOrOptionsOrPropertyKey?
 }
 
 export function updateClass(target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor): PropertyDescriptor | void;
-export function updateClass(selector: ClassSelector, classMapOrOptions?: string | { [className: string]: (el: HTMLElement, value: any, helper: HelperHostSet & { $this: any }) => boolean } | ClassApplyOptions, options?: ClassApplyOptions): MethodDecorator;
+export function updateClass(selector: string, classMapOrOptions?: string | ClassMapType | ClassQueryOptions, options?: ClassQueryOptions): MethodDecorator;
+export function updateClass(selector: ClassFnSelector, classMap: string | ClassMapType): MethodDecorator;
 export function updateClass(selectorOrTarget?: any, classMapOrOptionsOrPropertyKey?: any, optionsOrDescriptor?: any): any {
   // Bare decorator: @updateClass
-  if (optionsOrDescriptor !== undefined && (typeof classMapOrOptionsOrPropertyKey === 'string' || typeof classMapOrOptionsOrPropertyKey === 'symbol')) {
+  if (optionsOrDescriptor !== undefined && typeof selectorOrTarget !== 'string' && typeof selectorOrTarget !== 'function' && (typeof classMapOrOptionsOrPropertyKey === 'string' || typeof classMapOrOptionsOrPropertyKey === 'symbol')) {
     return createClassDecorator('update')('$this', {})(selectorOrTarget as Object, classMapOrOptionsOrPropertyKey, optionsOrDescriptor as PropertyDescriptor);
   }
   // With selector
-  if (typeof selectorOrTarget === 'string') {
+  if (typeof selectorOrTarget === 'string' || typeof selectorOrTarget === 'function') {
     return createClassDecorator('update')(selectorOrTarget, classMapOrOptionsOrPropertyKey, optionsOrDescriptor as ClassApplyOptions);
   }
   // Without selector (defaults to $this)
@@ -259,14 +272,15 @@ export function updateClass(selectorOrTarget?: any, classMapOrOptionsOrPropertyK
 }
 
 export function addClass(target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor): PropertyDescriptor | void;
-export function addClass(selector: ClassSelector, classMapOrOptions?: string | { [className: string]: (el: HTMLElement, value: any, helper: HelperHostSet & { $this: any }) => boolean } | ClassApplyOptions, options?: ClassApplyOptions): MethodDecorator;
+export function addClass(selector: string, classMapOrOptions?: string | ClassMapType | ClassQueryOptions, options?: ClassQueryOptions): MethodDecorator;
+export function addClass(selector: ClassFnSelector, classMap: string | ClassMapType): MethodDecorator;
 export function addClass(selectorOrTarget?: any, classMapOrOptionsOrPropertyKey?: any, optionsOrDescriptor?: any): any {
   // Bare decorator: @addClass
-  if (optionsOrDescriptor !== undefined && (typeof classMapOrOptionsOrPropertyKey === 'string' || typeof classMapOrOptionsOrPropertyKey === 'symbol')) {
+  if (optionsOrDescriptor !== undefined && typeof selectorOrTarget !== 'string' && typeof selectorOrTarget !== 'function' && (typeof classMapOrOptionsOrPropertyKey === 'string' || typeof classMapOrOptionsOrPropertyKey === 'symbol')) {
     return createClassDecorator('add')('$this', {})(selectorOrTarget as Object, classMapOrOptionsOrPropertyKey, optionsOrDescriptor as PropertyDescriptor);
   }
   // With selector
-  if (typeof selectorOrTarget === 'string') {
+  if (typeof selectorOrTarget === 'string' || typeof selectorOrTarget === 'function') {
     return createClassDecorator('add')(selectorOrTarget, classMapOrOptionsOrPropertyKey, optionsOrDescriptor as ClassApplyOptions);
   }
   // Without selector (defaults to $this)
@@ -274,14 +288,15 @@ export function addClass(selectorOrTarget?: any, classMapOrOptionsOrPropertyKey?
 }
 
 export function removeClass(target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor): PropertyDescriptor | void;
-export function removeClass(selector: ClassSelector, classMapOrOptions?: string | { [className: string]: (el: HTMLElement, value: any, helper: HelperHostSet & { $this: any }) => boolean } | ClassApplyOptions, options?: ClassApplyOptions): MethodDecorator;
+export function removeClass(selector: string, classMapOrOptions?: string | ClassMapType | ClassQueryOptions, options?: ClassQueryOptions): MethodDecorator;
+export function removeClass(selector: ClassFnSelector, classMap: string | ClassMapType): MethodDecorator;
 export function removeClass(selectorOrTarget?: any, classMapOrOptionsOrPropertyKey?: any, optionsOrDescriptor?: any): any {
   // Bare decorator: @removeClass
-  if (optionsOrDescriptor !== undefined && (typeof classMapOrOptionsOrPropertyKey === 'string' || typeof classMapOrOptionsOrPropertyKey === 'symbol')) {
+  if (optionsOrDescriptor !== undefined && typeof selectorOrTarget !== 'string' && typeof selectorOrTarget !== 'function' && (typeof classMapOrOptionsOrPropertyKey === 'string' || typeof classMapOrOptionsOrPropertyKey === 'symbol')) {
     return createClassDecorator('remove')('$this', {})(selectorOrTarget as Object, classMapOrOptionsOrPropertyKey, optionsOrDescriptor as PropertyDescriptor);
   }
   // With selector
-  if (typeof selectorOrTarget === 'string') {
+  if (typeof selectorOrTarget === 'string' || typeof selectorOrTarget === 'function') {
     return createClassDecorator('remove')(selectorOrTarget, classMapOrOptionsOrPropertyKey, optionsOrDescriptor as ClassApplyOptions);
   }
   // Without selector (defaults to $this)
@@ -289,18 +304,53 @@ export function removeClass(selectorOrTarget?: any, classMapOrOptionsOrPropertyK
 }
 
 export function toggleClass(target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor): PropertyDescriptor | void;
-export function toggleClass(selector: ClassSelector, classMapOrOptions?: string | { [className: string]: (el: HTMLElement, value: any, helper: HelperHostSet & { $this: any }) => boolean } | ClassApplyOptions, options?: ClassApplyOptions): MethodDecorator;
+export function toggleClass(selector: string, classMapOrOptions?: string | ClassMapType | ClassQueryOptions, options?: ClassQueryOptions): MethodDecorator;
+export function toggleClass(selector: ClassFnSelector, classMap: string | ClassMapType): MethodDecorator;
 export function toggleClass(selectorOrTarget?: any, classMapOrOptionsOrPropertyKey?: any, optionsOrDescriptor?: any): any {
   // Bare decorator: @toggleClass
-  if (optionsOrDescriptor !== undefined && (typeof classMapOrOptionsOrPropertyKey === 'string' || typeof classMapOrOptionsOrPropertyKey === 'symbol')) {
+  if (optionsOrDescriptor !== undefined && typeof selectorOrTarget !== 'string' && typeof selectorOrTarget !== 'function' && (typeof classMapOrOptionsOrPropertyKey === 'string' || typeof classMapOrOptionsOrPropertyKey === 'symbol')) {
     return createClassDecorator('toggle')('$this', {})(selectorOrTarget as Object, classMapOrOptionsOrPropertyKey, optionsOrDescriptor as PropertyDescriptor);
   }
   // With selector
-  if (typeof selectorOrTarget === 'string') {
+  if (typeof selectorOrTarget === 'string' || typeof selectorOrTarget === 'function') {
     return createClassDecorator('toggle')(selectorOrTarget, classMapOrOptionsOrPropertyKey, optionsOrDescriptor as ClassApplyOptions);
   }
   // Without selector (defaults to $this)
   return createClassDecorator('toggle')('$this', selectorOrTarget as ClassApplyOptions);
+}
+
+// ─── Aliases ───
+// class는 예약어라 cls 사용
+export const cls = applyClass;
+
+// ─── 편의 헬퍼 (selector/root 생략) ───
+
+export function clsThis(action?: ClassAction, options?: ClassQueryOptions): MethodDecorator {
+  return applyClass('$this', action, options);
+}
+export function clsAppHost(action?: ClassAction, options?: ClassQueryOptions): MethodDecorator {
+  return applyClass('$appHost', action, options);
+}
+export function clsLight(selector: string, action?: ClassAction, options?: Omit<ClassQueryOptions, 'root'>): MethodDecorator;
+export function clsLight(selector: string, options?: Omit<ClassQueryOptions, 'root'>): MethodDecorator;
+export function clsLight(selector: string, actionOrOptions?: ClassAction | Omit<ClassQueryOptions, 'root'>, options?: Omit<ClassQueryOptions, 'root'>): MethodDecorator {
+  const action = (typeof actionOrOptions === 'string' ? actionOrOptions : undefined) as ClassAction | undefined;
+  const opts = (typeof actionOrOptions === 'object' ? actionOrOptions : options) as Omit<ClassQueryOptions, 'root'> | undefined;
+  return applyClass(selector, action, {...opts ?? {}, root: 'light'});
+}
+export function clsShadow(selector: string, action?: ClassAction, options?: Omit<ClassQueryOptions, 'root'>): MethodDecorator;
+export function clsShadow(selector: string, options?: Omit<ClassQueryOptions, 'root'>): MethodDecorator;
+export function clsShadow(selector: string, actionOrOptions?: ClassAction | Omit<ClassQueryOptions, 'root'>, options?: Omit<ClassQueryOptions, 'root'>): MethodDecorator {
+  const action = (typeof actionOrOptions === 'string' ? actionOrOptions : undefined) as ClassAction | undefined;
+  const opts = (typeof actionOrOptions === 'object' ? actionOrOptions : options) as Omit<ClassQueryOptions, 'root'> | undefined;
+  return applyClass(selector, action, {...opts ?? {}, root: 'shadow'});
+}
+export function clsAll(selector: string, action?: ClassAction, options?: Omit<ClassQueryOptions, 'root'>): MethodDecorator;
+export function clsAll(selector: string, options?: Omit<ClassQueryOptions, 'root'>): MethodDecorator;
+export function clsAll(selector: string, actionOrOptions?: ClassAction | Omit<ClassQueryOptions, 'root'>, options?: Omit<ClassQueryOptions, 'root'>): MethodDecorator {
+  const action = (typeof actionOrOptions === 'string' ? actionOrOptions : undefined) as ClassAction | undefined;
+  const opts = (typeof actionOrOptions === 'object' ? actionOrOptions : options) as Omit<ClassQueryOptions, 'root'> | undefined;
+  return applyClass(selector, action, {...opts ?? {}, root: 'all'});
 }
 
 export const findAllClassMetadata = (target: any): Map<string | symbol, ClassApplyMetadata> => {

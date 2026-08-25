@@ -1,40 +1,27 @@
 import { ReflectUtils } from '@dooboostore/core';
 import { ensureInit, getElementConfig } from './elementDefine';
 import { SwcUtils } from '../utils/Utils';
-import { SwcQueryOptions, HelperHostSet } from '../types';
+import { SwcQueryOptions, HelperHostSet, SwcFnSelector, SwcSelector } from '../types';
 
-export interface PropertyOptions extends SwcQueryOptions {
+// 공통 옵션 — root 없음
+export interface PropertyBaseOptions {
   name?: string | symbol;
   filter?: (target: HTMLElement, value: any, meta: {currentThis: any, helper: HelperHostSet}) => boolean;
-  /**
-   * Custom key to extract value from return object.
-   * If not provided, uses PROPERTY_METADATA_KEY by default.
-   * Useful when multiple @setProperty decorators are on the same method.
-   * 
-   * Example:
-   * @setProperty('selector1', { valueKey: 'prop1' })
-   * @setProperty('selector2', { valueKey: 'prop2' })
-   * myMethod() {
-   *   return {
-   *     prop1: 'value1',
-   *     prop2: 'value2'
-   *   };
-   * }
-   * 
-   * Or with symbols:
-   * @setProperty('selector1', { valueKey: Symbol.for('prop1') })
-   * @setProperty('selector2', { valueKey: Symbol.for('prop2') })
-   * myMethod() {
-   *   return {
-   *     [Symbol.for('prop1')]: 'value1',
-   *     [Symbol.for('prop2')]: 'value2'
-   *   };
-   * }
-   */
   valueKey?: symbol | string;
 }
 
-export type PropertySelector = string | ((currentThis: any, helper: HelperHostSet) => NodeList | Element | Element[] | null);
+// 문자열 셀렉터 전용 — root 허용
+export type PropertyQueryOptions = PropertyBaseOptions & SwcQueryOptions;
+// 함수 셀렉터 전용 — root 금지
+export type PropertyNonQueryOptions = PropertyBaseOptions;
+// 내부 저장/해석용 — root optional이라 두 종류 모두 저장 가능
+export type PropertyOptions = PropertyQueryOptions;
+
+export type PropertyFnSelector = SwcFnSelector;
+export type PropertySelector = SwcSelector;
+
+// 셀렉터 종류에 따라 옵션 타입 분기
+export type PropertyOptionsOf<S extends PropertySelector> = S extends string ? PropertyQueryOptions : PropertyNonQueryOptions;
 
 export interface PropertyMetadata {
   propertyKey: string | symbol;
@@ -62,7 +49,7 @@ export const resolvePropertyTargets = (inst: any, selector: PropertySelector, op
   const results: any[] = [];
 
   // Resolve selector if it's a function
-  let resolvedSelector: string | Element | NodeList | Element[] | null = selector as any;
+  let resolvedSelector: string | Node | Element | NodeList | Element[] | null = selector as any;
   if (typeof selector === 'function') {
     const hostSet = SwcUtils.getHelperAndHostSet(currentWin, inst);
     resolvedSelector = selector(inst, hostSet);
@@ -146,9 +133,9 @@ export const resolvePropertyTargets = (inst: any, selector: PropertySelector, op
  * - @applyProperty((this, helper) => 'selector', 'propertyName') - Function-based selector
  * - Return null/undefined to skip setting
  */
-export function applyProperty(selector: PropertySelector, targetPropertyKey: string | symbol, options?: PropertyOptions): MethodDecorator & PropertyDecorator;
-export function applyProperty(selector: PropertySelector, options?: PropertyOptions): MethodDecorator & PropertyDecorator;
-export function applyProperty(selector: PropertySelector, targetPropertyKeyOrOptions?: string | symbol | PropertyOptions, options?: PropertyOptions): MethodDecorator & PropertyDecorator {
+export function applyProperty<S extends PropertySelector>(selector: S, targetPropertyKey: string | symbol, options?: PropertyOptionsOf<S>): MethodDecorator & PropertyDecorator;
+export function applyProperty<S extends PropertySelector>(selector: S, options?: PropertyOptionsOf<S>): MethodDecorator & PropertyDecorator;
+export function applyProperty(selector: PropertySelector, targetPropertyKeyOrOptions?: string | symbol | PropertyOptions, options?: PropertyOptions): MethodDecorator {
   return (target: Object, propertyKey: string | symbol, descriptor?: PropertyDescriptor) => {
     // ensureInit(target as any);
     
@@ -303,8 +290,10 @@ export function applyProperty(selector: PropertySelector, targetPropertyKeyOrOpt
  */
 export function property(target: Object, propertyKey: string | symbol): void;
 export function property(target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor): PropertyDescriptor | void;
-export function property(selector: PropertySelector, targetPropertyKey: string | symbol, options?: PropertyOptions): PropertyDecorator;
-export function property(selector: PropertySelector, options?: PropertyOptions): PropertyDecorator;
+export function property(selector: string, targetPropertyKey: string | symbol, options?: PropertyQueryOptions): PropertyDecorator;
+export function property(selector: PropertyFnSelector, targetPropertyKey: string | symbol, options?: PropertyNonQueryOptions): PropertyDecorator;
+export function property(selector: string, options?: PropertyQueryOptions): PropertyDecorator;
+export function property(selector: PropertyFnSelector, options?: PropertyNonQueryOptions): PropertyDecorator;
 export function property(selectorOrTarget?: PropertySelector | Object, targetPropertyKeyOrOptions?: any, optionsOrDescriptor?: any): any {
   // Bare decorator: @property
   if (optionsOrDescriptor !== undefined && (typeof targetPropertyKeyOrOptions === 'string' || typeof targetPropertyKeyOrOptions === 'symbol')) {
@@ -313,6 +302,10 @@ export function property(selectorOrTarget?: PropertySelector | Object, targetPro
   // With selector
   if (typeof selectorOrTarget === 'string') {
     return applyProperty(selectorOrTarget, targetPropertyKeyOrOptions as any, optionsOrDescriptor as PropertyOptions);
+  }
+  // Function selector
+  if (typeof selectorOrTarget === 'function') {
+    return applyProperty(selectorOrTarget as PropertyFnSelector, targetPropertyKeyOrOptions as any, optionsOrDescriptor as PropertyOptions);
   }
   // Without selector (defaults to $this)
   return applyProperty('$this', undefined as any, selectorOrTarget as PropertyOptions);
@@ -336,12 +329,18 @@ export function property(selectorOrTarget?: PropertySelector | Object, targetPro
  *   return true;
  * }
  */
-export function setProperty(selector: PropertySelector, targetPropertyKey: string | symbol, options?: PropertyOptions): MethodDecorator;
-export function setProperty(selector: PropertySelector, options?: PropertyOptions): MethodDecorator;
+export function setProperty(selector: string, targetPropertyKey: string | symbol, options?: PropertyQueryOptions): MethodDecorator;
+export function setProperty(selector: PropertyFnSelector, targetPropertyKey: string | symbol, options?: PropertyNonQueryOptions): MethodDecorator;
+export function setProperty(selector: string, options?: PropertyQueryOptions): MethodDecorator;
+export function setProperty(selector: PropertyFnSelector, options?: PropertyNonQueryOptions): MethodDecorator;
 export function setProperty(selectorOrOptions?: PropertySelector | PropertyOptions, targetPropertyKeyOrOptions?: any, optionsOrUndefined?: PropertyOptions): MethodDecorator {
   // With selector
   if (typeof selectorOrOptions === 'string') {
     return applyProperty(selectorOrOptions, targetPropertyKeyOrOptions as any, optionsOrUndefined as PropertyOptions) as MethodDecorator;
+  }
+  // Function selector
+  if (typeof selectorOrOptions === 'function') {
+    return applyProperty(selectorOrOptions as PropertyFnSelector, targetPropertyKeyOrOptions as any, optionsOrUndefined as PropertyOptions) as MethodDecorator;
   }
   // Without selector (defaults to $this)
   return applyProperty('$this', undefined as any, selectorOrOptions as PropertyOptions) as MethodDecorator;
@@ -365,5 +364,32 @@ export const findAllPropertyApplyMetadata = (target: any): Map<string | symbol, 
   return result;
 };
 
+// ─── Aliases ───
+// property(필드) / setProperty(메서드)와 구분되는 일반 데코레이터 단축명
+export const prop = applyProperty;
+
+// ─── 편의 헬퍼 (selector/root 생략) ───
+
+export function propThis(targetPropertyKey?: string | symbol, options?: PropertyQueryOptions): MethodDecorator {
+  return applyProperty('$this', targetPropertyKey, options);
+}
+export function propAppHost(targetPropertyKey?: string | symbol, options?: PropertyQueryOptions): MethodDecorator {
+  return applyProperty('$appHost', targetPropertyKey, options);
+}
+export function propWindow(targetPropertyKey?: string | symbol, options?: PropertyQueryOptions): MethodDecorator {
+  return applyProperty('$window', targetPropertyKey, options);
+}
+export function propDocument(targetPropertyKey?: string | symbol, options?: PropertyQueryOptions): MethodDecorator {
+  return applyProperty('$document', targetPropertyKey, options);
+}
+export function propLight(selector: string, targetPropertyKey?: string | symbol, options?: Omit<PropertyQueryOptions, 'root'>): MethodDecorator {
+  return applyProperty(selector, targetPropertyKey, {...options ?? {}, root: 'light'});
+}
+export function propShadow(selector: string, targetPropertyKey?: string | symbol, options?: Omit<PropertyQueryOptions, 'root'>): MethodDecorator {
+  return applyProperty(selector, targetPropertyKey, {...options ?? {}, root: 'shadow'});
+}
+export function propAll(selector: string, targetPropertyKey?: string | symbol, options?: Omit<PropertyQueryOptions, 'root'>): MethodDecorator {
+  return applyProperty(selector, targetPropertyKey, {...options ?? {}, root: 'all'});
+}
 
 export default applyProperty;

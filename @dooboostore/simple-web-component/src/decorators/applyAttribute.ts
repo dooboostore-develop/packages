@@ -1,46 +1,33 @@
 import {ReflectUtils, FunctionUtils, ActionExpression} from '@dooboostore/core';
 import {ensureInit, getElementConfig} from './elementDefine';
 import {SwcUtils} from '../utils/Utils';
-import {SwcQueryOptions, HelperHostSet} from '../types';
+import {SwcQueryOptions, HelperHostSet, SwcFnSelector, SwcSelector} from '../types';
 import {ConvertUtils} from '@dooboostore/core-web';
 
 // ============================================
 // Types & Interfaces
 // ============================================
 
-export interface AttributeOptions extends SwcQueryOptions {
+// 공통 옵션 — root 없음
+export interface AttributeBaseOptions {
   name?: string;
   type?: typeof Number | typeof Boolean | typeof String;
   filter?: (target: HTMLElement, value: any, meta: { currentThis: any, helper: HelperHostSet }) => boolean;
-  /**
-   * Custom key to extract value from return object.
-   * If not provided, uses ATTRIBUTE_METADATA_KEY by default.
-   * Useful when multiple @setAttribute decorators are on the same method.
-   * 
-   * Example:
-   * @setAttribute('selector1', { valueKey: 'attr1' })
-   * @setAttribute('selector2', { valueKey: 'attr2' })
-   * myMethod() {
-   *   return {
-   *     attr1: 'value1',
-   *     attr2: 'value2'
-   *   };
-   * }
-   * 
-   * Or with symbols:
-   * @setAttribute('selector1', { valueKey: Symbol.for('attr1') })
-   * @setAttribute('selector2', { valueKey: Symbol.for('attr2') })
-   * myMethod() {
-   *   return {
-   *     [Symbol.for('attr1')]: 'value1',
-   *     [Symbol.for('attr2')]: 'value2'
-   *   };
-   * }
-   */
   valueKey?: symbol | string;
 }
 
-export type AttributeSelector = string | ((currentThis: any, helper: HelperHostSet) => NodeList | Element | Element[] | null);
+// 문자열 셀렉터 전용 — root 허용 (컴포넌트 DOM 트리 안에서 탐색)
+export type AttributeQueryOptions = AttributeBaseOptions & SwcQueryOptions;
+// 함수 셀렉터 전용 — root 금지 (이미 요소를 직접 반환)
+export type AttributeNonQueryOptions = AttributeBaseOptions;
+// 내부 저장/해석용 — root optional이라 두 종류 모두 저장 가능
+export type AttributeOptions = AttributeQueryOptions;
+
+export type AttributeFnSelector = SwcFnSelector;
+export type AttributeSelector = SwcSelector;
+
+// 셀렉터 종류에 따라 옵션 타입 분기
+export type AttributeOptionsOf<S extends AttributeSelector> = S extends string ? AttributeQueryOptions : AttributeNonQueryOptions;
 
 export interface AttributeMetadata {
   propertyKey: string | symbol;
@@ -143,7 +130,7 @@ export const resolveAttributeTargets = (inst: any, selector: AttributeSelector, 
   const results: HTMLElement[] = [];
 
   // Resolve selector if it's a function
-  let resolvedSelector: string | Element | NodeList | Element[] | null = selector as any;
+  let resolvedSelector: string | Node | Element | NodeList | Element[] | null = selector as any;
   if (typeof selector === 'function') {
     const hostSet = SwcUtils.getHelperAndHostSet(currentWin, inst);
     resolvedSelector = selector(inst, hostSet);
@@ -223,9 +210,9 @@ export const resolveAttributeTargets = (inst: any, selector: AttributeSelector, 
  * - @applyAttribute((this, helper) => 'selector', 'attrName') - Function-based selector
  * - Return null to remove attribute
  */
-export function applyAttribute(selector: AttributeSelector, targetAttributeName: string, options?: AttributeOptions): MethodDecorator & PropertyDecorator;
-export function applyAttribute(selector: AttributeSelector, options?: AttributeOptions): MethodDecorator & PropertyDecorator;
-export function applyAttribute(selector: AttributeSelector, targetAttributeNameOrOptions?: string | AttributeOptions, options?: AttributeOptions): MethodDecorator & PropertyDecorator {
+export function applyAttribute<S extends AttributeSelector>(selector: S, targetAttributeName: string, options?: AttributeOptionsOf<S>): MethodDecorator & PropertyDecorator;
+export function applyAttribute<S extends AttributeSelector>(selector: S, options?: AttributeOptionsOf<S>): MethodDecorator & PropertyDecorator;
+export function applyAttribute(selector: AttributeSelector, targetAttributeNameOrOptions?: string | AttributeOptions, options?: AttributeOptions): MethodDecorator {
   return (target: Object, propertyKey: string | symbol, descriptor?: PropertyDescriptor) => {
     // ensureInit(target as any);
 
@@ -383,8 +370,9 @@ export function applyAttribute(selector: AttributeSelector, targetAttributeNameO
  */
 export function attribute(target: Object, propertyKey: string | symbol):  void;
 export function attribute(target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor): PropertyDescriptor | void;
-export function attribute(attributeName: string, options?: AttributeOptions): PropertyDecorator;
-export function attribute(selector: AttributeSelector, attributeName: string, options?: AttributeOptions): PropertyDecorator;
+export function attribute(attributeName: string, options?: AttributeQueryOptions): PropertyDecorator;
+export function attribute(selector: string, attributeName: string, options?: AttributeQueryOptions): PropertyDecorator;
+export function attribute(selector: AttributeFnSelector, attributeName: string, options?: AttributeNonQueryOptions): PropertyDecorator;
 export function attribute(selectorOrAttributeOrTarget?: AttributeSelector | Object, attributeNameOrOptions?: any, optionsOrDescriptor?: any): any {
   // Bare decorator: @attribute
   if (optionsOrDescriptor !== undefined && (typeof attributeNameOrOptions === 'string' || typeof attributeNameOrOptions === 'symbol')) {
@@ -434,8 +422,9 @@ export function attribute(selectorOrAttributeOrTarget?: AttributeSelector | Obje
  *   return 'active';
  * }
  */
-export function setAttribute(selector: AttributeSelector, attributeName: string, options?: AttributeOptions): MethodDecorator;
-export function setAttribute(attributeName: string, options?: AttributeOptions): MethodDecorator;
+export function setAttribute(selector: string, attributeName: string, options?: AttributeQueryOptions): MethodDecorator;
+export function setAttribute(selector: AttributeFnSelector, attributeName: string, options?: AttributeNonQueryOptions): MethodDecorator;
+export function setAttribute(attributeName: string, options?: AttributeQueryOptions): MethodDecorator;
 export function setAttribute(selectorOrAttributeOrOptions?: AttributeSelector | AttributeOptions, attributeNameOrOptions?: any, optionsOrUndefined?: AttributeOptions): MethodDecorator {
   // Function selector: @setAttribute((c, helper) => ..., 'attr', options?)
   if (typeof selectorOrAttributeOrOptions === 'function') {
@@ -481,5 +470,26 @@ export const findAllAttributeApplyMetadata = (target: any): Map<string | symbol,
   return result;
 };
 
+// ─── Aliases ───
+// attribute(필드) / setAttribute(메서드)와 구분되는 일반 데코레이터 단축명
+export const attr = applyAttribute;
+
+// ─── 편의 헬퍼 (selector/root 생략) ───
+
+export function attrThis(targetAttributeName?: string, options?: AttributeQueryOptions): MethodDecorator {
+  return applyAttribute('$this', targetAttributeName, options);
+}
+export function attrAppHost(targetAttributeName?: string, options?: AttributeQueryOptions): MethodDecorator {
+  return applyAttribute('$appHost', targetAttributeName, options);
+}
+export function attrLight(selector: string, targetAttributeName?: string, options?: Omit<AttributeQueryOptions, 'root'>): MethodDecorator {
+  return applyAttribute(selector, targetAttributeName, {...options ?? {}, root: 'light'});
+}
+export function attrShadow(selector: string, targetAttributeName?: string, options?: Omit<AttributeQueryOptions, 'root'>): MethodDecorator {
+  return applyAttribute(selector, targetAttributeName, {...options ?? {}, root: 'shadow'});
+}
+export function attrAll(selector: string, targetAttributeName?: string, options?: Omit<AttributeQueryOptions, 'root'>): MethodDecorator {
+  return applyAttribute(selector, targetAttributeName, {...options ?? {}, root: 'all'});
+}
 
 export default applyAttribute;
