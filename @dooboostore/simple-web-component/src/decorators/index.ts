@@ -1,6 +1,7 @@
 export * from './addEventListener';
 export * from './mutationObserver';
 export * from './resizeObserver';
+export * from './intersectionObserver';
 export * from './applyAttribute';
 export * from './elementDefine';
 export * from './changedAttribute';

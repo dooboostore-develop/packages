@@ -1,38 +1,27 @@
-import {ActionExpression, FunctionUtils, ReflectUtils, Subject} from '@dooboostore/core';
-import {debounceTime, distinctUntilChanged, throttleTime} from '@dooboostore/core/message/operators';
-import {getAddEventListenerMetadata, type AddEventListenerMetadata} from './addEventListener';
-import {getMutationObserverMetadata} from './mutationObserver';
-import type {MutationObserverBaseOptions, MutationObserverMetadata} from './mutationObserver';
-import {getResizeObserverMetadata} from './resizeObserver';
-import type {ResizeObserverMetadata} from './resizeObserver';
+import {ActionExpression, FunctionUtils, ReflectUtils} from '@dooboostore/core';
+import {EventListenerLifeCycler} from './addEventListener';
+import {MutationObserverLifeCycler} from './mutationObserver';
+import {ResizeObserverLifeCycler} from './resizeObserver';
+import {IntersectionObserverLifeCycler} from './intersectionObserver';
 import {findAllLifecycleMetadata, findAllOnConnectedAfterMetadata, findAllOnConnectedBeforeMetadata, findAllOnConnectedMetadata, ON_AFTER_ADOPTED_METADATA_KEY, ON_AFTER_DISCONNECTED_METADATA_KEY, ON_BEFORE_ADOPTED_METADATA_KEY, ON_BEFORE_DISCONNECTED_METADATA_KEY, ON_CONNECTED_COMPLETED_METADATA_KEY, ON_INITIALIZE_METADATA_KEY} from './lifecycles';
-import {getEmitCustomEventMetadataList} from './emitCustomEvent';
-import {convertAttributeValue, findAllAttributeChangedMetadata} from './changedAttribute';
-import {findAllAttributeApplyMetadata, findAllAttributeMetadata, getAttributeValue} from './applyAttribute';
+import {EmitCustomEventLifeCycler} from './emitCustomEvent';
+import {ChangedAttributeLifeCycler} from './changedAttribute';
+import {findAllAttributeApplyMetadata, findAllAttributeMetadata} from './applyAttribute';
 import {getQueryMetadata, getQueryAllMetadata} from './query';
 import {SwcUtils} from '../utils/Utils';
 import {DOM_EVENT_NAMES, HTML_TAG_ENTRIES} from '../config/config';
 import {SituationTypeContainer, SituationTypeContainers} from '@dooboostore/simple-boot/decorators/inject/Inject';
-import {HelperHostSet, HostSet, InjectSituationType} from '../types';
+import {ElementDefineLifeCycler, HelperHostSet, HostSet, InjectSituationType, IntersectionObserverSet, MutationObserverSet, OnConnectedResult, ResizeObserverSet, ResizeObserverSetEntry, SwcRootType} from '../types';
 import {ConvertUtils, ElementApply} from '@dooboostore/core-web';
 import {isSSR} from "../elements/SwcAppMixin";
 import {findAllStateMetadata} from "./state";
 import {findAllPropertyMetadata} from "./applyProperty";
+import {MessageSubscribeLifeCycler} from "./subscribeSwcAppMessageWhileConnected";
+import {RouteSubscribeLifeCycler} from "./subscribeSwcAppRouteChangeWhileConnected";
 
 // --- Core Interfaces & Types ---
 
 export const ELEMENT_CONFIG_KEY = Symbol.for('simple-web-component:element-config');
-
-/** 바인딩된 이벤트 리스너 한 건 */
-export interface BoundListener {
-  target: EventTarget;
-  type: string;
-  handler: EventListener;
-  options: AddEventListenerOptions;
-  onRemoves?: Array<{ fn: (target: EventTarget, optionValue: unknown) => void; opts: unknown }>;
-  subscription?: { unsubscribe: () => void };
-  meta?: AddEventListenerMetadata<Event>;
-}
 
 export interface ElementConfig {
   extends?: string;
@@ -350,12 +339,6 @@ export const elementDefine =
         metadata.extends = extendsTagName;
       }
 
-      const emitCustomEventList = getEmitCustomEventMetadataList(constructor) || [];
-      const emitHostCustomEventList = emitCustomEventList.filter(meta => meta.selector === '$this' || meta.selector === '');
-      const addEventListenerList = getAddEventListenerMetadata(constructor) || [];
-      const mutationObserverList = getMutationObserverMetadata(constructor) || [];
-      const resizeObserverList = getResizeObserverMetadata(constructor) || [];
-      const attrChangeMap = findAllAttributeChangedMetadata(constructor);
       const attributeList = findAllAttributeMetadata(constructor);
       const applyAttributeMap = findAllAttributeApplyMetadata(constructor);
 
@@ -368,34 +351,254 @@ export const elementDefine =
       const hostAttributes = attributeList.filter(it => it.selector === '$this').map(it => it.propertyKey || String(it.propertyKey));
       // Get original static observedAttributes before they're overwritten by Object.defineProperty
       const originalStaticObservedAttributes = (constructor.observedAttributes ?? []) as string[];
-      const mergedObservedAttributes = [...new Set([...(metadata.observedAttributes ?? []), ...originalStaticObservedAttributes, ...attrChangeMap.keys(), ...attributeApplyNames, ...hostAttributes, ...emitHostCustomEventList.map(it => (it.options as any).attributeName).filter(Boolean), ...swcLifecycleAttributes, ...swcOnEvents])];
-      // const connectedInnerHtmlList = getOnConnectedInnerHtmlMetadata(constructor) || [];
 
       const proto = constructor.prototype;
       setupPrototype(proto, win);
 
       // 값을 기대하지않는다.
       let helperHostSet: HelperHostSet | null = null;
-      // 이벤트 리스너 / MutationObserver / ResizeObserver 인스턴스 (클로저 변수 — connected/disconnected 공유)
-      let boundListeners: BoundListener[] = [];
-      let shadowMutationObserver: MutationObserver | null = null;
-      let lightMutationObserver: MutationObserver | null = null;
-      let resizeObserver: ResizeObserver | null = null;
-      // 메타별 removeObserver 콜백 목록 (disconnected 시 호출)
-      let removeObserverCallbacks: Array<{ fn: (target: Element, optionValue: unknown) => void; target: any; opts: unknown }> = [];
+      // ── cyclers: 데코레이터별 라이프사이클 위임 클래스 (elementDefine 시 1회 생성, 계속 재사용) ──
+      const eventCycler = new EventListenerLifeCycler();
+      const cyclers: ElementDefineLifeCycler[] = [
+        eventCycler,
+        new ChangedAttributeLifeCycler(),
+        new EmitCustomEventLifeCycler(),
+        new ResizeObserverLifeCycler(),
+        new IntersectionObserverLifeCycler(),
+        new MutationObserverLifeCycler(),
+        new MessageSubscribeLifeCycler(),
+        new RouteSubscribeLifeCycler(),
+      ];
+
+      // observedAttributes 기여 cycler (define-time, constructor 기반)
+      const cyclerObservedAttributes = cyclers.flatMap(c => c.getObservedAttributeNames?.(constructor) ?? []);
+      const mergedObservedAttributes = [...new Set([...(metadata.observedAttributes ?? []), ...originalStaticObservedAttributes, ...cyclerObservedAttributes, ...attributeApplyNames, ...hostAttributes, ...swcLifecycleAttributes, ...swcOnEvents])];
+
+      // 렌더 후 모든 시클러 onConnected 호출 → Set 수집 후 observer 생성
+      const buildObservers = async (helperHostSet: HelperHostSet): Promise<void> => {
+        const inst = helperHostSet.$this;
+        const observers: Array<MutationObserver | ResizeObserver | IntersectionObserver> = [];
+        let resizeObserverSet: ResizeObserverSet = [];
+        let mutationObserverSet: MutationObserverSet = [];
+        let intersectionObserverSet: IntersectionObserverSet = [];
+
+        // delegate 추적 root 해석: shadow/light/auto/all → 실제 root 목록
+        const resolveDelegateRoots = (delegateRoot: SwcRootType | undefined): (HTMLElement | ShadowRoot)[] => {
+          const r = delegateRoot || 'auto';
+          const roots: (HTMLElement | ShadowRoot)[] = [];
+          if (r === 'auto') roots.push(inst.shadowRoot || inst);
+          else if (r === 'light') roots.push(inst);
+          else if (r === 'shadow' && inst.shadowRoot) roots.push(inst.shadowRoot);
+          else if (r === 'all') { roots.push(inst); if (inst.shadowRoot) roots.push(inst.shadowRoot); }
+          return roots;
+        };
+
+        // 1. 모든 시클러 onConnected → observer Set 수집 (여러 시클러가 반환한 Set 을 전부 누적)
+        for (const c of cyclers) {
+          const result = (await c.onConnected?.(helperHostSet, resizeObserverSet)) as OnConnectedResult | void;
+          if (!result) continue;
+          if (result.resizeObserverSet?.length) resizeObserverSet = [...resizeObserverSet, ...result.resizeObserverSet];
+          if (result.mutationObserverSet?.length) mutationObserverSet = [...mutationObserverSet, ...result.mutationObserverSet];
+          if (result.intersectionObserverSet?.length) intersectionObserverSet = [...intersectionObserverSet, ...result.intersectionObserverSet];
+        }
+
+        // 2. 타입별로 observer 생성
+        // ResizeObserver 먼저: mutation callback 이 observe/unobserve 를 주입받아야 함
+        // observeTargets 중 delegate 항목은 셀렉터 문자열이라 초기 observe 하지 않는다 (동적 추적 전용).
+        // 동적 observe/unobserve 는 중복 호출을 막기 위해 observe 대상 WeakSet 으로 추적한다.
+        const resizeDelegates = (resizeObserverSet ?? []).filter(t => t.delegate && typeof t.target === 'string') as Array<ResizeObserverSetEntry & { target: string }>;
+        let resizeObserve: ((el: Element, opts?: ResizeObserverOptions) => void) | undefined;
+        let resizeUnobserve: ((el: Element) => void) | undefined;
+        const resizeObserved = new WeakSet<Element>();
+        if (resizeObserverSet?.length) {
+          const roCallbacks = [...new Set(resizeObserverSet.map(e => e.callback))];
+          const ro = new (win as any).ResizeObserver((entries, obs) => {
+            for (const cb of roCallbacks) cb(entries, obs);
+          });
+          for (const e of resizeObserverSet) {
+            if (e.delegate) continue;
+            if (typeof e.target === 'string') {
+              // 문자열(non-delegate)이면 root 에서 검색된 요소들을 observe 대상으로 추가한다.
+              const scope = resolveDelegateRoots(e.delegateRoot);
+              for (const sr of scope) {
+                sr.querySelectorAll(e.target).forEach(el => {
+                  if (!resizeObserved.has(el)) { ro.observe(el, e.options); resizeObserved.add(el); }
+                });
+              }
+              continue;
+            }
+            ro.observe(e.target as Element, e.options);
+            if (e.target instanceof Element) resizeObserved.add(e.target);
+          }
+          resizeObserve = (el, opts) => {
+            if (resizeObserved.has(el)) return;
+            ro.observe(el, opts);
+            resizeObserved.add(el);
+          };
+          resizeUnobserve = (el) => {
+            if (!resizeObserved.has(el)) return;
+            ro.unobserve(el);
+            resizeObserved.delete(el);
+          };
+          observers.push(ro);
+        }
+
+        // IntersectionObserver: 옵션 그룹별로 1개씩 생성.
+        // delegate 항목은 동적 추적용 셀렉터이므로 observe/unobserve 함수를 MutationObserver 콜백에 넘긴다.
+        // 동적 observe/unobserve 중복 방지를 위해 그룹별 WeakSet 으로 추적한다.
+        const intersectionDelegates: Array<{ target: string; delegateRoot?: SwcRootType; observe: (el: Element) => void; unobserve: (el: Element) => void }> = [];
+        for (const group of intersectionObserverSet) {
+          const ioCallbacks = [...new Set(group.observeTargets.map(e => e.callback))];
+          const io = new (win as any).IntersectionObserver((entries, obs) => {
+            for (const cb of ioCallbacks) cb(entries, obs);
+          }, group.options);
+          const ioObserved = new WeakSet<Element>();
+          for (const e of group.observeTargets) {
+            if (e.delegate) {
+              const target = e.target as string;
+              const observe = (el: Element) => {
+                if (ioObserved.has(el)) return;
+                io.observe(el);
+                ioObserved.add(el);
+              };
+              const unobserve = (el: Element) => {
+                if (!ioObserved.has(el)) return;
+                io.unobserve(el);
+                ioObserved.delete(el);
+              };
+              intersectionDelegates.push({ target, delegateRoot: e.delegateRoot, observe, unobserve });
+              continue;
+            }
+            if (typeof e.target === 'string') {
+              // 문자열(non-delegate)이면 root 에서 검색된 요소들을 observe 대상으로 추가한다.
+              const scope = resolveDelegateRoots(e.delegateRoot);
+              for (const sr of scope) {
+                sr.querySelectorAll(e.target).forEach(el => {
+                  if (!ioObserved.has(el)) { io.observe(el); ioObserved.add(el); }
+                });
+              }
+              continue;
+            }
+            io.observe(e.target as Element);
+            if (e.target instanceof Element) ioObserved.add(e.target);
+          }
+          observers.push(io);
+        }
+
+        // resize/intersection delegate 동적 추적 — MutationObserver 콜백에서 추가/제거된 요소를 observe/unobserve 한다.
+        const handleResizeDelegate = (n: Node, observe: boolean) => {
+          if (!resizeObserve || !resizeUnobserve || n.nodeType !== 1) return;
+          const el = n as HTMLElement;
+          for (const d of resizeDelegates) {
+            const isThis = d.target === '$this' || d.target === '';
+            const matchesSel = (node: any) => {
+              if (!node || node.nodeType !== 1) return false;
+              if (isThis) return true;
+              return (node as HTMLElement).matches?.(d.target) || !!(node as HTMLElement).closest?.(d.target);
+            };
+            if (matchesSel(el)) {
+              observe ? resizeObserve(el, d.options)
+                       : resizeUnobserve(el);
+            } else if (!isThis) {
+              el.querySelectorAll(d.target).forEach(sub => {
+                observe ? resizeObserve(sub as HTMLElement, d.options)
+                         : resizeUnobserve(sub as HTMLElement);
+              });
+            }
+          }
+        };
+        const handleIntersectionDelegate = (n: Node, observe: boolean) => {
+          if (n.nodeType !== 1) return;
+          const el = n as HTMLElement;
+          for (const d of intersectionDelegates) {
+            const isThis = d.target === '$this' || d.target === '';
+            const matchesSel = (node: any) => {
+              if (!node || node.nodeType !== 1) return false;
+              if (isThis) return true;
+              return (node as HTMLElement).matches?.(d.target) || !!(node as HTMLElement).closest?.(d.target);
+            };
+            if (matchesSel(el)) {
+              observe ? d.observe(el) : d.unobserve(el);
+            } else if (!isThis) {
+              el.querySelectorAll(d.target).forEach(sub => {
+                observe ? d.observe(sub as HTMLElement) : d.unobserve(sub as HTMLElement);
+              });
+            }
+          }
+        };
+
+        if (mutationObserverSet?.length || resizeDelegates.length > 0 || intersectionDelegates.length > 0) {
+          // 하나의 MutationObserver 로 resize/intersection delegate 동적 추적 + mutation 콜백을 함께 처리
+          const callbacks = [...new Set((mutationObserverSet ?? []).map(e => e.callback))];
+          const mo = new (win as any).MutationObserver((mutations, obs) => {
+            for (const mut of mutations) {
+              Array.from(mut.addedNodes   || []).forEach(n => { handleResizeDelegate(n as Node, true); handleIntersectionDelegate(n as Node, true); });
+              Array.from(mut.removedNodes || []).forEach(n => { handleResizeDelegate(n as Node, false); handleIntersectionDelegate(n as Node, false); });
+            }
+            for (const cb of callbacks) cb(mutations, obs);
+          });
+
+          // observe 대상 전체(엔트리 + delegate 추적 root)를 하나로 모아 중복 observe 를 제거한다.
+          // 같은 target 이 여러 소스에서 지정되면 MutationObserverInit 을 합집합(최대 감지범위)으로 병합한다.
+          const moObserveTargets = new Map<Element | ShadowRoot, MutationObserverInit>();
+          const mergeMutationInit = (existing: MutationObserverInit | undefined, next: MutationObserverInit): MutationObserverInit => {
+            if (!existing) return next;
+            const mergedFilter = existing.attributeFilter || next.attributeFilter
+              ? [...new Set([...(existing.attributeFilter ?? []), ...(next.attributeFilter ?? [])])]
+              : undefined;
+            return {
+              childList: existing.childList || next.childList,
+              attributes: existing.attributes || next.attributes,
+              characterData: existing.characterData || next.characterData,
+              subtree: existing.subtree || next.subtree,
+              attributeOldValue: existing.attributeOldValue || next.attributeOldValue,
+              characterDataOldValue: existing.characterDataOldValue || next.characterDataOldValue,
+              attributeFilter: mergedFilter,
+            };
+          };
+          const addObserveTarget = (target: Element | ShadowRoot, options: MutationObserverInit) => {
+            moObserveTargets.set(target, mergeMutationInit(moObserveTargets.get(target), options));
+          };
+
+          // 1) mutationObserverSet 엔트리
+          for (const e of mutationObserverSet ?? []) {
+            if (e.delegate) continue;
+            const init = e.options ?? { childList: true };
+            if (typeof e.target === 'string') {
+              // 문자열(non-delegate)이면 root 에서 검색된 요소들을 observe 대상으로 추가한다.
+              const scope = resolveDelegateRoots(e.delegateRoot);
+              for (const sr of scope) {
+                sr.querySelectorAll(e.target).forEach(el => addObserveTarget(el, init));
+              }
+              continue;
+            }
+            addObserveTarget(e.target, init);
+          }
+
+          // 2) delegate 추적 root: shadow/light/all/auto 로 해석해 전부 observe
+          for (const d of resizeDelegates) {
+            for (const r of resolveDelegateRoots(d.delegateRoot)) addObserveTarget(r, { childList: true, subtree: true });
+          }
+          for (const d of intersectionDelegates) {
+            for (const r of resolveDelegateRoots(d.delegateRoot)) addObserveTarget(r, { childList: true, subtree: true });
+          }
+
+          for (const [target, options] of moObserveTargets) {
+            mo.observe(target, options);
+          }
+          observers.push(mo);
+        }
+
+        inst.__swc_observers = observers;
+      };
+
       const originalConnected = proto.connectedCallback;
       proto.connectedCallback = async function () {
         ensureInit(this);
-        // 재연결 시 누적 방지 — 클로저 변수 리셋
-        boundListeners = [];
-        removeObserverCallbacks = [];
-        // connected 됐을시 최신화
+        // 재연결 시 누적 방지 — cycler 내부 리소스 초기화
         helperHostSet = SwcUtils.getHelperAndHostSet(win, this as any);
         const appHost = helperHostSet.$appHost;
         const useSsr = isSSR(this);
-        // console.log('isSsr', useSsr, this);
-        // console.log('----helperHostSet--->', this, helperHostSet, useSsr)
-        // let connectedApp: SwcAppInterface |undefined;
         try {
           if (appHost && typeof (appHost as any)._connected === 'function') {
             await (appHost as any)._connected(this);
@@ -404,27 +607,19 @@ export const elementDefine =
             (appHost as any)._connected_safari_and_standby.push(this);
           }
 
-          // const hostSet = SwcUtils.getHostSet(this as any);
           const conf = getElementConfig(this);
           const currentWin = (this as any)._resolveWindow(conf);
 
-          const bMethods = findAllOnConnectedBeforeMetadata(this); //.filter(it => useSsr ? !it.options.ssrFirst : true);
-          // console.log('beforeConnected', bMethods)
-          for (const m of bMethods) await (this as any)._invokeLifecycleMethod(m.propertyKey, helperHostSet);
+          // before-connected 라이프사이클 메서드 (@onConnectedBefore)
+          for (const m of findAllOnConnectedBeforeMetadata(this)) await (this as any)._invokeLifecycleMethod(m.propertyKey, helperHostSet);
           (this as any)._executeSwcScript('swc-on-before-connected', helperHostSet);
 
-          // console.log('vvvvvvvvvvvvvvvu-seSsr-vvvvvvvvvv>', useSsr, this.tagName, this.getAttribute('seq'))
-          //   // ssr 처리라서 이미 내려준거그대로 상요하면된다 따라서 호출안한다
-          // const targetConnectedList = findAllOnConnectedMetadata(constructor).filter(it => useSsr ? !it.options.ssrFirst : true);
+          // ── 렌더 (@onConnected / @onConnectedBody*) — elementDefine 책임 ──
           const targetConnectedList = useSsr ? [] : findAllOnConnectedMetadata(constructor);
           const shadowMode = conf?.useShadow || targetConnectedList.find(it => it.options.useShadow)?.options.useShadow;
-          // console.log('--------->', this.tagName, shadowMode && !this.shadowRoot)
           if (shadowMode && !this.shadowRoot) {
             const mode = shadowMode === true ? 'open' : shadowMode;
-            console.log('tagName=', this.tagName, 'mode', mode, this.shadowRoot);
-            // if (this.tagName!=='INDEX-ROUTER') {
             this.attachShadow({ mode: mode as ShadowRootMode });
-            // }
           }
 
           const stateContext: any = { ...helperHostSet };
@@ -435,20 +630,14 @@ export const elementDefine =
           const shadowChildren: Node[] = [];
           const lightChildren: Node[] = [];
 
-          console.log('targetConnectList', this.tagName, targetConnectedList.length);
           if (targetConnectedList.length > 0) {
-            // let sContent = '',
-            //   lContent = '';
             for (const meta of targetConnectedList) {
-              // const res = (this as any)[meta.propertyKey]();
               let res = await (this as any)._invokeLifecycleMethod(meta.propertyKey, helperHostSet);
-              // res = SwcUtils.projectProcessHtml(this, res);
               if (typeof res === 'string') {
                 const htmlTemplateElement = doc.createElement('template');
-                htmlTemplateElement.innerHTML = res; //SwcUtils.projectProcessHtml(this._swcId, res, doc);
+                htmlTemplateElement.innerHTML = res;
                 res = htmlTemplateElement.content;
               }
-
               if (res) {
                 const nodes = Array.isArray(res) ? res : [res];
                 if (meta.options.useShadow || conf?.useShadow) {
@@ -484,628 +673,20 @@ export const elementDefine =
             globalDelegatedRoots.add(root);
           }
 
-          // Separate delegate and non-delegate listeners
-          const delegateListeners: typeof addEventListenerList = [];
-          const mutationDelegateListeners: typeof addEventListenerList = [];
-          const nonDelegateListeners: typeof addEventListenerList = [];
-
-          const isSpecialSelector = (sel: any) => sel === '$window' || sel === '$document' || sel === '$host' || sel === '$appHost' || sel === '$firstHost' || sel === '$lastHost' || sel === '$firstAppHost' || sel === '$lastAppHost' || sel === '$hosts' || sel === '$appHosts' || sel === '$this' || sel === '';
-
-          addEventListenerList.forEach(meta => {
-            // Function-based selectors cannot be used with delegate listeners
-            const isStringSelector = typeof meta.selector === 'string';
-            const delegateMode = meta.options.delegate;
-            if (delegateMode && isStringSelector && !isSpecialSelector(meta.selector)) {
-              if (delegateMode === 'mutation') {
-                mutationDelegateListeners.push(meta);
-              } else {
-                delegateListeners.push(meta);
-              }
-            } else {
-              nonDelegateListeners.push(meta);
-            }
-          });
-
-          const delegatesByTypeAndRoot = new Map<string, any[]>();
-          delegateListeners.forEach(meta => {
-            const r = meta.options.root || 'auto';
-            const rootKey = `${meta.type}:${r}`;
-            if (!delegatesByTypeAndRoot.has(rootKey)) {
-              delegatesByTypeAndRoot.set(rootKey, []);
-            }
-            delegatesByTypeAndRoot.get(rootKey)!.push(meta);
-          });
-
-          delegatesByTypeAndRoot.forEach((metaList, typeRootKey) => {
-            const [type, rStr] = typeRootKey.split(':');
-            const r = rStr === 'auto' ? 'auto' : rStr;
-            const opts = { capture: metaList[0].options.capture, once: metaList[0].options.once, passive: metaList[0].options.passive };
-
-            const bindRoots: (HTMLElement | ShadowRoot)[] = [];
-            if (r === 'auto') bindRoots.push(this.shadowRoot || (this as any));
-            else if (r === 'light') bindRoots.push(this as any);
-            else if (r === 'shadow' && this.shadowRoot) bindRoots.push(this.shadowRoot);
-            else if (r === 'all') {
-              bindRoots.push(this as any);
-              if (this.shadowRoot) bindRoots.push(this.shadowRoot);
-            }
-
-            bindRoots.forEach(br => {
-              const sortedMetaList = [...metaList].sort((a, b) => {
-                const aStop = a.options.stopPropagation ? 1 : 0;
-                const bStop = b.options.stopPropagation ? 1 : 0;
-                return bStop - aStop;
-              });
-
-              const unifiedHandler = async (event: Event) => {
-                for (const meta of sortedMetaList) {
-                  const { selector, options } = meta;
-                  const matchedEl = (event.target as HTMLElement)?.closest(selector);
-                  if (matchedEl && (br as any).contains(matchedEl)) {
-                    // Apply filter if specified
-                    if (options.filter) {
-                      const helper = SwcUtils.getHelperAndHostSet(currentWin, matchedEl);
-                      if (!options.filter(event, helper)) {
-                        continue; // Skip this listener if filter returns false
-                      }
-                    }
-                    if (options.stopPropagation) event.stopPropagation();
-                    if (options.stopImmediatePropagation) event.stopImmediatePropagation();
-                    if (options.preventDefault) event.preventDefault();
-                    const currentHostSet = SwcUtils.getHostSet(this as any);
-                    const args = { event, ...currentHostSet, $el: matchedEl, $root: br };
-                    await (this as any)[meta.propertyKey](event, { ...currentHostSet, $matchedElement: matchedEl }, args);
-                    if ((event as any).cancelBubble) break;
-                  }
-                }
-              };
-              br.addEventListener(type, unifiedHandler, opts);
-              // 각 메타의 removeListener를 메타 옵션과 함께 보관 (delegate 그룹은 여러 메타 가능)
-              const onRemoves: Array<{ fn: (target: Element, optionValue: any) => void; opts: any }> = [];
-              for (const m of sortedMetaList) {
-                if (m.options.removeListener) {
-                  onRemoves.push({ fn: m.options.removeListener, opts: m.options });
-                }
-              }
-              boundListeners.push({ target: br, type, handler: unifiedHandler, options: opts, onRemoves });
-            });
-          });
-
-          // ─── 직접 바인딩 헬퍼 (non-delegate + delegate:'mutation' 공용) ───
-          const bindDirect = (target: EventTarget, meta: AddEventListenerMetadata) => {
-            const { type, options } = meta;
-            const opts = { capture: options.capture, once: options.once, passive: options.passive };
-
-            const handler = async (event: Event) => {
-              // Apply filter if specified
-              if (options.filter) {
-                const helper = SwcUtils.getHelperAndHostSet(currentWin, target as HTMLElement);
-                if (!options.filter(event, { currentThis: this, helper })) {
-                  return; // Skip if filter returns false
-                }
-              }
-              if (options.stopPropagation) event.stopPropagation();
-              if (options.stopImmediatePropagation) event.stopImmediatePropagation();
-              if (options.preventDefault) event.preventDefault();
-              const currentHostSet = SwcUtils.getHostSet(this as any);
-              const args = { event, ...currentHostSet, $el: target, $root: target };
-              await (this as any)[meta.propertyKey](event, { currentHostSet, $matchedElement: event.currentTarget }, args);
-            };
-
-            // Create event stream with Observable-based operators
-            const eventSubject = new Subject<Event>();
-            let eventStream = eventSubject as any;
-
-            if (options.debounceTime !== undefined && options.debounceTime > 0) {
-              eventStream = eventStream.pipe(debounceTime(options.debounceTime));
-            }
-            if (options.throttleTime !== undefined && options.throttleTime > 0) {
-              eventStream = eventStream.pipe(throttleTime(options.throttleTime));
-            }
-            if (options.distinctUntilChanged !== undefined && options.distinctUntilChanged !== false) {
-              if (typeof options.distinctUntilChanged === 'function') {
-                eventStream = eventStream.pipe(distinctUntilChanged(options.distinctUntilChanged));
-              } else {
-                eventStream = eventStream.pipe(distinctUntilChanged());
-              }
-            }
-
-            const subscription = eventStream.subscribe({
-              next: (event: Event) => {
-                handler(event).catch((err: any) => console.error('Event handler error:', err));
-              },
-              error: (err: any) => console.error('Event stream error:', err)
-            });
-
-            // Create wrapper handler that emits to the subject
-            const wrappedHandler = (event: Event) => {
-              eventSubject.next(event);
-            };
-
-            target.addEventListener(type, wrappedHandler, opts);
-            const onRemoves: Array<{ fn: (target: Element, optionValue: any) => void; opts: any }> = options.removeListener ? [{ fn: options.removeListener, opts: options }] : [];
-            boundListeners.push({ target, type, handler: wrappedHandler, options: opts, subscription, onRemoves, meta });
-          };
-
-          const unbindDirect = (target: EventTarget, meta: AddEventListenerMetadata) => {
-            for (let i = boundListeners.length - 1; i >= 0; i--) {
-              const l = boundListeners[i];
-              if (l.target === target && l.type === meta.type && l.meta === meta) {
-                try {
-                  l.target.removeEventListener(l.type, l.handler, l.options);
-                  l.subscription?.unsubscribe?.();
-                } catch (e) {
-                  console.error('[SWC] unbindDirect error:', e);
-                }
-                // 사용자 정의 정리 콜백 (removeListener) — 요소 unmount 시에도 호출
-                if (Array.isArray(l.onRemoves)) {
-                  for (const r of l.onRemoves) {
-                    try {
-                      r.fn(l.target, r.opts);
-                    } catch (e) {
-                      console.error('[SWC] unbindDirect removeListener error:', e);
-                    }
-                  }
-                }
-                boundListeners.splice(i, 1);
-              }
-            }
-          };
-
-          // delegate:'mutation' 이 바인딩한 요소 추적 (중복 바인딩 방지)
-          const eventBoundSets = new Map<AddEventListenerMetadata, WeakSet<Element>>();
-
-          nonDelegateListeners.forEach(meta => {
-            const { selector, options } = meta;
-            const bindTargets: EventTarget[] = [];
-            const r = options.root || 'auto';
-
-            // Resolve selector if it's a function
-            let resolvedSelector: string | null = null;
-            if (typeof selector === 'function') {
-              const hostSet = SwcUtils.getHelperAndHostSet(currentWin, this);
-              const result = selector(this, hostSet);
-              if (typeof result === 'string') {
-                resolvedSelector = result;
-              } else if (result instanceof currentWin.Element) {
-                bindTargets.push(result as EventTarget);
-              } else if (result instanceof currentWin.NodeList) {
-                bindTargets.push(...Array.from(result as EventTarget[]));
-              } else if (Array.isArray(result)) {
-                bindTargets.push(...(result as EventTarget[]));
-              }
-            } else {
-              resolvedSelector = selector;
-            }
-
-            const applyRootOption = (target: any) => {
-              if (!target) return;
-              if (r === 'auto') {
-                bindTargets.push(target.shadowRoot || target);
-              } else {
-                if (r === 'light' || r === 'all') bindTargets.push(target);
-                if ((r === 'shadow' || r === 'all') && target.shadowRoot) bindTargets.push(target.shadowRoot);
-              }
-            };
-
-            if (resolvedSelector) {
-              if (resolvedSelector === '$window') bindTargets.push(currentWin);
-              else if (resolvedSelector === '$document') bindTargets.push(currentWin.document);
-              else if (resolvedSelector === '$host') applyRootOption(helperHostSet.$host);
-              else if (resolvedSelector === '$parentHost') applyRootOption(helperHostSet.$parentHost);
-              else if (resolvedSelector === '$appHost') applyRootOption(helperHostSet.$appHost);
-              else if (resolvedSelector === '$firstHost') applyRootOption(helperHostSet.$firstHost);
-              else if (resolvedSelector === '$lastHost') applyRootOption(helperHostSet.$lastHost);
-              else if (resolvedSelector === '$firstAppHost') applyRootOption(helperHostSet.$firstAppHost);
-              else if (resolvedSelector === '$lastAppHost') applyRootOption(helperHostSet.$lastAppHost);
-              else if (resolvedSelector === '$hosts') helperHostSet.$hosts.forEach(applyRootOption);
-              else if (resolvedSelector === '$appHosts') helperHostSet.$appHosts.forEach(applyRootOption);
-              else if (resolvedSelector === '$this' || !resolvedSelector) applyRootOption(this);
-              else {
-                const searchRoots: (HTMLElement | ShadowRoot)[] = [];
-                if (r === 'auto') searchRoots.push(this.shadowRoot || (this as any));
-                else if (r === 'light') searchRoots.push(this as any);
-                else if (r === 'shadow' && this.shadowRoot) searchRoots.push(this.shadowRoot);
-                else if (r === 'all') {
-                  searchRoots.push(this as any);
-                  if (this.shadowRoot) searchRoots.push(this.shadowRoot);
-                }
-
-                searchRoots.forEach(sr => {
-                  sr.querySelectorAll(resolvedSelector).forEach(el => bindTargets.push(el));
-                });
-              }
-            }
-
-            bindTargets.forEach(t => bindDirect(t, meta));
-          });
-
-          // ─── MutationObserver / ResizeObserver 처리 ───
-          // shadow/light 루트별로 각각 observer를 두고, 해당 루트에 데코레이터 메타가 있으면 observer를 생성한다.
-          // 두 루트 모두 있으면 observer 2개, 한쪽만 있으면 1개, 없으면 0개.
-          shadowMutationObserver = null;
-          lightMutationObserver = null;
-          resizeObserver = null;
-
-          // ResizeObserver: @resizeObserver 데코레이터가 하나라도 있으면 observer 하나 생성 (shadow 있으면 shadow 루트, 없으면 light)
-          if (resizeObserverList.length > 0) {
-            const root: HTMLElement | ShadowRoot = this.shadowRoot || (this as any);
-            resizeObserver = new ResizeObserver((entries: ResizeObserverEntry[], obs: ResizeObserver) => {
-              for (const m of resizeObserverList) {
-                let matchedEls: HTMLElement[] = [];
-                if (m.options.delegate && typeof m.selector === 'string') {
-                  const isThis = m.selector === '$this' || m.selector === '';
-                  const matchesSel = (node: any): boolean => {
-                    if (!node || node.nodeType !== 1) return false;
-                    if (isThis) return true;
-                    const el = node as HTMLElement;
-                    return el.matches?.(m.selector as string) || !!el.closest?.(m.selector as string);
-                  };
-                  matchedEls = entries.map(e => e.target as HTMLElement).filter(matchesSel);
-                } else {
-                  matchedEls = entries.map(e => e.target as HTMLElement).filter(t => t && t.nodeType === 1);
-                }
-                if (matchedEls.length === 0) continue;
-                if (m.options.filter) {
-                  const helper = SwcUtils.getHelperAndHostSet(currentWin, this);
-                  if (!m.options.filter(matchedEls, { currentThis: this, helper })) continue;
-                }
-                const hostSet = SwcUtils.getHostSet(this as any);
-                (this as any)[m.propertyKey](matchedEls, entries, obs, { ...hostSet, $root: root });
-              }
-            });
-            // resizeObserver 메타별 removeObserver 수집
-            for (const m of resizeObserverList) {
-              if (m.options.removeObserver) {
-                removeObserverCallbacks.push({ fn: m.options.removeObserver, target: root, opts: m.options });
-              }
-            }
-
-            // ─── non-delegate 메타 초기 observe ───
-            // delegate 메타는 mutation 동적 추적이 담당하므로 제외.
-            // 함수 셀렉터는 selector를 직접 호출해 반환 요소를 observe (mutation 경로 아님).
-            // 문자열 셀렉터는 meta.options.root에 따라 scope에서 querySelectorAll.
-            for (const m of resizeObserverList) {
-              if (m.options.delegate) continue;
-              const hostSet = SwcUtils.getHelperAndHostSet(currentWin, this);
-              let targets: HTMLElement[] = [];
-
-              if (typeof m.selector === 'function') {
-                const res = (m.selector as any)(this, hostSet);
-                if (res instanceof currentWin.HTMLElement) targets = [res as HTMLElement];
-                else if (res instanceof currentWin.NodeList) targets = Array.from(res as NodeList).filter(e => e instanceof currentWin.HTMLElement) as HTMLElement[];
-                else if (Array.isArray(res)) targets = res.filter((e: any) => e instanceof currentWin.HTMLElement) as HTMLElement[];
-              } else if (typeof m.selector === 'string') {
-                if (m.selector === '$this' || m.selector === '') {
-                  targets = [this as HTMLElement];
-                } else {
-                  const r: any = m.options.root || 'auto';
-                  const scopes: any[] = [];
-                  if (r === 'auto') scopes.push(this.shadowRoot || this);
-                  else if (r === 'light') scopes.push(this);
-                  else if (r === 'shadow' && this.shadowRoot) scopes.push(this.shadowRoot);
-                  else if (r === 'all') { scopes.push(this); if (this.shadowRoot) scopes.push(this.shadowRoot); }
-                  for (const scope of scopes) {
-                    const found = scope?.querySelectorAll?.(m.selector as string) as NodeListOf<HTMLElement> | undefined;
-                    if (found?.length) targets.push(...Array.from(found));
-                  }
-                }
-              }
-
-              for (const el of targets) {
-                resizeObserver.observe(el, m.options.box ? { box: m.options.box } : undefined);
-              }
-            }
-          }
-          // MutationObserver: shadow/light 루트별 그룹핑
-          const shadowMetas = mutationObserverList.filter(m => {
-            const r = m.options.root || 'auto';
-            return this.shadowRoot && (r === 'shadow' || r === 'all' || r === 'auto');
-          });
-          const lightMetas = mutationObserverList.filter(m => {
-            const r = m.options.root || 'auto';
-            return r === 'light' || r === 'all' || (!this.shadowRoot && r === 'auto');
-          });
-
-          const setupMutationObserver = (root: HTMLElement | ShadowRoot, metas: MutationObserverMetadata[], resizeDelegates: ResizeObserverMetadata[] = [], eventDelegates: AddEventListenerMetadata[] = []): MutationObserver | null => {
-            // 처리할 메타가 하나도 없으면 observer 생성 안 함 (루트당 1개로 공유)
-            if (metas.length === 0 && resizeDelegates.length === 0 && eventDelegates.length === 0) return null;
-
-            // 사용자가 입력한 옵션 그대로 (아무것도 안 주면 childList 기본)
-            const initFrom = (o: MutationObserverBaseOptions): MutationObserverInit => {
-              const init: MutationObserverInit = {
-                childList: o.childList,
-                attributes: o.attributes,
-                characterData: o.characterData,
-                subtree: o.subtree,
-                attributeFilter: o.attributeFilter,
-                attributeOldValue: o.attributeOldValue,
-                characterDataOldValue: o.characterDataOldValue
-              };
-              // MutationObserver는 최소 1개는 true여야 함
-              if (!init.childList && !init.attributes && !init.characterData) init.childList = true;
-              return init;
-            };
-
-            // 함수 셀렉터 메타가 observe한 요소 집합 (콜백에서 m.target 포함 여부 체크용)
-            const fnObservedSets = new Map<MutationObserverMetadata, WeakSet<Element>>();
-
-            const observer = new MutationObserver((mutations: MutationRecord[], obs: MutationObserver) => {
-              for (const meta of metas) {
-                const { selector, options } = meta;
-                let matchedEls: HTMLElement[] = [];
-
-                // 이 메타가 관심 있는 mutation 타입인지 (공유 observer라 타입이 섞여 들어올 수 있음)
-                const mutationTypeMatches = (m: MutationRecord): boolean => {
-                  const hasExplicit = !!(options.childList || options.attributes || options.characterData);
-                  if (m.type === 'childList') return hasExplicit ? !!options.childList : true; // 명시 없으면 childList 기본
-                  if (m.type === 'attributes') return !!options.attributes;
-                  if (m.type === 'characterData') return !!options.characterData;
-                  return true;
-                };
-
-                if (options.delegate && typeof selector === 'string') {
-                  const isThis = selector === '$this' || selector === '';
-                  const matchesSel = (node: any): boolean => {
-                    if (!node || node.nodeType !== 1) return false;
-                    if (isThis) return true;
-                    const el = node as HTMLElement;
-                    return el.matches?.(selector as string) || !!el.closest?.(selector as string);
-                  };
-                  matchedEls = mutations.flatMap(m => {
-                    if (!mutationTypeMatches(m)) return [];
-                    const els: HTMLElement[] = [];
-                    if (matchesSel(m.target)) els.push(m.target as HTMLElement);
-                    Array.from(m.addedNodes || [])
-                      .filter(matchesSel)
-                      .forEach(n => els.push(n as HTMLElement));
-                    Array.from(m.removedNodes || [])
-                      .filter(matchesSel)
-                      .forEach(n => els.push(n as HTMLElement));
-                    return els;
-                  });
-                } else if (typeof selector === 'string') {
-                  // non-delegate: observe 대상이 매칭 요소들이므로 그들의 mutation 대상 + 추가/제거 노드
-                  const isThis = selector === '$this' || selector === '';
-                  const matchesSel = (node: any): boolean => {
-                    if (!node || node.nodeType !== 1) return false;
-                    if (isThis) return true;
-                    return (node as HTMLElement).matches?.(selector as string);
-                  };
-                  matchedEls = mutations.flatMap(m => {
-                    if (!mutationTypeMatches(m)) return [];
-                    const els: HTMLElement[] = [];
-                    if (matchesSel(m.target)) els.push(m.target as HTMLElement);
-                    Array.from(m.addedNodes || [])
-                      .filter(matchesSel)
-                      .forEach(n => els.push(n as HTMLElement));
-                    Array.from(m.removedNodes || [])
-                      .filter(matchesSel)
-                      .forEach(n => els.push(n as HTMLElement));
-                    return els;
-                  });
-                } else if (typeof selector === 'function') {
-                  // 함수 셀렉터: 초기 observe에서 호출해 저장한 요소 집합에 m.target이 있는지 참조 비교
-                  const observedSet = fnObservedSets.get(meta);
-                  matchedEls = mutations
-                    .filter(m => mutationTypeMatches(m))
-                    .map(m => m.target as HTMLElement)
-                    .filter(t => t && t.nodeType === 1 && (observedSet ? observedSet.has(t) : false));
-                } else {
-                  matchedEls = mutations.filter(m => mutationTypeMatches(m)).map(m => m.target as HTMLElement).filter(t => t && t.nodeType === 1);
-                }
-
-                if (matchedEls.length === 0) continue;
-                if (options.filter) {
-                  const helper = SwcUtils.getHelperAndHostSet(currentWin, this);
-                  if (!options.filter(matchedEls, { currentThis: this, helper })) continue;
-                }
-                const hostSet = SwcUtils.getHostSet(this as any);
-                // 1번째: 매치된 element 배열, 2번째: 원본 mutations, 3번째: observer
-                (this as any)[meta.propertyKey](matchedEls, mutations, obs, { ...hostSet, $root: root });
-              }
-
-              // ─── resizeObserver delegate 동적 추적 ───
-              // 추가/삭제된 요소가 delegate 셀렉터와 매칭되면 resizeObserver에 observe/unobserve
-              if (resizeDelegates.length > 0 && resizeObserver) {
-                const handle = (n: Node, observe: boolean) => {
-                  if (n.nodeType !== 1) return;
-                  const el = n as HTMLElement;
-                  for (const m of resizeDelegates) {
-                    if (typeof m.selector !== 'string') continue;
-                    const isThis = m.selector === '$this' || m.selector === '';
-                    const matchesSel = (node: any): boolean => {
-                      if (!node || node.nodeType !== 1) return false;
-                      if (isThis) return true;
-                      const e = node as HTMLElement;
-                      return e.matches?.(m.selector as string) || !!e.closest?.(m.selector as string);
-                    };
-                    if (matchesSel(el)) {
-                      if (observe) resizeObserver.observe(el, m.options.box ? { box: m.options.box } : undefined);
-                      else resizeObserver.unobserve(el);
-                    } else if (!isThis) {
-                      el.querySelectorAll(m.selector).forEach(sub => {
-                        if (observe) resizeObserver.observe(sub as HTMLElement, m.options.box ? { box: m.options.box } : undefined);
-                        else resizeObserver.unobserve(sub as HTMLElement);
-                      });
-                    }
-                  }
-                };
-                for (const m of mutations) {
-                  Array.from(m.addedNodes || []).forEach(n => handle(n, true));
-                  Array.from(m.removedNodes || []).forEach(n => handle(n, false));
-                }
-              }
-
-              // ─── addEventListener(delegate:'mutation') 동적 바인딩/해제 ───
-              // 비버블링 이벤트(focus/blur/... 등)는 closest 델리게이션으로 안 잡히므로,
-              // 매칭 요소에 직접 리스너를 바인딩하고 추가/제거를 MutationObserver로 추적한다.
-              if (eventDelegates.length > 0) {
-                for (const m of eventDelegates) {
-                  let boundSet = eventBoundSets.get(m);
-                  if (!boundSet) {
-                    boundSet = new WeakSet<Element>();
-                    eventBoundSets.set(m, boundSet);
-                  }
-                  const isThis = m.selector === '$this' || m.selector === '';
-                  const matchesSel = (node: any): boolean => {
-                    if (!node || node.nodeType !== 1) return false;
-                    if (isThis) return true;
-                    return typeof m.selector === 'string' && (node as HTMLElement).matches?.(m.selector as string);
-                  };
-
-                  const bindEl = (el: Element) => {
-                    if (!boundSet!.has(el)) {
-                      bindDirect(el, m);
-                      boundSet!.add(el);
-                    }
-                  };
-                  const unbindEl = (el: Element) => {
-                    if (boundSet!.has(el)) {
-                      unbindDirect(el, m);
-                      boundSet!.delete(el);
-                    }
-                  };
-
-                  for (const mut of mutations) {
-                    Array.from(mut.addedNodes || []).forEach(n => {
-                      if (n.nodeType !== 1) return;
-                      if (matchesSel(n)) {
-                        bindEl(n as Element);
-                      } else if (!isThis && typeof m.selector === 'string') {
-                        (n as Element).querySelectorAll?.(m.selector as string).forEach(bindEl);
-                      }
-                    });
-                    Array.from(mut.removedNodes || []).forEach(n => {
-                      if (n.nodeType !== 1) return;
-                      const el = n as Element;
-                      if (matchesSel(el)) {
-                        unbindEl(el);
-                      } else if (!isThis && typeof m.selector === 'string') {
-                        el.querySelectorAll?.(m.selector as string).forEach(unbindEl);
-                      }
-                    });
-                  }
-                }
-              }
-            });
-
-            // delegate 메타(mutation, resize, addEventListener:'mutation')가 하나라도 있으면 → 루트에 subtree observe 1개로 전부 감지 (콜백에서 메타별 매칭 처리)
-            const hasDelegate = metas.some(m => m.options.delegate) || resizeDelegates.some(m => m.options.delegate) || eventDelegates.length > 0;
-            if (hasDelegate) {
-              observer.observe(root, { childList: true, subtree: true });
-            }
-
-            // non-delegate 메타: 셀렉터 매칭 요소들을 사용자 옵션 그대로 observe
-            const nonDelegateMetas = metas.filter(m => !m.options.delegate);
-            for (const m of nonDelegateMetas) {
-              const { selector, options } = m;
-              const mInit = initFrom(options);
-              if (typeof selector === 'string') {
-                if (selector === '$this' || selector === '') {
-                  observer.observe(root, mInit);
-                } else {
-                  root.querySelectorAll(selector).forEach(el => observer.observe(el as HTMLElement, mInit));
-                }
-              } else if (typeof selector === 'function') {
-                  // 함수 셀렉터: 함수를 한 번 호출해 반환 요소들을 observe + 집합에 저장 (콜백에서 target 비교)
-                  const hostSet = SwcUtils.getHelperAndHostSet(currentWin, this);
-                  const res = (selector as any)(this, hostSet);
-                  let targets: HTMLElement[] = [];
-                  if (res instanceof currentWin.HTMLElement) targets = [res as HTMLElement];
-                  else if (res instanceof currentWin.NodeList) targets = Array.from(res as NodeList).filter((e: any) => e instanceof currentWin.HTMLElement) as HTMLElement[];
-                  else if (Array.isArray(res)) targets = res.filter((e: any) => e instanceof currentWin.HTMLElement) as HTMLElement[];
-
-                  const set = new WeakSet<Element>();
-                  for (const el of targets) {
-                    set.add(el);
-                    observer.observe(el as HTMLElement, mInit);
-                  }
-                  fnObservedSets.set(m, set);
-                }
-            }
-
-            // ─── addEventListener(delegate:'mutation') 초기 바인딩 (connect 시점에 이미 존재하는 요소) ───
-            for (const m of eventDelegates) {
-              let boundSet = eventBoundSets.get(m);
-              if (!boundSet) {
-                boundSet = new WeakSet<Element>();
-                eventBoundSets.set(m, boundSet);
-              }
-              if (typeof m.selector !== 'string') continue;
-              if (m.selector === '$this' || m.selector === '') {
-                bindDirect(root as EventTarget, m);
-                boundSet.add(root as Element);
-              } else {
-                root.querySelectorAll(m.selector).forEach(el => {
-                  if (!boundSet.has(el)) {
-                    bindDirect(el, m);
-                    boundSet.add(el);
-                  }
-                });
-              }
-            }
-
-            return observer;
-          };
-
-          // resizeObserver delegate 메타도 루트별로 필터해서 넘김
-          const shadowResizeDelegateMetas = resizeObserverList.filter(m => {
-            if (!m.options.delegate) return false;
-            const r = m.options.root || 'auto';
-            return this.shadowRoot && (r === 'shadow' || r === 'all' || r === 'auto');
-          });
-          const lightResizeDelegateMetas = resizeObserverList.filter(m => {
-            if (!m.options.delegate) return false;
-            const r = m.options.root || 'auto';
-            return r === 'light' || r === 'all' || (!this.shadowRoot && r === 'auto');
-          });
-
-          // addEventListener(delegate:'mutation') 메타도 루트별로 필터해서 같은 observer에 넘김
-          const shadowEventDelegateMetas = mutationDelegateListeners.filter(m => {
-            const r = m.options.root || 'auto';
-            return this.shadowRoot && (r === 'shadow' || r === 'all' || r === 'auto');
-          });
-          const lightEventDelegateMetas = mutationDelegateListeners.filter(m => {
-            const r = m.options.root || 'auto';
-            return r === 'light' || r === 'all' || (!this.shadowRoot && r === 'auto');
-          });
-
-          if (this.shadowRoot) shadowMutationObserver = setupMutationObserver(this.shadowRoot, shadowMetas, shadowResizeDelegateMetas, shadowEventDelegateMetas);
-          lightMutationObserver = setupMutationObserver(this as any, lightMetas, lightResizeDelegateMetas, lightEventDelegateMetas);
-
-          // mutationObserver 메타별 removeObserver 수집
-          for (const m of mutationObserverList) {
-            if (m.options.removeObserver) {
-              const rootForM = this.shadowRoot && (m.options.root === 'shadow' || m.options.root === 'all' || (m.options.root === 'auto' && this.shadowRoot)) ? this.shadowRoot : (this as any);
-              removeObserverCallbacks.push({ fn: m.options.removeObserver, target: rootForM, opts: m.options });
-            }
-          }
+          // ── cycler 실행 (렌더 후): 모든 시클러 onConnected → observer Set 수집 → observer 생성 ──
+          // helperHostSet 은 클로저 변수라 async 흐름에서 다른 인스턴스로 덮어써질 수 있다.
+          // 반드시 현재 인스턴스(this)로 재계산한 값을 사용한다.
+          await buildObservers(SwcUtils.getHelperAndHostSet(win, this as any));
 
           if (originalConnected) await originalConnected.apply(this);
 
-          const aMethods = findAllOnConnectedAfterMetadata(this); //.filter(it => { return useSsr ? !it.options.ssrFirst : true; });
-          // console.log('afterConnected', this.tagName, aMethods,  getOnConnectedAfterMetadata(this))
-          for (const m of aMethods) await (this as any)._invokeLifecycleMethod(m.propertyKey, helperHostSet);
+          // after-connected 라이프사이클 메서드 (@onConnectedAfter)
+          for (const m of findAllOnConnectedAfterMetadata(this)) await (this as any)._invokeLifecycleMethod(m.propertyKey, helperHostSet);
           (this as any)._executeSwcScript('swc-on-connected', helperHostSet);
           (this as any)._executeSwcScript('swc-on-after-connected', helperHostSet);
           (this as any).__swc_connected = true;
-
-          // Trigger @changedAttributeThis with while: 'connected'
-          for (let [name, metaList] of Array.from(attrChangeMap)) {
-            for (const meta of metaList) {
-              if (meta.options.while === 'connected') {
-                const val = getAttributeValue(this, name, { type: meta.options.type });
-                if (val !== null) {
-                  await (this as any)[meta.propertyKey](val, null, name, helperHostSet);
-                }
-              }
-            }
-          }
         } finally {
-          for (let m of findAllLifecycleMetadata(this, ON_CONNECTED_COMPLETED_METADATA_KEY)) {
-            await (this as any)._invokeLifecycleMethod(m.propertyKey, helperHostSet);
-          }
+          for (const m of findAllLifecycleMetadata(this, ON_CONNECTED_COMPLETED_METADATA_KEY)) await (this as any)._invokeLifecycleMethod(m.propertyKey, helperHostSet);
           if (appHost && typeof (appHost as any)._connectedDone === 'function') {
             await (appHost as any)._connectedDone(this);
           }
@@ -1117,81 +698,26 @@ export const elementDefine =
       ////////////////////////////////////////////////
       const originalDisconnected = proto.disconnectedCallback;
       proto.disconnectedCallback = function () {
-        // const helperHostSet = SwcUtils.getHelperAndHostSet(win, this as any);
-        // Remove from appHost LAST when disconnected
-        // console.log('disconnnnnnnnnnnnnnnnnnn', helperHostSet, this)
-        const appHost = helperHostSet.$appHost;
+        const appHost = helperHostSet?.$appHost;
         if (appHost && typeof (appHost as any)._disconnected === 'function') {
           (appHost as any)._disconnected(this);
         }
 
         (this as any)._executeSwcScript('swc-on-before-disconnected', helperHostSet);
-        const bMethods = findAllLifecycleMetadata(this, ON_BEFORE_DISCONNECTED_METADATA_KEY);
-        for (const m of bMethods) (this as any)._invokeLifecycleMethod(m.propertyKey, helperHostSet);
-        // event listener 정리
-        if (boundListeners.length > 0) {
-          boundListeners.forEach((l: BoundListener) => {
-            l.target.removeEventListener(l.type, l.handler, l.options);
-            // Cleanup Observable subscription if present
-            if (l.subscription && typeof l.subscription.unsubscribe === 'function') {
-              l.subscription.unsubscribe();
-            }
-            // 사용자 정의 정리 콜백 호출
-            if (Array.isArray(l.onRemoves)) {
-              for (const r of l.onRemoves) {
-                try {
-                  r.fn(l.target, r.opts);
-                } catch (e) {
-                  console.error('[SWC] removeListener error:', e);
-                }
-              }
-            }
-          });
-          boundListeners = [];
-        }
+        for (const m of findAllLifecycleMetadata(this, ON_BEFORE_DISCONNECTED_METADATA_KEY)) (this as any)._invokeLifecycleMethod(m.propertyKey, helperHostSet);
+        for (const c of cyclers) c.onDisconnected?.(helperHostSet!);
 
-        // MutationObserver / ResizeObserver 정리
-        const _obs: Array<MutationObserver | ResizeObserver | null> = [shadowMutationObserver, lightMutationObserver, resizeObserver];
-        for (const o of _obs) {
-          try {
-            (o as any)?.disconnect?.();
-          } catch (e) {
-            console.error('[SWC] observer disconnect error:', e);
-          }
+        for (const o of (this as any).__swc_observers ?? []) {
+          try { (o as any)?.disconnect?.(); } catch (e) { console.error('[SWC] observer disconnect error:', e); }
         }
-        shadowMutationObserver = null;
-        lightMutationObserver = null;
-        resizeObserver = null;
-
-        // 메타별 removeObserver 콜백 호출
-        for (const cb of removeObserverCallbacks) {
-          try {
-            cb.fn(cb.target, cb.opts);
-          } catch (e) {
-            console.error('[SWC] removeObserver error:', e);
-          }
-        }
-        removeObserverCallbacks = [];
+        (this as any).__swc_observers = [];
 
         // elementApply event listener 정리
         new ElementApply(this, { id: this._swcId }).removeAllEventListener();
 
-        // globalDelegatedRoots remove
-        // const roots = [this, this.getRootNode()];
-        // if (this.shadowRoot) {
-        //   roots.push(this.shadowRoot);
-        // }
-        // roots.forEach(root => {
-        //     DOM_EVENT_NAMES.forEach(type => {
-        //       root.removeEventListener(type, handleGlobalSwcEvent);
-        //     });
-        //   }
-        // )
-
         if (originalDisconnected) originalDisconnected.apply(this);
 
-        const aMethods = findAllLifecycleMetadata(this, ON_AFTER_DISCONNECTED_METADATA_KEY);
-        for (const m of aMethods) (this as any)._invokeLifecycleMethod(m.propertyKey, helperHostSet);
+        for (const m of findAllLifecycleMetadata(this, ON_AFTER_DISCONNECTED_METADATA_KEY)) (this as any)._invokeLifecycleMethod(m.propertyKey, helperHostSet);
         (this as any)._executeSwcScript('swc-on-disconnected', helperHostSet);
         (this as any)._executeSwcScript('swc-on-after-disconnected', helperHostSet);
         (this as any).__swc_connected = false;
@@ -1201,13 +727,12 @@ export const elementDefine =
       proto.adoptedCallback = function () {
         const hostSet = SwcUtils.getHostSet(this as any);
         (this as any)._executeSwcScript('swc-on-before-adopted', hostSet);
-        const bMethods = findAllLifecycleMetadata(this, ON_BEFORE_ADOPTED_METADATA_KEY);
-        for (const m of bMethods) (this as any)._invokeLifecycleMethod(m.propertyKey, hostSet);
+        for (const m of findAllLifecycleMetadata(this, ON_BEFORE_ADOPTED_METADATA_KEY)) (this as any)._invokeLifecycleMethod(m.propertyKey, hostSet);
+        for (const c of cyclers) c.onAdopted?.(helperHostSet!);
 
         if (originalAdopted) originalAdopted.apply(this);
 
-        const aMethods = findAllLifecycleMetadata(this, ON_AFTER_ADOPTED_METADATA_KEY);
-        for (const m of aMethods) (this as any)._invokeLifecycleMethod(m.propertyKey, hostSet);
+        for (const m of findAllLifecycleMetadata(this, ON_AFTER_ADOPTED_METADATA_KEY)) (this as any)._invokeLifecycleMethod(m.propertyKey, hostSet);
         (this as any)._executeSwcScript('swc-on-adopted', hostSet);
         (this as any)._executeSwcScript('swc-on-after-adopted', hostSet);
       };
@@ -1216,7 +741,9 @@ export const elementDefine =
       proto.attributeChangedCallback = function (name: string, old: string | null, newVal: string | null) {
         if (originalAttributeChanged) originalAttributeChanged.apply(this, [name, old, newVal]);
 
-        const hSet = SwcUtils.getHostSet(this as any);
+        // attributeChangedCallback 은 connected 이전에도 호출될 수 있으므로
+        // 클로저의 helperHostSet(null 가능) 대신 이 시점에 새로 계산한다.
+        const helperAndHostSet = SwcUtils.getHelperAndHostSet(win, this as any);
 
         // Process expression directive before passing to handlers
         let processedVal: any = newVal;
@@ -1225,18 +752,17 @@ export const elementDefine =
           const expr = ae.getFirstExpression('callReturn');
           if (expr) {
             const win = (this as any)._resolveWindow?.() || ((typeof window !== 'undefined' ? window : undefined) as any);
-            const helperAndHostSet = SwcUtils.getHelperAndHostSet(win, this as any);
+            const exprHelperAndHostSet = SwcUtils.getHelperAndHostSet(win, this as any);
             const script = ConvertUtils.decodeHtmlEntity(expr.script, win.document);
             try {
               const result = FunctionUtils.executeReturn({
                 script: script,
                 context: this,
-                args: helperAndHostSet
+                args: exprHelperAndHostSet
               });
-              // Pass the result object directly without serialization
               processedVal = result;
             } catch (e) {
-              console.error(`[SWC] Failed to execute directive {{= ${expr.script} }} on attribute ${name}: ${helperAndHostSet}`, e);
+              console.error(`[SWC] Failed to execute directive {{= ${expr.script} }} on attribute ${name}: ${exprHelperAndHostSet}`, e);
               processedVal = newVal;
             }
           }
@@ -1249,21 +775,8 @@ export const elementDefine =
           }
         }
 
-        const hostCustomEventMeta = emitHostCustomEventList.find(it => (it.options as any).attributeName === name);
-        if (hostCustomEventMeta && newVal !== null) {
-          (this as any)._bindAttributeEvent(this as any, name, newVal, hostCustomEventMeta.type);
-        }
-
-        const metaList = attrChangeMap.get(name);
-        if (metaList && Array.isArray(metaList)) {
-          for (const meta of metaList) {
-            if (meta.options.while === 'connected' && !(this as any).__swc_connected) {
-              continue;
-            }
-            const convertedVal = convertAttributeValue(processedVal, meta.options.type);
-            (this as any)[meta.propertyKey](convertedVal, old, name, hSet);
-          }
-        }
+        // cycler 위임: attribute 옵저빙(@emitCustomEvent(attributeName) / @changedAttribute 등)
+        for (const c of cyclers) c.onAttributeChanged?.(helperAndHostSet, name, old, processedVal);
       };
 
       Object.defineProperty(constructor, 'observedAttributes', {

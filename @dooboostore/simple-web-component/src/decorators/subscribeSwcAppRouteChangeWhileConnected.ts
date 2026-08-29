@@ -86,3 +86,22 @@ export const getSubscribeSwcAppRouteChangeWhileConnectedMetadata = (target: any)
   // Sort by order (default 0 if not specified)
   return [...results].sort((a, b) => (a.options?.order ?? 0) - (b.options?.order ?? 0));
 };
+
+// ─────────────────────────────────────────────────────────────────────────────
+// RouteSubscribeLifeCycler
+// NOTE: 실제 구독 로직은 SwcAppMixin._connected 에서 처리된다.
+//       이 cycler 는 메타데이터 접근 진입점 역할만 하며,
+//       향후 SwcAppMixin 에서 로직을 분리할 때 이 클래스로 이전한다.
+// ─────────────────────────────────────────────────────────────────────────────
+import { ElementDefineLifeCycler } from '../types';
+
+export class RouteSubscribeLifeCycler implements ElementDefineLifeCycler {
+  onConnected(_helperHostSet: HelperHostSet): void {
+    // 실제 구독은 SwcAppMixin._connected 에서 처리
+  }
+
+  /** SwcAppMixin 이 구독 대상 메타를 꺼낼 때 사용 */
+  getMetadata(helperHostSet: HelperHostSet): SwcAppRouteChangeSubscriberMetadata[] {
+    return getSubscribeSwcAppRouteChangeWhileConnectedMetadata(helperHostSet.$this);
+  }
+}

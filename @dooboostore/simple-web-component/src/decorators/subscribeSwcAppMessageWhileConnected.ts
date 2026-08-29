@@ -72,3 +72,20 @@ export const getSubscribeSwcAppMessageWhileConnectedMetadata = (target: any): Sw
   const constructor = target instanceof Function ? target : target.constructor;
   return ReflectUtils.getOwnMetadata(SUBSCRIBE_SWC_APP_MESSAGE_WHILE_CONNECTED_METADATA_KEY, constructor);
 };
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MessageSubscribeLifeCycler
+// NOTE: 실제 구독 로직은 SwcAppMixin._connected 에서 처리된다.
+// ─────────────────────────────────────────────────────────────────────────────
+import { ElementDefineLifeCycler } from '../types';
+
+export class MessageSubscribeLifeCycler implements ElementDefineLifeCycler {
+  onConnected(_helperHostSet: HelperHostSet): void {
+    // 실제 구독은 SwcAppMixin._connected 에서 처리
+  }
+
+  /** SwcAppMixin 이 구독 대상 메타를 꺼낼 때 사용 */
+  getMetadata(helperHostSet: HelperHostSet): SwcAppMessageSubscriberMetadata[] | undefined {
+    return getSubscribeSwcAppMessageWhileConnectedMetadata(helperHostSet.$this);
+  }
+}

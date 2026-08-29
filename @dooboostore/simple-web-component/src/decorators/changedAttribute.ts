@@ -65,3 +65,49 @@ export const findAllAttributeChangedMetadata = (target: any): Map<string, Change
 export const convertAttributeValue = (val: any, type?: typeof Number | typeof Boolean | typeof String): any => {
   return convertValue(val, type);
 };
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ChangedAttributeLifeCycler
+// ─────────────────────────────────────────────────────────────────────────────
+import { ElementDefineLifeCycler, HelperHostSet } from '../types';
+import { getAttributeValue } from './applyAttribute';
+
+export class ChangedAttributeLifeCycler implements ElementDefineLifeCycler {
+  private attrChangeMap: Map<string, ChangedAttributeThisMetadata[]> | null = null;
+
+  /** 클래스 메타데이터 기반 attrChangeMap 을 lazy 로드한다 (공유 시클러 캐시). */
+  private getAttrChangeMap(inst: any): Map<string, ChangedAttributeThisMetadata[]> {
+    if (!this.attrChangeMap) this.attrChangeMap = findAllAttributeChangedMetadata(inst);
+    return this.attrChangeMap;
+  }
+
+  /** observedAttributes 에 포함할 attribute 이름 목록 */
+  getObservedAttributeNames(inst: any): string[] {
+    return Array.from(this.getAttrChangeMap(inst).keys());
+  }
+
+  onConnected(helperHostSet: HelperHostSet): void {
+    const inst = helperHostSet.$this;
+
+    // while:'connected' 옵션 — connected 시점 현재 값으로 초기 실행
+    for (const [name, metaList] of this.getAttrChangeMap(inst)) {
+      for (const meta of metaList) {
+        if (meta.options.while === 'connected') {
+          const val = getAttributeValue(inst, name, { type: meta.options.type });
+          if (val !== null) inst[meta.propertyKey](val, null, name, helperHostSet);
+        }
+      }
+    }
+  }
+
+  /** attributeChangedCallback 에서 elementDefine 이 직접 호출 */
+  onAttributeChanged(helperHostSet: HelperHostSet, name: string, old: string | null, newVal: any): void {
+    const inst = helperHostSet.$this;
+    const metaList = this.getAttrChangeMap(inst).get(name);
+    if (!metaList) return;
+    for (const meta of metaList) {
+      if (meta.options.while === 'connected' && !inst.__swc_connected) continue;
+      inst[meta.propertyKey](convertAttributeValue(newVal, meta.options.type), old, name, helperHostSet);
+    }
+  }
+}

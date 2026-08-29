@@ -206,9 +206,31 @@ export default (w: Window) => {
     //   return this.#getTemplate();
     // }
 
+    connectedCallback() {
+      console.log('[DBG] ProductCard connected', this, 'shadowRoot=', !!this.shadowRoot, 'cardExists=', !!this.querySelector?.('.card'), 'children=', this.children?.length);
+      this.addEventListener('click', (e) => {
+        const t = (e.target as any);
+        const path = e.composedPath?.().map(n => (n as any)?.tagName || (n as any)?.constructor?.name || n).join(' > ');
+        console.log('[DBG] native click on host', e.type, 'target=', t?.className || t?.tagName, 'inShadow=', !!this.shadowRoot?.contains?.(t as Node), '| inLightDom=', !!this.contains?.(t as Node), '| cardHasImg=', !!this.querySelector?.('.card img'), '| thisIsInPath=', path?.includes('SWC-EXAMPLE-COMMERCE-PRODUCT-CARD'), '| swcId=', (this as any)._swcId, '| path=', path);
+        if (t?.tagName === 'IMG') {
+          const cardImg = this.querySelector('.card img');
+          console.log('[DBG] IMG same as card img?', t === cardImg, '| img.parent is image div?', t?.parentElement?.className);
+        }
+      });
+      setTimeout(() => console.log('[DBG] after 1s cardExists=', !!this.querySelector?.('.card'), 'children=', this.children?.length, 'hostHTML=', this.innerHTML?.slice(0, 60)), 1000);
+      super.connectedCallback?.();
+    }
+
+    disconnectedCallback() {
+      console.log('[DBG] ProductCard DISCONNECTED', this);
+      super.disconnectedCallback?.();
+    }
+
     @addEventListener('.card', 'click', { delegate: true })
     @emitCustomEvent('$this', 'view-product', { bubbles: true, attributeName: 'on-view-product' })
     onCardClick(event: Event) {
+      console.log('[DBG] onCardClick invoked', event?.type, 'target=', (event as any)?.target?.className || (event as any)?.target?.tagName, 'currentTarget=', (event as any)?.currentTarget?.tagName);
+      alert(2);
       console.log('vv');
       return { productId: this.#product?.id };
     }
@@ -217,6 +239,12 @@ export default (w: Window) => {
     @emitCustomEvent('$this', 'add-to-cart', { bubbles: true, attributeName: 'on-add-to-cart' })
     onAddToCart(event: Event) {
       return { product: this.#product };
+    }
+
+
+    @addEventListener('.card', 'click', { delegate: true })
+    o2nCardClick(event: Event) {alert(2)
+      console.log('vv');
     }
 
     // setProduct(product: Product): void {

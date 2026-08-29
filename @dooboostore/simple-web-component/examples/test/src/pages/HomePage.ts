@@ -1,4 +1,4 @@
-import { event, innerHtml, onConnectedAfter, onConnectedBody, updateClass, applyNode, elementDefine, emitCustomEvent, onConnectedBefore, onConnectedBodyShadow, addEventListenerThis, mutationObserverDelegateShadow, eventDelegate, eventShadow, eventDelegateShadow, mutationObserverShadow, insertBeforeEndShadow, resizeObserverShadow, resizeObserverDelegateShadow, mutationObserver, resizeObserver, styleShadow, clsShadow, applyShadow, propWindow, emitThis, eventThis } from '@dooboostore/simple-web-component';
+import { event, innerHtml, onConnectedAfter, onConnectedBody, updateClass, applyNode, elementDefine, emitCustomEvent, onConnectedBefore, onConnectedBodyShadow, addEventListenerThis, mutationObserverDelegateShadow, eventDelegate, eventShadow, eventDelegateShadow, mutationObserverShadow, insertBeforeEndShadow, resizeObserverShadow, resizeObserverDelegateShadow, mutationObserver, resizeObserver, styleShadow, clsShadow, applyShadow, propWindow, emitThis, eventThis, intersectionObserverShadow, intersectionObserverDelegateShadow } from '@dooboostore/simple-web-component';
 import {Inject} from '@dooboostore/simple-boot';
 import {Router} from '@dooboostore/core-web';
 import {ProductService} from '../services/ProductService';
@@ -97,6 +97,22 @@ export default (w: Window) => {
     onCardResizeDelegate(matchedEls: HTMLElement[], entries: ResizeObserverEntry[], observer: ResizeObserver) {
       const e = entries[0];
       console.log('[ResizeObserver delegate] target:', matchedEls, matchedEls[0]?.className, 'size:', e?.contentRect.width, 'x', e?.contentRect.height);
+    }
+
+    // ─── IntersectionObserver 테스트 ───
+
+    // non-delegate: .mutation-card 직접 observe → 뷰포트 진입/이탈 감지
+    @intersectionObserverShadow('.mutation-card', { threshold: 0 })
+    onCardIntersect(matchedEls: HTMLElement[], entries: IntersectionObserverEntry[], observer: IntersectionObserver) {
+      const e = entries[0];
+      console.log('[IntersectionObserver non-delegate] target:', matchedEls, matchedEls[0]?.className, '| isIntersecting:', e?.isIntersecting, '| ratio:', e?.intersectionRatio);
+    }
+
+    // delegate: 동적 추가된 .mutation-card 뷰포트 진입도 감지
+    @intersectionObserverDelegateShadow('.mutation-card', { threshold: 0 })
+    onCardIntersectDelegate(matchedEls: HTMLElement[], entries: IntersectionObserverEntry[], observer: IntersectionObserver) {
+      const e = entries[0];
+      console.log('[IntersectionObserver delegate] target:', matchedEls, matchedEls[0]?.className, '| isIntersecting:', e?.isIntersecting, '| ratio:', e?.intersectionRatio);
     }
 
     // non-delegate: .mutation-test-grid 컨테이너 직접 observe → 자식 추가/삭제 감지
@@ -283,7 +299,7 @@ export default (w: Window) => {
       this.addToCart(e.detail.product);
     }
 
-    onProductViewProduct(e: CustomEvent, set: any) {
+    onProductViewProduct(e: CustomEvent, set: any) { alert(1)
       this.navigateToProduct(e.detail.productId);
     }
 

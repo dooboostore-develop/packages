@@ -224,3 +224,38 @@ export function emitShadow(selector: string, type: string, options?: Omit<EmitCu
 export function emitAll(selector: string, type: string, options?: Omit<EmitCustomEventQueryOptions, 'root'>): MethodDecorator {
   return emitCustomEvent(selector, type, {...options ?? {}, root: 'all'} as any);
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// EmitCustomEventLifeCycler
+// ─────────────────────────────────────────────────────────────────────────────
+import { ElementDefineLifeCycler } from '../types';
+
+export class EmitCustomEventLifeCycler implements ElementDefineLifeCycler {
+  private hostEmitMeta: EmitCustomEventMetadata[] | null = null;
+
+  private getHostEmitMeta(inst: any): EmitCustomEventMetadata[] {
+    if (!this.hostEmitMeta) {
+      const all = getEmitCustomEventMetadataList(inst) ?? [];
+      this.hostEmitMeta = all.filter(m => m.selector === '$this' || m.selector === '');
+    }
+    return this.hostEmitMeta;
+  }
+
+  /** observedAttributes 에 포함할 attributeName 목록 */
+  getObservedAttributeNames(inst: any): string[] {
+    return this.getHostEmitMeta(inst).map(m => (m.options as any).attributeName).filter(Boolean) as string[];
+  }
+
+  onConnected(_helperHostSet: HelperHostSet): void {
+    // emit 처리는 descriptor.value 래핑으로 이미 완료. connected 시 별도 작업 없음
+  }
+
+  /** attributeChangedCallback 에서 elementDefine 이 직접 호출 */
+  onAttributeChanged(helperHostSet: HelperHostSet, name: string, _old: string | null, newVal: string | null): void {
+    const inst = helperHostSet.$this;
+    const matched = this.getHostEmitMeta(inst).find(m => (m.options as any).attributeName === name);
+    if (matched && newVal !== null) {
+      inst._bindAttributeEvent?.(inst, name, newVal, matched.type);
+    }
+  }
+}
