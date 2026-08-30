@@ -384,6 +384,12 @@ export class DocumentBase extends ParentNodeBase implements Document {
       setTimeout(() => {
         if (this._window && this._window.dispatchEvent) {
           this._window.dispatchEvent({ type: 'load', target: this._window });
+          // pageshow fires after load for initial navigation (persisted=false)
+          if (typeof this._window.dispatchPageShow === 'function') {
+            this._window.dispatchPageShow(false);
+          } else {
+            this._window.dispatchEvent({ type: 'pageshow', persisted: false, target: this._window });
+          }
         }
       }, 0);
     }

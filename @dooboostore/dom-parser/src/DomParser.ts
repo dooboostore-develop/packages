@@ -16,6 +16,8 @@ ElementBase.dependencies = {
 
 export interface DomParserOptions {
   href?: string;
+  onUrlChange?: (url: string) => void;
+  fetch?: typeof globalThis.fetch;
 }
 
 export class DomParser {
@@ -23,9 +25,8 @@ export class DomParser {
   private _document: Document | null;
 
   constructor(html: string, option?: DomParserOptions) {
-    // console.log('create DomParser==',html)
     // Create WindowBase instance with the document
-    const windowBase = new WindowBase({ initialUrl: option?.href });
+    const windowBase = new WindowBase({ initialUrl: option?.href, onUrlChange: option?.onUrlChange, fetch: option?.fetch });
     this._window = windowBase as unknown as Window;
     this._document = windowBase.document as any;
 

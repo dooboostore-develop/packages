@@ -67,6 +67,74 @@ export namespace UrlUtils {
   };
 
   /**
+   * 상대경로를 현재 URL 기준 절대경로(URL)로 변환한다.
+   * 이미 절대경로인 경우 그대로 반환한다.
+   *
+   * @param relative - 변환할 상대경로 또는 절대경로
+   * @param base     - 기준이 되는 절대경로 (예: location.href)
+   * @returns 절대경로로 변환된 URL 객체
+   *
+   * @example
+   * resolveUrl('./data.json', 'https://example.com/app/page')
+   * // → URL { href: 'https://example.com/app/data.json' }
+   *
+   * resolveUrl('/api/users', 'https://example.com/app/page')
+   * // → URL { href: 'https://example.com/api/users' }
+   *
+   * resolveUrl('https://other.com/foo', 'https://example.com/app/page')
+   * // → URL { href: 'https://other.com/foo' }
+   */
+  /**
+   * 상대경로를 base URL 기준 절대경로(URL)로 변환한다.
+   * 이미 절대경로인 경우 그대로 반환한다.
+   *
+   * @param relative - 변환할 상대경로 또는 절대경로
+   * @param base     - 기준이 되는 절대경로 (예: location.href)
+   * @returns 절대경로로 변환된 URL 객체
+   *
+   * @example
+   * toAbsoluteUrl('./data.json', 'https://example.com/app/page')
+   * // → URL { href: 'https://example.com/app/data.json' }
+   *
+   * toAbsoluteUrl('/api/users', 'https://example.com/app/page')
+   * // → URL { href: 'https://example.com/api/users' }
+   *
+   * toAbsoluteUrl('https://other.com/foo', 'https://example.com/app/page')
+   * // → URL { href: 'https://other.com/foo' }
+   */
+  export const toAbsoluteUrl = (relative: string, base: string): URL => {
+    return new URL(relative, base);
+  };
+
+  /**
+   * fetch의 input(string | URL | Request)을 base 기준 절대경로로 변환한다.
+   * - string  → 절대경로 string으로 반환
+   * - URL     → 절대경로 URL로 반환
+   * - Request → url만 교체한 새 Request로 반환 (headers/body 등 유지)
+   *
+   * @example
+   * toAbsoluteRequest('/api/users', 'https://example.com')
+   * // → 'https://example.com/api/users'
+   *
+   * toAbsoluteRequest(new Request('./data.json'), 'https://example.com/app/')
+   * // → Request { url: 'https://example.com/app/data.json' }
+   */
+  export function toAbsoluteRequest(input: string, base: string): string;
+  export function toAbsoluteRequest(input: URL, base: string): URL;
+  export function toAbsoluteRequest(input: Request, base: string): Request;
+  export function toAbsoluteRequest(input: RequestInfo | URL, base: string): RequestInfo | URL;
+  export function toAbsoluteRequest(input: RequestInfo | URL, base: string): RequestInfo | URL {
+    if (input instanceof URL) {
+      return toAbsoluteUrl(input.href, base);
+    }
+    if (typeof input === 'string') {
+      return toAbsoluteUrl(input, base).href;
+    }
+    // Request 객체 - url만 교체하고 나머지 옵션(headers, body, method 등)은 유지
+    return new Request(toAbsoluteUrl(input.url, base).href, input);
+  }
+
+  /**
    * URLSearchParams 조작을 위한 헬퍼
    */
   export const manipulateSearchParams = (searchParams: URLSearchParams, options?: { delete?: string[]; append?: [[string, string]]; upsert?: Record<string, string | string[]> }): URLSearchParams => {

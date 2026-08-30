@@ -1,6 +1,3 @@
-// import { Window, Location, History, Navigator } from './Window';
-// import { CustomElementRegistry } from './CustomElementRegistry';
-// import { Document } from '../node/Document';
 import { DocumentBase } from '../node/DocumentBase';
 import { NodeBase } from '../node/NodeBase';
 import { ElementBase } from '../node/elements/ElementBase';
@@ -74,326 +71,13 @@ import {
   HTMLVideoElement
 } from '../node/elements';
 import { CustomElementRegistryImp } from './CustomElementRegistryImp';
-import {ShadowRootBase} from "../node/ShadowRootBase";
-import {NodeFilter} from "../node/NodeFilter";
+import { ShadowRootBase } from '../node/ShadowRootBase';
+import { NodeFilter } from '../node/NodeFilter';
 import { NodeList } from '../node';
-
-class LocationBase implements Location {
-  private _href: string = 'about:blank';
-  private _protocol: string = 'about:';
-  private _host: string = '';
-  private _hostname: string = '';
-  private _port: string = '';
-  private _pathname: string = 'blank';
-  private _search: string = '';
-  private _hash: string = '';
-  private _origin: string = 'null';
-  private urlChangeCallback?: (url: string) => void;
-
-  constructor(initialUrl: string = 'about:blank', urlChangeCallback?: (url: string) => void) {
-    this.urlChangeCallback = urlChangeCallback;
-    this.parseUrl(initialUrl);
-  }
-
-  ancestorOrigins: DOMStringList;
-
-  get href(): string {
-    return this._href;
-  }
-
-  set href(url: string) {
-    const oldHref = this._href;
-    this.parseUrl(url);
-
-    if (this._href !== oldHref && this.urlChangeCallback) {
-      this.urlChangeCallback(this._href);
-    }
-  }
-
-  get protocol(): string {
-    return this._protocol;
-  }
-  set protocol(value: string) {
-    if (!value.endsWith(':')) value += ':';
-    this._protocol = value;
-    this.reconstructUrl();
-  }
-
-  get host(): string {
-    return this._host;
-  }
-  set host(value: string) {
-    this._host = value;
-    const colonIndex = value.lastIndexOf(':');
-    if (colonIndex !== -1 && colonIndex > value.lastIndexOf(']')) {
-      this._hostname = value.substring(0, colonIndex);
-      this._port = value.substring(colonIndex + 1);
-    } else {
-      this._hostname = value;
-      this._port = '';
-    }
-    this.reconstructUrl();
-  }
-
-  get hostname(): string {
-    return this._hostname;
-  }
-  set hostname(value: string) {
-    this._hostname = value;
-    this._host = this._port ? `${value}:${this._port}` : value;
-    this.reconstructUrl();
-  }
-
-  get port(): string {
-    return this._port;
-  }
-  set port(value: string) {
-    this._port = value;
-    this._host = value ? `${this._hostname}:${value}` : this._hostname;
-    this.reconstructUrl();
-  }
-
-  get pathname(): string {
-    return this._pathname;
-  }
-  set pathname(value: string) {
-    if (!value.startsWith('/')) value = '/' + value;
-    this._pathname = value;
-    this.reconstructUrl();
-  }
-
-  get search(): string {
-    return this._search;
-  }
-  set search(value: string) {
-    if (value && !value.startsWith('?')) value = '?' + value;
-    this._search = value;
-    this.reconstructUrl();
-  }
-
-  get hash(): string {
-    return this._hash;
-  }
-  set hash(value: string) {
-    if (value && !value.startsWith('#')) value = '#' + value;
-    this._hash = value;
-    this.reconstructUrl();
-  }
-
-  get origin(): string {
-    return this._origin;
-  }
-
-  assign(url: string): void {
-    const oldHref = this._href;
-    this.parseUrl(url);
-    if (this._href !== oldHref && this.urlChangeCallback) {
-      this.urlChangeCallback(this._href);
-    }
-  }
-
-  replace(url: string): void {
-    this.assign(url);
-  }
-
-  reload(_forcedReload?: boolean): void {}
-
-  toString(): string {
-    return this._href;
-  }
-
-  private parseUrl(url: string): void {
-    try {
-      let parsedUrl: URL;
-      if (url.startsWith('//')) {
-        parsedUrl = new URL(this._protocol + url);
-      } else if (url.startsWith('/')) {
-        parsedUrl = new URL(url, `${this._protocol}//${this._host}`);
-      } else if (url.includes('://')) {
-        parsedUrl = new URL(url);
-      } else {
-        const base = `${this._protocol}//${this._host}${this._pathname}`;
-        parsedUrl = new URL(url, base);
-      }
-      this._href = parsedUrl.href;
-      this._protocol = parsedUrl.protocol;
-      this._host = parsedUrl.host;
-      this._hostname = parsedUrl.hostname;
-      this._port = parsedUrl.port;
-      this._pathname = parsedUrl.pathname;
-      this._search = parsedUrl.search;
-      this._hash = parsedUrl.hash;
-      this._origin = parsedUrl.origin;
-    } catch (e) {
-      if (url === 'about:blank') {
-        this._href = 'about:blank';
-        this._protocol = 'about:';
-        this._host = '';
-        this._hostname = '';
-        this._port = '';
-        this._pathname = 'blank';
-        this._search = '';
-        this._hash = '';
-        this._origin = 'null';
-      }
-    }
-  }
-
-  private reconstructUrl(): void {
-    try {
-      let url = this._protocol;
-      if (this._protocol !== 'about:' && this._protocol !== 'data:') {
-        url += '//';
-        if (this._host) url += this._host;
-      }
-      url += this._pathname;
-      url += this._search;
-      url += this._hash;
-      const testUrl = new URL(url);
-      this._href = testUrl.href;
-      this._origin = testUrl.origin;
-    } catch (e) {}
-  }
-}
-
-class HistoryBase implements History {
-  length: number = 1;
-  state: any = null;
-  private window: WindowBase;
-  private historyStack: Array<{ state: any; title: string; url?: string }> = [];
-  private currentIndex: number = -1;
-
-  constructor(window: WindowBase) {
-    this.window = window;
-  }
-
-  scrollRestoration: ScrollRestoration;
-
-  back(): void {
-    this.go(-1);
-  }
-  forward(): void {
-    this.go(1);
-  }
-  go(delta?: number): void {
-    if (!delta || this.historyStack.length === 0) return;
-    const newIndex = this.currentIndex + delta;
-    if (newIndex >= 0 && newIndex < this.historyStack.length) {
-      this.currentIndex = newIndex;
-      const entry = this.historyStack[this.currentIndex];
-      this.state = entry.state;
-      if (entry.url && this.window.location) {
-        (this.window.location as any)._href = entry.url;
-        (this.window.location as any).parseUrl(entry.url);
-      }
-      (this.window as any).dispatchPopStateEvent(entry.state, entry.url);
-    }
-  }
-
-  pushState(data: any, title: string, url?: string): void {
-    this.historyStack = this.historyStack.slice(0, this.currentIndex + 1);
-    this.historyStack.push({ state: data, title, url });
-    this.currentIndex = this.historyStack.length - 1;
-    this.state = data;
-    this.length = this.historyStack.length;
-    if (url && this.window.location) {
-      const oldHref = (this.window.location as any)._href;
-      (this.window.location as any)._href = url;
-      (this.window.location as any).parseUrl(url);
-      if (url !== oldHref && (this.window.location as any).urlChangeCallback) {
-        (this.window.location as any).urlChangeCallback(url);
-      }
-    }
-  }
-
-  replaceState(data: any, title: string, url?: string): void {
-    if (this.currentIndex >= 0 && this.currentIndex < this.historyStack.length) {
-      this.historyStack[this.currentIndex] = { state: data, title, url };
-    } else {
-      this.historyStack = [{ state: data, title, url }];
-      this.currentIndex = 0;
-      this.length = 1;
-    }
-    this.state = data;
-    if (url && this.window.location) {
-      const oldHref = (this.window.location as any)._href;
-      (this.window.location as any)._href = url;
-      (this.window.location as any).parseUrl(url);
-      if (url !== oldHref && (this.window.location as any).urlChangeCallback) {
-        (this.window.location as any).urlChangeCallback(url);
-      }
-    }
-  }
-}
-
-class NavigatorBase implements Navigator {
-  clipboard: Clipboard;
-  credentials: CredentialsContainer;
-  doNotTrack: string;
-  geolocation: Geolocation;
-  login: NavigatorLogin;
-  maxTouchPoints: number;
-  mediaCapabilities: MediaCapabilities;
-  mediaDevices: MediaDevices;
-  mediaSession: MediaSession;
-  permissions: Permissions;
-  serviceWorker: ServiceWorkerContainer;
-  userActivation: UserActivation;
-  wakeLock: WakeLock;
-  canShare(data?: ShareData): boolean {
-    return false;
-  }
-  getGamepads(): (Gamepad | null)[] {
-    return [];
-  }
-  requestMIDIAccess(options?: MIDIOptions): Promise<MIDIAccess> {
-    return Promise.resolve({} as MIDIAccess);
-  }
-  requestMediaKeySystemAccess(keySystem: unknown, supportedConfigurations: unknown): Promise<MediaKeySystemAccess> {
-    return Promise.resolve({} as MediaKeySystemAccess);
-  }
-  sendBeacon(url: string | URL, data?: BodyInit | null): boolean {
-    return false;
-  }
-  share(data?: ShareData): Promise<void> {
-    return Promise.resolve();
-  }
-  vibrate(pattern: unknown): boolean {
-    return false;
-  }
-  webdriver: boolean;
-  clearAppBadge(): Promise<void> {
-    return Promise.resolve();
-  }
-  setAppBadge(contents?: number): Promise<void> {
-    return Promise.resolve();
-  }
-  hardwareConcurrency: number;
-  registerProtocolHandler(scheme: string, url: string | URL): void {
-    return;
-  }
-  appCodeName: string;
-  appName: string;
-  appVersion: string;
-  product: string;
-  productSub: string;
-  vendor: string;
-  vendorSub: string;
-  locks: LockManager;
-  mimeTypes: MimeTypeArray;
-  pdfViewerEnabled: boolean;
-  plugins: PluginArray;
-  javaEnabled(): boolean {
-    return false;
-  }
-  storage: StorageManager;
-  userAgent: string = 'Mozilla/5.0 (Server-Side Rendering)';
-  language: string = 'en-US';
-  languages: readonly string[] = ['en-US', 'en'];
-  platform: string = 'Server';
-  cookieEnabled: boolean = false;
-  onLine: boolean = true;
-}
+import { LocationBase } from './LocationBase';
+import { HistoryBase } from './HistoryBase';
+import { NavigatorBase } from './NavigatorBase';
+import { UrlUtils } from '@dooboostore/core';
 
 interface WindowEventListener {
   type: string;
@@ -403,17 +87,14 @@ interface WindowEventListener {
 
 export class WindowBase implements Window {
   [key: string]: any;
+
   private _eventListeners: WindowEventListener[] = [];
   private _timers: Set<number> = new Set();
   private _intervals: Set<number> = new Set();
   private _animationFrames: Set<number> = new Set();
-  readonly clientInformation: Navigator;
   private _closed: boolean = false;
 
-  get closed(): boolean {
-    return this._closed;
-  }
-
+  readonly clientInformation: Navigator;
   readonly cookieStore: any = {};
   readonly customElements: CustomElementRegistry;
   readonly devicePixelRatio: number = 1;
@@ -423,7 +104,7 @@ export class WindowBase implements Window {
   readonly self: any = this;
   readonly window: any = this;
 
-  private _location: Location;
+  private _location: LocationBase;
   get location(): Location {
     return this._location;
   }
@@ -432,23 +113,9 @@ export class WindowBase implements Window {
     else this._location.href = href.href;
   }
 
-
   console = console;
 
-  // Global constructors
-  Event = class Event {
-    constructor(public type: string) {}
-  };
-  CustomEvent = class CustomEvent extends this.Event {
-    constructor(
-      type: string,
-      public detail: any
-    ) {
-      super(type);
-    }
-  };
-  // SSR(서버사이드)에서는 브라우저 observer 가 없으므로 no-op 더미를 제공한다.
-  // simple-web-component 등이 observe/unobserve/disconnect 를 호출해도 안전하게 무시한다.
+  // ── Observer stubs (no-op in SSR) ────────────────────────────────────────
   IntersectionObserver = class {
     observe(_target: Element, _options?: any): void {}
     unobserve(_target: Element): void {}
@@ -465,7 +132,18 @@ export class WindowBase implements Window {
     unobserve(_target: Element): void {}
     disconnect(): void {}
   };
-  // All HTML element constructors
+
+  // ── Global event constructors ─────────────────────────────────────────────
+  Event = class Event {
+    constructor(public type: string) {}
+  };
+  CustomEvent = class CustomEvent extends this.Event {
+    constructor(type: string, public detail: any) {
+      super(type);
+    }
+  };
+
+  // ── DOM type references ───────────────────────────────────────────────────
   Node = NodeBase;
   NodeList = NodeList;
   Element = ElementBase;
@@ -532,8 +210,9 @@ export class WindowBase implements Window {
   HTMLTrackElement = HTMLTrackElement;
   HTMLTrElement = HTMLTrElement;
   HTMLUListElement = HTMLUListElement;
-HTMLVideoElement = HTMLVideoElement;
-  // Type Aliases
+  HTMLVideoElement = HTMLVideoElement;
+
+  // Type aliases for common alternate names
   HTMLImageElement = HTMLImgElement;
   HTMLParagraphElement = HTMLPElement;
   HTMLHeadingElement = HTMLH1Element;
@@ -543,22 +222,43 @@ HTMLVideoElement = HTMLVideoElement;
   ShadowRoot = ShadowRootBase;
   NodeFilter = NodeFilter;
 
-  constructor(config?: { initialUrl?: string }) {
+  private _config: { initialUrl?: string; onUrlChange?: (url: string) => void; fetch?: typeof globalThis.fetch } = {};
+
+  constructor(config?: {
+    initialUrl?: string;
+    onUrlChange?: (url: string) => void;
+    fetch?: typeof globalThis.fetch;
+  }) {
+    this._config = config ?? {};
     const documentBase = new DocumentBase();
     if (documentBase && (documentBase as any).setWindow) {
       (documentBase as any).setWindow(this);
     }
-    this._location = new LocationBase(config?.initialUrl);
+    this._location = new LocationBase(config?.initialUrl, config?.onUrlChange);
+    this._location.setHashChangeCallback((oldUrl, newUrl) => {
+      this.dispatchEvent({
+        type: 'hashchange',
+        oldURL: oldUrl,
+        newURL: newUrl,
+        target: this,
+        currentTarget: this,
+        bubbles: true,
+        cancelable: false,
+      });
+    });
     documentBase.setLocation(this._location);
     this.document = documentBase as unknown as Document;
+
     const customElementRegistryImp = new CustomElementRegistryImp();
     customElementRegistryImp.setWindow(this);
     this.customElements = customElementRegistryImp as unknown as CustomElementRegistry;
+
     this.history = new HistoryBase(this);
     this.navigator = new NavigatorBase();
     this.clientInformation = this.navigator;
   }
 
+  // ── Window interface stub fields ──────────────────────────────────────────
   [index: number]: Window;
   event: Event;
   external: External;
@@ -597,101 +297,17 @@ HTMLVideoElement = HTMLVideoElement;
   toolbar: BarProp;
   top: Window;
   visualViewport: VisualViewport;
-  blur(): void {
-    return;
-  }
-  cancelIdleCallback(handle: number): void {
-    return;
-  }
-  captureEvents(): void {
-    return;
-  }
-  confirm(message?: string): boolean {
-    return false;
-  }
-  focus(): void {
-    return;
-  }
-  getComputedStyle(elt: Element, pseudoElt?: string | null): CSSStyleDeclaration {
-    // SSR: 실제 스타일 계산은 불가능하므로 빈 CSSStyleDeclaration 를 반환해
-    // getPropertyValue 등 스타일 접근이 안전하게 동작하게 한다.
-    const emptyStyle: any = {
-      parentRule: null,
-      cssText: '',
-      length: 0,
-      getPropertyValue: () => '',
-      getPropertyPriority: () => '',
-      setProperty: () => {},
-      removeProperty: () => '',
-      item: () => '',
-    };
-    return emptyStyle as CSSStyleDeclaration;
-  }
-  getSelection(): Selection | null {
-    return null;
-  }
-  matchMedia(query: string): MediaQueryList {
-    // SSR: 미디어 쿼리는 실제 평가가 불가능하므로 기본(비매칭) 결과를 반환한다.
-    return {
-      matches: false,
-      media: query,
-      onchange: null,
-      addListener: () => {},
-      removeListener: () => {},
-      addEventListener: () => {},
-      removeEventListener: () => {},
-      dispatchEvent: () => false,
-    };
-  }
-  moveBy(x: number, y: number): void {
-    return;
-  }
-  moveTo(x: number, y: number): void {
-    return;
-  }
-  open(url?: string | URL, target?: string, features?: string): WindowProxy | null {
-    return null;
-  }
-  postMessage(message: unknown, targetOrigin?: unknown, transfer?: unknown): void {
-    return;
-  }
-  print(): void {
-    return;
-  }
-  prompt(message?: string, _default?: string): string | null {
-    return null;
-  }
-  releaseEvents(): void {
-    return;
-  }
-  requestIdleCallback(callback: IdleRequestCallback, options?: IdleRequestOptions): number {
-    return 0;
-  }
-  resizeBy(x: number, y: number): void {
-    return;
-  }
-  resizeTo(width: number, height: number): void {
-    return;
-  }
-  scroll(x?: unknown, y?: unknown): void {
-    return;
-  }
-  scrollBy(x?: unknown, y?: unknown): void {
-    return;
-  }
-  scrollTo(x?: unknown, y?: unknown): void {
-    return;
-  }
-  stop(): void {
-    return;
-  }
-  cancelAnimationFrame(handle: number): void {
-    return;
-  }
-  requestAnimationFrame(callback: FrameRequestCallback): number {
-    // SSR: requestAnimationFrame 이 없으므로 setTimeout 으로 대체한다.
-    return this.setTimeout(() => callback(Date.now()), 16) as number;
-  }
+  localStorage: Storage;
+  sessionStorage: Storage;
+  caches: CacheStorage;
+  crossOriginIsolated: boolean;
+  crypto: Crypto;
+  indexedDB: IDBFactory;
+  isSecureContext: boolean;
+  origin: string;
+  performance: Performance;
+
+  // ── GlobalEventHandlers stubs ─────────────────────────────────────────────
   onabort: (this: GlobalEventHandlers, ev: UIEvent) => any;
   onanimationcancel: (this: GlobalEventHandlers, ev: AnimationEvent) => any;
   onanimationend: (this: GlobalEventHandlers, ev: AnimationEvent) => any;
@@ -792,6 +408,8 @@ HTMLVideoElement = HTMLVideoElement;
   onwebkitanimationstart: (this: GlobalEventHandlers, ev: Event) => any;
   onwebkittransitionend: (this: GlobalEventHandlers, ev: Event) => any;
   onwheel: (this: GlobalEventHandlers, ev: WheelEvent) => any;
+
+  // ── WindowEventHandlers stubs ─────────────────────────────────────────────
   onafterprint: (this: WindowEventHandlers, ev: Event) => any;
   onbeforeprint: (this: WindowEventHandlers, ev: Event) => any;
   onbeforeunload: (this: WindowEventHandlers, ev: BeforeUnloadEvent) => any;
@@ -812,46 +430,145 @@ HTMLVideoElement = HTMLVideoElement;
   onstorage: (this: WindowEventHandlers, ev: StorageEvent) => any;
   onunhandledrejection: (this: WindowEventHandlers, ev: PromiseRejectionEvent) => any;
   onunload: (this: WindowEventHandlers, ev: Event) => any;
-  localStorage: Storage;
-  caches: CacheStorage;
-  crossOriginIsolated: boolean;
-  crypto: Crypto;
-  indexedDB: IDBFactory;
-  isSecureContext: boolean;
-  origin: string;
-  performance: Performance;
-  atob(data: string): string {
-    return '';
+
+  // ── Window methods ────────────────────────────────────────────────────────
+  get closed(): boolean {
+    return this._closed;
   }
-  btoa(data: string): string {
-    return '';
-  }
-  createImageBitmap(image: unknown, sx?: unknown, sy?: unknown, sw?: unknown, sh?: unknown, options?: unknown): Promise<ImageBitmap> {
-    return Promise.resolve({} as ImageBitmap);
-  }
-  fetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
-    return Promise.resolve(new Response('', { status: 200 }));
-  }
-  queueMicrotask(callback: VoidFunction): void {
-    globalThis.queueMicrotask(callback);
-  }
-  reportError(e: any): void {
-    console.error(e);
-  }
-  structuredClone<T = any>(value: T, options?: StructuredSerializeOptions): T {
-    return JSON.parse(JSON.stringify(value));
-  }
-  sessionStorage: Storage;
 
   alert(_message?: any): void {}
+
+  blur(): void {}
+
+  cancelIdleCallback(_handle: number): void {}
+
+  captureEvents(): void {}
+
   close(): void {
     if (this._closed) return;
+    // spec: beforeunload is skippable in SSR, but fire pagehide then unload
+    this.dispatchPageHide(false);
+    this.dispatchUnload();
     this._closed = true;
     this._timers.forEach(id => clearTimeout(id));
     this._intervals.forEach(id => clearInterval(id));
     this._eventListeners.length = 0;
   }
 
+  confirm(_message?: string): boolean {
+    return false;
+  }
+
+  focus(): void {}
+
+  getComputedStyle(_elt: Element, _pseudoElt?: string | null): CSSStyleDeclaration {
+    // SSR: return a minimal no-op CSSStyleDeclaration so property reads are safe.
+    const emptyStyle: any = {
+      parentRule: null,
+      cssText: '',
+      length: 0,
+      getPropertyValue: () => '',
+      getPropertyPriority: () => '',
+      setProperty: () => {},
+      removeProperty: () => '',
+      item: () => '',
+    };
+    return emptyStyle as CSSStyleDeclaration;
+  }
+
+  getSelection(): Selection | null {
+    return null;
+  }
+
+  matchMedia(query: string): MediaQueryList {
+    // SSR: media queries cannot be evaluated; return a safe non-matching stub.
+    return {
+      matches: false,
+      media: query,
+      onchange: null,
+      addListener: () => {},
+      removeListener: () => {},
+      addEventListener: () => {},
+      removeEventListener: () => {},
+      dispatchEvent: () => false,
+    };
+  }
+
+  moveBy(_x: number, _y: number): void {}
+  moveTo(_x: number, _y: number): void {}
+
+  open(_url?: string | URL, _target?: string, _features?: string): WindowProxy | null {
+    return null;
+  }
+
+  postMessage(_message: unknown, _targetOrigin?: unknown, _transfer?: unknown): void {}
+
+  print(): void {}
+
+  prompt(_message?: string, _default?: string): string | null {
+    return null;
+  }
+
+  releaseEvents(): void {}
+
+  requestIdleCallback(_callback: IdleRequestCallback, _options?: IdleRequestOptions): number {
+    return 0;
+  }
+
+  resizeBy(_x: number, _y: number): void {}
+  resizeTo(_width: number, _height: number): void {}
+  scroll(_x?: unknown, _y?: unknown): void {}
+  scrollBy(_x?: unknown, _y?: unknown): void {}
+  scrollTo(_x?: unknown, _y?: unknown): void {}
+  stop(): void {}
+
+  cancelAnimationFrame(_handle: number): void {}
+
+  requestAnimationFrame(callback: FrameRequestCallback): number {
+    // SSR: delegate to setTimeout as rAF is unavailable.
+    return this.setTimeout(() => callback(Date.now()), 16) as number;
+  }
+
+  atob(_data: string): string {
+    return '';
+  }
+
+  btoa(_data: string): string {
+    return '';
+  }
+
+  createImageBitmap(
+    _image: unknown,
+    _sx?: unknown,
+    _sy?: unknown,
+    _sw?: unknown,
+    _sh?: unknown,
+    _options?: unknown
+  ): Promise<ImageBitmap> {
+    return Promise.resolve({} as ImageBitmap);
+  }
+
+  fetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+    const resolvedInput = UrlUtils.toAbsoluteRequest(input, this._location.href);
+    if (this._config.fetch) {
+      return this._config.fetch(resolvedInput, init);
+    }
+    return Promise.resolve(new Response('', { status: 200 }));
+  }
+
+  queueMicrotask(callback: VoidFunction): void {
+    globalThis.queueMicrotask(callback);
+  }
+
+  reportError(e: any): void {
+    console.error(e);
+  }
+
+  structuredClone<T = any>(value: T, _options?: StructuredSerializeOptions): T {
+    return JSON.parse(JSON.stringify(value));
+  }
+
+  // ── Timer helpers ─────────────────────────────────────────────────────────
   setTimeout(callback: Function, delay?: number, ...args: any[]): number {
     const id = globalThis.setTimeout(() => {
       this._timers.delete(id as any);
@@ -860,71 +577,39 @@ HTMLVideoElement = HTMLVideoElement;
     this._timers.add(id);
     return id;
   }
+
   clearTimeout(id: number): void {
     globalThis.clearTimeout(id);
     this._timers.delete(id);
   }
 
-
-  // addInterval(id: any) {
-  //   this._intervals.add(id);
-  //   return id;
-  // }
-  /**
-   * setInterval
-   * @param callback
-   * @param delay
-   * @param args
-   */
   setInterval(callback: Function, delay?: number, ...args: any[]): number {
-    // return this.addInterval(globalThis.setInterval(callback, delay, ...args)) as any;
-    // console.log('setInterval--->')
-    // // 마이크로태스크 큐에 추가하여 콜백 실행을 보장
-    // // Promise.resolve().then(() => {
-    //   const intervals = this._intervals;
-    //   intervals.add(id);
-    // // });
-    // return id;
-
-    // console.log('----------> ', this, this._intervals)
-    const id = globalThis.setInterval(callback,delay,...args);
+    const id = globalThis.setInterval(callback, delay, ...args);
     this._intervals.add(id);
     return id;
-    // const id = globalThis.setInterval((a: any) => {
-    //   console.log('setInterval--->',id )
-    //   callback(a);
-    //   i.add(id);
-    // }, delay, ...args) as any;
-    // return id;
   }
 
-  /**
-   * clearInterval
-   * @param id
-   */
   clearInterval(id: number): void {
     globalThis.clearInterval(id);
-    // console.log('clearInterval--->')
-    // 마이크로태스크에서 처리되도록 defer
-    // Promise.resolve().then(() => {
-    //   const intervals = this._intervals;
     this._intervals.delete(id);
-    // });
   }
 
+  // ── Event system ──────────────────────────────────────────────────────────
   addEventListener(type: string, listener: any, options?: any): void {
-    // Basic support for major window events
     this._eventListeners.push({
       type,
       listener: typeof listener === 'function' ? listener : listener?.handleEvent,
-      options
+      options,
     });
   }
 
   removeEventListener(type: string, listener: any): void {
     const targetListener = typeof listener === 'function' ? listener : listener?.handleEvent;
-    this._eventListeners = this._eventListeners.filter(l => !(l.type === type && l.listener === targetListener));
+    this._eventListeners = this._eventListeners.filter(
+      l => !(l.type === type && l.listener === targetListener)
+    );
   }
+
   dispatchEvent(event: any): boolean {
     const type = typeof event === 'string' ? event : event.type;
     const listeners = [...this._eventListeners.filter(l => l.type === type)];
@@ -939,11 +624,81 @@ HTMLVideoElement = HTMLVideoElement;
         console.error(`Error in Window event listener for ${type}:`, e);
       }
     }
-    return true;
+
+    // Also invoke on* property handler (e.g. onpageshow, onbeforeunload).
+    const onHandler = (this as any)['on' + type];
+    if (typeof onHandler === 'function') {
+      try {
+        onHandler.call(this, event);
+      } catch (e) {
+        console.error(`Error in Window on${type} handler:`, e);
+      }
+    }
+
+    // beforeunload: treat non-empty returnValue as cancelled.
+    if (type === 'beforeunload' && event) {
+      if (event.returnValue !== undefined && event.returnValue !== '' && event.returnValue !== null) {
+        event.defaultPrevented = true;
+      }
+      return !event.defaultPrevented;
+    }
+    return !(event && event.defaultPrevented);
   }
 
-
-  private dispatchPopStateEvent(state: any, url?: string): void {
-    this.dispatchEvent({ type: 'popstate', state, url });
+  // ── Page lifecycle ────────────────────────────────────────────────────────
+  private _createPageTransitionEvent(type: 'pageshow' | 'pagehide', persisted: boolean): any {
+    return {
+      type,
+      persisted,
+      target: this,
+      currentTarget: this,
+      bubbles: false,
+      cancelable: false,
+      defaultPrevented: false,
+      timeStamp: Date.now(),
+      preventDefault() { (this as any).defaultPrevented = true; },
+    };
   }
+
+  dispatchPageShow(persisted = false): void {
+    this.dispatchEvent(this._createPageTransitionEvent('pageshow', persisted));
+  }
+
+  dispatchPageHide(persisted = false): void {
+    this.dispatchEvent(this._createPageTransitionEvent('pagehide', persisted));
+  }
+
+  dispatchBeforeUnload(): boolean {
+    const event: any = {
+      type: 'beforeunload',
+      target: this,
+      currentTarget: this,
+      cancelable: true,
+      defaultPrevented: false,
+      returnValue: '',
+      preventDefault() { (this as any).defaultPrevented = true; },
+    };
+    return this.dispatchEvent(event);
+  }
+
+  dispatchUnload(): void {
+    this.dispatchEvent({
+      type: 'unload',
+      target: this,
+      currentTarget: this,
+      bubbles: false,
+      cancelable: false,
+    });
+  }
+
+  dispatchPopState(state: any, url?: string): void {
+    this.dispatchEvent({ type: 'popstate', state, url, target: this, currentTarget: this });
+  }
+
+  // ── Convenience aliases for testing ──────────────────────────────────────
+  simulatePageShow(persisted = false): void { this.dispatchPageShow(persisted); }
+  simulatePageHide(persisted = false): void { this.dispatchPageHide(persisted); }
+  simulateBeforeUnload(): boolean { return this.dispatchBeforeUnload(); }
+  simulateUnload(): void { this.dispatchUnload(); }
+  simulatePopState(state: any, url?: string): void { this.dispatchPopState(state, url); }
 }
