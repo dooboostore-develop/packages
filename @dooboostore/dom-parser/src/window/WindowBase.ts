@@ -341,36 +341,36 @@ class NavigatorBase implements Navigator {
   userActivation: UserActivation;
   wakeLock: WakeLock;
   canShare(data?: ShareData): boolean {
-    throw new Error('Method not implemented.');
+    return false;
   }
   getGamepads(): (Gamepad | null)[] {
-    throw new Error('Method not implemented.');
+    return [];
   }
   requestMIDIAccess(options?: MIDIOptions): Promise<MIDIAccess> {
-    throw new Error('Method not implemented.');
+    return Promise.resolve({} as MIDIAccess);
   }
   requestMediaKeySystemAccess(keySystem: unknown, supportedConfigurations: unknown): Promise<MediaKeySystemAccess> {
-    throw new Error('Method not implemented.');
+    return Promise.resolve({} as MediaKeySystemAccess);
   }
   sendBeacon(url: string | URL, data?: BodyInit | null): boolean {
-    throw new Error('Method not implemented.');
+    return false;
   }
   share(data?: ShareData): Promise<void> {
-    throw new Error('Method not implemented.');
+    return Promise.resolve();
   }
   vibrate(pattern: unknown): boolean {
-    throw new Error('Method not implemented.');
+    return false;
   }
   webdriver: boolean;
   clearAppBadge(): Promise<void> {
-    throw new Error('Method not implemented.');
+    return Promise.resolve();
   }
   setAppBadge(contents?: number): Promise<void> {
-    throw new Error('Method not implemented.');
+    return Promise.resolve();
   }
   hardwareConcurrency: number;
   registerProtocolHandler(scheme: string, url: string | URL): void {
-    throw new Error('Method not implemented.');
+    return;
   }
   appCodeName: string;
   appName: string;
@@ -384,7 +384,7 @@ class NavigatorBase implements Navigator {
   pdfViewerEnabled: boolean;
   plugins: PluginArray;
   javaEnabled(): boolean {
-    throw new Error('Method not implemented.');
+    return false;
   }
   storage: StorageManager;
   userAgent: string = 'Mozilla/5.0 (Server-Side Rendering)';
@@ -447,7 +447,24 @@ export class WindowBase implements Window {
       super(type);
     }
   };
-
+  // SSR(서버사이드)에서는 브라우저 observer 가 없으므로 no-op 더미를 제공한다.
+  // simple-web-component 등이 observe/unobserve/disconnect 를 호출해도 안전하게 무시한다.
+  IntersectionObserver = class {
+    observe(_target: Element, _options?: any): void {}
+    unobserve(_target: Element): void {}
+    disconnect(): void {}
+    takeRecords(): IntersectionObserverEntry[] { return []; }
+  };
+  MutationObserver = class {
+    observe(_target: Node, _options?: MutationObserverInit): void {}
+    disconnect(): void {}
+    takeRecords(): MutationRecord[] { return []; }
+  };
+  ResizeObserver = class {
+    observe(_target: Element, _options?: ResizeObserverOptions): void {}
+    unobserve(_target: Element): void {}
+    disconnect(): void {}
+  };
   // All HTML element constructors
   Node = NodeBase;
   NodeList = NodeList;
@@ -515,9 +532,7 @@ export class WindowBase implements Window {
   HTMLTrackElement = HTMLTrackElement;
   HTMLTrElement = HTMLTrElement;
   HTMLUListElement = HTMLUListElement;
-  HTMLVideoElement = HTMLVideoElement;
-  IntersectionObserver = function (){return {observe:()=>{}, unobserve: ()=>{},disconnect:()=>{}}}
-
+HTMLVideoElement = HTMLVideoElement;
   // Type Aliases
   HTMLImageElement = HTMLImgElement;
   HTMLParagraphElement = HTMLPElement;
@@ -583,76 +598,99 @@ export class WindowBase implements Window {
   top: Window;
   visualViewport: VisualViewport;
   blur(): void {
-    throw new Error('Method not implemented.');
+    return;
   }
   cancelIdleCallback(handle: number): void {
-    throw new Error('Method not implemented.');
+    return;
   }
   captureEvents(): void {
-    throw new Error('Method not implemented.');
+    return;
   }
   confirm(message?: string): boolean {
-    throw new Error('Method not implemented.');
+    return false;
   }
   focus(): void {
-    throw new Error('Method not implemented.');
+    return;
   }
   getComputedStyle(elt: Element, pseudoElt?: string | null): CSSStyleDeclaration {
-    throw new Error('Method not implemented.');
+    // SSR: 실제 스타일 계산은 불가능하므로 빈 CSSStyleDeclaration 를 반환해
+    // getPropertyValue 등 스타일 접근이 안전하게 동작하게 한다.
+    const emptyStyle: any = {
+      parentRule: null,
+      cssText: '',
+      length: 0,
+      getPropertyValue: () => '',
+      getPropertyPriority: () => '',
+      setProperty: () => {},
+      removeProperty: () => '',
+      item: () => '',
+    };
+    return emptyStyle as CSSStyleDeclaration;
   }
   getSelection(): Selection | null {
-    throw new Error('Method not implemented.');
+    return null;
   }
   matchMedia(query: string): MediaQueryList {
-    throw new Error('Method not implemented.');
+    // SSR: 미디어 쿼리는 실제 평가가 불가능하므로 기본(비매칭) 결과를 반환한다.
+    return {
+      matches: false,
+      media: query,
+      onchange: null,
+      addListener: () => {},
+      removeListener: () => {},
+      addEventListener: () => {},
+      removeEventListener: () => {},
+      dispatchEvent: () => false,
+    };
   }
   moveBy(x: number, y: number): void {
-    throw new Error('Method not implemented.');
+    return;
   }
   moveTo(x: number, y: number): void {
-    throw new Error('Method not implemented.');
+    return;
   }
   open(url?: string | URL, target?: string, features?: string): WindowProxy | null {
-    throw new Error('Method not implemented.');
+    return null;
   }
   postMessage(message: unknown, targetOrigin?: unknown, transfer?: unknown): void {
-    throw new Error('Method not implemented.');
+    return;
   }
   print(): void {
-    throw new Error('Method not implemented.');
+    return;
   }
   prompt(message?: string, _default?: string): string | null {
-    throw new Error('Method not implemented.');
+    return null;
   }
   releaseEvents(): void {
-    throw new Error('Method not implemented.');
+    return;
   }
   requestIdleCallback(callback: IdleRequestCallback, options?: IdleRequestOptions): number {
-    throw new Error('Method not implemented.');
+    return 0;
   }
   resizeBy(x: number, y: number): void {
-    throw new Error('Method not implemented.');
+    return;
   }
   resizeTo(width: number, height: number): void {
-    throw new Error('Method not implemented.');
+    return;
   }
   scroll(x?: unknown, y?: unknown): void {
-    throw new Error('Method not implemented.');
+    return;
   }
   scrollBy(x?: unknown, y?: unknown): void {
-    throw new Error('Method not implemented.');
+    return;
   }
   scrollTo(x?: unknown, y?: unknown): void {
-    throw new Error('Method not implemented.');
+    return;
   }
   stop(): void {
-    throw new Error('Method not implemented.');
+    return;
   }
   cancelAnimationFrame(handle: number): void {
-    throw new Error('Method not implemented.');
+    return;
   }
   requestAnimationFrame(callback: FrameRequestCallback): number {
-    throw new Error('Method not implemented.');
+    // SSR: requestAnimationFrame 이 없으므로 setTimeout 으로 대체한다.
+    return this.setTimeout(() => callback(Date.now()), 16) as number;
   }
   onabort: (this: GlobalEventHandlers, ev: UIEvent) => any;
   onanimationcancel: (this: GlobalEventHandlers, ev: AnimationEvent) => any;
@@ -783,25 +821,25 @@ export class WindowBase implements Window {
   origin: string;
   performance: Performance;
   atob(data: string): string {
-    throw new Error('Method not implemented.');
+    return '';
   }
   btoa(data: string): string {
-    throw new Error('Method not implemented.');
+    return '';
   }
   createImageBitmap(image: unknown, sx?: unknown, sy?: unknown, sw?: unknown, sh?: unknown, options?: unknown): Promise<ImageBitmap> {
-    throw new Error('Method not implemented.');
+    return Promise.resolve({} as ImageBitmap);
   }
   fetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
-    throw new Error('Method not implemented.');
+    return Promise.resolve(new Response('', { status: 200 }));
   }
   queueMicrotask(callback: VoidFunction): void {
-    throw new Error('Method not implemented.');
+    globalThis.queueMicrotask(callback);
   }
   reportError(e: any): void {
-    throw new Error('Method not implemented.');
+    console.error(e);
   }
   structuredClone<T = any>(value: T, options?: StructuredSerializeOptions): T {
-    throw new Error('Method not implemented.');
+    return JSON.parse(JSON.stringify(value));
   }
   sessionStorage: Storage;
 
