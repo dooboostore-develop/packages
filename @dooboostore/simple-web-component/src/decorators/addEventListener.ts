@@ -95,6 +95,22 @@ export function addEventListenerDelegate<TEvent extends Event = Event>(selector:
   return addEventListener<TEvent>(selector, type, {...options??{}, root:'auto', delegate: true});
 }
 
+export function addEventListenerMutationLight<TEvent extends Event = Event>(selector: string, type: string, options?: Omit<AddEventListenerQueryOptions<TEvent>, 'delegate'>): MethodDecorator {
+  return addEventListener<TEvent>(selector, type, {...options??{}, root:'light', delegate: 'mutation'});
+}
+
+export function addEventListenerMutationShadow<TEvent extends Event = Event>(selector: string, type: string, options?: Omit<AddEventListenerQueryOptions<TEvent>, 'delegate'>): MethodDecorator {
+  return addEventListener<TEvent>(selector, type, {...options??{}, root:'shadow', delegate: 'mutation'});
+}
+
+export function addEventListenerMutationAll<TEvent extends Event = Event>(selector: string, type: string, options?: Omit<AddEventListenerQueryOptions<TEvent>, 'delegate'>): MethodDecorator {
+  return addEventListener<TEvent>(selector, type, {...options??{}, root:'all', delegate: 'mutation'});
+}
+
+export function addEventListenerMutation<TEvent extends Event = Event>(selector: string, type: string, options?: Omit<AddEventListenerQueryOptions<TEvent>, 'delegate'>): MethodDecorator {
+  return addEventListener<TEvent>(selector, type, {...options??{}, root:'auto', delegate: 'mutation'});
+}
+
 // ─── root별 일반 헬퍼 (delegate 없음, 문자열 셀렉터 전용) ───
 
 export function addEventListenerLight<TEvent extends Event = Event>(selector: string, type: string, options?: AddEventListenerQueryOptions<TEvent>): MethodDecorator {
@@ -136,6 +152,10 @@ export const eventDelegateLight = addEventListenerDelegateLight;
 export const eventDelegateShadow = addEventListenerDelegateShadow;
 export const eventDelegateAll = addEventListenerDelegateAll;
 export const eventDelegate = addEventListenerDelegate;
+export const eventMutationLight = addEventListenerMutationLight;
+export const eventMutationShadow = addEventListenerMutationShadow;
+export const eventMutationAll = addEventListenerMutationAll;
+export const eventMutation = addEventListenerMutation;
 export const eventLight = addEventListenerLight;
 export const eventShadow = addEventListenerShadow;
 export const eventAll = addEventListenerAll;

@@ -1,0 +1,37 @@
+{
+  "name": "@dooboostore/algorithm",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "./dist/cjs/index.js",
+  "module": "./dist/esm/index.js",
+  "types": "./dist/types/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/types/index.d.ts",
+      "import": "./dist/esm/index.js",
+      "require": "./dist/cjs/index.js",
+      "default": "./dist/esm/index.js"
+    }
+  },
+  "scripts": {
+    "clean": "rm -rf dist dist-test",
+    "build:esm": "node build.mjs esm",
+    "watch:esm": "pnpm run build:esm && node build.mjs esm --watch",
+    "build:cjs": "node build.mjs cjs",
+    "watch:cjs": "pnpm run build:cjs && node build.mjs cjs --watch",
+    "build": "node build.mjs all",
+    "watch": "node build.mjs all --watch",
+    "typecheck": "tsc --noEmit -p tsconfig.test.json",
+    "test": "webpack --config webpack.test.config.cjs && node --test dist-test/engine.test.cjs"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "esbuild": "^0.23.0",
+    "esbuild-plugin-tsc": "^0.5.0",
+    "ts-loader": "^9.5.1",
+    "tslib": "^2.8.1",
+    "typescript": "^5.9.2",
+    "webpack": "^5.93.0",
+    "webpack-cli": "^5.1.4"
+  }
+}
