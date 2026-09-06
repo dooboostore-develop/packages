@@ -20,4 +20,4 @@ export const componentFactories: ComponentFactory[] = [
   RangeSlider,
 ];
 
-export { computeSmaSeries, computeMacdSeries, computeRsiSeries, computeObvSeries } from './StockChart';
+export { computeSmaSeries, computeMacdSeries, computeRsiSeries, computeObvSeries } from '@dooboostore/algorithm';

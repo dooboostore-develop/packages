@@ -10,6 +10,15 @@ import {
   queryShadow,
   resizeObserverLight
 } from "@dooboostore/simple-web-component";
+import { computeMacdSeries, computeRsiSeries, computeObvSeries, computeSmaSeries } from '@dooboostore/algorithm';
+
+// 하위 호환: 기존 '../src/StockChart' 직접 임포트 경로 유지
+export { computeMacdSeries, computeRsiSeries, computeObvSeries, computeSmaSeries };
+
+/** OBV 설정 — 자식 <obv><line color=".."/></obv> 로 지정 (파라미터 없음) */
+export interface ObvConfig {
+  lineColor: string;
+}
 
 const tagName = "stock-chart";
 
@@ -80,36 +89,6 @@ export interface MacdConfig {
   signalColor: string;
 }
 
-function ema(values: number[], period: number): number[] {
-  const k = 2 / (period + 1);
-  const out = new Array<number>(values.length);
-  let prev = values.length ? values[0] : 0;
-  for (let i = 0; i < values.length; i++) {
-    prev = i === 0 ? values[0] : values[i] * k + prev * (1 - k);
-    out[i] = prev;
-  }
-  return out;
-}
-
-/** 종가 배열 → MACD선/시그널선/히스토그램 (전체 구간 기준이라 줌과 무관) */
-export function computeMacdSeries(
-  closes: number[],
-  fast: number,
-  slow: number,
-  sig: number,
-): { macd: number[]; signal: number[]; hist: number[] } {
-  let f = Math.max(2, Math.round(fast) || 12);
-  let s = Math.max(2, Math.round(slow) || 26);
-  const g = Math.max(2, Math.round(sig) || 9);
-  if (s <= f) s = f + 1; // 역전 시 퇴화 방지
-  const ef = ema(closes, f);
-  const es = ema(closes, s);
-  const macd = closes.map((_, i) => ef[i] - es[i]);
-  const signal = ema(macd, g);
-  const hist = macd.map((v, i) => v - signal[i]);
-  return { macd, signal, hist };
-}
-
 /** RSI 설정 — 자식 <rsi period="14"><line/><overbought/><oversold/></rsi> 로 지정 */
 export interface RsiConfig {
   period: number;
@@ -119,64 +98,7 @@ export interface RsiConfig {
 }
 
 /** 종가 배열 → RSI (Wilder 스무딩, 전체 구간 기준이라 줌과 무관) */
-export function computeRsiSeries(closes: number[], period: number): number[] {
-  const p = Math.max(2, Math.round(period) || 14);
-  const n = closes.length;
-  const out = new Array<number>(n).fill(50);
-  if (n <= p) return out;
-  let gain = 0, loss = 0;
-  for (let i = 1; i <= p; i++) {
-    const d = closes[i] - closes[i - 1];
-    if (d > 0) gain += d; else loss -= d;
-  }
-  let avgG = gain / p, avgL = loss / p;
-  const rsiAt = (g: number, l: number): number => {
-    if (l === 0) return g === 0 ? 50 : 100;
-    const rs = g / l;
-    return 100 - 100 / (1 + rs);
-  };
-  const first = rsiAt(avgG, avgL);
-  for (let i = 0; i <= p; i++) out[i] = first; // 선행 구간은 첫 값으로 메움
-  for (let i = p + 1; i < n; i++) {
-    const d = closes[i] - closes[i - 1];
-    avgG = (avgG * (p - 1) + (d > 0 ? d : 0)) / p;
-    avgL = (avgL * (p - 1) + (d < 0 ? -d : 0)) / p;
-    out[i] = rsiAt(avgG, avgL);
-  }
-  return out;
-}
-
-/** OBV 설정 — 자식 <obv><line color=".."/></obv> 로 지정 (파라미터 없음) */
-export interface ObvConfig {
-  lineColor: string;
-}
-
 /** 종가·거래량 배열 → OBV (누적, 전체 구간 기준이라 줌과 무관) */
-export function computeObvSeries(closes: number[], volumes: number[]): number[] {
-  const n = closes.length;
-  const out = new Array<number>(n).fill(0);
-  for (let i = 1; i < n; i++) {
-    const v = volumes[i] || 0;
-    out[i] = out[i - 1] + (closes[i] > closes[i - 1] ? v : closes[i] < closes[i - 1] ? -v : 0);
-  }
-  return out;
-}
-
-/** 종가 배열 → 단순이동평균 (미형성 구간은 null, 전체 구간 기준이라 줌과 무관)
- *  엔진(TradingSimulator)과 동일한 수학식의 자립 복사본 — 컴포넌트 패키지 분리를 위해 의존 없음 */
-export function computeSmaSeries(closes: number[], period: number): (number | null)[] {
-  const p = Math.max(2, Math.round(period) || 20);
-  const n = closes.length;
-  const out = new Array<number | null>(n).fill(null);
-  let sum = 0;
-  for (let i = 0; i < n; i++) {
-    sum += closes[i];
-    if (i >= p) sum -= closes[i - p];
-    if (i >= p - 1) out[i] = sum / p;
-  }
-  return out;
-}
-
 /** 캔들 1건의 OHLCV + 현재 설정 기준 지표값 */
 export interface CandleInfo {
   index: number;
