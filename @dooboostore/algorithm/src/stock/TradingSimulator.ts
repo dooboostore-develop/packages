@@ -14,7 +14,7 @@ const LBL_VOL: Record<string, string> = { any: '무관', higher: '증가', lower
 const LBL_ALIGN: Record<string, string> = { any: '무관', aligned: '정배열', reverse: '역배열', largerAbove: '큰MA 위', largerBelow: '큰MA 아래', smallerAbove: '작은MA 위', smallerBelow: '작은MA 아래' };
 
 /** MA 멤버 조건 1건의 전체 스펙 한 줄 (팝업 구성 섹션용) */
-export function maSpecLine(period: number, sig: 'golden' | 'dead', s: any, trioParts: string[]): string {
+export function maSpecLine(period: number, sig: 'golden' | 'dead', s: MaSignal, trioParts: string[]): string {
   const dir = s.action === 'buy' ? '매수' : '매도';
   const pct = Math.max(1, Math.min(100, s.percent));
   const base = `MA${period} ${sig === 'golden' ? '골든' : '데드'} ${dir} ${pct}%`;
@@ -23,7 +23,7 @@ export function maSpecLine(period: number, sig: 'golden' | 'dead', s: any, trioP
 }
 
 /** 실현 멤버 조건 1건의 전체 스펙 한 줄 (팝업 구성 섹션용) */
-export function exitSpecLine(basisLabel: string, ex: any): string {
+export function exitSpecLine(basisLabel: string, ex: ExitConfig): string {
   return `청산 ${basisLabel} ${ex.percent}% · 매도 ${ex.sellPercent}% · 캔들 ${LBL_CANDLE[ex.candle] ?? ex.candle} · 거래량 ${LBL_VOL[ex.volume] ?? ex.volume} · 스킵 ${ex.skip}회`;
 }
 
@@ -92,7 +92,7 @@ export interface SimMetrics {
   avgPeriod: number; volatility: number; conflicts: number;
 }
 export interface BestConfig {
-  maConfigs: any[]; exits: any[]; profit: number; metrics: SimMetrics;
+  maConfigs: MaConfig[]; exits: ExitConfig[]; profit: number; metrics: SimMetrics;
   score: number; riskAversion: number; mres: ResolveMode; xres: ResolveMode; trend?: number; conviction?: number;
 }
 export interface TradeMarker { action: 'buy' | 'sell'; label: string; color: string; position: string }
@@ -156,7 +156,7 @@ export function alignForSignal(sig: string, hasSmaller = true, hasLarger = true)
   return pool[1 + Math.floor(Math.random() * (pool.length - 1))];
 }
 
-export function sanitizeAlignments(list: any[]): void {
+export function sanitizeAlignments(list: MaConfig[]): void {
   if (!Array.isArray(list) || !list.length) return;
   const ps = list.map((m: any) => Number(m?.period) || 0);
   const mn = Math.min(...ps), mx = Math.max(...ps);
@@ -435,7 +435,7 @@ export function findBestConfig(candles: SimCandle[], opts: FindBestOptions): Bes
   return bestClean ?? best; // 같은 틱 반대매매 없는 후보 우선 (없을 때만 전체 최적)
 }
 
-export function calcMetrics(candles: SimCandle[], maConfigs: any[], exits: any[], opts: CalcOptions): SimMetrics {
+export function calcMetrics(candles: SimCandle[], maConfigs: MaConfig[], exits: ExitConfig[], opts: CalcOptions): SimMetrics {
   if (!candles.length || !maConfigs.length) return { profit: -Infinity, rate: -Infinity, maxDrawdown: 100, tradeCount: 0, avgPeriod: 0, volatility: 0, conflicts: 0 };
   const { requireAll, initialCapital, feePercent, maMode, xMode } = opts;
   const simFrom = opts.simFrom ?? 0;
@@ -571,7 +571,7 @@ export function calcMetrics(candles: SimCandle[], maConfigs: any[], exits: any[]
   return { profit: rate, rate, maxDrawdown: maxDD, tradeCount: trades, avgPeriod, volatility, conflicts };
 }
 
-export function simulate(candles: SimCandle[], maConfigs: any[], exits: any[], opts: SimOptions): SimResult {
+export function simulate(candles: SimCandle[], maConfigs: MaConfig[], exits: ExitConfig[], opts: SimOptions): SimResult {
   const { initialCapital, feePercent, requireAll, maMode, xMode } = opts;
   const simFrom = opts.simFrom ?? 0;
   const simTo = opts.simTo ?? candles.length - 1;
