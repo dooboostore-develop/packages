@@ -668,3 +668,46 @@ export const findAllApplyNodeMetadata = (target: any): Map<string | symbol, Appl
   });
   return result;
 };
+// ─── filter 유틸 (applyNode/replace*/innerHtml* options.filter용) ───
+// filter는 true 반환 시 적용, false 반환 시 스킵.
+
+const filterScopeOf = (target: HTMLElement | ShadowRoot): Element | null => {
+  if (target && typeof (target as HTMLElement).querySelector === 'function') {
+    return target as unknown as Element;
+  }
+  const host = (target as ShadowRoot)?.host as unknown as Element | undefined;
+  return host && typeof host.querySelector === 'function' ? host : null;
+};
+
+const tagNameOf = (node: any): string | null => {
+  const tag = node?.tagName;
+  return typeof tag === 'string' ? tag.toLowerCase() : null;
+};
+
+// 새 노드와 같은 태그가 target 안에 이미 있으면 스킵 (SSR adopting용).
+export const skipIfSameTagPresent = (target: HTMLElement | ShadowRoot, newValue: any): boolean => {
+  const nodes = (Array.isArray(newValue) ? newValue : [newValue]).filter((n) => tagNameOf(n) !== null);
+  if (nodes.length === 0) return true;
+  const scope = filterScopeOf(target);
+  if (!scope) return true;
+  return !nodes.some((n) => scope.querySelector(tagNameOf(n)!));
+};
+
+// 새 값이 비어있으면 스킵 (null/''/빈 배열).
+export const skipIfEmpty = (_target: HTMLElement | ShadowRoot, newValue: any): boolean => {
+  if (newValue === null || newValue === undefined || newValue === false) return false;
+  if (typeof newValue === 'string') return newValue.trim().length > 0;
+  if (Array.isArray(newValue)) return newValue.length > 0;
+  return true;
+};
+
+// 텍스트가 달라질 때만 적용 (폴링 갱신용).
+export const applyIfChanged = (target: HTMLElement | ShadowRoot, newValue: any): boolean => {
+  const textOf = (v: any): string => {
+    if (typeof v === 'string') return v;
+    if (Array.isArray(v)) return v.map(textOf).join('');
+    return typeof v?.textContent === 'string' ? v.textContent : '';
+  };
+  const current = typeof (target as HTMLElement)?.textContent === 'string' ? (target as HTMLElement).textContent! : '';
+  return current !== textOf(newValue);
+};

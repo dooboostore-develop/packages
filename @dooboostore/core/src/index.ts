@@ -47,7 +47,7 @@ export * from './image';           // Image utilities (ImageUtils)
 export * from './expression';      // Expression evaluation (Expression)
 
 // === Type Exports ===
-export type * from './types';
+export * from './types';
 
 // ============================================================================
 // Default Export

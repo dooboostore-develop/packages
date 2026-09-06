@@ -13,7 +13,7 @@
     "emitDecoratorMetadata": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "moduleResolution": "bundler",
+    "moduleResolution": "node",
     "module": "esnext"
   },
   "include": ["src/**/*.ts"],
