@@ -14,7 +14,7 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "module": "esnext",
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "baseUrl": ".",
     "paths": {
 //      "@dooboostore/core/*": ["../../core/src/*"],

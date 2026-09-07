@@ -693,6 +693,15 @@ export const skipIfSameTagPresent = (target: HTMLElement | ShadowRoot, newValue:
   return !nodes.some((n) => scope.querySelector(tagNameOf(n)!));
 };
 
+// 지정 selector가 target 안에 이미 있으면 스킵 (같은 path 쿼리 변경 시 페이지 재생성 방지용).
+// 사용: @innerHtmlLight({ filter: skipIfExists('center-math-page') })
+export const skipIfExists = (selector: string) =>
+  (target: HTMLElement | ShadowRoot): boolean => {
+    const scope = filterScopeOf(target);
+    if (!scope) return true;
+    return !scope.querySelector(selector);
+  };
+
 // 새 값이 비어있으면 스킵 (null/''/빈 배열).
 export const skipIfEmpty = (_target: HTMLElement | ShadowRoot, newValue: any): boolean => {
   if (newValue === null || newValue === undefined || newValue === false) return false;
