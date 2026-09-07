@@ -5,6 +5,8 @@ import {
   computeMacdSeries,
   computeRsiSeries,
   computeObvSeries,
+} from '@dooboostore/algorithm';
+import {
   buildCandleInfo,
 } from '../src/StockChart';
 

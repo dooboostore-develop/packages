@@ -26,7 +26,9 @@
   },
   "peerDependencies": {
     "@dooboostore/simple-web-component": "workspace:*",
-    "@dooboostore/algorithm": "workspace:*"
+    "@dooboostore/algorithm": "workspace:*",
+    "@dooboostore/core": "workspace:*",
+    "@dooboostore/core-web": "workspace:*"
   },
   "devDependencies": {
     "@dooboostore/simple-web-component": "workspace:*",

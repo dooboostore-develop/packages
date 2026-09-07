@@ -12,9 +12,6 @@ import {
 } from "@dooboostore/simple-web-component";
 import { computeMacdSeries, computeRsiSeries, computeObvSeries, computeSmaSeries } from '@dooboostore/algorithm';
 
-// 하위 호환: 기존 '../src/StockChart' 직접 임포트 경로 유지
-export { computeMacdSeries, computeRsiSeries, computeObvSeries, computeSmaSeries };
-
 /** OBV 설정 — 자식 <obv><line color=".."/></obv> 로 지정 (파라미터 없음) */
 export interface ObvConfig {
   lineColor: string;

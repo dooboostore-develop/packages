@@ -45,6 +45,7 @@ export * from './advice';          // AOP exception handling (Advice)
 export * from './code';            // Code constants (ISO3166-1 country codes)
 export * from './image';           // Image utilities (ImageUtils)
 export * from './expression';      // Expression evaluation (Expression)
+export * from './hash';            // Hash utilities (HashUtils)
 
 // === Type Exports ===
 export * from './types';

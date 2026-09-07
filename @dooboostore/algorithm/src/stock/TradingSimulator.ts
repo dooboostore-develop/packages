@@ -1,5 +1,9 @@
 /** 순수 트레이딩 시뮬레이션 엔진 — DOM·페이지 상태 무의존. 모든 입력은 인자로 받는다. */
 
+import { computeSmaSeries } from './trend';
+import type { Candle } from './Candle';
+export type { Candle };
+
 export type ResolveMode = 'minFirst' | 'maxFirst' | 'all';
 export const RESOLVE_MODES: ResolveMode[] = ['minFirst', 'maxFirst', 'all'];
 export const EXIT_RESOLVE_MODES: ResolveMode[] = ['minFirst', 'maxFirst', 'all'];
@@ -18,7 +22,7 @@ export function maSpecLine(period: number, sig: 'golden' | 'dead', s: MaSignal, 
   const dir = s.action === 'buy' ? '매수' : '매도';
   const pct = Math.max(1, Math.min(100, s.percent));
   const base = `MA${period} ${sig === 'golden' ? '골든' : '데드'} ${dir} ${pct}%`;
-  const filt = [`캔들 ${LBL_CANDLE[s.candleFilter] ?? s.candleFilter}`, `거래량 ${LBL_VOL[s.volumeFilter] ?? s.volumeFilter}`, `배열 ${LBL_ALIGN[s.alignment] ?? s.alignment}`, `유지${s.consecutive}봉`];
+  const filt = [`캔들 ${LBL_CANDLE[s.candleFilter] ?? s.candleFilter}`, `거래량 ${LBL_VOL[s.volumeFilter] ?? s.volumeFilter}`, `배열 ${LBL_ALIGN[s.alignment] ?? s.alignment}`, `유지${s.consecutive}봉${(s.skipAfter ?? 0) > 0 ? `·매매후${s.skipAfter}봉쉼` : ''}`];
   return `${base} · ${[...filt, ...trioParts].join(' · ')}`;
 }
 
@@ -36,21 +40,6 @@ export function combinePct(pcts: number[]): number {
   return Math.min(100, Math.round((1 - remain) * 100 * 1e6) / 1e6);
 }
 
-/** 종가 배열 → 단순이동평균 (미형성 구간은 null, 전체 구간 기준).
- *  순수 레이어 소유. 차트(StockChart)는 컴포넌트 패키지 분리를 위해 동일 수학식의 자립 복사본을 둔다. */
-export function computeSmaSeries(closes: number[], period: number): (number | null)[] {
-  const p = Math.max(2, Math.round(period) || 20);
-  const n = closes.length;
-  const out = new Array<number | null>(n).fill(null);
-  let sum = 0;
-  for (let i = 0; i < n; i++) {
-    sum += closes[i];
-    if (i >= p) sum -= closes[i - p];
-    if (i >= p - 1) out[i] = sum / p;
-  }
-  return out;
-}
-
 /** 낙폭 회피 계수 λ 0~1 (기본 0.5). 0=수익만, 1=최대 방어. score = profit − λ·MDD */
 export const DEFAULT_RISK_AVERSION = 0.5;
 
@@ -62,7 +51,7 @@ export const TREND_NEUTRAL = 0.5;
 export const clampTrend = (s: number): number =>
   Number.isFinite(s) ? Math.max(0, Math.min(1, s)) : TREND_NEUTRAL;
 
-export interface SimCandle { date: string; open: number; high: number; low: number; close: number; volume: number }
+export interface SimCandle extends Candle {}
 
 export interface CondGroup { type: string; operator: string; value: number }
 export interface MaSignal {
@@ -70,6 +59,8 @@ export interface MaSignal {
   candleFilter: 'any' | 'bull' | 'bear'; volumeFilter: 'any' | 'higher' | 'lower'; consecutive: number;
   alignment: 'any' | 'aligned' | 'reverse' | 'largerAbove' | 'largerBelow' | 'smallerAbove' | 'smallerBelow';
   condTrade: CondGroup; condCandle: CondGroup; condMa: CondGroup;
+  /** 이 신호로 매매 후 쉬는 봉 수 (0=없음, 쿨다운 — streak 리셋) */
+  skipAfter?: number;
 }
 export interface MaConfig { period: number; color: string; pyramiding: { signals: MaSignal[] } }
 export interface ExitConfig {
@@ -105,30 +96,23 @@ export interface SimResult {
 export interface EngineOptions {
   initialCapital: number; feePercent: number; maMode: ResolveMode; xMode: ResolveMode;
   simFrom?: number; simTo?: number;
-  /** 실전 마찰 — 체결 지연 (0=신호봉 종가, 1=다음봉 시가) */
-  execDelay?: 0 | 1;
-  /** 실전 마찰 — 슬리피지 지수 0~1 (매수+ / 매도−) */
-  slippage?: number;
-  /** 실전 마찰 — 체결률 지수 0~1 (주문 대비 체결 비율, 결정적 분할) */
-  fillRatio?: number;
+  /** 시작 보유량 (미지정 0주) — 매도 수량 기준에 사용 */
+  initialShares?: number;
+  /** 시작 보유 평단 (미지정 0 — 평단 모르면 청산 손익 계산 스킵) */
+  initialAvgPrice?: number;
 }
 
-/** 체결 기준가 (신호봉 종가 or 다음봉 시가). null = 체결 불가 (다음봉 없음) */
-export function execBaseAt(candles: SimCandle[], i: number, opts: EngineOptions): number | null {
-  if ((opts.execDelay ?? 0) === 1) return i + 1 < candles.length ? candles[i + 1].open : null;
-  return candles[i].close;
-}
-
-/** 슬리피지율·체결률 정규화 (0~1 지수 그대로, 범위만 보정) */
-export function slipFillOf(opts: EngineOptions): { slip: number; fill: number } {
-  return {
-    slip: Math.max(0, Math.min(1, opts.slippage ?? 0)),
-    fill: Math.max(0, Math.min(1, opts.fillRatio ?? 1)),
-  };
-}
+/** 탐색 출력 %에 적용률을 곱해 1~100 조건값으로 자름 */
+export const scaleOutPct = (pct: number, rate: number): number => Math.max(1, Math.min(100, Math.round(pct * rate)));
 export interface CalcOptions extends EngineOptions { requireAll: boolean }
 export type SimOptions = CalcOptions;
-export interface FindBestOptions extends EngineOptions { trend?: number; riskAversion?: number }
+export interface FindBestOptions extends EngineOptions {
+  trend?: number; riskAversion?: number;
+  /** 매수 적용률 0~1 (기본 1) — 반환되는 MA 매수 percent에 곱함 */
+  buyPctRate?: number;
+  /** 매도 적용률 0~1 (기본 1) — 반환되는 MA 매도 percent·실현 sellPercent에 곱함 */
+  sellPctRate?: number;
+}
 
 export function condMet(count: number, operator: string, value: number): boolean {
   if (operator === 'any') return true;
@@ -152,7 +136,7 @@ export function alignForSignal(sig: string, hasSmaller = true, hasLarger = true)
     if (hasSmaller) pool.push('smallerAbove', 'smallerBelow');
     if (hasLarger) pool.push('largerAbove');
   }
-  if (Math.random() < 0.45) return 'any';
+  if (Math.random() < 0.25) return 'any';
   return pool[1 + Math.floor(Math.random() * (pool.length - 1))];
 }
 
@@ -216,11 +200,43 @@ export function findBestConfig(candles: SimCandle[], opts: FindBestOptions): Bes
   const pick = <T>(arr: T[]) => arr[rand(arr.length)];
   const colors = ['#ef4444','#f59e0b','#10b981','#6366f1','#ec4899','#06b6d4','#8b5cf6','#14b8a6'];
   const candleOpts: ('any'|'bull'|'bear')[] = ['any','bull','bear'];
+  /** 무관 가중 25% 뽑기 (출력의 무관 범람 방지, 완화 탐색은 별도) */
+  const pickCandleF = (): 'any'|'bull'|'bear' => { const r = Math.random(); return r < 0.25 ? 'any' : r < 0.625 ? 'bull' : 'bear'; };
+  const pickVolumeF = (): 'any'|'higher'|'lower' => { const r = Math.random(); return r < 0.25 ? 'any' : r < 0.625 ? 'higher' : 'lower'; };
+  /** 조건그룹 무관 확률 30% */
+  const ANY_COND_P = 0.3;
   const volOpts: ('any'|'higher'|'lower')[] = ['any','higher','lower'];
   const tradeConds = ['consecutiveBuy','consecutiveSell','consecutiveSelected'];
   const candleConds = ['consecutiveBullish','consecutiveBearish'];
   const maConds = ['maDeviation','maSlope'];
   const condOps = ['any','<','<=','=','!=','>=','>'] as const;
+  // 캔들 없이 opts prior만으로 추론 — 방향·범위 고정 + 중간값 ±5 지터 (극단 제외, 매 호출 조금씩 다름)
+  const inferFromPrior = (): any => {
+    const buyR0 = Number.isFinite(opts.buyPctRate as number) && (opts.buyPctRate as number) >= 0 ? (opts.buyPctRate as number) : 1;
+    const sellR0 = Number.isFinite(opts.sellPctRate as number) && (opts.sellPctRate as number) >= 0 ? (opts.sellPctRate as number) : 1;
+    const [bLo, bHi] = trendPctRange(true);
+    const [sLo, sHi] = trendPctRange(false);
+    const jit = (lo: number, hi: number) => Math.max(lo, Math.min(hi, Math.round((lo + hi) / 2) + Math.floor(Math.random() * 11) - 5));
+    const noCond = { type: 'any' as const, operator: 'any' as const, value: 1 };
+    const mkSig = (sig: 'golden' | 'dead', action: 'buy' | 'sell', pct: number): any => ({
+      signal: sig, action, percent: scaleOutPct(pct, action === 'sell' ? sellR0 : buyR0),
+      candleFilter: action === 'buy' ? 'bull' : 'bear', volumeFilter: 'higher',
+      consecutive: 2, alignment: sig === 'golden' ? 'aligned' : 'reverse', skipAfter: 0,
+      condTrade: { ...noCond }, condCandle: { ...noCond }, condMa: { ...noCond },
+    });
+    const pool = [5, 10, 20, 30];
+    const p1 = pool[Math.floor(Math.random() * pool.length)];
+    let p2 = pool[Math.floor(Math.random() * pool.length)];
+    if (p2 === p1) p2 = pool[(pool.indexOf(p1) + 1) % pool.length];
+    const periods = [p1, p2].sort((a, b) => a - b);
+    const maConfigs = periods.map((period, i) => ({
+      period, color: colors[i % colors.length],
+      pyramiding: { signals: [mkSig('golden', 'buy', jit(bLo, bHi)), mkSig('dead', 'sell', jit(sLo, sHi))] },
+    }));
+    const exits: any[] = [{ basis: 'profitRise', percent: 15, sellPercent: scaleOutPct(80, sellR0), skip: 0, candle: 'any', volume: 'any' }];
+    return { maConfigs, exits, profit: 0, metrics: null, score: 0, riskAversion, mres: opts.maMode, xres: opts.xMode, trend, conviction } as any;
+  };
+  if (!candles.length) return inferFromPrior();
   const trials = 500; // 1차 가중 랜덤 + 필요시 2차 완화 (hill-climb 포함 총 약 660회 평가)
   let best: any = null;
   let bestProfit = -Infinity;
@@ -253,13 +269,14 @@ export function findBestConfig(candles: SimCandle[], opts: FindBestOptions): Bes
       const ss = m.pyramiding?.signals;
       if (ss?.length) {
         const s: any = pick(ss);
-        const k = rand(6);
+        const k = rand(7);
         if (k === 0) { s.percent = clampN(s.percent + [-10, -5, 5, 10][rand(4)], 1, 100); const [mLo, mHi] = trendPctRange(s.action === 'buy'); s.percent = clampN(s.percent, mLo, mHi); }
         else if (k === 1) { s.consecutive = clampN(s.consecutive + (Math.random() < 0.5 ? -1 : 1), 1, 10); if (trend < 0.5 && s.action === 'buy') s.consecutive = Math.max(2, s.consecutive); }
         else if (k === 2) s.action = s.action === 'buy' ? 'sell' : 'buy';
-        else if (k === 3) s.candleFilter = pick(candleOpts);
-        else if (k === 4) s.volumeFilter = pick(volOpts);
-        else s.alignment = alignForSignal(s.signal);
+        else if (k === 3) s.candleFilter = pickCandleF();
+        else if (k === 4) s.volumeFilter = pickVolumeF();
+        else if (k === 5) s.alignment = alignForSignal(s.signal);
+        else s.skipAfter = clampN((s.skipAfter ?? 0) + (Math.random() < 0.5 ? -1 : 1) * (1 + rand(2)), 0, 20);
       }
     } else if (r < 0.7 && c.maConfigs.length) {
       const m: any = pick(c.maConfigs);
@@ -280,7 +297,7 @@ export function findBestConfig(candles: SimCandle[], opts: FindBestOptions): Bes
             const pool2 = g === s.condTrade ? ['any','consecutiveBuy','consecutiveSell','consecutiveSelected']
                         : g === s.condCandle ? ['any','consecutiveBullish','consecutiveBearish']
                         : ['any','maDeviation','maSlope'];
-            g.type = pick(pool2 as any);
+            g.type = Math.random() < ANY_COND_P ? 'any' : pick(pool2.slice(1) as any);
             if (g.type === 'any') g.operator = 'any';
             else if (g.operator === 'any') g.operator = pick((['<','<=','=','!=','>=','>']) as any);
           }
@@ -290,7 +307,7 @@ export function findBestConfig(candles: SimCandle[], opts: FindBestOptions): Bes
       const e = pick(c.exits);
       const k = rand(4);
       if (k === 0) e.percent = clampN(e.percent + (Math.random() < 0.5 ? -1 : 1) * (1 + rand(4)), 1, 100);
-      else if (k === 1) e.sellPercent = clampN(e.sellPercent + (Math.random() < 0.5 ? -1 : 1) * (5 + rand(10)), 1, 100);
+      else if (k === 1) e.sellPercent = clampN(e.sellPercent + (Math.random() < 0.5 ? -1 : 1) * (5 + rand(10)), 1, MAX_OUT_PCT);
       else if (k === 2) e.skip = clampN(e.skip + (Math.random() < 0.5 ? -1 : 1), 0, 20);
       else {
         // 50% 확률로 다른 청산의 basis를 복사해 계단 유지 (임계값·비중은 독립 변이)
@@ -310,7 +327,7 @@ export function findBestConfig(candles: SimCandle[], opts: FindBestOptions): Bes
     {
           for (const mm of RESOLVE_MODES) {
             for (const xm of EXIT_RESOLVE_MODES) {
-          const m = calcMetrics(candles, maCfgs as any, exitCfgs as any, { requireAll: true, simFrom: z0, simTo: z1, initialCapital, feePercent, maMode: mm, xMode: xm, execDelay: opts.execDelay, slippage: opts.slippage, fillRatio: opts.fillRatio });
+          const m = calcMetrics(candles, maCfgs as any, exitCfgs as any, { requireAll: true, simFrom: z0, simTo: z1, initialCapital, feePercent, maMode: mm, xMode: xm });
           const score = scoreOf(m);
               const uiMode = mm === opts.maMode && xm === opts.xMode;
               if (score > bestProfit || (score === bestProfit && uiMode)) { maCfgs.sort((a:any,b:any)=>a.period-b.period); bestProfit = score; best = { maConfigs: maCfgs, exits: exitCfgs, profit: m.profit, metrics: m, score, riskAversion, mres: mm, xres: xm, trend, conviction }; }
@@ -325,14 +342,16 @@ export function findBestConfig(candles: SimCandle[], opts: FindBestOptions): Bes
     }
   };
   // 베이스라인 2종을 먼저 평가 — 명백한 추세가 있을 때 0거래(관망)가 최적이라고 나오는 것 방지
-  // 중립이 아닐 때는 앵커 매수/매도 %도 추세 범위로 클램프 (방어/공격 체제 일관성). 중립은 99/100 그대로.
-  const baselineExits: any[] = [{ basis: 'profitRise', percent: 15, sellPercent: 100, skip: 0, candle: 'any', volume: 'any' }];
+  // 한 방 올인 방지 상한: 탐색 출력 %는 80을 넘지 않음 (MA 랜덤 ≤60, 앵커·실현만 해당)
+  const MAX_OUT_PCT = 80;
+  // 중립이 아닐 때는 앵커 매수/매도 %도 추세 범위로 클램프 (방어/공격 체제 일관성). 중립 포함 전부 상한 적용.
+  const baselineExits: any[] = [{ basis: 'profitRise', percent: 15, sellPercent: MAX_OUT_PCT, skip: 0, candle: 'any', volume: 'any' }];
   const blPct = (p: number, isBuy: boolean) => {
-    if (trend === 0.5) return p;
+    if (trend === 0.5) return Math.min(p, MAX_OUT_PCT);
     const [, hi] = trendPctRange(isBuy);
-    return Math.min(p, hi);
+    return Math.min(p, hi, MAX_OUT_PCT);
   };
-  const baseline = (periods: number[]) => periods.map((period, i) => ({ period, color: colors[i % colors.length], pyramiding: { signals: (['golden','dead'] as const).map(sig => ({ signal: sig, action: sig === 'golden' ? 'buy' : 'sell', percent: sig === 'golden' ? blPct(99, true) : blPct(100, false), candleFilter: 'any', volumeFilter: 'any', consecutive: (sig === 'golden' && trend < 0.5) ? 2 : 1, alignment: 'any', condTrade: { type: 'any', operator: 'any', value: 1 }, condCandle: { type: 'any', operator: 'any', value: 1 }, condMa: { type: 'any', operator: 'any', value: 1 } })) } }));
+  const baseline = (periods: number[]) => periods.map((period, i) => ({ period, color: colors[i % colors.length], pyramiding: { signals: (['golden','dead'] as const).map(sig => ({ signal: sig, action: sig === 'golden' ? 'buy' : 'sell', percent: sig === 'golden' ? blPct(99, true) : blPct(100, false), candleFilter: 'any', volumeFilter: 'any', consecutive: 2, alignment: 'any', condTrade: { type: 'any', operator: 'any', value: 1 }, condCandle: { type: 'any', operator: 'any', value: 1 }, condMa: { type: 'any', operator: 'any', value: 1 } })) } }));
   // NOTE: 매수 percent 100은 수수료 여유분이 없어 단 1주도 체결되지 않으므로 99 사용
   consider(baseline([5, 20]), baselineExits);
   consider(baseline([10, 30, 60]), baselineExits);
@@ -340,13 +359,13 @@ export function findBestConfig(candles: SimCandle[], opts: FindBestOptions): Bes
   const periodPool = [5,10,20,30,60,90,120,200].filter(v => v <= maxPeriodCap);
   const maxPeriod = maxPeriodCap;
   const noCond = { type: 'any' as const, operator: 'any' as const, value: 1 };
-  const simpleExits: any[] = [{ basis: 'profitRise', percent: 15, sellPercent: 100, skip: 0, candle: 'any', volume: 'any' }];
+  const simpleExits: any[] = [{ basis: 'profitRise', percent: 15, sellPercent: MAX_OUT_PCT, skip: 0, candle: 'any', volume: 'any' }];
   const periodScore = new Map<number, number>();
   for (const pp of periodPool) {
     const pm = calcMetrics(candles, [{ period: pp, color: '#888888', pyramiding: { signals: [
       { signal: 'golden', action: 'buy', percent: 99, candleFilter: 'any', volumeFilter: 'any', consecutive: 1, alignment: 'any', condTrade: { ...noCond }, condCandle: { ...noCond }, condMa: { ...noCond } },
       { signal: 'dead', action: 'sell', percent: 100, candleFilter: 'any', volumeFilter: 'any', consecutive: 1, alignment: 'any', condTrade: { ...noCond }, condCandle: { ...noCond }, condMa: { ...noCond } },
-    ] } }], simpleExits, { requireAll: true, simFrom: z0, simTo: z1, initialCapital, feePercent, maMode, xMode, execDelay: opts.execDelay, slippage: opts.slippage, fillRatio: opts.fillRatio });
+    ] } }], simpleExits, { requireAll: true, simFrom: z0, simTo: z1, initialCapital, feePercent, maMode, xMode });
     periodScore.set(pp, Number.isFinite(pm.profit) ? pm.profit : -Infinity);
   }
   const weightedPool = [...periodPool].sort((a, b) => (periodScore.get(b) ?? -Infinity) - (periodScore.get(a) ?? -Infinity));
@@ -378,6 +397,7 @@ export function findBestConfig(candles: SimCandle[], opts: FindBestOptions): Bes
     const relaxed = phase === 1;
     // 1차(1000회)에서 거래 있는 최적값을 찾았으면 2차(조건 완화) 생략
     if (relaxed && (best?.metrics?.tradeCount ?? 0) > 0) break;
+    if (relaxed) console.log(`[findBest] phase0 trades=${best?.metrics?.tradeCount ?? 0} profit=${bestProfit === -Infinity ? '-Inf' : bestProfit.toFixed(2)} → relaxed(무관 70%) 진입`);
   for (let t = 0; t < trials; t++) {
     const maCount = 2 + rand(3);
     const used = new Set<number>();
@@ -392,13 +412,14 @@ export function findBestConfig(candles: SimCandle[], opts: FindBestOptions): Bes
         return {
         action,
         percent: pctLo + rand(pctHi - pctLo + 1),
-        candleFilter: relaxed && Math.random() < 0.7 ? 'any' : pick(candleOpts),
-        volumeFilter: relaxed && Math.random() < 0.7 ? 'any' : pick(volOpts),
-        consecutive: (relaxed ? 1 + rand(2) : 1 + rand(3)) + consBoost,
+        candleFilter: relaxed && Math.random() < 0.7 ? 'any' : pickCandleF(),
+        volumeFilter: relaxed && Math.random() < 0.7 ? 'any' : pickVolumeF(),
+        consecutive: (relaxed ? 1 + rand(2) : 2 + rand(2)) + consBoost,
         alignment: relaxed ? 'any' : alignForSignal(sg),
-        condTrade: relaxed ? { type: 'any' as const, operator: 'any' as const, value: 1 } : (Math.random() < 0.5 ? { type: 'any' as const, operator: 'any' as const, value: 1 } : { type: pick(tradeConds) as any, operator: pick([...condOps].filter(o=>o!=='any')) as any, value: 1 + rand(5) }),
-        condCandle: relaxed ? { type: 'any' as const, operator: 'any' as const, value: 1 } : (Math.random() < 0.5 ? { type: 'any' as const, operator: 'any' as const, value: 1 } : { type: pick(candleConds) as any, operator: pick([...condOps].filter(o=>o!=='any')) as any, value: 1 + rand(5) }),
-        condMa: relaxed ? { type: 'any' as const, operator: 'any' as const, value: 1 } : (Math.random() < 0.5 ? { type: 'any' as const, operator: 'any' as const, value: 1 } : { type: pick(maConds) as any, operator: pick([...condOps].filter(o=>o!=='any')) as any, value: Number((Math.random()*20 -10).toFixed(1)) }),
+        skipAfter: relaxed ? 0 : rand(4),
+        condTrade: relaxed ? { type: 'any' as const, operator: 'any' as const, value: 1 } : (Math.random() < ANY_COND_P ? { type: 'any' as const, operator: 'any' as const, value: 1 } : { type: pick(tradeConds) as any, operator: pick([...condOps].filter(o=>o!=='any')) as any, value: 1 + rand(5) }),
+        condCandle: relaxed ? { type: 'any' as const, operator: 'any' as const, value: 1 } : (Math.random() < ANY_COND_P ? { type: 'any' as const, operator: 'any' as const, value: 1 } : { type: pick(candleConds) as any, operator: pick([...condOps].filter(o=>o!=='any')) as any, value: 1 + rand(5) }),
+        condMa: relaxed ? { type: 'any' as const, operator: 'any' as const, value: 1 } : (Math.random() < ANY_COND_P ? { type: 'any' as const, operator: 'any' as const, value: 1 } : { type: pick(maConds) as any, operator: pick([...condOps].filter(o=>o!=='any')) as any, value: Number((Math.random()*20 -10).toFixed(1)) }),
         };
       };
       const sigCount = 1 + rand(3);
@@ -411,7 +432,7 @@ export function findBestConfig(candles: SimCandle[], opts: FindBestOptions): Bes
     const exitCount = 1 + rand(2);
     const exits: any[] = Array.from({ length: exitCount }, () => {
       const b = pick(['profitRise','profitFall','peakFall','peakRise'] as const);
-      return { basis: b, percent: 5 + rand(21), sellPercent: 30 + rand(71), skip: rand(6), candle: pick(candleOpts), volume: pick(volOpts) };
+      return { basis: b, percent: 5 + rand(21), sellPercent: 30 + rand(51), skip: rand(6), candle: pickCandleF(), volume: pickVolumeF() };
     });
     // 2개일 때 50% 확률로 계단식 청산: 같은 basis + 다른 임계값 → 한쪽 발동 집합이 다른 쪽을 포함해 동시 발동 보장 (모드 간 실질 차이)
     if (exits.length === 2 && Math.random() < 0.5) {
@@ -432,7 +453,52 @@ export function findBestConfig(candles: SimCandle[], opts: FindBestOptions): Bes
       consider(mutated.maConfigs, mutated.exits);
     }
   }
-  return bestClean ?? best; // 같은 틱 반대매매 없는 후보 우선 (없을 때만 전체 최적)
+  // 적용률: 탐색 승자의 MA 매수/매도 percent·실현 sellPercent에 곱해 조건 자체로 반환
+  const buyR = Number.isFinite(opts.buyPctRate as number) && (opts.buyPctRate as number) >= 0 ? (opts.buyPctRate as number) : 1;
+  const sellR = Number.isFinite(opts.sellPctRate as number) && (opts.sellPctRate as number) >= 0 ? (opts.sellPctRate as number) : 1;
+  const applyOut = (winner: any): any => {
+    if (!winner) return winner;
+    for (const m of winner.maConfigs ?? []) {
+      for (const s of (m?.pyramiding?.signals ?? []) as any[]) {
+        s.percent = scaleOutPct(s.percent, s.action === 'sell' ? sellR : buyR);
+      }
+    }
+    for (const e of winner.exits ?? []) {
+      e.sellPercent = scaleOutPct(Number(e.sellPercent) || 0, sellR);
+    }
+    return winner;
+  };
+  const _best = bestClean ?? best; // 같은 틱 반대매매 없는 후보 우선 (없을 때만 전체 최적)
+  if (!_best || (_best?.metrics?.tradeCount ?? 0) === 0) {
+    // 거래 0건 승자는 무관 쓰레기 — prior 추론으로 대체
+    console.log(`[findBest] no tradable winner (trades=0) → prior inference (trend=${trend})`);
+    return inferFromPrior();
+  }
+  // pool/후보 공유 참조 오염 방지 — 반환 전에 깊은 복사 후 스케일
+  const out = JSON.parse(JSON.stringify(_best));
+  const scaled = applyOut(out);
+  // 승자 무관 집계 (디버그용 — 왜 무관만 나오는지 추적)
+  let anyN = 0, totalN = 0;
+  for (const m of scaled.maConfigs ?? []) {
+    for (const s of (m?.pyramiding?.signals ?? []) as any[]) {
+      totalN += 7;
+      if (s.candleFilter === 'any') anyN++;
+      if (s.volumeFilter === 'any') anyN++;
+      if (s.alignment === 'any') anyN++;
+      if (s.condTrade?.type === 'any') anyN++;
+      if (s.condCandle?.type === 'any') anyN++;
+      if (s.condCandle?.operator === 'any') anyN++;
+      if (s.condMa?.type === 'any') anyN++;
+    }
+  }
+  for (const e of scaled.exits ?? []) {
+    totalN += 2;
+    if (e.candle === 'any') anyN++;
+    if (e.volume === 'any') anyN++;
+  }
+  const src = _best === bestClean ? 'clean' : 'raw';
+  console.log(`[findBest] winner src=${src} periods=[${(scaled.maConfigs ?? []).map((m: any) => m.period).join(',')}] trades=${_best?.metrics?.tradeCount ?? 0} profit=${Number(_best?.profit)?.toFixed?.(2) ?? _best?.profit} any=${anyN}/${totalN}`);
+  return scaled;
 }
 
 export function calcMetrics(candles: SimCandle[], maConfigs: MaConfig[], exits: ExitConfig[], opts: CalcOptions): SimMetrics {
@@ -451,8 +517,8 @@ export function calcMetrics(candles: SimCandle[], maConfigs: MaConfig[], exits: 
   const isAligned=(idx:number)=>{ const f=sortedMas.map(ma=>({period:ma.period,v:maMap.get(ma.period)![idx]})).filter(x=>x.v!=null) as any[]; if(f.length<2) return true; for(let k=0;k<f.length-1;k++) if(!(f[k].v>f[k+1].v)) return false; return true; };
   const isRev=(idx:number)=>{ const f=sortedMas.map(ma=>({period:ma.period,v:maMap.get(ma.period)![idx]})).filter(x=>x.v!=null) as any[]; if(f.length<2) return true; for(let k=0;k<f.length-1;k++) if(!(f[k].v<f[k+1].v)) return false; return true; };
   const checkAlignment=(maPeriod:number,idx:number,mode:string)=>{ const cur=maMap.get(maPeriod)?.[idx]; if(cur==null) return false; if(mode==='any') return true; if(mode==='aligned') return isAligned(idx); if(mode==='reverse') return isRev(idx); const larger=[...maMap.entries()].filter(([p])=>p>maPeriod).map(([,arr])=>arr[idx]).filter(v=>v!=null) as number[]; const smaller=[...maMap.entries()].filter(([p])=>p<maPeriod).map(([,arr])=>arr[idx]).filter(v=>v!=null) as number[]; if(mode==='largerAbove') return larger.length>0&&larger.every(v=>v>cur); if(mode==='largerBelow') return larger.length>0&&larger.every(v=>v<cur); if(mode==='smallerAbove') return smaller.length>0&&smaller.every(v=>v>cur); if(mode==='smallerBelow') return smaller.length>0&&smaller.every(v=>v<cur); return true; };
-  let cash=initialCapital; let shares=0; let totalCost=0; const feeRate=feePercent/100; const { slip: slipR, fill: fillR } = slipFillOf(opts); let peakPrice=0; let troughPrice=0; let trades=0; let conflicts=0; let barDir:string|null=null; const tradeActions:string[]=[]; const sigStreak=new Map<any,number>(); let maSkipRemaining=0;
-  const equities:number[]=[]; let peakEquity=initialCapital; let maxDD=0;
+  let cash=initialCapital; let shares=opts.initialShares ?? 0; let totalCost=shares>0?(opts.initialAvgPrice ?? 0)*shares:0; const startEquity=initialCapital+totalCost; const feeRate=feePercent/100; let peakPrice=0; let troughPrice=0; let trades=0; let conflicts=0; let barDir:string|null=null; const tradeActions:string[]=[]; const sigStreak=new Map<any,number>(); const coolUntil=new Map<any,number>(); let maSkipRemaining=0;
+  const equities:number[]=[]; let peakEquity=startEquity; let maxDD=0;
   for(let i=1;i<candles.length;i++){
     if(i<mz0||i>mz1) continue;
     if(shares>0){ peakPrice=Math.max(peakPrice,candles[i].close); troughPrice=troughPrice?Math.min(troughPrice,candles[i].close):candles[i].close; } else { peakPrice=0; troughPrice=0; }
@@ -483,9 +549,9 @@ export function calcMetrics(candles: SimCandle[], maConfigs: MaConfig[], exits: 
         else if(xm==='all') execEx={...exitCands[0], sellPercent: combinePct(exitCands.map(e=>Number(e.sellPercent)||0))};
         const ex=execEx;
         const sellSharesRaw=Math.floor(shares*(ex.sellPercent/100));
-        const epX=execBaseAt(candles,i,opts); const sellShares=Math.floor(sellSharesRaw*fillR);
-        if(sellShares>0&&epX!=null){
-          const sellPx=epX*(1-slipR); const avg2=totalCost/shares; const proceeds=sellShares*sellPx; const fee=Math.round(proceeds*feeRate); shares-=sellShares; cash+=proceeds-fee; totalCost-=sellShares*avg2; if(shares===0) totalCost=0; trades++; maSkipRemaining=ex.skip; exitExecuted=true;
+        const epX=candles[i].close; const sellShares=sellSharesRaw;
+        if(sellShares>0){
+          const sellPx=epX; const avg2=totalCost/shares; const proceeds=sellShares*sellPx; const fee=Math.round(proceeds*feeRate); shares-=sellShares; cash+=proceeds-fee; totalCost-=sellShares*avg2; if(shares===0) totalCost=0; trades++; maSkipRemaining=ex.skip; exitExecuted=true;
         }
       }
       if(exitExecuted){ const eq=cash+shares*candles[i].close; equities.push(eq); peakEquity=Math.max(peakEquity,eq); maxDD=Math.max(maxDD, peakEquity?((peakEquity-eq)/peakEquity)*100:0); continue; }
@@ -502,6 +568,7 @@ export function calcMetrics(candles: SimCandle[], maConfigs: MaConfig[], exits: 
         if(sigType==='golden'){ if(isAbove) sig='golden'; } else { if(isBelow) sig='dead'; }
         const sigKey=`${ma.period}-${sIdx}`;
         if(!sig){ sigStreak.set(sigKey,0); continue; }
+        if((coolUntil.get(sigCfg)??-1)>=i){ sigStreak.set(sigKey,0); continue; } // 매매후 스킵 쿨다운
         const align=sigCfg.alignment??'any'; if(align!=='any'&&!checkAlignment(ma.period,i,align)){ sigStreak.set(sigKey,0); continue; }
         const need=Math.max(1,Math.min(10,sigCfg.consecutive??2));
         const holdingNow=sig==='golden'?isAbove:isBelow; const cur=holdingNow?(sigStreak.get(sigKey)??0)+1:1; sigStreak.set(sigKey,cur);
@@ -530,7 +597,7 @@ export function calcMetrics(candles: SimCandle[], maConfigs: MaConfig[], exits: 
         }
         const cfgPre:any=sigCfg; const pctPre=Math.max(1,Math.min(100,(cfgPre as any).percent));
         const singleMode = maMode === 'minFirst' || maMode === 'maxFirst';
-        if((cfgPre as any).action==='buy'){ const candleOk=(cfgPre as any).candleFilter==='any'||((cfgPre as any).candleFilter==='bull'?candles[i].close>candles[i].open:candles[i].close<candles[i].open); const volOk=(cfgPre as any).volumeFilter==='any'||(i>0&&((cfgPre as any).volumeFilter==='higher'?candles[i].volume>candles[i-1].volume:candles[i].volume<candles[i-1].volume)); if(!candleOk||!volOk) continue; if(singleMode){ const epPre=execBaseAt(candles,i,opts); if(epPre==null) continue; const buyPxPre=epPre*(1+slipR); const cost=Math.floor(cash*(pctPre/100)); if(cost<1000||cash<cost) continue; const buyShares=Math.floor(Math.floor(cost/buyPxPre)*fillR); if(buyShares<=0) continue; const actualCost=buyShares*buyPxPre; const fee=Math.round(actualCost*feeRate); if(cash<actualCost+fee) continue; } }
+        if((cfgPre as any).action==='buy'){ const candleOk=(cfgPre as any).candleFilter==='any'||((cfgPre as any).candleFilter==='bull'?candles[i].close>candles[i].open:candles[i].close<candles[i].open); const volOk=(cfgPre as any).volumeFilter==='any'||(i>0&&((cfgPre as any).volumeFilter==='higher'?candles[i].volume>candles[i-1].volume:candles[i].volume<candles[i-1].volume)); if(!candleOk||!volOk) continue; if(singleMode){ const epPre=candles[i].close; const buyPxPre=epPre; const cost=Math.floor(cash*(pctPre/100)); if(cost<1000||cash<cost) continue; const buyShares=Math.floor(cost/buyPxPre); if(buyShares<=0) continue; const actualCost=buyShares*buyPxPre; const fee=Math.round(actualCost*feeRate); if(cash<actualCost+fee) continue; } }
         else { const candleOk=(cfgPre as any).candleFilter==='any'||((cfgPre as any).candleFilter==='bull'?candles[i].close>candles[i].open:candles[i].close<candles[i].open); const volOk=(cfgPre as any).volumeFilter==='any'||(i>0&&((cfgPre as any).volumeFilter==='higher'?candles[i].volume>candles[i-1].volume:candles[i].volume<candles[i-1].volume)); if(!candleOk||!volOk) continue; if(singleMode){ if(shares<=0||totalCost<=0) continue; const sellShares=Math.floor(shares*(pctPre/100)); if(sellShares<=0) continue; } }
         cands.push({ma, sigCfg, sig, currClose});
       }
@@ -559,13 +626,14 @@ export function calcMetrics(candles: SimCandle[], maConfigs: MaConfig[], exits: 
       }
     }
     for(const exm of execsM){ const sigCfg:any=exm.cand.sigCfg; const currClose=exm.cand.currClose;
+        const coolMembers=(action:'buy'|'sell'):void=>{ for(const m of cands){ if((m.sigCfg as any).action!==action) continue; const sa=Math.max(0,Math.min(20,Math.round(Number((m.sigCfg as any).skipAfter)||0))); if(sa>0) coolUntil.set(m.sigCfg,i+sa); } };
         const cfg=sigCfg; const pct=Math.max(1,Math.min(100, exm.pct));
-        const epM=execBaseAt(candles,i,opts); if(epM==null) continue;
-        if((cfg as any).action==='buy'){ const candleOk=(cfg as any).candleFilter==='any'||((cfg as any).candleFilter==='bull'?candles[i].close>candles[i].open:candles[i].close<candles[i].open); const volOk=(cfg as any).volumeFilter==='any'||(i>0&&((cfg as any).volumeFilter==='higher'?candles[i].volume>candles[i-1].volume:candles[i].volume<candles[i-1].volume)); if(!candleOk||!volOk) continue; const buyPx=epM*(1+slipR); const cost=Math.floor(cash*(pct/100)); if(cost<1000||cash<cost) continue; const buyShares=Math.floor(Math.floor(cost/buyPx)*fillR); if(buyShares<=0) continue; const actualCost=buyShares*buyPx; const fee=Math.round(actualCost*feeRate); if(cash<actualCost+fee) continue; shares+=buyShares; cash-=actualCost+fee; totalCost+=actualCost+fee; if(barDir&&barDir!=='buy'){conflicts++;} barDir='buy'; trades++; tradeActions.push('buy'); } else { if(shares<=0||totalCost<=0) continue; const candleOk=(cfg as any).candleFilter==='any'||((cfg as any).candleFilter==='bull'?candles[i].close>candles[i].open:candles[i].close<candles[i].open); const volOk=(cfg as any).volumeFilter==='any'||(i>0&&((cfg as any).volumeFilter==='higher'?candles[i].volume>candles[i-1].volume:candles[i].volume<candles[i-1].volume)); if(!candleOk||!volOk) continue; const sellShares=Math.floor(Math.floor(shares*(pct/100))*fillR); if(sellShares<=0) continue; const avg=totalCost/shares; const sellPx=epM*(1-slipR); const proceeds=sellShares*sellPx; const fee=Math.round(proceeds*feeRate); shares-=sellShares; cash+=proceeds-fee; totalCost-=sellShares*avg; if(shares===0) totalCost=0; if(barDir&&barDir!=='sell'){conflicts++;} barDir='sell'; trades++; tradeActions.push('sell'); }
+        const epM=candles[i].close;
+        if((cfg as any).action==='buy'){ const candleOk=(cfg as any).candleFilter==='any'||((cfg as any).candleFilter==='bull'?candles[i].close>candles[i].open:candles[i].close<candles[i].open); const volOk=(cfg as any).volumeFilter==='any'||(i>0&&((cfg as any).volumeFilter==='higher'?candles[i].volume>candles[i-1].volume:candles[i].volume<candles[i-1].volume)); if(!candleOk||!volOk) continue; const buyPx=epM; const cost=Math.floor(cash*(pct/100)); if(cost<1000||cash<cost) continue; const buyShares=Math.floor(cost/buyPx); if(buyShares<=0) continue; const actualCost=buyShares*buyPx; const fee=Math.round(actualCost*feeRate); if(cash<actualCost+fee) continue; shares+=buyShares; cash-=actualCost+fee; totalCost+=actualCost+fee; if(barDir&&barDir!=='buy'){conflicts++;} barDir='buy'; trades++; tradeActions.push('buy'); coolMembers('buy'); } else { if(shares<=0||totalCost<=0) continue; const candleOk=(cfg as any).candleFilter==='any'||((cfg as any).candleFilter==='bull'?candles[i].close>candles[i].open:candles[i].close<candles[i].open); const volOk=(cfg as any).volumeFilter==='any'||(i>0&&((cfg as any).volumeFilter==='higher'?candles[i].volume>candles[i-1].volume:candles[i].volume<candles[i-1].volume)); if(!candleOk||!volOk) continue; const sellShares=Math.floor(shares*(pct/100)); if(sellShares<=0) continue; const avg=totalCost/shares; const sellPx=epM; const proceeds=sellShares*sellPx; const fee=Math.round(proceeds*feeRate); shares-=sellShares; cash+=proceeds-fee; totalCost-=sellShares*avg; if(shares===0) totalCost=0; if(barDir&&barDir!=='sell'){conflicts++;} barDir='sell'; trades++; tradeActions.push('sell'); coolMembers('sell'); }
     }
     const eq=cash+shares*candles[i].close; equities.push(eq); peakEquity=Math.max(peakEquity,eq); maxDD=Math.max(maxDD, peakEquity?((peakEquity-eq)/peakEquity)*100:0);
   }
-  const lastPrice=candles.length?candles[mz1].close:0; const evalAmt=cash+shares*lastPrice; const profit=evalAmt-initialCapital; const rate=initialCapital?(profit/initialCapital)*100:0;
+  const lastPrice=candles.length?candles[mz1].close:0; const evalAmt=cash+shares*lastPrice; const profit=evalAmt-startEquity; const rate=startEquity?(profit/startEquity)*100:0;
   let sum=0,sumSq=0; for(let i=1;i<equities.length;i++){ const r=(equities[i]-equities[i-1])/equities[i-1]; sum+=r; sumSq+=r*r; } const mean=equities.length>1?sum/(equities.length-1):0; const variance=equities.length>1?sumSq/(equities.length-1)-mean*mean:0; const volatility=Math.sqrt(Math.max(0,variance))*100;
   const avgPeriod=maConfigs.length?maConfigs.reduce((s:number,m:any)=>s+m.period,0)/maConfigs.length:50;
   return { profit: rate, rate, maxDrawdown: maxDD, tradeCount: trades, avgPeriod, volatility, conflicts };
@@ -624,16 +692,16 @@ export function simulate(candles: SimCandle[], maConfigs: MaConfig[], exits: Exi
 
   // 시뮬레이션: 투자원금/보유주식 기반 피라미딩 + G/D 라인 (연속발생 N회 충족 시 매매) + 익절/손절 (평균단가 기준, 중복 방지)
   let cash = initialCapital;
-  let shares = 0;
-  let totalCost = 0;
+  let shares = opts.initialShares ?? 0;
+  let totalCost = shares > 0 ? (opts.initialAvgPrice ?? 0) * shares : 0;
   const feeRate = feePercent / 100;
-  const { slip: slipR, fill: fillR } = slipFillOf(opts);
   let peakPrice = 0;
   let troughPrice = 0;
   const trades: SimTrade[] = [];
   const tradeAtIdx: Map<number, { action: 'buy'|'sell'; label: string; color: string; position: string }[]> = new Map();
   const crossAtIdx: Map<number, { label: string; color: string }[]> = new Map();
   const sigStreak = new Map<any, number>();
+  const coolUntil = new Map<any, number>();
   let maSkipRemaining = 0;
 
   for (let i = 1; i < candles.length; i++) {
@@ -693,10 +761,10 @@ export function simulate(candles: SimCandle[], maConfigs: MaConfig[], exits: Exi
         const ex = execEx;
         const basisLabel = execBasis;
         const sellSharesRaw = Math.floor(shares * (ex.sellPercent / 100));
-        const epX = execBaseAt(candles, i, opts);
-        const sellShares = Math.floor(sellSharesRaw * fillR);
-        if (sellShares > 0 && epX != null) {
-          const sellPx = epX * (1 - slipR);
+        const epX = candles[i].close;
+        const sellShares = sellSharesRaw;
+        if (sellShares > 0) {
+          const sellPx = epX;
           const proceeds = sellShares * sellPx;
           const fee = Math.round(proceeds * feeRate);
           shares -= sellShares;
@@ -711,7 +779,7 @@ export function simulate(candles: SimCandle[], maConfigs: MaConfig[], exits: Exi
           const exitFilters = `${ex.candle !== 'any' ? `, 캔들 ${ex.candle}` : ''}${ex.volume !== 'any' ? `, 거래량 ${ex.volume}` : ''}`;
           const reason = `실현 ${basisLabel} ${ex.percent}%${exitFilters} (수익률 ${profitNow.toFixed(2)}%, avg ${avg.toFixed(0)}→${currClose}) ${ex.sellPercent}% 매도${(ex as any)._aggNote ?? ''}, 수수료 ${fee.toLocaleString()}원, 이후 ${ex.skip}회 스킵`;
           const tIdx = trades.length + 1;
-            trades.push({ idx: tIdx, date: candles[i].date, price: sellPx, action: 'sell', maPeriod: 0, percent: ex.sellPercent, sharesDelta: sellShares, amount: proceeds, fee, cashAfter: cash, sharesAfter: shares, label, profitRate: profitNow, avgPrice: avgAfter, holdingValue, conds: execConds, condDetail: (ex as any)._detail ?? [exitSpecLine(execBasis, ex)], wantedPrice: currClose, execMode: (opts.execDelay ?? 0) === 1 ? 'nextOpen' : 'close', slipPct: (opts.slippage ?? 0) * 100, fillPct: (opts.fillRatio ?? 1) * 100, wantedShares: sellSharesRaw });
+            trades.push({ idx: tIdx, date: candles[i].date, price: sellPx, action: 'sell', maPeriod: 0, percent: ex.sellPercent, sharesDelta: sellShares, amount: proceeds, fee, cashAfter: cash, sharesAfter: shares, label, profitRate: profitNow, avgPrice: avgAfter, holdingValue, conds: execConds, condDetail: (ex as any)._detail ?? [exitSpecLine(execBasis, ex)], wantedPrice: currClose, execMode: 'close', slipPct: 0, fillPct: 100, wantedShares: sellSharesRaw });
           reasons.push({ idx: tIdx, reason });
           const arr = tradeAtIdx.get(i) ?? [];
           arr.push({ action: 'sell', label, color, position: 'candle-top' });
@@ -763,6 +831,7 @@ export function simulate(candles: SimCandle[], maConfigs: MaConfig[], exits: Exi
         }
         const sigKey = `${ma.period}-${sIdx}`;
         if (!sig) { sigStreak.set(sigKey, 0); continue; }
+        if ((coolUntil.get(sigCfg) ?? -1) >= i) { sigStreak.set(sigKey, 0); continue; } // 매매후 스킵 쿨다운
         const align = sigCfg.alignment ?? 'any';
         if (align !== 'any' && !checkAlignment(ma.period, i, align)) {
           sigStreak.set(sigKey, 0);
@@ -811,10 +880,9 @@ export function simulate(candles: SimCandle[], maConfigs: MaConfig[], exits: Exi
           if (cfg.action === 'buy') {
             const cost = Math.floor(cash * (pct / 100));
             if (cost < 1000 || cash < cost) continue;
-            const epPre = execBaseAt(candles, i, opts);
-            if (epPre == null) continue;
-            const buyPxPre = epPre * (1 + slipR);
-            const buyShares = Math.floor(Math.floor(cost / buyPxPre) * fillR);
+            const epPre = candles[i].close;
+            const buyPxPre = epPre;
+            const buyShares = Math.floor(cost / buyPxPre);
             if (buyShares <= 0) continue;
             if (cash < buyShares * buyPxPre + Math.round(buyShares * buyPxPre * feeRate)) continue;
           } else {
@@ -875,19 +943,20 @@ export function simulate(candles: SimCandle[], maConfigs: MaConfig[], exits: Exi
         const cfg = ex.cand.sigCfg;
         const sig = ex.cand.sig;
         const currClose = ex.cand.currClose;
+        // 같은 방향 후보 전원에 매매후 스킵 적용 (실제 체결 시)
+        const coolMembers = (action: 'buy' | 'sell'): void => { for (const m of cands) { if ((m.sigCfg as any).action !== action) continue; const sa = Math.max(0, Math.min(20, Math.round(Number((m.sigCfg as any).skipAfter) || 0))); if (sa > 0) coolUntil.set(m.sigCfg, i + sa); } };
         const pct = Math.max(1, Math.min(100, ex.pct));
         const condParts = ex.conds.slice(1);
         // 사유문은 대표 후보 자신의 필터 + 합산 산식만 (칩에는 전체 멤버 표시)
         const repParts = ex.cand.conds.slice(1);
         const aggNote = ex.note ? ` ${ex.note}` : '';
         if (cfg.action === 'buy') {
-          const epM = execBaseAt(candles, i, opts);
-          if (epM == null) continue;
-          const buyPx = epM * (1 + slipR);
+          const epM = candles[i].close;
+          const buyPx = epM;
           const cost = Math.floor(cash * (pct / 100));
           if (cost < 1000 || cash < cost) continue;
           const wantBuy = Math.floor(cost / buyPx);
-          const buyShares = Math.floor(wantBuy * fillR);
+          const buyShares = wantBuy;
           if (buyShares <= 0) continue;
           const actualCost = buyShares * buyPx;
           const fee = Math.round(actualCost * feeRate);
@@ -900,21 +969,21 @@ export function simulate(candles: SimCandle[], maConfigs: MaConfig[], exits: Exi
           const buyReason = `MA${ma.period} ${sig==='golden'?'골든':'데드'}(캔들 ${cfg.candleFilter}, 거래량 ${cfg.volumeFilter}, 정렬 ${cfg.alignment}, 유지${cfg.consecutive}봉${repParts.length ? `, ${repParts.join(' · ')}` : ''})${aggNote} - 매수 ${pct}% (체결가 ${buyPx.toLocaleString()}원), 수수료 ${fee.toLocaleString()}원`;
           const buyIdx = trades.length + 1;
           const buyConds = [`MA${ma.period} ${sig === 'golden' ? '골든' : '데드'} 매수 ${pct}%`, ...condParts];
-          trades.push({ idx: buyIdx, date: candles[i].date, price: buyPx, action: 'buy', maPeriod: ma.period, percent: pct, sharesDelta: buyShares, amount: actualCost, fee, cashAfter: cash, sharesAfter: shares, profitRate: null, avgPrice: buyAvgPrice, holdingValue: buyHoldingValue, conds: buyConds, condDetail: ex.detail ?? [], wantedPrice: currClose, execMode: (opts.execDelay ?? 0) === 1 ? 'nextOpen' : 'close', slipPct: (opts.slippage ?? 0) * 100, fillPct: (opts.fillRatio ?? 1) * 100, wantedShares: wantBuy });
+          trades.push({ idx: buyIdx, date: candles[i].date, price: buyPx, action: 'buy', maPeriod: ma.period, percent: pct, sharesDelta: buyShares, amount: actualCost, fee, cashAfter: cash, sharesAfter: shares, profitRate: null, avgPrice: buyAvgPrice, holdingValue: buyHoldingValue, conds: buyConds, condDetail: ex.detail ?? [], wantedPrice: currClose, execMode: 'close', slipPct: 0, fillPct: 100, wantedShares: wantBuy });
           reasons.push({ idx: buyIdx, reason: buyReason });
+          coolMembers('buy');
           const arr = tradeAtIdx.get(i) ?? [];
           arr.push({ action: 'buy', label: 'B', color: '#3b82f6', position: 'candle-top' });
           tradeAtIdx.set(i, arr);
         } else {
           if (shares <= 0 || totalCost <= 0) continue;
-          const epM = execBaseAt(candles, i, opts);
-          if (epM == null) continue;
+          const epM = candles[i].close;
           const wantSell = Math.floor(shares * (pct / 100));
-          const sellShares = Math.floor(wantSell * fillR);
+          const sellShares = wantSell;
           if (sellShares <= 0) continue;
           const avg = totalCost / shares;
           const profitRateSell = ((currClose - avg) / avg) * 100;
-          const sellPx = epM * (1 - slipR);
+          const sellPx = epM;
           const proceeds = sellShares * sellPx;
           const fee = Math.round(proceeds * feeRate);
           shares -= sellShares;
@@ -926,8 +995,9 @@ export function simulate(candles: SimCandle[], maConfigs: MaConfig[], exits: Exi
           const sellReason = `MA${ma.period} ${sig==='golden'?'골든':'데드'}(캔들 ${cfg.candleFilter}, 거래량 ${cfg.volumeFilter}, 정렬 ${cfg.alignment}, 유지${cfg.consecutive}봉${repParts.length ? `, ${repParts.join(' · ')}` : ''})${aggNote} - 매도 ${pct}% (수익률 ${profitRateSell.toFixed(2)}%, 체결가 ${sellPx.toLocaleString()}원, 수수료 ${fee.toLocaleString()}원)`;
           const sellIdx = trades.length + 1;
           const sellConds = [`MA${ma.period} ${sig === 'golden' ? '골든' : '데드'} 매도 ${pct}%`, ...condParts];
-          trades.push({ idx: sellIdx, date: candles[i].date, price: sellPx, action: 'sell', maPeriod: ma.period, percent: pct, sharesDelta: sellShares, amount: proceeds, fee, cashAfter: cash, sharesAfter: shares, profitRate: profitRateSell, avgPrice: avgAfterSell, holdingValue: holdingAfterSell, conds: sellConds, condDetail: ex.detail ?? [], wantedPrice: currClose, execMode: (opts.execDelay ?? 0) === 1 ? 'nextOpen' : 'close', slipPct: (opts.slippage ?? 0) * 100, fillPct: (opts.fillRatio ?? 1) * 100, wantedShares: wantSell });
+          trades.push({ idx: sellIdx, date: candles[i].date, price: sellPx, action: 'sell', maPeriod: ma.period, percent: pct, sharesDelta: sellShares, amount: proceeds, fee, cashAfter: cash, sharesAfter: shares, profitRate: profitRateSell, avgPrice: avgAfterSell, holdingValue: holdingAfterSell, conds: sellConds, condDetail: ex.detail ?? [], wantedPrice: currClose, execMode: 'close', slipPct: 0, fillPct: 100, wantedShares: wantSell });
           reasons.push({ idx: sellIdx, reason: sellReason });
+          coolMembers('sell');
           const arr2 = tradeAtIdx.get(i) ?? [];
           arr2.push({ action: 'sell', label: 'S', color: '#ef4444', position: 'candle-bottom' });
           tradeAtIdx.set(i, arr2);

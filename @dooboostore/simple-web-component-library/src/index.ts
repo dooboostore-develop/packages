@@ -27,5 +27,3 @@ export const componentFactories: ComponentFactory[] = [
   CartesianChart,
   CartesianChart3D,
 ];
-
-export { computeSmaSeries, computeMacdSeries, computeRsiSeries, computeObvSeries } from '@dooboostore/algorithm';

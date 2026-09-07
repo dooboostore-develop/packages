@@ -72,15 +72,19 @@ export default (w: Window): CartesianChart3DCtor => {
 
     private yaw = 35;
     private pitch = 25;
+    private roll = 0;
     private zoom = 1;
     private dragging = false;
     private dragLastX = 0;
     private dragLastY = 0;
+    private pinchLastDist = 0;
+    private pinchLastAngle = 0;
     private resizeRaf = 0;
 
     public reset(): void {
       this.yaw = num(this.getAttribute('yaw'), 35);
       this.pitch = num(this.getAttribute('pitch'), 25);
+      this.roll = num(this.getAttribute('roll'), 0);
       this.zoom = 1;
       if (this.canvas) this.draw();
     }
@@ -141,6 +145,7 @@ export default (w: Window): CartesianChart3DCtor => {
     onConnected() {
       this.yaw = num(this.getAttribute('yaw'), 35);
       this.pitch = num(this.getAttribute('pitch'), 25);
+      this.roll = num(this.getAttribute('roll'), 0);
       this.collect();
       if (this.canvas) this.draw();
     }
@@ -213,9 +218,15 @@ export default (w: Window): CartesianChart3DCtor => {
       const cosP = Math.cos(pitchR), sinP = Math.sin(pitchR);
       const x1 = x * cosY - y * sinY;
       const y1 = x * sinY + y * cosY;
-      const y2 = y1 * cosP - z * sinP;
-      const z2 = y1 * sinP + z * cosP;
-      return { sx: view.cx + x1 * view.scale, sy: view.cy - y2 * view.scale, depth: z2 };
+      // yaw 후 X1축 회전: y2 = 깊이(카메라는 +Y쪽), z2 = 수직(Z-up)
+      const depth = y1 * cosP - z * sinP;
+      const vert = y1 * sinP + z * cosP;
+      // 화면 내 회전(roll): 시점축 주위 회전 — 깊이 불변
+      const rollR = (this.roll * Math.PI) / 180;
+      const cosR = Math.cos(rollR), sinR = Math.sin(rollR);
+      const rx = x1 * cosR - vert * sinR;
+      const rv = x1 * sinR + vert * cosR;
+      return { sx: view.cx + rx * view.scale, sy: view.cy - rv * view.scale, depth };
     }
 
     private haloText(ctx: CanvasRenderingContext2D, text: string, x: number, y: number) {
@@ -450,6 +461,17 @@ export default (w: Window): CartesianChart3DCtor => {
       ctx.restore();
     }
 
+    /** 화면 기준 드래그(dx, dy)를 roll 회전만큼 역회전해 yaw/pitch에 반영.
+     *  roll=0이면 기존 그대로(dx→yaw, dy→pitch). */
+    private orbitBy(dx: number, dy: number): void {
+      const rollR = (this.roll * Math.PI) / 180;
+      const cosR = Math.cos(rollR), sinR = Math.sin(rollR);
+      const dx0 = dx * cosR - dy * sinR;
+      const dy0 = dx * sinR + dy * cosR;
+      this.yaw += dx0 * 0.4;
+      this.pitch += dy0 * 0.4;
+    }
+
     @eventShadow('#cc3d-canvas', 'mousedown')
     private onMouseDown(e: MouseEvent): void {
       if (this.hasAttribute('disabled-drag')) return;
@@ -461,8 +483,7 @@ export default (w: Window): CartesianChart3DCtor => {
     @eventShadow('#cc3d-canvas', 'mousemove')
     private onMouseMove(e: MouseEvent): void {
       if (!this.dragging || this.hasAttribute('disabled-drag')) return;
-      this.yaw += (e.clientX - this.dragLastX) * 0.4;
-      this.pitch -= (e.clientY - this.dragLastY) * 0.4;
+      this.orbitBy(e.clientX - this.dragLastX, e.clientY - this.dragLastY);
       this.dragLastX = e.clientX;
       this.dragLastY = e.clientY;
       this.draw();
@@ -488,13 +509,29 @@ export default (w: Window): CartesianChart3DCtor => {
       this.draw();
     }
 
+    private touchDist(a: Touch, b: Touch): number {
+      return Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
+    }
+
+    private touchAngle(a: Touch, b: Touch): number {
+      return (Math.atan2(a.clientY - b.clientY, a.clientX - b.clientX) * 180) / Math.PI;
+    }
+
     @eventShadow('#cc3d-canvas', 'touchstart', { passive: false })
     private onTouchStart(e: TouchEvent): void {
-      if (this.hasAttribute('disabled-drag') || e.touches.length !== 1) {
+      if (this.hasAttribute('disabled-drag')) return;
+      e.preventDefault();
+      if (e.touches.length === 2) {
+        // 두 손가락 시작: 핀치(줌) + 트위스트(회전) 기준점 저장, 한 손 드래그는 중단
+        this.dragging = false;
+        this.pinchLastDist = this.touchDist(e.touches[0], e.touches[1]);
+        this.pinchLastAngle = this.touchAngle(e.touches[0], e.touches[1]);
+        return;
+      }
+      if (e.touches.length !== 1) {
         this.dragging = false;
         return;
       }
-      e.preventDefault();
       this.dragging = true;
       this.dragLastX = e.touches[0].clientX;
       this.dragLastY = e.touches[0].clientY;
@@ -502,18 +539,50 @@ export default (w: Window): CartesianChart3DCtor => {
 
     @eventShadow('#cc3d-canvas', 'touchmove', { passive: false })
     private onTouchMove(e: TouchEvent): void {
-      if (!this.dragging || e.touches.length !== 1 || this.hasAttribute('disabled-drag')) return;
+      if (this.hasAttribute('disabled-drag')) return;
       e.preventDefault();
-      this.yaw += (e.touches[0].clientX - this.dragLastX) * 0.4;
-      this.pitch -= (e.touches[0].clientY - this.dragLastY) * 0.4;
+      if (e.touches.length === 2) {
+        // 핀치 줌 + 두 손가락 트위스트 회전
+        const dist = this.touchDist(e.touches[0], e.touches[1]);
+        const angle = this.touchAngle(e.touches[0], e.touches[1]);
+        if (this.pinchLastDist > 0 && dist > 0) {
+          this.zoom = Math.max(0.3, Math.min(5, this.zoom * (dist / this.pinchLastDist)));
+        }
+        let dAngle = angle - this.pinchLastAngle;
+        if (dAngle > 180) dAngle -= 360;
+        else if (dAngle < -180) dAngle += 360;
+        // 두 손가락 비틀기 = 화면 내 회전(roll, 시계방향 +가 화면 시계방향 추종)
+        this.roll -= dAngle;
+        this.pinchLastDist = dist;
+        this.pinchLastAngle = angle;
+        this.dragging = false;
+        this.draw();
+        return;
+      }
+      if (!this.dragging || e.touches.length !== 1) return;
+      this.orbitBy(e.touches[0].clientX - this.dragLastX, e.touches[0].clientY - this.dragLastY);
       this.dragLastX = e.touches[0].clientX;
       this.dragLastY = e.touches[0].clientY;
       this.draw();
     }
 
     @eventShadow('#cc3d-canvas', 'touchend')
-    private onTouchEnd(): void {
+    private onTouchEnd(e: TouchEvent): void {
+      this.pinchLastDist = 0;
+      // 두 손가락에서 한 손가락으로 줄면 남은 손가락으로 드래그 이어가기
+      if (e.touches.length === 1 && !this.hasAttribute('disabled-drag')) {
+        this.dragging = true;
+        this.dragLastX = e.touches[0].clientX;
+        this.dragLastY = e.touches[0].clientY;
+      } else {
+        this.dragging = false;
+      }
+    }
+
+    @eventShadow('#cc3d-canvas', 'touchcancel')
+    private onTouchCancel(): void {
       this.dragging = false;
+      this.pinchLastDist = 0;
     }
 
     @eventShadow('#cc3d-reset', 'click')
