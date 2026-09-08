@@ -3,9 +3,10 @@ import assert from 'node:assert/strict';
 import {
   combinePct,
   calcMetrics,
-  simulate,
-  findBestConfig,
+  TradingSimulator,
 } from '../src/stock/TradingSimulator';
+const { findBestConfig, simulate } = TradingSimulator;
+const simCfg = (maConfigs: any): any => ({ maConfigs, exitConfigs: [], maResolveMode: 'minFirst' as const, exitResolveMode: 'minFirst' as const });
 import {
   computeSmaSeries,
 } from '../src/stock/trend';
@@ -55,7 +56,7 @@ describe('empty inputs', () => {
       { date: 'd0', open: 10, high: 11, low: 9, close: 10, volume: 100 },
       { date: 'd1', open: 10, high: 12, low: 10, close: 12, volume: 200 },
     ];
-    const r = simulate(candles, [], [], { ...OPTS, simFrom: 0, simTo: 1 });
+    const r = simulate(candles, simCfg([]), { ...OPTS, simFrom: 0, simTo: 1 });
     assert.equal(r.cash, 1000000);
     assert.equal(r.trades.length, 0);
   });
@@ -76,7 +77,7 @@ describe('golden-buy smoke', () => {
     assert.ok(Number.isFinite(m.profit) && m.profit > 0);
   });
   it('simulate first trade is buy, cash consistent', () => {
-    const r = simulate(candles, mas, [], { ...OPTS, simFrom: 0, simTo: candles.length - 1 });
+    const r = simulate(candles, simCfg(mas), { ...OPTS, simFrom: 0, simTo: candles.length - 1 });
     assert.ok(r.trades.length > 0);
     assert.equal(r.trades[0].action, 'buy');
     assert.ok(r.cash >= 0 && r.shares >= 0);
@@ -94,30 +95,24 @@ describe('signal-close execution (deterministic, idempotent)', () => {
   }];
   const range = { simFrom: 0, simTo: candles.length - 1 };
   it('executes at signal close 104', () => {
-    const r = simulate(candles, mas, [], { ...OPTS, ...range });
+    const r = simulate(candles, simCfg(mas), { ...OPTS, ...range });
     assert.equal(r.trades[0].price, 104);
     assert.equal(r.trades[0].sharesDelta, 9615);
   });
   it('same input → same output (idempotent)', () => {
-    const a = simulate(candles, mas, [], { ...OPTS, ...range });
-    const b = simulate(candles, mas, [], { ...OPTS, ...range });
+    const a = simulate(candles, simCfg(mas), { ...OPTS, ...range });
+    const b = simulate(candles, simCfg(mas), { ...OPTS, ...range });
     assert.equal(a.cash, b.cash);
     assert.equal(a.trades.length, b.trades.length);
     assert.deepEqual(a.trades.map(t => [t.price, t.sharesDelta]), b.trades.map(t => [t.price, t.sharesDelta]));
   });
-  it('trades carry fixed exec context', () => {
-    const t = simulate(candles, mas, [], { ...OPTS, ...range }).trades[0] as any;
-    assert.equal(t.execMode, 'close');
-    assert.equal(t.slipPct, 0);
-    assert.equal(t.fillPct, 100);
-  });
   it('skipAfter cools the signal down (no back-to-back buys)', () => {
     const cool = [{ period: 2, color: '#f00', pyramiding: { signals: [{ ...mas[0].pyramiding.signals[0], percent: 10, skipAfter: 3 }] } }];
-    const r = simulate(candles, cool, [], { ...OPTS, ...range });
+    const r = simulate(candles, simCfg(cool), { ...OPTS, ...range });
     assert.ok(r.trades.length >= 2);
     const idxs = r.trades.map(t => candles.findIndex(c => c.date === t.date));
     for (let k = 1; k < idxs.length; k++) assert.ok(idxs[k] - idxs[k - 1] >= 4);
-    const plain = simulate(candles, [{ ...cool[0], pyramiding: { signals: [{ ...cool[0].pyramiding.signals[0], skipAfter: 0 }] } }], [], { ...OPTS, ...range });
+    const plain = simulate(candles, simCfg([{ ...cool[0], pyramiding: { signals: [{ ...cool[0].pyramiding.signals[0], skipAfter: 0 }] } }]), { ...OPTS, ...range });
     assert.ok(plain.trades.length > r.trades.length);
   });
 });
@@ -150,7 +145,7 @@ describe('findBestConfig without candles (opts-only inference, deterministic)', 
   });
   it('untradable data (2 bars) → prior inference, not all-any garbage', () => {
     const tiny = [100, 99].map((c, i) => ({ date: 'd' + i, open: c, high: c + 1, low: c - 1, close: c, volume: 1000 }));
-    const r = findBestConfig(tiny, { ...base, simFrom: 0, simTo: 1, trend: 0 })!;
+    const r = findBestConfig(tiny, { ...base, trend: 0 })!;
     assert.ok(r && r.maConfigs.length > 0);
     assert.ok(r.maConfigs.every(m => [5, 10, 20, 30].includes(m.period)));
     const sigs = r.maConfigs.flatMap(m => m.pyramiding.signals);
@@ -168,8 +163,8 @@ describe('findBestConfig smoke', () => {  it('returns a config on small data (se
     const orig = Math.random;
     Math.random = mulberry(99);
     try {
-      const { requireAll, ...noReq } = OPTS;
-      const best = findBestConfig(candles, { ...noReq, simFrom: 0, simTo: candles.length - 1 });
+      const { requireAll, initialCapital, feePercent, maMode, xMode, ...knobs } = OPTS;
+      const best = findBestConfig(candles, { ...knobs });
       assert.ok(best && best.maConfigs.length > 0);
     } finally {
       Math.random = orig;

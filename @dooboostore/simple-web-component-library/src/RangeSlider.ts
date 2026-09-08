@@ -914,6 +914,9 @@ export default (w: Window): RangeSliderCtor => {
           bar.setAttribute('aria-valuemax', String(Math.max(...vs)));
         }
       }
+      // 그룹 색이 있으면 채움바도 첫 그룹색 추종 (없으면 CSS 기본색)
+      const gc0 = this.groupNames().map(g => this.groupColor(g)).find(c => !!c);
+      this.fill.style.background = gc0 ?? '';
     }
 
     @addEventListener('.rs-thumb-multi', 'pointerdown', { root: 'shadow', delegate: true })
