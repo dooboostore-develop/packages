@@ -153,7 +153,8 @@ describe('findBestConfig without candles (opts-only inference, deterministic)', 
   });
 });
 
-describe('findBestConfig smoke', () => {  it('returns a config on small data (seeded)', () => {
+describe('findBestConfig smoke', () => {
+  it('returns a config on small data (seeded)', () => {
     const r = mulberry(7);
     let p = 100;
     const candles = Array.from({ length: 80 }, (_, i) => {
@@ -169,5 +170,32 @@ describe('findBestConfig smoke', () => {  it('returns a config on small data (se
     } finally {
       Math.random = orig;
     }
+  });
+});
+
+describe('prevActions chaining (continuous buys across zones)', () => {
+  const candles = [100, 102, 104, 106, 108, 110, 112, 114, 116, 118, 120, 122].map((c, i) => ({
+    date: 'd' + i, open: c - 1, high: c + 1, low: c - 2, close: c, volume: 1000,
+  }));
+  const mkSig = (extra: any) => ({
+    signal: 'golden', action: 'buy', percent: 10, candleFilter: 'any', volumeFilter: 'any',
+    consecutive: 1, alignment: 'any', ...extra,
+    condCandle: { type: 'any', operator: 'any', value: 1 },
+    condMa: { type: 'any', operator: 'any', value: 1 },
+  });
+  const noCond = { type: 'any', operator: 'any', value: 1 };
+  const zoneA = [{ period: 2, color: '#f00', pyramiding: { signals: [{ ...mkSig({ condTrade: { ...noCond } }) }] } }];
+  const zoneB = [{ period: 2, color: '#f00', pyramiding: { signals: [{ ...mkSig({ condTrade: { type: 'consecutiveBuy', operator: '>=', value: 2 } }) }] } }];
+  const rangeA = { simFrom: 0, simTo: 5 };
+  const rangeB = { simFrom: 0, simTo: 5 };
+  it('zone B fires from the first bar only with prevActions', () => {
+    const a = simulate(candles.slice(0, 6), simCfg(zoneA), { ...OPTS, ...rangeA });
+    assert.ok(a.trades.length >= 2);
+    const candB = candles.slice(6, 12);
+    const without = simulate(candB, simCfg(zoneB), { ...OPTS, ...rangeB });
+    assert.equal(without.trades.length, 0);
+    const prev = a.trades.map(t => t.action);
+    const chained = simulate(candB, simCfg(zoneB), { ...OPTS, ...rangeB, prevActions: prev });
+    assert.ok(chained.trades.length > 0);
   });
 });

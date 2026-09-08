@@ -512,6 +512,8 @@ export namespace TradingSimulator {
     initialCapital: number; feePercent: number; requireAll: boolean;
     simFrom?: number; simTo?: number;
     initialShares?: number; initialAvgPrice?: number;
+    /** 이전 구간 매매 액션 (구역 체인 실행용 — 연속매매 조건이 경계를 넘어 이어짐) */
+    prevActions?: TradeAction[];
   }
 
   export const simulate = (candles: SimCandle[], config: BestConfig, opts: SimulateOptions): SimResult => {
@@ -699,10 +701,18 @@ export namespace TradingSimulator {
           if (cur < need) continue;
           const ct0 = sigCfg.condTrade;
           if (ct0 && ct0.type !== 'any') {
+            // 자기자신 trades를 거슬러 올라가다 끝나면 이전 구간(prevActions)으로 이어서 셈
+            const countBack = (isTarget: (a: string) => boolean): number => {
+              let c = 0;
+              for (let k = trades.length - 1; k >= 0; k--) { if (isTarget(trades[k].action)) c++; else return c; }
+              const prev = opts.prevActions ?? [];
+              for (let k = prev.length - 1; k >= 0; k--) { if (isTarget(prev[k])) c++; else return c; }
+              return c;
+            };
             let count = 0;
-            if (ct0.type === 'consecutiveBuy') { for (let k = trades.length - 1; k >= 0; k--) { if (trades[k].action === 'buy') count++; else break; } }
-            else if (ct0.type === 'consecutiveSell') { for (let k = trades.length - 1; k >= 0; k--) { if (trades[k].action === 'sell') count++; else break; } }
-            else if (ct0.type === 'consecutiveSelected') { const target = sigCfg.action; for (let k = trades.length - 1; k >= 0; k--) { if (trades[k].action === target) count++; else break; } }
+            if (ct0.type === 'consecutiveBuy') count = countBack(a => a === 'buy');
+            else if (ct0.type === 'consecutiveSell') count = countBack(a => a === 'sell');
+            else if (ct0.type === 'consecutiveSelected') { const target = sigCfg.action; count = countBack(a => a === target); }
             if (!condMet(count, ct0.operator, ct0.value)) continue;
           }
           const cc0 = sigCfg.condCandle;
@@ -961,6 +971,8 @@ export interface SimTrade {
   cashAfter: number; sharesAfter: number; label?: string; profitRate: number | null;
   avgPrice: number; holdingValue: number; conds: string[]; condDetail: string[];
 }
+/** 매매 액션 (체결·청산·실패 포함) */
+export type TradeAction = SimTrade['action'];
 export interface SimMetrics {
   /** 수익률% (= rate, 레거시명 유지) */
   profit: number; rate: number;
@@ -994,7 +1006,6 @@ export interface EngineOptions {
 /** 탐색 출력 %에 적용률을 곱해 1~100 조건값으로 자름 */
 const scaleOutPct = (pct: number, rate: number): number => Math.max(1, Math.min(100, Math.round(pct * rate)));
 export interface CalcOptions extends EngineOptions { requireAll: boolean }
-export type SimOptions = CalcOptions;
 
 /** scoreCandidate 입력 — 돈 없음. 지정 이평선 전원 존재 봉부터 평가(requireAll 고정) */
 
