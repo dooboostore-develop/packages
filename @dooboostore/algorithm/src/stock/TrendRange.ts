@@ -20,7 +20,13 @@ export namespace TrendRange {
     scoreRate: number, // 0~1 방향 (0 하락 ~ 0.5 중립 ~ 1 상승)
     strengthRate: number, // 0~1 강도 (0 횡보 ~ 1 강력 추세)
     group: string,
-    uuid: string
+    uuid: string,
+    /** 확정 여부 — 마지막 구간(live edge)만 false. 새 봉이 오면 바뀔 수 있음 */
+    confirmed: boolean,
+    /** 예상 rate — 앞선 확정구간 rate들의 기울기 외삽 (0~1, prior 없으면 null).
+     *  인과율 유지: prior만으로 계산하므로 확정구간의 값은 prefix 안정.
+     *  scoreRate(실측)는 그대로 둠. */
+    forecastRate: number | null
   }
   export type TrendRangeConfig = {
     obvPeriod?: number,
@@ -28,18 +34,17 @@ export namespace TrendRange {
     macdSignalMa?: number,
     /** 강도 효율성 윈도우 (미지정 10) */
     strengthPeriod?: number,
-    /** 최소 구간 길이 (미만은 이웃에 흡수, 미지정 10, 1 이하면 병합 안 함) */
-    minLen?: number,
-    /** 최대 구간 수 (초과 시 짧은 것부터 흡수, 미지정 12, 0 이하면 제한 없음) */
-    maxSets?: number,
-    /** 구간 이름 결정 (미지정 시 rate 그대로 문자열화 — 그룹 묶음은 호출자 책임) */
+    /** 병합 컷 (미지정 10, 1이면 병합 안 함).
+     *  닫힌 run이 이보다 짧으면 다음 미확정 run에 흡수.
+     *  닫힘 자체는 추세 꺾임(그룹 바뀜) 즉시 — 길이 무관. */
+    mergeCut?: number,
+    /** 구간 이름 결정이자 유일한 병합 기준 (미지정 시 rate 그대로 문자열화).
+     *  인접 run은 실체화된 라벨이 같을 때만 합쳐진다. */
     groupBy?: (rate: number, strength: number) => string,
-    /** 흡수 방향 (미지정 forward — 짧은 구간은 뒤쪽에 흡수해 앞 구간 불변. backward는 이전 방식) */
-    mergeDir?: 'forward' | 'backward',
-    /** 병합 상대 호환성 (미지정 시 전부 허용).
-     *  groupBy와 같은 조건값 (scoreRate, strengthRate)으로 판단.
-     *  짧은 구간 흡수 때 호환되는 이웃을 우선 선택. 둘 다 (비)호환이면 mergeDir 규칙. */
-    mergeBy?: (aRate: number, aStrength: number, bRate: number, bStrength: number) => boolean,
+    /** 강도 확정 컷 (미지정 0.15). 닫히는 run의 평균 |score-0.5|가 이 이상이면
+     *  길이에 무관하게 즉시 확정. 측 컷(0.6/0.4 → 중립대 0.1)에 마진 얹은 값.
+     *  groupBy 컷이 다르면 함께 조정할 것. */
+    decisiveCut?: number,
   }
   /** macd 배열 → signal선 (null은 직전값 유지) */
   const buildSignalArr = (datas: TrendBar[], sigP: number): number[] => {
@@ -116,6 +121,11 @@ export namespace TrendRange {
   /** 지표 배열 → 추세 구간 배열 (단일 진입점).
    *  봉별 점수에 groupBy를 적용해 연속 동일 그룹을 한 구간으로 묶음.
    *  score=null 봉은 이전 그룹 유지(첫 봉이면 groupBy(0.5)).
+   *  닫히는 run은 길거나 강하면(평균 |score-0.5| ≥ decisiveCut) 즉시 확정 —
+   *  강한 짧은 구간이 미래 흡수로 바뀌는 일 없음. 약한 짧은 구간만 다음으로 흡수.
+   *  prefix 안정: 같은 입력 앞부분은 데이터가 늘어나도 확정구간(마지막 제외)이
+   *  범위·라벨·uuid 그대로 유지된다. 꼬리(live edge)만 바뀔 수 있다.
+   *  forecastRate: 앞선 확정구간 rate 기울기 외삽 (인과율 유지, prior 없으면 null).
    *  uuid = `from-to` + 범위 내 macd·signal·rsi·obv·ohlc·score·strength 해시. */
   export const trendRanges = (datas: TrendBar[], config?: TrendRangeConfig): TendRange[] => {
     if (!datas.length) return [];
@@ -137,34 +147,11 @@ export namespace TrendRange {
       if (groups[i] !== groups[i - 1]) { runs.push({ from: s, to: i - 1, group: groups[s] }); s = i; }
     }
     runs.push({ from: s, to: datas.length - 1, group: groups[s] });
-    // 짧은 구간은 뒤쪽 이웃에 흡수 (앞 구간 불변 — 시간 순서대로 확정).
-    // 맨 끝 구간만 앞에 붙음 (가장 최근이라 아직 잠정). mergeDir backward면 이전 방식.
-    const backward = config?.mergeDir === 'backward';
-    const absorb = (arr: { from: number; to: number; group: string }[], idx: number): void => {
-      if (arr.length <= 1) return;
-      const toPrev = backward ? idx !== 0 : idx >= arr.length - 1;
-      if (toPrev) { arr[idx - 1].to = arr[idx].to; arr.splice(idx, 1); }
-      else { arr[idx + 1].from = arr[idx].from; arr.splice(idx, 1); }
-    };
-    const minLen = Math.max(1, Math.round(config?.minLen ?? 10));
-    // 맨 끝 구간은 잠정(live edge)이라 흡수 대상에서 제외 — 새 봉이 붙어도 앞 구간 불변
-    for (;;) {
-      const si = runs.findIndex((g, idx) => idx < runs.length - 1 && (g.to - g.from + 1) < minLen);
-      if (si < 0 || runs.length <= 1) break;
-      absorb(runs, si);
-    }
-    const maxSetsRaw = config?.maxSets ?? 12;
-    const maxSets = maxSetsRaw <= 0 ? Number.POSITIVE_INFINITY : Math.max(1, Math.round(maxSetsRaw));
-    while (runs.length > maxSets) {
-      let mi = 0;
-      runs.forEach((g, i) => { if ((g.to - g.from) < (runs[mi].to - runs[mi].from)) mi = i; });
-      absorb(runs, mi);
-    }
-    // 인접 동종 합치기 (폴백 흡수로 생긴 연속 중복 제거 — 최종 라벨 기준, 최대 3회)
-    const materialize = (list: { from: number; to: number }[]): TendRange[] => list.map(g => {
+    const mergeCut = Math.max(1, Math.round(config?.mergeCut ?? 10));
+    const materializeOne = (from: number, to: number, confirmed: boolean): TendRange => {
       let sum = 0, cnt = 0, sSum = 0, sCnt = 0;
-      let raw = `${g.from}-${g.to}|`;
-      for (let i = g.from; i <= g.to; i++) {
+      let raw = `${from}-${to}|`;
+      for (let i = from; i <= to; i++) {
         const b = datas[i];
         if (scores[i] != null) { sum += scores[i]!; cnt++; }
         if (strengths[i] != null) { sSum += strengths[i]!; sCnt++; }
@@ -172,20 +159,64 @@ export namespace TrendRange {
       }
       const rate = cnt > 0 ? sum / cnt : 0.5;
       const strength = sCnt > 0 ? sSum / sCnt : 0;
-      return { startIndex: g.from, endIndex: g.to, scoreRate: rate, strengthRate: strength, group: groupBy(rate, strength), uuid: HashUtils.hash53(raw) };
-    });
-    let zones = materialize(runs);
-    const mergeBy = config?.mergeBy;
-    for (let guard = 0; guard < datas.length; guard++) {
-      const dup = zones.findIndex((z, i) => i > 0 && (mergeBy
-        ? mergeBy(zones[i - 1].scoreRate, zones[i - 1].strengthRate, z.scoreRate, z.strengthRate)
-        : z.group === zones[i - 1].group));
-      if (dup < 0) break;
-      runs[dup - 1].to = runs[dup].to;
-      runs.splice(dup, 1);
-      zones = materialize(runs);
+      return { startIndex: from, endIndex: to, scoreRate: rate, strengthRate: strength, group: groupBy(rate, strength), uuid: HashUtils.hash53(raw), confirmed, forecastRate: null };
+    };
+    const compatible = (a: TendRange, b: TendRange): boolean => a.group === b.group;
+    // 범위 방향 확신도 — 평균 |score-0.5|. 컷 이상이면 짧아도 즉시 확정
+    const decisiveness = (from: number, to: number): number => {
+      let sum = 0, cnt = 0;
+      for (let i = from; i <= to; i++) {
+        const s = scores[i];
+        if (s == null) continue;
+        sum += Math.abs(s - 0.5); cnt++;
+      }
+      return cnt > 0 ? sum / cnt : 0;
+    };
+    const decisiveCut = Math.max(0, config?.decisiveCut ?? 0.15);
+    // 앞선 확정구간 rate 기울기 외삽 (인과율: prior만 사용). prior 없으면 null
+    const forecastFor = (priors: number[]): number | null => {
+      if (!priors.length) return null;
+      if (priors.length === 1) return Math.max(0, Math.min(1, priors[0]));
+      const last3 = priors.slice(-3);
+      const diffs = last3.slice(1).map((v, k) => v - last3[k]);
+      const m = diffs.reduce((a, b) => a + b, 0) / diffs.length;
+      return Math.max(0, Math.min(1, last3[last3.length - 1] + m));
+    };
+    // 시계열 확정 워크 — runs를 왼쪽에서 오른쪽으로 한 번만 훑는다.
+    // 닫힌 구간은 그 자리에서 얼리고(범위·라벨·uuid 불변), 병합은 미확정 꼬리(cur) 안에서만 일어난다.
+    // 같은 입력 prefix는 항상 같은 확정구간을 내놓으므로 prefix 안정.
+    // 구간 수 무제한 — 확정구간은 절대 합치지 않음.
+    const done: TendRange[] = [];
+    let cur: { from: number; to: number; group: string } | null = null;
+    for (const r of runs) {
+      if (!cur) { cur = { ...r }; continue; }
+      if (compatible(materializeOne(cur.from, cur.to, true), materializeOne(r.from, r.to, true))) {
+        cur = { from: cur.from, to: r.to, group: r.group }; // fuse: 생존자는 최신 run의 그룹
+        continue;
+      }
+      // cur 닫힘 (뒤에 비호환 run이 옴).
+      // 길거나 강하면(방향 확신) 즉시 확정 — 짧은 강한 구간이 미래에 흡수되며 바뀌는 일 없음.
+      if ((cur.to - cur.from + 1) >= mergeCut || decisiveness(cur.from, cur.to) >= decisiveCut) {
+        done.push(materializeOne(cur.from, cur.to, true));
+        cur = { ...r };
+      } else {
+        // 다음 미확정 run에 흡수 — 단, 합친 라벨이 바로 앞 확정구간과 같아지면
+        // 인접 중복이 되므로 짧은 채로 확정 (앞 구간은 절대 안 건드림)
+        const last = done[done.length - 1];
+        if (last && materializeOne(cur.from, r.to, true).group === last.group) {
+          done.push(materializeOne(cur.from, cur.to, true));
+          cur = { ...r };
+        } else {
+          cur = { from: cur.from, to: r.to, group: r.group };
+        }
+      }
     }
-    return zones;
+    if (cur) done.push(materializeOne(cur.from, cur.to, false)); // live edge: 짧아도 그대로, 미확정
+    // 예상 rate 채우기 — 각 구간은 앞선 확정구간 rate만으로 추정 (인과율 유지)
+    for (let i = 0; i < done.length; i++) {
+      done[i].forecastRate = forecastFor(done.slice(0, i).map(z => z.scoreRate));
+    }
+    return done;
   }
 }
 

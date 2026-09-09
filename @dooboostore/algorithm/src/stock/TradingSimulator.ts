@@ -21,6 +21,8 @@ export namespace TradingSimulator {
     buyPctRate?: number;
     /** 매도 적용률 0~1 (기본 1) — 반환되는 MA 매도 percent·실현 sellPercent에 곱함 */
     sellPctRate?: number;
+    /** 랜덤 탐색 후보 수 (기본 100). hill-climb·베이스라인은 별도라 1이어도 0이 되진 않음 */
+    trials?: number;
   }
 
   interface ScoreCandidateOptions { maMode: ResolveMode; xMode: ResolveMode; riskAversion: number }
@@ -261,8 +263,10 @@ export namespace TradingSimulator {
       return { maConfigs, exitConfigs, maResolveMode: 'minFirst' as ResolveMode, exitResolveMode: 'minFirst' as ResolveMode };
     };
   if (!candles.length) return inferFromPrior();
-  // 바깥에서 수익률 보고 추가 라운드를 돌리니 1회 탐색은 100회로 가볍게
-  const trials = 100;
+  // 랜덤 탐색 후보 수 (기본 100, 동기 loop이라 상한). hill-climb·베이스라인은 별도
+  const trials = Number.isFinite(opts.trials as number)
+    ? Math.min(2000, Math.max(1, Math.floor(opts.trials as number)))
+    : 100;
     let best: any = null;
     let bestScore = -Infinity;
     let bestClean: any = null;

@@ -39,6 +39,8 @@ export interface ChartShapeBase {
   fill?: string;
   stroke?: string;
   strokeWidth?: number;
+  /** 외곽선 점선 패턴 (예: [5,5]) — rect 외곽선에만 적용 */
+  dash?: number[];
   target?: 'candle' | 'volume' | 'all';
   /** rect 상하 여백 (px) — 영역 rect와 구분용 인셋 */
   marginTop?: number;
@@ -571,7 +573,9 @@ export default (w: Window): StockChartCtor => {
       const shapes: ChartShape[] = [];
       this.querySelectorAll(":scope > rect").forEach((el) => {
         const attr = (n: string) => el.getAttribute(n);
-        const base = { fill: attr("fill") || attr("fill-style") || undefined, stroke: attr("stroke") || attr("stroke-style") || undefined, strokeWidth: num(attr("stroke-width")), target: (attr("target") === 'volume' ? 'volume' : attr("target") === 'all' ? 'all' : 'candle') as 'candle' | 'volume' | 'all', marginTop: Math.max(0, num(attr("margin-top"))), marginBottom: Math.max(0, num(attr("margin-bottom"))), label: attr("label") || undefined, color: attr("color") || undefined };
+        const dashRaw = attr("stroke-dasharray") || attr("dash") || undefined;
+        const dash = dashRaw ? dashRaw.split(/[\s,]+/).map(Number).filter(v => Number.isFinite(v) && v >= 0) : undefined;
+        const base = { fill: attr("fill") || attr("fill-style") || undefined, stroke: attr("stroke") || attr("stroke-style") || undefined, strokeWidth: num(attr("stroke-width")), dash: dash?.length ? dash : undefined, target: (attr("target") === 'volume' ? 'volume' : attr("target") === 'all' ? 'all' : 'candle') as 'candle' | 'volume' | 'all', marginTop: Math.max(0, num(attr("margin-top"))), marginBottom: Math.max(0, num(attr("margin-bottom"))), label: attr("label") || undefined, color: attr("color") || undefined };
         const ds = attr("date-start"), de = attr("date-end");
         if (ds && de) {
           shapes.push({ type: 'rect-date', dateStart: ds, dateEnd: de, ...base });
@@ -1582,6 +1586,7 @@ export default (w: Window): StockChartCtor => {
         if (s.stroke) {
           ctx.strokeStyle = s.stroke;
           ctx.lineWidth = s.strokeWidth || 1;
+          ctx.setLineDash(s.dash ?? []);
         }
         if (s.type === 'rect-date') {
           // 전체 points 기준 인덱스 → 보이는 구간과 교집합 (줌해도 클리핑 표시)

@@ -173,6 +173,26 @@ describe('findBestConfig smoke', () => {
   });
 });
 
+describe('findBestConfig trials option', () => {
+  it('trials: 1 returns shape (non-null, maConfigs array)', () => {
+    const r = mulberry(7);
+    let p = 100;
+    const candles = Array.from({ length: 30 }, (_, i) => {
+      p = Math.max(10, p + (r() - 0.48) * 3);
+      return { date: 'd' + i, open: p, high: p * 1.01, low: p * 0.99, close: p, volume: 1000 };
+    });
+    const orig = Math.random;
+    Math.random = mulberry(99);
+    try {
+      const { requireAll, initialCapital, feePercent, maMode, xMode, ...knobs } = OPTS;
+      const best = findBestConfig(candles, { ...knobs, trials: 1 });
+      assert.ok(best && Array.isArray(best.maConfigs) && best.maConfigs.length > 0);
+    } finally {
+      Math.random = orig;
+    }
+  });
+});
+
 describe('prevActions chaining (continuous buys across zones)', () => {
   const candles = [100, 102, 104, 106, 108, 110, 112, 114, 116, 118, 120, 122].map((c, i) => ({
     date: 'd' + i, open: c - 1, high: c + 1, low: c - 2, close: c, volume: 1000,

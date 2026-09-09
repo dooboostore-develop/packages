@@ -22,7 +22,7 @@
     "build": "node build.mjs all",
     "watch": "node build.mjs all --watch",
     "typecheck": "tsc --noEmit -p tsconfig.test.json",
-    "test": "webpack --config webpack.test.config.cjs && node --test dist-test/engine.test.cjs"
+    "test": "webpack --config webpack.test.config.cjs && node --test dist-test/full.test.cjs"
   },
   "peerDependencies": {
     "@dooboostore/core": "workspace:*"

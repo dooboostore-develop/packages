@@ -5,7 +5,7 @@ module.exports = {
   mode: 'development',
   target: 'node',
   entry: {
-    'engine.test': './test/engine.test.ts',
+    'full.test': './test/full.test.ts',
   },
   output: {
     filename: '[name].cjs',
