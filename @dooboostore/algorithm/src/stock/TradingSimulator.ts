@@ -899,6 +899,75 @@ export namespace TradingSimulator {
     const profit = evalAmt - startEquity;
     return { trades, cash, shares, profit, rate: startEquity ? (profit / startEquity) * 100 : 0 };
   };
+
+  /** 리플레이 원장 정산 — sim이 뽑은 당일봉 신호 1건을 실제 원장 상태로 집행.
+   *  위 simulate 집행 블록과 동일한 수식 ( floor / Math.round / avg 추적 ).
+   *  sim-world 값이 아닌 호출자가 넘긴 원장 값이 들어감. buy/sell/exit만 처리하고,
+   *  원장에서 집행 불가면 fail 레코드로 반환 (상태 불변).
+   *  reason 안의 금액 숫자(수수료/수익률/avg)도 정산값으로 패치 — 아래 템플릿이
+   *  바뀌면 테스트가 깨지도록 핀을 박아 둠. */
+  export const settleTradeToLedger = (
+    state: { cash: number; shares: number; avgPrice: number },
+    trade: SimTrade,
+    feePercent: number,
+    nextIdx: number,
+  ): { state: { cash: number; shares: number; avgPrice: number }; trade: SimTrade } => {
+    const feeRate = feePercent / 100;
+    const price = trade.price;
+    const pct = Math.max(1, Math.min(100, trade.percent));
+    const fail = (action: 'buy-fail' | 'sell-fail', why: string): { state: { cash: number; shares: number; avgPrice: number }; trade: SimTrade } => ({
+      state: { ...state },
+      trade: {
+        ...trade, idx: nextIdx, action,
+        reason: `${trade.conds[0] ?? (action === 'buy-fail' ? '매수' : '매도')} 시도 - 실패: ${why}`,
+        sharesDelta: 0, amount: 0, fee: 0,
+        cashAfter: state.cash, sharesAfter: state.shares, profitRate: null,
+        avgPrice: state.shares > 0 ? state.avgPrice : 0,
+        holdingValue: state.shares * price,
+      },
+    });
+    if (trade.action === 'buy') {
+      const cost = Math.floor(state.cash * (pct / 100));
+      if (!(price > 0)) return fail('buy-fail', `주가 오류 (시세 ${price}원)`);
+      if (cost < 1000 || state.cash < cost) return fail('buy-fail', cost < 1000 ? `주문금액 ${cost.toLocaleString()}원 (최소 1,000원 미만)` : `현금 부족 (주문 ${cost.toLocaleString()}원, 보유 ${state.cash.toLocaleString()}원)`);
+      const buyShares = Math.floor(cost / price);
+      if (buyShares <= 0) return fail('buy-fail', `1주 매수 불가 (주가 ${price.toLocaleString()}원, 주문금액 ${cost.toLocaleString()}원)`);
+      const actualCost = buyShares * price;
+      const fee = Math.round(actualCost * feeRate);
+      if (state.cash < actualCost + fee) return fail('buy-fail', `수수료 포함 부족 (필요 ${(actualCost + fee).toLocaleString()}원, 보유 ${state.cash.toLocaleString()}원)`);
+      const totalCost = state.avgPrice * state.shares + actualCost + fee;
+      const shares = state.shares + buyShares;
+      const cash = state.cash - actualCost - fee;
+      const avg = totalCost / shares;
+      const reason = trade.reason.replace(/, 수수료 [\d,.]+원$/, `, 수수료 ${fee.toLocaleString()}원`);
+      return {
+        state: { cash, shares, avgPrice: avg },
+        trade: { ...trade, idx: nextIdx, percent: pct, sharesDelta: buyShares, amount: actualCost, fee, cashAfter: cash, sharesAfter: shares, profitRate: null, avgPrice: avg, holdingValue: shares * price, reason },
+      };
+    }
+    if (trade.action !== 'sell' && trade.action !== 'exit') {
+      return { state: { ...state }, trade: { ...trade, idx: nextIdx } };
+    }
+    // sell / exit — 청산도 매도 집행과 동일
+    if (!(state.shares > 0) || !(state.avgPrice > 0)) return fail('sell-fail', `보유 주식 없음`);
+    const sellShares = Math.floor(state.shares * (pct / 100));
+    if (sellShares <= 0) return fail('sell-fail', `매도 수량 0주`);
+    const avg = state.avgPrice;
+    const profitRate = ((price - avg) / avg) * 100;
+    const proceeds = sellShares * price;
+    const fee = Math.round(proceeds * feeRate);
+    const shares = state.shares - sellShares;
+    const cash = state.cash + proceeds - fee;
+    const totalCost = avg * state.shares - sellShares * avg;
+    const avgAfter = shares > 0 ? totalCost / shares : 0;
+    let reason = trade.reason.replace(/\(수익률 ([-\d.,]+)%, 체결가 ([\d,.]+)원, 수수료 ([\d,.]+)원\)/, `(수익률 ${profitRate.toFixed(2)}%, 체결가 ${price.toLocaleString()}원, 수수료 ${fee.toLocaleString()}원)`);
+    reason = reason.replace(/\(수익률 ([-\d.,]+)%, avg ([\d,]+)→([\d,.]+)\)/, `(수익률 ${profitRate.toFixed(2)}%, avg ${avg.toFixed(0)}→${price})`);
+    reason = reason.replace(/, 수수료 ([\d,.]+)원, 이후/, `, 수수료 ${fee.toLocaleString()}원, 이후`);
+    return {
+      state: { cash, shares, avgPrice: avgAfter },
+      trade: { ...trade, idx: nextIdx, percent: pct, sharesDelta: sellShares, amount: proceeds, fee, cashAfter: cash, sharesAfter: shares, profitRate, avgPrice: avgAfter, holdingValue: shares * price, reason },
+    };
+  };
 }
 
 export type ResolveMode = 'minFirst' | 'maxFirst' | 'all';

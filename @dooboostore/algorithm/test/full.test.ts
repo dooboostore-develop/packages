@@ -4,3 +4,4 @@ import './engine.test';
 import './trendrange.test';
 import './trendrange-stability.test';
 import './real-candles.test';
+import './settle-trade.test';
