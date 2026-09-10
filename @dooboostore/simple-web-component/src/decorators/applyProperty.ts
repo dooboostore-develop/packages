@@ -8,6 +8,10 @@ export interface PropertyBaseOptions {
   name?: string | symbol;
   filter?: (target: HTMLElement, value: any, meta: {currentThis: any, helper: HelperHostSet}) => boolean;
   valueKey?: symbol | string;
+  /** 읽기 방식: 'get' 타깃 프로퍼티 읽기 (기본), 'call' 타깃 호출 후 리턴 사용 */
+  getType?: 'get' | 'call';
+  /** 쓰기 방식: 'set' 타깃 프로퍼티 대입 (기본), 'call' 타깃 호출 (배열이면 spread) */
+  setType?: 'set' | 'call';
 }
 
 // 문자열 셀렉터 전용 — root 허용
@@ -173,7 +177,7 @@ export function applyProperty(selector: PropertySelector, targetPropertyKeyOrOpt
       type: metaType
     });
 
-    // Helper: apply resolved value to targets
+    // Helper: apply resolved value to targets (setType 'call'이면 타깃 호출 — 배열은 spread)
     const applyValueToTargets = (inst: any, resolvedValue: any) => {
       if (resolvedValue === undefined) return resolvedValue;
 
@@ -189,6 +193,12 @@ export function applyProperty(selector: PropertySelector, targetPropertyKeyOrOpt
         }
 
         const resolvedRes = typeof resolvedValue === 'function' ? (resolvedValue as any)(targetEl, hostSet) : resolvedValue;
+        if (finalOptions.setType === 'call') {
+          if (typeof (targetEl as any)[targetPropertyKey] !== 'function') return;
+          if (Array.isArray(resolvedRes)) (targetEl as any)[targetPropertyKey].apply(targetEl, resolvedRes);
+          else (targetEl as any)[targetPropertyKey].call(targetEl, resolvedRes);
+          return;
+        }
         (targetEl as any)[targetPropertyKey] = resolvedRes;
       });
 
@@ -261,7 +271,12 @@ export function applyProperty(selector: PropertySelector, targetPropertyKeyOrOpt
           return true;
         });
 
-        const values = filtered.map(el => (el as any)[targetPropertyKey]);
+        const values = filtered.map(el => {
+          const raw = (el as any)[targetPropertyKey];
+          // getType 'call'이면 타깃 호출 후 리턴 사용
+          if (finalOptions.getType === 'call' && typeof raw === 'function') return raw.call(el);
+          return raw;
+        });
         return values.length === 1 ? values[0] : values;
       },
       set(this: any, value: any) {
@@ -295,8 +310,11 @@ export function property(selector: PropertyFnSelector, options?: PropertyNonQuer
 export function property(target: Object, propertyKey: string | symbol): void;
 export function property(target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor): PropertyDescriptor | void;
 export function property(selectorOrTarget?: PropertySelector | Object, targetPropertyKeyOrOptions?: any, optionsOrDescriptor?: any): any {
-  // Bare decorator: @property
-  if (optionsOrDescriptor !== undefined && (typeof targetPropertyKeyOrOptions === 'string' || typeof targetPropertyKeyOrOptions === 'symbol')) {
+  // Bare decorator direct invocation: @property on field/method passes (target, key[, descriptor]).
+  // NOTE: (selector-string, key, options) factory form must NOT enter here — target is never string/function.
+  if (optionsOrDescriptor !== undefined
+    && typeof selectorOrTarget !== 'string' && typeof selectorOrTarget !== 'function'
+    && (typeof targetPropertyKeyOrOptions === 'string' || typeof targetPropertyKeyOrOptions === 'symbol')) {
     return applyProperty('$this', undefined as any, {})(selectorOrTarget as Object, targetPropertyKeyOrOptions, optionsOrDescriptor as PropertyDescriptor);
   }
   // With selector
@@ -346,6 +364,52 @@ export function setProperty(selectorOrOptions?: PropertySelector | PropertyOptio
   return applyProperty('$this', undefined as any, selectorOrOptions as PropertyOptions) as MethodDecorator;
 }
 
+/**
+ * @callProperty - Method decorator for calling a method on matched elements.
+ * - @callProperty('selector', 'methodName') - 메서드 리턴값으로 타깃 메서드 호출
+ * - @callProperty('selector') - 메서드 이름과 같은 타깃 메서드 호출
+ * - 리턴값이 배열이면 spread 인자로 호출, 아니면 단일 인자로 호출
+ *
+ * Example:
+ * @event('#popup', 'open-request')
+ * @callProperty('#popup', 'show')
+ * onPopupOpen() {
+ *   return [this.rows]; // popup.show(this.rows)
+ * }
+ */
+export function callProperty(selector: string, targetMethodKey?: string | symbol, options?: PropertyQueryOptions): MethodDecorator;
+export function callProperty(selector: PropertyFnSelector, targetMethodKey?: string | symbol, options?: PropertyNonQueryOptions): MethodDecorator;
+export function callProperty(selector: string, options?: PropertyQueryOptions): MethodDecorator;
+export function callProperty(selectorOrTarget?: PropertySelector | PropertyOptions, targetMethodKeyOrOptions?: any, optionsOrUndefined?: PropertyOptions): MethodDecorator {
+  // setType 'call' 위임 — 메서드 리턴값을 타깃 메서드 호출로 전달 (배열이면 spread)
+  if (typeof selectorOrTarget === 'string' || typeof selectorOrTarget === 'function') {
+    if (typeof targetMethodKeyOrOptions === 'string' || typeof targetMethodKeyOrOptions === 'symbol') {
+      return applyProperty(selectorOrTarget as any, targetMethodKeyOrOptions, { ...optionsOrUndefined ?? {}, setType: 'call' }) as MethodDecorator;
+    }
+    return applyProperty(selectorOrTarget as any, { ...optionsOrUndefined ?? targetMethodKeyOrOptions ?? {}, setType: 'call' }) as MethodDecorator;
+  }
+  return applyProperty('$this', undefined as any, { ...selectorOrTarget ?? {}, setType: 'call' }) as MethodDecorator;
+}
+export function callPropertyLight(selector: string, targetMethodKey?: string | symbol, options?: Omit<PropertyQueryOptions, 'root'>): MethodDecorator;
+export function callPropertyLight(selector: string, options?: Omit<PropertyQueryOptions, 'root'>): MethodDecorator;
+export function callPropertyLight(selector: string, targetMethodKeyOrOptions?: any, options?: Omit<PropertyQueryOptions, 'root'>): MethodDecorator {
+  if (targetMethodKeyOrOptions != null && typeof targetMethodKeyOrOptions !== 'string' && typeof targetMethodKeyOrOptions !== 'symbol') {
+    return callProperty(selector, undefined, { ...targetMethodKeyOrOptions ?? {}, root: 'light' });
+  }
+  return callProperty(selector, targetMethodKeyOrOptions as any, { ...options ?? {}, root: 'light' });
+}
+export function callPropertyShadow(selector: string, targetMethodKey?: string | symbol, options?: Omit<PropertyQueryOptions, 'root'>): MethodDecorator;
+export function callPropertyShadow(selector: string, options?: Omit<PropertyQueryOptions, 'root'>): MethodDecorator;
+export function callPropertyShadow(selector: string, targetMethodKeyOrOptions?: any, options?: Omit<PropertyQueryOptions, 'root'>): MethodDecorator {
+  if (targetMethodKeyOrOptions != null && typeof targetMethodKeyOrOptions !== 'string' && typeof targetMethodKeyOrOptions !== 'symbol') {
+    return callProperty(selector, undefined, { ...targetMethodKeyOrOptions ?? {}, root: 'shadow' });
+  }
+  return callProperty(selector, targetMethodKeyOrOptions as any, { ...options ?? {}, root: 'shadow' });
+}
+export function callPropertyAll(selector: string, targetMethodKey?: string | symbol, options?: Omit<PropertyQueryOptions, 'root'>): MethodDecorator {
+  return callProperty(selector, targetMethodKey as any, { ...options ?? {}, root: 'all' });
+}
+
 // ============================================
 // Metadata Helpers
 // ============================================
@@ -389,6 +453,28 @@ export function propShadow(selector: string, targetPropertyKey?: string | symbol
   return applyProperty(selector, targetPropertyKey, {...options ?? {}, root: 'shadow'});
 }
 export function propAll(selector: string, targetPropertyKey?: string | symbol, options?: Omit<PropertyQueryOptions, 'root'>): MethodDecorator {
+  return applyProperty(selector, targetPropertyKey, {...options ?? {}, root: 'all'});
+}
+
+// ─── setProperty root 별칭 (메서드 리턴값 → 타깃 프로퍼티) ───
+export function setPropertyLight(selector: string, targetPropertyKey?: string | symbol, options?: Omit<PropertyQueryOptions, 'root'>): MethodDecorator {
+  return applyProperty(selector, targetPropertyKey, {...options ?? {}, root: 'light'});
+}
+export function setPropertyShadow(selector: string, targetPropertyKey?: string | symbol, options?: Omit<PropertyQueryOptions, 'root'>): MethodDecorator {
+  return applyProperty(selector, targetPropertyKey, {...options ?? {}, root: 'shadow'});
+}
+export function setPropertyAll(selector: string, targetPropertyKey?: string | symbol, options?: Omit<PropertyQueryOptions, 'root'>): MethodDecorator {
+  return applyProperty(selector, targetPropertyKey, {...options ?? {}, root: 'all'});
+}
+
+// ─── property root 별칭 (필드 프록시) ───
+export function propertyLight(selector: string, targetPropertyKey?: string | symbol, options?: Omit<PropertyQueryOptions, 'root'>): PropertyDecorator {
+  return applyProperty(selector, targetPropertyKey, {...options ?? {}, root: 'light'});
+}
+export function propertyShadow(selector: string, targetPropertyKey?: string | symbol, options?: Omit<PropertyQueryOptions, 'root'>): PropertyDecorator {
+  return applyProperty(selector, targetPropertyKey, {...options ?? {}, root: 'shadow'});
+}
+export function propertyAll(selector: string, targetPropertyKey?: string | symbol, options?: Omit<PropertyQueryOptions, 'root'>): PropertyDecorator {
   return applyProperty(selector, targetPropertyKey, {...options ?? {}, root: 'all'});
 }
 

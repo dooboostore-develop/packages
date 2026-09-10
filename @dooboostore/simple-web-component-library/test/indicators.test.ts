@@ -8,6 +8,7 @@ import {
 } from '@dooboostore/algorithm';
 import {
   buildCandleInfo,
+  maSeriesKey,
 } from '../src/StockChart';
 
 const near = (a: number, b: number, eps = 1e-9) => Math.abs(a - b) < eps;
@@ -81,8 +82,8 @@ describe('buildCandleInfo', () => {
   ];
   const closes = pts.map(p => p.close);
   const vols = pts.map(p => p.volume);
-  const sma = new Map([[2, computeSmaSeries(closes, 2)]]);
-  const mas = [{ color: '#f00', period: 2 }];
+  const sma = new Map([[maSeriesKey({ period: 2, type: 'sma' }), computeSmaSeries(closes, 2)]]);
+  const mas = [{ color: '#f00', period: 2, type: 'sma' as const }];
   const macdCfg = { fast: 2, slow: 3, signal: 2, fastColor: '#a', signalColor: '#b' };
   const macd = computeMacdSeries(closes, 2, 3, 2);
   const rsiCfg = { period: 2, lineColor: '#c', overbought: { level: 70, color: '#x' }, oversold: { level: 30, color: '#y' } };

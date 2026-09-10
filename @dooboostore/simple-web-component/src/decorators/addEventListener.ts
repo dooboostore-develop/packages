@@ -42,29 +42,32 @@ export type AddEventListenerOptionsOf<S extends EventListenerSelector, TEvent ex
 
 export function addEventListener<TEvent extends Event = Event>(target: SpecialSelector, type: string, options?: AddEventListenerQueryOptions<TEvent>): MethodDecorator;
 export function addEventListener<TEvent extends Event = Event>(selector: string, type: string, options?: AddEventListenerQueryOptions<TEvent>): MethodDecorator;
+export function addEventListener<TEvent extends Event = Event>(selector: string, type: string[], options?: AddEventListenerQueryOptions<TEvent>): MethodDecorator;
 export function addEventListener<TEvent extends Event = Event>(selector: EventListenerFnSelector, type: string, options?: AddEventListenerNonQueryOptions<TEvent>): MethodDecorator;
 /**
  * @addEventListener(type, options?) — 셀렉터 생략 시 $this(컴포넌트 자신)로 바인딩
  */
 export function addEventListener<TEvent extends Event = Event>(type: string, options?: AddEventListenerQueryOptions<TEvent>): MethodDecorator;
+export function addEventListener<TEvent extends Event = Event>(type: string[], options?: AddEventListenerQueryOptions<TEvent>): MethodDecorator;
 /**
  * @addEventListener decorator to bind events to elements.
  */
-export function addEventListener<TEvent extends Event = Event>(selectorOrType: EventListenerSelector | string, typeOrOptions?: string | AddEventListenerQueryOptions<TEvent>, maybeOptions?: AddEventListenerQueryOptions<TEvent>): MethodDecorator {
+export function addEventListener<TEvent extends Event = Event>(selectorOrType: EventListenerSelector | string | string[], typeOrOptions?: string | string[] | AddEventListenerQueryOptions<TEvent>, maybeOptions?: AddEventListenerQueryOptions<TEvent>): MethodDecorator {
   return (targetObj: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor) => {
     let selector: EventListenerSelector;
-    let type: string;
+    let types: string[];
     let opts: any = {};
 
-    if (typeof typeOrOptions === 'string') {
-      // (selector, type[, options]) form — 기존 호환
+    if (typeof typeOrOptions === 'string' || Array.isArray(typeOrOptions)) {
+      // (selector, type|[types][, options]) form — 기존 호환
       selector = selectorOrType as EventListenerSelector;
-      type = typeOrOptions;
+      types = Array.isArray(typeOrOptions) ? typeOrOptions : [typeOrOptions];
       opts = maybeOptions ?? {};
     } else {
-      // (type[, options]) form — selector 기본값 $this
+      // (type|[types][, options]) form — selector 기본값 $this
       selector = '$this';
-      type = selectorOrType as string;
+      if (Array.isArray(selectorOrType)) types = selectorOrType;
+      else types = [selectorOrType as string];
       opts = typeOrOptions ?? {};
     }
 
@@ -76,7 +79,7 @@ export function addEventListener<TEvent extends Event = Event>(selectorOrType: E
       ReflectUtils.defineMetadata(ADD_EVENT_LISTENER_METADATA_KEY, listeners, constructor);
     }
 
-    listeners.push({ propertyKey, selector, type, options: opts });
+    for (const type of types) listeners.push({ propertyKey, selector, type, options: opts });
   };
 }
 
