@@ -107,7 +107,7 @@ const tagName = 'range-slider';
 export type RangeSliderMode = 'single' | 'range';
 export type RangeSliderOrientation = 'horizontal' | 'vertical';
 
-/** 선언형 썸 자식 1건: <thumb name="p1" value="0" min="0" max="p2"> (min/max는 숫자 또는 썸 이름) */
+/** 선언형 썸 자식 1건: <thumb name="p1" value="0" min="0" max="p2" size="26" fill="#ef4444" color="#b91c1c"> (min/max는 숫자 또는 썸 이름) */
 export interface RangeThumbValues {
   [name: string]: number;
 }
@@ -158,7 +158,7 @@ export default (w: Window): RangeSliderCtor => {
     private _syncing = false;
     private _internals: any = null;
     // ---------- 선언형 썸 (자식 <thumb> 있을 때만 사용, 레거시와 배타) ----------
-    private _thumbs: (ThumbState & { el: Element; minRef?: string; maxRef?: string; color?: string; group?: string })[] | null = null;
+    private _thumbs: (ThumbState & { el: Element; minRef?: string; maxRef?: string; color?: string; size?: number; fill?: string; group?: string })[] | null = null;
     private _groups: { id: string; label: string; color?: string }[] | null = null;
     private _dragThumb: string | null = null;
     private _dragGroup: { group: string; lastV: number } | null = null;
@@ -682,7 +682,7 @@ export default (w: Window): RangeSliderCtor => {
         return;
       }
       const gkey = groups.map(g => `${g.id}:${g.label}:${g.color ?? ''}`).join('~');
-      const structKey = `${gkey}||` + els.map(el => [el.getAttribute('name'), el.getAttribute('min'), el.getAttribute('max'), el.getAttribute('step'), el.getAttribute('color'), owner.get(el) ?? ''].join('|')).join('~');
+      const structKey = `${gkey}||` + els.map(el => [el.getAttribute('name'), el.getAttribute('min'), el.getAttribute('max'), el.getAttribute('step'), el.getAttribute('color'), el.getAttribute('size'), el.getAttribute('fill'), owner.get(el) ?? ''].join('|')).join('~');
       const prevKey = this._thumbs ? (this._thumbs as any)._structKey : null;
       if (this._thumbs?.length && prevKey === structKey) {
         // 구조 동일 → value 속성만 외부에서 바뀌었는지 흡수
@@ -711,6 +711,8 @@ export default (w: Window): RangeSliderCtor => {
           minRef: el.getAttribute('min') ?? undefined,
           maxRef: el.getAttribute('max') ?? undefined,
           color: el.getAttribute('color') ?? undefined,
+          size: (() => { const s = Number(el.getAttribute('size')); return Number.isFinite(s) && s >= 10 && s <= 48 ? Math.round(s) : undefined; })(),
+          fill: el.getAttribute('fill') ?? undefined,
           group: owner.get(el),
         };
       });
@@ -736,6 +738,8 @@ export default (w: Window): RangeSliderCtor => {
         d.setAttribute('aria-label', t.name);
         const bc = t.color ?? (t.group ? this.groupColor(t.group) : undefined);
         if (bc) d.style.borderColor = bc;
+        if (t.size) { d.style.width = `${t.size}px`; d.style.height = `${t.size}px`; }
+        if (t.fill) d.style.background = t.fill;
         this.thumbBox.appendChild(d);
       }
       if (this.thumbMin) this.thumbMin.style.display = 'none';

@@ -10,7 +10,7 @@ import {
   queryShadow,
   resizeObserverLight
 } from "@dooboostore/simple-web-component";
-import { computeMacdSeries, computeRsiSeries, computeObvSeries, computeSmaSeries } from '@dooboostore/algorithm';
+import { computeMacdSeries, computeRsiSeries, computeObvSeries, computeSmaSeries, computeEmaSeries } from '@dooboostore/algorithm';
 
 /** OBV 설정 — 자식 <obv><line color=".."/></obv> 로 지정 (파라미터 없음) */
 export interface ObvConfig {
@@ -27,10 +27,10 @@ export interface StockChartPoint {
   low: number;
   close: number;
   volume: number;
-  lines?: { width: number; color: string }[];
+  lines?: { width: number; color: string; target?: string }[];
   tooltips?: { position: 'top' | 'bottom' | 'candle-top' | 'candle-bottom'; color?: string; fillColor?: string; lineColor?: string; labelColor?: string; label: string; lineWidth?: number }[];
   // 하위 호환 단일 필드
-  line?: { width: number; color: string };
+  line?: { width: number; color: string; target?: string };
   tooltip?: { position: 'top' | 'bottom' | 'candle-top' | 'candle-bottom'; color?: string; fillColor?: string; labelColor?: string; label: string; lineWidth?: number; lineColor?: string };
 }
 
@@ -79,6 +79,12 @@ function fmtBig(v: number): string {
   return Math.round(v).toLocaleString();
 }
 
+/** 이동평균 1건 — 자식 <ma period="20" color=".." type="sma|exponential"> (기본 sma) */
+export interface MaSpec { color: string; period: number; type: 'sma' | 'ema' }
+/** 이동평균 시리즈 키 — type+period (동일 period의 sma/ema 공존 가능) */
+export function maSeriesKey(ma: Pick<MaSpec, 'period' | 'type'>): string {
+  return `${ma.type}:${ma.period}`;
+}
 /** MACD 설정 — 자식 <macd><fast/><slow/><signal/></macd> 로 지정 (기본 12/26/9) */
 export interface MacdConfig {
   fast: number;
@@ -112,8 +118,8 @@ export interface CandleInfo {
 export function buildCandleInfo(
   index: number,
   points: StockChartPoint[],
-  mas: Array<{ color: string; period: number }>,
-  sma: Map<number, (number | null)[]>,
+  mas: MaSpec[],
+  sma: Map<string, (number | null)[]>,
   macdCfg: MacdConfig | null,
   macd: { macd: number[]; signal: number[]; hist: number[] } | null,
   rsiCfg: RsiConfig | null,
@@ -132,7 +138,7 @@ export function buildCandleInfo(
     index,
     candle: { date: d.date, open: d.open, high: d.high, low: d.low, close: d.close, volume: d.volume },
     ma: mas.map(m => {
-      const arr = sma.get(m.period);
+      const arr = sma.get(maSeriesKey(m));
       return { period: m.period, color: m.color, value: arr?.[index] ?? null, slope: maSlopeOf(arr) };
     }),
     macd: macdCfg && macd
@@ -148,6 +154,8 @@ export interface StockChart extends HTMLElement {
   setData(points: StockChartPoint[]): void;
   /** 프로그래밍 방식 뷰(줌/포커스) 지정 — 캔들 인덱스 양쪽 포함 */
   setView(start: number, end: number): void;
+  /** 줌 해제 — 전체 구간 표시 */
+  resetView(): void;
   /** 캔들 1건 조회 — 날짜 문자열 또는 인덱스, 없으면 null */
   getCandleInfo(key: string | number): CandleInfo | null;
   /** 캔들 여러 건 조회 — 인자 없으면 전체, 찾은 것만 배열로 */
@@ -176,7 +184,7 @@ export default (w: Window): StockChartCtor => {
     // ---------- 상태 ----------
     private points: StockChartPoint[] = [];
     private shapes: ChartShape[] = [];
-    private mas: Array<{ color: string; period: number }> = [];
+    private mas: MaSpec[] = [];
     private viewStart: number = 0;
     private viewEnd: number = 0;
     private selectedIdx: number = -1;
@@ -192,7 +200,7 @@ export default (w: Window): StockChartCtor => {
     // 지표 시리즈 캐시 (데이터/설정 변경 시 dirty)
     private seriesDirty: boolean = true;
     private series: {
-      sma: Map<number, (number | null)[]>;
+      sma: Map<string, (number | null)[]>;
       macd: { macd: number[]; signal: number[]; hist: number[] } | null;
       rsi: number[] | null;
       obv: number[] | null;
@@ -372,6 +380,17 @@ export default (w: Window): StockChartCtor => {
       }
     }
 
+    /** 줌 해제 — 전체 구간 표시 (다음 틱 수집 때도 전체로 초기화) */
+    resetView(): void {
+      const n = this.points.length;
+      this.viewStart = 0;
+      this.viewEnd = Math.max(0, n - 1);
+      this.viewInitDone = false;
+      if (this.isConnected && n) {
+        this.drawChart();
+      }
+    }
+
     getCandleInfo(key: string | number): CandleInfo | null {
       const idx = typeof key === 'number'
         ? (Number.isInteger(key) ? key : -1)
@@ -417,16 +436,17 @@ export default (w: Window): StockChartCtor => {
     // ---------- 지표 시리즈 (그리기·조회 공용 캐시) ----------
 
     private ensureSeries(): {
-      sma: Map<number, (number | null)[]>;
+      sma: Map<string, (number | null)[]>;
       macd: { macd: number[]; signal: number[]; hist: number[] } | null;
       rsi: number[] | null;
       obv: number[] | null;
     } {
       if (!this.seriesDirty && this.series) return this.series;
       const closes = this.points.map(p => p.close);
-      const sma = new Map<number, (number | null)[]>();
+      const sma = new Map<string, (number | null)[]>();
       for (const ma of this.mas) {
-        if (!sma.has(ma.period)) sma.set(ma.period, computeSmaSeries(closes, ma.period));
+        const key = maSeriesKey(ma);
+        if (!sma.has(key)) sma.set(key, ma.type === 'ema' ? computeEmaSeries(closes, ma.period) : computeSmaSeries(closes, ma.period));
       }
       this.series = {
         sma,
@@ -506,12 +526,13 @@ export default (w: Window): StockChartCtor => {
     }
 
     private collectMas(): void {
-      const mas: Array<{ color: string; period: number }> = [];
+      const mas: MaSpec[] = [];
       this.querySelectorAll(':scope > ma').forEach(el => {
         const color = el.getAttribute('color') || '#6366f1';
         const sizeAttr = el.getAttribute('size') || el.getAttribute('period') || '20';
         const period = Math.max(2, Number(sizeAttr) || 20);
-        mas.push({ color, period });
+        const type = (el.getAttribute('type') || 'sma').toLowerCase() === 'exponential' ? 'ema' : 'sma';
+        mas.push({ color, period, type });
       });
       this.mas = mas;
       this.seriesDirty = true;
@@ -531,11 +552,12 @@ export default (w: Window): StockChartCtor => {
         const close = Number(tick.getAttribute("close")) || 0;
         const volume = Number(tick.getAttribute("volume")) || 0;
         // candle/tick 자식 <line> / <tooltip> — 건별 B/S 등 여러 개 가능
-        const lines: { width: number; color: string }[] = [];
+        const lines: { width: number; color: string; target?: string }[] = [];
         tick.querySelectorAll(':scope > line').forEach(lineEl => {
           const w = lineEl.getAttribute('width');
           const c = lineEl.getAttribute('color');
-          if (w || c) lines.push({ width: w ? Number(w) || 1 : 1, color: c || 'rgba(99,102,241,0.6)' });
+          const t = lineEl.getAttribute('target');
+          if (w || c || t) lines.push({ width: w ? Number(w) || 1 : 1, color: c || 'rgba(99,102,241,0.6)', ...(t ? { target: t } : {}) });
         });
         const tooltips: NonNullable<StockChartPoint['tooltips']> = [];
         tick.querySelectorAll(':scope > tooltip').forEach(tipEl => {
@@ -1024,7 +1046,7 @@ export default (w: Window): StockChartCtor => {
       if (this.mas.length) {
         const sma = this.ensureSeries().sma;
         for (const ma of this.mas) {
-          const arr = sma.get(ma.period);
+          const arr = sma.get(maSeriesKey(ma));
           if (!arr) continue;
           ctx.strokeStyle = ma.color;
           ctx.lineWidth = 1.2;
@@ -1236,10 +1258,10 @@ export default (w: Window): StockChartCtor => {
         const x = xCandle(i);
         const lines = (d as any).lines as StockChartPoint['line'][] | undefined;
         const tooltips = (d as any).tooltips as StockChartPoint['tooltip'][] | undefined;
-        // <line> : 수직 타임라인 (가격 영역만)
+        // <line> : 수직 타임라인 (기본 가격 영역, target="all"이면 x축까지 전 패널)
         const lineList = lines ?? (d.line ? [d.line] : []);
         for (const ln of lineList) {
-          const yEnd = padT + priceH;
+          const yEnd = (ln as any).target === 'all' ? H - axisH : padT + priceH;
           ctx.save();
           ctx.strokeStyle = ln.color;
           ctx.lineWidth = ln.width;
