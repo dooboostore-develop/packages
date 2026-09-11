@@ -85,6 +85,18 @@ export interface MaSpec { color: string; period: number; type: 'sma' | 'ema' }
 export function maSeriesKey(ma: Pick<MaSpec, 'period' | 'type'>): string {
   return `${ma.type}:${ma.period}`;
 }
+/** 제네릭 꺾은선 오버레이 1건 — 자식 <series values=".." color=".." dash="5 4" width="1.5" label=".." anchor="after-last" extend="5">
+ *  도메인 무지향 (예측·목표가·비교선 등). 지표 계산에서 제외, 표시 전용.
+ *  anchor after-last = 마지막봉 다음부터 (미래 슬롯), at:INDEX = 지정 인덱스부터 덮어그리기. */
+export interface LineSeriesSpec {
+  values: number[];
+  color: string;
+  dash: number[];
+  width: number;
+  label?: string;
+  anchor: { type: 'after-last' } | { type: 'at'; index: number };
+  extend: number;
+}
 /** MACD 설정 — 자식 <macd><fast/><slow/><signal/></macd> 로 지정 (기본 12/26/9) */
 export interface MacdConfig {
   fast: number;
@@ -150,7 +162,7 @@ export function buildCandleInfo(
 }
 
 export interface StockChart extends HTMLElement {
-  /** 외부에서 데이터 주입 (tick 요소 대신 사용 가능) */
+  /** 외부에서 데이터 주입 */
   setData(points: StockChartPoint[]): void;
   /** 프로그래밍 방식 뷰(줌/포커스) 지정 — 캔들 인덱스 양쪽 포함 */
   setView(start: number, end: number): void;
@@ -166,7 +178,7 @@ export interface StockChart extends HTMLElement {
   getCandleInfoByNames(names?: string[]): CandleInfo[];
 }
 
-/** 자식 <candle>/<tick> — .value로 지표 포함 정보 조회 */
+/** 자식 <candle> — .value로 지표 포함 정보 조회 */
 export interface StockChartCandle extends HTMLElement {
   value: CandleInfo | null;
 }
@@ -185,6 +197,7 @@ export default (w: Window): StockChartCtor => {
     private points: StockChartPoint[] = [];
     private shapes: ChartShape[] = [];
     private mas: MaSpec[] = [];
+    private lineSeries: LineSeriesSpec[] = [];
     private viewStart: number = 0;
     private viewEnd: number = 0;
     private selectedIdx: number = -1;
@@ -380,6 +393,12 @@ export default (w: Window): StockChartCtor => {
       }
     }
 
+    /** 현재 뷰 구간 조회 (없으면 null) — 예측 꼬리분 뷰 확장용 */
+    getView(): { start: number; end: number } | null {
+      if (!this.points.length) return null;
+      return { start: Math.floor(this.viewStart), end: Math.ceil(this.viewEnd) };
+    }
+
     /** 줌 해제 — 전체 구간 표시 (다음 틱 수집 때도 전체로 초기화) */
     resetView(): void {
       const n = this.points.length;
@@ -411,9 +430,9 @@ export default (w: Window): StockChartCtor => {
     }
 
     getCandleInfoByName(name: string): CandleInfo | null {
-      // 자식 순서 = points 순서 (collectFromTicks) — name 속성 우선, 없으면 date 매칭
+      // 자식 순서 = points 순서 (collectFromCandles) — name 속성 우선, 없으면 date 매칭
       let idx = -1;
-      this.querySelectorAll(':scope > tick, :scope > candle').forEach((el, i) => {
+      this.querySelectorAll(':scope > candle').forEach((el, i) => {
         if (idx >= 0) return;
         if (el.getAttribute('name') === name || el.getAttribute('date') === name) idx = i;
       });
@@ -458,10 +477,10 @@ export default (w: Window): StockChartCtor => {
       return this.series;
     }
 
-    // 자식 <candle>/<tick>에 .value 주입 — 속성 변경이 아니라 감시 루프 없음
+    // 자식 <candle>에 .value 주입 — 속성 변경이 아니라 감시 루프 없음
     private stampCandleValues(): void {
       const s = this.ensureSeries();
-      this.querySelectorAll(':scope > tick, :scope > candle').forEach((el, i) => {
+      this.querySelectorAll(':scope > candle').forEach((el, i) => {
         (el as any).value = buildCandleInfo(i, this.points, this.mas, s.sma, this.macd, s.macd, this.rsi, s.rsi, this.obv, s.obv);
       });
     }
@@ -498,10 +517,11 @@ export default (w: Window): StockChartCtor => {
 
     @onConnectedAfter
     onConnected() {
-      // tick 자식 요소들로 데이터 구성
-      this.collectFromTicks();
+      // candle 자식 요소들로 데이터 구성
+      this.collectFromCandles();
       this.collectFromShapes();
       this.collectMas();
+      this.collectLineSeries();
       this.collectVolume();
       this.collectMacd();
       this.collectRsi();
@@ -538,29 +558,57 @@ export default (w: Window): StockChartCtor => {
       this.seriesDirty = true;
     }
 
+    private collectLineSeries(): void {
+      const out: LineSeriesSpec[] = [];
+      this.querySelectorAll(':scope > series').forEach(el => {
+        const values = (el.getAttribute('values') || '')
+          .split(/[\s,]+/).map(Number).filter(v => Number.isFinite(v));
+        if (!values.length) return;
+        const anchorRaw = (el.getAttribute('anchor') || 'after-last').trim();
+        let anchor: LineSeriesSpec['anchor'] = { type: 'after-last' };
+        const mAt = anchorRaw.match(/^at:(\d+)$/);
+        if (mAt) anchor = { type: 'at', index: Math.max(0, parseInt(mAt[1], 10)) };
+        const dash = (el.getAttribute('dash') || '')
+          .split(/[\s,]+/).map(Number).filter(v => Number.isFinite(v) && v >= 0);
+        const extendRaw = Number(el.getAttribute('extend'));
+        out.push({
+          values,
+          color: el.getAttribute('color') || '#8b5cf6',
+          dash: dash.length ? dash : [5, 4],
+          width: Math.max(0.5, Number(el.getAttribute('width')) || 1.5),
+          label: el.getAttribute('label') || undefined,
+          anchor,
+          extend: anchor.type === 'after-last'
+            ? (Number.isFinite(extendRaw) && extendRaw > 0 ? Math.floor(extendRaw) : values.length)
+            : 0,
+        });
+      });
+      this.lineSeries = out;
+    }
+
     // ---------- 데이터 수집 ----------
 
-    private collectFromTicks(): void {
-      // 하위호환: <tick> (구) / <candle> (신) 모두 지원
-      const ticks = this.querySelectorAll(":scope > tick, :scope > candle");
+    private collectFromCandles(): void {
+      // 자식 <candle>에서 데이터 수집
+      const candleEls = this.querySelectorAll(":scope > candle");
       const points: StockChartPoint[] = [];
-      ticks.forEach((tick) => {
-        const date = tick.getAttribute("date") || "";
-        const open = Number(tick.getAttribute("open")) || 0;
-        const high = Number(tick.getAttribute("high")) || 0;
-        const low = Number(tick.getAttribute("low")) || 0;
-        const close = Number(tick.getAttribute("close")) || 0;
-        const volume = Number(tick.getAttribute("volume")) || 0;
-        // candle/tick 자식 <line> / <tooltip> — 건별 B/S 등 여러 개 가능
+      candleEls.forEach((candleEl) => {
+        const date = candleEl.getAttribute("date") || "";
+        const open = Number(candleEl.getAttribute("open")) || 0;
+        const high = Number(candleEl.getAttribute("high")) || 0;
+        const low = Number(candleEl.getAttribute("low")) || 0;
+        const close = Number(candleEl.getAttribute("close")) || 0;
+        const volume = Number(candleEl.getAttribute("volume")) || 0;
+        // candle 자식 <line> / <tooltip> — 건별 B/S 등 여러 개 가능
         const lines: { width: number; color: string; target?: string }[] = [];
-        tick.querySelectorAll(':scope > line').forEach(lineEl => {
+        candleEl.querySelectorAll(':scope > line').forEach(lineEl => {
           const w = lineEl.getAttribute('width');
           const c = lineEl.getAttribute('color');
           const t = lineEl.getAttribute('target');
           if (w || c || t) lines.push({ width: w ? Number(w) || 1 : 1, color: c || 'rgba(99,102,241,0.6)', ...(t ? { target: t } : {}) });
         });
         const tooltips: NonNullable<StockChartPoint['tooltips']> = [];
-        tick.querySelectorAll(':scope > tooltip').forEach(tipEl => {
+        candleEl.querySelectorAll(':scope > tooltip').forEach(tipEl => {
           let pos = (tipEl.getAttribute('position') || 'top') as string;
           // 하위호환: tip-top/bottom → candle-top/bottom
           if (pos === 'tip-top') pos = 'candle-top';
@@ -626,13 +674,14 @@ export default (w: Window): StockChartCtor => {
       this.shapes = shapes;
     }
 
-    // tick/ma 자식 요소 변경(추가/삭제/속성) 시 재수집 후 다시 그림
+    // candle/ma/series 자식 요소 변경(추가/삭제/속성) 시 재수집 후 다시 그림
     // 셀렉터 생략 → $this(host, light DOM) observe
     @mutationObserverLight({ childList: true, attributes: true, subtree: true })
-    private onTicksMutated(matchedEls: HTMLElement[]): void {
-      this.collectFromTicks();
+    private onCandlesMutated(matchedEls: HTMLElement[]): void {
+      this.collectFromCandles();
       this.collectFromShapes();
       this.collectMas();
+      this.collectLineSeries();
       this.collectVolume();
       this.collectMacd();
       this.collectRsi();
@@ -684,6 +733,20 @@ export default (w: Window): StockChartCtor => {
       if (n === 0) return true;
       const span = this.viewEnd - this.viewStart + 1;
       return span >= n - 0.5;
+    }
+
+    /** 우측 끝 가시 시 제네릭 꺾은선 미래 슬롯 수 (그리기·히트테스팅 공용, 최대 12).
+     *  after-last extend + at 앵커 꼬리(마지막봉 초과분) 모두 반영. */
+    private futurePadFor(s: number, eI: number): number {
+      if (eI < this.points.length - 1 || !this.lineSeries.length) return 0;
+      const n = this.points.length;
+      let m = 0;
+      for (const ls of this.lineSeries) {
+        const a = ls.anchor;
+        if (a.type === 'after-last') m = Math.max(m, ls.extend);
+        else m = Math.max(m, a.index + ls.values.length - n);
+      }
+      return Math.min(12, Math.max(0, m));
     }
 
     @eventShadow('#stock-chart-canvas', 'wheel', { passive: false })
@@ -774,9 +837,9 @@ export default (w: Window): StockChartCtor => {
       const plotW = Math.max(1, rect.width - this.padL - padR);
       const s = Math.floor(this.viewStart),
         eI = Math.ceil(this.viewEnd);
-      const dataLen = eI - s + 1;
+      const xSpan = (eI - s + 1) + this.futurePadFor(s, eI);
       const frac = (clientX - rect.left - this.padL) / plotW;
-      const idx = Math.round(s + frac * dataLen - 0.5);
+      const idx = Math.round(s + frac * xSpan - 0.5);
       return idx >= s && idx <= eI ? idx : -1;
     }
 
@@ -925,6 +988,10 @@ export default (w: Window): StockChartCtor => {
       const priceH = plotH - volH - macdH - rsiH - obvH;
       const priceBottom = padT + priceH;
       const plotW = W - padL - padR;
+      // 제네릭 꺾은선 미래 슬롯 — 우측 끝이 보일 때만 x 도메인 확장 (없으면 기존과 동일)
+      const futurePad = this.futurePadFor(startI, endI);
+      const xSpan = data.length + futurePad;
+      const futureW = futurePad > 0 ? (futurePad / xSpan) * plotW : 0;
 
       const UP = "#e5484d",
         DOWN = "#3e63dd";
@@ -939,14 +1006,36 @@ export default (w: Window): StockChartCtor => {
         minP = Math.min(minP, d.low);
         maxV = Math.max(maxV, d.volume);
       }
+      // 제네릭 꺾은선 값도 y 도메인에 포함 (보이는 구간만)
+      for (const ls of this.lineSeries) {
+        const anchor = ls.anchor;
+        if (anchor.type === 'after-last') {
+          if (endI >= this.points.length - 1) {
+            for (const v of ls.values) {
+              if (v > maxP) maxP = v;
+              if (v < minP) minP = v;
+            }
+          }
+          continue;
+        }
+        ls.values.forEach((v, k) => {
+          const g = anchor.index + k;
+          // 미래 슬롯 표시분(우측 끝 가시 시)도 y 도메인에 포함
+          const hi = endI >= this.points.length - 1 ? this.points.length - 1 + futurePad : endI;
+          if (g >= startI && g <= hi) {
+            if (v > maxP) maxP = v;
+            if (v < minP) minP = v;
+          }
+        });
+      }
       const pPad = (maxP - minP) * 0.07 || maxP * 0.02 || 1;
       maxP += pPad;
       minP -= pPad;
 
       const yPrice = (p: number) =>
         padT + priceH - ((p - minP) / (maxP - minP)) * priceH;
-      const xCandle = (i: number) => padL + ((i + 0.5) / data.length) * plotW;
-      const candleW = plotW / data.length;
+      const xCandle = (i: number) => padL + ((i + 0.5) / xSpan) * plotW;
+      const candleW = plotW / xSpan;
       const bodyW = Math.max(1, Math.min(18, candleW * 0.65));
 
       // 가격 그리드 + 라벨
@@ -1016,10 +1105,10 @@ export default (w: Window): StockChartCtor => {
         ctx.stroke();
       }
 
-      // --- 클리핑: 가격 영역만 (거래량/x축 라벨로 침범 방지) ---
+      // --- 클리핑: 가격 영역만 (거래량/x축 라벨로 침범 방지, 미래 슬롯 포함) ---
       ctx.save();
       ctx.beginPath();
-      ctx.rect(padL, padT, plotW, priceH);
+      ctx.rect(padL, padT, plotW + futureW, priceH);
       ctx.clip();
 
       // 캔들 (가격 영역만)
@@ -1062,6 +1151,59 @@ export default (w: Window): StockChartCtor => {
             else ctx.lineTo(px, py);
           }
           ctx.stroke();
+        }
+      }
+
+      // 제네릭 꺾은선 오버레이 (지표 계산 제외, 표시 전용, 클리핑 내)
+      for (const ls of this.lineSeries) {
+        const anchor = ls.anchor;
+        const pts: { i: number; v: number }[] = [];
+        if (anchor.type === 'after-last') {
+          if (endI < this.points.length - 1) continue;
+          const lastClose = this.points[this.points.length - 1]?.close;
+          if (lastClose == null) continue;
+          const i0 = this.points.length - 1 - startI;
+          pts.push({ i: i0, v: lastClose });
+          ls.values.forEach((v, k) => pts.push({ i: i0 + 1 + k, v }));
+        } else {
+          const atIdx = anchor.index;
+          if (atIdx - 1 >= 0 && atIdx - 1 >= startI) {
+            const prev = this.points[atIdx - 1]?.close;
+            if (prev != null) pts.push({ i: atIdx - 1 - startI, v: prev });
+          }
+          ls.values.forEach((v, k) => pts.push({ i: atIdx + k - startI, v }));
+        }
+        const vis = pts.filter(p => p.i >= -1 && p.i <= data.length + futurePad);
+        if (!vis.length) continue;
+        ctx.strokeStyle = ls.color;
+        ctx.lineWidth = ls.width;
+        ctx.lineJoin = 'round';
+        ctx.setLineDash(ls.dash);
+        ctx.beginPath();
+        vis.forEach((p, j) => {
+          const px = xCandle(p.i);
+          const py = yPrice(p.v);
+          if (j === 0) ctx.moveTo(px, py);
+          else ctx.lineTo(px, py);
+        });
+        ctx.stroke();
+        ctx.setLineDash([]);
+        // 끝점 라벨
+        if (ls.label) {
+          const end = vis[vis.length - 1];
+          const ex = xCandle(end.i);
+          const ey = yPrice(end.v);
+          ctx.font = "10px -apple-system, sans-serif";
+          ctx.textBaseline = "middle";
+          const tagW = ctx.measureText(ls.label).width + 12;
+          const tx = Math.max(padL + 2, Math.min(W - tagW - 2, ex + 6));
+          const ty = Math.max(padT + 8, Math.min(priceBottom - 8, ey - 12));
+          ctx.fillStyle = ls.color;
+          ctx.beginPath();
+          ctx.roundRect(tx, ty - 8, tagW, 16, 4);
+          ctx.fill();
+          ctx.fillStyle = "#ffffff";
+          ctx.fillText(ls.label, tx + 6, ty);
         }
       }
 
@@ -1252,7 +1394,7 @@ export default (w: Window): StockChartCtor => {
         this.obvCache = null;
       }
 
-      // tick 자식 <line>/<tooltip> (건별 B/S 등 마커) — 여러 개 가능
+      // candle 자식 <line>/<tooltip> (건별 B/S 등 마커) — 여러 개 가능
       for (let i = 0; i < data.length; i++) {
         const d = data[i] as StockChartPoint;
         const x = xCandle(i);

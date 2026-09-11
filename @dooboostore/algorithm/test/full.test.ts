@@ -2,5 +2,5 @@
 // 개별 테스트 추가 시 아래에 한 줄 추가.
 import './trendrange.test';
 import './trendrange-stability.test';
-import './simulate.test';
+import './engine.test';
 import './kospi100.test';
