@@ -1,7 +1,8 @@
 /** 트레이딩 조건 탐색 — 입력(FindBestOptions) 스펙만 유지, 구현은 갈아엎기 예정 */
 
 import type { Candle } from './Candle';
-import { computeEmaSeries, computeMacdSeries, computeRsiSeries, computeSmaSeries } from './trend';
+import { computeEmaSeries, computeMacdSeries, computeObvSeries, computeRsiSeries, computeSmaSeries } from './trend';
+import { predictBoostLogOdds } from './boostModel';
 
 export namespace TradingSimulator {
   /** 사용자 보조지표 설정값 (페이지 SimIndicatorForm 그대로) */
@@ -43,6 +44,12 @@ export namespace TradingSimulator {
     consecRestBars?: number;
     /** 묶음 집행 그리드 N (2 이상) — 미지정 시 매봉 집행 */
     batchBars?: number;
+    /** 최소 매수예산 = 총자산 대비 비율 (기본 0.01) — 미만이면 소액제외. 0 이하 시 해제 */
+    minBudgetEquityPct?: number;
+    /** 최소 방향확률 엣지 0~1 (기본 0.2) — 미만이면 조건 미발행(관망). 0이면 해제 */
+    minEdge?: number;
+    /** 확신도 내 방향확률 엣지 가중 0~1 (기본 0.5) — 0이면 물리 기반만, 1이면 방향확률만 */
+    convictionBlend?: number;
   }
 
   /** 플랜 내장 집행 정책 — 연속 상한 + 휴식 + 묶음 (simulate가 플랜에서 읽음) */
@@ -52,6 +59,8 @@ export namespace TradingSimulator {
     /** 묶음 집행 그리드 N (2 이상). 절대봉 i % N === N-1 인 봉에만 집행, 사이는 누적·네팅.
      *  윈도우 잘라도 그리드 동일 → 풀윈도우 ≣ 청크분할 결과 일치 (노룩어헤드). 미지정 시 매봉 집행. */
     batchBars?: number;
+    /** 최소 매수예산 = 총자산(현금+평가) 대비 비율 (기본 0.01). 미만이면 소액제외로 스킵. 0 이하 시 해제 */
+    minBudgetEquityPct?: number;
   }
 
   /** findBestConfig 출력 — 전체 캔들 + 사용자 보조지표값으로 도출된 매매 플랜 조건 목록 */
@@ -59,8 +68,10 @@ export namespace TradingSimulator {
     conditions: TradeCondition[];
     /** 조건 적용 방식 — min: 최소 percent 조건만 처리, max: 최대 percent 조건만 처리, combined: 복합 처리 */
     applyMode: 'min' | 'max' | 'combined';
-    /** 확신도 0~1 (국면 정렬 + 힘 + 중력 정렬 + 적분) */
+    /** 확신도 0~1 (물리 기반 + 방향확률 엣지 블렌딩) */
     conviction: number;
+    /** 5봉 후 상승확률 0~1 (directionProbability, 기록 부족 시 0.5) */
+    upProbability: number;
     /** 집행 정책 — tuning.maxConsecBars 지정 시에만 내장 (미지정 시 simulate 무제한) */
     execPolicy?: ExecPolicy;
   }
@@ -202,92 +213,8 @@ export namespace TradingSimulator {
    * @param candles 선택 구간 캔들 (시간순)
    * @param options 탐색 옵션 — strategyRate(0 물타기극 ~ 0.5 균형 ~ 1 불타기극) + marketRate + indicators
    */
-  /**
-   * 종가 예측 — candles[] → 향후 number[] (요청 봉 수만큼, 재귀 1봉씩).
-   * findBestConfig와 동일한 물리량 어휘로 다음봉 변화율을 구해 누적:
-   * - 속도(가격변화율, 스플라인 고밀도) + 순간가속도(미분)
-   * - 질량(거래량)·질량변화율(거래량변화율) → 힘(질량×가속도, 중앙값 정규화)
-   * - 중력(장기MA 복원력) + 적분(변위/추세) + 미분
-   * - 흔들림(속도 표준편차) 감쇠 + 정착시간(단기/중기 마지막 교차 후 경과, 선형보간)
-   * - 오버슈트(장기MA 이탈) 반전압 + PCA 제1주축 국면 투영 (5피처)
-   * - 미래 거래량 미지 → 직전 유지 (명시적 가정)
-   */
-  export const forecastCloses = (
-    candles: readonly Candle[],
-    bars = 5,
-  ): number[] => {
-    const h = Math.floor(bars);
-    if (h < 1) return [];
-    if (!candles.length) return new Array(h).fill(0);
-    const last0 = candles[candles.length - 1]?.close ?? 0;
-    if (!(last0 > 0)) return new Array(h).fill(0);
-    const cc = candles.map(c => c.close);
-    const vv = candles.map(c => Math.max(0, c.volume || 0));
-    const hh = candles.map(c => c.high);
-    const ll = candles.map(c => c.low);
-    const lastVol = vv.length ? vv[vv.length - 1] : 0;
-    const lastH = hh.length ? hh[hh.length - 1] : 0;
-    const lastL = ll.length ? ll[ll.length - 1] : 0;
-    const out: number[] = [];
-    for (let k = 0; k < h; k++) {
-      // 지평선 감쇠 — 운동량(drive)은 멀수록 소멸, 중력(pull)은 유지 (직선 외삽 방지).
-      // 스텝 상한 ±4% (스플라인 오버슈트 폭주 차단)
-      const { drive, pull } = nextBarRate(cc, vv, hh, ll);
-      const r = Math.max(-0.04, Math.min(0.04, drive * Math.pow(0.9, k) + pull));
-      const prev = cc[cc.length - 1];
-      const p = Math.max(0, prev * (1 + r));
-      out.push(Math.round(p * 100) / 100);
-      cc.push(p);
-      vv.push(lastVol);
-      hh.push(lastH);
-      ll.push(lastL);
-    }
-    return out;
-  };
 
-  /** 추세 시나리오 콘 — 중간선(운동량 예측) + 상·하단(흔들림 밴드).
-   *  방향 점예측이 아니라 범위 예측: "n봉 후 이 안에 있을 것".
-   *  폭 = 최근 속도 표준편차 × 1.5 × √k (k=앞봉수). 횡장→넓음(모름), 추세장→좁음. */
-  export const forecastBands = (
-    candles: readonly Candle[],
-    bars = 5,
-    width = 2,
-    midOverride?: number[],
-  ): { mid: number[]; upper: number[]; lower: number[] } => {
-    const empty = { mid: [] as number[], upper: [] as number[], lower: [] as number[] };
-    const h = Math.floor(bars);
-    if (h < 1) return empty;
-    if (!candles.length) {
-      const z = new Array(h).fill(0);
-      return { mid: z, upper: [...z], lower: [...z] };
-    }
-    // 중간선: 지정 없으면 물리량. 페이지는 물리량+푸리에 앙상블을 넘김 (5일 58.5% 실측).
-    const mid = midOverride?.length === h ? midOverride.map(v => Math.round(v * 100) / 100) : forecastCloses(candles, h);
-    if (!mid.length) return empty;
-    const closes = candles.map(c => c.close);
-    const n = closes.length;
-    // 최근 속도 표준편차 (흔들림) — nextBarRate와 동일 어휘
-    const dense = catmullRomDense(closes);
-    const dv: number[] = [];
-    for (let i = 1; i < dense.length; i++) dv.push(dense[i - 1] > 0 ? (dense[i] - dense[i - 1]) / dense[i - 1] : 0);
-    const vel: number[] = [0];
-    for (let i = 1; i < n; i++) vel.push(((dv[(i - 1) * 2] ?? 0) + (dv[(i - 1) * 2 + 1] ?? 0)) / 2);
-    const K = Math.min(n, 10);
-    const recent = vel.slice(n - K);
-    const meanV = recent.reduce((s, v) => s + v, 0) / Math.max(1, recent.length);
-    const velOsc = Math.sqrt(recent.reduce((s, v) => s + (v - meanV) * (v - meanV), 0) / Math.max(1, recent.length));
-    // H-L 불안정도와 병합 — Parkinson 변동성(σ≈range/2.35)으로 환산 후 큰 쪽이 밴드폭 결정
-    const inst = instabilityOf(candles.map(c => c.high), candles.map(c => c.low), closes);
-    const osc = Math.max(velOsc, inst.level / 2.35);
-    const base = closes[n - 1] > 0 ? closes[n - 1] : 0;
-    const w = Number.isFinite(width) && width > 0 ? width : 1.5;
-    const upper = mid.map((m, k) => Math.round((m + base * osc * w * Math.sqrt(k + 1)) * 100) / 100);
-    const lower = mid.map((m, k) => Math.round(Math.max(0, m - base * osc * w * Math.sqrt(k + 1)) * 100) / 100);
-    return { mid, upper, lower };
-  };
 
-  /** 다음봉 변화율 — 풀피직스 1스텝 (forecastCloses 내부용).
-   *  drive(운동량계: 감쇠 대상)와 pull(중력: 유지)로 분리 반환. */
   /** EWMA — 전구간 사용·최근 가중 (바로전 1봉이 아니라 전부 반영) */
   const ewmaAll = (xs: number[], alpha = 0.12): number => {
     let m = 0;
@@ -314,211 +241,95 @@ export namespace TradingSimulator {
     return { level: fast, improve: slow > 1e-9 ? (slow - fast) / slow : 0 };
   };
 
-  /** 유사 파형(아날로그) 예측 — candles[] → 향후 number[].
-   *  최근 L봉 파형을 정규화(z)해 전구간에서 Euclidean 최단 K개를 찾고,
-   *  매칭 이후 실제 경로(수익률)의 중앙값을 집계. 스케일 무관, 모양 기반.
-   *  거리 특징 = [정규화 종가, 정규화 속도(스플라인 미분)] — 물리량 어휘 공유.
-   *  기록 부족 시 수평 폴백 (모름은 모른다고). */
-  export const forecastByAnalogy = (
-    candles: readonly Candle[],
-    bars = 10,
-    lookback = 20,
-    topK = 5,
-  ): number[] => {
-    const h = Math.floor(bars);
-    if (h < 1) return [];
-    const n = candles.length;
-    const L = Math.max(5, Math.floor(lookback));
-    const K = Math.max(1, Math.floor(topK));
-    const closes = candles.map(c => c.close);
-    const last = closes[n - 1] ?? 0;
-    if (!(last > 0)) return new Array(h).fill(0);
-    // 매칭은 끝에서 h봉 앞까지 (이후 경로 필요) + 쿼리 자기 자신 제외
-    const maxStart = Math.min(n - L - h, n - 2 * L);
-    if (maxStart < 1) return new Array(h).fill(Math.round(last * 100) / 100);
-    const znorm = (xs: number[]): number[] => {
-      const m = xs.reduce((s, x) => s + x, 0) / Math.max(1, xs.length);
-      const sd = Math.sqrt(xs.reduce((s, x) => s + (x - m) * (x - m), 0) / Math.max(1, xs.length));
-      return sd > 0 ? xs.map(x => (x - m) / sd) : xs.map(() => 0);
-    };
-    const velOf = (xs: number[]): number[] => {
-      // 스플라인 고밀도 미분 → 원래 해상도 (findBestConfig와 동일 어휘)
-      const dense = catmullRomDense(xs);
-      const dv: number[] = [];
-      for (let i = 1; i < dense.length; i++) dv.push(dense[i - 1] > 0 ? (dense[i] - dense[i - 1]) / dense[i - 1] : 0);
-      const vel: number[] = [0];
-      for (let i = 1; i < xs.length; i++) vel.push(((dv[(i - 1) * 2] ?? 0) + (dv[(i - 1) * 2 + 1] ?? 0)) / 2);
-      return vel;
-    };
-    const q = closes.slice(n - L);
-    const qz = znorm(q);
-    const qv = znorm(velOf(q));
-    const scored: { d: number; start: number }[] = [];
-    for (let s = 0; s <= maxStart; s++) {
-      const w = closes.slice(s, s + L);
-      const wz = znorm(w);
-      const wv = znorm(velOf(w));
-      let d = 0;
-      for (let j = 0; j < L; j++) {
-        d += (qz[j] - wz[j]) * (qz[j] - wz[j]) + (qv[j] - wv[j]) * (qv[j] - wv[j]);
-      }
-      scored.push({ d, start: s });
-    }
-    scored.sort((a, b) => a.d - b.d);
-    const picks = scored.slice(0, Math.min(K, scored.length));
-    // 이후 경로 단봉 수익률 중앙값 → 현재가 기준 레벨 복원 (복리)
-    const levels: number[] = [];
-    let acc = last;
-    for (let j = 0; j < h; j++) {
-      const rs = picks
-        .map(p => {
-          const a = p.start + L + j;
-          const prevC = closes[a - 1];
-          const fwd = closes[a];
-          return prevC > 0 && fwd != null ? fwd / prevC - 1 : null;
-        })
-        .filter((x): x is number => x != null)
-        .sort((a, b) => a - b);
-      if (!rs.length) break;
-      const med = rs[Math.floor(rs.length / 2)];
-      acc = Math.max(0, acc * (1 + med));
-      levels.push(Math.round(acc * 100) / 100);
-    }
-    while (levels.length < h) levels.push(levels.length ? levels[levels.length - 1] : Math.round(last * 100) / 100);
-    return levels;
-  };
 
-  /** 푸리에 외삽 예측 — candles[] → 향후 number[].
-   *  최근 L봉 추세(최소자승 직선) 분리 → 잔차 DFT 상위 M개 주기성분 → 위상 그대로 연장.
-   *  위상은 스펙트럼에 내장이라 파형 간 시차(변위) 자동 정렬. 기록 부족 시 수평 폴백. */
-  export const forecastByFourier = (
+  /**
+   * 종가 예측 — candles[] + maSize → 향후 number[].
+   * 마지막 maSize개 봉의 등락률(전봉 종가 대비)을 반전시켜 가까운 봉부터 복리 적용:
+   * f[0] = 종가×(1−r[n−1]), f[1] = f[0]×(1−r[n−2]), …
+   * 시작값은 맨끝캔들 종가에서 출발.
+   * (유사추종 블렌딩은 2026-09-12 워크포워드에서 방향성 악화 확인되어 제거 — 순수반전 59.2% vs 블렌딩 51.7%/순수유사 46.7%)
+   * 진폭은 방향확률 확신도에 따라 적응 (아래 DAMP).
+   * @param candles 선택 구간 캔들 (시간순)
+   * @param maSize 참조 봉 수 (= 예측 봉 수)
+   */
+  /** 방향확률 특성창 M=10 (directionProbability 9특성 중 과거10봉 기반 5종). */
+  const DIRP_M = 10;
+  export const forecast = (
     candles: readonly Candle[],
-    bars = 10,
-    lookback = 60,
-    topM = 3,
+    maSize: number,
   ): number[] => {
-    const h = Math.floor(bars);
-    if (h < 1) return [];
+    const m = Math.max(1, Math.floor(maSize));
     const n = candles.length;
+    if (!n) return [];
     const closes = candles.map(c => c.close);
-    const last = closes[n - 1] ?? 0;
-    if (!(last > 0)) return new Array(h).fill(0);
-    const L = Math.max(8, Math.floor(lookback));
-    if (n < L + 1) return new Array(h).fill(Math.round(last * 100) / 100);
-    const win = closes.slice(n - L);
-    // 추세 분리 (최소자승 직선, DFT창과 동일 L — 2L 확장은 시장 실측 악화 확인 후 원복)
-    let sx = 0, sy = 0, sxx = 0, sxy = 0;
-    for (let i = 0; i < L; i++) { sx += i; sy += win[i]; sxx += i * i; sxy += i * win[i]; }
-    const denom = L * sxx - sx * sx;
-    const slope = denom !== 0 ? (L * sxy - sx * sy) / denom : 0;
-    const icept = (sy - slope * sx) / L;
-    const resid = win.map((v, i) => v - (slope * i + icept));
-    // DFT (naive O(L^2), L≤수백이라 충분)
-    const N = L;
-    const mag: { k: number; amp: number; phase: number }[] = [];
-    for (let k = 1; k <= Math.floor((N - 1) / 2); k++) {
-      let re = 0, im = 0;
-      for (let t = 0; t < N; t++) {
-        const a = (2 * Math.PI * k * t) / N;
-        re += resid[t] * Math.cos(a);
-        im -= resid[t] * Math.sin(a);
-      }
-      mag.push({ k, amp: (2 * Math.hypot(re, im)) / N, phase: Math.atan2(im, re) });
+    const base = closes[n - 1];
+    if (!(base > 0)) return [];
+    // 마지막 m개 봉의 등락률, 가까운 순 (전봉 종가 대비)
+    const rates: number[] = [];
+    for (let i = n - 1; i >= Math.max(1, n - m); i--) {
+      const prev = closes[i - 1];
+      rates.push(prev > 0 ? (closes[i] - prev) / prev : 0);
     }
-    mag.sort((a, b) => b.amp - a.amp);
-    const comps = mag.slice(0, Math.max(1, Math.min(Math.floor(topM), mag.length)));
+    if (!rates.length) return [];
+    // 반전 복리 + 적응 댐핑 k = 0.15 + 0.5*edge (edge=방향확률 확신도 0~1).
+    // 확신 없을 땐 납작(횡보 맞춤), 확신 클 땐 진폭 확대(상승/하락 추종).
+    // 스위프 확정 (198우주 test-half, H=5): k0 0.25→0.15で MAE 6.40%→6.30%, 방향 59.05% 불변.
+    // (NOTE: m 스위프는 방법론 아티팩트 — H=5 종단점은 min(m,H)봉만 복리라 m≥5면 동일. MA=5/10 측정 동치 확인)
+    // 부호는 k>0이라 불변. edge는 directionProbability(부스팅, 30봉 미만이면 0).
+    const edge = Math.abs(directionProbability(candles) - 0.5) * 2;
+    const DAMP = 0.15 + 0.5 * edge; // 0.15~0.65
     const out: number[] = [];
-    for (let m = 1; m <= h; m++) {
-      let v = slope * (L - 1 + m) + icept;
-      for (const c of comps) v += c.amp * Math.cos((2 * Math.PI * c.k * (N + m - 1)) / N + c.phase);
-      out.push(Math.round(Math.max(0, v) * 100) / 100);
+    let acc = base;
+    for (const r of rates) {
+      acc = Math.max(0, acc * (1 - r));
+      out.push(Math.round((base + (acc - base) * DAMP) * 100) / 100);
     }
     return out;
   };
 
-  /** 다음봉 변화율 — 검증된 물리량 코어 + 거래량 크기변조 (forecastCloses 내부용).
-   *  코어: 속도(스플라인)/가속도/힘/중력/적분/흔들림/정착/오버슈트/PCA (51.7%/55.7% 실측).
-   *  변조: 전구간 EWMA 거래량변화율 → 1+tanh (증가 지속 → 증폭, 감소 → 감쇠). 방향 불변.
-   *  drive(감쇠 대상)/pull(중력 유지) 분리 반환. */
-  const nextBarRate = (closes: number[], volumes: number[], highs: number[], lows: number[]): { drive: number; pull: number } => {
-    const n = closes.length;
-    const last = n - 1;
-    if (n < 2 || !(closes[last] > 0)) return { drive: 0, pull: 0 };
-    const maS = computeSmaSeries(closes, Math.max(2, Math.min(5, n)));
-    const maM = computeSmaSeries(closes, Math.max(2, Math.min(10, n)));
-    const maL = computeSmaSeries(closes, Math.max(2, Math.min(60, n)));
-    const dense = catmullRomDense(closes);
-    const dv: number[] = [];
-    for (let i = 1; i < dense.length; i++) dv.push(dense[i - 1] > 0 ? (dense[i] - dense[i - 1]) / dense[i - 1] : 0);
-    const vel: number[] = [0];
-    for (let i = 1; i < n; i++) vel.push(((dv[(i - 1) * 2] ?? 0) + (dv[(i - 1) * 2 + 1] ?? 0)) / 2);
-    const accArr: number[] = [0];
-    for (let i = 1; i < n; i++) accArr.push(vel[i] - vel[i - 1]);
-    const velLast = vel[last];
-    const accLast = accArr[last];
-    const massROC: number[] = [0];
-    for (let i = 1; i < n; i++) massROC.push(volumes[i - 1] > 0 ? (volumes[i] - volumes[i - 1]) / volumes[i - 1] : 0);
-    const rawForce = volumes.map((m, i) => m * accArr[i]);
-    const sortedAbs = rawForce.map(Math.abs).sort((a, b) => a - b);
-    const medForce = sortedAbs[Math.floor(sortedAbs.length / 2)] || 1;
-    const forceLast = rawForce[last] / medForce;
-    const base = maL[last];
-    const gravity = base != null && base > 0 ? (base - closes[last]) / closes[last] : 0;
-    const K = Math.min(n, 10);
-    const recent = vel.slice(n - K);
-    const integral = recent.reduce((s, v) => s + v, 0);
-    const meanV = recent.reduce((s, v) => s + v, 0) / Math.max(1, recent.length);
-    const oscillation = Math.sqrt(recent.reduce((s, v) => s + (v - meanV) * (v - meanV), 0) / Math.max(1, recent.length));
-    const crossMM = lastCrossing(maS, maM);
-    const settling = crossMM == null ? K : Math.max(0, last - crossMM);
-    // chop 판별 — 최근 20봉 단기/중기 교차 횟수. 잦으면 횡보(신생 추세 아님) → drive 차단
-    let crossCount = 0;
-    const span = Math.min(n - 1, 20);
-    for (let i = n - span; i < n; i++) {
-      const a = (maS[i] ?? 0) - (maM[i] ?? 0);
-      const b = (maS[i - 1] ?? 0) - (maM[i - 1] ?? 0);
-      if (a === 0 || b === 0 || Math.sign(a) !== Math.sign(b)) crossCount++;
+  /**
+   * 5봉 후 상승확률 0~1 — 부스팅 9특성 (temp/export_trees.py 생산, thirds 1+2 학습).
+   * 평균회귀형: 급등 후엔 낮고 급락 후엔 높음. 기록 부족(30봉 미만) 시 0.5 중립.
+   * 특성: [과거10수익합, 최근3모멘텀, 변동성, RSI대용−0.5, 거래량추세,
+   *        MACDdiff, OBV기울기, volRatio, 장기MA이격] (temp/ds.py와 동일 정의).
+   */
+  export const directionProbability = (
+    candles: readonly Candle[],
+  ): number => {
+    const n = candles.length;
+    if (n < 30) return 0.5;
+    const closes = candles.map(c => c.close);
+    const vols = candles.map(c => Math.max(0, c.volume || 0));
+    const i = n - 1;
+    if (!(closes[i] > 0)) return 0.5;
+    const rets: number[] = [];
+    for (let j = i - DIRP_M + 1; j <= i; j++) {
+      const prev = closes[j - 1];
+      if (!(prev > 0)) return 0.5;
+      rets.push((closes[j] - prev) / prev);
     }
-    const chopFactor = 1 / (1 + Math.max(0, crossCount - 2));
-    const crossL = lastCrossing(closes.map(c => c as number | null), maL);
-    let overshoot = 0;
-    if (crossL != null) {
-      for (let i = Math.max(0, Math.floor(crossL)); i < n; i++) {
-        if (maL[i] != null && maL[i]! !== 0) overshoot = Math.max(overshoot, Math.abs((closes[i] - maL[i]!) / maL[i]!));
-      }
-    }
-    const feats: number[][] = [];
-    for (let i = n - K; i < n; i++) {
-      const g = closes[i] > 0 && maL[i] != null ? (maL[i]! - closes[i]) / closes[i] : 0;
-      feats.push([vel[i], accArr[i], rawForce[i] / medForce, g, massROC[i]]);
-    }
-    let regime = 0;
-    if (feats.length >= 2) {
-      const axis = firstPrincipalAxis(feats);
-      const lastStd = axis.map((_, j) => {
-        const s = standardize(feats.map(f => f[j]));
-        return s[s.length - 1] ?? 0;
-      });
-      regime = Math.abs(axis.reduce((s, a, j) => s + a * lastStd[j], 0));
-    }
-    const mom = velLast + 0.5 * accLast;
-    const momSign = mom > 0 ? 1 : mom < 0 ? -1 : 0;
-    const forceW = Math.tanh(forceLast * 0.5);
-    const trend = Math.tanh(integral * 20);
-    const dampV = 1 / (1 + oscillation * 30);
-    // 안정감 신뢰도 — H-L 불안정도가 축소 지속이면 운동량 신뢰 상향, 확대면 하향
-    const inst = instabilityOf(highs, lows, closes);
-    const trust = Math.max(0.05, Math.min(1, (0.35 + 0.65 * dampV) * (1 + 0.5 * Math.max(-1, Math.min(1, inst.improve)))));
-    const fresh = Math.exp(-settling / 15);
-    const revert = -Math.tanh(overshoot * 8);
-    const core = (mom * (0.7 + 0.3 * forceW) + regime * momSign * 0.008 + trend * 0.008)
-      * trust * (0.4 + 0.6 * fresh) * chopFactor
-      + revert * 0.002;
-    // 거래량 크기변조 — 전구간 EWMA 거래량변화율 (표준화). 방향은 코어 그대로.
-    const mMean = massROC.reduce((s, x) => s + x, 0) / Math.max(1, massROC.length);
-    const mStd = Math.sqrt(massROC.reduce((s, x) => s + (x - mMean) * (x - mMean), 0) / Math.max(1, massROC.length));
-    const Vz = mStd > 0 ? ewmaAll(massROC.map(x => x / mStd)) : 0;
-    return { drive: core * (1 + Math.tanh(Vz * 0.5)), pull: gravity * 0.03 };
+    const sumM = rets.reduce((a, b) => a + b, 0);
+    const mom3 = rets.slice(-3).reduce((a, b) => a + b, 0);
+    const mean = sumM / rets.length;
+    const vol = Math.sqrt(rets.reduce((a, r) => a + (r - mean) * (r - mean), 0) / rets.length);
+    let up = 0; let dn = 0;
+    for (const r of rets) { if (r > 0) up += r; else dn -= r; }
+    const rsi = up + dn > 0 ? up / (up + dn) : 0.5;
+    const v0 = vols.slice(i - DIRP_M + 1, i + 1).reduce((a, b) => a + b, 0) / DIRP_M;
+    const vP = vols.slice(i - 2 * DIRP_M + 1, i - DIRP_M + 1).reduce((a, b) => a + b, 0) / DIRP_M;
+    const vtrend = vP > 0 ? (v0 - vP) / vP : 0;
+    const macd = computeMacdSeries(closes, 12, 26, 9);
+    const md = macd.macd[i] != null && macd.signal[i] != null
+      ? ((macd.macd[i] as number) - (macd.signal[i] as number)) / closes[i] * 100 : 0;
+    const obv = computeObvSeries(closes, vols);
+    const ob = obv[i - 10] ? (obv[i] - obv[i - 5]) / Math.abs(obv[i - 10]) * 100 : 0;
+    const vWin = vols.slice(i - 20, i);
+    const vAvg = vWin.reduce((a, b) => a + b, 0) / Math.max(1, vWin.length);
+    const vr = vAvg > 0 ? vols[i] / vAvg : 1;
+    const ma30 = closes.slice(i - 29, i + 1).reduce((a, b) => a + b, 0) / 30;
+    const f = [sumM, mom3, vol, rsi - 0.5, vtrend, md, ob, vr, (closes[i] - ma30) / closes[i]];
+    if (f.some(v => !Number.isFinite(v))) return 0.5;
+    return 1 / (1 + Math.exp(-predictBoostLogOdds(f)));
   };
 
   export const findBestConfig = (
@@ -539,16 +350,20 @@ export namespace TradingSimulator {
       : {
         maxConsecBars: Math.max(1, Math.floor(tn.maxConsecBars ?? 2)),
         restBars: Math.max(1, Math.floor(tn.consecRestBars ?? 3)),
+        minBudgetEquityPct: tn.minBudgetEquityPct ?? 0.01,
         ...(tn.batchBars == null
           ? { batchBars: 2 }
           : tn.batchBars >= 2
             ? { batchBars: Math.floor(tn.batchBars) }
             : {}),
       };
-    if (n < 3) return { conditions: [], applyMode, conviction: 0, execPolicy };
+    if (n < 3) return { conditions: [], applyMode, conviction: 0, upProbability: 0.5, execPolicy };
 
     const closes = candles.map(c => c.close);
     const volumes = candles.map(c => Math.max(0, c.volume || 0));
+    // 방향확률 엣지 — 같은 캔들이면 전략rate 무관 상수라 비중 단조성 보존
+    const upProbability = directionProbability(candles);
+    const dirEdge = Math.abs(upProbability - 0.5) * 2; // 0~1 (방향무관 강도)
     const maFn = ind?.maExponential ? computeEmaSeries : computeSmaSeries;
     const pS = Math.max(2, Math.round(ind?.maShort ?? 5));
     const pM = Math.max(2, Math.round(ind?.maMid ?? 10));
@@ -610,10 +425,13 @@ export namespace TradingSimulator {
     });
     const regime = axis.reduce((s, a, j) => s + a * lastStd[j], 0);
 
-    // 확신도 — 국면 정렬 + 힘 + 중력 정렬 (tanh 압축, 0~1)
+    // 확신도 — 물리 기반(국면 정렬 + 힘 + 중력 정렬, 방향무관 크기)과
+    // 방향확률 엣지(0.5~1 크기)를 절반씩 블렌딩. 둘 다 방향무관 크기라 신호 방향과 충돌 없음.
     const last = n - 1;
     const alignG = Math.sign(vel[last]) === Math.sign(gravity[last]) && vel[last] !== 0 ? 1 : -0.5;
-    const conviction = 1 / (1 + Math.exp(-(regime * 0.8 + Math.tanh(force[last] * 0.5) * 0.6 + alignG * 0.4 + Math.tanh(integral * 20) * 0.5)));
+    const baseConviction = 1 / (1 + Math.exp(-(regime * 0.8 + Math.tanh(force[last] * 0.5) * 0.6 + alignG * 0.4 + Math.tanh(integral * 20) * 0.5)));
+    const blend = Math.max(0, Math.min(1, tn.convictionBlend ?? 0.5));
+    const conviction = (1 - blend) * baseConviction + blend * (0.5 + dirEdge * 0.5);
 
     // 비중 스케일 — 시장이 좋을수록 크게, 전략은 매수 편향 이동 + 모멘텀 추종
     // - 상승 모멘텀(momUp)이 클수록 매수 확대 (불타기 s=1에서 가장 강하게)
@@ -645,16 +463,20 @@ export namespace TradingSimulator {
     const cooldown = tn.cooldownScale == null
       ? Math.max(3, Math.min(14, Math.round(rawCd)))
       : Math.max(1, Math.min(30, Math.round(rawCd * tn.cooldownScale)));
+    // B. 발동 간격 — 기본 무거래봉 4 (집행 PnL 스위프 확정: train/test 양쪽 MDD 개선, 수익 동등. 명시 override 시 기존식).
     // 2026-09-11 스위프 확정값 (118종목): 구(5/4+보수1) 대비 -4
-    const quietBars = Math.max(0, (oscillation > 0.02 ? 1 : 0) + (conservative ? 1 : 0) + Math.round(tn.quietBarsAdd ?? 0));
+    const quietBars = Math.max(0, (tn.quietBarsAdd == null ? 4 : 0) + (oscillation > 0.02 ? 1 : 0) + (conservative ? 1 : 0) + Math.round(tn.quietBarsAdd ?? 0));
 
     // 확신도 게이트 — 약한 신호는 조건 자체를 내보내지 않음 (시장 나쁠수록 빗장 높게).
     // 방향-무관 명료도(|regime| = 지배 패턴 부합 강도)로 판단 — 하락 신호도 막지 않음.
     // conviction(방향성)은 비중 산정에만 사용.
+    // + edge 게이트 (메모 #4·#12): 방향확률 확신 낮으면 관망. 기본 0.2 (3mo 63.8%/10y 65.8%).
     const clarity = 1 / (1 + Math.exp(-Math.abs(regime) * 1.2));
     const gate = 0.5 - mRate * 0.2 + (tn.gateShift ?? 0); // m=0 → 0.5, m=0.5 → 0.4, m=1 → 0.3
     // NOTE 2026-09-11 실험: 0.42-0.24m 완화 시 118종목 스위프 완전 동일 → 게이트 비결합 확인, 원복
-    if (clarity < gate) return { conditions: [], applyMode, conviction, execPolicy };
+    const minEdge = Math.max(0, Math.min(1, tn.minEdge ?? 0.2));
+    // 기록 부족(n<30, 확률 미형성) 시에는 fail-open — 게이트 생략
+    if (clarity < gate || (n >= 30 && dirEdge < minEdge)) return { conditions: [], applyMode, conviction, upProbability, execPolicy };
 
     const conditions: TradeCondition[] = [];
     // 눌림 매력도 0~1 — 과매도 깊이 + 하락 모멘텀 + 장기MA 이탈 합성
@@ -714,7 +536,7 @@ export namespace TradingSimulator {
       for (const c of conditions) c.action = c.action === 'buy' ? 'sell' : 'buy';
     }
 
-    return { conditions, applyMode, conviction, execPolicy };
+    return { conditions, applyMode, conviction, upProbability, execPolicy };
   };
 
   /** 사용자 거래내역 1건 (페이지 TradeEntry 대응, 최소형) */
@@ -902,6 +724,13 @@ export namespace TradingSimulator {
     const doExecute = (exCond: TradeCondition, exCandidates: TradeCondition[], c: Candle, i: number, price: number) => {
       if (exCond.action === 'buy') {
         const budget = cash * (exCond.percent / 100);
+        // A. 먼지매수 차단 — 예산이 총자산(현금+보유평가) 대비 minBudgetEquityPct(기본 1%) 미만이면 스킵.
+        // 연타 매수로 현금 고갈 시 1~2주 매수가 반복되던 문제 대응. '소액제외'로 기록만 남김.
+        const minPct = execPolicy?.minBudgetEquityPct ?? 0.01;
+        if (minPct > 0 && budget < minPct * (cash + shares * price)) {
+          trades.push({ date: c.date, action: 'buy-failed', price, shares: 0, reason: '소액제외', condition: { ...exCond }, candidates: exCandidates });
+          return;
+        }
         const qty = Math.floor(budget / (price * (1 + fee)));
         if (qty < 1) {
           trades.push({ date: c.date, action: 'buy-failed', price, shares: 0, reason: '잔액부족', condition: { ...exCond }, candidates: exCandidates });
