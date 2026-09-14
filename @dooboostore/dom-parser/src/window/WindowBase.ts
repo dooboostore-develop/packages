@@ -1,6 +1,7 @@
 import { DocumentBase } from '../node/DocumentBase';
 import { NodeBase } from '../node/NodeBase';
 import { ElementBase } from '../node/elements/ElementBase';
+import { FormDataBase } from './FormDataBase';
 
 // Import all element classes
 import {
@@ -142,6 +143,9 @@ export class WindowBase implements Window {
       super(type);
     }
   };
+
+  // ── SSR FormData (dom-parser form 전용 최소 구현) ─────────────────────────
+  FormData = FormDataBase;
 
   // ── DOM type references ───────────────────────────────────────────────────
   Node = NodeBase;
