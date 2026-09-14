@@ -202,6 +202,8 @@ export default (w: Window): StockChartCtor => {
     private viewEnd: number = 0;
     private selectedIdx: number = -1;
     private viewInitDone: boolean = false;
+    /** 데이터 개수 바뀌면 뷰 초기화 (tf 전환 등) */
+    private lastPointsLength: number = -1;
     private showCloseLine: boolean = false;
     private showVolume: boolean = false;
     private macd: MacdConfig | null = null;
@@ -223,6 +225,8 @@ export default (w: Window): StockChartCtor => {
     private controlsEnabled: boolean = false;
     private readoutEnabled: boolean = false;
     private hiddenXLabel: boolean = false;
+    /** edge 진입 중복 발사 방지 (start/end 각각) */
+    private edgeFired: { start: boolean; end: boolean } = { start: false, end: false };
     private hiddenYLabel: boolean = false;
 
     // show-close-line 속성 변경 시 호출 (기본값: 안 보임)
@@ -373,6 +377,7 @@ export default (w: Window): StockChartCtor => {
     setData(points: StockChartPoint[]): void {
       this.points = points || [];
       this.viewInitDone = false;
+      this.edgeFired = { start: false, end: false };
       this.selectedIdx = -1;
       this.seriesDirty = true;
       if (this.isConnected) {
@@ -688,11 +693,12 @@ export default (w: Window): StockChartCtor => {
       this.collectObv();
       this.stampCandleValues();
       if (this.chartCanvas && this.points.length > 0) {
-        if (!this.viewInitDone) {
+        if (!this.viewInitDone || this.points.length !== this.lastPointsLength) {
           const n = this.points.length;
           this.viewStart = 0;
           this.viewEnd = n - 1;
           this.viewInitDone = true;
+          this.lastPointsLength = n;
         }
         this.drawChart();
       }
@@ -726,6 +732,21 @@ export default (w: Window): StockChartCtor => {
       span = Math.max(8, Math.min(n, Math.round(span)));
       this.viewStart = Math.max(0, Math.min(this.viewStart, n - span));
       this.viewEnd = this.viewStart + span - 1;
+      // edge 진입 시 1회성 view-edge 이벤트 (lazeloading용). 벗어나면 리셋.
+      const atStart = this.viewStart <= 0;
+      const atEnd = this.viewEnd >= n - 1;
+      if (atStart && !this.edgeFired.start) {
+        this.edgeFired.start = true;
+        this.dispatchEvent(new CustomEvent('view-edge', { detail: { edge: 'start' }, bubbles: true, composed: true }));
+      } else if (!atStart) {
+        this.edgeFired.start = false;
+      }
+      if (atEnd && !this.edgeFired.end) {
+        this.edgeFired.end = true;
+        this.dispatchEvent(new CustomEvent('view-edge', { detail: { edge: 'end' }, bubbles: true, composed: true }));
+      } else if (!atEnd) {
+        this.edgeFired.end = false;
+      }
     }
 
     private isAtFullView(): boolean {
