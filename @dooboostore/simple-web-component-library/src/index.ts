@@ -19,11 +19,17 @@ export type ComponentFactory =
   | ((w: Window) => CartesianChartCtor)
   | ((w: Window) => CartesianChart3DCtor);
 
+// NOTE: dist/cjs는 파일 단위 트랜스파일이라 esbuild가 ./StockChart 등을 CJS로 보고
+// node 호환 interop(__toESM(mod, 1))을 적용함. 그 결과 .default가 네임스페이스
+// 객체가 되므로(SSR require 경로), 여기서 한 번 풀어준다. ESM 경로엔 영향 없음.
+const undefault = <T>(m: T | { default: T }): T =>
+  (typeof m === 'function' ? m : (m as { default: T }).default) as T;
+
 export const componentFactories: ComponentFactory[] = [
-  StockChart,
-  RadarChart,
-  BubbleChart,
-  RangeSlider,
-  CartesianChart,
-  CartesianChart3D,
+  undefault(StockChart),
+  undefault(RadarChart),
+  undefault(BubbleChart),
+  undefault(RangeSlider),
+  undefault(CartesianChart),
+  undefault(CartesianChart3D),
 ];
