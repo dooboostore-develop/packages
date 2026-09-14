@@ -24,11 +24,8 @@
     "typecheck": "tsc --noEmit -p tsconfig.test.json",
     "test": "webpack --config webpack.test.config.cjs && node --test dist-test/full.test.cjs"
   },
-  "peerDependencies": {
-    "@dooboostore/core": "workspace:*"
-  },
+  "peerDependencies": {},
   "devDependencies": {
-    "@dooboostore/core": "workspace:*",
     "@types/node": "^20",
     "esbuild": "^0.23.0",
     "esbuild-plugin-tsc": "^0.5.0",
@@ -37,5 +34,8 @@
     "typescript": "^5.9.2",
     "webpack": "^5.93.0",
     "webpack-cli": "^5.1.4"
+  },
+  "dependencies": {
+    "@dooboostore/core": "workspace:*"
   }
 }

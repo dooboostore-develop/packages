@@ -67,16 +67,7 @@
     "url": "https://github.com/dooboostore-develop/packages"
   },
   "peerDependencies": {
-    "reflect-metadata": "^0.2.2",
-    "@dooboostore/core": "workspace:*",
-    "@dooboostore/core-node": "workspace:*",
-    "@dooboostore/core-web": "workspace:*",
-    "@dooboostore/dom-parser": "workspace:*",
-    "@dooboostore/dom-render": "workspace:*",
-    "@dooboostore/simple-boot": "workspace:*",
-    "@dooboostore/simple-boot-front": "workspace:*",
-    "@dooboostore/simple-boot-http-server": "workspace:*",
-    "@dooboostore/simple-web-component": "workspace:*"
+    "reflect-metadata": "^0.2.2"
   },
   "devDependencies": {
     "@babel/core": "^7.24.0",
@@ -98,6 +89,15 @@
     "typescript": "^5.9.2"
   },
   "dependencies": {
+    "@dooboostore/core": "workspace:*",
+    "@dooboostore/core-node": "workspace:*",
+    "@dooboostore/core-web": "workspace:*",
+    "@dooboostore/dom-parser": "workspace:*",
+    "@dooboostore/dom-render": "workspace:*",
+    "@dooboostore/simple-boot": "workspace:*",
+    "@dooboostore/simple-boot-front": "workspace:*",
+    "@dooboostore/simple-boot-http-server": "workspace:*",
+    "@dooboostore/simple-web-component": "workspace:*",
     "jsdom": "^26.0.0",
     "linkedom": "0.18.12",
     "playwright": "^1.59.1"

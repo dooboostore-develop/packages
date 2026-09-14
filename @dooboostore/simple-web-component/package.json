@@ -67,10 +67,7 @@
   },
   "author": "dooboostore <dooboostore@gmail.com> (https://github.com/dooboostore)",
   "peerDependencies": {
-    "reflect-metadata": "^0.2.2",
-    "@dooboostore/core": "workspace:*",
-    "@dooboostore/core-web": "workspace:*",
-    "@dooboostore/simple-boot": "workspace:*"
+    "reflect-metadata": "^0.2.2"
   },
   "devDependencies": {
     "@babel/core": "^7.24.0",
@@ -114,5 +111,10 @@
     "typecheck": "pnpm exec tsc --noEmit",
     "test": "echo test",
     "test:bundle": "pnpm --filter @dooboostore/simple-web-component-bundle-test dev"
+  },
+  "dependencies": {
+    "@dooboostore/core": "workspace:*",
+    "@dooboostore/core-web": "workspace:*",
+    "@dooboostore/simple-boot": "workspace:*"
   }
 }

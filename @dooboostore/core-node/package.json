@@ -59,18 +59,17 @@
     "node"
   ],
   "peerDependencies": {
-    "reflect-metadata": "^0.2.2",
-    "@dooboostore/core": "workspace:*"
+    "reflect-metadata": "^0.2.2"
   },
   "devDependencies": {
+    "@types/node": "^20",
+    "esbuild": "^0.23.0",
     "esbuild-plugin-tsc": "^0.5.0",
-    "webpack": "^5.93.0",
-    "webpack-cli": "^5.1.4",
     "ts-loader": "^9.5.1",
     "tslib": "^2.8.1",
-    "@types/node": "^20",
     "typescript": "^5.9.2",
-    "esbuild": "^0.23.0"
+    "webpack": "^5.93.0",
+    "webpack-cli": "^5.1.4"
   },
   "scripts": {
     "clean": "rm -rf dist",
@@ -88,5 +87,8 @@
     "ts:clean": "find . -name '*.js' -o -name '*.map' -o -name '*.d.ts' | xargs rm -f",
     "typecheck": "pnpm exec tsc --noEmit",
     "test": "echo test"
+  },
+  "dependencies": {
+    "@dooboostore/core": "workspace:*"
   }
 }
