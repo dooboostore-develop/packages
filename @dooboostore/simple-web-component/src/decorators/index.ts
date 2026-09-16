@@ -18,3 +18,5 @@ export * from './subscribeSwcAppMessageWhileConnected';
 export * from './publishSwcAppMessage';
 export * from './applySlot';
 export * from './state';
+export * from './setInterval';
+export * from './setTimeout';

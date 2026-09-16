@@ -23,13 +23,21 @@ Say goodbye to context switching between frontend and backend. With `@dooboostor
 
 | Package | Description |
 |---|---|
-| **`@dooboostore/simple-boot`** | The heart of the framework. A powerful IoC/DI container and AOP proxy manager. |
+| **`@dooboostore/core`** | Zero-dependency foundational utilities — RxJS-like `Observable`/`Subject`, validators, geometry, an HTTP fetcher, and array/object/string/date/math helpers. |
+| **`@dooboostore/core-node`** | Node-only utilities extending `core` — filesystem helpers, process/env info, memory profiling, SSR page pre-rendering. |
+| **`@dooboostore/core-web`** | Browser-only utilities extending `core` — DOM/event/storage helpers, client-side routers, canvas & animation utils. |
+| **`@dooboostore/algorithm`** | Stock/trading domain algorithms — trend & indicator detection (SMA/EMA/MACD/RSI/OBV) and a `TradingSimulator` for backtesting strategies. |
+| **`@dooboostore/dom-parser`** | A lightweight, dependency-free server-side DOM implementation (a jsdom alternative) for SSR environments. |
+| **`@dooboostore/dom-editor`** | A standalone visual drag-and-drop DOM/HTML editor with JSON import/export. |
+| **`@dooboostore/lib-node`** | A Node.js utility for generating random placeholder images via server-side `canvas`. |
+| **`@dooboostore/lib-web`** | Canvas-based browser UI widgets — a multi-layer image editor, GPS marker visualization, and polygon image cropping. |
+| **`@dooboostore/simple-boot`** | The heart of the framework. A powerful IoC/DI container, AOP proxy manager, and declarative routing decorators. |
 | **`@dooboostore/dom-render`** | A reactive, Proxy-based view template engine for DOM manipulation without VDOM. |
 | **`@dooboostore/simple-boot-front`** | SPA framework integrating `simple-boot` and `dom-render` (Angular-style development). |
-| **`@dooboostore/simple-boot-http-server`** | A high-performance Node.js HTTP web server framework with built-in Router & Intent system. |
-| **`@dooboostore/simple-boot-http-server-ssr`** | Seamless SSR (Server-Side Rendering) extension for the HTTP server. |
-| **`@dooboostore/core` / `core-node` / `core-web`** | Deep foundational utilities (Reflection, Observables, Byte manipulation) split by environment. |
-| **`@dooboostore/dom-parser` / `dom-editor`** | Advanced tools for parsing HTML to AST and manipulating DOM structures natively. |
+| **`@dooboostore/simple-web-component`** | A lightweight, no-Virtual-DOM front-end framework built directly on native Web Components — reuses `simple-boot`'s DI container with its own decorator + lifecycle-plugin rendering model. |
+| **`@dooboostore/simple-web-component-library`** | A UI component library built on `simple-web-component` — chart components (cartesian/stock/radar/bubble/3D) and a range slider. |
+| **`@dooboostore/simple-boot-http-server`** | A high-performance Node.js HTTP web server framework with declarative routing and a WebSocket RPC layer. |
+| **`@dooboostore/simple-boot-http-server-ssr`** | Seamless SSR (Server-Side Rendering) extension tying the front-end and HTTP server frameworks together. |
 
 ---
 
@@ -42,26 +50,27 @@ Just like Spring Boot, but in pure TypeScript.
 
 ```typescript
 import { Sim } from '@dooboostore/simple-boot/decorators/SimDecorator';
-import { Inject } from '@dooboostore/simple-boot/decorators/inject/Inject';
-import { Route, Get } from '@dooboostore/simple-boot-http-server/decorators/Route';
+import { Router, Route } from '@dooboostore/simple-boot/decorators/route/Router';
+import { GET } from '@dooboostore/simple-boot-http-server/decorators/MethodMapping';
+import { RequestResponse } from '@dooboostore/simple-boot-http-server/models/RequestResponse';
 
-@Sim()
+@Sim({ symbol: Symbol.for('UserService') })
 export class UserService {
   getUser(id: string) {
     return { id, name: 'John Doe' };
   }
 }
 
-@Sim()
-@Route({ path: '/api/users' })
+@Sim({ using: [UserService] })
+@Router({ path: '/api' })
 export class UserController {
   // Constructor Injection
   constructor(private userService: UserService) {}
 
-  @Get({ path: '/:id' })
-  async getUserProfile(req: RequestResponse) {
-    const userId = req.pathParams.id;
-    return this.userService.getUser(userId);
+  @Route({ path: '/users' })
+  @GET({ res: { contentType: 'application/json' } })
+  getUsers(rr: RequestResponse) {
+    return this.userService.getUser('1');
   }
 }
 ```
@@ -74,12 +83,12 @@ import { Sim } from '@dooboostore/simple-boot/decorators/SimDecorator';
 import { Component } from '@dooboostore/simple-boot-front/decorators/Component';
 import { ComponentBase } from '@dooboostore/simple-boot-front/component/ComponentBase';
 
-@Sim()
+@Sim
 @Component({
+  selector: 'user-profile',
   template: `
     <div class="profile-card">
-      <h2>Hello, \${ this.user.name }\$!</h2>
-      <input type="text" dr-value="@this@.user.name" />
+      <h2>Hello, \${@this@.user.name}\$!</h2>
       <button dr-event-click="@this@.save()">Save</button>
     </div>
   `,
@@ -100,6 +109,8 @@ Send JSON and Binary Files together over WebSockets with ease. Wait for the serv
 
 ```typescript
 // Client-side (Browser)
+import { WebSocketClient } from '@dooboostore/simple-boot-http-server/websocket';
+
 const ws = new WebSocketClient('ws://localhost:8080');
 const topic = ws.subject('/api/upload');
 

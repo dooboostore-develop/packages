@@ -18,6 +18,8 @@ import {findAllStateMetadata} from "./state";
 import {findAllPropertyMetadata} from "./applyProperty";
 import {MessageSubscribeLifeCycler} from "./subscribeSwcAppMessageWhileConnected";
 import {RouteSubscribeLifeCycler} from "./subscribeSwcAppRouteChangeWhileConnected";
+import {SetIntervalLifeCycler} from "./setInterval";
+import {SetTimeoutLifeCycler} from "./setTimeout";
 
 // --- Core Interfaces & Types ---
 
@@ -368,6 +370,8 @@ export const elementDefine =
         new MutationObserverLifeCycler(),
         new MessageSubscribeLifeCycler(),
         new RouteSubscribeLifeCycler(),
+        new SetIntervalLifeCycler(),
+        new SetTimeoutLifeCycler(),
       ];
 
       // observedAttributes 기여 cycler (define-time, constructor 기반)

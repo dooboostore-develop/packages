@@ -92,17 +92,27 @@ app.run();
 ## Core API
 
 - `SimpleBootFront`
-	- Browser runtime bootstrap class.
-	- Exposes routing observables and `goRouting(url)` helper.
+	- Browser runtime bootstrap class (extends `SimpleApplication` from `@dooboostore/simple-boot`).
+	- `run(otherInstanceSim?, url?)` bootstraps the app; `goRouting(url)` / `routingRouterModule(url)` navigate programmatically.
+	- `routingObservable` / `routingStartObservable` / `routingEndObservable` — observe routing transitions (`{ triggerPoint, domRenderRouter, routerModule }`).
+	- `getSimstanceManager()` exposes the underlying DI container.
+	- SSR data hydration helpers used together with `@dooboostore/simple-boot-http-server-ssr`: `saveDataHydration(key, data)`, `getDataHydration(key)`, `cutDataHydration(key)` (read-and-remove), `deleteDataHydration(key)`, `clearDataHydration()`, `writeDataHydration()` (serializes pending hydration data into a `<script>` tag).
 - `SimFrontOption` / `UrlType`
 	- Front runtime option object.
-	- Configure `window`, root `selector`, and route strategy (`path` or `hash`).
-- `@Component(config)`
-	- Registers renderable component metadata (`selector`, `template`, `styles`, `using`, `proxy`).
-- `@Script(config)`
-	- Registers reusable script functions/classes for template context.
+	- Configure `window`, root `selector` (default `#app`), route strategy (`urlType: UrlType.path | UrlType.hash`, default `path`), and `using` (component classes to register).
+- `@Component(config)` (alias: `@component`)
+	- Registers renderable component metadata: `selector` (defaults to the lowercased class name), `template`, `styles`, `using`, `proxy`, and `noStrip` (keep the host element instead of stripping it).
+	- Can also be used bare (`@Component` with no config).
+- `@Script(config?)` (alias: `@script`)
+	- Registers a class extending `ScriptRunnable` (implements `run(...args)`) under a name (defaults to the class name) so templates/other components can invoke it as a script function.
 - `ComponentBase`
-	- Extends dom-render component base and supports routing callbacks.
+	- Extends dom-render's `ComponentBase` and implements `RouterAction.OnRouting` with a default no-op `onRouting`.
+- `ComponentRouterBase`
+	- Router-aware component base (extends dom-render's `ComponentRouterBase`). Implements `canActivate`/`onRouting` to swap in the routed child component, and exposes `getPathData<T>()` for the current route's path data.
+- `ComponentSet`
+	- Wraps an arbitrary object together with its `@Component` template/styles (extends dom-render's `ComponentSet`) — used internally when swapping routed components.
+- Lifecycle interfaces: `OnInitedChild` (`onInitedChild(): void`), `OnFinish` (`onFinish(): void`), `onChangedRender` (`onChangedRender(): void`) — implement on a component to hook into these lifecycle points.
+- Namespace re-exports: importing from the package root also gives you `Core`, `CoreWeb`, `DomRender`, `SimpleBoot` (namespaced re-exports of `@dooboostore/core`, `@dooboostore/core-web`, `@dooboostore/dom-render`, `@dooboostore/simple-boot`), so you don't need to add those as separate dependencies just to reach a type or utility.
 
 ## Architecture Notes
 

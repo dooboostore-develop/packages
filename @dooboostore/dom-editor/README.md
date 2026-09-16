@@ -85,9 +85,9 @@ const editor = new DomEditor(document.getElementById('editor-container')!, optio
 ### Structured Data Import
 
 ```typescript
-import { DomEditor, NodeData } from '@dooboostore/dom-editor';
+import { DomEditor, ElementData } from '@dooboostore/dom-editor';
 
-const initialTree: NodeData = {
+const initialTree: ElementData = {
   nodeType: 'element',
   tagName: 'div',
   className: 'container',
@@ -181,6 +181,8 @@ editor.destroy();
 
 #### ElementData
 
+Only `ElementData` and `DomEditorOptions` are exported by name from the package root. A `children` entry is structurally either an element node or a text node, but that union (`NodeData`/`TextNodeData`) is not itself exported — annotate variables as `ElementData`, as shown above.
+
 ```typescript
 interface ElementData {
   nodeType: 'element';
@@ -188,16 +190,22 @@ interface ElementData {
   id?: string;
   className?: string;
   attributes?: Record<string, string>;
-  children?: NodeData[];
+  children?: Array<ElementData | { nodeType: 'text'; textContent: string }>;
 }
-
-interface TextNodeData {
-  nodeType: 'text';
-  textContent: string;
-}
-
-type NodeData = ElementData | TextNodeData;
 ```
+
+### Utility Functions
+
+The package root also re-exports the internal DOM/drag helper functions it uses itself (`export * from './utils'`), in case they're useful standalone:
+
+```typescript
+import { sanitizeHtml, isValidHtmlTag, getValidHtmlTags, debounce, throttle } from '@dooboostore/dom-editor';
+```
+
+- `sanitizeHtml(html: string): string` — strips `<script>` tags and the `onload`/`onerror`/`onclick`/`onmouseover` attributes. This is a **basic** filter, not a full XSS sanitizer (it doesn't cover every event-handler attribute or `javascript:` URLs) — for the "sanitize untrusted HTML" best practice below, treat it as a first pass, not a complete guarantee.
+- `isValidHtmlTag(tagName: string): boolean` / `getValidHtmlTags(): string[]` — check against / list the editor's allow-listed tag names.
+- `generateUniqueId(prefix?: string): string`, `cloneElement(element: HTMLElement): HTMLElement`, `isDescendant`, `canDrop`, `calculateDropPosition`, `clearHighlights`, `animateElement` — internal drag-and-drop helpers, exported but mainly useful if you're extending the editor's own behavior.
+- `debounce(func, wait)` / `throttle(func, limit)` — generic timing helpers.
 
 ## Features in Detail
 
@@ -335,8 +343,8 @@ pnpm run watch
 ## Best Practices
 
 - Initialize the editor with a stable container element size.
-- Use structured `NodeData` for long-term persistence or server sync.
-- Sanitize untrusted HTML before passing it into `loadContent`.
+- Use structured `ElementData` (via `exportData()`/`importData()`) for long-term persistence or server sync.
+- Sanitize untrusted HTML before passing it into `loadContent` — the package's own `sanitizeHtml` helper (see Utility Functions) is a basic pass, not a full guarantee against XSS.
 - Call `destroy()` when unmounting to clean up editor resources.
 
 ## Troubleshooting

@@ -39,11 +39,11 @@ class Dashboard extends HTMLElement {
 
 ### 3. **Declarative DOM Updates**
 
-#### @onConnectedShadow
+#### @onConnectedBodyShadow
 Render HTML automatically when component connects to DOM.
 
 ```typescript
-@onConnectedShadow
+@onConnectedBodyShadow
 render() {
   return `<div>Hello, <span>${this.name}</span>!</div>`;
 }
@@ -101,7 +101,7 @@ class ContentManager extends HTMLElement {
     return true;
   }
 
-  @onConnectedLight
+  @onConnectedBodyLight
   render() {
     return `
       <div>
@@ -171,7 +171,7 @@ class CounterApp extends HTMLElement {
     this.count++;  // Triggers automatic DOM update
   }
 
-  @onConnectedInnerHtml
+  @onConnectedBodyLight
   render() {
     return `
       <div>
@@ -254,7 +254,7 @@ class UserProfile extends HTMLElement {
     this.isEditing = !this.isEditing;
   }
 
-  @onConnectedShadow
+  @onConnectedBodyShadow
   render() {
     return `
       <div>
@@ -305,12 +305,16 @@ onCriticalClick(event: Event) {
 - `addEventListenerDocument(type, options)` - Listen on document
 - `addEventListenerDelegate(selector, type, options)` - Event delegation
 - `eventDelegate(selector, type, options)` - Short alias
-- `addEventListenerDelegateLightDom(selector, type, options)` - Delegate in light DOM
-- `eventDelegateLightDom(selector, type, options)` - Short alias
-- `addEventListenerDelegateShadowDom(selector, type, options)` - Delegate in shadow DOM
-- `eventDelegateShadowDom(selector, type, options)` - Short alias
-- `addEventListenerDelegateAllDom(selector, type, options)` - Delegate in all DOM
-- `eventDelegateAllDom(selector, type, options)` - Short alias
+- `addEventListenerDelegateLight(selector, type, options)` - Delegate in light DOM
+- `eventDelegateLight(selector, type, options)` - Short alias
+- `addEventListenerDelegateShadow(selector, type, options)` - Delegate in shadow DOM
+- `eventDelegateShadow(selector, type, options)` - Short alias
+- `addEventListenerDelegateAll(selector, type, options)` - Delegate in all DOM
+- `eventDelegateAll(selector, type, options)` - Short alias
+- `addEventListenerLight(selector, type, options)` / `eventLight(...)` - Bind (non-delegated) in light DOM
+- `addEventListenerShadow(selector, type, options)` / `eventShadow(...)` - Bind (non-delegated) in shadow DOM
+- `addEventListenerAll(selector, type, options)` / `eventAll(...)` - Bind (non-delegated) in both light & shadow DOM
+- `addEventListenerMutation(selector, type, options)` / `eventMutation(...)` - Delegate via `MutationObserver` instead of event bubbling (useful for non-bubbling events like `focus`/`blur`); `*Light`/`*Shadow`/`*All` variants also available
 
 #### @emitCustomEvent
 Emit custom events with data.
@@ -613,9 +617,9 @@ class FormHandler extends HTMLElement {
 - `@setProperty('#selector', 'propertyName', options)` - Set property on selector with options
 - `@setProperty` - Bare decorator (uses method name as property on $this)
 
-### 6.6 **DOM Observers (@mutationObserver, @resizeObserver)**
+### 6.6 **DOM Observers (@mutationObserver, @resizeObserver, @intersectionObserver)**
 
-Observe DOM mutations and element size changes declaratively. Both decorators share the same pattern as `@event` — they support optional selector (defaults to `$this`), root-based helpers, and `delegate` mode.
+Observe DOM mutations, element size changes, and viewport intersection declaratively. All three decorators share the same pattern as `@event` — they support optional selector (defaults to `$this`), root-based helpers, and `delegate` mode.
 
 #### @mutationObserver
 Detect DOM changes (child add/remove, attribute changes, text changes) and react automatically.
@@ -708,8 +712,52 @@ class ChartWidget extends HTMLElement {
 **Combining with @resizeObserver delegate (dynamic tracking):**
 When `delegate: true`, an internal `MutationObserver` automatically observes the root so that elements matching the selector are tracked even after being dynamically added/removed from the DOM.
 
+#### @intersectionObserver
+Detect when elements enter/exit the viewport (or a custom scroll container) and react automatically — useful for lazy loading, infinite scroll, and visibility tracking.
+
+```typescript
+@elementDefine('lazy-image-list')
+class LazyImageList extends HTMLElement {
+  // Fire when any matching element crosses the viewport boundary
+  @intersectionObserverLight('.lazy-img', { threshold: 0 })
+  onImageVisible(matchedEls: HTMLElement[], entries: IntersectionObserverEntry[], observer: IntersectionObserver) {
+    entries.forEach(e => {
+      if (e.isIntersecting) (e.target as HTMLImageElement).src = (e.target as HTMLElement).dataset.src!;
+    });
+  }
+
+  // Delegate mode tracks dynamically added elements too
+  @intersectionObserverDelegateShadow('.card', { threshold: [0, 0.5, 1] })
+  onCardIntersect(matchedEls: HTMLElement[], entries: IntersectionObserverEntry[], observer: IntersectionObserver) {
+    console.log('intersection ratio:', entries[0]?.intersectionRatio);
+  }
+}
+```
+
+**Callback signature:**
+- `matchedEls: HTMLElement[]` - Elements matching the selector (1st arg)
+- `entries: IntersectionObserverEntry[]` - Original observer entries (2nd arg)
+- `observer: IntersectionObserver` - The observer instance (3rd arg)
+
+**@intersectionObserver Options:**
+- Standard `IntersectionObserverInit` options: `threshold`, `rootMargin` (note: its own scroll-container `root` is passed as `intersectionRoot`, since the decorator's `root` option already means light/shadow/all/auto selector scope)
+- `delegate` - Observe root and filter by selector in callback (dynamically added/removed elements are tracked too)
+- `root` - `'light' | 'shadow' | 'all' | 'auto'`
+- `filter` - Additional callback filter
+- `removeObserver` - Cleanup callback called on disconnect `(target, options)`
+
+**@intersectionObserver Decorator Variants:**
+- `intersectionObserver(selector?, options?)` - Full form (selector defaults to `$this`)
+- `intersectionObserverLight(selector?, options?)` - Observe light DOM
+- `intersectionObserverShadow(selector?, options?)` - Observe shadow DOM
+- `intersectionObserverAll(selector?, options?)` - Observe both light & shadow
+- `intersectionObserverDelegate(selector?, options?)` - Delegate mode (root observe)
+- `intersectionObserverDelegateLight(selector?, options?)` - Delegate in light DOM
+- `intersectionObserverDelegateShadow(selector?, options?)` - Delegate in shadow DOM
+- `intersectionObserverDelegateAll(selector?, options?)` - Delegate in all DOM
+
 **Cleanup:**
-Both observers are automatically disconnected when the component is removed from the DOM. `removeObserver` callbacks (if provided) are invoked during cleanup.
+All three observers are automatically disconnected when the component is removed from the DOM. `removeObserver` callbacks (if provided) are invoked during cleanup.
 
 ### 7. **DOM Manipulation with applyNode**
 
@@ -736,7 +784,7 @@ class ContentUpdater extends HTMLElement {
     return `<p>Prepended content</p>`;
   }
 
-  @onConnectedLight
+  @onConnectedBodyLight
   render() {
     return `
       <div>
@@ -802,7 +850,7 @@ class StyledComponent extends HTMLElement {
     };
   }
 
-  @onConnectedLight
+  @onConnectedBodyLight
   render() {
     return `
       <div>
@@ -908,6 +956,57 @@ onFirst() { }
 @onConnectedBefore({ order: 1 })  // Runs second
 onSecond() { }
 ```
+
+### 8.6 **Timers (@setInterval, @setTimeout)**
+
+Declaratively run a method on a repeating interval or after a one-time delay, tied to the component's connected lifecycle. Both are pure metadata-collecting decorators — they never touch the method itself (no `descriptor.value` wrapping) — so they compose safely with any other decorator stacked on the same method, regardless of declaration order. All the actual scheduling/cleanup is handled by `SetIntervalLifeCycler`/`SetTimeoutLifeCycler` (`ElementDefineLifeCycler` implementations, same plugin pattern as the observers above):
+
+- Starts automatically when the component connects.
+- Automatically `clearInterval`/`clearTimeout`s when the component disconnects — no manual cleanup needed.
+
+```typescript
+@elementDefine('live-clock')
+class LiveClock extends HTMLElement {
+  @setInterval(1000, {
+    parameter: (set) => [Date.now()],
+    created: (set, id) => console.log('interval started, timer id:', id)
+  })
+  tick(now: number) {
+    this.textContent = new Date(now).toLocaleTimeString();
+  }
+
+  // No options - called with no arguments, once per second
+  @setInterval(1000)
+  onTick() {
+    console.log('tick');
+  }
+
+  // Fires once, 3 seconds after connect
+  @setTimeout(3000)
+  onceAfter3s() {
+    console.log('3 seconds have passed');
+  }
+}
+```
+
+**`@setInterval(interval, options?)` / `@setTimeout(delay, options?)`:**
+- `interval` / `delay` - milliseconds. `setInterval` repeats; `setTimeout` fires once.
+- `parameter?: (set: HelperHostSet) => any[]` - computes the arguments passed to the method on each tick/fire. Omitted → method is called with no arguments.
+- `created?: (set: HelperHostSet, id: number) => void` - fires once, right after the timer is armed, with the real `setInterval`/`setTimeout` return value. For logging/debugging only — cleanup is still handled automatically, this is not a manual-clear hook.
+- `valueKey?: symbol | string` - same convention as `@applyAttribute`'s `valueKey` (see "Multiple Decorators with Shared Return Value" below): if the method's return value is an object and this key's value is a function, that function is called on every tick/fire — but note the callback signature is just `(id: number)`, not `(set, id)` like `created`.
+
+```typescript
+@setInterval(900, { valueKey: 'onTick' })
+poll() {
+  return {
+    onTick: (id: number) => console.log('interval', id, 'ticked'),
+  };
+}
+```
+
+**Why no wrapping is needed:** unlike `@applyAttribute`/`@setAttribute` (which must wrap the method because it can be called by arbitrary code — event handlers, other decorators, etc.), the timer's own `LifeCycler` is the one calling `inst[propertyKey](...)` every tick/fire — it already has the return value in hand at that call site, so it can read `valueKey` off of it without ever needing to intercept the method.
+
+> `@requestAnimationFrame` is not implemented yet.
 
 ### 9. **Structural Directives**
 
@@ -1426,6 +1525,7 @@ class MixedKeysExample extends HTMLElement {
 - `@applyClass` / `@updateClass` / etc.
 - `@emitCustomEvent` / `@emit`
 - `@publishSwcAppMessage` / `@publish`
+- `@setInterval` / `@setTimeout` - variant: the extracted value must itself be a function, and that function is invoked with `(id: number)` on every tick/fire (see "Timers" section above) rather than being applied directly like the other decorators here.
 
 Each decorator will use only its corresponding value from the return object, preventing conflicts and allowing clean separation of concerns.
 
@@ -1517,9 +1617,7 @@ method() { ... }
 
 **query.ts:**
 - `query(selector?, options?)` - Query single element (supports $this, $host, $appHost, etc.)
-
-**queryAll.ts:**
-- `queryAll(selector?, options?)` - Query multiple elements
+- `queryAll(selector?, options?)` - Query multiple elements (same file as `query`)
 
 **emitCustomEvent.ts:**
 - `emitCustomEvent(target, type, options?)` - Emit custom events

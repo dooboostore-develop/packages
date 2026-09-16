@@ -56,6 +56,12 @@ export default (w: Window) => {
       return { path: '/orders' };
     }
 
+    @addEventListener('#timer-test-link', 'click')
+    @emitCustomEvent('$this', 'navigate', { attributeName: 'on-navigate' })
+    onTimerTestClick() {
+      return { path: '/timer-test' };
+    }
+
     @addEventListener('.cart-icon', 'click')
     @emitCustomEvent('$this', 'navigate', { attributeName: 'on-navigate' })
     onCartClick() {
@@ -181,6 +187,7 @@ export default (w: Window) => {
           <div class="nav-center">
             <a id="home-link">Home</a>
             <a id="orders-link">My Orders</a>
+            <a id="timer-test-link">Timer Test</a>
           </div>
           <div class="cart-section">
             <span class="cart-icon" id="cart-icon">🛒</span>

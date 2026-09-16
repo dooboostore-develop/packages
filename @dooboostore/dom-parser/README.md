@@ -126,7 +126,9 @@ Creates a new DOM parser instance with the provided HTML string.
 **DomParserOptions:**
 ```typescript
 interface DomParserOptions {
-  href?: string;  // Base URL for the document
+  href?: string;                              // Base URL for the document
+  onUrlChange?: (url: string) => void;        // Called whenever the parsed document's `location.href` changes (e.g. from code running against the parsed DOM setting `location.href` or using history APIs)
+  fetch?: typeof globalThis.fetch;             // Custom fetch implementation used by `window.fetch()` inside the parsed environment
 }
 ```
 
@@ -173,7 +175,8 @@ console.log(h1?.textContent); // "Hello"
 - `NodeIterator` / `TreeWalker`
 - CSS selector parsing with complex expressions
 - Event handling and DOM manipulation
-- Custom Element registration via `customElements.define()`
+- Custom Element registration via `customElements.define()` (including customized built-ins via `is=""` and automatic upgrade of already-parsed elements)
+- Basic SVG (`<svg>`, `<circle>`, `<rect>`) and MathML element recognition alongside 70+ standard HTML element tags
 
 
 ## Use Cases
@@ -477,35 +480,9 @@ console.log(allHeadings.length); // 2
 - **Memory Efficient**: Clean separation of concerns with proper garbage collection
 - **TreeWalker & NodeIterator**: Efficient DOM traversal without loading entire tree into memory
 
-
-
-```typescript
-import { parseHTML } from '@dooboostore/dom-parser';
-
-// Quick setup with parseHTML utility
-const templateHtml = fs.readFileSync('template.html', 'utf8');
-const window = parseHTML(templateHtml);
-
-// Set up global DOM for SSR
-global.document = window.document;
-global.window = window;
-
-// Now your components can use DOM APIs on the server
-```
-
-**Alternative with DomParser class:**
-```typescript
-import { DomParser } from '@dooboostore/dom-parser';
-
-const parser = new DomParser(templateHtml);
-global.document = parser.document;
-global.window = parser.window;
-```
-
-
 ---
 
-## API Reference
+## DOM Node Classes Reference
 
 ### Core Classes
 
@@ -525,7 +502,9 @@ destroy(): void                       // Destroy parser and free memory
 
 // Options
 interface DomParserOptions {
-  href?: string;  // Base URL for the document
+  href?: string;                          // Base URL for the document
+  onUrlChange?: (url: string) => void;    // Fires when the parsed document's location.href changes
+  fetch?: typeof globalThis.fetch;        // Custom fetch implementation for window.fetch()
 }
 ```
 
@@ -554,17 +533,14 @@ The package provides TypeScript implementations of standard DOM interfaces:
 ### Advanced Interfaces
 
 ```typescript
-// Node Traversal
-NodeIterator: Traverse DOM nodes sequentially
-TreeWalker: Efficient DOM tree traversal with filters
+// Importable from '@dooboostore/dom-parser'
+NodeIterator     // Traverse DOM nodes sequentially (also returned by document.createNodeIterator())
+NodeFilter       // Node-filtering constants (SHOW_ELEMENT, SHOW_TEXT, ...)
+ParentNodeBase   // Base class implementing child-node management
+ChildNodeBase    // Base class implementing parent/sibling navigation
 
-// Node Filtering
-NodeFilter: Define which nodes to include during traversal
-
-// Standard Interfaces
-ParentNodeBase: Manage child nodes
-ChildNodeBase: Navigate parent hierarchy
-GetRootNodeOptions: Root node access configuration
+// Not a top-level export — obtained via document.createTreeWalker(), not imported directly
+TreeWalker       // Efficient DOM tree traversal with filters
 ```
 
 ---

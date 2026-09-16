@@ -151,7 +151,7 @@ async function buildTarget(target, watch = false) {
       );
       // Create package.json in dist/cjs to mark it as CommonJS
       const cjsPackageJson = {
-        name: '@dooboostore/simple-web-component-library-cjs-internal',
+        name: '@dooboostore/algorithm-cjs-internal',
         private: true,
         type: 'commonjs'
       };

@@ -63,19 +63,13 @@ state = result.rootObject;
 
 ## Public API (Root Export)
 
-`@dooboostore/dom-render` now exposes modules from root entry:
+`@dooboostore/dom-render`'s root entry (`src/index.ts`) re-exports everything as flat named exports — there is no `components`/`configs`/etc. namespace object to import. In practice you import whatever you need directly:
 
-- `components`
-- `configs`
-- `decorators`
-- `events`
-- `lifecycle`
-- `messenger`
-- `operators`
-- `rawsets`
-- `types`
-- `DomRender`
-- `DomRenderProxy`
+```typescript
+import { DomRender, DomRenderProxy, ComponentBase, attribute, query, event, Appender, DomRenderConfig } from '@dooboostore/dom-render';
+```
+
+This covers, among others: the built-in component classes/helpers (`If`, `This`, `Choose`, `CheckBox`, `Radio`, `Select`, `Timer`, `Details`, `Input`, `Route`, `RouterOutlet`, `A`, `ComponentSet`, `ComponentRouterBase`, and the combined `drComponent` map used to register them all at once), `configs`, `decorators`, `events`, `lifecycle` interfaces, `messenger`, `operators`, and `rawsets` — plus `DomRender`/`DomRenderProxy` themselves.
 
 This enables single-entry usage without relying on package subpath exports.
 
@@ -183,14 +177,15 @@ Strip wrapper element while preserving children.
 
 - `dr-inner-html`: bind `innerHTML`
 - `dr-inner-text`: bind `innerText`
-- `dr-attr`: bind attribute object
 - `dr-this`, `dr-this-property`: bind target context object
-- `dr-before`, `dr-after`: pre/post scripts around operator execution
+- `dr-option-before`, `dr-option-after`: pre/post scripts attached alongside another directive on the same element
+
+Plain attributes are usually bound simply by putting a template expression inside the attribute value itself — there is no separate `dr-attr` directive:
 
 ```html
 <div dr-inner-text="@this@.plainText"></div>
 <div dr-inner-html="@this@.trustedHtml"></div>
-<img dr-attr="{ src: @this@.imageUrl, alt: @this@.alt }" />
+<img src="${@this@.imageUrl}$" alt="${@this@.alt}$" />
 ```
 
 ### Form utility (`dr-form`)

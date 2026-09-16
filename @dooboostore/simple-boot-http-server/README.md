@@ -88,14 +88,24 @@ console.log('🚀 Server running at http://localhost:8080');
 ## 🛠️ Advanced Features
 
 ### Filters
-Implement the `Filter` interface to perform common request processing.
+Implement the `Filter` interface to perform common request processing. A filter has two hooks: `proceedBefore` runs before the route handler (return `false` to stop the chain right there), and `proceedAfter` runs after it (receives `before`, the boolean `proceedBefore` returned).
 
 ```typescript
+import { Filter } from '@dooboostore/simple-boot-http-server/filters/Filter';
+import { RequestResponse } from '@dooboostore/simple-boot-http-server/models/RequestResponse';
+import { SimpleBootHttpServer } from '@dooboostore/simple-boot-http-server/SimpleBootHttpServer';
+
 @Sim
 export class MyAuthFilter implements Filter {
-    async onHandle(rr: RequestResponse): Promise<boolean> {
-        // Returning false stops the request execution.
-        return true; 
+    async onInit(app: SimpleBootHttpServer) {}
+
+    async proceedBefore({ rr }: { rr: RequestResponse; app: SimpleBootHttpServer; carrier: Map<string, any> }): Promise<boolean> {
+        // Returning false stops the request from proceeding to the next filter/route handler.
+        return true;
+    }
+
+    async proceedAfter({ rr, before }: { rr: RequestResponse; app: SimpleBootHttpServer; before: boolean; carrier: Map<string, any> }): Promise<boolean> {
+        return true;
     }
 }
 ```

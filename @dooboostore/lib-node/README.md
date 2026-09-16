@@ -46,8 +46,10 @@ import { RandomImage } from '@dooboostore/lib-node';
 
 ### Bundle entry import
 
+The `bundle-entry` subpath re-exports everything from the root import plus the `@dooboostore/core` and `@dooboostore/core-node` peer packages as namespaces (`Core`, `CoreNode`), so consumers can reach them without adding separate imports.
+
 ```typescript
-import { RandomImage } from '@dooboostore/lib-node/bundle-entry';
+import { RandomImage, Core, CoreNode } from '@dooboostore/lib-node/bundle-entry';
 ```
 
 ## Basic Usage

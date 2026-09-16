@@ -83,9 +83,9 @@ class UserService {
 class UserController {
 	constructor(@Inject() private readonly userService: UserService) {}
 
-	@Route({ path: '/:id' })
-	detail(intent: any) {
-		const id = intent?.pathVariable?.id ?? 'unknown';
+	// Path params use {name} (or {name:regex}), not Express-style :name
+	@Route({ path: '/{id}' })
+	detail(id: string) {
 		return this.userService.getUser(id);
 	}
 }
@@ -102,7 +102,7 @@ console.log(userService.getUser('100'));
 - `SimpleApplication`, `SimOption`
 - `alert/*`, `cache/*`, `decorators/*`, `errors/*`, `fetch/*`
 - `intent/*`, `lifecycle/*`, `proxy/*`, `route/*`, `simstance/*`, `throwable/*`, `types/*`
-- `Core` namespace re-export from `@dooboostore/core/bundle-entry`
+- `Core` namespace re-export from `@dooboostore/core` (bundle-entry only)
 
 ## Common Patterns
 
@@ -117,15 +117,34 @@ const service = app.getInstance(MyService);
 
 ### 2) Intent publish
 
+`publishIntent` targets a `@Sim` registered with a `symbol`, addressed as `` Symbol.for(<name>)://<methodName> `` (see `Intent`). Method parameters are bound positionally from the data array, and `@Inject`-decorated parameters are still resolved from the container:
+
 ```typescript
-await app.publishIntent({ path: '/domain/user/created' }, { id: 'u-1' });
+import { Sim, Intent } from '@dooboostore/simple-boot';
+
+const NotifierSymbol = Symbol.for('Notifier');
+
+@Sim({ symbol: NotifierSymbol })
+class Notifier {
+	onUserCreated(id: string) {
+		console.log('user created:', id);
+		return id;
+	}
+}
+
+const intent = new Intent('Symbol.for(Notifier)://onUserCreated', ['u-1']);
+const [result] = await app.publishIntent(intent);
 ```
 
 ### 3) Route invoke
 
+`routing()` resolves the match and returns a `RouterModule` — it does **not** call the matched method for you. Read `pathData` for path params and fetch the module instance to invoke it yourself:
+
 ```typescript
-const result = await app.routing('/users/100');
-console.log(result);
+const routerModule = await app.routing('/users/100', { router: UserController });
+const id = routerModule.getPathData<{ id: string }>()?.id; // '100'
+const controller = routerModule.getModuleInstance<UserController>();
+const result = controller?.detail(id!);
 ```
 
 ### 4) SimOption customization

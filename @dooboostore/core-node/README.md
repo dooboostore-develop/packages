@@ -14,10 +14,10 @@ A comprehensive Node.js-specific utility library extending `@dooboostore/core` w
 -   **📁 Rich File System Operations**: `File<E>` class with read/write/copy/move/delete/rename operations—no raw fs callbacks
 -   **📄 Buffer & Data Conversion**: String ↔ Buffer conversions with Base64 support (data URLs compatible)
 -   **🌐 Batch URL Processing**: `HttpPageDownloader` for SSR to static HTML generation (pre-rendering workflows)
--   **⚙️ Process & Environment Access**: PID, platform, architecture, environment variables, CLI arguments, signals
--   **💾 Memory Profiling & Monitoring**: Heap snapshots, memory usage tracking, SIGUSR2 debugging signals
--   **🛣️ Advanced Path Operations**: Wrapper around Node.js `path` module with type-safe handling
--   **🔌 Zero Dependencies**: Uses only Node.js built-ins (fs, path, process, v8, os)
+-   **⚙️ Process & Environment Access**: PID, platform, architecture, environment variables, CLI argv
+-   **💾 Memory Profiling & Monitoring**: Heap snapshots, memory usage tracking, SIGUSR2 debugging signal handler
+-   **🛣️ Path Operations**: Thin, typed wrapper around Node.js's `path` module
+-   **🔌 Node.js Built-ins Only**: Implemented on top of `fs`/`path`/`process`/`v8`/`os` — no third-party runtime deps
 -   **🎯 TypeScript Support**: Full TypeScript definitions with generics and advanced types
 -   **🪶 Tree-Shaking Friendly**: Only import what you need from the root entry point
 
@@ -25,20 +25,18 @@ A comprehensive Node.js-specific utility library extending `@dooboostore/core` w
 
 ## Installation
 
-Install `@dooboostore/core-node` and its peer dependency:
+`@dooboostore/core-node` depends on `@dooboostore/core` (installed automatically) and peer-depends on `reflect-metadata`:
 
 ```bash
 # pnpm (recommended)
-pnpm add @dooboostore/core-node @dooboostore/core
+pnpm add @dooboostore/core-node reflect-metadata
 
 # npm
-npm install @dooboostore/core-node @dooboostore/core
+npm install @dooboostore/core-node reflect-metadata
 
 # yarn
-yarn add @dooboostore/core-node @dooboostore/core
+yarn add @dooboostore/core-node reflect-metadata
 ```
-
-**Peer Dependency:** `@dooboostore/core` (any version >= 1.0.0)
 
 ---
 
@@ -69,10 +67,11 @@ Complete file system abstraction with an object-oriented `File<E>` class.
 class File<E = any> {
   // Properties
   get path(): string                      // Full file path
-  get fileName(): string                  // Just the filename
-  get directory(): string                 // Directory path
-  get extension(): string | undefined     // File extension
-  size?: number                           // File size in bytes
+  get fileName(): string                  // Just the filename (substring after the last '/')
+  get directory(): string                 // Directory path (substring before the last '/')
+  get extension(): string | undefined     // File extension (undefined if there is no '.')
+  get originalName(): string | undefined  // Original filename passed in when constructed
+  size?: number                           // File size in bytes (populated by updateStats())
   etcData?: E                             // Generic metadata
 
   // Methods
@@ -86,33 +85,45 @@ class File<E = any> {
 
 #### FileUtils Namespace
 
+`PathParamType` accepted throughout is `string | string[]` — an array is joined via `path.join(...)`.
+
 ```typescript
-// Write buffer to file
-writeFile<E>(buffer: Buffer, config?: {
-  path?: string              // Auto-generates temp path if not provided
-  originalName?: string      // Original filename for metadata
-  etcData?: E               // Generic metadata (generic type E)
+// Write a Buffer to a file (auto-generates an OS temp path if config.path is omitted)
+writeFile<E = any>(buffer: Buffer, config?: {
+  path?: string              // defaults to `${os.tmpdir()}/${uuid4()}_${Date.now()}`
+  originalName?: string      // original filename, stored as File.originalName
+  etcData?: E                // generic metadata, stored as File.etcData
 }): Promise<File<E>>
 
-// Read file content
-readSync(path: PathParam): Buffer              // Synchronous read
-readAsync(path: PathParam): Promise<Buffer>    // Async read
+// Read
+readSync(path: PathParamType, config?: { option?: fs.readFileSync 2nd arg }): Buffer
+readAsync(path: PathParamType, config?: { option?: fs.promises.readFile 2nd arg }): Promise<Buffer>
+read(path: PathParamType, config: { option: fs.readFile 2nd arg }): Promise<Buffer>   // callback-style fs.readFile, promisified by return
+readJsonSync<T = any>(path: PathParamType): T
+readJsonAsync<T = any>(path: PathParamType): Promise<T>
+readStringSync(path: PathParamType): string            // reads as 'utf-8'
+readStringAsync(path: PathParamType): Promise<string>   // reads as 'utf-8'
 
-// Read JSON
-readJsonSync<T>(path: PathParam): T            // Parse JSON file
-readJsonAsync<T>(path: PathParam): Promise<T>
+// Write
+write(data: string | Buffer, config: { path: PathParamType, options?: fs.WriteFileOptions }): string   // returns the resolved path
+writeAppend(data: string | Buffer, config: { path: PathParamType, options?: fs.WriteFileOptions }): string
 
-// Read as string
-readStringSync(path: PathParam): string
-readStringAsync(path: PathParam): Promise<string>
+// Delete
+deleteSync(path: PathParamType, config?: { options?: fs.RmOptions }): void       // fs.rmSync, only if it exists
+deleteDirSync(path: PathParamType, config?: { options?: fs.RmDirOptions }): void // fs.rmdirSync, only if it exists
+deleteFileSync(path: PathParamType): void                                        // fs.unlinkSync, only if it exists
+
+// Copy
+copySync(source: PathParamType, destination: PathParamType, options?: fs.cpSync 3rd arg): void
 
 // Directory operations
-mkdirSync(path: PathParam, options?: MakeDirectoryOptions): void
-mkdir(path: PathParam, options?: MakeDirectoryOptions): Promise<string>
-existsSync(path: PathParam, callbacks?: { exists?, noExists? }): boolean
+mkdirSync(path: PathParamType, config?: MakeDirectoryOptions): void
+mkdir(path: PathParamType, config?: MakeDirectoryOptions): Promise<string>
+// Note: the callback keys are spelled `existes`/`noExistes` (typo preserved from the source), not `exists`/`noExists`
+existsSync(path: PathParamType, config?: { existes?: (path: string) => void, noExistes?: (path: string) => void }): boolean
 
 // Path handling
-path(pathParam: string | string[]): string    // Join path array or return string
+path(pathParam: PathParamType): string    // joins an array with path.join(...), or returns the string as-is
 ```
 
 #### Example: File Upload Handler
@@ -202,37 +213,30 @@ Access to Node.js process information and environment variables.
 
 #### ProcessUtils Namespace
 
+A thin, directly-named wrapper around Node's global `process` object.
+
 ```typescript
-// Get process ID
-ProcessUtils.pid(): number                    // Current process PID
+// Runtime identity
+ProcessUtils.getPid(): number                     // process.pid
+ProcessUtils.getPlatform(): NodeJS.Platform       // process.platform ('darwin' | 'linux' | 'win32' | ...)
+ProcessUtils.getArch(): string                    // process.arch
+ProcessUtils.getNodeVersion(): string             // process.version
+ProcessUtils.getVersions(): NodeJS.ProcessVersions // process.versions (node, v8, openssl, ...)
+ProcessUtils.getTitle(): string                   // process.title
+ProcessUtils.getCwd(): string                     // process.cwd()
+ProcessUtils.getUptime(): number                  // process.uptime()
+ProcessUtils.getCpuUsage(): NodeJS.CpuUsage        // process.cpuUsage()
+ProcessUtils.getArgv(): string[]                  // process.argv (NOT sliced — includes the node binary and script path)
 
-// Get runtime environment
-ProcessUtils.platform(): NodeJS.Platform      // 'linux' | 'darwin' | 'win32'
-ProcessUtils.arch(): string                   // 'x64' | 'arm64' | 'x32'
-ProcessUtils.version(): string                // Node.js version
-
-// Environment detection
-ProcessUtils.isDev(): boolean                 // process.env.NODE_ENV === 'development'
-ProcessUtils.isProd(): boolean                // process.env.NODE_ENV === 'production'
-ProcessUtils.isTest(): boolean                // process.env.NODE_ENV === 'test'
-
-// Environment variables
-ProcessUtils.env(key: string): string | undefined
-ProcessUtils.envRequired(key: string): string // Throws if missing
-ProcessUtils.envBool(key: string): boolean    // Parse boolean env var
-ProcessUtils.envInt(key: string): number      // Parse integer env var
-
-// CLI arguments
-ProcessUtils.argv(): string[]                 // process.argv.slice(2)
-ProcessUtils.argvMap(): Record<string, string>  // Parse --key=value format
-
-// Memory info
-ProcessUtils.memoryUsage(): NodeJS.MemoryUsage  // Heap, external, RSS
-ProcessUtils.uptime(): number                 // Process uptime in seconds
+// Environment
+ProcessUtils.getEnv(key: string): string | undefined     // process.env[key]
+ProcessUtils.setEnv(key: string, value: string): void     // process.env[key] = value
+ProcessUtils.isProduction(): boolean   // process.env.NODE_ENV === 'production'
+ProcessUtils.isDevelopment(): boolean  // process.env.NODE_ENV === 'development' || NODE_ENV is unset
+ProcessUtils.isTest(): boolean         // process.env.NODE_ENV === 'test'
 
 // Process control
-ProcessUtils.exit(code?: number): void        // Graceful exit
-ProcessUtils.restart(): void                  // Restart process
+ProcessUtils.exit(code: number = 0): void   // process.exit(code)
 ```
 
 #### Example: Environment Configuration
@@ -241,17 +245,15 @@ ProcessUtils.restart(): void                  // Restart process
 import { ProcessUtils } from '@dooboostore/core-node';
 
 const config = {
-  isDev: ProcessUtils.isDev(),
-  port: ProcessUtils.envInt('PORT') || 3000,
-  apiKey: ProcessUtils.envRequired('API_KEY'),
-  debugMode: ProcessUtils.envBool('DEBUG'),
-  database: ProcessUtils.env('DATABASE_URL') || 'localhost:5432'
+  isDev: ProcessUtils.isDevelopment(),
+  port: Number(ProcessUtils.getEnv('PORT')) || 3000,
+  database: ProcessUtils.getEnv('DATABASE_URL') || 'localhost:5432'
 };
 
 console.log('🚀 Starting server...');
-console.log(`  PID: ${ProcessUtils.pid()}`);
-console.log(`  Platform: ${ProcessUtils.platform()} (${ProcessUtils.arch()})`);
-console.log(`  Environment: ${ProcessUtils.isProd() ? 'Production' : 'Development'}`);
+console.log(`  PID: ${ProcessUtils.getPid()}`);
+console.log(`  Platform: ${ProcessUtils.getPlatform()} (${ProcessUtils.getArch()})`);
+console.log(`  Environment: ${ProcessUtils.isProduction() ? 'Production' : 'Development'}`);
 ```
 
 ---
@@ -263,43 +265,36 @@ Monitor heap usage and generate memory snapshots for debugging.
 #### MemoryUtils Namespace
 
 ```typescript
-// Memory monitoring
-MemoryUtils.getCurrentMemoryUsage(): {
-  rss: number,          // Resident set size (MB)
-  heapTotal: number,    // Total heap (MB)
-  heapUsed: number,     // Used heap (MB)
-  external: number      // External memory (MB)
-}
+// Raw memory usage (bytes — same shape as process.memoryUsage())
+MemoryUtils.memoryUsage(): NodeJS.MemoryUsage   // { rss, heapTotal, heapUsed, external, arrayBuffers }
 
-// Heap snapshots
-MemoryUtils.writeHeapSnapshot(filename?: string): Promise<string>
-  // Generates snapshot file (default: heap-${timestamp}.heapsnapshot)
+// Logs memory usage to the console, converted to MB
+MemoryUtils.logMemoryUsage(): void
 
-// Memory threshold alerts
-MemoryUtils.onMemoryThreshold(threshold: number, callback: () => void): void
+// Writes a V8 heap snapshot into `logPath` (a directory), filename is heap-<ISO timestamp>.heapsnapshot
+// Returns the written file path, or null if v8.writeHeapSnapshot threw
+MemoryUtils.writeHeapSnapshot(logPath: string): string | null
 
-// SIGUSR2 signal handler for profiling
-MemoryUtils.enableUSR2Profiling(outputDir?: string): void
-  // Dumps heap snapshot on SIGUSR2 signal
+// Registers a SIGUSR2 handler that calls writeHeapSnapshot(logPath) when the process receives SIGUSR2
+// (e.g. `kill -SIGUSR2 <pid>`, or `pm2 sendSignal SIGUSR2 <app-name>`)
+MemoryUtils.registerHeapDumpSignal(logPath: string): void
+
+// Starts a setInterval that calls logMemoryUsage() every `intervalMs`, and if `thresholdMB`
+// is exceeded, warns and (if `logPath` is given) writes an automatic heap snapshot.
+// Returns the interval handle so you can clearInterval() it later.
+MemoryUtils.startMemoryMonitoring(intervalMs?: number /* default 5 min */, thresholdMB?: number, logPath?: string): NodeJS.Timeout
 ```
 
 #### Example: Memory Monitoring
 
 ```typescript
-import { MemoryUtils, ProcessUtils } from '@dooboostore/core-node';
+import { MemoryUtils } from '@dooboostore/core-node';
 
-// Monitor every 5 seconds
-setInterval(() => {
-  const { heapUsed, heapTotal, rss } = MemoryUtils.getCurrentMemoryUsage();
-  
-  console.log(`📊 Memory: ${heapUsed.toFixed(2)} / ${heapTotal.toFixed(2)}MB`);
-}, 5000);
+// Log memory every 30s, and auto-dump a heap snapshot into ./heaps if usage exceeds 500MB
+MemoryUtils.startMemoryMonitoring(30_000, 500, './heaps');
 
-// Alert on high memory
-MemoryUtils.onMemoryThreshold(500, () => {
-  console.warn('⚠️ High memory! Dumping heap...');
-  MemoryUtils.writeHeapSnapshot('./heaps/high.heapsnapshot');
-});
+// Also dump on demand via `kill -SIGUSR2 <pid>`
+MemoryUtils.registerHeapDumpSignal('./heaps');
 ```
 
 ---
@@ -310,29 +305,28 @@ Wrapper around Node.js `path` module with type-safe handling.
 
 #### PathUtils Namespace
 
+A direct, one-to-one wrapper around Node's `path` module (plus `processCwd()` for `process.cwd()`). Every function takes plain string arguments — unlike `FileUtils`'s `PathParamType`, it does **not** accept an array in place of the rest-args.
+
 ```typescript
-// Join paths (flexible input)
-PathUtils.join(...paths: Array<string | string[]>): string
-
-// Resolve to absolute path
-PathUtils.resolve(path: string): string
-
-// Normalize path
-PathUtils.normalize(path: string): string
-
-// Extract components
-PathUtils.dirname(path: string): string      // Get directory
-PathUtils.basename(path: string): string     // Get filename
-PathUtils.extname(path: string): string      // Get extension
+PathUtils.processCwd(): string                                   // process.cwd()
+PathUtils.join(...paths: string[]): string                       // path.join(...)
+PathUtils.resolve(...paths: string[]): string                    // path.resolve(...)
+PathUtils.normalize(path: string): string                        // path.normalize(path)
+PathUtils.dirname(path: string): string                          // path.dirname(path)
+PathUtils.basename(path: string, suffix?: string): string        // path.basename(path, suffix)
+PathUtils.extname(path: string): string                          // path.extname(path)
+PathUtils.isAbsolute(path: string): boolean                      // path.isAbsolute(path)
+PathUtils.relative(from: string, to: string): string              // path.relative(from, to)
+PathUtils.parse(path: string): path.ParsedPath                   // path.parse(path)
+PathUtils.format(pathObject: path.FormatInputPathObject): string // path.format(pathObject)
 ```
 
-#### Example: Cross-Platform Paths
+#### Example: Path Handling
 
 ```typescript
 import { PathUtils } from '@dooboostore/core-node';
 
-// Works on Windows too
-const configPath = PathUtils.join(['./config', 'env', 'production.json']);
+const configPath = PathUtils.join('./config', 'env', 'production.json');
 
 // Parse file parts
 const parsed = PathUtils.parse('/app/src/index.ts');
@@ -348,21 +342,21 @@ Convert between Buffers, strings, and handle Base64 encoding/decoding.
 #### ConvertUtils Namespace
 
 ```typescript
-// Buffer to String
-ConvertUtils.toString(buffer: Buffer, config?: {
-  encoding?: BufferEncoding   // 'utf-8', 'base64', 'hex', etc. (default: 'utf-8')
+// Buffer (or string, passed through unchanged) to String
+ConvertUtils.toString(data: string | Buffer, config?: {
+  encoding?: BufferEncoding   // default: 'utf-8'; forwarded to Buffer#toString(encoding, start, end)
   start?: number
   end?: number
 }): string
 
 // String to Buffer
-ConvertUtils.toBuffer(data: string, config?: {
-  encoding?: BufferEncoding   // 'utf-8', 'base64', 'hex', etc. (default: 'utf-8')
-}): Buffer
-
-// Handles Base64 Data URLs automatically
-// Input: "data:image/png;base64,iVBORw0KGgo..."
+ConvertUtils.toBuffer(data: string, config?: { encoding: BufferEncoding }): Buffer
 ```
+
+`toBuffer` only special-cases `config.encoding === 'base64'`: it strips an optional Data URL prefix
+(everything up to and including `;base64,`, e.g. `"data:image/png;base64,iVBORw0KGgo..."`) and decodes
+the rest as base64. For any other (or missing) `encoding`, it returns `Buffer.from(data)` (UTF-8) —
+other encoding values are not applied.
 
 #### Example: Image Processing
 
@@ -422,7 +416,7 @@ import { HttpPageDownloader } from '@dooboostore/core-node';
 import { ProcessUtils } from '@dooboostore/core-node';
 
 async function buildStaticSite() {
-  const baseUrl = ProcessUtils.env('BUILD_URL') || 'http://localhost:3000';
+  const baseUrl = ProcessUtils.getEnv('BUILD_URL') || 'http://localhost:3000';
 
   const downloader = new HttpPageDownloader(baseUrl);
   const routes = ['/', '/about', '/products', '/contact'];
@@ -438,11 +432,9 @@ async function buildStaticSite() {
 import { ProcessUtils } from '@dooboostore/core-node';
 
 const config = {
-  environment: ProcessUtils.isProd() ? 'production' : 'development',
-  port: ProcessUtils.envInt('PORT') || 3000,
-  apiKey: ProcessUtils.envRequired('API_KEY'),
-  debug: ProcessUtils.envBool('DEBUG'),
-  ...ProcessUtils.argvMap()
+  environment: ProcessUtils.isProduction() ? 'production' : 'development',
+  port: Number(ProcessUtils.getEnv('PORT')) || 3000,
+  debug: ProcessUtils.getEnv('DEBUG') === 'true'
 };
 ```
 
@@ -451,59 +443,38 @@ const config = {
 ```typescript
 import { MemoryUtils } from '@dooboostore/core-node';
 
-// Enable SIGUSR2 heap profiling
-MemoryUtils.enableUSR2Profiling('./heap-dumps');
+// Enable SIGUSR2 heap profiling — `kill -SIGUSR2 <pid>` dumps a snapshot into ./heap-dumps
+MemoryUtils.registerHeapDumpSignal('./heap-dumps');
 
-// Monitor heap (kill -USR2 <pid> to capture snapshot)
-setInterval(() => {
-  const { heapUsed } = MemoryUtils.getCurrentMemoryUsage();
-  console.log(`Heap: ${heapUsed.toFixed(2)}MB`);
-}, 30000);
+// Also log + auto-dump every 30s if heap usage exceeds 500MB
+MemoryUtils.startMemoryMonitoring(30_000, 500, './heap-dumps');
 ```
 
 ---
 
-## 🔗 Integration with @dooboostore/core
+## 🔗 Relationship to @dooboostore/core
 
-| Feature | @dooboostore/core | @dooboostore/core-node |
-|---------|---|---|
-| Reactive/Observable | ✅ | Reuses |
-| Validators | ✅ | Reuses |
-| HTTP Client | ✅ | ✅ (Extended) |
-| File I/O | ❌ | ✅ |
-| Process/Env | ❌ | ✅ |
-| Memory Profiling | ❌ | ✅ |
-| Buffer Operations | ❌ | ✅ |
-| Path Operations | ❌ | ✅ |
+`core-node` depends on `@dooboostore/core` for two things specifically: `HttpPageDownloader` uses `core`'s `HttpFetcher`/`HttpFetcherRequest` to perform the actual HTTP GET, and `FileUtils.writeFile` uses `core`'s `RandomUtils.uuid4()` to generate a temp file name when no `path` is given. Everything else in this package (file, process, memory, path, convert) is implemented directly on Node.js built-ins and has no further dependency on `core`.
 
----
-
-## 📊 Performance Characteristics
-
-| Aspect | Details |
-|--------|---------|
-| **Dependencies** | 0 (Node.js only) |
-| **Bundle Size** | ~15KB gzipped |
-| **File Ops** | Native performance |
-| **Heap Snapshots** | ~1-2s per 50MB |
-| **Tree-Shaking** | ✅ Full support |
-| **Node Versions** | 14.0+ |
+| Feature | @dooboostore/core-node |
+|---------|---|
+| File I/O | ✅ |
+| Process/Env | ✅ |
+| Memory Profiling | ✅ |
+| Buffer/Base64 Conversion | ✅ |
+| Path Operations | ✅ |
+| HTTP page fetching | ✅ (via `core`'s `HttpFetcher`) |
 
 ---
 
 ## 🎓 Best Practices
 
-1. **Use File<E> for type-safe metadata**
-2. **Enable SIGUSR2 profiling in production**
-3. **Use ProcessUtils for env configuration**
-4. **Monitor heap in long-running processes**
-5. **Use PathUtils for cross-platform compatibility**
+1. **Use `File<E>` for type-safe metadata** — `etcData` carries whatever metadata you need alongside the file.
+2. **Register a SIGUSR2 heap dump handler in production** — `MemoryUtils.registerHeapDumpSignal(dir)` lets you trigger a heap snapshot on demand via `kill -SIGUSR2 <pid>`, without restarting the process.
+3. **Use `ProcessUtils` for environment checks** — `isProduction()`/`isDevelopment()`/`isTest()` read `NODE_ENV` consistently.
+4. **Use `PathUtils` for cross-platform path handling** instead of string concatenation.
 
 ---
-
-## Learn More
-
-The detailed API documentation is available on our documentation website.
 
 ## License
 
