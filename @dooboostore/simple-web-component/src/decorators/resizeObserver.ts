@@ -26,107 +26,123 @@ export interface ResizeObserverMetadata {
 
 export const RESIZE_OBSERVER_METADATA_KEY = Symbol.for('simple-web-component:resize-observer');
 
+const applyResizeObserver = (selector: SwcSelector, options: ResizeObserverOptions, targetObj: Object, propertyKey: string | symbol): void => {
+  const constructor = targetObj.constructor;
+  let observers = ReflectUtils.getMetadata<ResizeObserverMetadata[]>(RESIZE_OBSERVER_METADATA_KEY, constructor);
+  if (!observers) {
+    observers = [];
+    ReflectUtils.defineMetadata(RESIZE_OBSERVER_METADATA_KEY, observers, constructor);
+  }
+  observers.push({ propertyKey, selector, options });
+};
+
+const resolveResizeObserverArgs = (
+  selectorOrOptions: SwcSelector | ResizeObserverOptions | undefined,
+  maybeOptions: ResizeObserverOptions | undefined,
+  extra: Partial<ResizeObserverOptions>
+): { selector: SwcSelector; options: ResizeObserverOptions } => {
+  if (typeof selectorOrOptions === 'string' || typeof selectorOrOptions === 'function') {
+    return { selector: selectorOrOptions, options: { ...(maybeOptions ?? {}), ...extra } };
+  }
+  return { selector: '$this', options: { ...(selectorOrOptions ?? {}), ...extra } };
+};
+
+/**
+ * bare(@decorator)와 factory(@decorator()/@decorator(...)) 호출을 모두 처리하는 공통 디스패처.
+ * extra는 Light/Shadow/All/Delegate 변형이 강제로 덧씌우는 옵션(root, delegate 등)이다.
+ */
+const dispatchResizeObserver = (
+  selectorOrOptionsOrTarget: SwcSelector | ResizeObserverOptions | Object | undefined,
+  maybeOptionsOrPropertyKey: ResizeObserverOptions | string | symbol | undefined,
+  descriptor: PropertyDescriptor | undefined,
+  extra: Partial<ResizeObserverOptions>
+): MethodDecorator | void => {
+  if ((typeof maybeOptionsOrPropertyKey === 'string' || typeof maybeOptionsOrPropertyKey === 'symbol') && descriptor !== undefined) {
+    // 옵션 없이: @decorator
+    applyResizeObserver('$this', { ...extra }, selectorOrOptionsOrTarget as Object, maybeOptionsOrPropertyKey);
+    return;
+  }
+  // 옵션과 함께: @decorator() / @decorator(selector, options) / @decorator(options)
+  const { selector, options } = resolveResizeObserverArgs(
+    selectorOrOptionsOrTarget as SwcSelector | ResizeObserverOptions | undefined,
+    maybeOptionsOrPropertyKey as ResizeObserverOptions | undefined,
+    extra
+  );
+  return (targetObj: Object, propertyKey: string | symbol) => {
+    applyResizeObserver(selector, options, targetObj, propertyKey);
+  };
+};
+
 export function resizeObserver(target: SpecialSelector, options?: ResizeObserverQueryOptions): MethodDecorator;
 export function resizeObserver(selector: string, options?: ResizeObserverQueryOptions): MethodDecorator;
 export function resizeObserver(selector: SwcFnSelector, options?: ResizeObserverNonQueryOptions): MethodDecorator;
 export function resizeObserver(options?: ResizeObserverQueryOptions): MethodDecorator;
+export function resizeObserver(target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor): void;
 /**
  * @resizeObserver decorator to observe element size changes.
+ * 옵션 없이 `@resizeObserver` 그대로 붙여도 되고, `@resizeObserver(...)`처럼 셀렉터/옵션을 줄 수도 있다.
  */
-export function resizeObserver(selectorOrOptions?: SwcSelector | ResizeObserverOptions, maybeOptions?: ResizeObserverOptions): MethodDecorator {
-  return (targetObj: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor) => {
-    let selector: SwcSelector = '$this';
-    let options: ResizeObserverOptions = {};
-
-    if (typeof selectorOrOptions === 'string' || typeof selectorOrOptions === 'function') {
-      selector = selectorOrOptions;
-      options = maybeOptions ?? {};
-    } else {
-      selector = '$this';
-      options = selectorOrOptions ?? {};
-    }
-
-    const constructor = targetObj.constructor;
-
-    let observers = ReflectUtils.getMetadata<ResizeObserverMetadata[]>(RESIZE_OBSERVER_METADATA_KEY, constructor);
-    if (!observers) {
-      observers = [];
-      ReflectUtils.defineMetadata(RESIZE_OBSERVER_METADATA_KEY, observers, constructor);
-    }
-
-    observers.push({ propertyKey, selector, options });
-  };
+export function resizeObserver(selectorOrOptionsOrTarget?: SwcSelector | ResizeObserverOptions | Object, maybeOptionsOrPropertyKey?: ResizeObserverOptions | string | symbol, descriptor?: PropertyDescriptor): MethodDecorator | void {
+  return dispatchResizeObserver(selectorOrOptionsOrTarget, maybeOptionsOrPropertyKey, descriptor, {});
 }
 
-export function resizeObserverThis(options?: ResizeObserverQueryOptions): MethodDecorator {
-  return resizeObserver('$this', options);
+export function resizeObserverThis(options?: ResizeObserverQueryOptions): MethodDecorator;
+export function resizeObserverThis(target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor): void;
+export function resizeObserverThis(optionsOrTarget?: ResizeObserverQueryOptions | Object, propertyKey?: string | symbol, descriptor?: PropertyDescriptor): MethodDecorator | void {
+  return dispatchResizeObserver(optionsOrTarget, propertyKey, descriptor, {});
 }
 
 // ─── root별 delegate 헬퍼 (root 주입 → 문자열 셀렉터 전용) ───
 
 export function resizeObserverDelegateLight(selector: string, options?: Omit<ResizeObserverQueryOptions, 'delegate'>): MethodDecorator;
 export function resizeObserverDelegateLight(options?: Omit<ResizeObserverQueryOptions, 'delegate'>): MethodDecorator;
-export function resizeObserverDelegateLight(selectorOrOptions?: string | Omit<ResizeObserverQueryOptions, 'delegate'>, maybeOptions?: Omit<ResizeObserverQueryOptions, 'delegate'>): MethodDecorator {
-  if (typeof selectorOrOptions === 'string' || typeof selectorOrOptions === 'function') {
-    return resizeObserver(selectorOrOptions as any, {...maybeOptions ?? {}, root: 'light', delegate: true});
-  }
-  return resizeObserver({...selectorOrOptions ?? {}, root: 'light', delegate: true});
+export function resizeObserverDelegateLight(target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor): void;
+export function resizeObserverDelegateLight(selectorOrOptionsOrTarget?: string | Omit<ResizeObserverQueryOptions, 'delegate'> | Object, maybeOptionsOrPropertyKey?: Omit<ResizeObserverQueryOptions, 'delegate'> | string | symbol, descriptor?: PropertyDescriptor): MethodDecorator | void {
+  return dispatchResizeObserver(selectorOrOptionsOrTarget as any, maybeOptionsOrPropertyKey as any, descriptor, { root: 'light', delegate: true });
 }
 
 export function resizeObserverDelegateShadow(selector: string, options?: Omit<ResizeObserverQueryOptions, 'delegate'>): MethodDecorator;
 export function resizeObserverDelegateShadow(options?: Omit<ResizeObserverQueryOptions, 'delegate'>): MethodDecorator;
-export function resizeObserverDelegateShadow(selectorOrOptions?: string | Omit<ResizeObserverQueryOptions, 'delegate'>, maybeOptions?: Omit<ResizeObserverQueryOptions, 'delegate'>): MethodDecorator {
-  if (typeof selectorOrOptions === 'string' || typeof selectorOrOptions === 'function') {
-    return resizeObserver(selectorOrOptions as any, {...maybeOptions ?? {}, root: 'shadow', delegate: true});
-  }
-  return resizeObserver({...selectorOrOptions ?? {}, root: 'shadow', delegate: true});
+export function resizeObserverDelegateShadow(target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor): void;
+export function resizeObserverDelegateShadow(selectorOrOptionsOrTarget?: string | Omit<ResizeObserverQueryOptions, 'delegate'> | Object, maybeOptionsOrPropertyKey?: Omit<ResizeObserverQueryOptions, 'delegate'> | string | symbol, descriptor?: PropertyDescriptor): MethodDecorator | void {
+  return dispatchResizeObserver(selectorOrOptionsOrTarget as any, maybeOptionsOrPropertyKey as any, descriptor, { root: 'shadow', delegate: true });
 }
 
 export function resizeObserverDelegateAll(selector: string, options?: Omit<ResizeObserverQueryOptions, 'delegate'>): MethodDecorator;
 export function resizeObserverDelegateAll(options?: Omit<ResizeObserverQueryOptions, 'delegate'>): MethodDecorator;
-export function resizeObserverDelegateAll(selectorOrOptions?: string | Omit<ResizeObserverQueryOptions, 'delegate'>, maybeOptions?: Omit<ResizeObserverQueryOptions, 'delegate'>): MethodDecorator {
-  if (typeof selectorOrOptions === 'string' || typeof selectorOrOptions === 'function') {
-    return resizeObserver(selectorOrOptions as any, {...maybeOptions ?? {}, root: 'all', delegate: true});
-  }
-  return resizeObserver({...selectorOrOptions ?? {}, root: 'all', delegate: true});
+export function resizeObserverDelegateAll(target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor): void;
+export function resizeObserverDelegateAll(selectorOrOptionsOrTarget?: string | Omit<ResizeObserverQueryOptions, 'delegate'> | Object, maybeOptionsOrPropertyKey?: Omit<ResizeObserverQueryOptions, 'delegate'> | string | symbol, descriptor?: PropertyDescriptor): MethodDecorator | void {
+  return dispatchResizeObserver(selectorOrOptionsOrTarget as any, maybeOptionsOrPropertyKey as any, descriptor, { root: 'all', delegate: true });
 }
 
 export function resizeObserverDelegate(selector: string, options?: Omit<ResizeObserverQueryOptions, 'delegate'>): MethodDecorator;
 export function resizeObserverDelegate(options?: Omit<ResizeObserverQueryOptions, 'delegate'>): MethodDecorator;
-export function resizeObserverDelegate(selectorOrOptions?: string | Omit<ResizeObserverQueryOptions, 'delegate'>, maybeOptions?: Omit<ResizeObserverQueryOptions, 'delegate'>): MethodDecorator {
-  if (typeof selectorOrOptions === 'string' || typeof selectorOrOptions === 'function') {
-    return resizeObserver(selectorOrOptions as any, {...maybeOptions ?? {}, root: 'auto', delegate: true});
-  }
-  return resizeObserver({...selectorOrOptions ?? {}, root: 'auto', delegate: true});
+export function resizeObserverDelegate(target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor): void;
+export function resizeObserverDelegate(selectorOrOptionsOrTarget?: string | Omit<ResizeObserverQueryOptions, 'delegate'> | Object, maybeOptionsOrPropertyKey?: Omit<ResizeObserverQueryOptions, 'delegate'> | string | symbol, descriptor?: PropertyDescriptor): MethodDecorator | void {
+  return dispatchResizeObserver(selectorOrOptionsOrTarget as any, maybeOptionsOrPropertyKey as any, descriptor, { root: 'auto', delegate: true });
 }
 
 // ─── root별 일반 헬퍼 (delegate 없이, 셀렉터 생략 시 $this) ───
 
 export function resizeObserverLight(selector: string, options?: ResizeObserverQueryOptions): MethodDecorator;
 export function resizeObserverLight(options?: ResizeObserverQueryOptions): MethodDecorator;
-export function resizeObserverLight(selectorOrOptions?: string | ResizeObserverQueryOptions, maybeOptions?: ResizeObserverQueryOptions): MethodDecorator {
-  if (typeof selectorOrOptions === 'string' || typeof selectorOrOptions === 'function') {
-    return resizeObserver(selectorOrOptions as any, {...maybeOptions ?? {}, root: 'light'});
-  }
-  return resizeObserver({...selectorOrOptions ?? {}, root: 'light'});
+export function resizeObserverLight(target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor): void;
+export function resizeObserverLight(selectorOrOptionsOrTarget?: string | ResizeObserverQueryOptions | Object, maybeOptionsOrPropertyKey?: ResizeObserverQueryOptions | string | symbol, descriptor?: PropertyDescriptor): MethodDecorator | void {
+  return dispatchResizeObserver(selectorOrOptionsOrTarget as any, maybeOptionsOrPropertyKey as any, descriptor, { root: 'light' });
 }
 
 export function resizeObserverShadow(selector: string, options?: ResizeObserverQueryOptions): MethodDecorator;
 export function resizeObserverShadow(options?: ResizeObserverQueryOptions): MethodDecorator;
-export function resizeObserverShadow(selectorOrOptions?: string | ResizeObserverQueryOptions, maybeOptions?: ResizeObserverQueryOptions): MethodDecorator {
-  if (typeof selectorOrOptions === 'string' || typeof selectorOrOptions === 'function') {
-    return resizeObserver(selectorOrOptions as any, {...maybeOptions ?? {}, root: 'shadow'});
-  }
-  return resizeObserver({...selectorOrOptions ?? {}, root: 'shadow'});
+export function resizeObserverShadow(target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor): void;
+export function resizeObserverShadow(selectorOrOptionsOrTarget?: string | ResizeObserverQueryOptions | Object, maybeOptionsOrPropertyKey?: ResizeObserverQueryOptions | string | symbol, descriptor?: PropertyDescriptor): MethodDecorator | void {
+  return dispatchResizeObserver(selectorOrOptionsOrTarget as any, maybeOptionsOrPropertyKey as any, descriptor, { root: 'shadow' });
 }
 
 export function resizeObserverAll(selector: string, options?: ResizeObserverQueryOptions): MethodDecorator;
 export function resizeObserverAll(options?: ResizeObserverQueryOptions): MethodDecorator;
-export function resizeObserverAll(selectorOrOptions?: string | ResizeObserverQueryOptions, maybeOptions?: ResizeObserverQueryOptions): MethodDecorator {
-  if (typeof selectorOrOptions === 'string' || typeof selectorOrOptions === 'function') {
-    return resizeObserver(selectorOrOptions as any, {...maybeOptions ?? {}, root: 'all'});
-  }
-  return resizeObserver({...selectorOrOptions ?? {}, root: 'all'});
+export function resizeObserverAll(target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor): void;
+export function resizeObserverAll(selectorOrOptionsOrTarget?: string | ResizeObserverQueryOptions | Object, maybeOptionsOrPropertyKey?: ResizeObserverQueryOptions | string | symbol, descriptor?: PropertyDescriptor): MethodDecorator | void {
+  return dispatchResizeObserver(selectorOrOptionsOrTarget as any, maybeOptionsOrPropertyKey as any, descriptor, { root: 'all' });
 }
 
 export function getResizeObserverMetadata(target: any): ResizeObserverMetadata[] | undefined {

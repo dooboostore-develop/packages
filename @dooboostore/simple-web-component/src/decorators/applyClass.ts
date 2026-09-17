@@ -325,11 +325,21 @@ export const cls = applyClass;
 
 // ─── 편의 헬퍼 (selector/root 생략) ───
 
-export function clsThis(action?: ClassAction, options?: ClassQueryOptions): MethodDecorator {
-  return applyClass('$this', action, options);
+export function clsThis(action?: ClassAction, options?: ClassQueryOptions): MethodDecorator;
+export function clsThis(target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor): PropertyDescriptor | void;
+export function clsThis(actionOrTarget?: ClassAction | Object, optionsOrPropertyKey?: ClassQueryOptions | string | symbol, descriptor?: PropertyDescriptor): any {
+  if ((typeof optionsOrPropertyKey === 'string' || typeof optionsOrPropertyKey === 'symbol') && descriptor !== undefined) {
+    return (applyClass('$this', undefined as any, {}) as any)(actionOrTarget, optionsOrPropertyKey, descriptor);
+  }
+  return applyClass('$this', actionOrTarget as any, optionsOrPropertyKey as ClassQueryOptions);
 }
-export function clsAppHost(action?: ClassAction, options?: ClassQueryOptions): MethodDecorator {
-  return applyClass('$appHost', action, options);
+export function clsAppHost(action?: ClassAction, options?: ClassQueryOptions): MethodDecorator;
+export function clsAppHost(target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor): PropertyDescriptor | void;
+export function clsAppHost(actionOrTarget?: ClassAction | Object, optionsOrPropertyKey?: ClassQueryOptions | string | symbol, descriptor?: PropertyDescriptor): any {
+  if ((typeof optionsOrPropertyKey === 'string' || typeof optionsOrPropertyKey === 'symbol') && descriptor !== undefined) {
+    return (applyClass('$appHost', undefined as any, {}) as any)(actionOrTarget, optionsOrPropertyKey, descriptor);
+  }
+  return applyClass('$appHost', actionOrTarget as any, optionsOrPropertyKey as ClassQueryOptions);
 }
 export function clsLight(selector: string, action?: ClassAction, options?: Omit<ClassQueryOptions, 'root'>): MethodDecorator;
 export function clsLight(selector: string, options?: Omit<ClassQueryOptions, 'root'>): MethodDecorator;

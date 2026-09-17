@@ -12,24 +12,6 @@ declare global {
     document: Document;
     history: History;
   }
-
-  namespace Dooboostore {
-    interface PackageInfo {
-      id: string;
-      name: string;
-      description: string;
-      longDescription: string;
-      icon: string;
-      color: string;
-      features: PackageFeature[];
-      example: string;
-    }
-
-    interface PackageFeature {
-      title: string;
-      desc: string;
-    }
-  }
 }
 
 export {};

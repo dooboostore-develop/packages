@@ -642,11 +642,21 @@ export const node = applyNode;
 
 // ─── 편의 헬퍼 (selector/root 생략) ───
 
-export function applyThis(options?: ApplyNodeQueryOptions): MethodDecorator {
-  return applyNode('$this', options);
+export function applyThis(options?: ApplyNodeQueryOptions): MethodDecorator;
+export function applyThis(target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor): PropertyDescriptor | void;
+export function applyThis(optionsOrTarget?: ApplyNodeQueryOptions | Object, propertyKey?: string | symbol, descriptor?: PropertyDescriptor): MethodDecorator | PropertyDescriptor | void {
+  if ((typeof propertyKey === 'string' || typeof propertyKey === 'symbol') && descriptor !== undefined) {
+    return (applyNode('$this', {}) as any)(optionsOrTarget, propertyKey, descriptor);
+  }
+  return applyNode('$this', optionsOrTarget as ApplyNodeQueryOptions);
 }
-export function applyAppHost(options?: ApplyNodeQueryOptions): MethodDecorator {
-  return applyNode('$appHost', options);
+export function applyAppHost(options?: ApplyNodeQueryOptions): MethodDecorator;
+export function applyAppHost(target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor): PropertyDescriptor | void;
+export function applyAppHost(optionsOrTarget?: ApplyNodeQueryOptions | Object, propertyKey?: string | symbol, descriptor?: PropertyDescriptor): MethodDecorator | PropertyDescriptor | void {
+  if ((typeof propertyKey === 'string' || typeof propertyKey === 'symbol') && descriptor !== undefined) {
+    return (applyNode('$appHost', {}) as any)(optionsOrTarget, propertyKey, descriptor);
+  }
+  return applyNode('$appHost', optionsOrTarget as ApplyNodeQueryOptions);
 }
 export function applyLight(selector: string, options?: Omit<ApplyNodeQueryOptions, 'root'>): MethodDecorator {
   return applyNode(selector, {...options ?? {}, root: 'light'});

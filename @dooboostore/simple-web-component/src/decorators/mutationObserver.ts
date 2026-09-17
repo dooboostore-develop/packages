@@ -24,107 +24,124 @@ export interface MutationObserverMetadata {
 
 export const MUTATION_OBSERVER_METADATA_KEY = Symbol.for('simple-web-component:mutation-observer');
 
+const applyMutationObserver = (selector: SwcSelector, options: MutationObserverQueryOptions, targetObj: Object, propertyKey: string | symbol): void => {
+  const constructor = targetObj.constructor;
+  let observers = ReflectUtils.getMetadata<MutationObserverMetadata[]>(MUTATION_OBSERVER_METADATA_KEY, constructor);
+  if (!observers) {
+    observers = [];
+    ReflectUtils.defineMetadata(MUTATION_OBSERVER_METADATA_KEY, observers, constructor);
+  }
+  observers.push({ propertyKey, selector, options });
+};
+
+const resolveMutationObserverArgs = (
+  selectorOrOptions: SwcSelector | MutationObserverQueryOptions | undefined,
+  maybeOptions: MutationObserverQueryOptions | undefined,
+  extra: Partial<MutationObserverQueryOptions>
+): { selector: SwcSelector; options: MutationObserverQueryOptions } => {
+  if (typeof selectorOrOptions === 'string' || typeof selectorOrOptions === 'function') {
+    return { selector: selectorOrOptions, options: { ...(maybeOptions ?? {}), ...extra } };
+  }
+  return { selector: '$this', options: { ...(selectorOrOptions ?? {}), ...extra } };
+};
+
+/**
+ * selectorOrOptionsOrTarget/maybeOptionsOrPropertyKey/descriptor을 받아 bare(@decorator)와
+ * factory(@decorator()/@decorator(...)) 호출을 모두 처리하는 공통 디스패처.
+ * extra는 Light/Shadow/All/Delegate 변형이 강제로 덧씌우는 옵션(root, delegate 등)이다.
+ */
+const dispatchMutationObserver = (
+  selectorOrOptionsOrTarget: SwcSelector | MutationObserverQueryOptions | Object | undefined,
+  maybeOptionsOrPropertyKey: MutationObserverQueryOptions | string | symbol | undefined,
+  descriptor: PropertyDescriptor | undefined,
+  extra: Partial<MutationObserverQueryOptions>
+): MethodDecorator | void => {
+  if ((typeof maybeOptionsOrPropertyKey === 'string' || typeof maybeOptionsOrPropertyKey === 'symbol') && descriptor !== undefined) {
+    // 옵션 없이: @decorator
+    applyMutationObserver('$this', { ...extra }, selectorOrOptionsOrTarget as Object, maybeOptionsOrPropertyKey);
+    return;
+  }
+  // 옵션과 함께: @decorator() / @decorator(selector, options) / @decorator(options)
+  const { selector, options } = resolveMutationObserverArgs(
+    selectorOrOptionsOrTarget as SwcSelector | MutationObserverQueryOptions | undefined,
+    maybeOptionsOrPropertyKey as MutationObserverQueryOptions | undefined,
+    extra
+  );
+  return (targetObj: Object, propertyKey: string | symbol) => {
+    applyMutationObserver(selector, options, targetObj, propertyKey);
+  };
+};
+
 export function mutationObserver(target: SpecialSelector, options?: MutationObserverQueryOptions): MethodDecorator;
 export function mutationObserver(selector: string, options?: MutationObserverQueryOptions): MethodDecorator;
 export function mutationObserver(selector: SwcFnSelector, options?: MutationObserverNonQueryOptions): MethodDecorator;
 export function mutationObserver(options?: MutationObserverQueryOptions): MethodDecorator;
+export function mutationObserver(target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor): void;
 /**
  * @mutationObserver decorator to observe DOM mutations.
+ * 옵션 없이 `@mutationObserver` 그대로 붙여도 되고, `@mutationObserver(...)`처럼 셀렉터/옵션을 줄 수도 있다.
  */
-export function mutationObserver(selectorOrOptions?: SwcSelector | MutationObserverQueryOptions, maybeOptions?: MutationObserverQueryOptions): MethodDecorator {
-  return (targetObj: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor) => {
-    let selector: SwcSelector = '$this';
-    let options: MutationObserverQueryOptions = {};
-
-    if (typeof selectorOrOptions === 'string' || typeof selectorOrOptions === 'function') {
-      selector = selectorOrOptions;
-      options = maybeOptions ?? {};
-    } else {
-      selector = '$this';
-      options = selectorOrOptions ?? {};
-    }
-
-    const constructor = targetObj.constructor;
-
-    let observers = ReflectUtils.getMetadata<MutationObserverMetadata[]>(MUTATION_OBSERVER_METADATA_KEY, constructor);
-    if (!observers) {
-      observers = [];
-      ReflectUtils.defineMetadata(MUTATION_OBSERVER_METADATA_KEY, observers, constructor);
-    }
-
-    observers.push({ propertyKey, selector, options });
-  };
+export function mutationObserver(selectorOrOptionsOrTarget?: SwcSelector | MutationObserverQueryOptions | Object, maybeOptionsOrPropertyKey?: MutationObserverQueryOptions | string | symbol, descriptor?: PropertyDescriptor): MethodDecorator | void {
+  return dispatchMutationObserver(selectorOrOptionsOrTarget, maybeOptionsOrPropertyKey, descriptor, {});
 }
 
-export function mutationObserverThis<TEvent extends Event = Event>(options?: MutationObserverQueryOptions): MethodDecorator {
-  return mutationObserver('$this', options);
+export function mutationObserverThis(options?: MutationObserverQueryOptions): MethodDecorator;
+export function mutationObserverThis(target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor): void;
+export function mutationObserverThis(optionsOrTarget?: MutationObserverQueryOptions | Object, propertyKey?: string | symbol, descriptor?: PropertyDescriptor): MethodDecorator | void {
+  return dispatchMutationObserver(optionsOrTarget, propertyKey, descriptor, {});
 }
 
 // ─── root별 delegate 헬퍼 (addEventListener와 동일 패턴) ───
 
 export function mutationObserverDelegateLight(selector: string, options?: MutationObserverBaseOptions): MethodDecorator;
 export function mutationObserverDelegateLight(options?: MutationObserverBaseOptions): MethodDecorator;
-export function mutationObserverDelegateLight(selectorOrOptions?: string | Omit<MutationObserverQueryOptions, 'root'>, maybeOptions?: Omit<MutationObserverQueryOptions, 'root'>): MethodDecorator {
-  if (typeof selectorOrOptions === 'string' || typeof selectorOrOptions === 'function') {
-    return mutationObserver(selectorOrOptions, {...maybeOptions ?? {}, root: 'light', delegate: true});
-  }
-  return mutationObserver({...selectorOrOptions ?? {}, root: 'light', delegate: true});
+export function mutationObserverDelegateLight(target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor): void;
+export function mutationObserverDelegateLight(selectorOrOptionsOrTarget?: string | Omit<MutationObserverQueryOptions, 'root'> | Object, maybeOptionsOrPropertyKey?: Omit<MutationObserverQueryOptions, 'root'> | string | symbol, descriptor?: PropertyDescriptor): MethodDecorator | void {
+  return dispatchMutationObserver(selectorOrOptionsOrTarget as any, maybeOptionsOrPropertyKey as any, descriptor, { root: 'light', delegate: true });
 }
 
 export function mutationObserverDelegateShadow(selector: string, options?: MutationObserverBaseOptions): MethodDecorator;
 export function mutationObserverDelegateShadow(options?: MutationObserverBaseOptions): MethodDecorator;
-export function mutationObserverDelegateShadow(selectorOrOptions?: string | Omit<MutationObserverQueryOptions, 'root'>, maybeOptions?: Omit<MutationObserverQueryOptions, 'root'>): MethodDecorator {
-  if (typeof selectorOrOptions === 'string' || typeof selectorOrOptions === 'function') {
-    return mutationObserver(selectorOrOptions, {...maybeOptions ?? {}, root: 'shadow', delegate: true});
-  }
-  return mutationObserver({...selectorOrOptions ?? {}, root: 'shadow', delegate: true});
+export function mutationObserverDelegateShadow(target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor): void;
+export function mutationObserverDelegateShadow(selectorOrOptionsOrTarget?: string | Omit<MutationObserverQueryOptions, 'root'> | Object, maybeOptionsOrPropertyKey?: Omit<MutationObserverQueryOptions, 'root'> | string | symbol, descriptor?: PropertyDescriptor): MethodDecorator | void {
+  return dispatchMutationObserver(selectorOrOptionsOrTarget as any, maybeOptionsOrPropertyKey as any, descriptor, { root: 'shadow', delegate: true });
 }
 
 export function mutationObserverDelegateAll(selector: string, options?: MutationObserverBaseOptions): MethodDecorator;
 export function mutationObserverDelegateAll(options?: MutationObserverBaseOptions): MethodDecorator;
-export function mutationObserverDelegateAll(selectorOrOptions?: string | Omit<MutationObserverQueryOptions, 'root'>, maybeOptions?: Omit<MutationObserverQueryOptions, 'root'>): MethodDecorator {
-  if (typeof selectorOrOptions === 'string' || typeof selectorOrOptions === 'function') {
-    return mutationObserver(selectorOrOptions, {...maybeOptions ?? {}, root: 'all', delegate: true});
-  }
-  return mutationObserver({...selectorOrOptions ?? {}, root: 'all', delegate: true});
+export function mutationObserverDelegateAll(target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor): void;
+export function mutationObserverDelegateAll(selectorOrOptionsOrTarget?: string | Omit<MutationObserverQueryOptions, 'root'> | Object, maybeOptionsOrPropertyKey?: Omit<MutationObserverQueryOptions, 'root'> | string | symbol, descriptor?: PropertyDescriptor): MethodDecorator | void {
+  return dispatchMutationObserver(selectorOrOptionsOrTarget as any, maybeOptionsOrPropertyKey as any, descriptor, { root: 'all', delegate: true });
 }
 
 export function mutationObserverDelegate(selector: string, options?: MutationObserverBaseOptions): MethodDecorator;
 export function mutationObserverDelegate(options?: MutationObserverBaseOptions): MethodDecorator;
-export function mutationObserverDelegate(selectorOrOptions?: string | Omit<MutationObserverQueryOptions, 'root'>, maybeOptions?: Omit<MutationObserverQueryOptions, 'root'>): MethodDecorator {
-  if (typeof selectorOrOptions === 'string' || typeof selectorOrOptions === 'function') {
-    return mutationObserver(selectorOrOptions, {...maybeOptions ?? {}, root: 'auto', delegate: true});
-  }
-  return mutationObserver({...selectorOrOptions ?? {}, root: 'auto', delegate: true});
+export function mutationObserverDelegate(target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor): void;
+export function mutationObserverDelegate(selectorOrOptionsOrTarget?: string | Omit<MutationObserverQueryOptions, 'root'> | Object, maybeOptionsOrPropertyKey?: Omit<MutationObserverQueryOptions, 'root'> | string | symbol, descriptor?: PropertyDescriptor): MethodDecorator | void {
+  return dispatchMutationObserver(selectorOrOptionsOrTarget as any, maybeOptionsOrPropertyKey as any, descriptor, { root: 'auto', delegate: true });
 }
 
 // ─── root별 일반 헬퍼 (delegate 없이, 셀렉터 생략 시 $this) ───
 
 export function mutationObserverLight(selector: string, options?: Omit<MutationObserverQueryOptions, 'root'>): MethodDecorator;
 export function mutationObserverLight(options?: Omit<MutationObserverQueryOptions, 'root'>): MethodDecorator;
-export function mutationObserverLight(selectorOrOptions?: string | Omit<MutationObserverQueryOptions, 'root'>, maybeOptions?: Omit<MutationObserverQueryOptions, 'root'>): MethodDecorator {
-  if (typeof selectorOrOptions === 'string' || typeof selectorOrOptions === 'function') {
-    return mutationObserver(selectorOrOptions, {...maybeOptions ?? {}, root: 'light'});
-  }
-  return mutationObserver({...selectorOrOptions ?? {}, root: 'light'});
+export function mutationObserverLight(target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor): void;
+export function mutationObserverLight(selectorOrOptionsOrTarget?: string | Omit<MutationObserverQueryOptions, 'root'> | Object, maybeOptionsOrPropertyKey?: Omit<MutationObserverQueryOptions, 'root'> | string | symbol, descriptor?: PropertyDescriptor): MethodDecorator | void {
+  return dispatchMutationObserver(selectorOrOptionsOrTarget as any, maybeOptionsOrPropertyKey as any, descriptor, { root: 'light' });
 }
 
 export function mutationObserverShadow(selector: string, options?: Omit<MutationObserverQueryOptions, 'root'>): MethodDecorator;
 export function mutationObserverShadow(options?: Omit<MutationObserverQueryOptions, 'root'>): MethodDecorator;
-export function mutationObserverShadow(selectorOrOptions?: string | Omit<MutationObserverQueryOptions, 'root'>, maybeOptions?: Omit<MutationObserverQueryOptions, 'root'>): MethodDecorator {
-  if (typeof selectorOrOptions === 'string' || typeof selectorOrOptions === 'function') {
-    return mutationObserver(selectorOrOptions, {...maybeOptions ?? {}, root: 'shadow'});
-  }
-  return mutationObserver({...selectorOrOptions ?? {}, root: 'shadow'});
+export function mutationObserverShadow(target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor): void;
+export function mutationObserverShadow(selectorOrOptionsOrTarget?: string | Omit<MutationObserverQueryOptions, 'root'> | Object, maybeOptionsOrPropertyKey?: Omit<MutationObserverQueryOptions, 'root'> | string | symbol, descriptor?: PropertyDescriptor): MethodDecorator | void {
+  return dispatchMutationObserver(selectorOrOptionsOrTarget as any, maybeOptionsOrPropertyKey as any, descriptor, { root: 'shadow' });
 }
 
 export function mutationObserverAll(selector: string, options?: Omit<MutationObserverQueryOptions, 'root'>): MethodDecorator;
 export function mutationObserverAll(options?: Omit<MutationObserverQueryOptions, 'root'>): MethodDecorator;
-export function mutationObserverAll(selectorOrOptions?: string | Omit<MutationObserverQueryOptions, 'root'>, maybeOptions?: Omit<MutationObserverQueryOptions, 'root'>): MethodDecorator {
-  if (typeof selectorOrOptions === 'string' || typeof selectorOrOptions === 'function') {
-    return mutationObserver(selectorOrOptions, {...maybeOptions ?? {}, root: 'all'});
-  }
-  return mutationObserver({...selectorOrOptions ?? {}, root: 'all'});
+export function mutationObserverAll(target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor): void;
+export function mutationObserverAll(selectorOrOptionsOrTarget?: string | Omit<MutationObserverQueryOptions, 'root'> | Object, maybeOptionsOrPropertyKey?: Omit<MutationObserverQueryOptions, 'root'> | string | symbol, descriptor?: PropertyDescriptor): MethodDecorator | void {
+  return dispatchMutationObserver(selectorOrOptionsOrTarget as any, maybeOptionsOrPropertyKey as any, descriptor, { root: 'all' });
 }
 
 export function getMutationObserverMetadata(target: any): MutationObserverMetadata[] | undefined {

@@ -476,11 +476,21 @@ export const attr = applyAttribute;
 
 // ─── 편의 헬퍼 (selector/root 생략) ───
 
-export function attrThis(targetAttributeName?: string, options?: AttributeQueryOptions): MethodDecorator {
-  return applyAttribute('$this', targetAttributeName, options);
+export function attrThis(targetAttributeName?: string, options?: AttributeQueryOptions): MethodDecorator;
+export function attrThis(target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor): PropertyDescriptor | void;
+export function attrThis(targetAttributeNameOrTarget?: string | Object, optionsOrPropertyKey?: AttributeQueryOptions | string | symbol, descriptor?: PropertyDescriptor): any {
+  if ((typeof optionsOrPropertyKey === 'string' || typeof optionsOrPropertyKey === 'symbol') && descriptor !== undefined) {
+    return (applyAttribute('$this', undefined as any, {}) as any)(targetAttributeNameOrTarget, optionsOrPropertyKey, descriptor);
+  }
+  return applyAttribute('$this', targetAttributeNameOrTarget as any, optionsOrPropertyKey as AttributeQueryOptions);
 }
-export function attrAppHost(targetAttributeName?: string, options?: AttributeQueryOptions): MethodDecorator {
-  return applyAttribute('$appHost', targetAttributeName, options);
+export function attrAppHost(targetAttributeName?: string, options?: AttributeQueryOptions): MethodDecorator;
+export function attrAppHost(target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor): PropertyDescriptor | void;
+export function attrAppHost(targetAttributeNameOrTarget?: string | Object, optionsOrPropertyKey?: AttributeQueryOptions | string | symbol, descriptor?: PropertyDescriptor): any {
+  if ((typeof optionsOrPropertyKey === 'string' || typeof optionsOrPropertyKey === 'symbol') && descriptor !== undefined) {
+    return (applyAttribute('$appHost', undefined as any, {}) as any)(targetAttributeNameOrTarget, optionsOrPropertyKey, descriptor);
+  }
+  return applyAttribute('$appHost', targetAttributeNameOrTarget as any, optionsOrPropertyKey as AttributeQueryOptions);
 }
 export function attrLight(selector: string, targetAttributeName?: string, options?: Omit<AttributeQueryOptions, 'root'>): MethodDecorator {
   return applyAttribute(selector, targetAttributeName, {...options ?? {}, root: 'light'});

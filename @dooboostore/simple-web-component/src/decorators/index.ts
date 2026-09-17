@@ -20,3 +20,5 @@ export * from './applySlot';
 export * from './state';
 export * from './setInterval';
 export * from './setTimeout';
+export * from './requestAnimationFrame';
+export * from './eventMedia';

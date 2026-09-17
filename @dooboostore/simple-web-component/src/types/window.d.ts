@@ -23,26 +23,10 @@ declare global {
     history: History;
     console: Console;
     IntersectionObserver: typeof IntersectionObserver;
+    ResizeObserver: typeof ResizeObserver;
+    MutationObserver: typeof MutationObserver;
     SwaggerUIBundle: any;
 
-  }
-
-  namespace Dooboostore {
-    interface PackageInfo {
-      id: string;
-      name: string;
-      description: string;
-      longDescription: string;
-      icon: string;
-      color: string;
-      features: PackageFeature[];
-      example: string;
-    }
-
-    interface PackageFeature {
-      title: string;
-      desc: string;
-    }
   }
 }
 

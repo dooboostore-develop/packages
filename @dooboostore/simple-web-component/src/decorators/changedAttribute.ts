@@ -20,24 +20,39 @@ const convertValue = (val: any, type: any): any => {
   return val;
 };
 
-/**
- * @changedAttributeThis decorator - fires when any attribute on $this changes
- */
-export function changedAttribute(attributeName?: string, options: ChangedAttributeThisOptions = {}): MethodDecorator {
-  return (target: Object, propertyKey: string | symbol) => {
-    const constructor = target.constructor;
-    let metaList = ReflectUtils.getOwnMetadata(ON_ATTRIBUTE_CHANGED_METADATA_KEY, constructor) as ChangedAttributeThisMetadata[];
-    if (!metaList) {
-      metaList = [];
-      ReflectUtils.defineMetadata(ON_ATTRIBUTE_CHANGED_METADATA_KEY, metaList, constructor);
-    }
+const applyChangedAttribute = (attributeName: string | undefined, options: ChangedAttributeThisOptions, target: Object, propertyKey: string | symbol): void => {
+  const constructor = target.constructor;
+  let metaList = ReflectUtils.getOwnMetadata(ON_ATTRIBUTE_CHANGED_METADATA_KEY, constructor) as ChangedAttributeThisMetadata[];
+  if (!metaList) {
+    metaList = [];
+    ReflectUtils.defineMetadata(ON_ATTRIBUTE_CHANGED_METADATA_KEY, metaList, constructor);
+  }
 
-    const name = attributeName || String(propertyKey);
-    metaList.push({
-      attributeName: name,
-      propertyKey,
-      options
-    });
+  const name = attributeName || String(propertyKey);
+  metaList.push({
+    attributeName: name,
+    propertyKey,
+    options
+  });
+};
+
+export function changedAttribute(attributeName?: string, options?: ChangedAttributeThisOptions): MethodDecorator;
+export function changedAttribute(target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor): void;
+/**
+ * @changedAttributeThis decorator - fires when any attribute on $this changes.
+ * 옵션 없이 `@changedAttribute` 그대로 붙여도 되고, `@changedAttribute(...)`처럼 이름/옵션을 줄 수도 있다.
+ */
+export function changedAttribute(attributeNameOrTarget?: string | Object, optionsOrPropertyKey?: ChangedAttributeThisOptions | string | symbol, descriptor?: PropertyDescriptor): MethodDecorator | void {
+  if ((typeof optionsOrPropertyKey === 'string' || typeof optionsOrPropertyKey === 'symbol') && descriptor !== undefined) {
+    // 옵션 없이: @changedAttribute
+    applyChangedAttribute(undefined, {}, attributeNameOrTarget as Object, optionsOrPropertyKey);
+    return;
+  }
+  // 옵션과 함께: @changedAttribute() / @changedAttribute('name', options?)
+  const attributeName = attributeNameOrTarget as string | undefined;
+  const options = (optionsOrPropertyKey as ChangedAttributeThisOptions) ?? {};
+  return (target: Object, propertyKey: string | symbol) => {
+    applyChangedAttribute(attributeName, options, target, propertyKey);
   };
 }
 

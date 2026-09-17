@@ -20,6 +20,8 @@ import {MessageSubscribeLifeCycler} from "./subscribeSwcAppMessageWhileConnected
 import {RouteSubscribeLifeCycler} from "./subscribeSwcAppRouteChangeWhileConnected";
 import {SetIntervalLifeCycler} from "./setInterval";
 import {SetTimeoutLifeCycler} from "./setTimeout";
+import {RequestAnimationFrameLifeCycler} from "./requestAnimationFrame";
+import {EventMediaLifeCycler} from "./eventMedia";
 
 // --- Core Interfaces & Types ---
 
@@ -372,6 +374,8 @@ export const elementDefine =
         new RouteSubscribeLifeCycler(),
         new SetIntervalLifeCycler(),
         new SetTimeoutLifeCycler(),
+        new RequestAnimationFrameLifeCycler(),
+        new EventMediaLifeCycler(),
       ];
 
       // observedAttributes 기여 cycler (define-time, constructor 기반)
@@ -416,7 +420,7 @@ export const elementDefine =
         const resizeObserved = new WeakSet<Element>();
         if (resizeObserverSet?.length) {
           const roCallbacks = [...new Set(resizeObserverSet.map(e => e.callback))];
-          const ro = new (win as any).ResizeObserver((entries, obs) => {
+          const ro = new win.ResizeObserver((entries, obs) => {
             for (const cb of roCallbacks) cb(entries, obs);
           });
           for (const e of resizeObserverSet) {
@@ -453,7 +457,7 @@ export const elementDefine =
         const intersectionDelegates: Array<{ target: string; delegateRoot?: SwcRootType; observe: (el: Element) => void; unobserve: (el: Element) => void }> = [];
         for (const group of intersectionObserverSet) {
           const ioCallbacks = [...new Set(group.observeTargets.map(e => e.callback))];
-          const io = new (win as any).IntersectionObserver((entries, obs) => {
+          const io = new win.IntersectionObserver((entries, obs) => {
             for (const cb of ioCallbacks) cb(entries, obs);
           }, group.options);
           const ioObserved = new WeakSet<Element>();
@@ -534,7 +538,7 @@ export const elementDefine =
         if (mutationObserverSet?.length || resizeDelegates.length > 0 || intersectionDelegates.length > 0) {
           // 하나의 MutationObserver 로 resize/intersection delegate 동적 추적 + mutation 콜백을 함께 처리
           const callbacks = [...new Set((mutationObserverSet ?? []).map(e => e.callback))];
-          const mo = new (win as any).MutationObserver((mutations, obs) => {
+          const mo = new win.MutationObserver((mutations, obs) => {
             for (const mut of mutations) {
               Array.from(mut.addedNodes   || []).forEach(n => { handleResizeDelegate(n as Node, true); handleIntersectionDelegate(n as Node, true); });
               Array.from(mut.removedNodes || []).forEach(n => { handleResizeDelegate(n as Node, false); handleIntersectionDelegate(n as Node, false); });

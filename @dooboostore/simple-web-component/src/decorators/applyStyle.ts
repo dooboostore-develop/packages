@@ -266,11 +266,21 @@ export const style = applyStyle;
 
 // ─── 편의 헬퍼 (selector/root 생략) ───
 
-export function styleThis(action?: StyleAction, options?: StyleQueryOptions): MethodDecorator {
-  return applyStyle('$this', action, options);
+export function styleThis(action?: StyleAction, options?: StyleQueryOptions): MethodDecorator;
+export function styleThis(target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor): PropertyDescriptor | void;
+export function styleThis(actionOrTarget?: StyleAction | Object, optionsOrPropertyKey?: StyleQueryOptions | string | symbol, descriptor?: PropertyDescriptor): any {
+  if ((typeof optionsOrPropertyKey === 'string' || typeof optionsOrPropertyKey === 'symbol') && descriptor !== undefined) {
+    return (applyStyle('$this', undefined as any, {}) as any)(actionOrTarget, optionsOrPropertyKey, descriptor);
+  }
+  return applyStyle('$this', actionOrTarget as any, optionsOrPropertyKey as StyleQueryOptions);
 }
-export function styleAppHost(action?: StyleAction, options?: StyleQueryOptions): MethodDecorator {
-  return applyStyle('$appHost', action, options);
+export function styleAppHost(action?: StyleAction, options?: StyleQueryOptions): MethodDecorator;
+export function styleAppHost(target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor): PropertyDescriptor | void;
+export function styleAppHost(actionOrTarget?: StyleAction | Object, optionsOrPropertyKey?: StyleQueryOptions | string | symbol, descriptor?: PropertyDescriptor): any {
+  if ((typeof optionsOrPropertyKey === 'string' || typeof optionsOrPropertyKey === 'symbol') && descriptor !== undefined) {
+    return (applyStyle('$appHost', undefined as any, {}) as any)(actionOrTarget, optionsOrPropertyKey, descriptor);
+  }
+  return applyStyle('$appHost', actionOrTarget as any, optionsOrPropertyKey as StyleQueryOptions);
 }
 export function styleLight(selector: string, action?: StyleAction, options?: Omit<StyleQueryOptions, 'root'>): MethodDecorator;
 export function styleLight(selector: string, options?: Omit<StyleQueryOptions, 'root'>): MethodDecorator;

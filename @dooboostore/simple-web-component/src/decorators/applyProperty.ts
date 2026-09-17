@@ -434,17 +434,37 @@ export const prop = applyProperty;
 
 // ─── 편의 헬퍼 (selector/root 생략) ───
 
-export function propThis(targetPropertyKey?: string | symbol, options?: PropertyQueryOptions): MethodDecorator {
-  return applyProperty('$this', targetPropertyKey, options);
+const dispatchPropConvenience = (
+  selector: '$this' | '$appHost' | '$window' | '$document',
+  targetPropertyKeyOrTarget?: string | symbol | Object,
+  optionsOrPropertyKey?: PropertyQueryOptions | string | symbol,
+  descriptor?: PropertyDescriptor
+): any => {
+  if ((typeof optionsOrPropertyKey === 'string' || typeof optionsOrPropertyKey === 'symbol') && descriptor !== undefined) {
+    return (applyProperty(selector, undefined as any, {}) as any)(targetPropertyKeyOrTarget, optionsOrPropertyKey, descriptor);
+  }
+  return applyProperty(selector, targetPropertyKeyOrTarget as any, optionsOrPropertyKey as PropertyQueryOptions);
+};
+
+export function propThis(targetPropertyKey?: string | symbol, options?: PropertyQueryOptions): MethodDecorator;
+export function propThis(target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor): PropertyDescriptor | void;
+export function propThis(targetPropertyKeyOrTarget?: string | symbol | Object, optionsOrPropertyKey?: PropertyQueryOptions | string | symbol, descriptor?: PropertyDescriptor): any {
+  return dispatchPropConvenience('$this', targetPropertyKeyOrTarget, optionsOrPropertyKey, descriptor);
 }
-export function propAppHost(targetPropertyKey?: string | symbol, options?: PropertyQueryOptions): MethodDecorator {
-  return applyProperty('$appHost', targetPropertyKey, options);
+export function propAppHost(targetPropertyKey?: string | symbol, options?: PropertyQueryOptions): MethodDecorator;
+export function propAppHost(target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor): PropertyDescriptor | void;
+export function propAppHost(targetPropertyKeyOrTarget?: string | symbol | Object, optionsOrPropertyKey?: PropertyQueryOptions | string | symbol, descriptor?: PropertyDescriptor): any {
+  return dispatchPropConvenience('$appHost', targetPropertyKeyOrTarget, optionsOrPropertyKey, descriptor);
 }
-export function propWindow(targetPropertyKey?: string | symbol, options?: PropertyQueryOptions): MethodDecorator {
-  return applyProperty('$window', targetPropertyKey, options);
+export function propWindow(targetPropertyKey?: string | symbol, options?: PropertyQueryOptions): MethodDecorator;
+export function propWindow(target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor): PropertyDescriptor | void;
+export function propWindow(targetPropertyKeyOrTarget?: string | symbol | Object, optionsOrPropertyKey?: PropertyQueryOptions | string | symbol, descriptor?: PropertyDescriptor): any {
+  return dispatchPropConvenience('$window', targetPropertyKeyOrTarget, optionsOrPropertyKey, descriptor);
 }
-export function propDocument(targetPropertyKey?: string | symbol, options?: PropertyQueryOptions): MethodDecorator {
-  return applyProperty('$document', targetPropertyKey, options);
+export function propDocument(targetPropertyKey?: string | symbol, options?: PropertyQueryOptions): MethodDecorator;
+export function propDocument(target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor): PropertyDescriptor | void;
+export function propDocument(targetPropertyKeyOrTarget?: string | symbol | Object, optionsOrPropertyKey?: PropertyQueryOptions | string | symbol, descriptor?: PropertyDescriptor): any {
+  return dispatchPropConvenience('$document', targetPropertyKeyOrTarget, optionsOrPropertyKey, descriptor);
 }
 export function propLight(selector: string, targetPropertyKey?: string | symbol, options?: Omit<PropertyQueryOptions, 'root'>): MethodDecorator {
   return applyProperty(selector, targetPropertyKey, {...options ?? {}, root: 'light'});
