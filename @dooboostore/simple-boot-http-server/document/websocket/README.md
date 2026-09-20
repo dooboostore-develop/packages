@@ -99,8 +99,13 @@ Server/client code expands `{"$file":"f1"}` into a file object:
 
 ## Client Usage
 
+`WebSocketClient` ships as its own standalone browser bundle (not through the package's `exports` map), so it's loaded with a plain `<script>` tag rather than an import:
+
 ```html
+<script src="./node_modules/@dooboostore/simple-boot-http-server/dist/umd-bundle/websocket-client.umd.js"></script>
 <script>
+  const { WebSocketClient } = dooboostoreSimpleBootHttpServerWebSocketClient;
+
   const ws = new WebSocketClient('http://localhost:8080', {
     retryConnectionCount: Number.MAX_SAFE_INTEGER,
     retryConnectionDelay: 1000
@@ -108,7 +113,7 @@ Server/client code expands `{"$file":"f1"}` into a file object:
 
   const subject = ws.subject('Symbol.for(UserService)://say', { type: 'intent' });
 
-  subject.observable.subscribe({
+  const subscription = subject.observable.subscribe({
     next: data => {
       console.log('received', data);
     }
@@ -125,6 +130,12 @@ Server/client code expands `{"$file":"f1"}` into a file object:
     office: { photo: files[0] },
     attachments: files
   });
+
+  // subscription.unsubscribe() only tears down the LOCAL RxJS-style subscription
+  // (it stops delivering to this particular `next`/`error` callback pair).
+  // To actually unregister the topic on the server and free its uuid, call
+  // the object returned by ws.subject(...) itself:
+  subject.unsubscribe();
 </script>
 ```
 
@@ -133,12 +144,13 @@ Server/client code expands `{"$file":"f1"}` into a file object:
 ```ts
 say(message: any) {
   console.log('UserService says:', message);
+  const buffer = Buffer.from('hello binary world', 'utf8');
   return {
     m: 'ok',
     office: {
       photo: {
-        name: 'favicon.png',
-        mime: 'image/png',
+        name: 'greeting.txt',
+        mime: 'text/plain',
         size: buffer.length,
         buffer
       }

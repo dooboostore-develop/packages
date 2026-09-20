@@ -316,6 +316,85 @@ onCriticalClick(event: Event) {
 - `addEventListenerAll(selector, type, options)` / `eventAll(...)` - Bind (non-delegated) in both light & shadow DOM
 - `addEventListenerMutation(selector, type, options)` / `eventMutation(...)` - Delegate via `MutationObserver` instead of event bubbling (useful for non-bubbling events like `focus`/`blur`); `*Light`/`*Shadow`/`*All` variants also available
 
+**Event-Type-Specific Aliases (eventClick, eventInputThis, ...):**
+
+Beyond the generic `event(selector, type, options)` form, every scope/delegate variant above is also pre-bound to ~59 common DOM event types, so you don't have to repeat the type string:
+
+```typescript
+@eventClick('.logo')
+onLogoClick() { ... }
+
+// Same as: @eventDelegateLight('.item', 'click')
+@eventClickDelegateLight('.item')
+onItemClick(event: Event) { ... }
+
+// Same as: @addEventListenerThis('keydown')
+// No selector/options needed → bare form works too (no parens)
+@eventKeydownThis
+onKeydown(event: KeyboardEvent) { ... }
+
+// Still callable with options when you need them
+@eventKeydownThis({ filter: (e, helper) => !helper.currentThis.isLocked })
+onKeydownFiltered(event: KeyboardEvent) { ... }
+```
+
+Naming pattern: `event` + `PascalCase(type)` + scope suffix (`''`(base) / `DelegateLight` / `DelegateShadow` / `DelegateAll` / `Delegate` / `MutationLight` / `MutationShadow` / `MutationAll` / `Mutation` / `Light` / `Shadow` / `All` / `This` / `AppHost` / `Window` / `Document`) — e.g. `eventClick`, `eventClickDelegateShadow`, `eventDblclickThis`, `eventPointerdownDelegateAll`, `eventKeydownWindow`.
+
+The `This`/`AppHost`/`Window`/`Document` variants (e.g. `eventClickThis`, `eventClickWindow`) take no selector — only an optional `options`, so they support both bare usage (`@eventClickThis`) and factory usage (`@eventClickThis({...})`), the same dual-mode pattern `@subscribeSwcAppRouteChangeWhileConnected`/`@subscribeSwcAppMessageWhileConnected` already use. The `Delegate*`/`Light`/`Shadow`/`All`/base variants still require a `selector` as their first argument, so they must always be called with parens.
+
+Covered event types include mouse (`click`, `dblclick`, `mousedown`, `mouseup`, `mousemove`, `mouseover`, `mouseout`, `mouseenter`, `mouseleave`, `contextmenu`, `wheel`), keyboard (`keydown`, `keyup`, `keypress`), form (`input`, `change`, `submit`, `reset`, `invalid`, `select`), focus (`focus`, `blur`, `focusin`, `focusout`), drag & drop (`dragstart`, `drag`, `dragend`, `dragenter`, `dragleave`, `dragover`, `drop`), touch (`touchstart`, `touchmove`, `touchend`, `touchcancel`), pointer (`pointerdown`, `pointerup`, `pointermove`, `pointerover`, `pointerout`, `pointerenter`, `pointerleave`, `pointercancel`), clipboard (`copy`, `cut`, `paste`), animation/transition (`animationstart/end/iteration/cancel`, `transitionstart/end/cancel/run`), and misc (`scroll`, `resize`, `load`, `error`, `toggle`).
+
+These aliases are generated in `addEventListener.ts` from a small internal `makeTypedEventAliases<TEvent>(type)` factory — adding a new event type is a one-line addition, not hand-written boilerplate. Any event type not covered still works via the generic `@event(selector, 'your-type', options)` / `@eventDelegateLight(selector, 'your-type', options)` etc.
+
+#### Order-Independent Parameter Decorators (@eventObject, @matchedElement, @hostSet, @helperHostSet, @helperSet)
+
+`@addEventListener`-bound handlers normally receive fixed positional arguments (`(event, legacyHelper1, legacyHelper2)`). If you'd rather not memorize that order, decorate individual parameters instead — order and position no longer matter, and any parameter left undecorated in a method that uses none of these decorators still gets the legacy positional arguments (fully backward-compatible):
+
+```typescript
+import { addEventListener, eventObject, matchedElement, hostSet, helperHostSet, helperSet } from '@dooboostore/simple-web-component';
+
+@elementDefine('product-list')
+class ProductList extends HTMLElement {
+  // Order can be anything you like
+  @addEventListenerDelegateLight('.item', 'click')
+  onItemClick(@matchedElement $item: Element, @eventObject event: Event) {
+    console.log('clicked item:', $item, event);
+  }
+
+  // Only need the host tree info? Just ask for @hostSet.
+  @eventClickThis()
+  onHostClick(@hostSet hs: HostSet) {
+    console.log(hs.$appHost, hs.$hosts);
+  }
+
+  // Need DOM helpers ($q, $qa, ...) too? Use @helperHostSet (superset of @hostSet) or @helperSet (helpers only).
+  @eventClickThis()
+  onHostClickFull(@helperHostSet full: HelperHostSet, @helperSet helpers: HelperSet) { ... }
+}
+```
+
+- `@eventObject` - the original DOM `Event`
+- `@matchedElement` - the delegate-matched element (or `event.currentTarget` for direct bindings)
+- `@hostSet` - host-ancestor-tree info only (`$host`, `$parentHost`, `$hosts`, `$appHost`, `$appHosts`, `$firstHost`, `$lastHost`, `$firstAppHost`, `$lastAppHost`)
+- `@helperHostSet` - `@hostSet` + DOM/window helpers (`$d`, `$w`, `$q`, `$qa`, `$qi`) + `$this`
+- `@helperSet` - DOM/window helpers only (`$d`, `$w`, `$q`, `$qa`, `$qi`), no host-tree info
+
+The same mechanism (and the same 5 decorators, plus two more) also applies to:
+- **`@onInitialize`/`@onConnectedBefore`/`@onConnectedAfter`/... lifecycle methods** — can freely mix `@hostSet`/`@helperHostSet`/`@helperSet` with `@inject(...)` on the same method.
+- **`@subscribeSwcAppRouteChangeWhileConnected`** — add `@routerEvent` to receive the `RouterEventType` regardless of position.
+- **`@subscribeSwcAppMessageWhileConnected`** — add `@appMessage` to receive the `SwcAppMessage` regardless of position.
+
+```typescript
+@onConnectedAfter
+onconstructor(@inject(UserService.SYMBOL) userService: UserService, @hostSet hs: HostSet) { ... }
+
+@subscribeSwcAppRouteChangeWhileConnected
+onRouteChanged(@helperSet helpers: HelperSet, @routerEvent re: RouterEventType) { ... }
+
+@subscribeSwcAppMessageWhileConnected
+onMessage(@hostSet hs: HostSet, @appMessage msg: SwcAppMessage) { ... }
+```
+
 #### @emitCustomEvent
 Emit custom events with data.
 
@@ -336,7 +415,8 @@ async onLogin() {
 Publish messages through the message bus when method completes.
 
 ```typescript
-@publishSwcAppMessage()
+// No arguments needed → bare form
+@publishSwcAppMessage
 async onLogin() {
   const user = await this.authService.login();
   return user;  // Published as message with data: user
@@ -350,13 +430,14 @@ updateProfile() {
 ```
 
 **@publishSwcAppMessage Decorator Variants:**
-- `publishSwcAppMessage()` - Publish without message type
+- `publishSwcAppMessage` - Bare decorator, publish without message type (equivalent to `publishSwcAppMessage()`)
+- `publishSwcAppMessage()` - Same as bare, but as a factory call — useful when you need the call-with-parens form for consistency with a neighboring decorator
 - `publishSwcAppMessage(messageType)` - Publish with specific message type
 - `publishSwcAppMessage(messageType, { valueKey: 'customKey' })` - Publish with custom value extraction
 - `publishSwcAppMessage({ messageType: 'type', valueKey: 'customKey' })` - Publish with options object
-- `publish()` - Short alias
-- `publish(messageType)` - Short alias with message type
-- `publish(messageType, options)` - Short alias with options
+- `publishMessage` / `publishMessage()` - Short alias, same bare/factory duality
+- `publishMessage(messageType)` - Short alias with message type
+- `publishMessage(messageType, options)` - Short alias with options
 
 **Using valueKey for Multiple Decorators:**
 
@@ -1076,7 +1157,8 @@ Publish a message from a method's return value.
 ```typescript
 @elementDefine('login-form')
 class LoginForm extends HTMLElement {
-  @publishSwcAppMessage()
+  // No arguments needed → bare form
+  @publishSwcAppMessage
   async onSubmit() {
     const user = await this.authService.login(
       this.username,
@@ -1094,11 +1176,11 @@ class LoginForm extends HTMLElement {
 ```
 
 **@publishSwcAppMessage Decorator Variants:**
-- `publishSwcAppMessage()` - Publish without message type
+- `publishSwcAppMessage` / `publishSwcAppMessage()` - Publish without message type (bare or factory form, both equivalent)
 - `publishSwcAppMessage(messageType)` - Publish with specific message type
 - `publishSwcAppMessage(messageType, { valueKey: 'customKey' })` - Publish with custom value extraction
 - `publishSwcAppMessage({ messageType: 'type', valueKey: 'customKey' })` - Publish with options object
-- `publishMessage()` - Short alias
+- `publishMessage` / `publishMessage()` - Short alias
 - `publishMessage(messageType)` - Short alias with message type
 - `publishMessage(messageType, options)` - Short alias with options
 

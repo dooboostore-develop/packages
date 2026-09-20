@@ -87,4 +87,22 @@ export class UserService {
     console.log('🗑️  User deleted with id:', id);
     return true;
   }
+
+  // WebSocket 데모(websocket-client.html)가 `Symbol.for(UserService)://say` intent로 호출하는 핸들러.
+  // @Sim({symbol}) 클래스의 public 메서드는 이름으로 intent 라우팅되므로 별도 데코레이터가 필요 없다.
+  say(message: any) {
+    console.log('UserService says:', message);
+    // WebSocketManager/WebSocketClient의 바이너리 프레이밍(길이헤더+JSON메타+원본버퍼)을 태워보는 데모.
+    // Buffer가 응답에 섞여 있으면 자동으로 바이너리 전송 경로를 탄다 (JSON에 base64로 우겨넣지 않음).
+    const buffer = Buffer.from(`hello binary world @ ${new Date().toISOString()}`, 'utf8');
+    return {
+      echo: message,
+      at: new Date().toISOString(),
+      file: {
+        name: 'greeting.txt',
+        mime: 'text/plain',
+        buffer
+      }
+    };
+  }
 }

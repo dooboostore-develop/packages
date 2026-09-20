@@ -73,8 +73,8 @@ export const APPLY_SLOT_METADATA_KEY = Symbol.for('simple-web-component:apply-sl
 //     }
 // };
 
-const applyToDom = (swcId: string, id: string, pos: ApplySlotPosition, nodes: Node[]) => {
-  const nodeSlot = new NodeSlot(this, swcId);
+const applyToDom = (host: HTMLElement, swcId: string, id: string, pos: ApplySlotPosition, nodes: Node[]) => {
+  const nodeSlot = new NodeSlot(host, swcId);
   if (pos === 'replaceChildrenText' || pos === 'replaceChildren' || pos === 'replaceChildrenHtml') {
     nodeSlot.replaceChildren(id, ...nodes);
   } else if (pos === 'appendHtml' || pos === 'append' || pos === 'appendText') {
@@ -109,6 +109,7 @@ export function applySlot(targetId: string, opt: OptionalType<ApplySlotOptions, 
     descriptor.value = function (...args: any[]) {
       ensureInit(this);
 
+      const host = this;
       const conf = getElementConfig(this);
       const currentWin = conf.window;
       const swcId = this._swcId;
@@ -137,7 +138,7 @@ export function applySlot(targetId: string, opt: OptionalType<ApplySlotOptions, 
         const res: string | Node = options.fallback.call(this, hostSet);
         const nodes: Node[] = resToNodes(res);
         fallbackNodes.push(...nodes);
-        applyToDom(swcId, targetId, options.position, nodes);
+        applyToDom(host, swcId, targetId, options.position, nodes);
       }
 
       /**
@@ -162,12 +163,12 @@ export function applySlot(targetId: string, opt: OptionalType<ApplySlotOptions, 
           const extracted = extractValue(asyncRes);
           const nodes = resToNodes(extracted)
           fallbackNodes.forEach((it: any) => it.remove());
-          applyToDom(swcId, targetId, options.position, nodes);
+          applyToDom(host, swcId, targetId, options.position, nodes);
         })
       } else {
         const extracted = extractValue(res);
         const nodes: Node[] = resToNodes(extracted);
-        applyToDom(swcId, targetId, options.position, nodes);
+        applyToDom(host, swcId, targetId, options.position, nodes);
       }
     };
   };

@@ -4,6 +4,10 @@ import CheckoutPage from './CheckoutPage';
 import HomePage from './HomePage';
 import OrdersPage from './OrdersPage';
 import TimerTestPage from './TimerTestPage';
+import SlotTestPage from './SlotTestPage';
+import RxjsOperatorsTestPage from './RxjsOperatorsTestPage';
+import EventDelegateTestPage from './EventDelegateTestPage';
+import LifecycleParamTestPage from './LifecycleParamTestPage';
 import {replaceChildren, innerHtmlLight, subscribeSwcAppRouteChangeWhileConnected, publishSwcAppMessage, onConnectedBodyLight, innerHtml, onConnectedAfter, onConnectedBody, updateClass, addEventListener, applyNode, elementDefine, emitCustomEvent, onConnectedBefore, onConnectedBodyShadow, addEventListenerThis, attribute } from '@dooboostore/simple-web-component';
 import {Inject} from '@dooboostore/simple-boot';
 import {Router, type RouterEventType} from '@dooboostore/core-web';
@@ -11,7 +15,7 @@ import {CartService} from '../services/CartService';
 import {OrderService} from '../services/OrderService';
 import {ProductService} from '../services/ProductService';
 
-export { CartPage, ProductPage, CheckoutPage, HomePage, OrdersPage, TimerTestPage };
+export { CartPage, ProductPage, CheckoutPage, HomePage, OrdersPage, TimerTestPage, SlotTestPage, RxjsOperatorsTestPage, EventDelegateTestPage, LifecycleParamTestPage };
 
 /**
  * Root Router Factory - Main routing hub
@@ -52,7 +56,7 @@ export const rootRouterFactory = (w: Window) => {
     //   console.log('RootRouter received message:', message);
     // }
 
-    @subscribeSwcAppRouteChangeWhileConnected(['', '/', '/product/{id}', '/cart', '/checkout', '/orders', '/timer-test'])
+    @subscribeSwcAppRouteChangeWhileConnected(['', '/', '/product/{id}', '/cart', '/checkout', '/orders', '/timer-test', '/slot-test', '/rxjs-operators-test', '/event-delegate-test', '/lifecycle-param-test'])
     @innerHtmlLight
     routeChanged(routerPathSet: RouterEventType) {
       if (['', '/'].includes(routerPathSet.path)) {
@@ -65,10 +69,16 @@ export const rootRouterFactory = (w: Window) => {
         return `<swc-example-commerce-orders-page/>`;
       } else if (['/timer-test'].includes(routerPathSet.path)) {
         return `<swc-example-timer-test-page/>`;
+      } else if (['/slot-test'].includes(routerPathSet.path)) {
+        return `<swc-example-slot-test-page/>`;
+      } else if (['/rxjs-operators-test'].includes(routerPathSet.path)) {
+        return `<swc-example-rxjs-operators-test-page/>`;
+      } else if (['/event-delegate-test'].includes(routerPathSet.path)) {
+        return `<swc-example-event-delegate-test-page/>`;
+      } else if (['/lifecycle-param-test'].includes(routerPathSet.path)) {
+        return `<swc-example-lifecycle-param-test-page/>`;
       } else if (routerPathSet.path.startsWith('/product/')) {
         return `<swc-example-commerce-product-page product-id="${routerPathSet.pathData.id}"/>`;
-      } else if (routerPathSet.path.startsWith('/detail/')) {
-        return ` <swc-example-accommodation-detail-page product-id="${routerPathSet.pathData.productId}"/>`;
       } else {
         return `<div style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 400px; padding: 40px; text-align: center; color: #666;">
        <h2 style="font-size: 24px; margin: 0 0 10px 0; color: #333;">404 - Page Not Found</h2>
@@ -109,4 +119,4 @@ export const rootRouterFactory = (w: Window) => {
   return tagName;
 };
 
-export const pageFactories = [CartPage, ProductPage, CheckoutPage, HomePage, OrdersPage, TimerTestPage, rootRouterFactory];
+export const pageFactories = [CartPage, ProductPage, CheckoutPage, HomePage, OrdersPage, TimerTestPage, SlotTestPage, RxjsOperatorsTestPage, EventDelegateTestPage, LifecycleParamTestPage, rootRouterFactory];

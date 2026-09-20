@@ -1,5 +1,5 @@
 import { SwcAppInterface, SwcAppMessage } from '../types';
-import { APPLY_NODE_METADATA_KEY, findAllLifecycleMetadata, getSubscribeSwcAppMessageWhileConnectedMetadata, getSubscribeSwcAppRouteChangeWhileConnectedMetadata, ON_CONNECTED_SWC_APP_METADATA_KEY, SUBSCRIBE_SWC_APP_ROUTE_CHANGE_WHILE_CONNECTED_METADATA_KEY } from '../decorators';
+import { APPLY_NODE_METADATA_KEY, findAllLifecycleMetadata, getSubscribeSwcAppMessageWhileConnectedMetadata, getSubscribeSwcAppRouteChangeWhileConnectedMetadata, ON_CONNECTED_SWC_APP_METADATA_KEY, SUBSCRIBE_SWC_APP_ROUTE_CHANGE_WHILE_CONNECTED_METADATA_KEY, buildSwcParameterArgs } from '../decorators';
 import { SwcAppEngine, SwcAttributeConfigType, SwcConfigType } from '../SwcAppEngine';
 import { debounceTimeIntervalLock, FunctionUtils, Subscription } from '@dooboostore/core';
 import {RouterEventType, ValidUtils} from '@dooboostore/core-web';
@@ -83,8 +83,6 @@ export function SwcAppMixin<T extends { new (...args: any[]): HTMLElement }>(Bas
         const routeChangeSubscribers = getSubscribeSwcAppRouteChangeWhileConnectedMetadata(instance);
 
         if (routeChangeSubscribers.length > 0) {
-          console.log('[SWC-MIXIN] Route change subscribers found');
-
           // Subscribers are already sorted by order from getSubscribeSwcAppRouteChangeWhileConnectedMetadata
           // Execute subscribers in order, stop if one returns a value
           for (const metadata of routeChangeSubscribers) {
@@ -127,7 +125,16 @@ export function SwcAppMixin<T extends { new (...args: any[]): HTMLElement }>(Bas
             const filterPassed = !filter || filter(this.router!, { helper: hostSet, currentThis: instance });
 
             if (pathMatched && filterPassed && instance[methodName]) {
-              const result = extractValue(await instance[methodName]({ ...re, pathData: pathData }));
+              const routeEventValue = { ...re, pathData: pathData };
+              const instanceHelperHostSet = SwcUtils.getHelperAndHostSet(this.config.window, instance);
+              const instanceHelperSet = SwcUtils.getHelperSet(this.config.window);
+              const args = buildSwcParameterArgs(instance, methodName, {
+                routerEvent: routeEventValue,
+                hostSet: instanceHelperHostSet,
+                helperHostSet: instanceHelperHostSet,
+                helperSet: instanceHelperSet
+              }, [routeEventValue]);
+              const result = extractValue(await instance[methodName](...args));
               // if (typeof result === 'object'
               // If handler returns a value, stop propagation to next handlers
               if (result !== undefined && result !== null) {
@@ -348,7 +355,15 @@ export function SwcAppMixin<T extends { new (...args: any[]): HTMLElement }>(Bas
           }
 
           if (typeMatched && filterMatched && typeof instance[methodName] === 'function') {
-            instance[methodName](message);
+            const instanceHelperHostSet = SwcUtils.getHelperAndHostSet(this.config.window, instance);
+            const instanceHelperSet = SwcUtils.getHelperSet(this.config.window);
+            const args = buildSwcParameterArgs(instance, methodName, {
+              appMessage: message,
+              hostSet: instanceHelperHostSet,
+              helperHostSet: instanceHelperHostSet,
+              helperSet: instanceHelperSet
+            }, [message]);
+            instance[methodName](...args);
           }
         });
       }

@@ -11,6 +11,8 @@ import {getQueryMetadata, getQueryAllMetadata} from './query';
 import {SwcUtils} from '../utils/Utils';
 import {DOM_EVENT_NAMES, HTML_TAG_ENTRIES} from '../config/config';
 import {SituationTypeContainer, SituationTypeContainers} from '@dooboostore/simple-boot/decorators/inject/Inject';
+import {FirstCheckMaker} from '@dooboostore/simple-boot';
+import {buildSwcParameterArgs, getParameterMetadata} from './parameter';
 import {ElementDefineLifeCycler, HelperHostSet, HostSet, InjectSituationType, IntersectionObserverSet, MutationObserverSet, OnConnectedResult, ResizeObserverSet, ResizeObserverSetEntry, SwcRootType} from '../types';
 import {ConvertUtils, ElementApply} from '@dooboostore/core-web';
 import {isSSR} from "../elements/SwcAppMixin";
@@ -238,6 +240,13 @@ const setupPrototype = (proto: any, win: Window) => {
     if (typeof (this as any)[methodName] !== 'function') return;
     const useHostSet = hostSet ?? SwcUtils.getHelperAndHostSet(win, this);
     const app = useHostSet?.$appHost?.simpleApplication;
+
+    // @hostSet/@helperHostSet/@helperSet(parameter.ts)를 위한 값. lifecycle 메서드는
+    // event/matched 개념이 없으므로 이 세 가지만 채운다.
+    const helperSetValue = SwcUtils.getHelperSet(win);
+    const helperHostSetValue = {...helperSetValue, ...useHostSet, $this: this};
+    const kindValues = {hostSet: useHostSet, helperHostSet: helperHostSetValue, helperSet: helperSetValue};
+
     // console.log('---->hh',app, this, methodName);
     if (app) {
       const otherStorage = new Map<any, any>();
@@ -250,16 +259,30 @@ const setupPrototype = (proto: any, win: Window) => {
       }), new SituationTypeContainer({situationType: InjectSituationType.LAST_APP_HOST, data: useHostSet.$lastAppHost})]);
       otherStorage.set(SituationTypeContainers, situations);
 
+      // @hostSet/@helperHostSet/@helperSet가 붙은 파라미터는 @Inject/situationType 기반
+      // 해석보다 먼저 처리되고(firstCheckMaker), 그 외 파라미터는 기존처럼 @Inject/타입
+      // 기반으로 정상 해석된다 — 같은 메서드에서 두 방식을 섞어 써도 된다.
+      const firstCheckMaker: FirstCheckMaker = ({target, targetKey}, token, idx) => {
+        const saves = getParameterMetadata(target, targetKey!);
+        const found = saves.find(s => s.index === idx);
+        return found ? (kindValues as any)[found.kind] : undefined;
+      };
+
       return app.simstanceManager.executeBindParameterSim(
         {
           target: this,
           targetKey: methodName,
-          inputParameters: extraArgs
+          inputParameters: extraArgs,
+          firstCheckMaker: [firstCheckMaker]
         },
         otherStorage
       );
     } else {
-      return (this as any)[methodName](...extraArgs);
+      // SimpleApplication(DI 컨테이너)이 없는 standalone 사용 시에도 @hostSet/@helperHostSet/
+      // @helperSet만큼은 buildSwcParameterArgs로 주입해준다 — 해당 데코레이터가 하나도 없으면
+      // extraArgs를 그대로 반환하므로(기존 동작 그대로) 하위호환 깨지지 않는다.
+      const args = buildSwcParameterArgs(this, methodName, kindValues, extraArgs);
+      return (this as any)[methodName](...args);
     }
   };
 

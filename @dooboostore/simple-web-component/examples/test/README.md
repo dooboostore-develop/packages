@@ -1,41 +1,40 @@
-# 🛍️ E-Commerce SPA Example
+# 🛍️ simple-web-component Example / Test App
 
-A complete e-commerce application built with **@dooboostore/simple-web-component** using the modern **Accommodation Pattern** for Clean, Composable SPA Architecture.
+A small e-commerce SPA built with **@dooboostore/simple-web-component**, doubling as a **live test bed** for the framework's decorators — routing, DI, events (including delegation), timers, slots, and the RxJS-style event operators.
 
 ## Features
 
-- ✅ **Accommodation Pattern**: Factory-based registration with explicit DI
-- ✅ **Central Root Router**: One `rootRouterFactory` managing all routes
-- ✅ **@subscribeSwcAppRouteChange**: Declarative route patterns with parameter extraction
-- ✅ **Dependency Injection**: Services injected via `@onInitialize`
-- ✅ **Event-driven Navigation**: Header navigation via `on-navigate` custom events
-- ✅ **Responsive Design**: Pure CSS without framework overhead
-- ✅ **Zero Hidden Magic**: Explicit decorators, clear control flow
+- ✅ Route-driven SPA via a single `RootRouter` (`@subscribeSwcAppRouteChangeWhileConnected`)
+- ✅ Dependency Injection via `@dooboostore/simple-boot`'s `@Inject`, mixed with SWC's own parameter decorators
+- ✅ Event-driven navigation via custom events (`@emitCustomEvent` / `on-navigate`)
+- ✅ Live test pages for: timers/animation frames, slots, RxJS-style event operators, event delegation, and order-independent parameter injection
+- ✅ Zero hidden magic: explicit decorators, `@elementDefine` factories, clear control flow
 
 ## Project Structure
 
 ```
 src/
-├── index.ts                # Entry: calls bootFactory, mounts app
-├── index.html              # Root: <body id="app" is="swc-app-body">
-├── bootFactory.ts          # Central: registers all factories
+├── index.ts                # Entry: reflect-metadata → defineSwcAppBody → appElement.connect(...)
+├── index.html               # <body id="app" is="swc-app-body">
 ├── components/
-│   ├── index.ts            # Exports: componentFactories
-│   ├── Header.ts           # @elementDefine, returns tagName
-│   ├── ProductCard.ts
-│   └── CartButton.ts
+│   ├── index.ts             # Exports: componentFactories
+│   ├── Header.ts            # Nav + cart badge; DI via @onConnectedBefore + @Inject
+│   ├── CartButton.ts        # Customized built-in element (extends HTMLButtonElement)
+│   └── ProductCard.ts
 ├── pages/
-│   ├── index.ts            # Exports: pageFactories, rootRouterFactory
-│   ├── HomePage.ts         # Factory returns tagName
-│   ├── ProductPage.ts      # @attributeThis('product-id')
-│   ├── CartPage.ts
-│   ├── CheckoutPage.ts
-│   └── OrdersPage.ts
-└── services/               # Business logic
-    ├── index.ts            # Exports: serviceFactories
-    ├── ProductService.ts
-    ├── CartService.ts
-    └── OrderService.ts
+│   ├── index.ts             # Exports: pageFactories + rootRouterFactory (RootRouter)
+│   ├── HomePage.ts / CartPage.ts / CheckoutPage.ts / OrdersPage.ts
+│   ├── ProductPage.ts       # @attribute('product-id')
+│   ├── TimerTestPage.ts          # @setInterval / @setTimeout / @requestAnimationFrame
+│   ├── SlotTestPage.ts           # @applySlot family + <!--[[ id ]]--> template directive
+│   ├── RxjsOperatorsTestPage.ts  # @addEventListener debounceTime/throttleTime/distinctUntilChanged/filter
+│   ├── EventDelegateTestPage.ts  # delegate:true (bubbling) vs delegate:'mutation'
+│   └── LifecycleParamTestPage.ts # @eventObject/@matchedElement/@hostSet/... parameter decorators
+├── services/
+│   ├── index.ts             # Exports: serviceFactories
+│   └── ProductService.ts / CartService.ts / OrderService.ts
+└── types/
+    └── window.d.ts          # Window type augmentation (ResizeObserver/MutationObserver/etc.)
 ```
 
 ## Getting Started
@@ -51,404 +50,243 @@ pnpm run dev
 pnpm run build
 ```
 
-Visit `http://localhost:3006` in your browser.
+Visit `http://localhost:3007` in your browser (see `webpack.config.cjs`; overridable via the `PORT` env var).
 
-## Architecture: The Accommodation Pattern
+## Architecture
 
-### 1. Service Registration (bootFactory.ts)
-Central boot factory coordinating all registrations:
-
-```typescript
-import register from '@dooboostore/simple-web-component';
-import { serviceFactories } from './services';
-import { componentFactories } from "./components";
-import { pageFactories } from "./pages";
-
-export default (w: Window, container: symbol) => {
-  // Initialize services with DI container
-  serviceFactories.forEach(s => s(container));
-  
-  // Register all pages, components, and root router
-  register(w, [...pageFactories, ...componentFactories]);
-};
-```
-
-### 2. Root Router with Route Decorators (pages/index.ts)
-Central routing hub using `@subscribeSwcAppRouteChange`:
-
-```typescript
-export const rootRouterFactory = (w: Window) => {
-  const tagName = 'commerce-root-router';
-  const existing = w.customElements.get(tagName);
-  if (existing) return tagName;
-
-  @elementDefine(tagName, { window: w })
-  class RootRouter extends w.HTMLElement {
-    private router: Router;
-    private productService: ProductService;
-    private cartService: CartService;
-
-    @onInitialize
-    onconstructor(
-      router: Router,
-      @Inject({ symbol: ProductService.SYMBOL }) productService: ProductService,
-      @Inject({ symbol: CartService.SYMBOL }) cartService: CartService
-    ) {
-      this.router = router;
-      this.productService = productService;
-      this.cartService = cartService;
-    }
-
-    // Pattern 1: Simple route
-    @subscribeSwcAppRouteChange(['', '/'])
-    @applyInnerHtmlNodeThis({ root: 'light' })
-    homeRoute(router: RouterEventType) {
-      return `<swc-example-commerce-home-page/>`;
-    }
-
-    // Pattern 2: Route with path parameters
-    @subscribeSwcAppRouteChange('/product/{id}')
-    @applyInnerHtmlNodeThis({ root: 'light' })
-    productRoute(router: RouterEventType, pathData: any) {
-      return `<swc-example-commerce-product-page product-id="${pathData.id}"/>`;
-    }
-
-    @applyReplaceChildrenNodeThis({
-      root: 'light',
-      filter: (host, newNode) => !host.contains(newNode)
-    })
-    renderContent(node: Node) {
-      return node;
-    }
-
-    navigate(path: string): void {
-      this.router.go(path);
-    }
-
-    @onConnectedInnerHtml({ useShadow: true })
-    render() {
-      return `
-        <style>
-          :host display: flex; flex-direction: column; min-height: 100vh; background: #fff; }
-        </style>
-        <swc-example-commerce-header on-navigate="$host.navigate($data.path)"></swc-example-commerce-header>
-        <main id="page-container">
-          <slot></slot>
-        </main>
-      `;
-    }
-  }
-  return tagName;
-};
-
-export const pageFactories = [
-  rootRouterFactory,
-  HomePage,
-  ProductPage,
-  CartPage,
-  CheckoutPage,
-  OrdersPage
-];
-```
-
-### 3. Page Component with Attributes (pages/ProductPage.ts)
-Pages receive data via HTML attributes:
-
-```typescript
-export default (w: Window) => {
-  const tagName = 'swc-example-commerce-product-page';
-  const existing = w.customElements.get(tagName);
-  if (existing) return tagName;
-
-  @elementDefine(tagName, { window: w })
-  class ProductPage extends w.HTMLElement {
-    private router: Router;
-    private productService: ProductService;
-    private productId: string = '';
-
-    @attributeThis('product-id')
-    productIdAttr: string = '';
-
-    @onInitialize
-    onconstructor(
-      router: Router,
-      @Inject({ symbol: ProductService.SYMBOL }) productService: ProductService
-    ) {
-      this.router = router;
-      this.productService = productService;
-
-      // Listen to attribute changes
-      if (this.productIdAttr) {
-        this.loadProduct(this.productIdAttr);
-      }
-    }
-
-    private loadProduct(id: string) {
-      if (this.productId !== id) {
-        this.productId = id;
-        // Fetch and render product
-        this.render();
-      }
-    }
-
-    @addEventListener('#go-back', 'click')
-    onBack() {
-      this.router.go('/');
-    }
-  }
-  return tagName;
-};
-```
-
-### 4. Component Emitting Events (components/Header.ts)
-Components emit navigation events via `@emitCustomEventThis`:
-
-```typescript
-export default (w: Window) => {
-  const tagName = 'swc-example-commerce-header';
-  const existing = w.customElements.get(tagName);
-  if (existing) return tagName;
-
-  @elementDefine(tagName, { window: w })
-  class Header extends w.HTMLElement {
-    @emitCustomEventThis('navigate')
-    @addEventListener('.nav-link', 'click', { delegate: true })
-    onNavClick(e: any) {
-      const path = e.target.closest('[data-path]')?.dataset?.path;
-      return { path };
-    }
-  }
-  return tagName;
-};
-```
-
-### 5. Entry Point (index.ts)
-Bootstraps the app with DI container and mounts root router:
+### 1. Bootstrap (index.ts)
 
 ```typescript
 import 'reflect-metadata';
-import { SwcAppInterface } from '@dooboostore/simple-web-component';
-import { UrlUtils } from "@dooboostore/core";
-import bootFactory from "./bootFactory";
+import { SwcAppInterface, defineSwcAppBody } from '@dooboostore/simple-web-component';
+import { UrlUtils } from '@dooboostore/core';
+import { componentFactories } from './components';
+import { pageFactories } from './pages';
+import { serviceFactories } from './services';
 
 const w = window;
 
-w.document.addEventListener('DOMContentLoaded', () => {
+w.document.addEventListener('DOMContentLoaded', async () => {
   const container = Symbol('container');
-  bootFactory(w, container);
-  
+  serviceFactories.forEach(it => it(container));
+  await defineSwcAppBody(w);
+
   const appElement = w.document.querySelector('#app') as SwcAppInterface;
   const path = UrlUtils.getUrlPath(w.location) ?? '/';
-  
+
   if (appElement) {
     appElement.connect({
-      path: path,
+      path,
       routeType: 'path',
-      container: container,
-      window: w,
-      onEngineStarted: () => {
-        console.log('[Commerce] Engine started');
-        appElement.innerHTML = '<commerce-root-router></commerce-root-router>';
-      }
+      onStartedLazyDefineComponent: [...componentFactories, ...pageFactories],
+      container,
+      window: w
     });
   }
 });
 ```
 
-## Data Flow
+### 2. Root Router (pages/index.ts)
 
+A single `RootRouter` owns all routing via `@subscribeSwcAppRouteChangeWhileConnected` — no `@Router`/`@Sim` on the Web Component itself:
+
+```typescript
+@elementDefine('commerce-root-router', { window: w })
+class RootRouter extends w.HTMLElement {
+  private router: Router;
+
+  @onConnectedAfter
+  onconstructor(
+    @Inject({ symbol: ProductService.SYMBOL }) productService: ProductService,
+    @Inject({ symbol: CartService.SYMBOL }) cartService: CartService,
+    @Inject({ symbol: OrderService.SYMBOL }) orderService: OrderService,
+    router: Router
+  ) {
+    this.router = router;
+    // ...
+  }
+
+  @publishSwcAppMessage
+  publishMessage(message: string) {
+    return message;
+  }
+
+  @subscribeSwcAppRouteChangeWhileConnected(['', '/', '/product/{id}', '/cart', '/checkout', '/orders', '/timer-test', '/slot-test', '/rxjs-operators-test', '/event-delegate-test', '/lifecycle-param-test'])
+  @innerHtmlLight
+  routeChanged(routerPathSet: RouterEventType) {
+    if (['', '/'].includes(routerPathSet.path)) return `<swc-example-commerce-home-page/>`;
+    if (routerPathSet.path.startsWith('/product/')) return `<swc-example-commerce-product-page product-id="${routerPathSet.pathData.id}"/>`;
+    // ...other routes, 404 fallback
+  }
+
+  @replaceChildren({ root: 'light', filter: (host, newNode) => !host.contains(newNode) })
+  renderContent(node: Node) {
+    return node;
+  }
+
+  navigate(path: string): void {
+    this.router.go(path);
+  }
+
+  @onConnectedBodyShadow
+  render() {
+    return `
+      <swc-example-commerce-header on-navigate="$host.navigate($data.path)"></swc-example-commerce-header>
+      <main id="page-container"><slot></slot></main>
+    `;
+  }
+}
 ```
-Services (DI Container)
-    ↓
-bootFactory (initialize services)
-    ↓
-rootRouterFactory (@subscribeSwcAppRouteChange)
-    ↓
-Pages (receive data via attributes)
-    ↓
-Components (emit events via @emitCustomEventThis)
-    ↓
-UI Rendering (Pure Web Components)
+
+### 3. Page with an Attribute (pages/ProductPage.ts)
+
+```typescript
+@elementDefine('swc-example-commerce-product-page', { window: w })
+class ProductPage extends w.HTMLElement {
+  @attribute('product-id')
+  productId: string;
+
+  @onConnectedBefore
+  onconstructor(@Inject({ symbol: ProductService.SYMBOL }) productService: ProductService, /* ...more @Inject */) {
+    if (this.productId) this.loadProduct(this.productId);
+  }
+}
+```
+
+### 4. Component Emitting Navigation Events (components/Header.ts)
+
+```typescript
+@elementDefine('swc-example-commerce-header', { window: w })
+class Header extends w.HTMLElement {
+  @onConnectedBefore
+  async gg(@inject({ symbol: CartService.SYMBOL }) cartService: CartService) {
+    await cartService.load();
+    cartService.store.subscribe(cart => this.updateCartCount());
+  }
+
+  @addEventListener('#home-link', 'click')
+  @emitCustomEvent('$this', 'navigate', { attributeName: 'on-navigate' })
+  onHomeClick() {
+    return { path: '/' };
+  }
+
+  @applyNode('#cart-count', { position: 'replaceChildren' })
+  updateCartCount() {
+    return this.cartService?.getItemCount?.() || 0;
+  }
+}
+```
+
+### 5. Service Definition (services/ProductService.ts)
+
+```typescript
+export default (container: symbol) => {
+  @Sim({ symbol: ProductService.SYMBOL, container })
+  class ProductServiceImpl implements ProductService {
+    async getProducts() { /* ... */ }
+  }
+  return ProductServiceImpl;
+};
+```
+
+`@Sim` is for **services only** — Web Components use `@elementDefine`, never `@Sim`/`@Router`.
+
+---
+
+## Decorator Feature Test Pages
+
+Beyond the storefront pages, this app doubles as a live test bed for framework features that are hard to verify with static docs. Each route below is a self-contained, click-through demo (navigable from the header nav bar):
+
+| Route | Page | Demonstrates |
+|---|---|---|
+| `/timer-test` | `TimerTestPage.ts` | `@setInterval` / `@setTimeout` / `@requestAnimationFrame` — `type: 'onConnected'` vs `'returnValue'` modes, `parameter`/`created` callbacks, `valueKey` fallback, and safe stacking with `@applyNode` regardless of decorator order. |
+| `/slot-test` | `SlotTestPage.ts` | `@applySlot` (`@appendSlot`/`@prependSlot`/`@replaceChildrenSlot`/`@clearSlot`) using the `<!--[[ id ]]-->` template directive — the declarative way to embed a slot marker (`SwcUtils.projectProcessHtml` converts it automatically; no manual `NodeSlot` construction needed). |
+| `/rxjs-operators-test` | `RxjsOperatorsTestPage.ts` | `@addEventListener`'s RxJS-style options: `debounceTime`, `throttleTime`, `distinctUntilChanged`, `filter`. Includes the gotcha that `debounceTime`/`throttleTime` defer processing past the point where a shadow-crossing event's `.target` is still reliable — read live DOM state instead of the event inside a delayed handler. |
+| `/event-delegate-test` | `EventDelegateTestPage.ts` | `eventDelegateLight`/`eventDelegateShadow` (`delegate: true`, bubbling-based — one listener, catches elements added *after* connect with zero rebinding, but only for bubbling events) vs `eventMutation` (`delegate: 'mutation'`, MutationObserver-based — binds directly per element, so it also covers non-bubbling events like `focus`). |
+| `/lifecycle-param-test` | `LifecycleParamTestPage.ts` | The order-independent parameter decorators (below), including mixing `@dooboostore/simple-boot`'s `@Inject` with SWC's own `@hostSet`/`@helperHostSet`/`@helperSet` on the *same* method, and route-change / app-message subscribers receiving their payload via `@routerEvent` / `@appMessage`. |
+
+## Order-Independent Parameter Decorators (`@dooboostore/simple-web-component` → `decorators/parameter.ts`)
+
+Handlers for `@addEventListener` (incl. delegate variants), SWC lifecycle methods (`@onConnected*`), `@subscribeSwcAppRouteChangeWhileConnected`, and `@subscribeSwcAppMessageWhileConnected` are normally called with **fixed positional arguments**. These parameter decorators let you request exactly the values you need, **in any order**, mirroring `@dooboostore/simple-boot`'s `@Inject` (index-based metadata, not call-order-based):
+
+| Decorator | Injects | Usable in |
+|---|---|---|
+| `@eventObject` | the raw `Event` | `@addEventListener` handlers |
+| `@matchedElement` | the delegate-matched element (`$matchedElement`) | `@addEventListener` delegate handlers |
+| `@hostSet` | `HostSet` — `$host`/`$hosts`/`$firstHost`/`$appHost`/... (host-tree info only) | all four families below |
+| `@helperHostSet` | `HelperHostSet` — `HelperSet & HostSet & {$this}` (everything) | all four families |
+| `@helperSet` | `HelperSet` — `$d`/`$w`/`$q`/`$qa`/`$qi` (pure DOM/window helpers, no host-tree info) | all four families |
+| `@routerEvent` | `{ ...RouterEventType, pathData }` | `@subscribeSwcAppRouteChangeWhileConnected` handlers |
+| `@appMessage` | the `SwcAppMessage` payload | `@subscribeSwcAppMessageWhileConnected` handlers |
+
+If a method uses **none** of these, it falls back to the exact legacy positional call — fully backward compatible.
+
+```typescript
+// Reordered, and mixed with simple-boot's own @Inject in one method:
+@onConnectedAfter
+onConnectedCheck(
+  @Inject({ symbol: ProductService.SYMBOL }) productService: ProductService,
+  @hostSet hs: HostSet,
+  @helperHostSet full: HelperHostSet,
+  @helperSet helpers: HelperSet
+) { /* ... */ }
+
+// Delegate handler with matched element requested before the event:
+@eventDelegateLight('.dyn-btn', 'click')
+onClick(@matchedElement el: Element, @eventObject e: Event) { /* ... */ }
 ```
 
 ## Key Patterns
 
-### ⚠️ **CRITICAL: NO @Sim for ANY Web Component (including examples!)**
+### ⚠️ **`@Sim` is for services only**
 
-**This rule applies to ALL classes that extend HTMLElement, including:**
-- ✅ RootRouter
-- ✅ Pages (HomePage, ProductPage, CartPage, etc.)
-- ✅ Components (Header, ProductCard, CartButton, etc.)
-
-Only Services should use `@Sim` decorator! Web Components should use `@elementDefine` only. Routing is now handled via `@subscribeSwcAppRouteChange` decorators on individual route handler methods.
+Any class extending `HTMLElement` — pages, components, the root router — uses `@elementDefine` and nothing else. Never `@Sim`/`@Router` on a Web Component.
 
 ```typescript
-// ✅ CORRECT: Service with @Sim
-@Sim()
-export class ProductService {
-  async getProducts() { }
-}
+// ✅ Service
+@Sim({ symbol: ProductService.SYMBOL, container })
+class ProductServiceImpl implements ProductService { /* ... */ }
 
-// ✅ CORRECT: RootRouter with @subscribeSwcAppRouteChange (NO @Sim, NO @Router)
+// ✅ Web Component
 @elementDefine(tagName, { window: w })
-class RootRouter extends w.HTMLElement {
-  @onInitialize
-  onconstructor(service: ProductService) { }
+class ProductPage extends w.HTMLElement { /* ... */ }
 
-  @subscribeSwcAppRouteChange('/')
-  @applyInnerHtmlNodeThis({ root: 'light' })
-  homeRoute(router: RouterEventType) {
-    return `<page-home/>`;
-  }
-
-  @subscribeSwcAppRouteChange('/product/{id}')
-  @applyInnerHtmlNodeThis({ root: 'light' })
-  productRoute(router: RouterEventType, pathData: any) {
-    return `<page-product product-id="${pathData.id}"/>`;
-  }
-}
-
-// ✅ CORRECT: Page with @elementDefine (NO @Sim, NO @Router)
-@elementDefine(tagName, { window: w })
-class ProductPage extends w.HTMLElement {
-  @onInitialize
-  onconstructor(service: ProductService) { }
-}
-
-// ✅ CORRECT: Component with @elementDefine (NO @Sim)
-@elementDefine(tagName, { window: w })
-class Header extends w.HTMLElement { }
-
-// ❌ WRONG: ANY Web Component with @Sim
+// ❌ NEVER
 @Sim()
 @elementDefine(tagName, { window: w })
-class RootRouter extends w.HTMLElement { }  // ← NEVER DO THIS!
-
-// ❌ WRONG: Old pattern with @Router (completely removed)
-@Sim()
-@Router(routerConfig)
-@elementDefine(tagName, { window: w })
-class RootRouter extends w.HTMLElement { }  // ← NEVER DO THIS!
+class ProductPage extends w.HTMLElement { /* ... */ }
 ```
 
-### 1️⃣ **Factory Returns tagName (String)**
+### Factory returns `tagName` (string)
+
 ```typescript
 export default (w: Window) => {
   const tagName = 'element-name';
   const existing = w.customElements.get(tagName);
-  if (existing) return tagName;  // Return string, NOT class
+  if (existing) return tagName;
 
   @elementDefine(tagName, { window: w })
-  class ElementName { }
-  
-  return tagName;  // Always return string
+  class ElementName extends w.HTMLElement { /* ... */ }
+
+  return tagName;
 };
 ```
 
-### 2️⃣ **@onInitialize for DI**
-```typescript
-@onInitialize
-onconstructor(
-  router: Router,
-  @Inject({ symbol: Service.SYMBOL }) service: Service
-) {
-  this.router = router;
-  this.service = service;
-}
-```
-
-### 3️⃣ **@subscribeSwcAppRouteChange for Routes**
-```typescript
-@subscribeSwcAppRouteChange('/path/{param}')
-@applyInnerHtmlNodeThis({ root: 'light' })
-routeMethod(router: RouterEventType, pathData: any) {
-  return `<component-name attribute="${pathData.param}" />`;
-}
-```
-
-### 4️⃣ **Event Communication**
-Header → emit → RootRouter → navigate:
+### Event → custom event → router navigation
 
 ```typescript
 // Header emits
-@emitCustomEventThis('navigate')
-onNavClick() { return { path: '/product/123' }; }
+@addEventListener('.logo', 'click')
+@emitCustomEvent('$this', 'navigate', { attributeName: 'on-navigate' })
+onLogoClick() { return { path: '/' }; }
 
-// RootRouter receives
-<header on-navigate="$host.navigate($data.path)"></header>
+// RootRouter's shadow template wires the attribute
+// <header on-navigate="$host.navigate($data.path)"></header>
 
-// RootRouter handles
+// RootRouter handles it
 navigate(path: string) { this.router.go(path); }
 ```
 
-## Service Definition Pattern
-
-Services are implemented as factories that return classes wrapped with `@Sim` for Dependency Injection and Singleton lifetime management:
-
-```typescript
-// services/ProductService.ts
-export namespace ProductService {
-  export const SYMBOL = Symbol('ProductService');
-  
-  export interface Product {
-    id: string;
-    name: string;
-    price: number;
-    // ... more fields
-  }
-}
-
-export interface ProductService {
-  getProducts(): Promise<ProductService.Product[]>;
-  searchProducts(query: string): Promise<ProductService.Product[]>;
-  getProductById(id: string): Promise<ProductService.Product>;
-}
-
-// Factory function: receives container and returns Service class
-export default (container: symbol): ConstructorType<any> => {
-  @Sim({ symbol: ProductService.SYMBOL, container })
-  class ProductServiceImpl implements ProductService {
-    async getProducts() {
-      // Implementation
-    }
-    
-    async searchProducts(query: string) {
-      // Implementation
-    }
-    
-    async getProductById(id: string) {
-      // Implementation
-    }
-  }
-  
-  return ProductServiceImpl;
-};
-
-// services/index.ts
-import productServiceFactory from './ProductService';
-import orderServiceFactory from './OrderService';
-import cartServiceFactory from './CartService';
-
-export const serviceFactories = [
-  productServiceFactory,
-  orderServiceFactory,
-  cartServiceFactory
-];
-```
-
-### How it Works:
-1. **Factory Pattern:** Each service exports a default factory function
-2. **@Sim Decorator:** Marks the class for DI container (Singleton by default)
-3. **SYMBOL Registration:** `@Inject({ symbol: ProductService.SYMBOL })` to inject into components
-4. **Container Setup:** `bootFactory` calls each factory with the container symbol
-5. **Dependency Injection:** Web Components receive services via `@onInitialize`
-
 ---
 
-**This architecture demonstrates true Accommodation:**
-- ✅ Explicit registration via bootFactory
-- ✅ Centralized routing in one RootRouter
-- ✅ Parameter passing via HTML attributes
-- ✅ Event-driven navigation
-- ✅ Full Dependency Injection support
-- ✅ Clear data flow with no hidden magic
+**License**: MIT (same as the parent package).

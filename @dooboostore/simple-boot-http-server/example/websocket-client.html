@@ -25,9 +25,13 @@
       const observable = subject.observable;
       // const subject = ws.subject('/aaapi/test',  'router');
       const subscription = observable.subscribe({
-        next: data => {
+        next: async data => {
           console.log('Received data:', data);
-          display.innerHTML += `<p>received: ${JSON.stringify(data)}</p>`;
+          display.innerHTML += `<p>received: ${JSON.stringify({ echo: data.echo, at: data.at })}</p>`;
+          if (data.file instanceof File) {
+            const text = await data.file.text();
+            display.innerHTML += `<p>file: name=${data.file.name} mime=${data.file.type} size=${data.file.size}B content="${text}"</p>`;
+          }
         },
         error: err => {
           console.error('WebSocket error:', err);
@@ -38,7 +42,11 @@
         subject.send({ ww: 'zz' });
       });
       unSubscribeButton.addEventListener('click', () => {
+        // subscription.unsubscribe()는 로컬 RxJS 구독만 해제한다 (topicSubject 레벨).
+        // 서버에 실제 unsubscribe 토픽을 보내고 클라이언트 topics 맵을 정리하려면
+        // ws.subject(...)가 리턴하는 바깥 객체의 unsubscribe()를 호출해야 한다.
         subscription.unsubscribe();
+        subject.unsubscribe();
       });
 
       //

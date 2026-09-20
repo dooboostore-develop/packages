@@ -4,11 +4,6 @@ import {Subscription} from "@dooboostore/core";
 import {inject} from "@dooboostore/simple-boot";
 
 /**
-import {CartService} from "../services/CartService";
-import {Subscription} from "@dooboostore/core";
-import {Inject} from "@dooboostore/simple-boot";
-
-/**
  * Header Navigation Component Factory
  */
 export default (w: Window) => {
@@ -45,8 +40,7 @@ export default (w: Window) => {
 
     @addEventListener('#home-link', 'click')
     @emitCustomEvent('$this', 'navigate', { attributeName: 'on-navigate' })
-    onHomeClick(event: Event,h : any) {
-      console.log('-!!', event, h)
+    onHomeClick() {
       return { path: '/' };
     }
 
@@ -60,6 +54,30 @@ export default (w: Window) => {
     @emitCustomEvent('$this', 'navigate', { attributeName: 'on-navigate' })
     onTimerTestClick() {
       return { path: '/timer-test' };
+    }
+
+    @addEventListener('#slot-test-link', 'click')
+    @emitCustomEvent('$this', 'navigate', { attributeName: 'on-navigate' })
+    onSlotTestClick() {
+      return { path: '/slot-test' };
+    }
+
+    @addEventListener('#rxjs-test-link', 'click')
+    @emitCustomEvent('$this', 'navigate', { attributeName: 'on-navigate' })
+    onRxjsTestClick() {
+      return { path: '/rxjs-operators-test' };
+    }
+
+    @addEventListener('#delegate-test-link', 'click')
+    @emitCustomEvent('$this', 'navigate', { attributeName: 'on-navigate' })
+    onDelegateTestClick() {
+      return { path: '/event-delegate-test' };
+    }
+
+    @addEventListener('#lifecycle-test-link', 'click')
+    @emitCustomEvent('$this', 'navigate', { attributeName: 'on-navigate' })
+    onLifecycleTestClick() {
+      return { path: '/lifecycle-param-test' };
     }
 
     @addEventListener('.cart-icon', 'click')
@@ -115,9 +133,10 @@ export default (w: Window) => {
 
           .nav-center {
             display: flex;
-            gap: 30px;
+            gap: 18px;
             flex: 1;
             justify-content: center;
+            flex-wrap: wrap;
           }
 
           nav a {
@@ -188,6 +207,10 @@ export default (w: Window) => {
             <a id="home-link">Home</a>
             <a id="orders-link">My Orders</a>
             <a id="timer-test-link">Timer Test</a>
+            <a id="slot-test-link">Slot Test</a>
+            <a id="rxjs-test-link">RxJS Ops</a>
+            <a id="delegate-test-link">Delegate Test</a>
+            <a id="lifecycle-test-link">Lifecycle Params</a>
           </div>
           <div class="cart-section">
             <span class="cart-icon" id="cart-icon">🛒</span>

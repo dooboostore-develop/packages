@@ -22,3 +22,4 @@ export * from './setInterval';
 export * from './setTimeout';
 export * from './requestAnimationFrame';
 export * from './eventMedia';
+export * from './parameter';

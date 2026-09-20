@@ -90,7 +90,9 @@ type RegisteredClientSet<T = any> = RegisteredClient<T> & { webSocketSet: WebSoc
 
 @Sim
 export class WebSocketManager implements WebSocketEndPoint {
-  private clients: Map<WebSocketSet, RegisteredClient[]> = new Map();
+  private connections: Map<WebSocketSet, Set<string>> = new Map();
+  private registrations: Map<string, RegisteredClientSet> = new Map();
+  private targets: Map<string, Set<string>> = new Map();
   private eventSubscriptions: Map<string, Map<string, EventResponseCallBack>> = new Map();
   private subject = new Subject<TopicRequest | TopicUnsubscribeRequest | TopicSubscribeRequest | TopicServerEventResponse>();
   constructor(
@@ -102,67 +104,82 @@ export class WebSocketManager implements WebSocketEndPoint {
     return this.subject.asObservable();
   }
   connect(wsSet: WebSocketSet) {
-    this.clients.set(wsSet, []);
+    this.connections.set(wsSet, new Set<string>());
     console.log('WebSocket connected:', wsSet.request.url);
   }
   close(wsSet: WebSocketSet) {
     this.removeAllClientsByWebSocketSet(wsSet);
-    this.clients.delete(wsSet);
+    this.connections.delete(wsSet);
     console.log('WebSocket disconnected:', wsSet.request.url);
   }
 
   setClientTopic(wsSet: WebSocketSet, uuid: string, target: string, subscribeBody?: any) {
-    const clientTopics = this.clients.get(wsSet);
-    if (clientTopics && !clientTopics.find(it => it.uuid === uuid)) {
-      clientTopics.push({ uuid, target, subscribeBody });
-      this.clients.set(wsSet, clientTopics);
-    } else if (clientTopics) {
-      throw { message: 'Already subscribed topic' };
+    const uuidSet = this.connections.get(wsSet);
+    if (!uuidSet) {
+      return;
     }
+    if (this.registrations.has(uuid)) {
+      throw new Error('Already subscribed topic');
+    }
+    this.registrations.set(uuid, { uuid, target, subscribeBody, webSocketSet: wsSet });
+    uuidSet.add(uuid);
+    if (!this.targets.get(target)) {
+      this.targets.set(target, new Set<string>());
+    }
+    this.targets.get(target)?.add(uuid);
   }
 
   findAllClientsByTarget(target: string): RegisteredClientSet[] {
-    const results: RegisteredClientSet[] = [];
-    for (const [wsSet, topics] of Array.from(this.clients.entries())) {
-      const find = topics.find(it => it.target === target);
-      if (find) {
-        results.push({ ...find, webSocketSet: wsSet });
-      }
+    const uuids = this.targets.get(target);
+    if (!uuids) {
+      return [];
     }
+    const results: RegisteredClientSet[] = [];
+    uuids.forEach(uuid => {
+      const reg = this.registrations.get(uuid);
+      if (reg) {
+        results.push({ ...reg });
+      }
+    });
     return results;
   }
 
   findClientsByTarget(target: string): RegisteredClientSet {
-    for (const [wsSet, topics] of Array.from(this.clients.entries())) {
-      const find = topics.find(it => it.target === target);
-      if (find) {
-        return { ...find, webSocketSet: wsSet };
+    const uuids = this.targets.get(target);
+    if (!uuids) {
+      return undefined as any;
+    }
+    for (const uuid of Array.from(uuids)) {
+      const reg = this.registrations.get(uuid);
+      if (reg) {
+        return { ...reg };
       }
     }
+    return undefined as any;
   }
 
   removeClientByUUID(uuid: string) {
-    for (const [wsSet, topics] of Array.from(this.clients.entries())) {
-      const findIndex = topics.findIndex(it => it.uuid === uuid);
-      if (findIndex >= 0) {
-        topics.splice(findIndex, 1);
-        this.clients.set(wsSet, topics);
-        // 이벤트 구독도 함께 정리
-        this.eventSubscriptions.delete(uuid);
-        return true;
+    const reg = this.registrations.get(uuid);
+    if (!reg) {
+      return false;
+    }
+    this.registrations.delete(uuid);
+    this.connections.get(reg.webSocketSet)?.delete(uuid);
+    const targetSet = this.targets.get(reg.target);
+    if (targetSet) {
+      targetSet.delete(uuid);
+      if (targetSet.size <= 0) {
+        this.targets.delete(reg.target);
       }
     }
-    return false;
+    // 이벤트 구독도 함께 정리
+    this.eventSubscriptions.delete(uuid);
+    return true;
   }
 
   findClientByUUID(uuid: string): RegisteredClientSet | undefined {
-    for (const [wsSet, topics] of Array.from(this.clients.entries())) {
-      const find = topics.find(it => it.uuid === uuid);
-      if (find) {
-        return { ...find, webSocketSet: wsSet };
-      }
-    }
-    return undefined;
+    const reg = this.registrations.get(uuid);
+    return reg ? { ...reg } : undefined;
   }
 
   sendDataByUUID({ uuid, body }: { uuid: string; body?: any }) {
@@ -342,7 +359,7 @@ export class WebSocketManager implements WebSocketEndPoint {
   }
 
   getOpenClients() {
-    return Array.from(this.clients.keys()).filter(it => it.socket.readyState === WebSocket.OPEN);
+    return Array.from(this.connections.keys()).filter(it => it.socket.readyState === WebSocket.OPEN);
   }
 
   private isBinaryPayload(value: any) {
@@ -701,13 +718,24 @@ export class WebSocketManager implements WebSocketEndPoint {
   }
 
   private removeAllClientsByWebSocketSet(wsSet: WebSocketSet) {
-    const topics = this.clients.get(wsSet);
-    if (!topics) {
+    const uuidSet = this.connections.get(wsSet);
+    if (!uuidSet) {
       return;
     }
-    for (const topic of topics) {
-      this.eventSubscriptions.delete(topic.uuid);
-    }
-    this.clients.set(wsSet, []);
+    uuidSet.forEach(uuid => {
+      const reg = this.registrations.get(uuid);
+      if (reg) {
+        this.registrations.delete(uuid);
+        const targetSet = this.targets.get(reg.target);
+        if (targetSet) {
+          targetSet.delete(uuid);
+          if (targetSet.size <= 0) {
+            this.targets.delete(reg.target);
+          }
+        }
+      }
+      this.eventSubscriptions.delete(uuid);
+    });
+    uuidSet.clear();
   }
 }

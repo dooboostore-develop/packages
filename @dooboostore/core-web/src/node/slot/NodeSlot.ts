@@ -138,18 +138,25 @@ export class NodeSlot {
     return slots.map(s => s.nodes());
   }
 
+  /**
+   * Shared disambiguation for the `(...items)` / `(targetId, ...items)` overload pair.
+   * Items are always Node instances (or strings meant as literal content) coming from
+   * callers; a leading string is therefore always treated as `targetId`, even when no
+   * items follow — this avoids misclassifying `targetId` itself as content when the
+   * caller has zero items to insert (e.g. a decorated method returning undefined).
+   */
+  private static parseTargetArgs(args: any[]): { targetId: string | undefined; items: Array<Node | string> } {
+    if (typeof args[0] === 'string') {
+      return { targetId: args[0], items: args.slice(1) as Array<Node | string> };
+    }
+    return { targetId: undefined, items: args as Array<Node | string> };
+  }
+
   append(...items: Array<Node | string>): void;
   append(targetId: string | undefined, ...items: Array<Node | string>): void;
   append(...args: any[]): void {
     // signature: append(...items) OR append(targetId, ...items)
-    let targetId: string | undefined;
-    let items: Array<Node | string> = [];
-    if (typeof args[0] === 'string' && args.length > 1) {
-      targetId = args[0];
-      items = args.slice(1) as Array<Node | string>;
-    } else {
-      items = args as Array<Node | string>;
-    }
+    const { targetId, items } = NodeSlot.parseTargetArgs(args);
     if (!items || items.length === 0) return;
     const slots = this.findSlots(targetId);
     if (!slots || slots.length === 0) return;
@@ -161,14 +168,7 @@ export class NodeSlot {
   appendHtml(...items: Array<Node | string>): void;
   appendHtml(targetId: string | undefined, ...items: Array<Node | string>): void;
   appendHtml(...args: any[]): void {
-    let targetId: string | undefined;
-    let items: Array<Node | string> = [];
-    if (typeof args[0] === 'string' && args.length > 1) {
-      targetId = args[0];
-      items = args.slice(1) as Array<Node | string>;
-    } else {
-      items = args as Array<Node | string>;
-    }
+    const { targetId, items } = NodeSlot.parseTargetArgs(args);
     const slots = this.findSlots(targetId);
     for (const s of slots) s.appendHtml(...items);
   }
@@ -176,14 +176,7 @@ export class NodeSlot {
   appendText(...items: Array<Node | string>): void;
   appendText(targetId: string | undefined, ...items: Array<Node | string>): void;
   appendText(...args: any[]): void {
-    let targetId: string | undefined;
-    let items: Array<Node | string> = [];
-    if (typeof args[0] === 'string' && args.length > 1) {
-      targetId = args[0];
-      items = args.slice(1) as Array<Node | string>;
-    } else {
-      items = args as Array<Node | string>;
-    }
+    const { targetId, items } = NodeSlot.parseTargetArgs(args);
     const slots = this.findSlots(targetId);
     for (const s of slots) s.appendText(...items);
   }
@@ -194,14 +187,7 @@ export class NodeSlot {
   appendCopy(...items: Array<Node | string>): void;
   appendCopy(targetId: string | undefined, ...items: Array<Node | string>): void;
   appendCopy(...args: any[]): void {
-    let targetId: string | undefined;
-    let items: Array<Node | string> = [];
-    if (typeof args[0] === 'string' && args.length > 1) {
-      targetId = args[0];
-      items = args.slice(1) as Array<Node | string>;
-    } else {
-      items = args as Array<Node | string>;
-    }
+    const { targetId, items } = NodeSlot.parseTargetArgs(args);
     if (!items || items.length === 0) return;
     const slots = this.findSlots(targetId);
     if (!slots || slots.length === 0) return;
@@ -213,14 +199,7 @@ export class NodeSlot {
   prepend(...items: Array<Node | string>): void;
   prepend(targetId: string | undefined, ...items: Array<Node | string>): void;
   prepend(...args: any[]): void {
-    let targetId: string | undefined;
-    let items: Array<Node | string> = [];
-    if (typeof args[0] === 'string' && args.length > 1) {
-      targetId = args[0];
-      items = args.slice(1) as Array<Node | string>;
-    } else {
-      items = args as Array<Node | string>;
-    }
+    const { targetId, items } = NodeSlot.parseTargetArgs(args);
     if (!items || items.length === 0) return;
     const slots = this.findSlots(targetId);
     if (!slots || slots.length === 0) return;
@@ -232,14 +211,7 @@ export class NodeSlot {
   prependHtml(...items: Array<Node | string>): void;
   prependHtml(targetId: string | undefined, ...items: Array<Node | string>): void;
   prependHtml(...args: any[]): void {
-    let targetId: string | undefined;
-    let items: Array<Node | string> = [];
-    if (typeof args[0] === 'string' && args.length > 1) {
-      targetId = args[0];
-      items = args.slice(1) as Array<Node | string>;
-    } else {
-      items = args as Array<Node | string>;
-    }
+    const { targetId, items } = NodeSlot.parseTargetArgs(args);
     const slots = this.findSlots(targetId);
     for (const s of slots) s.prependHtml(...items);
   }
@@ -247,14 +219,7 @@ export class NodeSlot {
   prependText(...items: Array<Node | string>): void;
   prependText(targetId: string | undefined, ...items: Array<Node | string>): void;
   prependText(...args: any[]): void {
-    let targetId: string | undefined;
-    let items: Array<Node | string> = [];
-    if (typeof args[0] === 'string' && args.length > 1) {
-      targetId = args[0];
-      items = args.slice(1) as Array<Node | string>;
-    } else {
-      items = args as Array<Node | string>;
-    }
+    const { targetId, items } = NodeSlot.parseTargetArgs(args);
     const slots = this.findSlots(targetId);
     for (const s of slots) s.prependText(...items);
   }
@@ -265,14 +230,7 @@ export class NodeSlot {
   prependCopy(...items: Array<Node | string>): void;
   prependCopy(targetId: string | undefined, ...items: Array<Node | string>): void;
   prependCopy(...args: any[]): void {
-    let targetId: string | undefined;
-    let items: Array<Node | string> = [];
-    if (typeof args[0] === 'string' && args.length > 1) {
-      targetId = args[0];
-      items = args.slice(1) as Array<Node | string>;
-    } else {
-      items = args as Array<Node | string>;
-    }
+    const { targetId, items } = NodeSlot.parseTargetArgs(args);
     if (!items || items.length === 0) return;
     const slots = this.findSlots(targetId);
     if (!slots || slots.length === 0) return;
@@ -302,14 +260,7 @@ export class NodeSlot {
   replaceChildren(targetId: string | undefined, ...items: Array<Node | string>): void;
   replaceChildren(...args: any[]): void {
     // signature: replaceChildren(...items) OR replaceChildren(targetId, ...items)
-    let targetId: string | undefined;
-    let items: Array<Node | string> = [];
-    if (typeof args[0] === 'string' && args.length > 1) {
-      targetId = args[0];
-      items = args.slice(1) as Array<Node | string>;
-    } else {
-      items = args as Array<Node | string>;
-    }
+    const { targetId, items } = NodeSlot.parseTargetArgs(args);
     const slots = this.findSlots(targetId);
     if (!slots || slots.length === 0) return;
     for (const s of slots) {
@@ -320,14 +271,7 @@ export class NodeSlot {
   replaceChildrenHtml(...items: Array<Node | string>): void;
   replaceChildrenHtml(targetId: string | undefined, ...items: Array<Node | string>): void;
   replaceChildrenHtml(...args: any[]): void {
-    let targetId: string | undefined;
-    let items: Array<Node | string> = [];
-    if (typeof args[0] === 'string' && args.length > 1) {
-      targetId = args[0];
-      items = args.slice(1) as Array<Node | string>;
-    } else {
-      items = args as Array<Node | string>;
-    }
+    const { targetId, items } = NodeSlot.parseTargetArgs(args);
     const slots = this.findSlots(targetId);
     if (!slots || slots.length === 0) return;
     for (const s of slots) {
@@ -338,14 +282,7 @@ export class NodeSlot {
   replaceChildrenText(...items: Array<Node | string>): void;
   replaceChildrenText(targetId: string | undefined, ...items: Array<Node | string>): void;
   replaceChildrenText(...args: any[]): void {
-    let targetId: string | undefined;
-    let items: Array<Node | string> = [];
-    if (typeof args[0] === 'string' && args.length > 1) {
-      targetId = args[0];
-      items = args.slice(1) as Array<Node | string>;
-    } else {
-      items = args as Array<Node | string>;
-    }
+    const { targetId, items } = NodeSlot.parseTargetArgs(args);
     const slots = this.findSlots(targetId);
     if (!slots || slots.length === 0) return;
     for (const s of slots) {
