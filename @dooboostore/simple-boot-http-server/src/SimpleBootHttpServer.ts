@@ -326,23 +326,28 @@ export class SimpleBootHttpServer extends SimpleApplication {
                   여기에서 정해진 타입 리턴에 따른 조치
                   ...
                */
-              if (it.config?.resolver) {
-                const execute = typeof it.config.resolver === 'function' ? this.simstanceManager.getOrNewSim({target: it.config.resolver}) : it.config.resolver;
-                data = await execute?.resolve?.(data, rr);
+              const resConfig = it.config?.res;
+              if (resConfig?.manual === true) {
+                // 핸들러가 ServerResponse를 직접 주입받아 스스로 write/end를 제어한다 (예: SSE 스트리밍)
+              } else {
+                if (it.config?.resolver) {
+                  const execute = typeof it.config.resolver === 'function' ? this.simstanceManager.getOrNewSim({target: it.config.resolver}) : it.config.resolver;
+                  data = await execute?.resolve?.(data, rr);
+                }
+                const status = resConfig?.status ?? HttpStatus.Ok;
+                const headers = resConfig?.header ?? {};
+                if (resConfig?.contentType) {
+                  headers[HttpHeaders.ContentType] = resConfig.contentType;
+                }
+                if ((resConfig?.contentType?.toLowerCase().indexOf(Mimes.ApplicationJson.toLowerCase()) ?? -1) > -1) {
+                  data = JSON.stringify(data);
+                } else if (data && typeof data === 'object') {
+                  data = JSON.stringify(data);
+                }
+                rr.resSetHeaders(headers)
+                rr.resSetStatusCode(status);
+                rr.resWrite(data);
               }
-              const status = it.config?.res?.status ?? HttpStatus.Ok;
-              const headers = it.config?.res?.header ?? {};
-              if (it.config?.res?.contentType) {
-                headers[HttpHeaders.ContentType] = it.config?.res?.contentType;
-              }
-              if ((it.config?.res?.contentType?.toLowerCase().indexOf(Mimes.ApplicationJson.toLowerCase()) ?? -1) > -1) {
-                data = JSON.stringify(data);
-              } else if (data && typeof data === 'object') {
-                data = JSON.stringify(data);
-              }
-              rr.resSetHeaders(headers)
-              rr.resSetStatusCode(status);
-              rr.resWrite(data);
             }
           }
 

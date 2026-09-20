@@ -1,10 +1,10 @@
 import 'reflect-metadata';
-import { SimpleBootHttpServer } from '@dooboostore/simple-boot-http-server/SimpleBootHttpServer';
-import { HttpServerOption } from '@dooboostore/simple-boot-http-server/option/HttpServerOption';
+import { SimpleBootHttpServer, HttpServerOption } from '@dooboostore/simple-boot-http-server';
 import { AppRouter } from './routers/AppRouter';
 import { ApiRouter } from './routers/ApiRouter';
 import { CloseLogEndPoint } from './endpoints/CloseLogEndPoint';
 import { ErrorLogEndPoint } from './endpoints/ErrorLogEndPoint';
+import { RequestLogEndPoint } from './endpoints/RequestLogEndPoint';
 import { GlobalAdvice } from './advices/GlobalAdvice';
 import { WebSocketManager } from '@dooboostore/simple-boot-http-server/websocket/WebSocketManager';
 
@@ -12,6 +12,7 @@ import { WebSocketManager } from '@dooboostore/simple-boot-http-server/websocket
 const option = new HttpServerOption(
   {
     globalAdvice: new GlobalAdvice(),
+    requestEndPoints: [new RequestLogEndPoint()],
     closeEndPoints: [new CloseLogEndPoint()],
     errorEndPoints: [new ErrorLogEndPoint()],
     webSocketEndPoints: [WebSocketManager],

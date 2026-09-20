@@ -43,7 +43,7 @@ Server will start on **http://localhost:8080**
 example/
 ├── package.json
 ├── tsconfig.json
-├── build.mjs           # esbuild configuration
+├── webpack.config.cjs  # webpack (ts-loader) bundler configuration
 └── src/
     ├── index.ts        # Server entry point
     ├── routers/
@@ -82,6 +82,26 @@ example/
 - **GET /api/time**  
   Get current server time with timezone info
 
+- **GET /api/users/find?id=1**  
+  Find a single user by id
+
+- **PUT /api/users**  
+  Update an existing user
+  ```json
+  {
+    "id": 1,
+    "name": "Alice Updated"
+  }
+  ```
+
+- **DELETE /api/users?id=1**  
+  Delete a user
+
+- **GET /api/stream/time**  
+  Server-Sent Events endpoint — pushes the current time every second. Demonstrates `res: { manual: true }`,
+  which tells the framework to skip its automatic status/header/body write so the handler can control the
+  injected `ServerResponse` directly (`res.writeHead` + repeated `res.write`).
+
 ## Example Code
 
 ### Creating a Router
@@ -95,12 +115,30 @@ import { GET, POST } from '@dooboostore/simple-boot-http-server/decorators/Metho
 @Router({ path: '/api' })
 export class ApiRouter {
   @Route({ path: '/hello' })
-  @GET
+  @GET({ res: { contentType: 'application/json' } })
   hello(rr: RequestResponse) {
-    rr.resSetHeader('Content-Type', 'application/json');
-    rr.res.write(JSON.stringify({ message: 'Hello!' }));
-    rr.res.end();
+    // 리턴값이 그대로 응답 body가 된다 (object면 자동으로 JSON.stringify)
+    return { message: 'Hello!' };
   }
+}
+```
+
+### Streaming a Response Manually (SSE)
+
+```typescript
+import { ServerResponse } from 'http';
+
+@Route({ path: '/stream/time' })
+@GET({ res: { manual: true } }) // 자동 status/header/body 처리를 건너뛴다
+streamTime(res: ServerResponse) {
+  res.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache' });
+
+  return new Promise<void>(resolve => {
+    const timer = setInterval(() => {
+      res.write(`data: ${JSON.stringify({ time: new Date().toISOString() })}\n\n`);
+    }, 1000);
+    res.on('close', () => { clearInterval(timer); resolve(); }); // 클라이언트 연결 종료 시 정리
+  });
 }
 ```
 

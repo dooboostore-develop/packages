@@ -101,6 +101,16 @@ main {
     color: white;
 }
 
+.method.put {
+    background: #f59e0b;
+    color: white;
+}
+
+.method.delete {
+    background: #ef4444;
+    color: white;
+}
+
 .endpoint code {
     background: #667eea;
     color: white;
@@ -141,6 +151,12 @@ pre {
     margin-top: 1rem;
     font-family: 'Courier New', monospace;
     min-height: 100px;
+}
+
+#streamLog {
+    max-height: 200px;
+    overflow-y: auto;
+    white-space: pre-wrap;
 }
 
 footer {

@@ -54,7 +54,6 @@ export class ResourceFilter implements Filter {
             }
 
             if (typeof it === 'string') {
-              console.log('url!!!!!!!', url)
                 return it === url;
                 // return RegExp(it).test(url);
             }

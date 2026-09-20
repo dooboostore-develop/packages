@@ -1,4 +1,4 @@
-import { Sim } from '@dooboostore/simple-boot/decorators/SimDecorator';
+import { Sim } from '@dooboostore/simple-boot';
 
 export interface User {
   id: number;
@@ -86,9 +86,5 @@ export class UserService {
     this.users.splice(index, 1);
     console.log('🗑️  User deleted with id:', id);
     return true;
-  }
-
-  say() {
-    return 'zzzzzzzzzz'
   }
 }

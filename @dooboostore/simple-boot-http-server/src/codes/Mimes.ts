@@ -24,6 +24,8 @@ export enum Mimes {
   ImageXpixmap = 'image/x-xpixmap',
   ImageXxbm = 'image/x-xbm',
   MultipartFormData = 'multipart/form-data',
+  TextEventStream = 'text/event-stream', // SSE 실시간 텍스트 스트리밍
+  ApplicationXndjson = 'application/x-ndjson',
   ApplicationJsonPostSimpleBootSsrIntentScheme = 'application/json-post+simple-boot-ssr-intent-scheme',
   Intent = 'intent'
 }

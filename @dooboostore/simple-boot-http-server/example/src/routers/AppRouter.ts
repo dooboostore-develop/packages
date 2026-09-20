@@ -1,11 +1,6 @@
-import { Sim } from '@dooboostore/simple-boot/decorators/SimDecorator';
-import { Router, Route } from '@dooboostore/simple-boot/decorators/route/Router';
-import { GET } from '@dooboostore/simple-boot-http-server/decorators/MethodMapping';
-import { RequestResponse } from '@dooboostore/simple-boot-http-server/models/RequestResponse';
-import { ReqHeader } from '@dooboostore/simple-boot-http-server/models/datas/ReqHeader';
-import { RouterModule } from '@dooboostore/simple-boot/route/RouterModule';
+import { Sim, Router, Route, RouterModule } from '@dooboostore/simple-boot';
+import { GET, RequestResponse, ReqHeader, ResourceResolver } from '@dooboostore/simple-boot-http-server';
 import { ApiRouter } from './ApiRouter';
-import { ResourceResolver } from '@dooboostore/simple-boot-http-server/resolvers/ResourceResolver';
 
 @Sim
 @Router({
@@ -76,6 +71,26 @@ export class AppRouter {
                     <code>/api/time</code>
                     <span>- Get current server time</span>
                 </div>
+                <div class="endpoint">
+                    <span class="method get">GET</span>
+                    <code>/api/users/find?id=1</code>
+                    <span>- Find a user by id</span>
+                </div>
+                <div class="endpoint">
+                    <span class="method put">PUT</span>
+                    <code>/api/users</code>
+                    <span>- Update an existing user</span>
+                </div>
+                <div class="endpoint">
+                    <span class="method delete">DELETE</span>
+                    <code>/api/users?id=1</code>
+                    <span>- Delete a user</span>
+                </div>
+                <div class="endpoint">
+                    <span class="method get">GET</span>
+                    <code>/api/stream/time</code>
+                    <span>- Server-Sent Events (manual response streaming)</span>
+                </div>
             </section>
 
             <section class="card">
@@ -83,7 +98,16 @@ export class AppRouter {
                 <button onclick="testGet()" class="btn">Test GET /api/hello</button>
                 <button onclick="testPost()" class="btn">Test POST /api/users</button>
                 <button onclick="testTime()" class="btn">Test GET /api/time</button>
+                <button onclick="testFindUser()" class="btn">Test GET /api/users/find?id=1</button>
+                <button onclick="testUpdateUser()" class="btn">Test PUT /api/users</button>
+                <button onclick="testDeleteUser()" class="btn">Test DELETE /api/users?id=3</button>
                 <pre id="response"></pre>
+            </section>
+
+            <section class="card">
+                <h2>📡 SSE Streaming Demo</h2>
+                <button onclick="toggleStream()" id="streamBtn" class="btn">Connect /api/stream/time</button>
+                <pre id="streamLog"></pre>
             </section>
         </main>
 
@@ -127,6 +151,64 @@ export class AppRouter {
             } catch (err) {
                 responseEl.textContent = 'Error: ' + err.message;
             }
+        }
+
+        async function testFindUser() {
+            try {
+                const res = await fetch('/api/users/find?id=1');
+                const data = await res.json();
+                responseEl.textContent = JSON.stringify(data, null, 2);
+            } catch (err) {
+                responseEl.textContent = 'Error: ' + err.message;
+            }
+        }
+
+        async function testUpdateUser() {
+            try {
+                const res = await fetch('/api/users', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id: 1, name: 'Alice Updated' })
+                });
+                const data = await res.json();
+                responseEl.textContent = JSON.stringify(data, null, 2);
+            } catch (err) {
+                responseEl.textContent = 'Error: ' + err.message;
+            }
+        }
+
+        async function testDeleteUser() {
+            try {
+                const res = await fetch('/api/users?id=3', { method: 'DELETE' });
+                const data = await res.json();
+                responseEl.textContent = JSON.stringify(data, null, 2);
+            } catch (err) {
+                responseEl.textContent = 'Error: ' + err.message;
+            }
+        }
+
+        let eventSource = null;
+        const streamLogEl = document.getElementById('streamLog');
+        const streamBtnEl = document.getElementById('streamBtn');
+
+        function toggleStream() {
+            if (eventSource) {
+                eventSource.close();
+                eventSource = null;
+                streamBtnEl.textContent = 'Connect /api/stream/time';
+                streamLogEl.textContent += '\\n[closed]';
+                return;
+            }
+            streamLogEl.textContent = '';
+            eventSource = new EventSource('/api/stream/time');
+            streamBtnEl.textContent = 'Disconnect';
+            eventSource.onmessage = (e) => {
+                streamLogEl.textContent += e.data + '\\n';
+                streamLogEl.scrollTop = streamLogEl.scrollHeight;
+            };
+            eventSource.onerror = () => {
+                streamLogEl.textContent += '[error]\\n';
+            };
         }
     </script>
 </body>

@@ -24,11 +24,18 @@ export type MappingConfig = {
         accept?: (Mimes|string)[];
     };
 
-    res?: {
-        status?: number;
-        header?: {[key: string]: string};
-        contentType?: Mimes | string;
-    }
+    res?:
+        | {
+              status?: number;
+              header?: {[key: string]: string};
+              contentType?: Mimes | string;
+              manual?: false;
+          }
+        /**
+         * manual: true — 리턴값을 이용한 자동 status/header/body 처리(및 resolver 호출)를 건너뛴다.
+         * SSE 등 핸들러가 ServerResponse를 직접 주입받아 writeHead/write/end를 스스로 제어하는 경우 사용.
+         */
+        | { manual: true };
     resolver?: Resolver|ConstructorType<Resolver>;
 }
 export type SaveMappingConfig = {propertyKey: string | symbol; config: MappingConfig}
@@ -156,7 +163,7 @@ export const getPATCH = (target: any, propertyKey: string | symbol): MappingConf
     return getUrlMapping(target, propertyKey);
 }
 export const getPATCHS = (target: any): SaveMappingConfig[] => {
-    return getUrlMappings(target)?.filter(it => it.config?.method.toUpperCase() === HttpMethod.GET);
+    return getUrlMappings(target)?.filter(it => it.config?.method.toUpperCase() === HttpMethod.PATCH);
 }
 export function OPTIONS(config: Omit<MappingConfig, 'method'>): ReflectMethod;
 export function OPTIONS(target: any, propertyKey: string | symbol, descriptor: PropertyDescriptor): void;
@@ -194,7 +201,7 @@ export const getHEAD = (target: any, propertyKey: string | symbol): MappingConfi
     return getUrlMapping(target, propertyKey);
 }
 export const getHEADS = (target: any): SaveMappingConfig[] => {
-    return getUrlMappings(target)?.filter(it => it.config?.method.toUpperCase() === HttpMethod.GET);
+    return getUrlMappings(target)?.filter(it => it.config?.method.toUpperCase() === HttpMethod.HEAD);
 }
 export function TRACE(config: Omit<MappingConfig, 'method'>): ReflectMethod;
 export function TRACE(target: any, propertyKey: string | symbol, descriptor: PropertyDescriptor): void;
