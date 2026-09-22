@@ -38,15 +38,7 @@ export interface RequestAnimationFrameMetadata {
  */
 export type FrameCallback = (timestamp: number, prevValue?: any) => any;
 
-const activeMap = new WeakMap<any, number[]>();
-const getActiveEntries = (inst: any): number[] => {
-  let entries = activeMap.get(inst);
-  if (!entries) {
-    entries = [];
-    activeMap.set(inst, entries);
-  }
-  return entries;
-};
+const getActiveEntries = (inst: any): number[] => (inst.__swc_requestAnimationFrameIds ??= []);
 
 const startFrameLoop = (win: Window, entries: number[], frameFn: FrameCallback): number => {
   let currentId = 0;
@@ -134,7 +126,7 @@ export const findAllRequestAnimationFrameMetadata = (target: any): RequestAnimat
 export class RequestAnimationFrameLifeCycler implements ElementDefineLifeCycler {
   onConnected(helperHostSet: HelperHostSet): void {
     const inst = helperHostSet.$this;
-    activeMap.delete(inst); // 재연결 대비 리셋
+    inst.__swc_requestAnimationFrameIds = []; // 재연결 대비 리셋
     const entries = getActiveEntries(inst);
     for (const meta of findAllRequestAnimationFrameMetadata(inst)) {
       if (meta.options.type !== 'onConnected') continue; // returnValue 타입은 수동 호출을 기다림
@@ -146,13 +138,13 @@ export class RequestAnimationFrameLifeCycler implements ElementDefineLifeCycler 
 
   onDisconnected(helperHostSet: HelperHostSet): void {
     const inst = helperHostSet.$this;
-    for (const id of activeMap.get(inst) ?? []) {
+    for (const id of inst.__swc_requestAnimationFrameIds ?? []) {
       try {
         helperHostSet.$w.cancelAnimationFrame(id);
       } catch (e) {
         console.error('[SWC] cancelAnimationFrame error:', e);
       }
     }
-    activeMap.delete(inst);
+    inst.__swc_requestAnimationFrameIds = [];
   }
 }

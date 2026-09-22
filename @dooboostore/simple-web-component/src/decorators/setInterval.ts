@@ -33,15 +33,7 @@ export interface SetIntervalMetadata {
   options: SetIntervalOptions;
 }
 
-const activeMap = new WeakMap<any, number[]>();
-const getActiveEntries = (inst: any): number[] => {
-  let entries = activeMap.get(inst);
-  if (!entries) {
-    entries = [];
-    activeMap.set(inst, entries);
-  }
-  return entries;
-};
+const getActiveEntries = (inst: any): number[] => (inst.__swc_intervalIds ??= []);
 
 /**
  * type:'onConnected' - connect 시 자동으로 setInterval을 걸고, disconnect 시 자동으로 clearInterval 한다.
@@ -102,7 +94,7 @@ export const findAllSetIntervalMetadata = (target: any): SetIntervalMetadata[] =
 export class SetIntervalLifeCycler implements ElementDefineLifeCycler {
   onConnected(helperHostSet: HelperHostSet): void {
     const inst = helperHostSet.$this;
-    activeMap.delete(inst); // 재연결 대비 리셋
+    inst.__swc_intervalIds = []; // 재연결 대비 리셋
     for (const meta of findAllSetIntervalMetadata(inst)) {
       if (meta.options.type !== 'onConnected') continue; // returnValue 타입은 수동 호출을 기다림
       const id = helperHostSet.$w.setInterval(() => {
@@ -124,13 +116,13 @@ export class SetIntervalLifeCycler implements ElementDefineLifeCycler {
 
   onDisconnected(helperHostSet: HelperHostSet): void {
     const inst = helperHostSet.$this;
-    for (const id of activeMap.get(inst) ?? []) {
+    for (const id of inst.__swc_intervalIds ?? []) {
       try {
         helperHostSet.$w.clearInterval(id);
       } catch (e) {
         console.error('[SWC] clearInterval error:', e);
       }
     }
-    activeMap.delete(inst);
+    inst.__swc_intervalIds = [];
   }
 }

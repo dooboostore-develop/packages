@@ -33,15 +33,7 @@ export interface SetTimeoutMetadata {
   options: SetTimeoutOptions;
 }
 
-const activeMap = new WeakMap<any, number[]>();
-const getActiveEntries = (inst: any): number[] => {
-  let entries = activeMap.get(inst);
-  if (!entries) {
-    entries = [];
-    activeMap.set(inst, entries);
-  }
-  return entries;
-};
+const getActiveEntries = (inst: any): number[] => (inst.__swc_timeoutIds ??= []);
 
 /**
  * type:'onConnected' - connect 시 자동으로 setTimeout을 걸고, disconnect 시 (아직 실행 전이라면) 자동으로 clearTimeout 한다.
@@ -105,7 +97,7 @@ export const findAllSetTimeoutMetadata = (target: any): SetTimeoutMetadata[] => 
 export class SetTimeoutLifeCycler implements ElementDefineLifeCycler {
   onConnected(helperHostSet: HelperHostSet): void {
     const inst = helperHostSet.$this;
-    activeMap.delete(inst); // 재연결 대비 리셋
+    inst.__swc_timeoutIds = []; // 재연결 대비 리셋
     for (const meta of findAllSetTimeoutMetadata(inst)) {
       if (meta.options.type !== 'onConnected') continue; // returnValue 타입은 수동 호출을 기다림
       const id = helperHostSet.$w.setTimeout(() => {
@@ -127,13 +119,13 @@ export class SetTimeoutLifeCycler implements ElementDefineLifeCycler {
 
   onDisconnected(helperHostSet: HelperHostSet): void {
     const inst = helperHostSet.$this;
-    for (const id of activeMap.get(inst) ?? []) {
+    for (const id of inst.__swc_timeoutIds ?? []) {
       try {
         helperHostSet.$w.clearTimeout(id);
       } catch (e) {
         console.error('[SWC] clearTimeout error:', e);
       }
     }
-    activeMap.delete(inst);
+    inst.__swc_timeoutIds = [];
   }
 }
