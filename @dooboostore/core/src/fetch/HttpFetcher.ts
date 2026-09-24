@@ -1,6 +1,9 @@
 import { Fetcher, FetcherRequest } from './Fetcher';
 import { ConvertUtils } from '../convert/ConvertUtils';
 
+// timeout(라이브러리가 자동으로 abort)과 signal(사용자가 직접 abort)은 같이 쓸 수 있어야 한다 -
+// 둘 중 먼저 오는 쪽이 이기면 됨. 상호배타로 막았다가(signal?:never) 되돌림: 네이티브
+// AbortSignal.timeout()/AbortSignal.any()로 제대로 합치면 되는 문제였음(execute() 참고).
 export type RequestInitType = RequestInit & { timeout?: number };
 export type RequestInfo = {
   requestInfo: string | URL;
@@ -62,56 +65,49 @@ export class HttpFetcher<
   RESPONSE = Response,
   PIPE extends { responseData?: RESPONSE | undefined } = any
 > extends Fetcher<HttpFetcherTarget, RESPONSE, HttpFetcherConfig<CONFIG, RESPONSE>, PIPE> {
+  // get/post/put/patch/head/delete가 전부 config.config.fetch.method를 세팅하려고 caller가
+  // 넘긴 config(.fetch) 객체를 직접 mutate했다 - 같은 config 객체를 여러 호출이 공유하면
+  // (예: Promise.all로 동시에 get/post) 서로의 method를 덮어쓰는 레이스가 생겼다. caller의
+  // 객체는 절대 건드리지 않고, 얕은 복사본 위에 method만 얹어서 반환한다.
+  private withMethod<T = RESPONSE>(
+    config: HttpFetcherRequest<RESPONSE, CONFIG, T>,
+    method: string
+  ): HttpFetcherRequest<RESPONSE, CONFIG, T> {
+    return { ...config, config: { ...config.config, fetch: { ...config.config?.fetch, method } } };
+  }
+
   get<T = RESPONSE>(config: HttpFetcherRequest<RESPONSE, CONFIG, T>): Promise<T> {
-    config.config ??= {};
-    config.config.fetch = config.config?.fetch ?? {};
-    config.config.fetch.method = 'GET';
-    return this.fetch(config);
+    return this.fetch(this.withMethod(config, 'GET'));
   }
 
   post<T = RESPONSE>(
     config: HttpFetcherRequest<RESPONSE, CONFIG, T>
   ): Promise<T> {
-    config.config ??= {};
-    config.config.fetch = config.config?.fetch ?? {};
-    config.config.fetch.method = 'POST';
-    return this.fetch(config);
+    return this.fetch(this.withMethod(config, 'POST'));
   }
 
   patch<T = RESPONSE>(
     config: HttpFetcherRequest<RESPONSE, CONFIG, T>
   ): Promise<T> {
-    config.config ??= {};
-    config.config.fetch = config.config?.fetch ?? {};
-    config.config.fetch.method = 'PATCH';
-    return this.fetch(config);
+    return this.fetch(this.withMethod(config, 'PATCH'));
   }
 
   put<T = RESPONSE>(
     config: HttpFetcherRequest<RESPONSE, CONFIG, T>
   ): Promise<T> {
-    config.config ??= {};
-    config.config.fetch = config.config?.fetch ?? {};
-    config.config.fetch.method = 'PUT';
-    return this.fetch(config);
+    return this.fetch(this.withMethod(config, 'PUT'));
   }
 
   head<T = RESPONSE>(
     config: HttpFetcherRequest<RESPONSE, CONFIG, T>
   ): Promise<T> {
-    config.config ??= {};
-    config.config.fetch = config.config?.fetch ?? {};
-    config.config.fetch.method = 'HEAD';
-    return this.fetch(config);
+    return this.fetch(this.withMethod(config, 'HEAD'));
   }
 
   delete<T = RESPONSE>(
     config: HttpFetcherRequest<RESPONSE, CONFIG, T>
   ): Promise<T> {
-    config.config ??= {};
-    config.config.fetch = config.config?.fetch ?? {};
-    config.config.fetch.method = 'DELETE';
-    return this.fetch(config);
+    return this.fetch(this.withMethod(config, 'DELETE'));
   }
 
   protected async beforeProxyFetch<T = RequestInfo | URL>(
@@ -169,7 +165,7 @@ export class HttpFetcher<
       }
     } else {
       httpResponseError.body = e;
-      httpResponseError.message = e.message;
+      httpResponseError.message = e?.message;
     }
     return httpResponseError;
   }
@@ -187,7 +183,10 @@ export class HttpFetcher<
       const searchParams = ConvertUtils.toURLSearchParams(target.searchParams ?? {});
 
       try {
-        const url = typeof target.url === 'string' ? new URL(target.url) : target.url;
+        // target.url이 이미 URL 인스턴스여도 new URL()에 그대로 넘기면 항상 새 객체가 나온다
+        // (문자열이든 URL이든 다 받음) - 그래서 삼항연산자로 분기할 필요가 없다. 이렇게 안 하고
+        // 기존 인스턴스를 그대로 썼을 땐, 호출부가 재사용하는 URL 객체를 여기서 직접 mutate해버렸다.
+        const url = new URL(target.url);
         searchParams.forEach((value, key) => {
           url.searchParams.append(key, value);
         });
@@ -205,51 +204,41 @@ export class HttpFetcher<
     // before proxy fetch
     const beforeProxyData = { requestInfo: target, init: config?.fetch } as BeforeProxyFetchParams<URL>;
     let beforeData = config?.beforeProxyFetch
-      ? await config?.beforeProxyFetch(config as any)
-      : beforeProxyData.requestInfo;
-    beforeData = config?.skipGlobalBeforeProxyFetch ? beforeProxyData : await this.beforeProxyFetch(beforeProxyData);
-    target = beforeData.requestInfo as URL;
+      ? await config?.beforeProxyFetch(beforeProxyData)
+      : beforeProxyData;
+
+    beforeData = config?.skipGlobalBeforeProxyFetch ? beforeData : await this.beforeProxyFetch(beforeData);
+    target = beforeData.requestInfo;
     if (beforeData.init) {
       config ??= {};
       config.fetch = beforeData.init;
     }
 
-    let abortedTimeout: NodeJS.Timeout | undefined;
+    // timeout이 있으면 그 시간 뒤 자동으로 abort되는 signal을 만들고, 사용자가 signal도 같이
+    // 줬으면 AbortSignal.any()로 둘을 합친다 - 둘 중 먼저 abort되는 쪽이 이긴다. 수동 setTimeout/
+    // AbortController/리스너 관리가 전혀 필요 없다(네이티브가 다 해줌).
+    let requestInit: RequestInit | undefined = config?.fetch;
     if (config?.fetch && 'timeout' in config.fetch) {
-      const abortController = new AbortController();
-      abortedTimeout = setTimeout(() => {
-        if (config?.fetch?.signal) {
-          const inputSignal = config.fetch.signal;
-          const listener = () => {
-            if (!abortController.signal.aborted) {
-              abortController.abort();
-            }
-            inputSignal.removeEventListener('abort', listener);
-          };
-          inputSignal.addEventListener('abort', listener);
-        }
-        if (!abortController.signal.aborted) {
-          abortController.abort();
-        }
-      }, config.fetch.timeout);
-      config.fetch.signal = abortController.signal;
+      const timeoutSignal = AbortSignal.timeout(config.fetch.timeout);
+      const signal = config.fetch.signal ? AbortSignal.any([timeoutSignal, config.fetch.signal]) : timeoutSignal;
+      requestInit = { ...config.fetch, signal };
     }
 
-    this.beforeFetch({ target, requestInit: config?.fetch });
-    return (config.fetcher??fetch)(target, config?.fetch)
+    this.beforeFetch({ target, requestInit });
+    return (config.fetcher??fetch)(target, requestInit)
       .then(async it => {
         // console.log('httpFetch!!!', Array.from(it.headers))
-        this.afterFetch({ target: target as URL, requestInit: config?.fetch }, it);
+        this.afterFetch({ target: target as URL, requestInit }, it);
         // after proxy fetch
         // @ts-ignore
         const afterProxyData: AfterProxyFetchParams<any> = {
-          fetch: { target: target as URL, requestInit: config.fetch },
+          fetch: { target: target as URL, requestInit },
           config: beforeData,
           response: it
         };
-        it = config?.afterProxyFetch ? await config.afterProxyFetch(afterProxyData) : it;
-        // @ts-ignore
-        it = config?.skipGlobalAfterProxyFetch ? it : await this.afterProxyFetch(afterProxyData);
+        afterProxyData.response = config?.afterProxyFetch ? await config.afterProxyFetch(afterProxyData) : it;
+        afterProxyData.response = config?.skipGlobalAfterProxyFetch ? afterProxyData.response : await this.afterProxyFetch(afterProxyData);
+        it = afterProxyData.response;
         config?.fetchResponseAfterCallBack?.(it, config);
         if (!config?.allowedResponseNotOk && !it.ok) {
           throw it;
@@ -259,11 +248,6 @@ export class HttpFetcher<
           throw data;
         }
         return it;
-      })
-      .finally(() => {
-        if (abortedTimeout) {
-          clearTimeout(abortedTimeout);
-        }
       });
   }
 }

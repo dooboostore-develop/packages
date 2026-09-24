@@ -17,6 +17,7 @@ import {ElementDefineLifeCycler, HelperHostSet, HostSet, InjectSituationType, In
 import {ConvertUtils, ElementApply} from '@dooboostore/core-web';
 import {isSSR} from "../elements/SwcAppMixin";
 import {findAllStateMetadata} from "./state";
+import {findAllAroundMetadata} from "./around";
 import {findAllPropertyMetadata} from "./applyProperty";
 import {MessageSubscribeLifeCycler} from "./subscribeSwcAppMessageWhileConnected";
 import {RouteSubscribeLifeCycler} from "./subscribeSwcAppRouteChangeWhileConnected";
@@ -123,9 +124,31 @@ export const ensureInit = (inst: any) => { // HTMLElement
     const stateAllList = findAllStateMetadata(target);
     if (stateAllList) {
       stateAllList.forEach(meta => {
-        const initUserData = (inst as any)[meta.propertyKey];
-        delete (inst as any)[meta.propertyKey];
-        (inst as any)[meta.propertyKey] = initUserData;
+        // getter로 읽으면 안 됨 — own이 남아있을 때 getter가 이주까지 해버려
+        // setter 재대입과 합치면 DOM 동기화가 중복 실행됨. descriptor에서 raw를 꺼낸다.
+        // own이 없으면(이미 정리됨) 스킵.
+        const own = Object.getOwnPropertyDescriptor(inst, meta.propertyKey);
+        if (own && 'value' in own) {
+          const initUserData = own.value;
+          delete (inst as any)[meta.propertyKey];
+          (inst as any)[meta.propertyKey] = initUserData;
+        }
+      });
+    }
+
+    // @around 필드의 own property 정리 → setter 경유로 재대입 (초기값에 set() 적용).
+    // attribute/query처럼 plain delete하면 초기값이 날아간다 — 반드시 살려서 setter로 넣는다.
+    // getter로 읽으면 안 됨(before 변환값이 섞임) — descriptor에서 raw를 꺼낸다.
+    // own이 없으면(이미 정리됨) 스킵 — 그래야 중복 변환이 안 생긴다.
+    const aroundAllList = findAllAroundMetadata(target);
+    if (aroundAllList) {
+      aroundAllList.forEach(meta => {
+        const own = Object.getOwnPropertyDescriptor(inst, meta.propertyKey);
+        if (own && 'value' in own) {
+          const initUserData = own.value;
+          delete (inst as any)[meta.propertyKey];
+          (inst as any)[meta.propertyKey] = initUserData;
+        }
       });
     }
 

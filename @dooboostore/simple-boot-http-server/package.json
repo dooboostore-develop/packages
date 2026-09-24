@@ -122,6 +122,6 @@
     "publish:npm": "pnpm run build && cp package.json package.json.back && pnpm pack && TARBALL_NAME=$(ls dooboostore-simple-boot-http-server-*.tgz | head -n 1) && tar -xzf \"$TARBALL_NAME\" -C . --strip-components=1 package/package.json && rm \"$TARBALL_NAME\" && (pnpm publish --no-git-checks || true) && cp package.json.back package.json && rm -rf package.json.back  ",
     "ts:clean": "find . -name '*.js' -o -name '*.map' -o -name '*.d.ts' | xargs rm -f",
     "typecheck": "tsc --noEmit",
-    "test": "echo test"
+    "test": "node --import ./test/register-loader.mjs --test --test-force-exit test/index.test.ts"
   }
 }

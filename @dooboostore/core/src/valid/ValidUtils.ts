@@ -1,4 +1,4 @@
-import {ClassType, ConstructorType, FilterFalsy, FilterNullish, NonNullable, Nullable, Nullish, NullOrUndefined} from '../types';
+import type {ClassType, ConstructorType, FilterFalsy, FilterNullish, NonNullable, Nullable, Nullish, NullOrUndefined} from '../types';
 
 export namespace ValidUtils {
 

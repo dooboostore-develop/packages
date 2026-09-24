@@ -8,6 +8,7 @@ import SlotTestPage from './SlotTestPage';
 import RxjsOperatorsTestPage from './RxjsOperatorsTestPage';
 import EventDelegateTestPage from './EventDelegateTestPage';
 import LifecycleParamTestPage from './LifecycleParamTestPage';
+import AroundStateTestPage from './AroundStateTestPage';
 import {replaceChildren, innerHtmlLight, subscribeSwcAppRouteChangeWhileConnected, publishSwcAppMessage, onConnectedBodyLight, innerHtml, onConnectedAfter, onConnectedBody, updateClass, addEventListener, applyNode, elementDefine, emitCustomEvent, onConnectedBefore, onConnectedBodyShadow, addEventListenerThis, attribute } from '@dooboostore/simple-web-component';
 import {Inject} from '@dooboostore/simple-boot';
 import {Router, type RouterEventType} from '@dooboostore/core-web';
@@ -15,7 +16,7 @@ import {CartService} from '../services/CartService';
 import {OrderService} from '../services/OrderService';
 import {ProductService} from '../services/ProductService';
 
-export { CartPage, ProductPage, CheckoutPage, HomePage, OrdersPage, TimerTestPage, SlotTestPage, RxjsOperatorsTestPage, EventDelegateTestPage, LifecycleParamTestPage };
+export { CartPage, ProductPage, CheckoutPage, HomePage, OrdersPage, TimerTestPage, SlotTestPage, RxjsOperatorsTestPage, EventDelegateTestPage, LifecycleParamTestPage, AroundStateTestPage };
 
 /**
  * Root Router Factory - Main routing hub
@@ -56,7 +57,7 @@ export const rootRouterFactory = (w: Window) => {
     //   console.log('RootRouter received message:', message);
     // }
 
-    @subscribeSwcAppRouteChangeWhileConnected(['', '/', '/product/{id}', '/cart', '/checkout', '/orders', '/timer-test', '/slot-test', '/rxjs-operators-test', '/event-delegate-test', '/lifecycle-param-test'])
+    @subscribeSwcAppRouteChangeWhileConnected(['', '/', '/product/{id}', '/cart', '/checkout', '/orders', '/timer-test', '/slot-test', '/rxjs-operators-test', '/event-delegate-test', '/lifecycle-param-test', '/around-state-test'])
     @innerHtmlLight
     routeChanged(routerPathSet: RouterEventType) {
       if (['', '/'].includes(routerPathSet.path)) {
@@ -77,6 +78,8 @@ export const rootRouterFactory = (w: Window) => {
         return `<swc-example-event-delegate-test-page/>`;
       } else if (['/lifecycle-param-test'].includes(routerPathSet.path)) {
         return `<swc-example-lifecycle-param-test-page/>`;
+      } else if (['/around-state-test'].includes(routerPathSet.path)) {
+        return `<swc-example-around-state-test-page/>`;
       } else if (routerPathSet.path.startsWith('/product/')) {
         return `<swc-example-commerce-product-page product-id="${routerPathSet.pathData.id}"/>`;
       } else {
@@ -119,4 +122,4 @@ export const rootRouterFactory = (w: Window) => {
   return tagName;
 };
 
-export const pageFactories = [CartPage, ProductPage, CheckoutPage, HomePage, OrdersPage, TimerTestPage, SlotTestPage, RxjsOperatorsTestPage, EventDelegateTestPage, LifecycleParamTestPage, rootRouterFactory];
+export const pageFactories = [CartPage, ProductPage, CheckoutPage, HomePage, OrdersPage, TimerTestPage, SlotTestPage, RxjsOperatorsTestPage, EventDelegateTestPage, LifecycleParamTestPage, AroundStateTestPage, rootRouterFactory];

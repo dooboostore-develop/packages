@@ -48,7 +48,6 @@ graph TD
     SWCLIB["📊 @dooboostore/simple-web-component-library<br/>charts, sliders — built on SWC"]
 
     ALGO["📈 @dooboostore/algorithm<br/>trading indicators & backtesting"]
-    DOMEDITOR["🖌️ @dooboostore/dom-editor"]
     LIBWEB["🖼️ @dooboostore/lib-web"]
     LIBNODE["🗂️ @dooboostore/lib-node"]
 
@@ -70,7 +69,6 @@ graph TD
     SWC --> SWCLIB
 
     CORE --> ALGO
-    COREWEB --> DOMEDITOR
     COREWEB --> LIBWEB
     CORENODE --> LIBNODE
 
@@ -159,7 +157,6 @@ Same decorators (`@Sim`, `@Inject`), same container, same mental model — the o
 | **`@dooboostore/core-web`** | Browser-only utilities extending `core` — DOM/event/storage helpers, client-side routers, canvas & animation utils. |
 | **`@dooboostore/algorithm`** | Stock/trading domain algorithms — trend & indicator detection (SMA/EMA/MACD/RSI/OBV) and a `TradingSimulator` for backtesting strategies. |
 | **`@dooboostore/dom-parser`** | A lightweight, dependency-free server-side DOM implementation (a jsdom alternative) for SSR environments. |
-| **`@dooboostore/dom-editor`** | A standalone visual drag-and-drop DOM/HTML editor with JSON import/export. |
 | **`@dooboostore/lib-node`** | A Node.js utility for generating random placeholder images via server-side `canvas`. |
 | **`@dooboostore/lib-web`** | Canvas-based browser UI widgets — a multi-layer image editor, GPS marker visualization, and polygon image cropping. |
 | **`@dooboostore/simple-boot`** | The heart of the framework. A powerful IoC/DI container, AOP proxy manager, and declarative routing decorators. |

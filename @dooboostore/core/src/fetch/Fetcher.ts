@@ -52,11 +52,15 @@ export abstract class Fetcher<TARGET, RESPONSE, CONFIG, PIPE extends { responseD
         })
         .catch(async e => {
           this.error(config, pipe, e);
-          config?.error?.();
+          config?.error?.(e);
           if (config?.errorTransform) {
             e = await config.errorTransform(e);
           }
-          e = await this.errorTransform(e);
+          try {
+            e = await this.errorTransform(e);
+          } catch (ee){
+            e = ee;
+          }
           reject(e);
         })
         .finally(() => {

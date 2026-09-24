@@ -80,6 +80,12 @@ export default (w: Window) => {
       return { path: '/lifecycle-param-test' };
     }
 
+    @addEventListener('#around-state-test-link', 'click')
+    @emitCustomEvent('$this', 'navigate', { attributeName: 'on-navigate' })
+    onAroundStateTestClick() {
+      return { path: '/around-state-test' };
+    }
+
     @addEventListener('.cart-icon', 'click')
     @emitCustomEvent('$this', 'navigate', { attributeName: 'on-navigate' })
     onCartClick() {
@@ -211,6 +217,7 @@ export default (w: Window) => {
             <a id="rxjs-test-link">RxJS Ops</a>
             <a id="delegate-test-link">Delegate Test</a>
             <a id="lifecycle-test-link">Lifecycle Params</a>
+            <a id="around-state-test-link">Around/State</a>
           </div>
           <div class="cart-section">
             <span class="cart-icon" id="cart-icon">🛒</span>

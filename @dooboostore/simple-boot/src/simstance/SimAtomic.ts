@@ -1,7 +1,8 @@
 import { ConstructorType } from '@dooboostore/core';
-import { SimConfig, SimMetadataKey } from '../decorators/SimDecorator';
+import { Lifecycle, SimConfig, SimMetadataKey } from '../decorators/SimDecorator';
 import { Carrier, SimstanceManager } from './SimstanceManager';
 import { ReflectUtils } from '@dooboostore/core';
+import { ValidUtils } from '@dooboostore/core';
 
 export class SimAtomic<T = object> {
   private value?: T | undefined;
@@ -27,7 +28,19 @@ export class SimAtomic<T = object> {
     // return this.simstanceManager.getOrNewSim({target:this.type, newInstanceCarrier: config?.newInstanceCarrier});
     if (!this.value) {
       if (typeof this.type.targetKeyType === 'symbol') {
-        this.value = this.simstanceManager.findFirstSim(this.type.targetKeyType)?.getValue();
+        // symbol 키로 직접 등록된(다른 targetKeyType으로는 안 갈리는) storage 항목을 바로 조회한다.
+        // findFirstSim(symbol)로 다시 찾으면 이 atomic 자신과 같은 걸 또 찾아서 무한 재귀가 된다.
+        const stored = this.simstanceManager.getStoreSet(this.type.targetKeyType as any);
+        if (ValidUtils.isArrowFunction(stored?.instance)) {
+          const fresh = (stored!.instance as Function)() as T;
+          if (this.getConfig()?.scope === Lifecycle.Singleton) {
+            // 싱글톤이면 결과값으로 storage를 덮어써서 다음 조회부턴 factory를 다시 안 부르고 캐시된 값을 쓴다.
+            this.simstanceManager.setStoreSet(this.type.targetKeyType as any, fresh, stored!.type);
+            this.value = fresh;
+          }
+          return fresh;
+        }
+        this.value = stored?.instance as T | undefined;
       } else {
         this.value = this.simstanceManager.getOrNewSim({target: this.type.targetKeyType as any, originTypeTarget: this.type.originalType, newInstanceCarrier: config?.newInstanceCarrier});
       }

@@ -1,6 +1,6 @@
 import { ConstructorType } from '@dooboostore/core';
 import { SimNoSuch } from '../throwable/SimNoSuch';
-import { getPostConstructs, getSim, Lifecycle, SimConfig, simProcess, sims } from '../decorators/SimDecorator';
+import { getPostConstructs, getSim, Lifecycle, SimConfig, SimMetadataKey, simProcess, sims } from '../decorators/SimDecorator';
 import { ObjectUtils } from '@dooboostore/core';
 import { SimAtomic } from './SimAtomic';
 import { ReflectUtils } from '@dooboostore/core';
@@ -215,7 +215,12 @@ export class SimstanceManager implements Runnable<void, Map<ConstructorType<any>
   registerStore(targetKey: ConstructorType<any> | Function, regTyps: Set<ConstructorType<any> | Function | any>): void {
     const itemMap = this.storage.get(targetKey) ?? new Map<ConstructorType<any> | Function, any>();
     regTyps.forEach(it => {
-      const { type, value } = (typeof it === 'object' ? { type: it.constructor, value: it } : { type: it, value: undefined }) as { type: ConstructorType<any> | Function; value: any };
+      // 팩토리(화살표 함수)는 typeof 'function'이라 예전엔 object 분기를 못 타고 {type: it, value: undefined}로
+      // 빠져서 죽은 키로만 남고 절대 호출되지 않았다 - object 인스턴스와 동급으로 value에 그대로 담아준다.
+      // (실제 "매번 새로 호출"은 SimAtomic.getValue()가 이 값이 factory인지 보고 처리한다.)
+      const { type, value } = (
+        ValidUtils.isArrowFunction(it) ? { type: it, value: it } : typeof it === 'object' ? { type: it.constructor, value: it } : { type: it, value: undefined }
+      ) as { type: ConstructorType<any> | Function; value: any };
       if (!itemMap.has(type) || (value !== undefined && itemMap.get(type) === undefined)) {
         itemMap.set(type, value);
       }
@@ -544,10 +549,23 @@ export class SimstanceManager implements Runnable<void, Map<ConstructorType<any>
   run(otherInstanceSim: Map<ConstructorType<any> | Function | SimConfig | symbol, any> = new Map()) {
     // this.otherInstanceSim = new Map();
     for (const [k, v] of Array.from(otherInstanceSim.entries())) {
-      const storageKey = typeof k === 'object' && k !== null && 'type' in (k as any) ? (k as any).type : k;
-      this.registerStore(storageKey, new Set([v]));
+      const hasType = typeof k === 'object' && k !== null && 'type' in (k as any);
+      const hasSymbol = typeof k === 'object' && k !== null && !!(k as any).symbol;
+      const storageKey = hasType ? (k as any).type : k;
 
-      if (typeof k === 'object' && k !== null && 'symbol' in (k as any) && (k as any).symbol) {
+      // symbol 전용 디스크립터({symbol, scope}, type 없음)는 원본 객체를 키로 쓰는 등록을 생략한다 -
+      // 바로 아래 symbol 키 등록과 값이 같아서 findFirstSim(symbol)이 둘 중 먼저 들어간(원본 객체 키)
+      // atomic을 골라버리고, 실제 symbol 키로 등록된 atomic은 찾히지 않던 문제였다.
+      if (hasType || !hasSymbol) {
+        this.registerStore(storageKey, new Set([v]));
+      }
+
+      if (hasSymbol) {
+        // findFirstSim(symbol) -> SimAtomic.getConfig()가 매칭할 수 있도록 @Sim 데코레이터와
+        // 동일하게 SimConfig를 실제 등록값에 메타데이터로 붙여준다.
+        if (!ReflectUtils.getMetadata(SimMetadataKey, v)) {
+          ReflectUtils.defineMetadata(SimMetadataKey, { ...(k as any), scope: (k as any).scope ?? Lifecycle.Singleton }, v);
+        }
         this.registerStore((k as any).symbol, new Set([v]));
       }
     }

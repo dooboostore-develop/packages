@@ -8,9 +8,7 @@
     "skipLibCheck": true,
     "types": ["node"],
     "noEmit": true,
-    "allowImportingTsExtensions": true,
-    "experimentalDecorators": true,
-    "emitDecoratorMetadata": true
+    "allowImportingTsExtensions": true
   },
   "include": ["**/*.ts"]
 }
