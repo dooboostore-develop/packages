@@ -1,6 +1,6 @@
 import MainPage from './MainPage';
 import DetailPage from './DetailPage';
-import { innerHtmlLight,replaceChildren, elementDefine, onConnectedBefore, onConnectedShadow, subscribeSwcAppRouteChangeWhileConnected } from '@dooboostore/simple-web-component';
+import { innerHtmlLight,replaceChildren, elementDefine, onConnectedBefore, onConnectedShadow, subscribeSwcAppRouteChange } from '@dooboostore/simple-web-component';
 import {Inject} from '@dooboostore/simple-boot';
 import {Router, type RouterEventType} from '@dooboostore/core-web';
 import {StockService} from '../services/StockService';
@@ -34,7 +34,7 @@ export const rootRouterFactory = (w: Window) => {
     }
 
     @innerHtmlLight
-    @subscribeSwcAppRouteChangeWhileConnected(['','/', '/detail/{id}'])
+    @subscribeSwcAppRouteChange(['','/', '/detail/{id}'])
     routeChanged(routerPathSet: RouterEventType) {
       if (['', '/'].includes(routerPathSet.path)) {
         return `<swc-example-stock-main-page/>`

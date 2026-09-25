@@ -2,7 +2,7 @@ import {
   elementDefine,
   onConnectedBodyShadow,
   onConnectedBefore,
-  subscribeSwcAppRouteChangeWhileConnected,
+  subscribeSwcAppRouteChange,
   replaceChildrenLight,
   htmlFragment, onInitialize
 } from '@dooboostore/simple-web-component';
@@ -31,21 +31,21 @@ export default (w: Window) => {
     }
 
     @replaceChildrenLight
-    @subscribeSwcAppRouteChangeWhileConnected(['', '/'])
+    @subscribeSwcAppRouteChange(['', '/'])
     handleHome() {
       console.log('[test-swc] IndexRouter handleHome');
       return IndexRoute(w);
     }
 
     @replaceChildrenLight
-    @subscribeSwcAppRouteChangeWhileConnected('/user')
+    @subscribeSwcAppRouteChange('/user')
     handleUser() {
       console.log('[test-swc] IndexRouter handleUser');
       return UserRoute(w);
     }
 
     @replaceChildrenLight
-    @subscribeSwcAppRouteChangeWhileConnected(['/{tail:.*}'], { order: 999 })
+    @subscribeSwcAppRouteChange(['/{tail:.*}'], { order: 999 })
     handle404(routerPathSet: RouterEventType) {
       console.log('[test-swc] IndexRouter handle404:', routerPathSet.path);
       return htmlFragment(`

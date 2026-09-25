@@ -19,7 +19,7 @@ export type SWCSSRConfig = {
    * Playwright evaluates real JS files loaded from your index.html,
    * so component registration happens automatically in the browser context.
    */
-  registerComponents?: (window: any) => Promise<void> | void;
+  registerComponents?: (window: any, rr?: RequestResponse) => Promise<void> | void;
   playwright?: {
     waitUntil?: 'load' | 'domcontentloaded' | 'networkidle' | 'commit';
     waitForSelector?: string;

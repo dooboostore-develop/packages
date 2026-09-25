@@ -1,4 +1,4 @@
-import {addEventListener, innerHtml, attribute, elementDefine, onConnected, onConnectedBefore, query, subscribeSwcAppRouteChangeWhileConnected} from '@dooboostore/simple-web-component';
+import {addEventListener, innerHtml, attribute, elementDefine, onConnected, onConnectedBefore, query, subscribeSwcAppRouteChange} from '@dooboostore/simple-web-component';
 import {Inject} from '@dooboostore/simple-boot';
 import {AccommodationService} from '../services/AccommodationService';
 import {EventService, LocalEvent} from '../services/EventService';
@@ -59,12 +59,12 @@ export default (w: Window) => {
     //   return 'zzz'
     // }
 
-    @subscribeSwcAppRouteChangeWhileConnected('/accommodation/{id}')
+    @subscribeSwcAppRouteChange('/accommodation/{id}')
     onRouteChangeToDetailPage(router: any, pathData: any) {
       console.log('[DetailPage] onRouteChangeToDetailPage called', { pathData, currentPath: router.currentPath });
     }
 
-    @subscribeSwcAppRouteChangeWhileConnected
+    @subscribeSwcAppRouteChange
     onAnyRouteChange(router: any, pathData: any) {
       console.log('[DetailPage] onAnyRouteChange called', { currentPath: router.currentPath });
     }

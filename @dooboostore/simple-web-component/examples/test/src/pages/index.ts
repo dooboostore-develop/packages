@@ -9,7 +9,7 @@ import RxjsOperatorsTestPage from './RxjsOperatorsTestPage';
 import EventDelegateTestPage from './EventDelegateTestPage';
 import LifecycleParamTestPage from './LifecycleParamTestPage';
 import AroundStateTestPage from './AroundStateTestPage';
-import {replaceChildren, innerHtmlLight, subscribeSwcAppRouteChangeWhileConnected, publishSwcAppMessage, onConnectedBodyLight, innerHtml, onConnectedAfter, onConnectedBody, updateClass, addEventListener, applyNode, elementDefine, emitCustomEvent, onConnectedBefore, onConnectedBodyShadow, addEventListenerThis, attribute } from '@dooboostore/simple-web-component';
+import {replaceChildren, innerHtmlLight, subscribeSwcAppRouteChange, publishSwcAppMessage, onConnectedBodyLight, innerHtml, onConnectedAfter, onConnectedBody, updateClass, addEventListener, applyNode, elementDefine, emitCustomEvent, onConnectedBefore, onConnectedBodyShadow, addEventListenerThis, attribute } from '@dooboostore/simple-web-component';
 import {Inject} from '@dooboostore/simple-boot';
 import {Router, type RouterEventType} from '@dooboostore/core-web';
 import {CartService} from '../services/CartService';
@@ -52,12 +52,12 @@ export const rootRouterFactory = (w: Window) => {
       return message;
     }
 
-    // @subscribeSwcAppMessageWhileConnected
+    // @subscribeSwcAppMessage
     // ttt(message: SwcAppMessage) {
     //   console.log('RootRouter received message:', message);
     // }
 
-    @subscribeSwcAppRouteChangeWhileConnected(['', '/', '/product/{id}', '/cart', '/checkout', '/orders', '/timer-test', '/slot-test', '/rxjs-operators-test', '/event-delegate-test', '/lifecycle-param-test', '/around-state-test'])
+    @subscribeSwcAppRouteChange(['', '/', '/product/{id}', '/cart', '/checkout', '/orders', '/timer-test', '/slot-test', '/rxjs-operators-test', '/event-delegate-test', '/lifecycle-param-test', '/around-state-test'])
     @innerHtmlLight
     routeChanged(routerPathSet: RouterEventType) {
       if (['', '/'].includes(routerPathSet.path)) {

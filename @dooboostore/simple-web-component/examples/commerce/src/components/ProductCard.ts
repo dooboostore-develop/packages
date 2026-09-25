@@ -1,4 +1,4 @@
-import { innerHtml, addEventListener, applyNode, attribute, changedAttribute, elementDefine, emitCustomEvent, onConnectedBefore, subscribeSwcAppMessageWhileConnected, type SwcAppMessage } from '@dooboostore/simple-web-component';
+import { innerHtml, addEventListener, applyNode, attribute, changedAttribute, elementDefine, emitCustomEvent, onConnectedBefore, subscribeSwcAppMessage, type SwcAppMessage } from '@dooboostore/simple-web-component';
 import {ProductService} from "../services/ProductService";
 import {inject} from "@dooboostore/simple-boot";
 
@@ -29,7 +29,7 @@ export default (w: Window) => {
       this.onProductIdChanged(this.productId, null, null, null);
     }
 
-    @subscribeSwcAppMessageWhileConnected
+    @subscribeSwcAppMessage
     tt(data: SwcAppMessage) {
       // console.log('-------->', data);
       // this.tttt(data.data);

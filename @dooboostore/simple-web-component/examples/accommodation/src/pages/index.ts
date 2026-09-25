@@ -3,7 +3,7 @@ import ListPage from './ListPage';
 import DetailPage from './DetailPage';
 import EventDetailPage from './EventDetailPage';
 import {Inject} from '@dooboostore/simple-boot';
-import { innerHtmlLight, replaceChildren, elementDefine, onConnectedBefore, onConnectedBodyShadow, subscribeSwcAppRouteChangeWhileConnected } from '@dooboostore/simple-web-component';
+import { innerHtmlLight, replaceChildren, elementDefine, onConnectedBefore, onConnectedBodyShadow, subscribeSwcAppRouteChange } from '@dooboostore/simple-web-component';
 import {Router, type RouterEventType} from '@dooboostore/core-web';
 import {AccommodationService, EventService} from '../services';
 
@@ -34,7 +34,7 @@ const indexPageFactory = (w: Window) => {
       console.log('onInitialize', this.router, this.accommodationService, this.eventService);
     }
 
-    @subscribeSwcAppRouteChangeWhileConnected({ order: -1 })
+    @subscribeSwcAppRouteChange({ order: -1 })
     onRouteChange(routerPathSet: RouterEventType) {
       console.log('[Route Change]', {
         path: routerPathSet.path,
@@ -44,35 +44,35 @@ const indexPageFactory = (w: Window) => {
       // 반환값 없음 → 다음 핸들러도 계속 실행
     }
 
-    @subscribeSwcAppRouteChangeWhileConnected(['', '/'], { order: 0 })
+    @subscribeSwcAppRouteChange(['', '/'], { order: 0 })
     @innerHtmlLight
     handleHome(routerPathSet: RouterEventType) {
       console.log('[Route Handler] Home');
       return `<swc-example-accommodation-landing-page/>`;
     }
 
-    @subscribeSwcAppRouteChangeWhileConnected(['/list'], { order: 1 })
+    @subscribeSwcAppRouteChange(['/list'], { order: 1 })
     @innerHtmlLight
     handleList(routerPathSet: RouterEventType) {
       console.log('[Route Handler] List');
       return `<swc-example-accommodation-list-page/>`;
     }
 
-    @subscribeSwcAppRouteChangeWhileConnected(['/event/{eventId}'], { order: 2 })
+    @subscribeSwcAppRouteChange(['/event/{eventId}'], { order: 2 })
     @innerHtmlLight
     handleEventDetail(routerPathSet: RouterEventType) {
       console.log('[Route Handler] Event Detail', routerPathSet.pathData);
       return `<swc-example-accommodation-event-detail-page event-id="${routerPathSet.pathData.eventId}"/>`;
     }
 
-    @subscribeSwcAppRouteChangeWhileConnected(['/detail/{productId}'], { order: 3 })
+    @subscribeSwcAppRouteChange(['/detail/{productId}'], { order: 3 })
     @innerHtmlLight
     handleProductDetail(routerPathSet: RouterEventType) {
       console.log('[Route Handler] Product Detail', routerPathSet.pathData);
       return `<swc-example-accommodation-detail-page product-id="${routerPathSet.pathData.productId}"/>`;
     }
 
-    @subscribeSwcAppRouteChangeWhileConnected(['/{tail:.*}'], { order: 999 })
+    @subscribeSwcAppRouteChange(['/{tail:.*}'], { order: 999 })
     @innerHtmlLight
     handle404(routerPathSet: RouterEventType) {
       console.log('[Route Handler] 404 Not Found', routerPathSet.path);

@@ -4,6 +4,8 @@ import {Filter} from '@dooboostore/simple-boot-http-server/filters/Filter';
 import {Mimes} from '@dooboostore/simple-boot-http-server/codes/Mimes';
 import {HttpStatus} from '@dooboostore/simple-boot-http-server/codes/HttpStatus';
 import {SimpleBootHttpServer} from '@dooboostore/simple-boot-http-server/SimpleBootHttpServer';
+import {injectRequestResponse} from '@dooboostore/simple-boot-http-server/proxy/RequestResponseInjectProxy';
+import {SimConfig} from '@dooboostore/simple-boot';
 import {DomParserInitializer} from '../initializers/DomParserInitializer';
 
 export type SWCSSRDomParserConfig = {
@@ -12,9 +14,17 @@ export type SWCSSRDomParserConfig = {
   welcomUrl?: string;
   ssrExcludeFilter?: (rr: RequestResponse) => boolean;
   /**
-   * Function to register components for each request.
+   * SSR 에 노출할 백엔드 서비스 목록(각 항목은 symbol 을 가진다, 예: pairServices).
+   * 프레임워크가 요청마다 각 서비스를 꺼내 이 요청의 rr 을 주입한 뒤 Map 으로 묶어
+   * registerComponents 의 3번째 인자(sim)로 넘긴다. → 앱은 그 Map 을 bootfactory 에 그대로 전달만 하면 되고
+   *   직접 Proxy 로 감싸거나 rr 을 넣을 필요가 없다(쿠키 등 요청 컨텍스트 자동 전달).
    */
-  registerComponents?: (window: any) => Promise<void> | void;
+  intentServices?: SimConfig[];
+  /**
+   * 요청마다 컴포넌트를 등록한다.
+   * @param sim intentServices 를 rr 주입해 묶은 Map<symbol, service>. bootfactory 에 그대로 넘기면 된다.
+   */
+  registerComponents?: (window: any, rr: RequestResponse, sim: Map<symbol, any>) => Promise<void> | void;
 };
 
 /**
@@ -23,12 +33,15 @@ export type SWCSSRDomParserConfig = {
  */
 export class SSRSimpleWebComponentDomParserFilter implements Filter {
   private welcomUrl = 'http://localhost';
+  private app?: SimpleBootHttpServer;
 
   constructor(public config: SWCSSRDomParserConfig) {
     this.welcomUrl = config.welcomUrl || this.welcomUrl;
   }
 
-  async onInit(app: SimpleBootHttpServer) {}
+  async onInit(app: SimpleBootHttpServer) {
+    this.app = app;
+  }
 
   async onDestroy() {}
 
@@ -64,7 +77,16 @@ export class SSRSimpleWebComponentDomParserFilter implements Filter {
         // 2. Register Components if provided
         // We use SwcApplication inside the callback or directly here.
         if (this.config.registerComponents) {
-          await this.config.registerComponents(window);
+          // intentServices 를 rr 주입해 Map 으로 묶어 넘긴다 (앱은 bootfactory 에 그대로 전달만).
+          const sim = new Map<symbol, any>();
+          for (const service of (this.config.intentServices ?? []).filter(Boolean)) {
+            if (!service.symbol) continue;
+            for (const sym of (Array.isArray(service.symbol) ? service.symbol : [service.symbol])) {
+              const raw = this.app?.sim<any>(sym as any);
+              if (raw) sim.set(sym, injectRequestResponse(raw, rr));
+            }
+          }
+          await this.config.registerComponents(window, rr, sim);
         }
 
         // window.document.querySelector('.sidebar-space').innerHTML = '씨발놈아.';

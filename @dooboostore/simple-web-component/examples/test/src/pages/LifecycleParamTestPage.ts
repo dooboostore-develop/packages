@@ -1,4 +1,4 @@
-import { elementDefine, onConnectedAfter, onConnectedBodyShadow, hostSet, helperHostSet, helperSet, subscribeSwcAppRouteChangeWhileConnected, subscribeSwcAppMessageWhileConnected, routerEvent, appMessage } from '@dooboostore/simple-web-component';
+import { elementDefine, onConnectedAfter, onConnectedBodyShadow, hostSet, helperHostSet, helperSet, subscribeSwcAppRouteChange, subscribeSwcAppMessage, routerEvent, appMessage } from '@dooboostore/simple-web-component';
 import { Inject } from '@dooboostore/simple-boot';
 import { ProductService } from '../services/ProductService';
 
@@ -48,14 +48,14 @@ export default (w: Window) => {
 
     // 라우트 변경 구독 — 일부러 순서를 뒤집어서(@helperSet이 먼저, @routerEvent가 나중) 선언.
     // 이 컴포넌트가 connect될 때 SwcAppMixin._connected가 마지막 라우터 이벤트로 즉시 호출해준다.
-    @subscribeSwcAppRouteChangeWhileConnected
+    @subscribeSwcAppRouteChange
     onRouteChangedV2(@helperSet helpers: any, @routerEvent re: any) {
       this.routeChangedOk = !!helpers && typeof helpers.$q === 'function' && !!re && typeof re.path === 'string';
       this.updateStatus();
     }
 
     // 메시지 구독 — 순서를 뒤집어서(@hostSet이 먼저, @appMessage가 나중) 선언.
-    @subscribeSwcAppMessageWhileConnected
+    @subscribeSwcAppMessage
     onMessageV2(@hostSet hs: any, @appMessage msg: any) {
       this.messageOk = !!hs && Array.isArray(hs.$hosts) && !!msg && typeof msg.data === 'string';
       this.lastMessageData = msg?.data ?? '';

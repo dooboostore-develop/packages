@@ -1,5 +1,5 @@
 import { SwcAppInterface, SwcAppMessage } from '../types';
-import { APPLY_NODE_METADATA_KEY, findAllLifecycleMetadata, getSubscribeSwcAppMessageWhileConnectedMetadata, getSubscribeSwcAppRouteChangeWhileConnectedMetadata, ON_CONNECTED_SWC_APP_METADATA_KEY, SUBSCRIBE_SWC_APP_ROUTE_CHANGE_WHILE_CONNECTED_METADATA_KEY, buildSwcParameterArgs } from '../decorators';
+import { APPLY_NODE_METADATA_KEY, findAllLifecycleMetadata, getSubscribeSwcAppMessageMetadata, getSubscribeSwcAppRouteChangeMetadata, ON_CONNECTED_SWC_APP_METADATA_KEY, SUBSCRIBE_SWC_APP_ROUTE_CHANGE_METADATA_KEY, buildSwcParameterArgs } from '../decorators';
 import { SwcAppEngine, SwcAttributeConfigType, SwcConfigType } from '../SwcAppEngine';
 import { debounceTimeIntervalLock, FunctionUtils, Subscription } from '@dooboostore/core';
 import {RouterEventType, ValidUtils} from '@dooboostore/core-web';
@@ -80,17 +80,17 @@ export function SwcAppMixin<T extends { new (...args: any[]): HTMLElement }>(Bas
       );
 
       try {
-        const routeChangeSubscribers = getSubscribeSwcAppRouteChangeWhileConnectedMetadata(instance);
+        const routeChangeSubscribers = getSubscribeSwcAppRouteChangeMetadata(instance);
 
         if (routeChangeSubscribers.length > 0) {
-          // Subscribers are already sorted by order from getSubscribeSwcAppRouteChangeWhileConnectedMetadata
+          // Subscribers are already sorted by order from getSubscribeSwcAppRouteChangeMetadata
           // Execute subscribers in order, stop if one returns a value
           for (const metadata of routeChangeSubscribers) {
             const methodName = metadata.propertyKey;
             let pathPattern = metadata.options?.path as any;
             const filter = metadata.options?.filter;
             const extractValue = (v: any) => {
-              const keyToUse = metadata.options?.valueKey ?? SUBSCRIBE_SWC_APP_ROUTE_CHANGE_WHILE_CONNECTED_METADATA_KEY;
+              const keyToUse = metadata.options?.valueKey ?? SUBSCRIBE_SWC_APP_ROUTE_CHANGE_METADATA_KEY;
               if (v && typeof v === 'object' && keyToUse in v) {
                 return v[keyToUse];
               }
@@ -335,7 +335,7 @@ export function SwcAppMixin<T extends { new (...args: any[]): HTMLElement }>(Bas
     }
 
     _invokeMessageSubscribers(instance: any, message: SwcAppMessage) {
-      const messageSubscribers = getSubscribeSwcAppMessageWhileConnectedMetadata(instance);
+      const messageSubscribers = getSubscribeSwcAppMessageMetadata(instance);
       if (messageSubscribers && Array.isArray(messageSubscribers)) {
         messageSubscribers.forEach(metadata => {
           const methodName = metadata.propertyKey;

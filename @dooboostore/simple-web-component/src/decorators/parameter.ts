@@ -2,7 +2,7 @@ import { ReflectUtils } from '@dooboostore/core';
 
 /**
  * @eventObject/@matchedElement/@hostSet/@helperHostSet/@helperSet/@routerEvent/@appMessage —
- * @addEventListener/lifecycle/subscribeSwcAppRouteChangeWhileConnected/subscribeSwcAppMessageWhileConnected
+ * @addEventListener/lifecycle/subscribeSwcAppRouteChange/subscribeSwcAppMessage
  * 계열 핸들러의 파라미터를 순서 무관하게 선언할 수 있게 해주는 파라미터 데코레이터.
  * @dooboostore/simple-boot의 @Inject와 동일한 인덱스 기반 메타데이터 패턴을 따른다:
  * 데코레이터가 실행되는 순서가 아니라 실제 parameterIndex로 슬롯을 매칭하므로,
@@ -47,12 +47,12 @@ export function helperSet(target: Object, propertyKey: string | symbol, paramete
   registerParam('helperSet', target, propertyKey, parameterIndex);
 }
 
-/** @subscribeSwcAppRouteChangeWhileConnected 핸들러의 라우트 변경 이벤트({...RouterEventType, pathData})를 주입한다. */
+/** @subscribeSwcAppRouteChange 핸들러의 라우트 변경 이벤트({...RouterEventType, pathData})를 주입한다. */
 export function routerEvent(target: Object, propertyKey: string | symbol, parameterIndex: number): void {
   registerParam('routerEvent', target, propertyKey, parameterIndex);
 }
 
-/** @subscribeSwcAppMessageWhileConnected 핸들러의 SwcAppMessage 페이로드를 주입한다. */
+/** @subscribeSwcAppMessage 핸들러의 SwcAppMessage 페이로드를 주입한다. */
 export function appMessage(target: Object, propertyKey: string | symbol, parameterIndex: number): void {
   registerParam('appMessage', target, propertyKey, parameterIndex);
 }

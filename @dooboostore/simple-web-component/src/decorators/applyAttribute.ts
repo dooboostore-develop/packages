@@ -43,35 +43,6 @@ export const ATTRIBUTE_METADATA_KEY = Symbol.for('simple-web-component:attribute
 // Utilities
 // ============================================
 
-/**
- * Determine if a string is a CSS selector or an attribute name
- * 
- * CSS selectors typically:
- * - Start with: #, ., [, :, >, +, ~
- * - Contain special chars: >, +, ~, :, [, ]
- * - Are special keywords: $this, $host, $parentHost, etc.
- * 
- * Attribute names are typically:
- * - kebab-case (lowercase with hyphens)
- * - No special selector syntax
- * 
- * @param str - String to check
- * @returns true if it's a CSS selector, false if it's an attribute name
- */
-const isCssSelector = (str: string): boolean => {
-  if (!str) return false;
-  
-  // Special keywords
-  if (str.startsWith('$')) return true;
-  
-  // CSS selector syntax
-  if (/^[#.\[\:>+~]/.test(str)) return true;
-  
-  // Contains CSS combinator or pseudo-selector syntax
-  if (/[>+~:\[\]]/.test(str)) return true;
-  
-  return false;
-};
 
 const convertValue = (val: string | null, type: any): any => {
   if (val === null || val === undefined) return val;
@@ -379,22 +350,10 @@ export function attribute(selectorOrAttributeOrTarget?: AttributeSelector | Obje
     return applyAttribute('$this', undefined as any, {})(selectorOrAttributeOrTarget as Object, attributeNameOrOptions, optionsOrDescriptor as PropertyDescriptor);
   }
   
-  // With string as first parameter
+  // With string as first parameter — 무조건 셀렉터(querySelector 문자열).
+  // $this 등 특수 키워드도 셀렉터로 그대로 전달. $this 속성은 '@x($this, 'attr')' 형태로 명시.
   if (typeof selectorOrAttributeOrTarget === 'string') {
-    // Check if first parameter is a CSS selector or attribute name
-    const isSelector = isCssSelector(selectorOrAttributeOrTarget);
-    
-    if (isSelector) {
-      // First param is a selector: @attribute('#user', 'product-id', options?)
-      return applyAttribute(selectorOrAttributeOrTarget, attributeNameOrOptions as any, optionsOrDescriptor as AttributeOptions);
-    } else {
-      // First param is an attribute name: @attribute('product-id', options?)
-      // Treat as attribute name on $this
-      const options = (typeof attributeNameOrOptions === 'object' && attributeNameOrOptions !== null) 
-        ? attributeNameOrOptions 
-        : {};
-      return applyAttribute('$this', selectorOrAttributeOrTarget, options);
-    }
+    return applyAttribute(selectorOrAttributeOrTarget, attributeNameOrOptions as any, optionsOrDescriptor as AttributeOptions);
   }
   
   // Without selector (defaults to $this with options)
@@ -404,20 +363,20 @@ export function attribute(selectorOrAttributeOrTarget?: AttributeSelector | Obje
 /**
  * @setAttribute - Method decorator for setting element attributes from method return value
  * 
- * Intelligently distinguishes between attribute names and CSS selectors:
- * 
+ * 문자열 첫 인자는 무조건 셀렉터(querySelector 문자열). 내용 추측 없음.
+ * $this 속성은 '@setAttribute($this, 'attr')' 형태로 명시.
+ *
  * Usage patterns:
- * - @setAttribute('data-id') - Attribute name on $this (auto-detected)
- * - @setAttribute('#user', 'data-id') - Attribute name on selector
- * - @setAttribute('data-id', options) - Attribute name on $this with options
- * - @setAttribute('#user', 'data-id', options) - Attribute name on selector with options
+ * - @setAttribute('nav', 'data-active') - Attribute on selector
+ * - @setAttribute('#user', 'data-id') - Attribute on selector
+ * - @setAttribute($this, 'data-id') - Attribute on $this
  * - @setAttribute((this, helper) => 'selector', 'data-id') - Function-based selector
  * - @setAttribute - Bare decorator (uses method name as attribute on $this)
  * 
  * Note: This decorator is for METHODS ONLY. For fields, use @attribute.
  * 
  * Example:
- * @setAttribute('data-status')
+ * @setAttribute('.card', 'data-status')
  * updateStatus() {
  *   return 'active';
  * }
@@ -430,26 +389,45 @@ export function setAttribute(selectorOrAttributeOrOptions?: AttributeSelector | 
   if (typeof selectorOrAttributeOrOptions === 'function') {
     return applyAttribute(selectorOrAttributeOrOptions as AttributeSelector, attributeNameOrOptions as any, optionsOrUndefined as AttributeOptions) as MethodDecorator;
   }
-  // With string as first parameter
+  // With string as first parameter — 무조건 셀렉터(querySelector 문자열).
+  // $this 등 특수 키워드도 셀렉터로 그대로 전달. $this 속성은 '@x($this, 'attr')' 형태로 명시.
   if (typeof selectorOrAttributeOrOptions === 'string') {
-    // Check if first parameter is a CSS selector or attribute name
-    const isSelector = isCssSelector(selectorOrAttributeOrOptions);
-    
-    if (isSelector) {
-      // First param is a selector: @setAttribute('#user', 'data-id', options?)
-      return applyAttribute(selectorOrAttributeOrOptions, attributeNameOrOptions as any, optionsOrUndefined as AttributeOptions) as MethodDecorator;
-    } else {
-      // First param is an attribute name: @setAttribute('data-id', options?)
-      // Treat as attribute name on $this
-      const options = (typeof attributeNameOrOptions === 'object' && attributeNameOrOptions !== null) 
-        ? attributeNameOrOptions 
-        : {};
-      return applyAttribute('$this', selectorOrAttributeOrOptions, options) as MethodDecorator;
-    }
+    return applyAttribute(selectorOrAttributeOrOptions, attributeNameOrOptions as any, optionsOrUndefined as AttributeOptions) as MethodDecorator;
   }
   
   // Without selector (defaults to $this with options)
   return applyAttribute('$this', undefined as any, selectorOrAttributeOrOptions as AttributeOptions) as MethodDecorator;
+}
+
+/**
+ * @removeAttribute - 메서드 실행 시 엘리먼트 속성 제거 (반환값 그대로 통과).
+ * 라우트 구독처럼 값을 리턴하면 안 되는 곳에서 setAttribute(null) 대신 명시적으로 사용.
+ *
+ * Usage:
+ * - @removeAttribute('nav', 'href') - Remove attribute from selector
+ * - @removeAttribute('$this', 'href') - Remove attribute from $this
+ */
+export function removeAttribute(selector: string, attributeName: string, options?: AttributeQueryOptions): MethodDecorator;
+export function removeAttribute(selector: AttributeFnSelector, attributeName: string, options?: AttributeNonQueryOptions): MethodDecorator;
+export function removeAttribute(selector: AttributeSelector, attributeName: string, options?: AttributeOptions): MethodDecorator {
+  return (target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor) => {
+    const original = descriptor.value;
+    descriptor.value = function (...args: any[]) {
+      const res = (original as any).apply(this, args);
+      const doRemove = () => {
+        resolveAttributeTargets(this, selector, options ?? {}).forEach((el) => el.removeAttribute(attributeName));
+      };
+      if (res instanceof Promise) {
+        return res.then((v: any) => {
+          doRemove();
+          return v;
+        });
+      }
+      doRemove();
+      return res;
+    };
+    return descriptor;
+  };
 }
 
 // ============================================

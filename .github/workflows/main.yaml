@@ -17,7 +17,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 22.15.1
+          node-version: 24
           check-latest: true
 
       # ✅ corepack이 pnpm PATH 등록까지 확실히 해줌

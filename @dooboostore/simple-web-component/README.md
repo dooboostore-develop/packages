@@ -340,7 +340,7 @@ onKeydownFiltered(event: KeyboardEvent) { ... }
 
 Naming pattern: `event` + `PascalCase(type)` + scope suffix (`''`(base) / `DelegateLight` / `DelegateShadow` / `DelegateAll` / `Delegate` / `MutationLight` / `MutationShadow` / `MutationAll` / `Mutation` / `Light` / `Shadow` / `All` / `This` / `AppHost` / `Window` / `Document`) — e.g. `eventClick`, `eventClickDelegateShadow`, `eventDblclickThis`, `eventPointerdownDelegateAll`, `eventKeydownWindow`.
 
-The `This`/`AppHost`/`Window`/`Document` variants (e.g. `eventClickThis`, `eventClickWindow`) take no selector — only an optional `options`, so they support both bare usage (`@eventClickThis`) and factory usage (`@eventClickThis({...})`), the same dual-mode pattern `@subscribeSwcAppRouteChangeWhileConnected`/`@subscribeSwcAppMessageWhileConnected` already use. The `Delegate*`/`Light`/`Shadow`/`All`/base variants still require a `selector` as their first argument, so they must always be called with parens.
+The `This`/`AppHost`/`Window`/`Document` variants (e.g. `eventClickThis`, `eventClickWindow`) take no selector — only an optional `options`, so they support both bare usage (`@eventClickThis`) and factory usage (`@eventClickThis({...})`), the same dual-mode pattern `@subscribeSwcAppRouteChange`/`@subscribeSwcAppMessage` already use. The `Delegate*`/`Light`/`Shadow`/`All`/base variants still require a `selector` as their first argument, so they must always be called with parens.
 
 Covered event types include mouse (`click`, `dblclick`, `mousedown`, `mouseup`, `mousemove`, `mouseover`, `mouseout`, `mouseenter`, `mouseleave`, `contextmenu`, `wheel`), keyboard (`keydown`, `keyup`, `keypress`), form (`input`, `change`, `submit`, `reset`, `invalid`, `select`), focus (`focus`, `blur`, `focusin`, `focusout`), drag & drop (`dragstart`, `drag`, `dragend`, `dragenter`, `dragleave`, `dragover`, `drop`), touch (`touchstart`, `touchmove`, `touchend`, `touchcancel`), pointer (`pointerdown`, `pointerup`, `pointermove`, `pointerover`, `pointerout`, `pointerenter`, `pointerleave`, `pointercancel`), clipboard (`copy`, `cut`, `paste`), animation/transition (`animationstart/end/iteration/cancel`, `transitionstart/end/cancel/run`), and misc (`scroll`, `resize`, `load`, `error`, `toggle`).
 
@@ -381,17 +381,17 @@ class ProductList extends HTMLElement {
 
 The same mechanism (and the same 5 decorators, plus two more) also applies to:
 - **`@onInitialize`/`@onConnectedBefore`/`@onConnectedAfter`/... lifecycle methods** — can freely mix `@hostSet`/`@helperHostSet`/`@helperSet` with `@inject(...)` on the same method.
-- **`@subscribeSwcAppRouteChangeWhileConnected`** — add `@routerEvent` to receive the `RouterEventType` regardless of position.
-- **`@subscribeSwcAppMessageWhileConnected`** — add `@appMessage` to receive the `SwcAppMessage` regardless of position.
+- **`@subscribeSwcAppRouteChange`** — add `@routerEvent` to receive the `RouterEventType` regardless of position.
+- **`@subscribeSwcAppMessage`** — add `@appMessage` to receive the `SwcAppMessage` regardless of position.
 
 ```typescript
 @onConnectedAfter
 onconstructor(@inject(UserService.SYMBOL) userService: UserService, @hostSet hs: HostSet) { ... }
 
-@subscribeSwcAppRouteChangeWhileConnected
+@subscribeSwcAppRouteChange
 onRouteChanged(@helperSet helpers: HelperSet, @routerEvent re: RouterEventType) { ... }
 
-@subscribeSwcAppMessageWhileConnected
+@subscribeSwcAppMessage
 onMessage(@hostSet hs: HostSet, @appMessage msg: SwcAppMessage) { ... }
 ```
 
@@ -540,16 +540,16 @@ printTag() {
 #### @attribute (Field Decorator)
 Bind HTML attributes to properties with automatic read/write synchronization.
 
-Intelligently distinguishes between attribute names and CSS selectors:
+문자열 첫 인자는 **무조건 셀렉터** — `$this` 속성은 `@attribute('$this', 'attr')` 형태로 명시한다.
 
 ```typescript
 @elementDefine('product-card')
 class ProductCard extends HTMLElement {
-  // Attribute name on $this (auto-detected)
-  @attribute('product-id')
+  // Attribute on $this (explicit)
+  @attribute('$this', 'product-id')
   productId: string;
 
-  // Attribute name on selector
+  // Attribute on selector
   @attribute('#user', 'data-id')
   userId: string;
 
@@ -569,22 +569,26 @@ class ProductCard extends HTMLElement {
 #### @setAttribute (Method Decorator)
 Set element attributes from method return values.
 
+문자열 첫 인자는 **무조건 셀렉터**(querySelector 문자열) — 내용 추측 없음.
+`$this` 속성은 `@setAttribute('$this', 'attr')` 형태로 명시한다.
+메서드가 `null`을 리턴하면 해당 속성을 **제거**한다.
+
 ```typescript
 @elementDefine('status-updater')
 class StatusUpdater extends HTMLElement {
-  // Set attribute on $this
-  @setAttribute('data-status')
-  updateStatus() {
-    return this.isActive ? 'active' : 'inactive';
+  // Set attribute on selector (tag name works too)
+  @setAttribute('nav', 'data-active')
+  updateNav() {
+    return this.section; // 'releases' | null (null → 속성 제거)
   }
 
-  // Set attribute on selector
-  @setAttribute('#user', 'data-name')
+  // Set attribute on $this explicitly
+  @setAttribute('$this', 'data-name')
   setUserName() {
     return this.userName;
   }
 
-  // Bare decorator (uses method name as attribute)
+  // Bare decorator (uses method name as attribute on $this)
   @setAttribute
   setValue() {
     return this.computedValue;
@@ -592,19 +596,25 @@ class StatusUpdater extends HTMLElement {
 }
 ```
 
-**Usage Patterns:**
-- `@attribute('attr-name')` - Attribute name on $this (auto-detected)
-- `@attribute('#selector', 'attr-name')` - Attribute name on selector
-- `@attribute('attr-name', options)` - Attribute name on $this with options
-- `@attribute('#selector', 'attr-name', options)` - Attribute name on selector with options
-- `@attribute` - Bare decorator (uses field name as attribute on $this)
-
 **@setAttribute Patterns:**
-- `@setAttribute('attr-name')` - Set attribute on $this
-- `@setAttribute('#selector', 'attr-name')` - Set attribute on selector
-- `@setAttribute('attr-name', options)` - Set attribute on $this with options
-- `@setAttribute('#selector', 'attr-name', options)` - Set attribute on selector with options
+- `@setAttribute('selector', 'attr-name')` - Set attribute on selector (`nav`, `#user`, `.card` 모두 가능)
+- `@setAttribute('$this', 'attr-name')` - Set attribute on $this
+- `@setAttribute('selector', 'attr-name', options)` - With options
+- `@setAttribute('$this', 'attr-name', { valueKey: 'k' })` - 리턴 객체에서 `k`만 뽑아 세팅
 - `@setAttribute` - Bare decorator (uses method name as attribute on $this)
+
+#### @removeAttribute (Method Decorator)
+메서드 실행 시 속성을 무조건 제거한다. 리턴값은 그대로 통과시키므로,
+값을 리턴하면 안 되는 구독 핸들러(라우트 변경 등)에서 안전망으로 쓴다.
+
+```typescript
+// 모든 라우트 변경보다 먼저 실행 — nav 강조 초기화
+@subscribeSwcAppRouteChange({ order: -1 })
+@removeAttribute('nav', 'href')
+handleNavReset() {
+  return undefined; // 체인 계속
+}
+```
 
 #### @changedAttribute (Method Decorator)
 Listen for attribute changes on the component this element.
@@ -1126,23 +1136,23 @@ SWC supports two types of expression syntax for dynamic value evaluation:
 
 SWC provides a powerful message bus system for inter-component communication through SwcApp. Components can publish and subscribe to typed messages while connected.
 
-#### @subscribeSwcAppMessageWhileConnected
+#### @subscribeSwcAppMessage
 Subscribe to messages while component is connected to DOM.
 
 ```typescript
 @elementDefine('notification-panel')
 class NotificationPanel extends HTMLElement {
-  @subscribeSwcAppMessageWhileConnected
+  @subscribeSwcAppMessage
   onAnyMessage(message: SwcAppMessage) {
     console.log('Received message:', message);
   }
 
-  @subscribeSwcAppMessageWhileConnected('user-login')
+  @subscribeSwcAppMessage('user-login')
   onUserLogin(message: SwcAppMessage<{ username: string }>) {
     console.log(`Welcome ${message.data?.username}`);
   }
 
-  @subscribeSwcAppMessageWhileConnected('user-login', {
+  @subscribeSwcAppMessage('user-login', {
     filter: (msg) => msg.data?.username === 'admin'
   })
   onAdminLogin(message: SwcAppMessage) {
@@ -1230,7 +1240,7 @@ class ProductList extends HTMLElement {
 // Subscriber component
 @elementDefine('product-detail')
 class ProductDetail extends HTMLElement {
-  @subscribeSwcAppMessageWhileConnected('product-selected')
+  @subscribeSwcAppMessage('product-selected')
   onProductSelected(message: SwcAppMessage<Product>) {
     this.displayProduct(message.data);
   }
@@ -1351,7 +1361,7 @@ appElement.connect({
 });
 ```
 
-#### 12. **Routing with @subscribeSwcAppRouteChangeWhileConnected**
+#### 12. **Routing with @subscribeSwcAppRouteChange**
 
 SWC provides declarative routing with automatic path matching, order-based execution, and optional propagation control.
 
@@ -1360,26 +1370,26 @@ SWC provides declarative routing with automatic path matching, order-based execu
 ```typescript
 @elementDefine('root-router')
 class RootRouter extends HTMLElement {
-  @subscribeSwcAppRouteChangeWhileConnected(['', '/'], { order: 0 })
+  @subscribeSwcAppRouteChange(['', '/'], { order: 0 })
   @innerHtmlLight
   handleHome(routerPathSet: RouterEventType) {
     return `<landing-page/>`;
   }
 
-  @subscribeSwcAppRouteChangeWhileConnected(['/products'], { order: 1 })
+  @subscribeSwcAppRouteChange(['/products'], { order: 1 })
   @innerHtmlLight
   handleProducts(routerPathSet: RouterEventType) {
     return `<products-list/>`;
   }
 
-  @subscribeSwcAppRouteChangeWhileConnected(['/product/{id}'], { order: 2 })
+  @subscribeSwcAppRouteChange(['/product/{id}'], { order: 2 })
   @innerHtmlLight
   handleProductDetail(routerPathSet: RouterEventType) {
     const { id } = routerPathSet.pathData;
     return `<product-detail product-id="${id}"/>`;
   }
 
-  @subscribeSwcAppRouteChangeWhileConnected(['/{tail:.*}'], { order: 999 })
+  @subscribeSwcAppRouteChange(['/{tail:.*}'], { order: 999 })
   @innerHtmlLight
   handle404(routerPathSet: RouterEventType) {
     return `<not-found-page/>`;
@@ -1390,7 +1400,7 @@ class RootRouter extends HTMLElement {
 #### Route Handler Features
 
 **1. Path Matching**
-- **No path pattern** (omit path): `@subscribeSwcAppRouteChangeWhileConnected({ order: -1 })` - matches all routes
+- **No path pattern** (omit path): `@subscribeSwcAppRouteChange({ order: -1 })` - matches all routes
 - **Exact match**: `['', '/']` - matches home route only
 - **Prefix match**: `['/products']` - matches `/products` and `/products/...`
 - **Dynamic segments**: `['/product/{id}']` - captures `id` parameter
@@ -1400,9 +1410,9 @@ class RootRouter extends HTMLElement {
 Routes are executed in order of `order` value (lowest first). First matching route with a return value stops propagation:
 
 ```typescript
-@subscribeSwcAppRouteChangeWhileConnected(['', '/'], { order: 0 })  // Checked first
-@subscribeSwcAppRouteChangeWhileConnected(['/admin'], { order: 1 })  // Checked second
-@subscribeSwcAppRouteChangeWhileConnected(['/{tail:.*}'], { order: 999 })  // Checked last (404)
+@subscribeSwcAppRouteChange(['', '/'], { order: 0 })  // Checked first
+@subscribeSwcAppRouteChange(['/admin'], { order: 1 })  // Checked second
+@subscribeSwcAppRouteChange(['/{tail:.*}'], { order: 999 })  // Checked last (404)
 ```
 
 **3. Propagation Control**
@@ -1411,14 +1421,14 @@ Routes are executed in order of `order` value (lowest first). First matching rou
 
 ```typescript
 // This handler stops propagation (returns HTML)
-@subscribeSwcAppRouteChangeWhileConnected(['/admin'], { order: 1 })
+@subscribeSwcAppRouteChange(['/admin'], { order: 1 })
 @innerHtmlLight
 handleAdmin(routerPathSet: RouterEventType) {
   return `<admin-panel/>`; // ✅ Stops here
 }
 
 // This handler continues propagation (no return value)
-@subscribeSwcAppRouteChangeWhileConnected({ order: -1 })
+@subscribeSwcAppRouteChange({ order: -1 })
 onRouteChange(routerPathSet: RouterEventType) {
   console.log('Route changed:', routerPathSet.path);
   // No return value → continues to next handler
@@ -1431,7 +1441,7 @@ onRouteChange(routerPathSet: RouterEventType) {
 @elementDefine('accommodation-router')
 class AccommodationRouter extends HTMLElement {
   // Global route logger (order: -1 runs first, no path pattern = matches all routes)
-  @subscribeSwcAppRouteChangeWhileConnected({ order: -1 })
+  @subscribeSwcAppRouteChange({ order: -1 })
   onRouteChange(routerPathSet: RouterEventType) {
     console.log('[Route Change]', {
       path: routerPathSet.path,
@@ -1442,7 +1452,7 @@ class AccommodationRouter extends HTMLElement {
   }
 
   // Home route
-  @subscribeSwcAppRouteChangeWhileConnected(['', '/'], { order: 0 })
+  @subscribeSwcAppRouteChange(['', '/'], { order: 0 })
   @innerHtmlLight
   handleHome(routerPathSet: RouterEventType) {
     console.log('[Route Handler] Home');
@@ -1450,7 +1460,7 @@ class AccommodationRouter extends HTMLElement {
   }
 
   // List route
-  @subscribeSwcAppRouteChangeWhileConnected(['/list'], { order: 1 })
+  @subscribeSwcAppRouteChange(['/list'], { order: 1 })
   @innerHtmlLight
   handleList(routerPathSet: RouterEventType) {
     console.log('[Route Handler] List');
@@ -1458,7 +1468,7 @@ class AccommodationRouter extends HTMLElement {
   }
 
   // Detail route with dynamic parameter
-  @subscribeSwcAppRouteChangeWhileConnected(['/detail/{productId}'], { order: 2 })
+  @subscribeSwcAppRouteChange(['/detail/{productId}'], { order: 2 })
   @innerHtmlLight
   handleDetail(routerPathSet: RouterEventType) {
     const { productId } = routerPathSet.pathData;
@@ -1467,7 +1477,7 @@ class AccommodationRouter extends HTMLElement {
   }
 
   // 404 fallback (order: 999 runs last)
-  @subscribeSwcAppRouteChangeWhileConnected(['/{tail:.*}'], { order: 999 })
+  @subscribeSwcAppRouteChange(['/{tail:.*}'], { order: 999 })
   @innerHtmlLight
   handle404(routerPathSet: RouterEventType) {
     console.log('[Route Handler] 404 Not Found', routerPathSet.path);
@@ -1488,7 +1498,7 @@ interface SwcAppRouteChangeOptions {
 
 **Usage:**
 ```typescript
-@subscribeSwcAppRouteChangeWhileConnected(
+@subscribeSwcAppRouteChange(
   ['/admin/{section}'],
   {
     order: 5,
@@ -1500,6 +1510,31 @@ handleAdminSection(routerPathSet: RouterEventType) {
   const { section } = routerPathSet.pathData;
   return `<admin-${section}/>`;
 }
+```
+
+#### Combined Example: Route + Attribute (nav highlight)
+
+한 메서드에 여러 데코레이터를 걸고, 리턴 객체를 `valueKey`로 나눠 쓴다.
+**주의:** 값을 리턴하면 뒤 핸들러가 멈추므로, 관찰용 핸들러는 `order: -1` + `undefined` 리턴으로 체인을 이어간다.
+
+```typescript
+@replaceChildrenLight({ valueKey: 'element' })
+@subscribeSwcAppRouteChange('/releases')
+@setAttribute('nav', 'href', { valueKey: 'href' })
+handleExplore() {
+  return { element: ExplorePage(w), href: 'releases' }; // nav 강조 + 페이지 렌더
+}
+
+@subscribeSwcAppRouteChange({ order: -1 })
+@removeAttribute('nav', 'href')
+handleNavReset() {
+  return undefined; // 강조 초기화 후 체인 계속
+}
+```
+
+```css
+/* 현재 섹션 버튼 강조 */
+nav[href="releases"] [data-href="/releases"] { color: var(--color-text); background: var(--color-bg-alt); }
 ```
 
 #### RouterEventType Structure
