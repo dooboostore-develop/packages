@@ -117,6 +117,14 @@ server.run();
 
 `SSRFilter`/`SSRWorker` (the `jsdom`-based filters) use a simpler, manual mechanism instead: whatever you assign onto `window.server_side_data` on the server is serialized as an inline `<script>` and available on `window.server_side_data` on the client.
 
+### SWC `@property` hydration (`SSRSimpleWebComponentDomParserFilter`)
+
+1. `registerComponents` returns the `SwcAppInterface` (host + `connectedElements()`).
+2. `@property` metadata is collected from the host and connected elements into
+   `{ sel, prop, value }` items (`sel` = `[swc-use-ssr="<id>"]`, JSON-serializable values only).
+3. Embedded as a `<script>` that runs before the bundle: finds each node with
+   `querySelector` and sets `el[prop] = value`.
+
 ---
 
 ## 📖 Learn More

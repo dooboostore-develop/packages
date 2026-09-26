@@ -1867,3 +1867,60 @@ constructor(private service: Service) { super(); }  // Web Components can't have
 ## 📄 License
 [MIT License](https://github.com/dooboostore-develop/packages/tree/main/%40dooboostore/simple-web-component/LICENSE.md)
 
+
+---
+
+---
+
+## 📨 Message Replay (subject / trigger)
+
+Late subscribers can receive past messages. The buffer keeps every typed message
+(`SwcConfigType.messageReplayBufferSize`, default 10, minimum 1 guaranteed).
+
+```typescript
+// 'behavior' = last message only, 'replay' = whole buffer in order.
+// Unset = live only (legacy behavior).
+@subscribeSwcAppMessage('auth-changed', { subject: 'behavior' })
+onAuth(@appMessage msg: SwcAppMessage<User | null>) { ... }
+```
+
+`trigger` controls when replay happens (default `'connected'`).
+
+- `'connected'`: replay on connect. For handlers that don't need DOM targets.
+- `'connectedDone'`: replay after the element finished rendering. For handlers with
+  DOM targets like `@innerHtml` (avoids the race where replay arrives before render
+  and gets silently dropped).
+
+```typescript
+@subscribeSwcAppMessage('auth-changed', { subject: 'behavior', trigger: 'connectedDone' })
+@innerHtml('.wrap')
+async load(@appMessage msg: SwcAppMessage<User | null>) { ... }
+```
+
+Route subscribers (`@subscribeSwcAppRouteChange`) accept the same `trigger`.
+Live broadcasts always reach everyone regardless of trigger.
+
+## 🔌 App Host Hook (onConnected)
+
+`SwcAppMixin` calls the `onConnected()` hook after `connect()` finishes.
+`@inject` parameters are resolved via DI (host element itself included).
+
+```typescript
+class MyAppBody extends SwcAppMixin(w.HTMLBodyElement) {
+  override async onConnected(@inject(AuthService.SYMBOL) auth: AuthService) {
+    this.publishMessage({ type: 'auth-changed', data: await auth.me().catch(() => null) });
+  }
+}
+```
+
+When publishing from the host itself, call `this.publishMessage` directly.
+The `@publishSwcAppMessage` decorator publishes through the parent host, and the
+host itself has no parent, so the message would be dropped.
+
+Use `connectedElements()` to get the currently connected child elements.
+
+## 💧 @property Hydration Rules
+
+- Attach bare `@property` (no args) to a field to mark it as an SSR hydration target.
+- Self fields (`$this` + matching key) stay plain fields with no getter/setter.
+- Declare the field with `declare` (both `= null` and `;` initializers get overwritten on upgrade).

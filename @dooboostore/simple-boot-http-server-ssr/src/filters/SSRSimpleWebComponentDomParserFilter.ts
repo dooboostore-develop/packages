@@ -7,6 +7,8 @@ import {SimpleBootHttpServer} from '@dooboostore/simple-boot-http-server/SimpleB
 import {injectRequestResponse} from '@dooboostore/simple-boot-http-server/proxy/RequestResponseInjectProxy';
 import {SimConfig} from '@dooboostore/simple-boot';
 import {DomParserInitializer} from '../initializers/DomParserInitializer';
+import type { SwcAppInterface } from '@dooboostore/simple-web-component';
+import { findAllPropertyMetadata } from '@dooboostore/simple-web-component';
 
 export type SWCSSRDomParserConfig = {
   frontDistPath: string;
@@ -21,10 +23,11 @@ export type SWCSSRDomParserConfig = {
    */
   intentServices?: SimConfig[];
   /**
-   * 요청마다 컴포넌트를 등록한다.
+   * 요청마다 컴포넌트를 등록한다. 앱 bootfactory를 그대로 넘기면 된다.
    * @param sim intentServices 를 rr 주입해 묶은 Map<symbol, service>. bootfactory 에 그대로 넘기면 된다.
+   * @returns 초기화된 SwcApp (하이드레이션 데이터 박제 등에 사용)
    */
-  registerComponents?: (window: any, rr: RequestResponse, sim: Map<symbol, any>) => Promise<void> | void;
+  registerComponents?: (window: any, rr: RequestResponse, sim: Map<symbol, any>) => Promise<SwcAppInterface | void> | SwcAppInterface | void;
 };
 
 /**
@@ -76,6 +79,7 @@ export class SSRSimpleWebComponentDomParserFilter implements Filter {
       try {
         // 2. Register Components if provided
         // We use SwcApplication inside the callback or directly here.
+        let app: SwcAppInterface | void;
         if (this.config.registerComponents) {
           // intentServices 를 rr 주입해 Map 으로 묶어 넘긴다 (앱은 bootfactory 에 그대로 전달만).
           const sim = new Map<symbol, any>();
@@ -86,7 +90,57 @@ export class SSRSimpleWebComponentDomParserFilter implements Filter {
               if (raw) sim.set(sym, injectRequestResponse(raw, rr));
             }
           }
-          await this.config.registerComponents(window, rr, sim);
+          app = await this.config.registerComponents(window, rr, sim);
+        }
+
+        // [하이드레이션] swcApp 본체 + 연결 엘리먼트의 @property 값을 script로 박제.
+        // 클라에서 번들보다 먼저 실행 → querySelector로 찾아 .prop = 값 세팅 (네이티브
+        // 업그레이드는 own property 유지라 upgrade 후에도 값 살아있음).
+        if (app) {
+          const items: Array<{ sel: string; prop: string; value: unknown }> = [];
+          const targets: any[] = [app, ...(app.connectedElements?.() ?? []).filter((el: any) => el !== app)];
+          for (const el of targets) {
+            const swcId = (el as any)._swcId;
+            if (!swcId) continue;
+            const sel = `[swc-use-ssr="${swcId}"]`;
+            for (const m of findAllPropertyMetadata(el)) {
+              let value: unknown;
+              try {
+                value = el[m.propertyKey];
+              } catch {
+                continue;
+              }
+              if (value === undefined || typeof value === 'function') continue;
+              try {
+                JSON.stringify(value);
+              } catch {
+                continue;
+              }
+              items.push({ sel, prop: String(m.propertyKey), value });
+            }
+          }
+          if (items.length > 0) {
+            // 업그레이드 때 노드가 갈아엎어지면 JS 프로퍼티는 날아감. attribute는 복사되니
+            // data-hyd-* 로 박고, 같은 노드면 프로퍼티도 바로 세팅.
+            const script = window.document.createElement('script');
+            // <script> 내용은 이스케이프 없이 직렬화된다 → 값에 '</script>'가 있으면 HTML 파서가 거기서 태그를 닫아 XSS.
+            // JSON.stringify는 '<'를 이스케이프하지 않으므로 '\u003c'로 바꾼다 (JS에선 같은 문자열).
+            // U+2028/2029는 구형 JS 엔진에서 문자열 리터럴 안의 줄바꿈으로 해석돼 문법 오류가 나므로 함께 이스케이프.
+            const hydrationJson = JSON.stringify(items)
+              .replace(/</g, '\\u003c')
+              .replace(/\u2028/g, '\\u2028')
+              .replace(/\u2029/g, '\\u2029');
+            script.textContent =
+              ` window.__swc_hydration=${hydrationJson};` +
+              `for(const h of window.__swc_hydration){
+                const el=document.querySelector(h.sel);
+                  if(el){
+                    el[h.prop]=h.value;
+                  }
+              }`;
+            window.document.body.appendChild(script);
+            console.log(`[ssr-hydration] ${items.length} props embedded`);
+          }
         }
 
         // window.document.querySelector('.sidebar-space').innerHTML = '씨발놈아.';

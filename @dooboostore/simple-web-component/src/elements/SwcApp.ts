@@ -18,7 +18,10 @@ export const defineSwcApp = async (w: Window) => {
 
   @elementDefine(swcAppTagName, {window: w})
   class SwcAppImpl extends SwcAppMixin(w.HTMLElement) implements SwcAppInterface {
-    // SwcAppMixin에서 모든 기능을 상속받음
+    // SwcAppMixin에서 모든 기능을 상속받음. 기본 요소라 훅에서 할 일은 없음.
+    onConnected(): void {}
+    onDisconnected(): void {}
+    onSwcAppConnected(): void {}
   }
 
   return w.customElements.whenDefined(swcAppTagName);
@@ -39,7 +42,10 @@ export const defineSwcAppBody = async (w: Window) => {
 
   @elementDefine(swcAppBodyTagName, {window: w, extends: 'body'})
   class SwcAppBodyImpl extends SwcAppMixin(w.HTMLBodyElement) implements SwcAppInterface {
-    // SwcAppMixin에서 모든 기능을 상속받음
+    // SwcAppMixin에서 모든 기능을 상속받음. 기본 요소라 훅에서 할 일은 없음.
+    onConnected(): void {}
+    onDisconnected(): void {}
+    onSwcAppConnected(): void {}
   }
   return w.customElements.whenDefined(swcAppBodyTagName);
 };
@@ -59,7 +65,10 @@ export const defineSwcAppDiv = async (w: Window) => {
 
   @elementDefine(swcAppDivTagName, {window: w, extends: 'div'})
   class SwcAppDivImpl extends SwcAppMixin(w.HTMLDivElement) implements SwcAppInterface {
-    // SwcAppMixin에서 모든 기능을 상속받음
+    // SwcAppMixin에서 모든 기능을 상속받음. 기본 요소라 훅에서 할 일은 없음.
+    onConnected(): void {}
+    onDisconnected(): void {}
+    onSwcAppConnected(): void {}
   }
 
   return w.customElements.whenDefined(swcAppDivTagName);
@@ -80,7 +89,10 @@ export const defineSwcAppSection = async (w: Window) => {
 
   @elementDefine(swcAppSectionTagName, {window: w, extends: 'section'})
   class SwcAppSectionImpl extends SwcAppMixin(w.HTMLElement) implements SwcAppInterface {
-    // SwcAppMixin에서 모든 기능을 상속받음
+    // SwcAppMixin에서 모든 기능을 상속받음. 기본 요소라 훅에서 할 일은 없음.
+    onConnected(): void {}
+    onDisconnected(): void {}
+    onSwcAppConnected(): void {}
   }
 
   return w.customElements.whenDefined(swcAppSectionTagName);
@@ -101,7 +113,10 @@ export const defineSwcAppMain = async (w: Window) => {
 
   @elementDefine(swcAppMainTagName, {window: w, extends: 'main'})
   class SwcAppMainImpl extends SwcAppMixin(w.HTMLElement) implements SwcAppInterface {
-    // SwcAppMixin에서 모든 기능을 상속받음
+    // SwcAppMixin에서 모든 기능을 상속받음. 기본 요소라 훅에서 할 일은 없음.
+    onConnected(): void {}
+    onDisconnected(): void {}
+    onSwcAppConnected(): void {}
   }
 
   return w.customElements.whenDefined(swcAppMainTagName);
@@ -122,7 +137,10 @@ export const defineSwcAppArticle = async (w: Window) => {
 
   @elementDefine(swcAppArticleTagName, {window: w, extends: 'article'})
   class SwcAppArticleImpl extends SwcAppMixin(w.HTMLElement) implements SwcAppInterface {
-    // SwcAppMixin에서 모든 기능을 상속받음
+    // SwcAppMixin에서 모든 기능을 상속받음. 기본 요소라 훅에서 할 일은 없음.
+    onConnected(): void {}
+    onDisconnected(): void {}
+    onSwcAppConnected(): void {}
   }
 
   return w.customElements.whenDefined(swcAppArticleTagName);
@@ -143,7 +161,10 @@ export const defineSwcAppHeader = async (w: Window) => {
 
   @elementDefine(swcAppHeaderTagName, {window: w, extends: 'header'})
   class SwcAppHeaderImpl extends SwcAppMixin(w.HTMLElement) implements SwcAppInterface {
-    // SwcAppMixin에서 모든 기능을 상속받음
+    // SwcAppMixin에서 모든 기능을 상속받음. 기본 요소라 훅에서 할 일은 없음.
+    onConnected(): void {}
+    onDisconnected(): void {}
+    onSwcAppConnected(): void {}
   }
 
   return w.customElements.whenDefined(swcAppHeaderTagName);
@@ -164,7 +185,10 @@ export const defineSwcAppFooter = async (w: Window) => {
 
   @elementDefine(swcAppFooterTagName, {window: w, extends: 'footer'})
   class SwcAppFooterImpl extends SwcAppMixin(w.HTMLElement) implements SwcAppInterface {
-    // SwcAppMixin에서 모든 기능을 상속받음
+    // SwcAppMixin에서 모든 기능을 상속받음. 기본 요소라 훅에서 할 일은 없음.
+    onConnected(): void {}
+    onDisconnected(): void {}
+    onSwcAppConnected(): void {}
   }
 
   return w.customElements.whenDefined(swcAppFooterTagName);
@@ -185,7 +209,10 @@ export const defineSwcAppNav = async (w: Window) => {
 
   @elementDefine(swcAppNavTagName, {window: w, extends: 'nav'})
   class SwcAppNavImpl extends SwcAppMixin(w.HTMLElement) implements SwcAppInterface {
-    // SwcAppMixin에서 모든 기능을 상속받음
+    // SwcAppMixin에서 모든 기능을 상속받음. 기본 요소라 훅에서 할 일은 없음.
+    onConnected(): void {}
+    onDisconnected(): void {}
+    onSwcAppConnected(): void {}
   }
 
   return w.customElements.whenDefined(swcAppNavTagName);
@@ -206,7 +233,10 @@ export const defineSwcAppAside = async (w: Window) => {
 
   @elementDefine(swcAppAsideTagName, {window: w, extends: 'aside'})
   class SwcAppAsideImpl extends SwcAppMixin(w.HTMLElement) implements SwcAppInterface {
-    // SwcAppMixin에서 모든 기능을 상속받음
+    // SwcAppMixin에서 모든 기능을 상속받음. 기본 요소라 훅에서 할 일은 없음.
+    onConnected(): void {}
+    onDisconnected(): void {}
+    onSwcAppConnected(): void {}
   }
 
   return w.customElements.whenDefined(swcAppAsideTagName);

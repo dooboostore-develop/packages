@@ -247,7 +247,12 @@ export namespace SwcUtils {
     let current: any = el.parentElement || (el.getRootNode?.() as any)?.host;
     const doc = el.ownerDocument;
     const win = doc?.defaultView || ((typeof window !== 'undefined' ? window : undefined) as any);
+    let guard = 0;
     while (current && current !== doc && current !== win) {
+      if (++guard > 50) {
+        console.log('[swc] DEBUG host-walk loop:', (current as any)?.tagName, 'ctor=', (current as any)?.constructor?.name);
+        break;
+      }
       if (current.__swc_host) return current.__swc_host;
       if (getElementConfig(current)) return current as HTMLElement;
       current = current.parentElement || (current.getRootNode?.() as any)?.host;
@@ -497,6 +502,9 @@ export namespace SwcUtils {
     // el 자체부터 시작 (el이 app host일 수도 있음)
     let current: HTMLElement | null = el;
 
+    // NOTE: 이름으로만 찾는다. define 전에는 껍데기 엘리먼트라 메서드·instanceof로
+    // 판별 불가 (Safari 폴리필은 업그레이드 순서도 child-first). 'swc-app' 태그 또는
+    // is="swc-app-*" 속성이 유일한 단서. 커스텀 호스트도 반드시 이 prefix를 쓸 것.
     while (current) {
       const isAppHost =
         current.tagName.toLowerCase() === 'swc-app' ||

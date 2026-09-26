@@ -117,6 +117,19 @@ export const ensureInit = (inst: any) => { // HTMLElement
     const propertyAllList = findAllPropertyMetadata(target).filter(it => it.type === 'property');
     if (propertyAllList) {
       propertyAllList.forEach(meta => {
+        // getter가 없으면(순수 필드: declare·하이드레이션 값 등) 지우지 않음.
+        // getter가 있을 때만 own 값을 지워 getter가 DOM을 새로 읽게 한다.
+        let proto = Object.getPrototypeOf(inst);
+        let hasGetter = false;
+        while (proto && proto !== Object.prototype) {
+          const d = Object.getOwnPropertyDescriptor(proto, meta.propertyKey);
+          if (d) {
+            hasGetter = typeof d.get === 'function';
+            break;
+          }
+          proto = Object.getPrototypeOf(proto);
+        }
+        if (!hasGetter) return;
         delete (inst as any)[meta.propertyKey];
       });
     }

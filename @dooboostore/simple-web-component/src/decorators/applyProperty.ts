@@ -251,7 +251,13 @@ export function applyProperty(selector: PropertySelector, targetPropertyKeyOrOpt
       return;
     }
 
-    // Property decorator: define getter/setter to proxy to element properties
+    // Property decorator: define getter/setter to proxy to element properties.
+    // selector가 '$this' + 타겟 키가 자기 필드면 getter/setter 만들지 않고 리턴.
+    // (메타데이터는 위에서 이미 등록됨 → 하이드레이션 수집은 됨.)
+    // 순수 필드로 두는 게 업그레이드 때 값 유지에 안전 (setter 경로 타면 생성자·폴리필에 날아감).
+    if (selector === '$this' && targetPropertyKey === propertyKey) {
+      return;
+    }
     Object.defineProperty(target, propertyKey, {
       configurable: true,
       enumerable: true,
@@ -324,6 +330,12 @@ export function property(selectorOrTarget?: PropertySelector | Object, targetPro
   // Function selector
   if (typeof selectorOrTarget === 'function') {
     return applyProperty(selectorOrTarget as PropertyFnSelector, targetPropertyKeyOrOptions as any, optionsOrDescriptor as PropertyOptions);
+  }
+  // Bare field decorator: @property (target=prototype, key=field name, descriptor 없음).
+  // 기존 코드는 데코레이터를 만들어만 놓고 버려서 메타데이터가 안 남았음. 즉시 적용.
+  if (selectorOrTarget && typeof selectorOrTarget === 'object'
+    && (typeof targetPropertyKeyOrOptions === 'string' || typeof targetPropertyKeyOrOptions === 'symbol')) {
+    return applyProperty('$this', undefined as any, {})(selectorOrTarget as Object, targetPropertyKeyOrOptions);
   }
   // Without selector (defaults to $this)
   return applyProperty('$this', undefined as any, selectorOrTarget as PropertyOptions);

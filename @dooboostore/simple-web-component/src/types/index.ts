@@ -1,5 +1,6 @@
 import { SimpleApplication } from '@dooboostore/simple-boot';
 import { Router } from '@dooboostore/core-web';
+import type { Observable } from '@dooboostore/core';
 import {SwcAttributeConfigType, SwcConfigType} from "../SwcAppEngine";
 
 export enum InjectSituationType {
@@ -55,10 +56,21 @@ export type SwcAppMessage<T = any> = {
   type?: string;
 };
 
+/**
+ * 늦게 연결/구독한 쪽에 과거 메시지를 재생하는 방식 (@subscribeSwcAppMessage, observeMessage 공통).
+ * - 'subject' 또는 미지정: live만
+ * - 'behavior': 버퍼의 마지막 1개 먼저
+ * - 'replay': 버퍼 전체를 시간순으로 먼저
+ */
+export type SwcAppMessageSubject = 'subject' | 'behavior' | 'replay';
 
-export interface SwcAppInterface extends HTMLElement {
+/** observeMessage 옵션. type이 없으면 전 타입 live (타입별 버퍼라 재생은 type이 있을 때만). */
+export type SwcAppMessageObserveOptions = { type?: string; subject?: SwcAppMessageSubject };
+
+
+export interface SwcAppInterface extends HTMLElement, SwcElement {
   simpleApplication?: SimpleApplication;
-  config?:  SwcConfigType;
+  config?: SwcConfigType;
   router?: Router;
   connect(config?: SwcAttributeConfigType): Promise<void>;
   routing(path: string): Promise<void>;
@@ -66,10 +78,23 @@ export interface SwcAppInterface extends HTMLElement {
   back(): void;
   forward(): void;
   publishMessage(message: SwcAppMessage): void;
+  /** 코드로 메시지 구독 (RxJS 스타일). 반환된 Observable을 subscribe하고, 끝나면 unsubscribe. */
+  observeMessage<T = any>(): Observable<SwcAppMessage<T>>;
+  observeMessage<T = any>(type: string): Observable<SwcAppMessage<T>>;
+  observeMessage<T = any>(type: string, options: Omit<SwcAppMessageObserveOptions, 'type'>): Observable<SwcAppMessage<T>>;
+  observeMessage<T = any>(options: SwcAppMessageObserveOptions): Observable<SwcAppMessage<T>>;
+  /** 현재 연결된 자식 엘리먼트 목록 */
+  connectedElements(): Array<HTMLElement & SwcElement>;
 }
 
 export interface SwcElement {
-  _swcId: string;
+  _swcId?: string;
+  __swc_initialized?: boolean;
+  __swc_proto_setup?: boolean;
+  __swc_observers?: (MutationObserver | ResizeObserver | IntersectionObserver)[];
+  _emitHandlers?: Map<any, any>;
+  __swc_attributeEventHandlers?: Map<any, any>;
+  // __swc_handled?: any;
   // createSlotString(id: string): string
   // createEaHtml(id: string, script: string): string
   // createEaText(id: string, script: string): string

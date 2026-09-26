@@ -1,6 +1,7 @@
 import { ReflectUtils } from '@dooboostore/core';
 import { ensureInit, getElementConfig } from './elementDefine';
 import { SwcUtils } from '../utils/Utils';
+import { buildSwcParameterArgs } from './parameter';
 import { ElementDefineLifeCycler, HelperHostSet } from '../types';
 
 export const SET_INTERVAL_METADATA_KEY = Symbol.for('simple-web-component:set-interval');
@@ -18,6 +19,12 @@ export interface SetIntervalOptions {
   parameter?: (set: HelperHostSet) => any[];
   /** 타이머 등록 직후 1회 호출 (디버깅/로깅용). id는 실제 setInterval 반환값 - cleanup은 자동으로 처리되므로 직접 clear할 필요 없음. */
   created?: (set: HelperHostSet, id: number) => void;
+  /** [type:'onConnected' 전용] 매 tick 실행 여부 게이트. Promise<boolean>도 가능. false면 이 tick 스킵. */
+  filter?: (set: HelperHostSet) => boolean | Promise<boolean>;
+  /** [type:'onConnected' 전용] tick 핸들러 직전 훅. await되고, 리턴값은 @setIntervalBeforeReturn 으로 주입된다. */
+  before?: (set: HelperHostSet) => any | Promise<any>;
+  /** [type:'onConnected' 전용] tick 핸들러가 성공/실패해도 항상 실행되는 정리 훅. ctx로 인자/결과/에러. */
+  finally?: (set: HelperHostSet, ctx: { args: any[]; result?: any; error?: any }) => any | Promise<any>;
   /**
    * type:'onConnected' - 매 tick마다 데코레이트된 메서드의 리턴값이 객체이고 이 키의 값이 함수이면 (id: number)로 호출한다.
    * type:'returnValue' - 리턴값이 함수면 그 자체를, 객체면 이 키의 값이 함수일 때 그 값을 "실제로 반복 실행될 함수"로 사용한다.
@@ -98,16 +105,29 @@ export class SetIntervalLifeCycler implements ElementDefineLifeCycler {
     for (const meta of findAllSetIntervalMetadata(inst)) {
       if (meta.options.type !== 'onConnected') continue; // returnValue 타입은 수동 호출을 기다림
       const id = helperHostSet.$w.setInterval(() => {
-        const args = meta.options.parameter?.(helperHostSet) ?? [];
-        try {
-          const res = inst[meta.propertyKey](...args);
-          const vk = meta.options.valueKey ?? SET_INTERVAL_METADATA_KEY;
-          if (res && typeof res === 'object' && typeof res[vk] === 'function') {
-            res[vk](id);
+        void (async () => {
+          const helper = SwcUtils.getHelperAndHostSet(helperHostSet.$w, inst);
+          if (meta.options.filter && !(await meta.options.filter(helper))) return;
+          const paramArgs = meta.options.parameter?.(helperHostSet) ?? [];
+          const hostSet = SwcUtils.getHostSet(inst);
+          const helperSet = SwcUtils.getHelperSet(helperHostSet.$w);
+          const buildArgs = (beforeReturn: any) => buildSwcParameterArgs(inst, meta.propertyKey, {
+            hostSet, helperHostSet: helper, helperSet, setIntervalBeforeReturn: beforeReturn
+          }, [...paramArgs, beforeReturn]);
+          let args = buildArgs(undefined);
+          if (meta.options.before) { const br = await meta.options.before(helper); args = buildArgs(br); }
+          let result: any, error: any;
+          try {
+            result = await inst[meta.propertyKey](...args);
+            const vk = meta.options.valueKey ?? SET_INTERVAL_METADATA_KEY;
+            if (result && typeof result === 'object' && typeof result[vk] === 'function') result[vk](id);
+          } catch (e) {
+            error = e;
+          } finally {
+            if (meta.options.finally) await meta.options.finally(helper, { args, result, error });
           }
-        } catch (e) {
-          console.error('[SWC] setInterval tick error:', e);
-        }
+          if (error) console.error('[SWC] setInterval tick error:', error);
+        })().catch(e => console.error('[SWC] setInterval tick error:', e));
       }, meta.interval);
       meta.options.created?.(helperHostSet, id);
       getActiveEntries(inst).push(id);

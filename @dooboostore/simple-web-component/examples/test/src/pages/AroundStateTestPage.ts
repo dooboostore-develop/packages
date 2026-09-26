@@ -154,6 +154,34 @@ export default (w: Window) => {
     })
     nickname: string = '  bob ';
 
+    // 4. finally — 성공/throw/reject 모두에서 실행되는 정리 훅. 에러는 삼키지 않고 전파.
+    finLog: string[] = [];
+
+    @around({
+      after: (h: HelperHostSet, r: string) => `${r}!`,
+      finally: (h: HelperHostSet, ctx) => { (h.$this as any).finLog.push(`ok:${ctx.result}:${ctx.args[0]}`); }
+    })
+    finOk(x: string) { return `v:${x}`; }
+
+    @around({
+      finally: (h: HelperHostSet, ctx) => { (h.$this as any).finLog.push(`threw:${ctx.error?.message}`); }
+    })
+    finThrow(): string { throw new Error('boom'); }
+
+    @around({
+      finally: (h: HelperHostSet, ctx) => { (h.$this as any).finLog.push(`rejected:${ctx.error?.message}`); }
+    })
+    async finReject(): Promise<string> { throw new Error('async-boom'); }
+
+    // sync 원본 + async finally → 래퍼는 Promise 반환(투명성 규칙)
+    @around({
+      finally: async (h: HelperHostSet, ctx) => {
+        await new Promise(r => setTimeout(r, 10));
+        (h.$this as any).finLog.push(`async-fin:${ctx.result}:${ctx.args[0]}`);
+      }
+    })
+    finAsyncFin(n: number) { return n + 1; }
+
     results: string[] = [];
 
     @onConnectedAfter
@@ -179,6 +207,29 @@ export default (w: Window) => {
         eq('@around async-before+sync', await this.doubleSync(21), 43);
       } catch (e: any) {
         out.push(`❌ @around threw: ${e?.message}`);
+      }
+      try {
+        this.finLog = [];
+        eq('@around finally 성공값', this.finOk('a'), 'v:a!');
+        eq('@around finally ctx(result/args)', this.finLog.join(','), 'ok:v:a!:a');
+
+        this.finLog = [];
+        let threw = false;
+        try { this.finThrow(); } catch { threw = true; }
+        eq('@around finally sync throw 전파', threw, true);
+        eq('@around finally ctx(error)', this.finLog.join(','), 'threw:boom');
+
+        this.finLog = [];
+        let rejected = false;
+        try { await this.finReject(); } catch { rejected = true; }
+        eq('@around finally async reject 전파', rejected, true);
+        eq('@around finally ctx(reject error)', this.finLog.join(','), 'rejected:async-boom');
+
+        this.finLog = [];
+        eq('@around finally sync원본+async finally', await this.finAsyncFin(41), 42);
+        eq('@around finally ctx(async result/args)', this.finLog.join(','), 'async-fin:42:41');
+      } catch (e: any) {
+        out.push(`❌ @around finally threw: ${e?.message}`);
       }
       try {
         eq('@around property (초기값)', this.nickname, 'BOB');
