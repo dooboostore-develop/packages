@@ -5,6 +5,12 @@ export const ON_ATTRIBUTE_CHANGED_METADATA_KEY = Symbol.for('simple-web-componen
 export interface ChangedAttributeThisOptions  {
   type?: typeof Number | typeof Boolean | typeof String;
   while?: 'connected';
+  /** 속성 변경 시 핸들러 실행 여부 게이트. Promise<boolean>도 되어 async 판정 가능. false면 스킵. */
+  filter?: (value: any, meta: { currentThis: any; helper: HelperHostSet }) => boolean | Promise<boolean>;
+  /** filter 통과 후 핸들러 직전 훅. await되고, 리턴값은 @changedAttributeBeforeReturn 으로 핸들러에 주입된다. */
+  before?: (value: any, meta: { currentThis: any; helper: HelperHostSet }) => any | Promise<any>;
+  /** 핸들러가 성공/실패해도 항상 실행되는 정리 훅. ctx로 인자/결과/에러를 받는다. 에러는 로깅됨. */
+  finally?: (value: any, meta: { currentThis: any; helper: HelperHostSet }, ctx: { args: any[]; result?: any; error?: any }) => any | Promise<any>;
 }
 
 export interface ChangedAttributeThisMetadata {
@@ -86,6 +92,8 @@ export const convertAttributeValue = (val: any, type?: typeof Number | typeof Bo
 // ─────────────────────────────────────────────────────────────────────────────
 import { ElementDefineLifeCycler, HelperHostSet } from '../types';
 import { getAttributeValue } from './applyAttribute';
+import { SwcUtils } from '../utils/Utils';
+import { buildSwcParameterArgs } from './parameter';
 
 export class ChangedAttributeLifeCycler implements ElementDefineLifeCycler {
   private attrChangeMap: Map<string, ChangedAttributeThisMetadata[]> | null = null;
@@ -109,7 +117,7 @@ export class ChangedAttributeLifeCycler implements ElementDefineLifeCycler {
       for (const meta of metaList) {
         if (meta.options.while === 'connected') {
           const val = getAttributeValue(inst, name, { type: meta.options.type });
-          if (val !== null) inst[meta.propertyKey](val, null, name, helperHostSet);
+          if (val !== null) this.runChanged(helperHostSet, meta, val, null, name);
         }
       }
     }
@@ -122,7 +130,30 @@ export class ChangedAttributeLifeCycler implements ElementDefineLifeCycler {
     if (!metaList) return;
     for (const meta of metaList) {
       if (meta.options.while === 'connected' && !inst.__swc_connected) continue;
-      inst[meta.propertyKey](convertAttributeValue(newVal, meta.options.type), old, name, helperHostSet);
+      this.runChanged(helperHostSet, meta, convertAttributeValue(newVal, meta.options.type), old, name);
     }
+  }
+
+  // filter(async)/before/finally + @changedAttributeBeforeReturn 주입. fire-and-forget.
+  private runChanged(helperHostSet: HelperHostSet, meta: ChangedAttributeThisMetadata, value: any, old: string | null, name: string): void {
+    const inst = helperHostSet.$this;
+    const opts = meta.options;
+    void (async () => {
+      const helper = SwcUtils.getHelperAndHostSet(helperHostSet.$w, inst);
+      if (opts.filter && !(await opts.filter(value, { currentThis: inst, helper }))) return;
+      const hostSet = SwcUtils.getHostSet(inst);
+      const helperSet = SwcUtils.getHelperSet(helperHostSet.$w);
+      const legacyArgs = [value, old, name, helper];
+      const buildArgs = (beforeReturn: any) => buildSwcParameterArgs(inst, meta.propertyKey, {
+        hostSet, helperHostSet: helper, helperSet, changedAttributeBeforeReturn: beforeReturn
+      }, [...legacyArgs, beforeReturn]);
+      let args = buildArgs(undefined);
+      if (opts.before) { const br = await opts.before(value, { currentThis: inst, helper }); args = buildArgs(br); }
+      let result: any, error: any;
+      try { result = await inst[meta.propertyKey](...args); }
+      catch (e) { error = e; }
+      finally { if (opts.finally) await opts.finally(value, { currentThis: inst, helper }, { args, result, error }); }
+      if (error) throw error;
+    })().catch(e => console.error('[SWC] changedAttribute handler error:', e));
   }
 }

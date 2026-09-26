@@ -49,6 +49,17 @@ export interface AroundOptions<Args extends any[] = any[], Return = any> {
    * async 훅을 단 sync 메서드는 호출 측에서 Promise로 취급해야 한다.
    */
   after?: (helperHostSet: HelperHostSet, result: Awaited<Return>) => Return | Promise<Awaited<Return>>;
+  /**
+   * before/원본/after 실행이 끝나면 성공·실패와 무관하게 항상 실행되는 정리 훅 (try/finally의 finally).
+   * 두 번째 인자로 컨텍스트를 받는다:
+   *   - args: 호출자가 넘긴 원본 인자 배열(before 가공 전)
+   *   - result: 성공 시 최종 리턴값(after 적용 후). 실패 시 없음.
+   *   - error: throw/reject 시 그 에러. 성공 시 없음.
+   * 에러를 삼키지 않는다 — finally를 먼저 돌린 뒤 원래 에러/리턴값이 그대로 전파된다.
+   * sync 원본 + sync finally면 sync로 유지되지만, finally가 Promise를 리턴하면
+   * 래퍼는 Promise를 반환한다(async before/after와 동일 규칙).
+   */
+  finally?: (helperHostSet: HelperHostSet, ctx: { args: Args; result?: Awaited<Return>; error?: any }) => void | Promise<void>;
 }
 
 /** 인스턴스에서 HelperHostSet을 해석한다 — 실패(SSR/미초기화)하면 최소 폴백을 돌려준다. */
@@ -100,22 +111,44 @@ export function around(options: any = {}): MethodDecorator & PropertyDecorator {
       };
       descriptor.value = function (this: any, ...args: any[]) {
         const hhs = resolveHelperHostSet(this);
-        const callOriginal = (finalArgs: any[]) => runAfter.call(this, hhs, original.apply(this, finalArgs));
-        if (options.before) {
-          const mapped = (options.before as any).call(this, hhs, args);
-          if (mapped && typeof mapped.then === 'function') {
-            // async before — resolve된 인자로 원본 호출, 래퍼는 Promise 반환.
-            // (sync 원본 + sync 훅일 때만 sync 반환이 유지된다)
-            return mapped.then((m: any) => {
-              if (Array.isArray(m)) return callOriginal(m);
-              if (m !== undefined) return callOriginal([m]);
-              return callOriginal(args);
-            });
+        const self = this;
+        const callOriginal = (finalArgs: any[]) => runAfter.call(self, hhs, original.apply(self, finalArgs));
+        const runBody = () => {
+          if (options.before) {
+            const mapped = (options.before as any).call(self, hhs, args);
+            if (mapped && typeof mapped.then === 'function') {
+              // async before — resolve된 인자로 원본 호출, 래퍼는 Promise 반환.
+              // (sync 원본 + sync 훅일 때만 sync 반환이 유지된다)
+              return mapped.then((m: any) => {
+                if (Array.isArray(m)) return callOriginal(m);
+                if (m !== undefined) return callOriginal([m]);
+                return callOriginal(args);
+              });
+            }
+            if (Array.isArray(mapped)) return callOriginal(mapped);
+            if (mapped !== undefined) return callOriginal([mapped]);
           }
-          if (Array.isArray(mapped)) return callOriginal(mapped);
-          if (mapped !== undefined) return callOriginal([mapped]);
+          return callOriginal(args);
+        };
+        if (!options.finally) return runBody();
+        // sync/async 투명성을 지키는 try/finally — 에러는 삼키지 않고 finally 후 전파.
+        const afterFin = (settle: () => any, ctx: { args: any[]; result?: any; error?: any }) => {
+          const f = (options.finally as any).call(self, hhs, ctx);
+          return f && typeof f.then === 'function' ? f.then(settle) : settle();
+        };
+        let out: any;
+        try {
+          out = runBody();
+        } catch (e) {
+          return afterFin(() => { throw e; }, { args, error: e });
         }
-        return callOriginal(args);
+        if (out && typeof out.then === 'function') {
+          return out.then(
+            (v: any) => afterFin(() => v, { args, result: v }),
+            (e: any) => afterFin(() => { throw e; }, { args, error: e })
+          );
+        }
+        return afterFin(() => out, { args, result: out });
       };
       return descriptor;
     }

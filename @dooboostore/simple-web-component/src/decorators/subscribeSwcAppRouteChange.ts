@@ -11,9 +11,14 @@ export interface SwcAppRouteChangeSubscriberMetadata {
   options?: SwcAppRouteChangeOptions;
 }
 
-export interface SwcAppRouteChangeOptions {
+export interface SwcAppRouteChangeOptions<BeforeReturn = any, Result = any> {
   path?: RoutePathType;
-  filter?: (router: Router, meta: { currentThis: any; helper: HelperHostSet }) => boolean;
+  /** 라우트 변경 시 핸들러 실행 여부 게이트. Promise<boolean>도 되어 async 가드(인증 체크 등) 가능. false면 스킵. */
+  filter?: (router: Router, meta: { currentThis: any; helper: HelperHostSet }) => boolean | Promise<boolean>;
+  /** filter 통과 후 핸들러 직전 훅. await되고, 리턴값은 @routeChangeBeforeReturn 으로 핸들러에 주입된다. */
+  before?: (router: Router, meta: { currentThis: any; helper: HelperHostSet }) => BeforeReturn | Promise<BeforeReturn>;
+  /** 핸들러가 성공/실패해도 항상 실행되는 정리 훅. ctx로 핸들러 인자/결과/에러를 받는다. 에러는 삼키지 않고 전파. */
+  finally?: (router: Router, meta: { currentThis: any; helper: HelperHostSet }, ctx: { args: any[]; result?: Result; error?: any }) => any | Promise<any>;
   order?: number;
   valueKey?: symbol | string;
 }
@@ -40,8 +45,8 @@ export function subscribeSwcAppRouteChange(target: Object, propertyKey: string |
 // 오버로드 시그니처 - 함수 호출 (괄호 있음)
 export function subscribeSwcAppRouteChange(): MethodDecorator;
 export function subscribeSwcAppRouteChange(pathPattern: RoutePathType): MethodDecorator;
-export function subscribeSwcAppRouteChange(pathPattern: RoutePathType, config: Omit<SwcAppRouteChangeOptions, 'path'>): MethodDecorator;
-export function subscribeSwcAppRouteChange(options: SwcAppRouteChangeOptions): MethodDecorator;
+export function subscribeSwcAppRouteChange<BeforeReturn = any, Result = any>(pathPattern: RoutePathType, config: Omit<SwcAppRouteChangeOptions<NoInfer<BeforeReturn>, NoInfer<Result>>, 'path'>): MethodDecorator;
+export function subscribeSwcAppRouteChange<BeforeReturn = any, Result = any>(options: SwcAppRouteChangeOptions<NoInfer<BeforeReturn>, NoInfer<Result>>): MethodDecorator;
 
 // 실제 구현 (이중 모드)
 export function subscribeSwcAppRouteChange(targetOrOptions?: any, propertyKeyOrConfig?: any, descriptor?: PropertyDescriptor): any {

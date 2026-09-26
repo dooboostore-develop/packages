@@ -9,14 +9,17 @@ import RxjsOperatorsTestPage from './RxjsOperatorsTestPage';
 import EventDelegateTestPage from './EventDelegateTestPage';
 import LifecycleParamTestPage from './LifecycleParamTestPage';
 import AroundStateTestPage from './AroundStateTestPage';
-import {replaceChildren, innerHtmlLight, subscribeSwcAppRouteChange, publishSwcAppMessage, onConnectedBodyLight, innerHtml, onConnectedAfter, onConnectedBody, updateClass, addEventListener, applyNode, elementDefine, emitCustomEvent, onConnectedBefore, onConnectedBodyShadow, addEventListenerThis, attribute } from '@dooboostore/simple-web-component';
+import BeforeFilterReturnTestPage from './BeforeFilterReturnTestPage';
+import ObserverHooksTestPage from './ObserverHooksTestPage';
+import MessageSubjectTestPage from './MessageSubjectTestPage';
+import {replaceChildren, innerHtmlLight, subscribeSwcAppRouteChange, subscribeSwcAppMessage, publishSwcAppMessage, routeChangeBeforeReturn, appMessageBeforeReturn, onConnectedBodyLight, innerHtml, onConnectedAfter, onConnectedBody, updateClass, addEventListener, applyNode, elementDefine, emitCustomEvent, onConnectedBefore, onConnectedBodyShadow, addEventListenerThis, attribute } from '@dooboostore/simple-web-component';
 import {Inject} from '@dooboostore/simple-boot';
 import {Router, type RouterEventType} from '@dooboostore/core-web';
 import {CartService} from '../services/CartService';
 import {OrderService} from '../services/OrderService';
 import {ProductService} from '../services/ProductService';
 
-export { CartPage, ProductPage, CheckoutPage, HomePage, OrdersPage, TimerTestPage, SlotTestPage, RxjsOperatorsTestPage, EventDelegateTestPage, LifecycleParamTestPage, AroundStateTestPage };
+export { CartPage, ProductPage, CheckoutPage, HomePage, OrdersPage, TimerTestPage, SlotTestPage, RxjsOperatorsTestPage, EventDelegateTestPage, LifecycleParamTestPage, AroundStateTestPage, BeforeFilterReturnTestPage, ObserverHooksTestPage, MessageSubjectTestPage };
 
 /**
  * Root Router Factory - Main routing hub
@@ -52,12 +55,36 @@ export const rootRouterFactory = (w: Window) => {
       return message;
     }
 
-    // @subscribeSwcAppMessage
-    // ttt(message: SwcAppMessage) {
-    //   console.log('RootRouter received message:', message);
-    // }
+    // ── async filter/before/finally 검증용 (route) ──
+    @subscribeSwcAppRouteChange({
+      path: '/hook-guard-test',
+      filter: async () => { await new Promise(r => setTimeout(r, 20)); (w as any).__routeLog = ['filter']; return true; },
+      before: async () => { (w as any).__routeLog.push('before'); return 'GUARD_OK'; },
+      finally: async (_r: any, _m: any, ctx: any) => { (w as any).__routeLog.push('finally:' + ctx.result + ':args' + ctx.args.length); }
+    })
+    @innerHtmlLight
+    hookGuardRoute(@routeChangeBeforeReturn guard: string) {
+      (w as any).__routeLog.push('handler:' + guard);
+      return `<div id="hook-guard">hook guard ok</div>`;
+    }
 
-    @subscribeSwcAppRouteChange(['', '/', '/product/{id}', '/cart', '/checkout', '/orders', '/timer-test', '/slot-test', '/rxjs-operators-test', '/event-delegate-test', '/lifecycle-param-test', '/around-state-test'])
+    // ── async filter/before/finally 검증용 (message) ──
+    @publishSwcAppMessage('hooktest')
+    publishHookTest() {
+      return 1;
+    }
+
+    @subscribeSwcAppMessage('hooktest', {
+      filter: async () => { await new Promise(r => setTimeout(r, 20)); (w as any).__msgLog = ['filter']; return true; },
+      before: async () => { (w as any).__msgLog.push('before'); return 'PREP'; },
+      finally: async (_msg: any, _self: any, ctx: any) => { (w as any).__msgLog.push('finally:' + ctx.result + ':args' + ctx.args.length); }
+    })
+    onHookTest(@appMessageBeforeReturn prepared: string) {
+      (w as any).__msgLog.push('handler:' + prepared);
+      return 'done';
+    }
+
+    @subscribeSwcAppRouteChange(['', '/', '/product/{id}', '/cart', '/checkout', '/orders', '/timer-test', '/slot-test', '/rxjs-operators-test', '/event-delegate-test', '/lifecycle-param-test', '/around-state-test', '/before-filter-return-test', '/observer-hooks-test', '/message-subject-test'])
     @innerHtmlLight
     routeChanged(routerPathSet: RouterEventType) {
       if (['', '/'].includes(routerPathSet.path)) {
@@ -80,6 +107,12 @@ export const rootRouterFactory = (w: Window) => {
         return `<swc-example-lifecycle-param-test-page/>`;
       } else if (['/around-state-test'].includes(routerPathSet.path)) {
         return `<swc-example-around-state-test-page/>`;
+      } else if (['/before-filter-return-test'].includes(routerPathSet.path)) {
+        return `<swc-example-before-filter-return-test-page/>`;
+      } else if (['/observer-hooks-test'].includes(routerPathSet.path)) {
+        return `<swc-example-observer-hooks-test-page/>`;
+      } else if (['/message-subject-test'].includes(routerPathSet.path)) {
+        return `<swc-example-message-subject-test-page/>`;
       } else if (routerPathSet.path.startsWith('/product/')) {
         return `<swc-example-commerce-product-page product-id="${routerPathSet.pathData.id}"/>`;
       } else {
@@ -122,4 +155,4 @@ export const rootRouterFactory = (w: Window) => {
   return tagName;
 };
 
-export const pageFactories = [CartPage, ProductPage, CheckoutPage, HomePage, OrdersPage, TimerTestPage, SlotTestPage, RxjsOperatorsTestPage, EventDelegateTestPage, LifecycleParamTestPage, AroundStateTestPage, rootRouterFactory];
+export const pageFactories = [CartPage, ProductPage, CheckoutPage, HomePage, OrdersPage, TimerTestPage, SlotTestPage, RxjsOperatorsTestPage, EventDelegateTestPage, LifecycleParamTestPage, AroundStateTestPage, BeforeFilterReturnTestPage, ObserverHooksTestPage, MessageSubjectTestPage, rootRouterFactory];

@@ -1,7 +1,7 @@
 import { ReflectUtils } from '@dooboostore/core';
 import { SpecialSelector, SwcQueryOptions, HelperHostSet, SwcFnSelector, SwcSelector } from '../types';
 
-export interface AddEventListenerBaseOptions<TEvent extends Event = Event> extends EventListenerOptions {
+export interface AddEventListenerBaseOptions<TEvent extends Event = Event, Return = any> extends EventListenerOptions {
   capture?: boolean;
   once?: boolean;
   passive?: boolean;
@@ -10,7 +10,16 @@ export interface AddEventListenerBaseOptions<TEvent extends Event = Event> exten
   preventDefault?: boolean;
   // removeOnDisconnected?: boolean;
   // delegate는 문자열 셀렉터 전용 → AddEventListenerQueryOptions에만 존재
-  filter?: (target: Event | CustomEvent, meta:{currentThis: any, helper: HelperHostSet}) => boolean;
+  filter?: (target: TEvent | CustomEvent, meta:{currentThis: any, helper: HelperHostSet}) => boolean | Promise<boolean>;
+  /**
+   * filter 통과 후, 핸들러 호출 직전에 실행되는 훅. 이벤트/meta에 더해 핸들러에 넘어갈 args 배열을 받으며 await된다(비동기 가능).
+   * 리턴값은 게이팅에 쓰이지 않는다(취소는 filter 담당).
+   */
+  before?: (target: TEvent | CustomEvent, meta:{currentThis: any, helper: HelperHostSet}, args: any[]) => any | Promise<any>;
+  /**
+   * 핸들러가 성공/실패해도 항상 실행되는 정리 훅. ctx로 핸들러 인자/결과/에러를 받는다. 에러는 삼키지 않고 전파.
+   */
+  finally?: (target: TEvent | CustomEvent, meta:{currentThis: any, helper: HelperHostSet}, ctx: { args: any[]; result?: Return; error?: any }) => any | Promise<any>;
   // 리스너 제거(disconnected 또는 unmount) 시 호출되는 콜백. 첫 번째 인자는 바인딩된 타겟 element, 두 번째는 이 옵션이 속한 전체 옵션 객체(Base + SwcQuery + delegate).
   removeListener?: (target: Element, optionValue: AddEventListenerQueryOptions<TEvent>) => void;
   // RxJS operator options
@@ -32,7 +41,7 @@ export interface AddEventListenerMetadata<TEvent extends Event = Event> {
 export const ADD_EVENT_LISTENER_METADATA_KEY = Symbol.for('simple-web-component:add-event-listener');
 
 // root + delegate 허용 — 문자열 셀렉터는 컴포넌트 DOM 트리 안에서 탐색/델리게이션하므로 의미 있음
-export type AddEventListenerQueryOptions<TEvent extends Event = Event> = AddEventListenerBaseOptions<TEvent> & SwcQueryOptions & { delegate?: boolean | 'this' | 'mutation' };
+export type AddEventListenerQueryOptions<TEvent extends Event = Event, Return = any> = AddEventListenerBaseOptions<TEvent, Return> & SwcQueryOptions & { delegate?: boolean | 'this' | 'mutation' };
 // root·delegate 비허용 — 함수 셀렉터는 이미 요소를 직접 반환하므로 root·delegate가 무의미함
 export type AddEventListenerNonQueryOptions<TEvent extends Event = Event> = AddEventListenerBaseOptions<TEvent>;
 
@@ -1278,9 +1287,9 @@ export class EventListenerLifeCycler implements ElementDefineLifeCycler {
     const opts = { capture: options.capture, once: options.once, passive: options.passive };
 
     const handler = async (event: Event) => {
+      const helper = (options.filter || options.before || options.finally) ? SwcUtils.getHelperAndHostSet(currentWin, target as HTMLElement) : undefined;
       if (options.filter) {
-        const helper = SwcUtils.getHelperAndHostSet(currentWin, target as HTMLElement);
-        if (!options.filter(event, { currentThis: inst, helper })) return;
+        if (!(await options.filter(event, { currentThis: inst, helper }))) return;
       }
       if (options.stopPropagation) event.stopPropagation();
       if (options.stopImmediatePropagation) event.stopImmediatePropagation();
@@ -1289,14 +1298,30 @@ export class EventListenerLifeCycler implements ElementDefineLifeCycler {
       const legacyArgs = [event, { currentHostSet, $matchedElement: event.currentTarget }, { event, ...currentHostSet, $el: target, $root: target }];
       const currentHelperSet = SwcUtils.getHelperSet(currentWin);
       const currentHelperHostSet = { ...currentHelperSet, ...currentHostSet, $this: inst };
-      const args = buildSwcParameterArgs(inst, meta.propertyKey, {
-        event,
-        matched: event.currentTarget,
+      const buildArgs = (beforeReturn: any) => buildSwcParameterArgs(inst, meta.propertyKey, {
+        eventObject: event,
+        matchedElement: event.currentTarget,
         hostSet: currentHostSet,
         helperHostSet: currentHelperHostSet,
-        helperSet: currentHelperSet
+        helperSet: currentHelperSet,
+        eventBeforeReturn: beforeReturn
       }, legacyArgs);
-      await inst[meta.propertyKey](...args);
+      // before를 먼저 돌려 그 리턴값을 @eventBeforeReturn 으로 주입. before엔 (아직 자기 리턴 전이라
+      // eventBeforeReturn=undefined인) args를 넘기고, 리턴을 받은 뒤 args를 다시 빌드해 핸들러에 넘긴다.
+      let args = buildArgs(undefined);
+      if (options.before) {
+        const beforeReturn = await options.before(event, { currentThis: inst, helper }, args);
+        args = buildArgs(beforeReturn);
+      }
+      let result: any, error: any;
+      try {
+        result = await inst[meta.propertyKey](...args);
+      } catch (e) {
+        error = e;
+      } finally {
+        if (options.finally) await options.finally(event, { currentThis: inst, helper }, { args, result, error });
+      }
+      if (error) throw error;
     };
 
     const eventSubject = new Subject<Event>();
@@ -1413,9 +1438,9 @@ export class EventListenerLifeCycler implements ElementDefineLifeCycler {
           const matches = sorted.map(m => ({ m, matchedEl: (event.target as HTMLElement)?.closest(m.selector as string) }));
           for (const { m, matchedEl } of matches) {
             if (matchedEl && (br as any).contains(matchedEl)) {
+              const helper = (m.options.filter || m.options.before || m.options.finally) ? SwcUtils.getHelperAndHostSet(currentWin, matchedEl as HTMLElement) : undefined;
               if (m.options.filter) {
-                const helper = SwcUtils.getHelperAndHostSet(currentWin, matchedEl as HTMLElement);
-                if (!m.options.filter(event, { currentThis: inst, helper })) continue;
+                if (!(await m.options.filter(event, { currentThis: inst, helper }))) continue;
               }
               if (m.options.stopPropagation) event.stopPropagation();
               if (m.options.stopImmediatePropagation) event.stopImmediatePropagation();
@@ -1424,14 +1449,29 @@ export class EventListenerLifeCycler implements ElementDefineLifeCycler {
               const legacyArgs = [event, { ...hs, $matchedElement: matchedEl }, { event, ...hs, $el: matchedEl, $root: br }];
               const helperSetForMatch = SwcUtils.getHelperSet(currentWin);
               const helperHostSetForMatch = { ...helperSetForMatch, ...hs, $this: inst };
-              const args = buildSwcParameterArgs(inst, m.propertyKey, {
-                event,
-                matched: matchedEl,
+              const buildArgs = (beforeReturn: any) => buildSwcParameterArgs(inst, m.propertyKey, {
+                eventObject: event,
+                matchedElement: matchedEl,
                 hostSet: hs,
                 helperHostSet: helperHostSetForMatch,
-                helperSet: helperSetForMatch
+                helperSet: helperSetForMatch,
+                eventBeforeReturn: beforeReturn
               }, legacyArgs);
-              await inst[m.propertyKey](...args);
+              // before를 먼저 돌려 그 리턴값을 @eventBeforeReturn 으로 주입.
+              let args = buildArgs(undefined);
+              if (m.options.before) {
+                const beforeReturn = await m.options.before(event, { currentThis: inst, helper }, args);
+                args = buildArgs(beforeReturn);
+              }
+              let result: any, error: any;
+              try {
+                result = await inst[m.propertyKey](...args);
+              } catch (e) {
+                error = e;
+              } finally {
+                if (m.options.finally) await m.options.finally(event, { currentThis: inst, helper }, { args, result, error });
+              }
+              if (error) throw error;
               if ((event as any).cancelBubble) break;
             }
           }

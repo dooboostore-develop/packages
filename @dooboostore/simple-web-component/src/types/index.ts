@@ -1,5 +1,6 @@
 import { SimpleApplication } from '@dooboostore/simple-boot';
 import { Router } from '@dooboostore/core-web';
+import type { Observable } from '@dooboostore/core';
 import {SwcAttributeConfigType, SwcConfigType} from "../SwcAppEngine";
 
 export enum InjectSituationType {
@@ -66,6 +67,8 @@ export interface SwcAppInterface extends HTMLElement {
   back(): void;
   forward(): void;
   publishMessage(message: SwcAppMessage): void;
+  /** 코드로 메시지 구독 (RxJS 스타일). 반환된 Observable을 subscribe하고, 끝나면 unsubscribe. */
+  observeMessage<T = any>(type?: string, options?: { subject?: 'subject' | 'behavior' | 'replay' }): Observable<SwcAppMessage<T>>;
 }
 
 export interface SwcElement {

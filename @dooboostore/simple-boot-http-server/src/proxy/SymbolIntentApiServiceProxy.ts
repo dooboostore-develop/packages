@@ -40,7 +40,7 @@ export  const  createHandler = <T extends object>(apiService: ApiService): Proxy
                   fetch: {
                     credentials: 'include',
                     headers: headers,
-                    body: ConvertUtils.toFormData(userConfig?.body)
+                    body: userConfig?.body ? ConvertUtils.toFormData(userConfig.body) : undefined
                   }
                 }
               });

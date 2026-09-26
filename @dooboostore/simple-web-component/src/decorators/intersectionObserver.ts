@@ -1,5 +1,6 @@
 import { ReflectUtils } from '@dooboostore/core';
 import { SpecialSelector, SwcQueryOptions, SwcFnSelector, SwcSelector, HelperHostSet } from '../types';
+import { buildSwcParameterArgs } from './parameter';
 
 // 공통 옵션 — IntersectionObserverInit + filter/removeObserver. root·delegate 제외.
 // 주의: 데코레이터의 root(light/shadow/all/auto) 는 셀렉터 스코프 선택용이다.
@@ -7,7 +8,12 @@ import { SpecialSelector, SwcQueryOptions, SwcFnSelector, SwcSelector, HelperHos
 export interface IntersectionObserverBaseOptions extends Omit<IntersectionObserverInit, 'root'> {
   /** IntersectionObserver 의 스크롤 컨테이너 (viewport 대신). 데코레이터 root 와 혼동 주의. */
   intersectionRoot?: Element | Document;
-  filter?: (matchedEls: HTMLElement[], meta: { currentThis: any, helper: HelperHostSet }) => boolean;
+  /** 매칭 시 핸들러 실행 여부 게이트. Promise<boolean>도 되어 async 판정 가능. false면 스킵. */
+  filter?: (matchedEls: HTMLElement[], meta: { currentThis: any, helper: HelperHostSet }) => boolean | Promise<boolean>;
+  /** filter 통과 후 핸들러 직전 훅. await되고, 리턴값은 @intersectionObserverBeforeReturn 으로 핸들러에 주입된다. */
+  before?: (matchedEls: HTMLElement[], meta: { currentThis: any, helper: HelperHostSet }) => any | Promise<any>;
+  /** 핸들러가 성공/실패해도 항상 실행되는 정리 훅. ctx로 인자/결과/에러를 받는다. 에러는 로깅됨. */
+  finally?: (matchedEls: HTMLElement[], meta: { currentThis: any, helper: HelperHostSet }, ctx: { args: any[]; result?: any; error?: any }) => any | Promise<any>;
   removeObserver?: (target: Element, optionValue: IntersectionObserverQueryOptions) => void;
 }
 
@@ -200,11 +206,24 @@ export class IntersectionObserverLifeCycler implements ElementDefineLifeCycler {
             matchedEls = entries.map(e => e.target as HTMLElement).filter(t => t && t.nodeType === 1);
           }
           if (matchedEls.length === 0) continue;
-          if (m.options.filter) {
-            if (!m.options.filter(matchedEls, { currentThis: inst, helper: helperHostSet })) continue;
-          }
-          const hostSet = SwcUtils.getHostSet(inst);
-          inst[m.propertyKey](matchedEls, entries, obs, { ...hostSet, $root: root });
+          const opts = m.options;
+          void (async () => {
+            const helper = SwcUtils.getHelperAndHostSet(helperHostSet.$w, inst);
+            if (opts.filter && !(await opts.filter(matchedEls, { currentThis: inst, helper }))) return;
+            const hostSet = SwcUtils.getHostSet(inst);
+            const helperSet = SwcUtils.getHelperSet(helperHostSet.$w);
+            const legacyArgs = [matchedEls, entries, obs, { ...hostSet, $root: root }];
+            const buildArgs = (beforeReturn: any) => buildSwcParameterArgs(inst, m.propertyKey, {
+              hostSet, helperHostSet: helper, helperSet, intersectionObserverBeforeReturn: beforeReturn
+            }, [...legacyArgs, beforeReturn]);
+            let args = buildArgs(undefined);
+            if (opts.before) { const br = await opts.before(matchedEls, { currentThis: inst, helper }); args = buildArgs(br); }
+            let result: any, error: any;
+            try { result = await inst[m.propertyKey](...args); }
+            catch (e) { error = e; }
+            finally { if (opts.finally) await opts.finally(matchedEls, { currentThis: inst, helper }, { args, result, error }); }
+            if (error) throw error;
+          })().catch(e => console.error('[SWC] intersectionObserver handler error:', e));
         }
       };
     };

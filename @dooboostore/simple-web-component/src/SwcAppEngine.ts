@@ -29,6 +29,7 @@ export type SwcConfigType = {
   onChildrenRouteChanged?: (event: RouterEventType, app: SwcAppInterface) => void;
   childrenRouteChangedCheckIntervalTime?: number; // 자식 연결 완료 이벤트 디바운스 타임 (ms)
   childrenConnectedDoneCheckIntervalTime?: number;
+  messageReplayBufferSize?: number; // 타입별 과거 메시지 보관 개수. 늦게 연결된 인스턴스에 재생. 기본 10.
 };
 
 export type SwcAttributeConfigType = OptionalType<SwcConfigType, 'routeType' | 'window'>;

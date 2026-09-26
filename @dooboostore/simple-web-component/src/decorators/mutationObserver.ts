@@ -1,9 +1,15 @@
 import { ReflectUtils } from '@dooboostore/core';
 import { SpecialSelector, SwcQueryOptions, SwcSelector, SwcFnSelector, HelperHostSet } from '../types';
+import { buildSwcParameterArgs } from './parameter';
 
 // 공통 옵션 — root·delegate 없음 (MutationObserverInit + filter/removeObserver)
 export interface MutationObserverBaseOptions extends MutationObserverInit {
-  filter?: (matchedEls: HTMLElement[], meta: { currentThis: any, helper: HelperHostSet }) => boolean;
+  /** 매칭 시 핸들러 실행 여부 게이트. Promise<boolean>도 되어 async 판정 가능. false면 스킵. */
+  filter?: (matchedEls: HTMLElement[], meta: { currentThis: any, helper: HelperHostSet }) => boolean | Promise<boolean>;
+  /** filter 통과 후 핸들러 직전 훅. await되고, 리턴값은 @mutationObserverBeforeReturn 으로 핸들러에 주입된다. */
+  before?: (matchedEls: HTMLElement[], meta: { currentThis: any, helper: HelperHostSet }) => any | Promise<any>;
+  /** 핸들러가 성공/실패해도 항상 실행되는 정리 훅. ctx로 결과/에러를 받는다. 에러는 로깅됨. */
+  finally?: (matchedEls: HTMLElement[], meta: { currentThis: any, helper: HelperHostSet }, ctx: { args: any[]; result?: any; error?: any }) => any | Promise<any>;
   // observer 해제(disconnected) 시 호출되는 콜백. 첫 번째 인자는 observe된 target element, 두 번째는 사용자 옵션 객체.
   removeObserver?: (target: Element, optionValue: MutationObserverQueryOptions) => void;
 }
@@ -250,11 +256,24 @@ export class MutationObserverLifeCycler implements ElementDefineLifeCycler {
           }
 
           if (matchedEls.length === 0) continue;
-          if (options.filter) {
-            if (!options.filter(matchedEls, { currentThis: inst, helper: helperHostSet })) continue;
-          }
-          const hostSet = SwcUtils.getHostSet(inst);
-          inst[meta.propertyKey](matchedEls, mutations, obs, { ...hostSet, $root: root });
+          // fire-and-forget async 러너 — filter(async)/before/finally + @mutationObserverBeforeReturn 주입.
+          void (async () => {
+            const helper = SwcUtils.getHelperAndHostSet(helperHostSet.$w, inst);
+            if (options.filter && !(await options.filter(matchedEls, { currentThis: inst, helper }))) return;
+            const hostSet = SwcUtils.getHostSet(inst);
+            const helperSet = SwcUtils.getHelperSet(helperHostSet.$w);
+            const legacyArgs = [matchedEls, mutations, obs, { ...hostSet, $root: root }];
+            const buildArgs = (beforeReturn: any) => buildSwcParameterArgs(inst, meta.propertyKey, {
+              hostSet, helperHostSet: helper, helperSet, mutationObserverBeforeReturn: beforeReturn
+            }, [...legacyArgs, beforeReturn]);
+            let args = buildArgs(undefined);
+            if (options.before) { const br = await options.before(matchedEls, { currentThis: inst, helper }); args = buildArgs(br); }
+            let result: any, error: any;
+            try { result = await inst[meta.propertyKey](...args); }
+            catch (e) { error = e; }
+            finally { if (options.finally) await options.finally(matchedEls, { currentThis: inst, helper }, { args, result, error }); }
+            if (error) throw error;
+          })().catch(e => console.error('[SWC] mutationObserver handler error:', e));
         }
 
       };

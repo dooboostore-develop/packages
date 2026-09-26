@@ -1,10 +1,16 @@
 import { ReflectUtils } from '@dooboostore/core';
 import { SpecialSelector, SwcQueryOptions, SwcFnSelector, SwcSelector, HelperHostSet } from '../types';
+import { buildSwcParameterArgs } from './parameter';
 
 // 공통 옵션 — root·delegate 없음
 export interface ResizeObserverBaseOptions {
   box?: 'content-box' | 'border-box' | 'device-pixel-content-box';
-  filter?: (matchedEls: HTMLElement[], meta: { currentThis: any, helper: HelperHostSet }) => boolean;
+  /** 매칭 시 핸들러 실행 여부 게이트. Promise<boolean>도 되어 async 판정 가능. false면 스킵. */
+  filter?: (matchedEls: HTMLElement[], meta: { currentThis: any, helper: HelperHostSet }) => boolean | Promise<boolean>;
+  /** filter 통과 후 핸들러 직전 훅. await되고, 리턴값은 @resizeObserverBeforeReturn 으로 핸들러에 주입된다. */
+  before?: (matchedEls: HTMLElement[], meta: { currentThis: any, helper: HelperHostSet }) => any | Promise<any>;
+  /** 핸들러가 성공/실패해도 항상 실행되는 정리 훅. ctx로 인자/결과/에러를 받는다. 에러는 로깅됨. */
+  finally?: (matchedEls: HTMLElement[], meta: { currentThis: any, helper: HelperHostSet }, ctx: { args: any[]; result?: any; error?: any }) => any | Promise<any>;
   removeObserver?: (target: Element, optionValue: ResizeObserverOptions) => void;
 }
 
@@ -194,11 +200,24 @@ export class ResizeObserverLifeCycler implements ElementDefineLifeCycler {
           matchedEls = entries.map(e => e.target as HTMLElement).filter(t => t && t.nodeType === 1);
         }
         if (matchedEls.length === 0) continue;
-        if (m.options.filter) {
-          if (!m.options.filter(matchedEls, { currentThis: inst, helper: helperHostSet })) continue;
-        }
-        const hostSet = SwcUtils.getHostSet(inst);
-        inst[m.propertyKey](matchedEls, entries, obs, { ...hostSet, $root: root });
+        const opts = m.options;
+        void (async () => {
+          const helper = SwcUtils.getHelperAndHostSet(helperHostSet.$w, inst);
+          if (opts.filter && !(await opts.filter(matchedEls, { currentThis: inst, helper }))) return;
+          const hostSet = SwcUtils.getHostSet(inst);
+          const helperSet = SwcUtils.getHelperSet(helperHostSet.$w);
+          const legacyArgs = [matchedEls, entries, obs, { ...hostSet, $root: root }];
+          const buildArgs = (beforeReturn: any) => buildSwcParameterArgs(inst, m.propertyKey, {
+            hostSet, helperHostSet: helper, helperSet, resizeObserverBeforeReturn: beforeReturn
+          }, [...legacyArgs, beforeReturn]);
+          let args = buildArgs(undefined);
+          if (opts.before) { const br = await opts.before(matchedEls, { currentThis: inst, helper }); args = buildArgs(br); }
+          let result: any, error: any;
+          try { result = await inst[m.propertyKey](...args); }
+          catch (e) { error = e; }
+          finally { if (opts.finally) await opts.finally(matchedEls, { currentThis: inst, helper }, { args, result, error }); }
+          if (error) throw error;
+        })().catch(e => console.error('[SWC] resizeObserver handler error:', e));
       }
     };
 

@@ -86,6 +86,24 @@ export default (w: Window) => {
       return { path: '/around-state-test' };
     }
 
+    @addEventListener('#before-filter-return-test-link', 'click')
+    @emitCustomEvent('$this', 'navigate', { attributeName: 'on-navigate' })
+    onBeforeFilterReturnTestClick() {
+      return { path: '/before-filter-return-test' };
+    }
+
+    @addEventListener('#observer-hooks-test-link', 'click')
+    @emitCustomEvent('$this', 'navigate', { attributeName: 'on-navigate' })
+    onObserverHooksTestClick() {
+      return { path: '/observer-hooks-test' };
+    }
+
+    @addEventListener('#message-subject-test-link', 'click')
+    @emitCustomEvent('$this', 'navigate', { attributeName: 'on-navigate' })
+    onMessageSubjectTestClick() {
+      return { path: '/message-subject-test' };
+    }
+
     @addEventListener('.cart-icon', 'click')
     @emitCustomEvent('$this', 'navigate', { attributeName: 'on-navigate' })
     onCartClick() {
@@ -218,6 +236,9 @@ export default (w: Window) => {
             <a id="delegate-test-link">Delegate Test</a>
             <a id="lifecycle-test-link">Lifecycle Params</a>
             <a id="around-state-test-link">Around/State</a>
+            <a id="before-filter-return-test-link">Before/Filter/Return</a>
+            <a id="observer-hooks-test-link">Observer Hooks</a>
+            <a id="message-subject-test-link">Subject Test</a>
           </div>
           <div class="cart-section">
             <span class="cart-icon" id="cart-icon">🛒</span>
