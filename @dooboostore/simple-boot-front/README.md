@@ -25,9 +25,10 @@ It combines:
 ## Quick Start
 
 ```bash
-npx @dooboostore/create-simple-boot-front my-app
+npm init @dooboostore/simple-boot-front my-app
 cd my-app
-npm start
+npm install
+npm run dev
 ```
 
 ## Installation
@@ -57,11 +58,10 @@ Bundle entry import (explicit bundle-style contract):
 import * as SimpleBootFrontBundle from '@dooboostore/simple-boot-front/bundle-entry';
 
 const app = new SimpleBootFrontBundle.SimpleBootFront(
-	new SimpleBootFrontBundle.SimFrontOption({
-		window,
-		selector: '#app',
-		urlType: SimpleBootFrontBundle.UrlType.path
-	})
+	new SimpleBootFrontBundle.SimFrontOption(
+		{ window, selector: '#app', urlType: SimpleBootFrontBundle.UrlType.path },
+		{ rootRouter: IndexRouterComponent }
+	)
 );
 ```
 
@@ -69,21 +69,23 @@ const app = new SimpleBootFrontBundle.SimpleBootFront(
 
 ```ts
 import 'reflect-metadata';
-import { Component, SimpleBootFront, SimFrontOption, UrlType } from '@dooboostore/simple-boot-front';
+import { Sim, Router } from '@dooboostore/simple-boot';
+import { Component, ComponentBase, ComponentRouterBase, SimpleBootFront, SimFrontOption, UrlType } from '@dooboostore/simple-boot-front';
 
-@Component({
-	selector: 'home-page',
-	template: '<h1>Hello SimpleBootFront</h1>'
-})
-class HomePage {}
+@Sim
+@Component({ template: '<h1>Hello SimpleBootFront</h1>' })
+class HomePage extends ComponentBase {}
+
+@Sim
+@Router({ path: '', route: { '/': HomePage } })
+@Component({ template: '<main><dr-this value="${@this@.child}$"></dr-this></main>' })
+class IndexRouterComponent extends ComponentRouterBase {}
 
 const app = new SimpleBootFront(
-	new SimFrontOption({
-		window,
-		selector: '#app',
-		urlType: UrlType.path,
-		using: [HomePage]
-	})
+	new SimFrontOption(
+		{ window, selector: '#app', urlType: UrlType.path },
+		{ rootRouter: IndexRouterComponent } // 2nd arg: simple-boot InitOptionType
+	)
 );
 
 app.run();
@@ -99,7 +101,7 @@ app.run();
 	- SSR data hydration helpers used together with `@dooboostore/simple-boot-http-server-ssr`: `saveDataHydration(key, data)`, `getDataHydration(key)`, `cutDataHydration(key)` (read-and-remove), `deleteDataHydration(key)`, `clearDataHydration()`, `writeDataHydration()` (serializes pending hydration data into a `<script>` tag).
 - `SimFrontOption` / `UrlType`
 	- Front runtime option object.
-	- Configure `window`, root `selector` (default `#app`), route strategy (`urlType: UrlType.path | UrlType.hash`, default `path`), and `using` (component classes to register).
+	- `new SimFrontOption(config, initSimOption?)`: `config` sets `window`, root `selector` (default `#app`), route strategy (`urlType: UrlType.path | UrlType.hash`, default `path`), and `using`; `initSimOption` is simple-boot's `InitOptionType` (`rootRouter`, `advice`, `cache`, ...). `rootRouter` is the top-level `@Router` component.
 - `@Component(config)` (alias: `@component`)
 	- Registers renderable component metadata: `selector` (defaults to the lowercased class name), `template`, `styles`, `using`, `proxy`, and `noStrip` (keep the host element instead of stripping it).
 	- Can also be used bare (`@Component` with no config).
@@ -124,7 +126,7 @@ app.run();
 ## Troubleshooting
 
 - `reflect-metadata` must be loaded before decorators are evaluated.
-	- Ensure `import 'reflect-metadata'` appears in your app entry.
+	- The package root imports it, but add `import 'reflect-metadata'` to your entry when importing from subpaths.
 - Target selector must exist in the current document.
 	- `SimFrontOption.selector` defaults to `#app`.
 - If path routing does not behave as expected in static hosting, try hash mode.

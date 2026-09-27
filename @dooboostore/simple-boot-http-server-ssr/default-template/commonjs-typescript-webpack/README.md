@@ -1,6 +1,8 @@
-# Simple Boot HTTP Server SSR Templatesimple-boot-http-server-ssr default-template-webpack
+# Simple Boot HTTP Server SSR Template
 
-A Server-Side Rendering (SSR) template for Simple Boot HTTP Server with integrated front-end SPA framework.
+A Server-Side Rendering (SSR) template for Simple Boot HTTP Server with an integrated `simple-boot-front` SPA, rendered by `SSRFilter` (jsdom, pooled). The server listens on http://localhost:8081.
+
+> Note: the scripts reference `front-end/webpack.config.js` and `back-end/webpack.config.js`, which this template does not ship yet — add them before building.
 
 ## 🚀 Quick Start
 
@@ -16,7 +18,7 @@ pnpm install
 # Terminal 1: Frontend with webpack-dev-server
 pnpm frontend:dev
 
-# Terminal 2: Backend with hot reload
+# Terminal 2: Backend webpack --watch
 pnpm backend:build:watch
 ```
 
@@ -51,22 +53,25 @@ pnpm backend:start
 │   │   └── GlobalAdvice.ts
 │   ├── endpoints/         # Logging endpoints
 │   ├── environments/      # Backend environment config
-│   └── service/           # Backend services
+│   ├── global/            # Backend globals
+│   ├── logger/            # Backend logger
+│   └── service/           # Backend services (BackTalkService)
 │
 ├── front-end/             # Frontend SPA (Browser)
 │   ├── index.html         # HTML template
 │   ├── index.ts           # Frontend entry point
 │   ├── assets/            # Static assets (images, css, etc)
 │   ├── environments/      # Frontend environment config
-│   └── service/           # Frontend services
+│   ├── logger/            # Frontend logger
+│   └── service/           # Frontend services (FrontTalkService)
 │
 ├── src/                   # Shared Code (SSR + Client)
 │   ├── bootfactory.ts     # SSR factory for creating SimpleBootFront instances
 │   ├── component/         # Shared components
 │   │   └── hello/         # Example component
 │   ├── pages/             # Page components
-│   │   ├── index.router.component.ts   # Main router
-│   │   └── index.component.ts          # Home page
+│   │   ├── index.router.component.ts   # Main router ('/': IndexRouteComponent)
+│   │   └── index.route.component.ts    # Home page
 │   ├── service/           # Shared services (SSR + Client)
 │   │   └── TalkService.ts
 │   └── environments/      # Shared environment config
@@ -77,7 +82,7 @@ pnpm backend:start
 ## 🔑 Key Concepts
 
 ### 1. Server-Side Rendering (SSR)
-The server pre-renders React-like components on the server and sends HTML to the client for faster initial load and better SEO.
+The server renders `simple-boot-front` components and sends HTML to the client for faster initial load and better SEO.
 
 **SSR Flow:**
 ```
@@ -106,6 +111,7 @@ Code in `src/` folder runs on **both server (SSR) and client (browser)**:
 ### 3. Backend API (`back-end/api/`)
 RESTful API endpoints that are **excluded from SSR**:
 ```typescript
+@Sim
 @Router({ path: '/api' })
 export class ApiRrouter {
   @Route({ path: '/hello' })
@@ -132,17 +138,16 @@ Static files served by `ResourceFilter`:
 
 ### Backend
 - `pnpm backend:build` - Build backend bundle
-- `pnpm backend:build:watch` - Build with watch mode and auto-restart
+- `pnpm backend:build:watch` - Build with watch mode
 - `pnpm backend:start` - Start backend server
-- `pnpm backend:inspect:run` - Start with Node.js inspector
+- `pnpm backend:inspect:run` - Build and start with the Node.js inspector (note: it calls `front:build`, which is not defined; use `frontend:build`)
 
 ### Combined
 - `pnpm build` - Build both frontend and backend
 - `pnpm start` - Build and start server
 
 ### Development Workflows
-- `pnpm backend:build:no_sync:watch` - Backend only (no SSR sync)
-- `pnpm backend:build:only_sync:watch` - SSR sync only
+- `pnpm backend:build:no_sync:watch` / `pnpm backend:build:only_sync:watch` - backend watch with `MODE=NO_SYNC` / `MODE=ONLY_SYNC` (interpreted by the backend webpack config)
 
 ## 🎨 Creating New Features
 
@@ -153,7 +158,7 @@ Static files served by `ResourceFilter`:
 @Router({ path: '/api/my' })
 export class MyRouter {
   @Route({ path: '/data' })
-  @GET()
+  @GET
   getData(rr: RequestResponse): any {
     return { data: 'my data' };
   }
@@ -163,6 +168,8 @@ export class MyRouter {
 2. Register in `back-end/root.router.ts`:
 ```typescript
 @Router({
+  path: '',
+  route: {},
   routers: [ApiRrouter, MyRouter]  // Add your router
 })
 ```
@@ -183,7 +190,7 @@ export class AboutComponent extends ComponentBase {
 ```typescript
 @Router({
   route: {
-    '/': IndexComponent,
+    '/': IndexRouteComponent,
     '/about': AboutComponent  // Add your route
   }
 })
@@ -192,10 +199,8 @@ export class AboutComponent extends ComponentBase {
 ### Add a Shared Service
 1. Create `src/service/MyService.ts`:
 ```typescript
-@Sim
+@Sim({ symbol: Symbol.for('MyService') })
 export class MyService {
-  static SYMBOL = Symbol('MyService');
-  
   async fetchData() {
     // Works on both server and client
     return { data: 'shared data' };
@@ -206,7 +211,7 @@ export class MyService {
 2. Inject in components:
 ```typescript
 constructor(
-  @Inject({ symbol: MyService.SYMBOL }) private myService: MyService
+  @Inject(Symbol.for('MyService')) private myService: MyService  // or just `private myService: MyService`
 ) {}
 ```
 
@@ -215,27 +220,26 @@ constructor(
 ### Backend (`back-end/environments/environment.ts`)
 ```typescript
 export const environment = {
-  httpServerConfig: { listen: { port: 8080 } },
+  name: 'default-template',
+  host: 'http://localhost:8081',
   frontDistPath: 'dist-front-end',
-  frontDistIndexFileName: 'index.html'
+  frontDistIndexFileName: 'index.html',
+  loggerConfig: { level: LoggerLevel.DEBUG, format: '...' },
+  httpServerConfig: { listen: { port: 8081 } }
 };
 ```
 
 ### Frontend (`front-end/environments/environment.ts`)
 ```typescript
 export const environment = {
-  apiBaseUrl: '/api',
-  production: false
+  production: false,
+  apiPrefix: '/assets/api',
+  loggerConfig: { level: LoggerLevel.LOG, format: '...' }
 };
 ```
 
 ### Shared (`src/environments/environment.ts`)
-```typescript
-export const environment = {
-  appName: 'Simple Boot SSR App',
-  version: '1.0.0'
-};
-```
+`commonEnvironment` with cookie names (`ACCESS_TOKEN`, `REFRESH_TOKEN`) and the `Bearer` authorization header prefix.
 
 ## 🔍 SSR vs Client-Side Rendering
 
@@ -257,7 +261,8 @@ ssrExcludeFilter: (rr) => /^\/api\//.test(rr.reqUrl)
 2. **Use ResourceFilter for static assets** (already configured):
 ```typescript
 const resourceFilter = new ResourceFilter(environment.frontDistPath, [
-  '\.js$', '\.css$', '\.png$', '\.ico$'  // Bypass SSR
+  'assets/.*', '\.js$', '\.map$', '\.ico$', '\.png$',       // Bypass SSR
+  { request: 'robots.txt', dist: 'assets/robots.txt' }
 ]);
 ```
 
@@ -290,16 +295,16 @@ Check server console for SSR rendering logs and errors.
 
 ## 📚 Learn More
 
-- [Simple Boot Documentation](https://github.com/visualkhh/simple-boot)
-- [Simple Boot Front](https://github.com/visualkhh/simple-boot-front)
-- [Simple Boot HTTP Server](https://github.com/visualkhh/simple-boot-http-server)
-- [Simple Boot HTTP Server SSR](https://github.com/visualkhh/simple-boot-http-server-ssr)
+- [@dooboostore/simple-boot](https://www.npmjs.com/package/@dooboostore/simple-boot)
+- [@dooboostore/simple-boot-front](https://www.npmjs.com/package/@dooboostore/simple-boot-front)
+- [@dooboostore/simple-boot-http-server](https://www.npmjs.com/package/@dooboostore/simple-boot-http-server)
+- [@dooboostore/simple-boot-http-server-ssr](https://www.npmjs.com/package/@dooboostore/simple-boot-http-server-ssr)
 
 ## 🎯 What's Included
 
 ✅ Server-Side Rendering (SSR) with pooling  
 ✅ RESTful API with decorators  
-✅ Hot reload for both frontend and backend  
+✅ Watch builds for frontend (dev server) and backend  
 ✅ Shared code between server and client  
 ✅ TypeScript with full type safety  
 ✅ Webpack bundling for all targets  

@@ -11,6 +11,7 @@ import { ReqHeader } from './datas/ReqHeader';
 import { ReqMultipartFormBody } from './datas/body/ReqMultipartFormBody';
 import { HttpStatus } from '../codes/HttpStatus';
 import { gzip } from 'node-gzip';
+import { createGzip, constants as zlibConstants } from 'zlib';
 import { SessionManager } from '../session/SessionManager';
 import { HttpServerOption } from '../option/HttpServerOption';
 import { Blob } from 'node:buffer';
@@ -555,6 +556,55 @@ export class RequestResponse {
   resWriteHeadEnd(statusCode: number, headers?: OutgoingHttpHeaders | OutgoingHttpHeader[] | { [key: string]: string | string[] }) {
     this.createRequestResponseChain(this.res.writeHead(statusCode, headers as any));
     this.res.end();
+  }
+
+  /**
+   * 헤더를 즉시 보내고, source 가 내놓는 값을 하나씩 바로 body 에 쓴 뒤 end.
+   * (SSE / 스트리밍 응답용. resWrite 는 버퍼링 후 resEnd 에서 한 번에 보내므로 스트리밍 불가)
+   * - 문자열/Buffer 는 그대로, 그 외는 JSON.stringify
+   * - Accept-Encoding 에 gzip 이 있으면 gzip 스트림으로 압축하고, 청크마다 Z_SYNC_FLUSH 로 바로 내보낸다
+   *   (flush 없이 쓰면 zlib 내부 버퍼에 모였다가 늦게 나가서 SSE 실시간성이 깨짐)
+   * - 클라이언트가 끊으면 source.return() 으로 제너레이터를 종료시켜 finally 가 돌게 한다
+   */
+  async resStream(source: Iterable<any> | AsyncIterable<any>) {
+    const res = this.res;
+    const gz = this.reqHeaderFirst(HttpHeaders.AcceptEncoding)?.includes('gzip') ? createGzip() : undefined;
+    if (gz) {
+      res.setHeader(HttpHeaders.ContentEncoding, 'gzip');
+      res.removeHeader(HttpHeaders.ContentLength);
+      gz.pipe(res);
+    }
+    const out = gz ?? res;
+    res.flushHeaders();
+    let closed = false;
+    const onClose = () => {
+      closed = true;
+      (source as any).return?.();
+    };
+    res.once('close', onClose);
+    try {
+      for await (const chunk of source) {
+        if (closed) break;
+        const data = typeof chunk === 'string' || Buffer.isBuffer(chunk) ? chunk : JSON.stringify(chunk);
+        const ok = out.write(data);
+        gz?.flush(zlibConstants.Z_SYNC_FLUSH);
+        // backpressure: 버퍼가 차면 drain(또는 연결 종료)까지 대기
+        if (!ok) await new Promise(resolve => { out.once('drain', resolve); res.once('close', resolve); });
+      }
+    } catch (e) {
+      // 클라이언트가 끊긴 뒤의 에러(AbortSignal 로 대기를 푼 AbortError 등)는 받을 상대가 없으니 삼킨다
+      if (!closed) throw e;
+    } finally {
+      res.off('close', onClose);
+      if (closed) {
+        gz?.destroy();
+      } else if (!res.writableEnded) {
+        // gzip 이면 gz.end() → pipe 가 res.end() 까지 해준다. 끝까지 흘려보낸 뒤 리턴
+        const finished = new Promise(resolve => { res.once('finish', resolve); res.once('close', resolve); });
+        out.end();
+        await finished;
+      }
+    }
   }
 
   resIsDone() {

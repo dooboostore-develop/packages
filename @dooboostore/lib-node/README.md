@@ -134,7 +134,7 @@ All methods use a variant of this config:
 ```typescript
 {
   size: { w: number; h: number; },
-  mimeType?: 'image/png' | 'image/jpeg',
+  mimeType?: 'image/png' | 'image/jpeg', // default 'image/png'
   quality?: number,        // only for jpeg base64 output
   path?: string            // required for writeFile/writeFileSync
 }

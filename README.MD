@@ -84,7 +84,7 @@ Everything sits on `@dooboostore/core` — the only package with zero dependenci
 
 ## 🔗 How It Actually Fuses — Two Real Request Flows
 
-The diagrams below aren't hypothetical — they trace mechanisms that exist in the code today: `FirstCheckMaker` in `SimstanceManager`, the `res: { manual: true }` opt-out in `simple-boot-http-server`, and `simple-web-component`'s message bus.
+The diagrams below aren't hypothetical — they trace mechanisms that exist in the code today: `FirstCheckMaker` in `SimstanceManager`, the `res: 'manual'` opt-out in `simple-boot-http-server`, and `simple-web-component`'s message bus.
 
 ### Client-side: a route change reaches three different systems at once
 
@@ -106,7 +106,7 @@ sequenceDiagram
     DI-->>C: ProductService (via @Inject)<br/>+ HostSet + RouterEventType (via parameter.ts)
     C->>C: render product page
     C->>Bus: publishSwcAppMessage(product)
-    Bus->>O: subscribeSwcAppMessageWhileConnected(@appMessage)
+    Bus->>O: @subscribeSwcAppMessage handler (@appMessage)
     O->>O: update cart badge, no direct reference to C
 ```
 
@@ -127,7 +127,7 @@ sequenceDiagram
     Rt->>DI: resolve constructor-injected services
     DI->>Svc: same @Sim/@Inject container as the browser side
     Svc-->>Rt: handler logic
-    Rt->>S: config.res = { manual: true } → skip auto status/header/body write
+    Rt->>S: config.res = 'manual' → skip auto status/header/body write
     loop every second
         S-->>C: res.write(`data: ${Date.now()}\n\n`)  (SSE, one open connection)
     end
@@ -143,7 +143,7 @@ Same decorators (`@Sim`, `@Inject`), same container, same mental model — the o
 - 💉 **Advanced DI & AOP Container (`simple-boot`):** A fully custom-built Dependency Injection container supporting Singleton/Transient lifecycles, Circular Dependency resolution, and ES6 Proxy-based AOP.
 - ⚡ **Surgical Reactive DOM Engine (`dom-render`):** Forget Virtual DOM overhead. We use ES6 `Proxy` to detect state mutations and surgically patch only the exact affected DOM nodes in real-time.
 - 🧩 **No-VDOM Web Components (`simple-web-component`):** Native Web Components with a decorator-driven lifecycle, order-independent parameter injection, and a lifecycle-plugin architecture (`ElementDefineLifeCycler`) that lets observers/timers/event-delegation all compose safely.
-- 🔌 **Next-Gen WebSocket RPC & SSE:** Built-in multiplexing protocol that seamlessly packs JSON and Binary data (Files/Blobs) together without Base64 overhead, plus an opt-out (`res: { manual: true }`) for hand-rolled Server-Sent Events streaming.
+- 🔌 **Next-Gen WebSocket RPC & SSE:** Built-in multiplexing protocol that seamlessly packs JSON and Binary data (Files/Blobs) together without Base64 overhead, plus an opt-out (`res: 'manual'`) for hand-rolled Server-Sent Events streaming.
 - 🛠️ **Zero-Compromise OOP:** Embrace robust Object-Oriented Programming principles with heavily utilized Decorators and Reflection metadata.
 
 ---
@@ -244,7 +244,7 @@ class UserProfile extends HTMLElement {
   user = { name: 'Guest' };
 
   @onConnectedAfter
-  onconstructor(@Inject(UserService.SYMBOL) userService: UserService, @hostSet hs: any) {
+  onconstructor(@Inject(Symbol.for('UserService')) userService: UserService, @hostSet hs: any) {
     this.user = userService.getUser('1');
   }
 
@@ -265,18 +265,37 @@ Send JSON and Binary Files together over WebSockets with ease. Wait for the serv
 
 ```typescript
 // Client-side (Browser)
-import { WebSocketClient } from '@dooboostore/simple-boot-http-server/websocket';
+import { WebSocketClient } from '@dooboostore/simple-boot-http-server/websocket/WebSocketClient';
+import { firstValueFrom } from '@dooboostore/core';
 
 const ws = new WebSocketClient('ws://localhost:8080');
 const topic = ws.subject('/api/upload');
 
 // Send JSON + Native File Blob without Base64 encoding overhead!
-const response = await topic.send({
+// send() returns an Observable of the replies to this request; it does not complete, so take the first value.
+const response = await firstValueFrom(topic.send({
   metadata: { userId: '123', action: 'upload_avatar' },
-  avatar: fileInput.files[0] 
-}).toPromise();
+  avatar: fileInput.files[0]
+}));
 
 console.log('Server replied:', response);
+```
+
+---
+
+## 🛠️ Development
+
+This is a pnpm workspace (`pnpm@9`). Scripts in the root `package.json`:
+
+```bash
+pnpm install
+pnpm build          # all:build:step — builds every package in dependency order
+pnpm watch          # all:watch — watches every package concurrently
+pnpm clean          # all:clean
+pnpm run all:build:esm   # or all:build:cjs / all:build:cjs:esm / all:watch:esm / all:watch:cjs
+
+# per-package (each package has build / watch / typecheck / test)
+pnpm --filter @dooboostore/simple-boot test
 ```
 
 ---

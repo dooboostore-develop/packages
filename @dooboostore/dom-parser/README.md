@@ -11,11 +11,11 @@ A lightweight DOM parser for server-side HTML parsing and manipulation with full
 
 ## Features
 
--   **⚡ Server-Side DOM**: Complete DOM implementation for Node.js environments with zero dependencies
+-   **⚡ Server-Side DOM**: Complete DOM implementation for Node.js environments with no third-party dependencies
 -   **🔍 CSS Selector Support**: Full `querySelector` and `querySelectorAll` with complex selectors support
 -   **📦 Multi-Format**: Available as ESM, CJS, and UMD bundles for maximum compatibility
 -   **🛡️ TypeScript**: Full TypeScript definitions included with JSDoc documentation
--   **🪶 Zero Dependencies**: Lightweight with fast parsing performance, perfect for serverless environments
+-   **🪶 Minimal Dependencies**: Depends only on `@dooboostore/core`; lightweight and fast, suitable for serverless environments
 -   **🎯 HTML Templates**: Handles complex HTML templates, attributes, and custom elements
 -   **🌳 DOM Traversal**: Built-in support for `TreeWalker` and `NodeIterator` for efficient tree navigation
 -   **🎭 Custom Elements**: Full `customElements.define()` API for registering and using Web Components on the server
@@ -279,14 +279,14 @@ async function scrapeArticles(html: string) {
 ```typescript
 import { parseHTML } from '@dooboostore/dom-parser';
 
-// Define a custom element
-class MyCustomElement extends HTMLElement {
+const window = parseHTML('<html><body></body></html>');
+
+// Define a custom element (extend the parsed window's HTMLElement)
+class MyCustomElement extends (window as any).HTMLElement {
     connectedCallback() {
         this.innerHTML = '<p>Custom Element Works!</p>';
     }
 }
-
-const window = parseHTML('<html><body></body></html>');
 
 // Register custom element
 window.customElements.define('my-element', MyCustomElement);
@@ -322,9 +322,8 @@ const document = window.document;
 const root = document.querySelector('.container');
 const walker = document.createTreeWalker(
     root,
-    window.NodeFilter?.SHOW_ELEMENT,
-    null,
-    false
+    window.NodeFilter.SHOW_ELEMENT,
+    null
 );
 
 let node = walker.nextNode();
@@ -347,7 +346,7 @@ const fragment = document.createDocumentFragment();
 
 for (let i = 1; i <= 5; i++) {
     const li = document.createElement('li');
-    li.textContent = \`Item \${i}\`;
+    li.textContent = `Item ${i}`;
     fragment.appendChild(li);
 }
 
@@ -434,9 +433,7 @@ const parser = new DomParser(html, {
     href: 'https://example.com/page/'
 });
 
-// Now relative URLs are resolved correctly
-const link = parser.document.querySelector('a');
-console.log(link?.getAttribute('href')); // Resolved relative to base URL
+console.log(parser.window.location.href); // "https://example.com/page/"
 ```
 
 ### CSS Selector Complexity
@@ -474,7 +471,7 @@ console.log(allHeadings.length); // 2
 
 ## Performance Characteristics
 
-- **Zero External Dependencies**: No jsdom, cheerio, or other heavyweight parsers
+- **No Third-Party Dependencies**: No jsdom, cheerio, or other heavyweight parsers
 - **Lightweight**: Suitable for microservices and serverless environments  
 - **Fast Parsing**: Optimized HTML parsing algorithm
 - **Memory Efficient**: Clean separation of concerns with proper garbage collection
@@ -497,7 +494,8 @@ new DomParser(html: string, options?: DomParserOptions)
 // Methods
 get document(): Document              // Access the parsed document
 get window(): Window                  // Access the window object
-loadHTML(html: string): void          // Load new HTML and replace current document
+loadHTML(html: string): void          // Clear head/body and parse new HTML into the same document
+parseHTML(html: string): void         // Parse HTML into the current document (used by the constructor)
 destroy(): void                       // Destroy parser and free memory
 
 // Options
@@ -513,22 +511,24 @@ interface DomParserOptions {
 Quick utility function for SSR setup:
 
 ```typescript
-const window = parseHTML(html, { href?: string });
+const window = parseHTML(html, options?: DomParserOptions);
 // Returns Window object directly
 // window.document available immediately
 ```
 
 ### DOM Node Classes
 
-The package provides TypeScript implementations of standard DOM interfaces:
+The package provides TypeScript implementations of standard DOM interfaces. Exported from the root:
 
+- **WindowBase**: The `window` implementation (location, history, navigator, `customElements`, `fetch`, DOM constructors)
 - **DocumentBase**: Full Document implementation with `querySelector`, `getElementById`, `createElement`, etc.
-- **ElementBase**: Base element with attribute management
-- **HTMLElement**: Standard HTML elements (div, span, p, etc.)
-- **TextBase**: Text nodes
-- **Comment**: HTML comments  
+- **NodeBase** / **ElementBase** / **HTMLElementBase**: Node, element (attribute management) and HTML element base classes
+- **HTMLElement**: Standard HTML element class
 - **DocumentFragmentBase**: Document fragments for batch operations
 - **ShadowRootBase**: Shadow DOM support
+- **ElementFactory**: Static `createElement(tagName, ownerDocument?)` plus `getSupportedTagNames()` (and HTML/SVG/MathML variants)
+
+Text nodes (`TextBase`) and comments (`Comment`) are implemented internally and created via `document.createTextNode()` / `createComment()`.
 
 ### Advanced Interfaces
 

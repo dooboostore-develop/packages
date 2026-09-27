@@ -22,6 +22,8 @@ class MyComponent extends HTMLElement {
 }
 ```
 
+**`@elementDefine(name, options?)` options:** `window`, `extends` (customized built-in, e.g. `'body'`), `useShadow` (`true | 'open' | 'closed'`), `observedAttributes`, `customElementRegistry`.
+
 ### 2. **Dependency Injection (@onInitialize)**
 Inject services into Web Components using the `@onInitialize` decorator.
 
@@ -64,8 +66,8 @@ Replace child nodes with new content.
 
 ```typescript
 @replaceChildrenLight
-replaceChildren(node: Node) {
-  return node;
+renderNode() {
+  return this.buildNode(); // Node, Node[] or HTML string
 }
 ```
 ### 3.5 **Slot Management with @applySlot**
@@ -287,8 +289,8 @@ onSubmit(event: Event) {
 
 // Filter events - only process matching events
 @addEventListener('button', 'click', {
-  filter: (event, helper) => {
-    return event.target?.id === 'critical-button';
+  filter: (event, meta) => {
+    return (event.target as HTMLElement)?.id === 'critical-button';
   }
 })
 onCriticalClick(event: Event) {
@@ -316,6 +318,15 @@ onCriticalClick(event: Event) {
 - `addEventListenerAll(selector, type, options)` / `eventAll(...)` - Bind (non-delegated) in both light & shadow DOM
 - `addEventListenerMutation(selector, type, options)` / `eventMutation(...)` - Delegate via `MutationObserver` instead of event bubbling (useful for non-bubbling events like `focus`/`blur`); `*Light`/`*Shadow`/`*All` variants also available
 
+**@addEventListener Options:**
+- `capture` / `once` / `passive` - standard listener options
+- `preventDefault` / `stopPropagation` / `stopImmediatePropagation` - applied before the handler runs
+- `filter: (event, { currentThis, helper }) => boolean | Promise<boolean>` - skip the handler when it returns false
+- `before: (event, meta, args) => any` - runs after `filter`; its return value is injectable with `@eventBeforeReturn`
+- `finally: (event, meta, { args, result, error }) => any` - always runs after the handler
+- `debounceTime` / `throttleTime` (ms) / `distinctUntilChanged` - rate-limit the event stream
+- `removeListener: (target, options) => void` - cleanup callback on disconnect
+
 **Event-Type-Specific Aliases (eventClick, eventInputThis, ...):**
 
 Beyond the generic `event(selector, type, options)` form, every scope/delegate variant above is also pre-bound to ~59 common DOM event types, so you don't have to repeat the type string:
@@ -334,7 +345,7 @@ onItemClick(event: Event) { ... }
 onKeydown(event: KeyboardEvent) { ... }
 
 // Still callable with options when you need them
-@eventKeydownThis({ filter: (e, helper) => !helper.currentThis.isLocked })
+@eventKeydownThis({ filter: (e, meta) => !meta.currentThis.isLocked })
 onKeydownFiltered(event: KeyboardEvent) { ... }
 ```
 
@@ -383,6 +394,9 @@ The same mechanism (and the same 5 decorators, plus two more) also applies to:
 - **`@onInitialize`/`@onConnectedBefore`/`@onConnectedAfter`/... lifecycle methods** — can freely mix `@hostSet`/`@helperHostSet`/`@helperSet` with `@inject(...)` on the same method.
 - **`@subscribeSwcAppRouteChange`** — add `@routerEvent` to receive the `RouterEventType` regardless of position.
 - **`@subscribeSwcAppMessage`** — add `@appMessage` to receive the `SwcAppMessage` regardless of position.
+- **`before` hook results** — `@eventBeforeReturn`, `@routeChangeBeforeReturn`, `@appMessageBeforeReturn`, `@changedAttributeBeforeReturn`, `@mutationObserverBeforeReturn`, `@resizeObserverBeforeReturn`, `@intersectionObserverBeforeReturn`, `@eventMediaBeforeReturn`, `@setIntervalBeforeReturn`, `@setTimeoutBeforeReturn` inject the value returned by that decorator's `before` option.
+
+Note: once any parameter of a method is decorated, only decorated parameters receive values (the legacy positional arguments are no longer passed).
 
 ```typescript
 @onConnectedAfter
@@ -409,7 +423,8 @@ async onLogin() {
 **@emitCustomEvent Decorator Variants:**
 - `emitCustomEvent(target, type, options)` - Full form
 - `emit(target, type, options)` - Short alias
-- `emitThis(type, options)` - Emit from $this element (`emitAppHost` / `emitWindow` / `emitDocument` / `emitLight` / `emitShadow` / `emitAll` 도 있음)
+- `emitThis(type, options)` - Emit from $this element (`emitAppHost` / `emitWindow` / `emitDocument` take `(type, options)`; `emitLight` / `emitShadow` / `emitAll` take `(selector, type, options)`)
+- Options: `bubbles`, `composed`, `cancelable`, `filter`, `valueKey`, `attributeName`, `root`
 
 #### @publishSwcAppMessage
 Publish messages through the message bus when method completes.
@@ -453,15 +468,15 @@ handleMultipleEvents() {
 ```
 
 #### @emitThis
-Emit events from $this. `attributeName` 을 주면 부모가 그 attribute 로 핸들러를 걸 수 있다
-(기본 attribute 이름은 없음 — 쓰려면 명시).
+Emit events from $this. Pass `attributeName` so a parent can attach a handler through that attribute
+(there is no default attribute name; set it explicitly). The attribute script gets `event` and `$data` (= `event.detail`).
 
 ```typescript
 @emitThis('navigate', { attributeName: 'on-emit-navigate' })
 onNavClick(e: any) {
   return { path: e.target.dataset.path };
 }
-// 부모: <app-header on-emit-navigate="$host.onHeaderNavigate(event, $data)"></app-header>
+// Parent: <app-header on-emit-navigate="$host.onHeaderNavigate(event, $data)"></app-header>
 ```
 
 #### @addEventListenerThis
@@ -504,7 +519,7 @@ onUserLogout(e: CustomEvent) {
 ### 5. **DOM Querying**
 
 #### @query
-Query single element (Light DOM by default).
+Query a single element. The default `root: 'auto'` searches the shadow root if one exists, otherwise the light DOM.
 
 ```typescript
 @query('#form-input')
@@ -525,49 +540,55 @@ textInputs?: HTMLInputElement[];
 listItems?: HTMLLIElement[];
 ```
 
-#### @queryThis
-Query the component element itself.  == this
+#### Special selectors, `pick`, and shorthands
+Special selectors: `$this`, `$host`, `$parentHost`, `$appHost`, `$firstHost`, `$lastHost`, `$firstAppHost`, `$lastAppHost`, `$hosts`, `$appHosts`, `$window`, `$document`. A function selector `(currentThis, helper) => Element | Element[] | NodeList | null` is also accepted (no `root` option).
 
 ```typescript
-@queryThis
-self?: HTMLElement;
+@query('$this')
+self?: HTMLElement;          // the component itself
 
-printTag() {
-  console.log(this.self?.tagName);  // CUSTOM-CARD
-}
+@query('.item', { pick: 'last' })   // 'first' (default) | 'last' | number → single; 'all' | 'even' | 'odd' → array
+lastItem?: HTMLElement;
+
+@queryIn('shadow', 'even')('.row')  // root + pick factory
+evenRows?: HTMLElement[];
 ```
+
+- Shorthands: `queryLight` / `queryShadow` / `queryAllRoots` (single), `queryAllLight` / `queryAllShadow` / `queryAllAll` (arrays)
+- `filter: (el, { currentThis, helper }) => boolean` narrows the matches
+- Assigning `null` / `undefined` / `[]` to a `@query` field removes the matched elements from the DOM
 
 ### 6. **Attribute Binding**
 
 #### @attribute (Field / Method Decorator)
-필드와 메서드에 모두 붙는다. 붙은 곳에 따라 동작이 갈린다.
-- **필드**: 엘리먼트 attribute 를 읽고 쓰는 getter/setter (`type` 으로 Number/Boolean 변환)
-- **메서드**: 리턴값을 attribute 에 적용. `null` 이면 **제거**, `undefined` 면 아무것도 안 함
+Works on both fields and methods; behavior depends on where it is applied.
+- **Field**: getter/setter that reads/writes the element attribute (`type` converts to Number/Boolean)
+- **Method**: applies the return value to the attribute. `null` **removes** it, `undefined` does nothing
 
-문자열이 **하나면 자기 자신(`$this`)의 attribute 이름**, **둘이면 (셀렉터, attribute 이름)**.
+**One string = attribute name on `$this`**, **two strings = (selector, attribute name)**.
 
 ```typescript
 @elementDefine('product-card')
 class ProductCard extends HTMLElement {
-  // 필드 — $this 의 product-id
+  // Field — product-id on $this
   @attribute('product-id')
   productId: string;
 
-  // 필드 — 셀렉터 대상의 data-id
+  // Field — data-id on the selector target
   @attribute('#user', 'data-id')
   userId: string;
 
-  // 필드 — bare (필드 이름 = attribute 이름)
+  // Field — bare (field name = attribute name)
   @attribute
   title: string;
 
-  // 메서드 — 리턴값을 nav[data-active] 에 (null → 제거)
+  // Method — return value goes to nav[data-active] (null → removed)
   @attribute('nav', 'data-active')
   updateNav() {
     return this.section; // 'releases' | null
   }
 
-  // 메서드 — $this 의 data-name
+  // Method — data-name on $this
   @attribute('data-name')
   setUserName() {
     return this.userName;
@@ -576,27 +597,29 @@ class ProductCard extends HTMLElement {
 ```
 
 **Patterns:**
-- `@attribute` - `$this`, 이름은 필드/메서드 이름
-- `@attribute('attr-name', options?)` - `$this` 의 attr-name
-- `@attribute('selector', 'attr-name', options?)` - 셀렉터 대상 (`nav`, `#user`, `.card`, `$appHost` 모두 가능)
-- `@attribute((this, helper) => el, 'attr-name')` - 함수 셀렉터
-- `@attribute('selector', 'attr-name', { valueKey: 'k' })` - (메서드) 리턴 객체에서 `k`만 뽑아 세팅
+- `@attribute` - `$this`, name = field/method name
+- `@attribute('attr-name', options?)` - attr-name on `$this`
+- `@attribute('selector', 'attr-name', options?)` - selector target (`nav`, `#user`, `.card`, `$appHost`, ...)
+- `@attribute((this, helper) => el, 'attr-name')` - function selector
+- `@attribute('selector', 'attr-name', { valueKey: 'k' })` - (method) set only `k` from the returned object
+- Options: `type`, `filter`, `valueKey`, `root`. Shorthands: `attrThis`, `attrAppHost`, `attrLight`, `attrShadow`, `attrAll`
+- A field getter evaluates a `{{= expr }}` attribute value (see "Attribute Expressions")
 
 #### @removeAttribute (Method Decorator)
-메서드 실행 시 속성을 무조건 제거한다. 리턴값은 그대로 통과시키므로,
-값을 리턴하면 안 되는 구독 핸들러(라우트 변경 등)에서 안전망으로 쓴다.
+Always removes the attribute when the method runs. The return value passes through unchanged,
+so it is safe on subscriber handlers that must not return a value (e.g. route changes).
 
 ```typescript
-// 모든 라우트 변경보다 먼저 실행 — nav 강조 초기화
+// Runs before the other route handlers — reset the nav highlight
 @subscribeSwcAppRouteChange({ order: -1 })
 @removeAttribute('nav', 'href')
 handleNavReset() {
-  return undefined; // 체인 계속
+  return undefined; // keep the chain going
 }
 ```
 
 #### @changedAttribute (Method Decorator)
-Listen for attribute changes on the component this element.
+Listen for attribute changes on the component itself (`attributeChangedCallback`). Handler arguments: `(newValue, oldValue, name, helperHostSet)`; `newValue` is converted by `type` (and a `{{= expr }}` value is evaluated first).
 
 ```typescript
 @elementDefine('reactive-component')
@@ -612,47 +635,46 @@ class ReactiveComponent extends HTMLElement {
     console.log(`Status is now: ${newValue}`);
   }
 
-  // Listen to any attribute change
-  @changedAttribute()
-  onAnyAttributeChanged(newValue: any, oldValue: any) {
-    console.log('An attribute changed');
-  }
+  // Bare (or no name) → the method name is used as the attribute name
+  @changedAttribute
+  status(newValue: string) { }
 }
 ```
 
 **@changedAttribute Options:**
 - `attributeName` - Attribute name to listen for (optional, defaults to method name)
 - `type` - Type converter: `Number`, `Boolean`, or `String`
-- `while` - Execution condition: `'connected'` (only while connected to DOM)
+- `while` - `'connected'`: skip changes while disconnected, and run once on connect with the current value (if set)
+- `filter` / `before` / `finally` - same hook pattern as `@addEventListener` (`before` result → `@changedAttributeBeforeReturn`)
 
 ### 6.5 **Property Binding**
 
 #### @property (Field / Method Decorator)
-필드와 메서드에 모두 붙는다.
-- **필드**: 대상 엘리먼트의 프로퍼티를 읽고 쓰는 getter/setter
-  - bare `@property`(= `$this` + 같은 이름)는 getter/setter 없이 순수 필드로 두고 **SSR 하이드레이션 대상**으로만 등록된다
-- **메서드**: 리턴값을 대상 엘리먼트 프로퍼티에 대입 (`undefined` 면 무시)
+Works on both fields and methods.
+- **Field**: getter/setter that reads/writes a property of the target element
+  - Bare `@property` (= `$this` + same name) stays a plain field with no getter/setter and is only registered as an **SSR hydration target**
+- **Method**: assigns the return value to the target element's property (`undefined` is ignored)
 
-`@attribute` 와 달리 **첫 문자열은 항상 셀렉터**다. 자기 자신의 프로퍼티는 필드 그 자체라, 이름만 받는 형태는 의미가 없다.
+Unlike `@attribute`, **the first string is always a selector**. A property on the element itself is just the field, so a name-only form would be meaningless.
 
 ```typescript
 @elementDefine('form-handler')
 class FormHandler extends HTMLElement {
-  // 필드 — bare: 자기 필드 (SSR 하이드레이션 대상)
+  // Field — bare: own field (SSR hydration target)
   @property
   declare rows: Row[];
 
-  // 필드 — 셀렉터 대상의 프로퍼티
+  // Field — property of the selector target
   @property('#chart', 'data')
   chartData: number[];
 
-  // 메서드 — 리턴값을 #submit-btn.disabled 에
+  // Method — return value goes to #submit-btn.disabled
   @property('#submit-btn', 'disabled')
   updateSubmitState() {
     return this.hasErrors;
   }
 
-  // 메서드 — 셀렉터 대상의 같은 이름 프로퍼티 (input.value)
+  // Method — same-named property on the selector target (input.value)
   @property('input')
   value() {
     return this.initialValue;
@@ -661,11 +683,11 @@ class FormHandler extends HTMLElement {
 ```
 
 **Patterns:**
-- `@property` - `$this`, 이름은 필드/메서드 이름
-- `@property('selector', options?)` - 대상의 같은 이름 프로퍼티
-- `@property('selector', 'propertyName', options?)` - 대상의 propertyName
-- `@property((this, helper) => el, 'propertyName')` - 함수 셀렉터
-- 대상 메서드를 호출하려면 `@callProperty('selector', 'methodName')`
+- `@property` - `$this`, name = field/method name
+- `@property('selector', options?)` - same-named property on the target
+- `@property('selector', 'propertyName', options?)` - propertyName on the target
+- `@property((this, helper) => el, 'propertyName')` - function selector
+- To call a method on the target, use `@callProperty('selector', 'methodName')` (an array return value is spread as arguments; `callPropertyLight` / `callPropertyShadow` / `callPropertyAll` also exist)
 
 ### 6.6 **DOM Observers (@mutationObserver, @resizeObserver, @intersectionObserver)**
 
@@ -823,13 +845,13 @@ class ContentUpdater extends HTMLElement {
   }
 
   @addEventListener('.append-btn', 'click')
-  @beforeEndNode()
+  @insertBeforeEnd()
   appendContent() {
     return `<p>Appended content</p>`;
   }
 
   @addEventListener('.prepend-btn', 'click')
-  @afterBegin()
+  @insertAfterBegin()
   prependContent() {
     return `<p>Prepended content</p>`;
   }
@@ -848,15 +870,14 @@ class ContentUpdater extends HTMLElement {
 ```
 
 **@applyNode Decorator Variants:**
-- `replaceChildren()` - Replace all children
-- `replaceChildrenLight()` - Replace children in light DOM
-- `beforeEnd()` - Append to end
-- `beforeEndLight()` - Append to light DOM end
-- `afterBegin()` - Prepend to beginning
-- `afterBeginLight()` - Prepend to light DOM beginning
-- `innerHtml()` - Set innerHTML
-- `innerHtmlLight()` - Set innerHTML in light DOM
-- `innerText()` - Set innerText
+- `applyNode(selector?, options?)` / `apply` / `node` - Full form (selector defaults to `$this`, position defaults to `replaceChildren`); `applyThis` / `applyAppHost` / `applyLight` / `applyShadow` / `applyAll`
+- `replaceChildren()` / `replaceChildrenLight()` - Replace all children
+- `insertBeforeEnd()` / `insertBeforeEndLight()` / `insertBeforeEndShadow()` - Append to end
+- `insertAfterBegin()` / `insertAfterBeginLight()` - Prepend to beginning
+- `innerHtml()` / `innerHtmlLight()` / `innerHtmlShadow()` - Set innerHTML
+- `innerText()` / `innerTextLight()` / `innerTextShadow()` - Set innerText
+- `clearChildrenNode()` / `clearChildrenLight()` - Remove all children
+- Options: `position`, `root`, `filter`, `fallback`, `valueKey`. Ready-made `filter` helpers: `skipIfSameTagPresent`, `skipIfExists(selector)`, `skipIfEmpty`, `applyIfChanged` (e.g. `@innerHtmlLight({ filter: skipIfExists('my-page') })`)
 
 **Position Options:**
 ```typescript
@@ -869,7 +890,8 @@ export type ApplyNodePosition =
   | 'replaceChildren'  // Replace children
   | 'innerHtml'        // Set innerHTML
   | 'innerText'        // Set innerText
-  | 'remove';          // Remove element
+  | 'remove'           // Remove element
+  | 'clearChildren';   // Remove all children
 ```
 
 ### 8. **Style & Class Management**
@@ -883,7 +905,7 @@ class StyledComponent extends HTMLElement {
   isActive = false;
 
   @addEventListener('button', 'click')
-  @updateStyle()
+  @updateStyle
   toggleStyle() {
     return {
       color: this.isActive ? 'green' : 'red',
@@ -892,8 +914,8 @@ class StyledComponent extends HTMLElement {
   }
 
   @addEventListener('.toggle-btn', 'click')
-  @updateClass()
-  toggleClass() {
+  @updateClass
+  toggleState() {
     return {
       'active': this.isActive,
       'disabled': !this.isActive
@@ -912,17 +934,18 @@ class StyledComponent extends HTMLElement {
 }
 ```
 
-**@applyStyle Variants:**
-- `setStyleThis()` - Clear and set styles
-- `updateStyleThis()` - Update/merge styles
-- `removeStyleThis()` - Remove specific styles
+**@applyStyle Variants:** (each takes `(selector?, options?)`; bare form targets `$this`)
+- `setStyle` - Clear and set styles
+- `updateStyle` - Update/merge styles
+- `removeStyle` - Remove specific styles
+- `applyStyle(selector, action?)` / `style` - action `'set' | 'update' | 'remove'` (default `'update'`); `styleThis(action?)` / `styleAppHost` / `styleLight` / `styleShadow` / `styleAll`
 
-**@applyClass Variants:**
-- `setClassThis()` - Replace all classes
-- `updateClassThis()` - Toggle classes
-- `addClassThis()` - Add classes
-- `removeClassThis()` - Remove classes
-- `toggleClassThis()` - Toggle classes
+**@applyClass Variants:** (each takes `(selector?, classMapOrOptions?, options?)`; bare form targets `$this`)
+- `setClass` - Replace all classes
+- `updateClass` - Toggle classes by a `{ className: boolean }` map
+- `addClass` / `removeClass` / `toggleClass`
+- `applyClass(selector, action?)` / `cls` - action `'set' | 'update' | 'add' | 'remove' | 'toggle'` (default `'update'`); `clsThis(action?)` / `clsAppHost` / `clsLight` / `clsShadow` / `clsAll`
+- Note: for the class decorators, an options object in the 2nd position must contain `root` (e.g. `{ root: 'auto', valueKey: 'k' }`); an object without `root` is read as a class map
 
 ### 8.5 **Lifecycle Hooks**
 
@@ -939,17 +962,17 @@ class MyComponent extends HTMLElement {
 
   @onConnectedBefore({ order: 0 })
   beforeConnected() {
-    // Called before element connects to DOM
+    // Called on connect, before rendering
   }
 
   @onConnectedAfter({ order: 1 })
   afterConnected() {
-    // Called after element connects to DOM
+    // Called on connect, after rendering and observer setup
   }
 
   @onConnectedBody
   render() {
-    // Called when element enters DOM — 리턴한 HTML 을 렌더 (@onConnectedBodyShadow / @onConnectedBodyLight 변형)
+    // Called when element enters DOM — renders the returned HTML (variants: @onConnectedBodyShadow / @onConnectedBodyLight)
     return `<div>...</div>`;
   }
 
@@ -958,7 +981,7 @@ class MyComponent extends HTMLElement {
     // Called before element disconnects from DOM
   }
 
-  @onDisconnected
+  @onDisconnected // alias of @onDisconnectedAfter
   onDisconnected() {
     // Called when element leaves DOM
   }
@@ -968,15 +991,15 @@ class MyComponent extends HTMLElement {
     // Called before element is adopted into new document
   }
 
-  @onAdopted
+  @onAdopted // alias of @onAdoptedAfter
   onAdopted() {
     // Called when element is adopted into new document
   }
 
   @onConnectedSwcApp({ order: 0 })
   onSwcAppConnected() {
-    // Called after SwcApp.connect() completes
-    // Full DI support available through hostSet
+    // Called when the element registers with a connected SwcApp host
+    // (deferred until SwcApp.connect() if the app is not connected yet)
   }
 
   @onConnectedCompleted({ order: 0 })
@@ -986,17 +1009,16 @@ class MyComponent extends HTMLElement {
 }
 ```
 
-**Lifecycle Execution Order:**
-- `@onInitialize` - Component construction
-- `@onConnectedBefore` - Before DOM connection
-- `@onConnectedAfter` - After DOM connection
-- `@onConnectedBody` (`Shadow` / `Light`) - DOM connection (with HTML rendering, SSR 렌더된 엘리먼트는 건너뜀)
-- `@onConnectedSwcApp` - After SwcApp initialization
-- `@onConnectedCompleted` - All connected hooks done
-- `@onDisconnectedBefore` - Before DOM disconnection
-- `@onDisconnected` - DOM disconnection
-- `@onAdoptedBefore` - Before document adoption
-- `@onAdopted` - Document adoption
+**Lifecycle Execution Order (connectedCallback):**
+1. `@onInitialize` - once, on first init (DI via `@inject` parameters)
+2. `@onConnectedSwcApp` - the element registers with its app host (deferred until `connect()` if needed)
+3. `@onConnectedBefore` - before rendering
+4. `@onConnectedBody` (`Shadow` / `Light`) - render the returned HTML/Node (skipped for SSR-rendered elements)
+5. Observers / timers / listeners are wired up
+6. `@onConnectedAfter` - after rendering
+7. `@onConnectedCompleted` - always runs last (in a `finally` block), then `trigger: 'connectedDone'` replays fire
+
+Disconnect: `@onDisconnectedBefore` → cleanup → `@onDisconnected` (`@onDisconnectedAfter`). Adopt: `@onAdoptedBefore` → `@onAdopted` (`@onAdoptedAfter`).
 
 **Order Parameter:**
 All lifecycle decorators support `order?: number` for controlling execution sequence:
@@ -1008,17 +1030,19 @@ onFirst() { }
 onSecond() { }
 ```
 
-### 8.6 **Timers (@setInterval, @setTimeout)**
+### 8.6 **Timers (@setInterval, @setTimeout, @requestAnimationFrame)**
 
-Declaratively run a method on a repeating interval or after a one-time delay, tied to the component's connected lifecycle. Both are pure metadata-collecting decorators — they never touch the method itself (no `descriptor.value` wrapping) — so they compose safely with any other decorator stacked on the same method, regardless of declaration order. All the actual scheduling/cleanup is handled by `SetIntervalLifeCycler`/`SetTimeoutLifeCycler` (`ElementDefineLifeCycler` implementations, same plugin pattern as the observers above):
+Declaratively schedule work tied to the component. Every timer the decorator starts is cleared automatically on disconnect. There are two modes (`type` option):
 
-- Starts automatically when the component connects.
-- Automatically `clearInterval`/`clearTimeout`s when the component disconnects — no manual cleanup needed.
+- `type: 'returnValue'` (**default**) - nothing starts automatically. When you call the method, its return value (a function, or the function under `valueKey`) becomes the repeating/delayed callback, called with `(id: number)`. The original return value passes through.
+- `type: 'onConnected'` - starts on connect and calls the decorated method itself on every tick/fire.
 
 ```typescript
 @elementDefine('live-clock')
 class LiveClock extends HTMLElement {
+  // Auto-start on connect
   @setInterval(1000, {
+    type: 'onConnected',
     parameter: (set) => [Date.now()],
     created: (set, id) => console.log('interval started, timer id:', id)
   })
@@ -1026,73 +1050,73 @@ class LiveClock extends HTMLElement {
     this.textContent = new Date(now).toLocaleTimeString();
   }
 
-  // No options - called with no arguments, once per second
-  @setInterval(1000)
-  onTick() {
-    console.log('tick');
-  }
-
   // Fires once, 3 seconds after connect
-  @setTimeout(3000)
+  @setTimeout(3000, { type: 'onConnected' })
   onceAfter3s() {
     console.log('3 seconds have passed');
+  }
+
+  // Default 'returnValue': starts when you call startPolling()
+  @setInterval(900)
+  startPolling() {
+    return (id: number) => console.log('interval', id, 'ticked');
   }
 }
 ```
 
 **`@setInterval(interval, options?)` / `@setTimeout(delay, options?)`:**
 - `interval` / `delay` - milliseconds. `setInterval` repeats; `setTimeout` fires once.
-- `parameter?: (set: HelperHostSet) => any[]` - computes the arguments passed to the method on each tick/fire. Omitted → method is called with no arguments.
-- `created?: (set: HelperHostSet, id: number) => void` - fires once, right after the timer is armed, with the real `setInterval`/`setTimeout` return value. For logging/debugging only — cleanup is still handled automatically, this is not a manual-clear hook.
-- `valueKey?: symbol | string` - same convention as `@applyAttribute`'s `valueKey` (see "Multiple Decorators with Shared Return Value" below): if the method's return value is an object and this key's value is a function, that function is called on every tick/fire — but note the callback signature is just `(id: number)`, not `(set, id)` like `created`.
+- `type` - `'returnValue'` (default) | `'onConnected'`
+- `parameter?: (set: HelperHostSet) => any[]` - (`onConnected`) arguments for each tick/fire; omitted → no arguments.
+- `created?: (set: HelperHostSet, id: number) => void` - called once right after the timer is armed. For logging only; cleanup is automatic.
+- `filter` / `before` / `finally` - (`onConnected`) per-tick hooks; `before` result → `@setIntervalBeforeReturn` / `@setTimeoutBeforeReturn`.
+- `valueKey?: symbol | string` - which key of the returned object holds the callback function (defaults to `SET_INTERVAL_METADATA_KEY` / `SET_TIMEOUT_METADATA_KEY`).
+
+**`@requestAnimationFrame(options?)`** (bare form also works) - same two modes. The frame callback is `(timestamp, prevValue) => any`: return `undefined`/`null` to stop the loop, anything else is passed as `prevValue` to the next frame. Options: `type`, `created`, `valueKey`.
 
 ```typescript
-@setInterval(900, { valueKey: 'onTick' })
-poll() {
-  return {
-    onTick: (id: number) => console.log('interval', id, 'ticked'),
-  };
+@requestAnimationFrame
+animate() {
+  return (ts: number, prev = 0) => (prev < 100 ? prev + 1 : null); // stops at 100
 }
 ```
 
-**Why no wrapping is needed:** unlike `@applyAttribute`/`@attribute` (which must wrap the method because it can be called by arbitrary code — event handlers, other decorators, etc.), the timer's own `LifeCycler` is the one calling `inst[propertyKey](...)` every tick/fire — it already has the return value in hand at that call site, so it can read `valueKey` off of it without ever needing to intercept the method.
+### 8.7 **@around (AOP) and @eventMedia**
 
-> `@requestAnimationFrame` is not implemented yet.
+`@around` wraps a method (`before(helper, args)` → new args, `after(helper, result)` → new result, `finally(helper, { args, result, error })`) or a field (`get(helper, stored)`, `set(helper, incoming)`). Async hooks are supported when the method is async.
 
-### 9. **Structural Directives**
+```typescript
+@around({ before: (h, args: [string]) => [args[0].trim()], after: (h, r: string) => r + '!' })
+greet(name: string) { return `hi ${name}`; }
 
-Structural Directives allow declarative conditional rendering, list iteration, async handling, and routing with automatic attribute substitution and dynamic expressions.
+@around({ set: (h, v: string) => v?.trim() })
+label: string = '';
+```
 
-#### 8.0 **Expression Syntax - Dynamic Evaluation**
+`@eventMedia(query, eventType, options?)` / `@eventMediaChange(query, options?)` subscribe to `window.matchMedia(query)` on connect and unsubscribe on disconnect. Handler arguments: `(event: MediaQueryListEvent, helperHostSet)`. Options: `filter`, `before`, `finally`.
 
-SWC supports two types of expression syntax for dynamic value evaluation:
+```typescript
+@eventMediaChange('(max-width: 600px)')
+onMobile(e: MediaQueryListEvent) { this.compact = e.matches; }
+```
 
-**`{{ }} - Standard Expression Evaluation**
-- Used for boolean conditions and value comparisons
-- Syntax: `{{ expression }}`
-- Example: `{{ $value === 'pending' }}`, `{{ $host.isLoggedIn }}`
-- Context variables: `$value`, `$item`, `$index`, `$host`, `$parentHost`, `$appHost`, etc.
+### 9. **Attribute Expressions (`{{= }}`)**
 
-**`{{= }} - Function Call & Return Expression**
-- Evaluates JavaScript expressions and returns result
-- Syntax: `{{= functionCall() }}`  or `{{= computedValue }}`
-- Automatically executes functions and captures return values
-- Example: `{{= $item.name }}`, `{{= $parentHost.getData() }}`, `{{= formatDate($item.date) }}`
-- Used in attributes for dynamic substitution
-- Result is converted to string for DOM attributes
+An attribute value of the form `{{= expression }}` is evaluated as JavaScript instead of being used as a string:
 
-**Context Variables Available in All Directives:**
-- `$value` - the value passed to the template
-- `$host` - the current Web Component instance
-- `$parentHost` - parent component
-- `$appHost` - root application component
-- `$item` - current item (in SwcLoop)
-- `$index` - current index (in SwcLoop)
-- Helper functions - utility methods from `SwcUtils.getHelperAndHostSet()`
+```html
+<product-detail product-id="{{= $host.selectedId }}"></product-detail>
+```
+
+- Evaluated when the value is read by an `@attribute` field getter and before it is passed to `@changedAttribute` handlers
+- `this` is the element that owns the attribute; the helper/host variables are in scope: `$this`, `$host`, `$parentHost`, `$hosts`, `$firstHost`, `$lastHost`, `$appHost`, `$appHosts`, `$d`, `$w`, `$q`, `$qa`, `$qi`
+- The result keeps its JavaScript type (then `type` conversion applies); on error the raw string is used
+
+Template bindings inside `@onConnectedBody*` HTML (`@state@`, `<!--[html ]-->`, `<!--[text ]-->`, `a::`, `e::`, and `p::` for DOM properties) are described in the `@state` section.
 
 ---
 
-### 9. **Component Communication - Message Bus**
+### 10. **Component Communication - Message Bus**
 
 SWC provides a powerful message bus system for inter-component communication through SwcApp. Components can publish and subscribe to typed messages while connected.
 
@@ -1113,13 +1137,15 @@ class NotificationPanel extends HTMLElement {
   }
 
   @subscribeSwcAppMessage('user-login', {
-    filter: (msg) => msg.data?.username === 'admin'
+    filter: (msg, currentThis) => msg.data?.username === 'admin'
   })
   onAdminLogin(message: SwcAppMessage) {
     console.log('Admin logged in!');
   }
 }
 ```
+
+**@subscribeSwcAppMessage Options:** `filter(message, currentThis)`, `before(message, currentThis)` (result → `@appMessageBeforeReturn`), `finally(message, currentThis, { args, result, error })`, `subject`, `trigger` (see "Message Replay"). Every matching subscriber runs (fire-and-forget); return values do not stop other subscribers.
 
 #### @publishSwcAppMessage
 Publish a message from a method's return value.
@@ -1182,7 +1208,7 @@ type SwcAppMessage<T = any> = {
 - ✅ **Filter support** - use custom filter functions to handle specific conditions
 - ✅ **Auto-publishing** - return value automatically becomes message payload
 - ✅ **Async support** - works with async methods (promises)
-- ✅ **Centralized** - all messages routed through SwcApp host
+- ✅ **Centralized** - all messages routed through the nearest SwcApp host (`$appHost`)
 - ✅ **Decoupled** - components don't need to know about each other
 
 **Usage Example:**
@@ -1216,6 +1242,8 @@ SWC provides a flexible Mixin-based architecture for creating SwcApp elements th
 #### Available SwcApp Variants
 
 ```typescript
+// SwcApp, SwcAppBody, ... are createElement helpers: SwcAppBody(w, data?) creates the element.
+// defineSwcApp, defineSwcAppBody, ... register the custom element.
 import {
   SwcApp,           // swc-app (HTMLElement)
   SwcAppBody,       // swc-app-body (HTMLBodyElement, is="body")
@@ -1272,7 +1300,7 @@ w.document.addEventListener('DOMContentLoaded', async () => {
       path: '/',
       routeType: 'path',
       container: container,
-      onStartedLazyDefineComponent: [yourComponentFactory1, yourComponentFactor2],
+      onStartedLazyDefineComponent: [yourComponentFactory1, yourComponentFactory2],
       window: w,
       onEngineStarted: () => {
         console.log('🚀 Application started successfully');
@@ -1281,6 +1309,10 @@ w.document.addEventListener('DOMContentLoaded', async () => {
   }
 });
 ```
+
+**Main `connect()` options (`SwcAttributeConfigType`):** `routeType` (`'path' | 'hash' | 'element'`), `path` (first URL), `container` (DI container symbol), `window`, `onStartedLazyDefineComponent` (component factories), `onEngineStarted(sp, app)`, `onConnected` / `onDisconnected`, `onConnectedChildBefore` / `onConnectedChildAfter`, `onDisconnectedChildBefore` / `onDisconnectedChildAfter`, `onChildrenConnectedDone`, `onChildrenRouteChanged`, `messageReplayBufferSize`, `ssr`, `otherInstanceSim`.
+
+App host methods: `routing(path)`, `back()`, `forward()`, `reload()`, `publishMessage(message)`, `observeMessage(...)`, `connectedElements()`.
 
 #### Factory Pattern - Component Registration
 
@@ -1361,13 +1393,14 @@ class RootRouter extends HTMLElement {
 
 **1. Path Matching**
 - **No path pattern** (omit path): `@subscribeSwcAppRouteChange({ order: -1 })` - matches all routes
-- **Exact match**: `['', '/']` - matches home route only
-- **Prefix match**: `['/products']` - matches `/products` and `/products/...`
-- **Dynamic segments**: `['/product/{id}']` - captures `id` parameter
-- **Wildcard**: `['/{tail:.*}']` - matches any remaining path (use for 404)
+- Patterns are matched against the **whole** path (anchored regex); a string, an array (first match wins), or a function `(currentThis) => string | string[]`
+- **Exact match**: `['', '/']` - matches home route only; `['/products']` matches `/products` only
+- **Sub paths**: `['/products/{tail:.*}']` - use a regex segment to match `/products/...`
+- **Dynamic segments**: `['/product/{id}']` - captures `id` (`[^/]+`); custom regex: `{slug:[a-z0-9-]+}`
+- **Wildcard**: `['/{tail:.*}']` - matches any path (use for 404)
 
 **2. Order-Based Execution**
-Routes are executed in order of `order` value (lowest first). First matching route with a return value stops propagation:
+Handlers of one element run in `order` (lowest first, default 0). The first matching handler that returns a value stops the rest of **that element's** chain:
 
 ```typescript
 @subscribeSwcAppRouteChange(['', '/'], { order: 0 })  // Checked first
@@ -1376,8 +1409,8 @@ Routes are executed in order of `order` value (lowest first). First matching rou
 ```
 
 **3. Propagation Control**
-- **Return a value** (HTML string) → Stops propagation to next handlers
-- **Return undefined/null** → Continues to next handler
+- **Return a value** (anything other than `undefined`/`null`, after `valueKey` extraction) → stops this element's remaining handlers
+- **Return `undefined`/`null`** → continues to the next handler
 
 ```typescript
 // This handler stops propagation (returns HTML)
@@ -1450,11 +1483,17 @@ class AccommodationRouter extends HTMLElement {
 
 ```typescript
 interface SwcAppRouteChangeOptions {
-  path?: RoutePathType;  // Route path pattern(s)
+  path?: RoutePathType;  // string | string[] | (currentThis) => string | string[]
   order?: number;        // Execution order (default: 0)
-  filter?: (router: Router, meta: {currentThis: any, helper: HelperHostSet}) => boolean;
+  filter?: (router: Router, meta: { currentThis: any; helper: HelperHostSet }) => boolean | Promise<boolean>;
+  before?: (router: Router, meta) => any;           // result → @routeChangeBeforeReturn
+  finally?: (router: Router, meta, ctx: { args; result?; error? }) => any;
+  valueKey?: symbol | string;                       // value used for the stop check
+  trigger?: 'connected' | 'connectedDone';          // replay timing (see "Message Replay")
 }
 ```
+
+Forms: `@subscribeSwcAppRouteChange` (bare, all routes), `('/path')`, `(['/a', '/b'])`, `(path, options)`, `(options)`. Alias: `@changedRoute`.
 
 **Usage:**
 ```typescript
@@ -1474,26 +1513,26 @@ handleAdminSection(routerPathSet: RouterEventType) {
 
 #### Combined Example: Route + Attribute (nav highlight)
 
-한 메서드에 여러 데코레이터를 걸고, 리턴 객체를 `valueKey`로 나눠 쓴다.
-**주의:** 값을 리턴하면 뒤 핸들러가 멈추므로, 관찰용 핸들러는 `order: -1` + `undefined` 리턴으로 체인을 이어간다.
+Stack several decorators on one method and split the returned object with `valueKey`.
+**Note:** returning a value stops the later handlers, so an observer-style handler uses `order: -1` and returns `undefined` to keep the chain going.
 
 ```typescript
 @replaceChildrenLight({ valueKey: 'element' })
 @subscribeSwcAppRouteChange('/releases')
 @attribute('nav', 'href', { valueKey: 'href' })
 handleExplore() {
-  return { element: ExplorePage(w), href: 'releases' }; // nav 강조 + 페이지 렌더
+  return { element: ExplorePage(w), href: 'releases' }; // highlight nav + render the page
 }
 
 @subscribeSwcAppRouteChange({ order: -1 })
 @removeAttribute('nav', 'href')
 handleNavReset() {
-  return undefined; // 강조 초기화 후 체인 계속
+  return undefined; // reset the highlight, keep the chain going
 }
 ```
 
 ```css
-/* 현재 섹션 버튼 강조 */
+/* Highlight the current section button */
 nav[href="releases"] [data-href="/releases"] { color: var(--color-text); background: var(--color-bg-alt); }
 ```
 
@@ -1501,9 +1540,14 @@ nav[href="releases"] [data-href="/releases"] { color: var(--color-text); backgro
 
 ```typescript
 type RouterEventType = {
-  path: string;           // Current route path
-  pathData: Record<string, any>;  // Extracted path parameters
-  triggerPoint: 'start' | 'end';  // Route change phase
+  path: string;                   // Current route path
+  url: string;
+  search: string;
+  searchParams: URLSearchParams;
+  data?: any;
+  pathData?: Record<string, any>; // Extracted path parameters (filled per matched pattern)
+  router: Router;
+  triggerPoint: 'start' | 'end' | 'first-end';  // Route change phase
 };
 ```
 
@@ -1538,8 +1582,8 @@ import {
 class MultiDecoratorExample extends HTMLElement {
   @attribute('selector', 'data-state')
   @property('selector', 'value')
-  @updateStyle()
-  @updateClass()
+  @updateStyle
+  @updateClass
   handleUpdate() {
     return {
       [ATTRIBUTE_METADATA_KEY]: 'attribute-value',
@@ -1560,8 +1604,8 @@ For more readable code, use the `valueKey` option to specify custom keys:
 class CustomKeyExample extends HTMLElement {
   @attribute('selector', 'data-state', { valueKey: 'attrValue' })
   @property('selector', 'value', { valueKey: 'propValue' })
-  @updateStyle({ valueKey: 'styleValue' })
-  @updateClass({ valueKey: 'classValue' })
+  @updateStyle('$this', { valueKey: 'styleValue' })
+  @updateClass('$this', { root: 'auto', valueKey: 'classValue' })  // class options need `root`
   handleUpdate() {
     return {
       attrValue: 'attribute-value',
@@ -1582,7 +1626,7 @@ You can mix both approaches in the same method:
 class MixedKeysExample extends HTMLElement {
   @attribute('selector', 'data-state')  // Uses default ATTRIBUTE_METADATA_KEY
   @property('selector', 'value', { valueKey: 'customProp' })  // Uses custom key
-  @updateStyle({ valueKey: 'styles' })  // Uses custom key
+  @updateStyle('$this', { valueKey: 'styles' })  // Uses custom key
   handleUpdate() {
     return {
       [ATTRIBUTE_METADATA_KEY]: 'attr-value',
@@ -1596,13 +1640,14 @@ class MixedKeysExample extends HTMLElement {
 **Supported Decorators with valueKey:**
 - `@applyAttribute` / `@attribute`
 - `@applyProperty` / `@property`
-- `@applySlot` / `@clearSlot` / `@appendHtmlSlot` / etc.
-- `@applyNode` / `@replaceChildrenNode` / etc.
+- `@applySlot(id, { position, valueKey })` (the `clearSlot` / `appendHtmlSlot` / ... shorthands take no options)
+- `@applyNode` / `@replaceChildren` / `@innerHtml` / etc.
 - `@applyStyle` / `@updateStyle` / etc.
 - `@applyClass` / `@updateClass` / etc.
 - `@emitCustomEvent` / `@emit`
-- `@publishSwcAppMessage` / `@publish`
-- `@setInterval` / `@setTimeout` - variant: the extracted value must itself be a function, and that function is invoked with `(id: number)` on every tick/fire (see "Timers" section above) rather than being applied directly like the other decorators here.
+- `@publishSwcAppMessage` / `@publishMessage`
+- `@subscribeSwcAppRouteChange` - the extracted value decides whether the chain stops
+- `@setInterval` / `@setTimeout` / `@requestAnimationFrame` - variant: the extracted value must itself be a function, which becomes the timer/frame callback (see "Timers" above) rather than being applied directly.
 
 Each decorator will use only its corresponding value from the return object, preventing conflicts and allowing clean separation of concerns.
 
@@ -1653,7 +1698,7 @@ appElement.connect({
 
 ### Simplified Decorator API
 
-The decorator API uses a consolidated pattern where all decorators support **optional selector parameter** that defaults to `$this` when omitted. This eliminates redundant `*This` functions.
+Most DOM decorators take an **optional selector** that defaults to `$this` when omitted (or when used bare). Scope shorthands (`*This`, `*AppHost`, `*Light`, `*Shadow`, `*All`) are still provided for brevity.
 
 #### Current Usage Pattern
 ```typescript
@@ -1661,7 +1706,7 @@ The decorator API uses a consolidated pattern where all decorators support **opt
 @applyClass('selector', 'update')
 method() { ... }
 
-@applyClass('update')  // Selector defaults to $this
+@applyClass('$this', 'update')  // a single string is treated as the selector, so name $this explicitly (or use @clsThis('update'))
 method() { ... }
 
 @applyClass  // Bare decorator - selector defaults to $this
@@ -1671,7 +1716,7 @@ method() { ... }
 #### Decorator Functions (Current API)
 
 **applyClass.ts:**
-- `applyClass(selector?, options?)` - Set/update/add/remove/toggle classes
+- `applyClass(selector?, action?, options?)` - Set/update/add/remove/toggle classes
 - `setClass(selector?, options?)` - Replace all classes
 - `updateClass(selector?, options?)` - Toggle classes
 - `addClass(selector?, options?)` - Add classes
@@ -1679,49 +1724,50 @@ method() { ... }
 - `toggleClass(selector?, options?)` - Toggle classes
 
 **applyStyle.ts:**
-- `applyStyle(selector?, options?)` - Set/update/remove styles
+- `applyStyle(selector?, action?, options?)` - Set/update/remove styles
 - `setStyle(selector?, options?)` - Clear and set styles
 - `updateStyle(selector?, options?)` - Update/merge styles
 - `removeStyle(selector?, options?)` - Remove specific styles
 
 **applyProperty.ts:**
-- `property(selector?, propertyKey?, options?)` - 필드: 프로퍼티 get/set, 메서드: 리턴값 → 프로퍼티
+- `property(selector?, propertyKey?, options?)` - field: property get/set; method: return value → property
 
 **applyAttribute.ts:**
-- `attribute(attrName | selector?, attrName?, options?)` - 필드: attribute get/set, 메서드: 리턴값 → attribute (문자열 하나면 $this)
+- `attribute(attrName | selector?, attrName?, options?)` - field: attribute get/set; method: return value → attribute (one string = $this)
 
 **query.ts:**
-- `query(selector?, options?)` - Query single element (supports $this, $host, $appHost, etc.)
-- `queryAll(selector?, options?)` - Query multiple elements (same file as `query`)
+- `query(selector, options?)` - Query single element (supports $this, $host, $appHost, etc.; `pick` option)
+- `queryAll(selector, options?)` - Query multiple elements (`query` with `pick: 'all'`)
 
 **emitCustomEvent.ts:**
 - `emitCustomEvent(target, type, options?)` - Emit custom events
 - `emit(target, type, options?)` - Short alias
+- `emitCustomEvent(type, options?)` - Emit from `$this`
 
 #### Usage Examples
 
 ```typescript
 @elementDefine('my-component')
 class MyComponent extends HTMLElement {
-  // Class management - all default to $this
-  @updateClass()
+  // Class management - bare form targets $this
+  @updateClass
   toggleActive() {
     return { 'active': this.isActive };
   }
 
-  // Style management - all default to $this
-  @updateStyle()
+  // Style management - bare form targets $this
+  @updateStyle
   applyTheme() {
     return { color: this.theme.color, fontSize: '16px' };
   }
 
-  // Property binding - 첫 문자열은 셀렉터
+  // Property binding - first string is the selector
   @property('input', 'value')
   updateValue() {
     return this.computedValue;
   }
 
-  // Attribute binding - 문자열 하나면 $this 의 attribute
+  // Attribute binding - one string = attribute on $this
   @attribute('data-id')
   updateId() {
     return this.elementId;
@@ -1741,8 +1787,8 @@ class MyComponent extends HTMLElement {
     return { itemId: this.selectedId };
   }
 
-  // With selector
-  @updateClass('.card', 'update')
+  // With selector and action
+  @applyClass('.card', 'update')
   updateCardClass() {
     return { 'highlighted': true };
   }
@@ -1751,7 +1797,7 @@ class MyComponent extends HTMLElement {
 
 #### Key Features
 
-1. **Reduced API Surface** - Consolidated decorators eliminate redundant `*This` functions
+1. **Optional Selector** - Omit the selector (or use the bare form) to target `$this`
 2. **Cleaner Code** - Single function name with multiple overloads
 3. **Better Discoverability** - Intuitive parameter patterns
 4. **Flexible Usage** - Supports bare decorators, with options, and with selectors
@@ -1778,17 +1824,16 @@ class UserWidget extends w.HTMLElement { }
 class UserWidget extends w.HTMLElement { }
 ```
 
-### Factory Always Returns 
+### Factory Always Returns (the tag name)
 ```typescript
 export default (w: Window) => {
   const tagName = 'my-element';
-  const existing = w.customElements.get(tagName);
-  if (existing) return existing;  
+  if (w.customElements.get(tagName)) return tagName;
 
   @elementDefine(tagName, { window: w })
   class MyElement extends w.HTMLElement { }
-  
-  return existing; 
+
+  return tagName;
 };
 ```
 
@@ -1837,17 +1882,18 @@ Late subscribers can receive past messages. The buffer keeps every typed message
 
 ```typescript
 // 'behavior' = last message only, 'replay' = whole buffer in order.
-// Unset = live only (legacy behavior).
+// Unset (or 'subject') = live only.
 @subscribeSwcAppMessage('auth-changed', { subject: 'behavior' })
 onAuth(@appMessage msg: SwcAppMessage<User | null>) { ... }
 ```
 
 `trigger` controls when replay happens (default `'connected'`).
 
-- `'connected'`: replay on connect. For handlers that don't need DOM targets.
-- `'connectedDone'`: replay after the element finished rendering. For handlers with
-  DOM targets like `@innerHtml` (avoids the race where replay arrives before render
-  and gets silently dropped).
+- `'connected'`: replay when the element registers with the app host, i.e. before its own
+  `@onConnectedBody` render. For handlers that don't need DOM targets.
+- `'connectedDone'`: replay after the element finished rendering (after `@onConnectedCompleted`).
+  Use it when the handler targets DOM rendered by the element itself, like `@innerHtml('.wrap')`
+  (avoids the race where replay arrives before render and gets silently dropped).
 
 ```typescript
 @subscribeSwcAppMessage('auth-changed', { subject: 'behavior', trigger: 'connectedDone' })
@@ -1860,12 +1906,12 @@ Live broadcasts always reach everyone regardless of trigger.
 
 ## 🔌 App Host Hooks (onConnected / onSwcAppConnected / onDisconnected)
 
-`SwcAppMixin` 의 호스트 훅 세 개는 **abstract** — 상속한 클래스가 반드시 구현한다 (할 일 없으면 빈 메서드).
+The three host hooks of `SwcAppMixin` are **abstract**: a subclass must implement them (use an empty method if there is nothing to do).
 `@inject` parameters are resolved via DI (host element itself included).
 
-- `onConnected()` - connectedCallback 시점 (DOM 에 붙을 때마다). `connect()` 전이라 DI 컨테이너가 아직 없을 수 있다
-- `onSwcAppConnected()` - `connect()` 완료 후 (DI 컨테이너·라우터 준비됨). **서비스 호출은 여기서**
-- `onDisconnected()` - disconnectedCallback 시점. `onConnected` 에서 만든 구독 등을 해제
+- `onConnected()` - at connectedCallback (every time it is attached). It runs before `connect()`, so the DI container may not exist yet
+- `onSwcAppConnected()` - after `connect()` completes (DI container and router are ready). **Call services here**
+- `onDisconnected()` - at disconnectedCallback. Release subscriptions created in `onConnected`
 
 ```typescript
 class MyAppBody extends SwcAppMixin(w.HTMLBodyElement) {
@@ -1877,18 +1923,18 @@ class MyAppBody extends SwcAppMixin(w.HTMLBodyElement) {
 }
 ```
 
-### observeMessage — 메시지 버스를 Observable 로
+### observeMessage — the message bus as an Observable
 
 ```typescript
-host.observeMessage()                                    // 모든 타입, live 만
-host.observeMessage('auth-changed')                      // 특정 타입
-host.observeMessage('auth-changed', { subject: 'behavior' }) // 타입 + 마지막 값 replay
-host.observeMessage({ type: 'auth-changed', subject: 'replay' }) // 옵션 객체 형태
+host.observeMessage()                                    // all types, live only
+host.observeMessage('auth-changed')                      // one type
+host.observeMessage('auth-changed', { subject: 'behavior' }) // type + replay of the last value
+host.observeMessage({ type: 'auth-changed', subject: 'replay' }) // options-object form
 ```
 
-- `subject`: `'behavior'`(마지막 1개) / `'replay'`(쌓인 것 전부) 를 구독 시점에 먼저 받고 이어서 live.
-- replay 는 `type` 이 있을 때만 — 타입 없이 옵션만 주면 live 만 받는다.
-- 리턴은 `Observable` — `subscribe()` 한 `Subscription` 은 직접 `unsubscribe()` (보통 `onDisconnected`).
+- `subject`: `'behavior'` (last one) / `'replay'` (whole buffer) is delivered first at subscribe time, then live messages.
+- Replay only works when `type` is given; options without a type receive live messages only.
+- Returns an `Observable`; `unsubscribe()` the `Subscription` yourself (usually in `onDisconnected`).
 
 When publishing from the host itself, call `this.publishMessage` directly.
 The `@publishSwcAppMessage` decorator publishes through the parent host, and the

@@ -1,15 +1,16 @@
-# Simple Boot HTTP Server Example
+# Simple Boot HTTP Server Template
 
-A complete example demonstrating the features of `@dooboostore/simple-boot-http-server` - a powerful HTTP server framework built on Simple Boot.
+A quick start template demonstrating the features of `@dooboostore/simple-boot-http-server` - a powerful HTTP server framework built on Simple Boot.
 
 ## Features
 
 - 🎯 **Router-based Architecture** - `@Router` and `@Route` decorators
 - 📦 **Dependency Injection** - `@Sim` decorator for service management
-- 🔌 **HTTP Method Decorators** - `@GET`, `@POST`, `@PUT`, `@DELETE`
+- 🔌 **HTTP Method Decorators** - `@GET`, `@POST` (also `@PUT`, `@DELETE`, `@PATCH` available)
 - 📁 **Static File Serving** - Serve files from resources directory
 - ⚡ **Request/Response Abstraction** - Easy-to-use API
 - 🛠️ **Built-in JSON Parsing** - Automatic content-type handling
+- 🧯 **Global Exception Handling** - `GlobalAdvice` with `@ExceptionHandler`
 
 ## Getting Started
 
@@ -21,7 +22,7 @@ pnpm install
 
 ### Development Mode
 
-Run with auto-reload on file changes:
+Run `webpack --watch`; nodemon restarts `dist/index.cjs` on each rebuild:
 
 ```bash
 pnpm dev
@@ -40,19 +41,22 @@ Server will start on **http://localhost:8080**
 ## Project Structure
 
 ```
-example/
+./
 ├── package.json
 ├── tsconfig.json
-├── build.mjs           # esbuild configuration
+├── webpack.config.cjs      # webpack (ts-loader) + nodemon-webpack-plugin
 └── src/
-    ├── index.ts        # Server entry point
+    ├── index.ts            # Server entry point (HttpServerOption, rootRouter: AppRouter)
+    ├── advices/
+    │   └── GlobalAdvice.ts # @ExceptionHandler global error handling
+    ├── endpoints/          # Request / close / error log end points
     ├── routers/
-    │   ├── AppRouter.ts   # Main page router
-    │   └── ApiRouter.ts   # API endpoints
+    │   ├── AppRouter.ts    # Main page router (routers: [ApiRouter])
+    │   └── ApiRouter.ts    # API endpoints
     ├── services/
-    │   └── UserService.ts # User management service
+    │   └── UserService.ts  # User management service
     └── resources/
-        └── index.css      # Static CSS file
+        └── index.css       # Static CSS file
 ```
 
 ## API Endpoints
@@ -61,6 +65,9 @@ example/
 
 - **GET /**  
   Home page with interactive API testing UI
+
+- **GET /resources/index.css**  
+  Static file served through `@GET({ resolver: ResourceResolver })`
 
 ### API Routes (ApiRouter)
 
@@ -89,17 +96,17 @@ example/
 ```typescript
 import { Sim } from '@dooboostore/simple-boot/decorators/SimDecorator';
 import { Router, Route } from '@dooboostore/simple-boot/decorators/route/Router';
-import { GET, POST } from '@dooboostore/simple-boot-http-server/decorators/MethodMapping';
+import { GET } from '@dooboostore/simple-boot-http-server/decorators/MethodMapping';
+import { RequestResponse } from '@dooboostore/simple-boot-http-server/models/RequestResponse';
 
 @Sim
 @Router({ path: '/api' })
 export class ApiRouter {
   @Route({ path: '/hello' })
-  @GET
+  @GET({ res: { contentType: 'application/json' } })
   hello(rr: RequestResponse) {
-    rr.resSetHeader('Content-Type', 'application/json');
-    rr.res.write(JSON.stringify({ message: 'Hello!' }));
-    rr.res.end();
+    // The return value becomes the response body (objects are JSON.stringify'd automatically)
+    return { message: 'Hello!' };
   }
 }
 ```
@@ -115,10 +122,9 @@ export class ApiRouter {
   constructor(private userService: UserService) {}
   
   @Route({ path: '/users' })
-  @GET
+  @GET({ res: { contentType: 'application/json' } })
   getUsers(rr: RequestResponse) {
-    const users = this.userService.getAllUsers();
-    // ... return users
+    return this.userService.getAllUsers();
   }
 }
 ```
@@ -128,7 +134,7 @@ export class ApiRouter {
 - **@dooboostore/simple-boot-http-server** - HTTP server framework
 - **@dooboostore/simple-boot** - DI container & routing
 - **@dooboostore/core** - Core utilities
-- **esbuild** - Fast bundler
+- **webpack** - Bundler
 - **TypeScript** - Type safety
 - **Node.js** - Runtime environment
 

@@ -6,13 +6,14 @@
 
 `@dooboostore/simple-boot-http-server-ssr` provides a powerful **Server-Side Rendering (SSR)** environment by seamlessly integrating `@dooboostore/simple-boot-front` and `@dooboostore/simple-boot-http-server`.
 
-It ships **three interchangeable rendering strategies** as separate `Filter`s, so you pick the one that fits your app instead of being locked into one DOM backend:
+It ships **five interchangeable rendering strategies** as separate `Filter`s, so you pick the one that fits your app instead of being locked into one DOM backend:
 
 | Filter | DOM backend | Instance reuse | Best for |
 | --- | --- | --- | --- |
 | `SSRFilter` | `jsdom` | Pooled (`min`/`max`, generation-based eviction) | High-traffic apps that want warm instances ready to render |
 | `SSRDomParserFilter` | `@dooboostore/dom-parser` (this monorepo's own lightweight, dependency-free DOM) | Fresh window per request | Lower memory footprint, no jsdom dependency; pairs with the AOP-based data-hydration proxy below |
-| `SSRLinkDomFilter` | `linkedom` | Fresh window per request | Alternative lightweight DOM backend |
+| `SSRLinkDomFilter` | `linkedom` | Pooled (`poolOption` `min`/`max`, generation-based eviction) | Alternative lightweight DOM backend |
+| `SSRSimpleWebComponentDomParserFilter` | `@dooboostore/dom-parser` | Fresh window per request | `@dooboostore/simple-web-component` apps without a browser; `intentServices` injection and SWC `@property` hydration (below) |
 | `SSRSimpleWebComponentFilter` | Real headless **Chromium via Playwright** | New browser context per request (browser instance itself is reused) | Pixel/spec-perfect rendering (declarative Shadow DOM, real browser APIs) for `@dooboostore/simple-web-component` apps, at the cost of spinning up a real browser |
 
 All of them execute your existing frontend code (routing, components, services) on the server and return fully rendered HTML — no separate server-only rendering path to maintain.
@@ -33,7 +34,9 @@ All of them execute your existing frontend code (routing, components, services) 
 ## 📦 Installation
 
 ```bash
-pnpm add @dooboostore/simple-boot-http-server-ssr @dooboostore/simple-web-component jsdom
+pnpm add @dooboostore/simple-boot-http-server-ssr reflect-metadata
+# jsdom, linkedom, and playwright are regular dependencies; for SSRSimpleWebComponentFilter also run:
+npx playwright install chromium
 ```
 
 ---
@@ -41,53 +44,55 @@ pnpm add @dooboostore/simple-boot-http-server-ssr @dooboostore/simple-web-compon
 ## 💻 Core Usage
 
 ### 1. Universal Bootfactory (bootfactory.ts)
-Define a shared function to initialize the application on both server and client.
+Define a shared function to initialize the SWC app on both server and client.
 
 ```typescript
-export default (window: Window, urlPath?: string) => {
-  // Register components
-  register(window, [MyComponent, MyPage]);
+import swcRegister, { type SwcAppInterface } from '@dooboostore/simple-web-component';
 
-  const appElement = window.document.querySelector('#app');
-  if (appElement?.connect) {
-    const isClient = typeof window !== 'undefined' && window === globalThis.window;
-    
-    appElement.connect({
-      rootRouter: RootRouter,
-      path: urlPath ?? '/',
-      window,
-      // Server renders in 'direct' mode, Client hydrates in 'swap' mode
-      connectMode: isClient ? 'swap' : 'direct'
-    });
-  }
-  return appElement;
+export default async (window: Window, otherInstanceSim?: Map<symbol, any>, urlPath?: string) => {
+  // Register the built-in SWC elements (swc-app, ...) on this window
+  await swcRegister(window);
+
+  const app = window.document.querySelector('#app') as SwcAppInterface;
+  await app.connect({
+    window,
+    path: urlPath ?? '/',
+    routeType: 'path',
+    otherInstanceSim, // e.g. the `sim` Map from registerComponents
+    onStartedLazyDefineComponent: [/* component/page factories */]
+  });
+  return { app };
 };
 ```
 
 ### 2. Backend Configuration (SSR Filter)
-Add one of the SSR filters to your server configuration. Example using `SSRSimpleWebComponentFilter` (real Chromium via Playwright — requires `pnpm add playwright && npx playwright install chromium`):
+Add one of the SSR filters to your server configuration. Example using `SSRSimpleWebComponentDomParserFilter`:
 
 ```typescript
-const swcFilter = new SSRSimpleWebComponentFilter({
+const ssrFilter = new SSRSimpleWebComponentDomParserFilter({
   frontDistPath: './dist-client',
   frontDistIndexFileName: 'index.html',
-  // registerComponents is deprecated for this filter: Playwright loads your real
-  // bundle.js in an actual browser, so Custom Elements register themselves —
-  // you don't need to manually bootstrap the app here.
-  registerComponents: async (window: any) => {
-    bootfactory(window, window.location.pathname);
-  }
+  // Services exposed to SSR: each request gets them with its own `rr` injected, passed as `sim`
+  intentServices: [/* SimConfig items with a symbol */],
+  registerComponents: async (window: any, rr: RequestResponse, sim: Map<symbol, any>) => {
+    const { app } = await bootfactory(window, sim, UrlUtils.getUrlPath(window.location));
+    return app; // returning the SwcAppInterface enables @property hydration
+  },
+  ssrExcludeFilter: rr => /\.(js|css|map|ico|png|json)$/.test(rr.reqUrlPathName)
 });
 
 const server = new SimpleBootHttpSSRServer(
   new HttpSSRServerOption({
-    filters: [new ResourceFilter('./dist-client'), swcFilter]
+    listen: { port: 8080 },
+    filters: [new ResourceFilter('./dist-client', ['/bundle.js', /\.map$/]), ssrFilter]
   })
 );
 server.run();
 ```
 
-If you'd rather not spin up a real browser, use `SSRDomParserFilter` (or `SSRFilter` for `jsdom` with pooling, or `SSRLinkDomFilter` for `linkedom`) instead — same `Filter` interface, no Playwright dependency:
+`SSRSimpleWebComponentFilter` (real Chromium via Playwright) takes the same `frontDistPath` / `frontDistIndexFileName` / `ssrExcludeFilter` plus `playwright: { waitUntil, waitForSelector, waitForTimeout, timeout, ignoreTags }`. Playwright loads your real bundle, so Custom Elements register themselves and `registerComponents` is usually unnecessary.
+
+For `@dooboostore/simple-boot-front` apps, use `SSRDomParserFilter` (or `SSRFilter` for `jsdom` / `SSRLinkDomFilter` for `linkedom`, both pooled via `poolOption: { min, max, clearIntervalTime? }`) — same `Filter` interface:
 
 ```typescript
 const domParserFilter = new SSRDomParserFilter({
@@ -124,7 +129,7 @@ server.run();
    `{ sel, prop, value }` items (`sel` = `[swc-use-ssr="<id>"]`, JSON-serializable values only).
 3. Embedded as a `<script>` that runs before the bundle: finds each node with
    `querySelector` and sets `el[prop] = value`.
-4. The JSON is escaped for inline scripts (`<` → `<`, U+2028/U+2029), so a value
+4. The JSON is escaped for inline scripts (`<` → `\u003c`, U+2028/U+2029), so a value
    containing `</script>` can't break out of the tag. `JSON.parse` restores it exactly.
 5. Works because a custom element keeps own properties set **before** `customElements.define` —
    the upgrade doesn't reset them. Declare hydrated fields with `declare` (see the SWC README).
@@ -133,8 +138,8 @@ server.run();
 
 ## 📖 Learn More
 Check out the detailed guides and tutorials in the `document` folder.
-- [SSR Basics & JSDOM Usage](https://github.com/dooboostore-develop/packages/tree/main/simple-boot-http-server-ssr/document/Create%20a%20SSR%20Server%20Application%20Framework/02_chapter1_ssr_basics_jsdom.md)
-- [Data Hydration Guide](https://github.com/dooboostore-develop/packages/tree/main/simple-boot-http-server-ssr/document/Create%20a%20SSR%20Server%20Application%20Framework/04_chapter3_data_hydration.md)
+- [SSR Basics & JSDOM Usage](https://github.com/dooboostore-develop/packages/tree/main/@dooboostore/simple-boot-http-server-ssr/document/Create%20a%20SSR%20Server%20Application%20Framework/02_chapter1_ssr_basics_jsdom.md)
+- [Data Hydration Guide](https://github.com/dooboostore-develop/packages/tree/main/@dooboostore/simple-boot-http-server-ssr/document/Create%20a%20SSR%20Server%20Application%20Framework/04_chapter3_data_hydration.md)
 
 ---
 

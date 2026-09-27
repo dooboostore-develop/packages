@@ -63,15 +63,19 @@ state = result.rootObject;
 
 ## Public API (Root Export)
 
-`@dooboostore/dom-render`'s root entry (`src/index.ts`) re-exports everything as flat named exports — there is no `components`/`configs`/etc. namespace object to import. In practice you import whatever you need directly:
+`@dooboostore/dom-render`'s root entry (`src/index.ts`) re-exports as flat named exports — there is no `components`/`configs`/etc. namespace object to import:
 
 ```typescript
-import { DomRender, DomRenderProxy, ComponentBase, attribute, query, event, Appender, DomRenderConfig } from '@dooboostore/dom-render';
+import { DomRender, DomRenderProxy, ComponentBase, attribute, Appender, DomRenderConfig } from '@dooboostore/dom-render';
 ```
 
-This covers, among others: the built-in component classes/helpers (`If`, `This`, `Choose`, `CheckBox`, `Radio`, `Select`, `Timer`, `Details`, `Input`, `Route`, `RouterOutlet`, `A`, `ComponentSet`, `ComponentRouterBase`, and the combined `drComponent` map used to register them all at once), `configs`, `decorators`, `events`, `lifecycle` interfaces, `messenger`, `operators`, and `rawsets` — plus `DomRender`/`DomRenderProxy` themselves.
+This covers: a selected set of built-in components/helpers (`If`, `This`, `AppenderComponent`, `PromiseSwitch`, `Choose`, `CheckBox`, `Radio`, `Select`, `Timer`, `Details`, `Input`, `Route`, `RouterOutlet`, `A`, `ComponentSet`, `ComponentRouterBase`, `ComponentBase`, `attribute`, and the combined `drComponent` map used to register them all at once), plus everything from `configs`, `decorators`, `events`, `lifecycle`, `messenger`, `operators` (including the `Appender` collection class), `rawsets`, `types`, `DomRender` and `DomRenderProxy`.
 
-This enables single-entry usage without relying on package subpath exports.
+The `query` and `event` decorators are **not** re-exported from the root; import them via the `./*` subpath export:
+
+```typescript
+import { query, event } from '@dooboostore/dom-render/components/ComponentBase';
+```
 
 ---
 
@@ -123,11 +127,11 @@ Conditional rendering based on expression truthiness.
 
 ### `dr-for`
 
-Classic loop-style directive.
+Classic `for(...)` loop. `dr-option-it` is evaluated per iteration and its value is substituted for `#it#` in the cloned markup.
 
 ```html
-<li dr-for="let i=0; i<@this@.items.length; i++" dr-option-it="@this@.items[i]">
-  ${destIt.name}$
+<li dr-for="let i=0; i<@this@.items.length; i++" dr-option-it="i">
+  ${@this@.items[#it#].name}$
 </li>
 ```
 
@@ -180,17 +184,21 @@ Strip wrapper element while preserving children.
 - `dr-this`, `dr-this-property`: bind target context object
 - `dr-option-before`, `dr-option-after`: pre/post scripts attached alongside another directive on the same element
 
-Plain attributes are usually bound simply by putting a template expression inside the attribute value itself — there is no separate `dr-attr` directive:
+- `dr-value`, `dr-src`, `dr-checked`, `dr-selected`, `dr-readonly`, `dr-disabled`, `dr-hidden`, `dr-required`, `dr-open`, `dr-class`, `dr-style`: bind the corresponding property/attribute from an expression
+- `dr-attr="{key: expr, ...}"`: shorthand that expands each pair into `key="${expr}$"`
+
+Plain attributes can also be bound by putting a template expression inside the attribute value itself:
 
 ```html
 <div dr-inner-text="@this@.plainText"></div>
 <div dr-inner-html="@this@.trustedHtml"></div>
 <img src="${@this@.imageUrl}$" alt="${@this@.alt}$" />
+<img dr-attr="{src: @this@.imageUrl, alt: @this@.alt}" />
 ```
 
 ### Form utility (`dr-form`)
 
-`dr-form` wires fields and optional validator metadata.
+`dr-form` wires every `[name]` child to the target object (optionally with `Validator`/`ValidatorArray` from `@dooboostore/core`). Per-field options: `dr-form:name`, `dr-form:event` (default `change`), `dr-form:validator`.
 
 ```html
 <form dr-form="@this@.formState">
@@ -312,6 +320,7 @@ const userCard = DomRender.createComponent({
   template: `<div>${@this@.name}$</div>`
 });
 
+// DomRender.run({...}) is a shorthand that returns the proxied rootObject directly.
 const app = new DomRender({
   rootObject: { users: [] },
   target: document.querySelector('#app')!,
@@ -326,13 +335,16 @@ const app = new DomRender({
 Implement interfaces to receive lifecycle callbacks:
 
 - `onProxyDomRender(config)`
-- `onCreateRender(...args)`
+- `onCreateRender(...args)` / `onCreateRendered(...args)`
 - `onCreateRenderData(data)`
+- `onCreatedThisChild(child, childData)`
 - `onInitRender(param, rawSet)`
 - `onRawSetRendered(rawSet, otherData)`
-- `onChildRawSetRendered()`
+- `onChildRawSetRendered()` (interface in `lifecycle/OnChildRawSetRendered`, not re-exported from `lifecycle/index`)
+- `onChildRenderedByProperty(key, value)`
 - `onDestroyRender(params)`
 - `onChangeAttrRender(name, value, other)`
+- `onBeforeReturnGet(name, value, fullPath)` / `onBeforeReturnSet(name, value, fullPath)`
 
 ```typescript
 class ViewModel {
@@ -383,9 +395,9 @@ Use this when direct parent-child access is not suitable.
 
 This section is added for teams using both `dom-render` and `simple-web-component`.
 
-### `@addEventListener` (extended)
+### `@event` / `@addEventListener` (extended)
 
-`@addEventListener` is a decorator from `@dooboostore/simple-web-component`, not from `dom-render` directly.
+`@event` (alias of `@addEventListener`) is a decorator from `@dooboostore/simple-web-component`; it is unrelated to dom-render's own `@event({ query, name })`.
 
 In `dom-render`, equivalent patterns are:
 
@@ -420,9 +432,9 @@ updateRows(container: HTMLElement, nodes: Node[]) {
 
 For reactive templates, prefer declarative updates over manual replacement.
 
-### `@appendChild` (extended)
+### `@insertBeforeEnd` (extended)
 
-`@appendChild` is from `simple-web-component`.
+`simple-web-component` appends via `@insertBeforeEnd` (there is no `@appendChild` decorator).
 
 `dom-render` alternatives:
 

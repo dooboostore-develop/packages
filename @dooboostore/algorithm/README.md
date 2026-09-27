@@ -176,7 +176,7 @@ Replays `AutoTradeResult.conditions` bar-by-bar against `options.candles`, one o
 - `options.candles`, `options.config` (an `AutoTradeResult`), `options.history: UserTrade[]` (prior trades — `initial: true` entries seed a starting position without moving cash), `options.indicators`, `options.capital?`, `options.fee?` (0~1, taken on both buy and sell)
 - `options.risk?: { stopLossPct?, takeProfitPct? }` — checked before condition evaluation each bar, against the running average cost basis
 - `options.fromBar?` / `options.batchState?` — resume points for incremental/streaming re-simulation of a growing candle window
-- Returns `{ trades: UserTrade[], returnPct: number, batchState }` — `trades[].action` is `'buy' | 'sell' | 'buy-failed' | 'sell-failed'`, with `reason` set on failures (`'잔액부족'` insufficient funds, `'보유없음'` nothing to sell, `'소액제외'` order too small relative to equity) and `condition`/`candidates` snapshots of what fired
+- Returns `{ trades: UserTrade[], returnPct: number, batchState }` — `trades[].action` is `'buy' | 'sell' | 'buy-failed' | 'sell-failed'`, with a `reason` string literal (Korean values, see `src/stock/TradingSimulator.ts`): `'잔액부족'` insufficient funds, `'보유없음'` nothing to sell, `'소액제외'` order below `minBudgetEquityPct` of total equity (all on `*-failed`), and `'스탑로스'` on a stop-loss `sell`; plus `condition`/`candidates` snapshots of what fired
 
 **Standalone helpers:**
 

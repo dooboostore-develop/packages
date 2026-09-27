@@ -10,6 +10,9 @@ A complete example demonstrating the features of `@dooboostore/simple-boot-http-
 - 📁 **Static File Serving** - Serve files from resources directory
 - ⚡ **Request/Response Abstraction** - Easy-to-use API
 - 🛠️ **Built-in JSON Parsing** - Automatic content-type handling
+- 🧯 **Global Exception Handling** - `GlobalAdvice` with `@ExceptionHandler`
+- 🪵 **End Points** - request / close / error logging end points
+- 🔌 **WebSocket** - `WebSocketManager` topic protocol; `UserService` (`@Sim({ symbol: Symbol.for('UserService') })`) is callable over the socket
 
 ## Getting Started
 
@@ -21,7 +24,7 @@ pnpm install
 
 ### Development Mode
 
-Run with auto-reload on file changes:
+Run `webpack --watch`; nodemon restarts `dist/index.cjs` on each rebuild:
 
 ```bash
 pnpm dev
@@ -43,16 +46,24 @@ Server will start on **http://localhost:8080**
 example/
 ├── package.json
 ├── tsconfig.json
-├── webpack.config.cjs  # webpack (ts-loader) bundler configuration
+├── webpack.config.cjs          # webpack (ts-loader) + nodemon-webpack-plugin
+├── websocket-client.html       # Browser WebSocket demo (calls Symbol.for(UserService)://say)
 └── src/
-    ├── index.ts        # Server entry point
+    ├── index.ts                # Server entry point (HttpServerOption, rootRouter: AppRouter)
+    ├── advices/
+    │   └── GlobalAdvice.ts     # @ExceptionHandler global error handling
+    ├── endpoints/
+    │   ├── RequestLogEndPoint.ts
+    │   ├── CloseLogEndPoint.ts
+    │   └── ErrorLogEndPoint.ts
     ├── routers/
-    │   ├── AppRouter.ts   # Main page router
-    │   └── ApiRouter.ts   # API endpoints
+    │   ├── AppRouter.ts        # Main page router (routers: [ApiRouter])
+    │   └── ApiRouter.ts        # API endpoints
     ├── services/
-    │   └── UserService.ts # User management service
+    │   ├── index.ts
+    │   └── UserService.ts      # User management service
     └── resources/
-        └── index.css      # Static CSS file
+        └── index.css           # Static CSS file
 ```
 
 ## API Endpoints
@@ -61,6 +72,9 @@ example/
 
 - **GET /**  
   Home page with interactive API testing UI
+
+- **GET /resources/index.css**  
+  Static file served through `@GET({ resolver: ResourceResolver })`
 
 ### API Routes (ApiRouter)
 
@@ -98,7 +112,7 @@ example/
   Delete a user
 
 - **GET /api/stream/time**  
-  Server-Sent Events endpoint — pushes the current time every second. Demonstrates `res: { manual: true }`,
+  Server-Sent Events endpoint — pushes the current time every second. Demonstrates `res: 'manual'`,
   which tells the framework to skip its automatic status/header/body write so the handler can control the
   injected `ServerResponse` directly (`res.writeHead` + repeated `res.write`).
 
@@ -109,7 +123,8 @@ example/
 ```typescript
 import { Sim } from '@dooboostore/simple-boot/decorators/SimDecorator';
 import { Router, Route } from '@dooboostore/simple-boot/decorators/route/Router';
-import { GET, POST } from '@dooboostore/simple-boot-http-server/decorators/MethodMapping';
+import { GET } from '@dooboostore/simple-boot-http-server/decorators/MethodMapping';
+import { RequestResponse } from '@dooboostore/simple-boot-http-server/models/RequestResponse';
 
 @Sim
 @Router({ path: '/api' })
@@ -117,7 +132,7 @@ export class ApiRouter {
   @Route({ path: '/hello' })
   @GET({ res: { contentType: 'application/json' } })
   hello(rr: RequestResponse) {
-    // 리턴값이 그대로 응답 body가 된다 (object면 자동으로 JSON.stringify)
+    // The return value becomes the response body (objects are JSON.stringify'd automatically)
     return { message: 'Hello!' };
   }
 }
@@ -129,7 +144,7 @@ export class ApiRouter {
 import { ServerResponse } from 'http';
 
 @Route({ path: '/stream/time' })
-@GET({ res: { manual: true } }) // 자동 status/header/body 처리를 건너뛴다
+@GET({ res: 'manual' }) // Skip automatic status/header/body handling
 streamTime(res: ServerResponse) {
   res.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache' });
 
@@ -137,7 +152,7 @@ streamTime(res: ServerResponse) {
     const timer = setInterval(() => {
       res.write(`data: ${JSON.stringify({ time: new Date().toISOString() })}\n\n`);
     }, 1000);
-    res.on('close', () => { clearInterval(timer); resolve(); }); // 클라이언트 연결 종료 시 정리
+    res.on('close', () => { clearInterval(timer); resolve(); }); // Clean up when the client disconnects
   });
 }
 ```
@@ -153,10 +168,9 @@ export class ApiRouter {
   constructor(private userService: UserService) {}
   
   @Route({ path: '/users' })
-  @GET
+  @GET({ res: { contentType: 'application/json' } })
   getUsers(rr: RequestResponse) {
-    const users = this.userService.getAllUsers();
-    // ... return users
+    return this.userService.getAllUsers();
   }
 }
 ```
@@ -166,7 +180,7 @@ export class ApiRouter {
 - **@dooboostore/simple-boot-http-server** - HTTP server framework
 - **@dooboostore/simple-boot** - DI container & routing
 - **@dooboostore/core** - Core utilities
-- **esbuild** - Fast bundler
+- **webpack** - Bundler
 - **TypeScript** - Type safety
 - **Node.js** - Runtime environment
 

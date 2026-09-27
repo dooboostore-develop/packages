@@ -31,6 +31,17 @@ export namespace ValidUtils {
     }
   }
 
+  // 제너레이터 "객체"(function* 호출 결과) 판별. 프로토콜로 본다 —
+  // tslib 등으로 다운레벨된 제너레이터는 toString 태그가 '[object Object]' 라서 태그 검사로는 놓친다.
+  export const isGenerator = (value: any): value is Generator => {
+    return value !== null && typeof value === 'object' && typeof value.next === 'function' && typeof value[Symbol.iterator] === 'function';
+  }
+
+  // async function* 호출 결과 판별 (Symbol.iterator 가 없고 Symbol.asyncIterator 가 있다)
+  export const isAsyncGenerator = (value: any): value is AsyncGenerator => {
+    return value !== null && typeof value === 'object' && typeof value.next === 'function' && typeof value[Symbol.asyncIterator] === 'function';
+  }
+
   export const isFrozen = (obj: any): boolean => {
     return Object.isFrozen(obj);
   }

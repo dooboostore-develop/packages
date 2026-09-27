@@ -15,11 +15,8 @@ A complete example demonstrating the features of `@dooboostore/simple-boot-front
 # Install dependencies
 pnpm install
 
-# Start development server (opens at http://localhost:3002)
-pnpm dev
-
-# Or just serve without opening
-pnpm serve
+# Start the webpack dev server (http://localhost:3002, opens the browser)
+pnpm dev        # or: pnpm start / pnpm serve
 
 # Build for production
 pnpm build
@@ -29,41 +26,22 @@ pnpm build
 
 ```
 example/
-├── index.html              # Root HTML template
-├── index.ts                # Application entry point (SimpleBootFront)
-├── webpack.config.cjs      # Webpack configuration
-├── tsconfig.json          # TypeScript configuration
-├── package.json           # Dependencies
-└── src/
-    ├── components/        # Reusable components
-│   │   ├── item/
-│   │   │   ├── item.component.ts
-│   │   │   ├── item.html
-│   │   │   └── item.css
-│   │   └── profile/
-│   │       ├── profile.component.ts
-│   │       ├── profile.html
-│   │       └── profile.css
-│   ├── pages/             # Route pages
-│   │   ├── home/
-│   │   │   ├── home.ts
-│   │   │   ├── home.html
-│   │   │   └── home.css
-│   │   ├── user/
-│   │   │   ├── user.ts
-│   │   │   ├── user.html
-│   │   │   └── user.css
-│   │   └── about/
-│   │       ├── about.ts
-│   │       ├── about.html
-│   │       └── about.css
-│   ├── services/          # Business logic services
-│   │   └── UserService.ts
-│   └── types/             # TypeScript declarations
-│       └── index.d.ts
-├── webpack.config.cjs     # Webpack configuration
-├── tsconfig.json          # TypeScript configuration
-└── package.json           # Dependencies
+├── src/
+│   ├── index.html                 # Root HTML template
+│   ├── index.ts                   # Entry point (SimpleBootFront, rootRouter: IndexRouterComponent)
+│   ├── components/                # Reusable components
+│   │   ├── item/item.component.{ts,html,css}
+│   │   └── profile/profile.component.{ts,html,css}
+│   ├── pages/                     # Route pages
+│   │   ├── index.router.component.{ts,html,css}   # @Router: '/', '/user', '/about'
+│   │   ├── home/home.route.component.{ts,html,css}
+│   │   ├── user/user.route.component.{ts,html,css}
+│   │   └── about/about.route.component.{ts,html,css}
+│   └── services/
+│       └── UserService.ts         # Business logic service
+├── package.json
+├── tsconfig.json
+└── webpack.config.cjs
 ```
 
 ## Features Demonstrated
@@ -83,35 +61,18 @@ example/
 - `@Router` decorator for route configuration
 - Multiple route pages (Home, User, About)
 - `ComponentRouterBase` for router-enabled components
-- SPA navigation with `$router.go()`
+- SPA navigation with `$router?.go({path: '/user'})`
 
 ### 🔄 Lifecycle Hooks
-- `OnInitRender` - Called when component is rendered
-- `OnDestroyRender` - Called when component is destroyed
+- `onInitRender(param, rawSet)` - Called when the component is rendered (call `super.onInitRender`)
+- `onDestroyRender(metaData)` - Called when the component is destroyed
 - Cleanup and initialization patterns
 
 ### 🎨 Template Features
 - Reactive data binding with `${@this@.property}$`
 - Event handling with `dr-event-click`
-- DOM manipulation with `dr-this`
+- Routed child rendering with `<dr-this value="${@this@.child}$">`
 - HTML and CSS module imports
-
-## Project Structure
-
-```
-simple-boot-front/example/
-├── src/
-│   ├── index.html          # Main HTML file
-│   ├── index.ts            # Entry point
-│   └── examples/           # Example implementations
-│       ├── ComponentExample.ts
-│       ├── RouterExample.ts
-│       ├── DIExample.ts
-│       └── LifecycleExample.ts
-├── package.json
-├── tsconfig.json
-└── webpack.config.cjs
-```
 
 ## Technologies
 

@@ -29,7 +29,7 @@ Canvas-centered UI components for building rich browser editors, map-like visual
 - `TradeChart`
 - `OverlayStockChart`
 
-(plus their associated types, e.g. `CropCanvasConfig`, `GpsMarkerCanvasConfig`, `ImageCropCanvasConfig`, `ChartConfig`, `ChartDataPoint`, `TickerData`, `EventMarker`, etc. — see each component's section below.)
+(plus their associated types, e.g. `CropCanvasConfig`, `CropCanvasRunParameter`, `GpsMarkerCanvasConfig`, `MarkerPoint`, `PathData`, `ImageCropCanvasConfig`, `CropResult`, `ChartConfig`, `ChartDataPoint`, `OHLCV`, `Transaction`, `TickerData`, `LineType`, `NormalizeType`, `EventMarker`, and the `OverlayStockChart` event type guards.)
 
 ## Import Guide
 
@@ -45,13 +45,14 @@ import { ImageEditorCanvas, GpsMarkerCanvas, ImageCropCanvas, TradeChart, Overla
 import { ImageEditorCanvas } from '@dooboostore/lib-web/bundle-entry';
 ```
 
-### Namespace access from bundle entry
+`bundle-entry` also imports `reflect-metadata` and re-exports the peer packages as namespaces:
 
 ```typescript
-import { LibWebModule } from '@dooboostore/lib-web/bundle-entry';
-
-const editor = new LibWebModule.ImageEditorCanvas(/* ... */);
+import { ImageEditorCanvas, Core, CoreWeb } from '@dooboostore/lib-web/bundle-entry';
+// Core = @dooboostore/core, CoreWeb = @dooboostore/core-web
 ```
+
+The root also has a default export object `{ GpsMarkerCanvas, ImageCropCanvas, ImageEditorCanvas, TradeChart, OverlayStockChart }`.
 
 ## Installation
 
@@ -105,7 +106,7 @@ editor.resize(1024, 768);
 const dataUrl = await editor.exportFinalImage();
 ```
 
-Layers can also be added via `editor.run({ img, handle, cropStroke })` since `ImageEditorCanvas` implements `Runnable<void, CropCanvasRunParameter>` from `@dooboostore/core`.
+Also: `updateSelectedText(Options)`, `updateSelected<Shape>(options)`, `getSelectedLayer()`, `getMode()` (`'none' | 'crop' | 'erase'`), `isSelectedMode()`. Layers can also be added via `editor.run({ img, handle, cropStroke })` since `ImageEditorCanvas` implements `Runnable<void, CropCanvasRunParameter>` from `@dooboostore/core`.
 
 ### GPS marker map
 
@@ -120,11 +121,13 @@ const map = new GpsMarkerCanvas({
     useMercatorProjection: true, // false = simple equirectangular (lon,lat) projection
     markerColor: 'red',
     markerSize: 32,
+    // also: lineWidth, padding, labelFont, labelColor, labelOffset
 });
 
 map.setPaths([{ points: [{ lat: 37.5, lon: 127.0 }, { lat: 37.6, lon: 127.1 }], color: '#2196F3', closePath: false }]);
 map.setMarkers([{ lat: 37.5, lon: 127.0, label: 'Start', marker: { type: 'color', color: '#4CAF50' } }]);
 
+map.setUseMercatorProjection(false);
 map.zoomIn();
 map.zoomOut();
 map.resetViewAndFitData(); // reset pan/zoom and refit to current data
@@ -169,11 +172,12 @@ const chart = new TradeChart({
 });
 chart.setConfig({ show: { bollingerBands: true } });     // merge in more config later, chainable (returns `this`)
 chart.observable.subscribe(evt => console.log(evt));      // zoom/pan/click events (@dooboostore/core Observable)
+chart.getViewState();                                     // { startIndex, count }; setViewState(...) to restore
 chart.resize();
 chart.destroy();
 ```
 
-`TradeChart.createData(inputs, config)` turns raw OHLCV rows into the `ChartDataPoint[]` the chart consumes, computing moving averages / OBV / VOSC / RSI / MACD and golden/dead-cross state along the way. Most `show*` toggles (e.g. `showVolumePercentageLines`, `showPriceBollingerBands`, `showBuyMarkers`, ...) are fluent (`this`-returning) shortcuts for the equivalent `setConfig({ show: { ... } })` call.
+`TradeChart.createData(inputs, config)` turns raw OHLCV rows into the `ChartDataPoint[]` the chart consumes, computing moving averages / OBV / VOSC / RSI / MACD and golden/dead-cross state along the way. Data setters (`setTitle`, `setTransactions`, `setCross`, `setMAPeriods`, `setIsGroup`) and `draw()` are also chainable. Most `show*` toggles (e.g. `showVolumePercentageLines`, `showPriceBollingerBands`, `showBuyMarkers`, ...) are fluent (`this`-returning) shortcuts for the equivalent `setConfig({ show: { ... } })` call.
 
 ### Multi-ticker overlay chart (OverlayStockChart)
 
@@ -188,8 +192,11 @@ const dataMap = new Map([
 const overlay = new OverlayStockChart(
   document.getElementById('overlay') as HTMLCanvasElement,
   dataMap,
-  { initialState: { showCandles: false, showGrid: true, showAverage: [] } }
+  { initialState: { showCandles: false, showGrid: true, showAverage: [] } } // also: commonEvents, config
 );
+overlay.updateState({ showGrid: false });  // partial RenderState update; getState() reads it
+overlay.setData(dataMap);                  // replace data (optional commonEvents)
+overlay.destroy();
 ```
 
 `OverlayStockChart` draws several tickers' series on one canvas for comparison, normalizing their scales (`'none' | 'rangeNormalize' | 'normalize'`) and supporting several line-drawing styles (`'line' | 'line-smooth' | 'line-smooth-open/high/low/middle' | 'step-to' | 'step-from' | 'step-center'`) plus point/range event markers (`XPointEvent`/`YPointEvent`/`XYPointEvent`/`XRangeEvent`/`YRangeEvent`/`XYRangeEvent`, distinguished via the exported `isXPointEvent`/`isRangeEvent`/etc. type guards).

@@ -6,19 +6,24 @@ A quick start template for Simple Boot Front applications.
 
 ```
 src/
-├── index.ts                          # Application entry point
+├── index.ts                          # Entry point (SimFrontOption rootRouter: IndexRouterComponent)
 ├── index.html                        # Main HTML template
 ├── pages/                            # Router and route pages
-│   ├── index.router.component.ts     # Main router (Router + Component)
-│   ├── home/
-│   │   └── home.route.component.ts   # Home page (Route + Component)
-│   └── user/
-│       └── user.route.component.ts   # User page (Route + Component)
+│   ├── index.router.component.{ts,html,css}  # Main router ('/', '/user')
+│   ├── home/home.route.component.{ts,html,css}
+│   └── user/user.route.component.{ts,html,css}
 ├── components/                       # Reusable components
-│   └── hello.component.ts            # Example component
-├── services/                         # Business logic and data services
-│   └── UserService.ts                # User data service
-└── utils/                            # Utility functions and helpers
+│   ├── hello.component.{ts,html,css}     # <hello-component>
+│   ├── HelloComponent.{ts,html,css}      # duplicate of hello.component (same selector)
+│   ├── item/item.component.ts            # <item>
+│   └── profile/profile.component.ts      # <profile>
+├── scripts/
+│   └── concat.script.ts              # @Script({ name: 'concat' }) extends ScriptRunnable
+├── services/
+│   ├── UserService.ts                # User data service
+│   └── ProjectService.ts
+├── types/index.ts
+└── utils/
     └── dateUtils.ts                  # Date formatting utilities
 ```
 
@@ -27,13 +32,13 @@ src/
 ### 1. Router Component (*.router.component.ts)
 - **Router** + **Component** role
 - Extends `ComponentRouterBase`
-- Has `@Router` and `@Component` decorators
+- Has `@Sim`, `@Router`, and `@Component` decorators
 - Example: `index.router.component.ts`
 
 ### 2. Route Component (*.route.component.ts)
 - **Route** + **Component** role  
 - Extends `ComponentBase`
-- Has `@Component` decorator only
+- Has `@Sim` and `@Component` decorators
 - Used as route target in router
 - Example: `home.route.component.ts`, `user.route.component.ts`
 
@@ -63,15 +68,14 @@ Reusable UI components:
 - `hello.component.ts` - Example reusable component
 - Components can be used with custom selectors (e.g., `<hello-component>`)
 
-### 3. Services
+### 4. Services
 Business logic and data management:
 - `UserService.ts` - Handles user data with DI support
-- Use `@Sim({})` decorator for dependency injection
+- Use the `@Sim` decorator for dependency injection
 
-### 4. Scripts
-Utility functions and helpers:
-- `dateUtils.ts` - Date formatting functions
-- Pure TypeScript functions without decorators
+### 5. Scripts and Utils
+- `scripts/concat.script.ts` - a `@Script` (`ScriptRunnable`) callable from templates by name (`concat`)
+- `utils/dateUtils.ts` - plain date formatting functions without decorators
 
 ## Getting Started
 
@@ -84,7 +88,7 @@ pnpm install
 ```bash
 pnpm dev
 ```
-Runs the app at http://localhost:8081 with hot reload.
+Runs `webpack serve --mode development` (`pnpm serve` is the same). Note: this template ships no `webpack.config.*`, so add one (entry `src/index.ts`, ts/html/css loaders) before running.
 
 ### Build for Production
 ```bash
@@ -118,7 +122,7 @@ Creates optimized bundle in `dist/` folder.
 
 ### Add a Service
 1. Create `src/services/MyService.ts`
-2. Add `@Sim({})` decorator
+2. Add the `@Sim` decorator
 3. Inject in constructor:
 ```typescript
 constructor(private myService: MyService) {}
@@ -126,5 +130,5 @@ constructor(private myService: MyService) {}
 
 ## Learn More
 
-- [Simple Boot Documentation](https://github.com/visualkhh/simple-boot)
-- [Simple Boot Front](https://github.com/visualkhh/simple-boot-front)
+- [@dooboostore/simple-boot](https://www.npmjs.com/package/@dooboostore/simple-boot)
+- [@dooboostore/simple-boot-front](https://www.npmjs.com/package/@dooboostore/simple-boot-front)

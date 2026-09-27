@@ -1,125 +1,124 @@
-# Simple Web Component LSP — VSCode 디버그 실행 방법
+# Simple Web Component LSP — Running in VSCode (Debug)
 
-이 LSP는 VSCode + (선택) IntelliJ 모두를 지원하는 서버 1개 + 클라이언트 조합입니다.
-아래는 **VSCode에서 F5 디버그로 확장을 로드**해 SWC 문법 자동완성·하이라이트·선언부 이동을 확인하는 방법입니다.
+This LSP is one server plus clients: a VSCode extension client, and (optionally) IntelliJ via LSP4IJ.
+Below is how to **load the extension in VSCode with F5** and check SWC template completion, highlighting and go-to-definition.
 
-## 요구사항
+## Requirements
 
-- Node.js (패키지 레포 루트에서 `pnpm install` 완료된 상태)
+- Node.js (with `pnpm install` done at the repo root)
 - VSCode
 
-## 순서
+## Steps
 
-### 1. LSP 폴더를 워크스페이스로 연다
-`launch.json`이 이 폴더 안(`.vscode/`)에 있으므로, **이 폴더를 워크스페이스로 열어야** F5가 동작합니다.
+### 1. Open the LSP folder as the workspace
+F5 uses the workspace's `.vscode/launch.json`, so **open this folder as the workspace**:
 
 ```
 packages/@dooboostore/simple-web-component/lsp
 ```
 
-예:
+e.g.
 ```sh
 code packages/@dooboostore/simple-web-component/lsp
 ```
 
-### 2. 빌드 (아직 안 했다면)
+> `.vscode/` is not committed. If it is missing, add an `extensionHost` launch config
+> (e.g. name `"Run SWC LSP Extension"`, `args: ["--extensionDevelopmentPath=${workspaceFolder}"]`,
+> `preLaunchTask: "npm: compile"`), or pick **"VS Code Extension Development"** when VSCode offers it.
+
+### 2. Build
 ```sh
-pnpm run build
+pnpm run build   # tsc -p . → out/
 ```
-`.vscode/launch.json`의 프로필이 `npm: compile`(tsc)을 preLaunchTask로 돌리므로,
-**그대로 F5로 눌러 빌드+실행이 함께 진행됩니다.**
+If the launch config runs `npm: compile` (tsc) as its `preLaunchTask`, **F5 builds and runs in one go**.
 
-### 3. F5 디버그 실행
-- 왼쪽 **Run and Debug**(`Ctrl+Shift+D`) 패널에서
-- 드롭다운에서 **"Run SWC LSP Extension"** 프로필 선택
-- **F5**
+### 3. Start debugging (F5)
+- Open **Run and Debug** (`Ctrl+Shift+D`)
+- Select the launch profile
+- Press **F5**
 
-그러면 **Extension Development Host**라는 새 VSCode 창이 열립니다. 확장이 소그 창에 로드됩니다.
+A new **Extension Development Host** VSCode window opens with the extension loaded.
 
-### 4. 대상 프로젝트를 소그 창에서 연다
-- Extension Development Host 창에서
-  ```
-  File → Open Folder → …/dooboostore.github.io
-  ```
-- `apps/center/src/pages/lotto/LottoPage.ts`를 연다
-- SWC 문법을 확인한다.
+### 4. Open a target project in that window
+- In the Extension Development Host window: `File → Open Folder → <a project using SWC templates>`
+- Open a `.ts`/`.js` file with SWC template markup and check the syntax features.
 
-> 기본(처음 연) 창에는 확장이 로드되지 않습니다. **반드시 F5로 열린 소그 창**에서 확인하세요.
+> The original window does not load the extension. **Always check in the window opened by F5.**
 
-## 확인할 수 있는 것
-| 기능 | 입력 예시 |
+## What you can check
+| Feature | Input example |
 |------|-----------|
-| 상태 변수 완성 | `{{ @a` → `@aa@` |
-| 멤버 완성 | `{{ @aa@.` → `toString`, `toFixed` 등 |
-| 예약 변수 완성 | `{{ $` → `$host`, `$appHost`, `$this` … |
-| SWC 하이라이트 | `{{ }}`(keyword), `@aa@`(variable), `swc-on-*`(function) |
-| 선언부 이동 | `@aa@`에서 Cmd+Click → `@state('aa')` |
+| State/attribute/property variable completion | `{{ @a` → `@aa@` |
+| Member completion | `{{ @aa@.` → `toString`, `toFixed`, ... (by declared TS type) |
+| Reserved variable completion | `{{ $` → `$host`, `$appHost`, `$this`, ... |
+| Expression snippets | `{{`, `{{=`, `{{@` |
+| `ea:` marker snippets | `ea:` → `ea:${id}:start:html`, ... |
+| SWC highlighting | `{{ }}` (keyword), `@aa@` (variable), `swc-on-*` (function), `ea:` (macro) |
+| Hover | expressions, `$` variables, `@var@`, `ea:` markers, `swc-on-*` |
+| Diagnostics | e.g. an unclosed `{{=` |
+| Go to definition | Cmd+Click on `@aa@` → `@state('aa')` / `@attribute('aa')` |
 
-## 디버깅 팁
-- 확장 로드 로그: 소그 창 **Output** 탭 → 확장 필터에서 `Simple Web Component` 선택
-- LSP 상세 추적:
+## Debugging tips
+- Extension logs: in the dev host window, **Output** tab → select `Simple Web Component LSP` (trace goes to `SWC LSP Trace`)
+- Verbose LSP trace — put this in the dev host window's `settings.json`:
   ```json
   "simpleWebComponentLsp.trace.server": "verbose"
   ```
-  이 설정을 소그 창의 `settings.json`에 넣어 LSP 메시지를 출력합니다.
 
-## IntelliJ 지원 (LSP4IJ)
+## IntelliJ Support (LSP4IJ)
 
-VSCode용 확장과 **같은 LSP 서버**(`out/server/server.js`)를 IntelliJ에서도 씁니다.
-LSP는 "서버 1개, 클라이언트 다수" 구조라 서버는 그대로 두고 IntelliJ 쪽 클라이언트만 등록하면 됩니다.
+IntelliJ uses **the same LSP server** (`out/server/server.js`) as the VSCode extension.
+LSP is "one server, many clients", so you only register a client on the IntelliJ side.
 
-> ⚠️ **알려진 제한**: LSP4IJ는 `.`, `@`, `$` 자동완성 트리거를 서버에 **전달하지 않아** 완성은 동작하지 않습니다
-> (진단·하이라이트·호버는 동작). 완성을 정식으로 쓰려면 IntelliJ 전용 플러그인(SDK)을 만드는 것을 권장합니다.
+> ⚠️ **Known limitation**: LSP4IJ does **not forward** the `.`, `@`, `$` completion triggers to the server, so completion does not work
+> (diagnostics, highlighting and hover do). For real completion, use the dedicated IntelliJ plugin (`../plugins/intellij`).
 
-### 요구사항
-- IntelliJ IDEA 2024.2 이상
-- Node.js (LSP 서버 실행용)
-- 서버 빌드 완료: `cd packages/@dooboostore/simple-web-component/lsp && pnpm install && pnpm build`
+### Requirements
+- IntelliJ IDEA 2024.2+
+- Node.js (to run the LSP server)
+- Built server: `cd packages/@dooboostore/simple-web-component/lsp && pnpm install && pnpm build`
 
-### 1. LSP4IJ 플러그인 설치
-`Settings → Plugins → Marketplace`에서 **LSP4IJ** 검색 → Install → IDE 재시작
-(Red Hat 제공, JetBrains 마켓플레이스 공개 플러그인)
+### 1. Install the LSP4IJ plugin
+`Settings → Plugins → Marketplace` → search **LSP4IJ** → Install → restart the IDE
+(by Red Hat, public on the JetBrains Marketplace)
 
-### 2. 언어 서버 등록
-`Settings → Languages & Frameworks → Language Servers`에서 `+` 클릭:
+### 2. Register the language server
+`Settings → Languages & Frameworks → Language Servers` → click `+`:
 
 **Command**
 ```
 node $PROJECT_DIR$/packages/@dooboostore/simple-web-component/lsp/out/server/server.js --stdio
 ```
-- `$PROJECT_DIR$`는 매크로라서 프로젝트마다 자동 치환됩니다.
-- **주의**: 우리 서버는 `--stdio` 인자가 있어야 동작합니다
-  (생략하면 `Connection input stream is not set` 에러).
+- `$PROJECT_DIR$` is a macro, substituted per project.
+- **Note**: the server requires the `--stdio` argument
+  (without it you get `Connection input stream is not set`).
 
-**Mappings 탭**
+**Mappings tab**
 
-| 항목 | 값 |
+| Field | Value |
 |---|---|
 | File type | TypeScript (`*.ts`) |
 | Language ID | `typescript` |
 
-**Workspace Folders 탭** (선택)
-- `rootType: SOURCE_ROOTS` 또는 `markers: ["tsconfig.json"]` → 단일 저장소에 여러 SWC 프로젝트가 있을 때 서버가 스캔할 범위를 좁힐 수 있습니다.
+**Workspace Folders tab** (optional)
+- `rootType: SOURCE_ROOTS` or `markers: ["tsconfig.json"]` → narrows the scan scope when one repo has several SWC projects.
 
-### 3. 검증
-- SWC 마커(`{{ }}`, `{{= }}`, `{{@ }}`, `@var@`, `ea:` 등)가 있는 `.ts` 파일을 엽니다.
-- `View → Tool Windows → LSP Console`에서 서버 상태 확인.
-- 동작 확인:
-  - `swc-on-` 입력 → 이벤트 자동완성
-  - `{{= ` 입력 → `$host`/`$appHost` 완성
-  - `{{=` 미닫힘 → 에디터에 진단 표시
+### 3. Verify
+- Open a `.ts` file with SWC markers (`{{ }}`, `{{= }}`, `{{@ }}`, `@var@`, `ea:`, ...).
+- Check the server state in `View → Tool Windows → LSP Console`.
+- Check that highlighting, hover and diagnostics (e.g. an unclosed `{{=`) appear.
 
-### 자주 발생하는 문제
+### Troubleshooting
 
-| 증상 | 원인/해결 |
+| Symptom | Cause / Fix |
 |---|---|
-| 서버가 즉시 종료됨 | 커맨드에 `--stdio` 누락 |
-| 완성/진단 안 뜸 | Mappings에 TypeScript 파일타입 누락 |
-| Node 모듈 못 찾음 | `pnpm build` 전에 `pnpm install` 실행했는지 확인 |
-| 명령이 실행 안 됨 | 커맨드 경로에 `$PROJECT_DIR$` 매크로 사용, 혹은 절대경로로 대체 |
+| Server exits immediately | `--stdio` missing from the command |
+| No diagnostics/highlighting | TypeScript file type missing in Mappings |
+| Node module not found | Run `pnpm install` before `pnpm build` |
+| Command does not run | Use the `$PROJECT_DIR$` macro in the path, or an absolute path |
 
-### 서버 실행 파일 위치
+### Server executable
 ```
-lsp/out/server/server.js    ← VSCode 확장과 IntelliJ가 공유
+lsp/out/server/server.js    ← shared by the VSCode extension and IntelliJ
 ```
-빌드만 다시 하면(`pnpm build`) 두 편집기 모두 즉시 최신 서버를 씁니다.
+Rebuild (`pnpm build`) and both editors pick up the latest server.

@@ -1,79 +1,84 @@
 # SWC IntelliJ Plugin (Official LSP API)
 
-Simple Web Component 템플릿 문법(`{{...}}`, `@bind@`, `swc-on:*`, `ea:`, 예약 `$`변수)을
-TypeScript backtick template 문자열 안에서 지원하는 IntelliJ 플러그인입니다.
+An IntelliJ plugin that supports Simple Web Component template syntax (`{{...}}`, `@var@`, `swc-on-*`, `ea:`, reserved `$` variables)
+inside TypeScript backtick template strings.
 
-JetBrains **공식 LSP Client API**(`com.intellij.platform.lsp`)를 사용합니다.
-기존에 작성한 LSP 서버(`lsp/out/server/server.js`)를 그대로 재사용하므로, VSCode 확장과 동일한
-기능(자동완성, 정의 이동, semantic highlight)을 IntelliJ에서 얻습니다.
+It uses the JetBrains **official LSP Client API** (`com.intellij.platform.lsp`) and reuses the existing
+LSP server (`lsp/out/server/server.js`), so IntelliJ gets the same features as the VSCode extension
+(completion, go-to-definition, semantic highlighting).
 
-> 공식 LSP API는 상업용 IDE(IDEA Ultimate, WebStorm 등)에서만 사용 가능합니다.
-> IntelliJ IDEA 오픈소스 빌드와 Android Studio에서는 동작하지 않습니다.
+> The official LSP API is only available in commercial IDEs (IDEA Ultimate, WebStorm, ...).
+> It does not work in the IntelliJ IDEA open-source build or Android Studio.
 
-## 구조
+## Structure
 
 ```
 plugins/intellij/
-├── settings.gradle.kts          # Gradle + IntelliJ platform 저장소 설정
-├── build.gradle.kts             # IntelliJ 2026.2 대상 플러그인 빌드
-├── gradle.properties            # IDE: IntelliJ 내장 JBR 25 toolchain
-├── gradle/wrapper/              # gradlew
+├── settings.gradle.kts          # Gradle + plugin repositories (rootProject: swc-intellij)
+├── build.gradle.kts             # Plugin build targeting IntelliJ 2026.2 (sinceBuild 262)
+├── gradle.properties            # Toolchain: IntelliJ's bundled JBR
+├── gradlew, gradlew.bat         # Gradle wrapper scripts
 └── src/main/
     ├── kotlin/io/dooboostore/swc/lsp/
-    │   ├── SwcLspIntegrationProvider.kt  # EP 구현, 파일 열기 시 클라이언트 기동
-    │   └── SwcLspClientDescriptor.kt     # 지원 파일 판단 + server.js 실행 명령
+    │   ├── SwcLspIntegrationProvider.kt   # EP implementation, starts the client when a .ts file opens
+    │   ├── SwcLspClientDescriptor.kt      # Supported files (ts/mts/cts/tsx) + server.js command line
+    │   ├── SwcCompletionCustomizer.kt     # Disables IDE-side prefix filtering; the server matches
+    │   ├── SwcSemanticTokensCustomizer.kt # Maps server semantic tokens to text attributes
+    │   ├── SwcHighlightingListener.kt     # Paints SWC markers over the template-string color
+    │   └── SwcServerPath.kt               # Resolves the server output dir
     └── resources/META-INF/
-        └── plugin.xml          # EP 등록 및 com.intellij.modules.lsp 의존성
+        └── plugin.xml          # EP registration + com.intellij.modules.lsp / JavaScript dependencies
 ```
 
-## 요구사항
+## Requirements
 
-- JDK 25 — IntelliJ 내장 JBR 25를 toolchain으로 자동 사용
-- `node` — 실행 바이너리 (환경변수 `SWC_LSP_NODE`로 오버라이드 가능)
-- 상업용 IntelliJ 기반 IDE로 `runIde` 실행
+- JDK 25 — IntelliJ's bundled JBR is used as the toolchain (`org.gradle.java.installations.paths` in `gradle.properties`)
+- `node` — server runtime (override with the `SWC_LSP_NODE` env var)
+- A commercial IntelliJ-based IDE for `runIde`
 
-## 빌드
+## Build
 
 ```bash
 ./gradlew build
-# 결과: build/distributions/swc-intellij-0.0.1.zip
+# Output: build/distributions/swc-intellij-0.0.1.zip
 ```
 
-## 실행 (runIde)
+## Run (runIde)
 
-`runIde` 태스크는 임시 IntelliJ 인스턴스로 IDE를 띄우고, `-Dswc.lsp.server=<절대 경로>`를
-`../lsp/out/server/server.js`로 자동 주입합니다. LSP 서버를 먼저 컴파일하세요.
+`runIde` launches a sandbox IDE and injects `-Dswc.lsp.server=<absolute path>` pointing at
+`../../lsp/out/server/server.js` (only if that file exists). Compile the LSP server first.
 
 ```bash
-# 1) LSP 서버 빌드
-( cd ../lsp && npm run build )
+# 1) Build the LSP server
+( cd ../../lsp && pnpm run build )
 
-# 2) IDE 실행
+# 2) Launch the IDE
 ./gradlew runIde
 ```
 
-실행된 IDE에서 `.ts` 파일(예: `apps/center/src/pages/...`)을 열면 상태 표시줄 오른쪽에
-"Simple Web Component" 언어 서비스 위젯이 나타나고, backtick 안에서 자동완성 / semantic
-highlight / 정의 이동이 동작합니다.
+Open a `.ts` file with SWC templates in the launched IDE: a "Simple Web Component" language-service
+widget appears on the right of the status bar, and completion / semantic highlighting /
+go-to-definition work inside backticks.
 
-## 수동 배치 (옵션)
+## Manual Install (optional)
 
 ```bash
 ./gradlew buildPlugin
 # build/distributions/swc-intellij-0.0.1.zip
 ```
-`Preferences | Plugins | ⚙ | Install Plugin from Disk...` 로 설치합니다.
-`swc.lsp.server` 시스템 속성이 없으면 체크아웃 루트(`lsp/out/server/server.js`)를 자동 탐색합니다.
+Install via `Preferences | Plugins | ⚙ | Install Plugin from Disk...`.
+Without the `swc.lsp.server` system property, the plugin walks up from the working directory to the checkout
+containing `lsp/src/server/server.ts` and uses its `lsp/out/server/server.js`.
 
-## 로그
+## Logs
 
-LSP 통신 로그를 보려면 `Help | Diagnostic Tools | Debug Log Settings...`에 아래 추가:
+To see LSP traffic, add this to `Help | Diagnostic Tools | Debug Log Settings...`:
 
 ```
 #com.intellij.platform.lsp
 ```
 
-## 참고
+## References
 
-- 공식 문서: https://plugins.jetbrains.com/docs/intellij/language-server-protocol.html
-- LSP API 클래스 리네임(`LspServerSupportProvider` → `LspIntegrationProvider`)은 2026.1.4부터 적용됩니다.
+- Official docs: https://plugins.jetbrains.com/docs/intellij/language-server-protocol.html
+- The LSP API class rename (`LspServerSupportProvider` → `LspIntegrationProvider`) applies from 2026.1.4.

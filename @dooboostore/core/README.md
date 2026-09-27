@@ -5,17 +5,17 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](https://opensource.org/licenses/MIT)
 
 
-A zero-dependency TypeScript utility library providing 35+ modules for the @dooboostore ecosystem — a reactive messaging system (RxJS-like, but self-contained), DOM-oriented form validators, 2D/3D geometry, an extensible HTTP fetcher, cron-style scheduling, transaction coordination, and a large collection of array/object/string/date/math/convert/random helpers.
+A zero-dependency TypeScript utility library providing 30+ modules for the @dooboostore ecosystem — a reactive messaging system (RxJS-like, but self-contained), DOM-oriented form validators, 2D/3D geometry, an extensible HTTP fetcher, cron-style scheduling, transaction coordination, and a large collection of array/object/string/date/math/convert/random helpers.
 
 ---
 
 ## ✨ Key Features
 
--   **🎯 RxJS-Like Reactive System**: `Observable`, `Subject`, `BehaviorSubject`, `ReplaySubject`, `AsyncSubject` with 25+ pipeable operators — without an RxJS dependency
--   **⚡ Advanced Async Utilities**: `Promises.sleep/settle/settles/retry/loop`, concurrency-limited batch execution, `AbortablePromise`
+-   **🎯 RxJS-Like Reactive System**: `Observable`, `Subject`, `BehaviorSubject`, `ReplaySubject`, `ReplayForwardSubject` with 25+ pipeable operators — without an RxJS dependency
+-   **⚡ Advanced Async Utilities**: `Promises.sleep/settle/settles/retry/loop`, `Promises.Result.wrap` state tracking, concurrency-limited batch execution, `AbortablePromise`
 -   **📋 DOM-Bound Validation Framework**: composable `Validator` classes that read/write a DOM element's `value`/`checked` directly, plus checkbox-group combinators
 -   **📐 2D/3D Geometry Engine**: `Point2D`/`Point3D`, `Rect`, `Polygon`, `Ellipse`, `Vector` (p5.js-style), with containment/overlap checks and percent/ratio layout helpers
--   **🌐 Extensible HTTP Client**: `Fetcher`/`HttpFetcher`/`HttpJsonFetcher` — a config-object request API with overridable lifecycle hooks, not a flat options bag
+-   **🌐 Extensible HTTP Client**: `Fetcher`/`HttpFetcher`/`HttpJsonFetcher` — a config-object request API with per-request callbacks and overridable lifecycle hooks
 -   **📦 Data Utilities**: `ArrayUtils`, `ObjectUtils`, `StringUtils`, `DateUtils`, `MathUtil`, `ConvertUtils`, `RandomUtils`
 -   **⏰ Cron-Shaped Scheduling**: `ScheduleBase` tracks run history/state/counts around your `execute()` implementation
 -   **🛡️ Transaction Coordination**: `TransactionManager` cascades `catch()`/`finally()` across registered transactions
@@ -43,13 +43,13 @@ yarn add @dooboostore/core
 
 ## 📚 Module Organization
 
-`@dooboostore/core` is organized into **35+ modules**, all re-exported from the package root (`src/index.ts`).
+`@dooboostore/core` is organized into **30+ modules**, all re-exported from the package root (`src/index.ts`).
 
 ### **Tier 1: Foundation (Data & Async)**
 
 | Module | Description | Key Exports |
 |--------|-------------|------------|
-| **message** | RxJS-like reactive system | `Observable`, `Subject`, `BehaviorSubject`, `ReplaySubject`, `AsyncSubject` |
+| **message** | RxJS-like reactive system | `Observable`, `Subject`, `BehaviorSubject`, `ReplaySubject`, `ReplayForwardSubject`, `Subscription`, `debounce`/`throttle` helpers |
 | **promise** | Advanced async utilities | `Promises`, `AbortablePromise` |
 | **valid** | Type guards | `ValidUtils` (`isString`, `isNumber`, `isObject`, `isEmpty`, `isNullish`, …) |
 | **array** | Array manipulation | `ArrayUtils` (`split`, `toShuffle`, `pick`, `has`/`hasAll`, `relation`, …) |
@@ -67,7 +67,7 @@ yarn add @dooboostore/core
 | **validators** | DOM-bound validation framework | `Validator`, `FormValidator`, `RequiredValidator`, `RegExpTestValidator`, checkbox-array combinators |
 | **fetch** | HTTP client framework | `HttpFetcher`, `HttpJsonFetcher`, `Fetcher` (base, for non-HTTP transports) |
 | **entity** | 2D/3D geometry | `Point2D`, `Point3D`, `Polygon`, `Rect`, `Ellipse`, `Vector`, `Scalar` |
-| **runs** | Runnable pattern | `Runnable<I, O>` interface |
+| **runs** | Runnable pattern | `Runnable<R, PR>`, `AroundRunnable`, `AutoStartRunner`, `RunnableLoader`, `StoreRunnableLoader` |
 
 ### **Tier 3: Coordination & Async Patterns**
 
@@ -82,19 +82,20 @@ yarn add @dooboostore/core
 | Module | Description | Key Exports |
 |--------|-------------|------------|
 | **url** | URL utilities | `UrlUtils` |
-| **parser** | Parsing utilities | `CssParser`, `ObjectPathParser` |
+| **parser** | Parsing utilities | `CssParser` |
 | **logger** | Structured logging | `Logger` |
-| **storage** | Storage abstraction | `Storage`, `MemoryStorage` |
+| **storage** | Storage abstraction | `Storage`, `MemoryStorage`, `StorageUtils` |
 | **reflect** | Metadata reflection | `ReflectUtils` |
 | **function** | Function utilities | `FunctionUtils` (dynamic script execution) |
 | **optional** | Optional/Maybe monad | `Optional<T>`, `OptionalUtils` |
 | **iterators** | Range iterators | `Range` |
 | **queues** | Async queues | `AsyncBlockingQueue<T>` |
 | **advice** | AOP-style exception handling | `Advice` |
-| **code** | Code constants | ISO3166-1 country codes (`IOS3166_1`) |
+| **code** | Code constants | `Code<D>` type, ISO3166-1 country codes (`IOS3166_1_Code` enum, `IOS3166_1_CodeDescription`) |
 | **image** | Image utilities | `ImageUtils` |
 | **expression** | Expression evaluation | `ActionExpression`, `Expression` |
-| **hash** | Hashing | `HashUtils` |
+| **hash** | Hashing | `HashUtils` (`hash53`) |
+| **types** | Shared type helpers (`src/types.ts`) | `ClassType`, `ConstructorType`, `OptionalType`, `Mutable`, `MethodKeys`, … |
 
 ---
 
@@ -117,8 +118,8 @@ Observable<T, E>
 Subject<T, E>              // Multicast observable
 BehaviorSubject<T, E>      // With current value
 ReplaySubject<T, E>        // Replays historical values to new subscribers
-ReplayForwardSubject<T, E> // Replay variant that forwards subsequent values
-AsyncSubject<T, E>         // Emits only the last value, on complete
+ReplayForwardSubject<T>    // ReplaySubject; getForwardOnly() returns an Observable of only values emitted after subscribing (no replay)
+Subscription               // returned by subscribe(); call unsubscribe()
 ```
 
 #### Pipeable Operators (`message/operators`)
@@ -132,7 +133,7 @@ import { debounceTime, map, switchMap, filter, catchError } from '@dooboostore/c
 
 Available operators (one file per operator under `src/message/operators/`): `map`, `filter`, `reduce`, `scan`, `switchMap`, `mergeMap`, `concatMap`, `tap`, `find`, `first`, `single`, `take`, `takeLast`, `takeUntil`, `takeWhile`, `skip`, `skipWhile`, `distinctUntilChanged`, `debounceTime`, `throttle`, `throttleTime`, `delay`, `bufferTime`, `timeout`, `catchError`, `retry`, `finalize`, `share`, `from`, `interval`.
 
-Standalone creation/combination helpers (not `.pipe()` operators, imported from the package root) live under `src/message/internal/`: `of`, `range`, `fromArray`, `fromPromise`, `fromEvent`, `merge`, `concat`, `defer`, `empty`, `never`, `throwError`, `interval`, `timer`, `firstValueFrom`, `lastValueFrom`, `toPromise`.
+Standalone creation/combination helpers (not `.pipe()` operators, imported from the package root) live under `src/message/internal/`: `of`, `range`, `fromArray`, `fromPromise`, `fromEvent`, `merge`, `concat`, `defer`, `empty`, `never`, `throwError`, `interval`, `timer`, `firstValueFrom`, `lastValueFrom`, `toPromise`. The root also exports the pipeable `startWith`, `skip`, `take`, `takeWhile`, and plain function helpers `debounce(fn, delay)`, `throttle(fn, delay)`, `throttleTime(fn, delay)`, `debounceTimeIntervalLock(unlockChecker, unlocked, intervalTime)`.
 
 #### Example: Reactive Search with Debounce
 
@@ -184,6 +185,10 @@ Promises.loop<T>(config: { factory: (loopInfo: { age: number }) => Promise<T>; d
 Promises.filterCatch(promise, errorTypeOrPredicate): Promise<Error | undefined>
 Promises.abortable<T>(executor: (() => Promise<T>) | Promise<T>, signal?: AbortSignal): AbortablePromise<T>
 Promises.withResolvers<T>(): { promise, resolve, reject }         // like the stage-4 Promise.withResolvers
+
+// Wrap a promise (or a promise factory) so its state can be read synchronously
+Promises.Result.wrap<T, E>(promise | () => promise)              // the promise itself, plus status/isPending/isFulfilled/isRejected/value/reason (+ factory() to re-run when given a factory)
+Promises.Result.awaitWrap<T, E>(promise | () => promise)         // awaits it and resolves to a plain settled state object (never rejects)
 
 // Batch execution helpers
 Promises.executeInChunks<T>(factories, { chunkSize, sleepBetweenChunks }): Promise<T[]>
@@ -255,13 +260,14 @@ abstract class Validator<T = any, E = Element> {
 | `ValueEqualsValidator(equalsValue)` / `ValueNotEqualsValidator(equalsValue)` | `value === equalsValue` / `!==` |
 | `CheckedValidator` / `UnCheckedValidator` | `target.checked` is `true` / `false` |
 | `PassValidator` / `NonPassValidator` | always `true` / always `false` |
+| `ValidValidator(callback)` | valid()'s result comes from your own `callback(value, target, event)` |
 | `MultipleValidator(validators)` | all given validators are valid (AND) |
 | `ValidMultipleValidator(callback, validators)` | valid()'s result comes from your own `callback(validators, value, target, event)` |
 | `ValidatorArray` (abstract) | base for validators whose `value` is a `Validator[]` (e.g. a checkbox group) |
 | `ValidValidatorArray(callback)` | `ValidatorArray` whose `valid()` delegates to your callback |
 | `AllCheckedValidatorArray` / `AllUnCheckedValidatorArray` | every item in the array is checked / unchecked |
 | `CountEqualsCheckedValidatorArray(count)`, `CountGreaterThanCheckedValidatorArray(count)`, `CountGreaterThanEqualsCheckedValidatorArray(count)`, `CountLessThanCheckedValidatorArray(count)`, `CountLessThanEqualsCheckedValidatorArray(count)`, `CountUnCheckedValidatorArray(count)`, and the matching `*UnCheckedValidatorArray` set | the number of checked/unchecked items compares against `count` as the name says |
-| `IncludeCheckedValidatorArray` / `ExcludeCheckedValidatorArray` | at least one item checked / no items checked |
+| `IncludeCheckedValidatorArray(include, allRequired?)` / `ExcludeCheckedValidatorArray(include, allRequired?)` | at least one item is checked and every checked value is in `include` (with `allRequired`, every `include` value must be checked) / the same for unchecked items |
 
 #### Example: Composite form validation
 
@@ -374,7 +380,9 @@ const user = await api.get<User>({ target: `/api/users/${id}` });
 const created = await api.postJson<User>({ target: '/api/users', config: { fetch: { body: { name: 'Ada' } } } });
 ```
 
-To customize cross-cutting behavior (auth headers, 401 handling, logging), subclass `HttpFetcher`/`HttpJsonFetcher` and override the protected hooks (`before`, `afterSuccess`, `error`, `finally`, `beforeProxyFetch`, `afterProxyFetch`, `errorTransform`) rather than passing a flat options object — there is no `FetcherOptions`-style `beforeRequest`/`afterResponse` callback bag.
+Per request, `HttpFetcherConfig` also accepts `fetcher` (a custom `fetch` implementation), `allowedResponseNotOk` (don't throw on non-2xx), `beforeProxyFetch`/`afterProxyFetch` (rewrite the request / response; `skipGlobalBeforeProxyFetch`/`skipGlobalAfterProxyFetch` bypass the class-level hooks), `fetchResponseBeforeCallBack`/`fetchResponseAfterCallBack`, and `hasResponseErrorChecker` (return a truthy value to throw it). `fetch.timeout` aborts automatically and can be combined with your own `signal`.
+
+For cross-cutting behavior (auth headers, 401 handling, logging), subclass `HttpFetcher`/`HttpJsonFetcher` and override the protected hooks: `before`, `beforeFetch`, `afterFetch`, `afterSuccess`, `afterSuccessTransform`, `error`, `finally`, `beforeProxyFetch`, `afterProxyFetch`, `errorTransform`. By default `errorTransform` wraps failures in `HttpResponseError` (`error`, `body`, `response`; check with `isHttpResponseError`).
 
 ---
 
@@ -442,6 +450,7 @@ import { ScheduleBase } from '@dooboostore/core';
 class DailyBackupSchedule extends ScheduleBase<void, { fileCount: number }> {
   spec = '0 2 * * *';
   name = 'Daily Database Backup';
+  description = 'Back up the database every night at 02:00';
 
   async execute() {
     const backup = await performBackup();
@@ -493,7 +502,7 @@ StringUtils.lsubString(str, len) / rsubString(str, len)
 StringUtils.ellipsis(text, length)              // truncate with "…"
 StringUtils.deleteEnter(str)                    // strip newlines
 StringUtils.pickEmoji(str)
-StringUtils.appendPostposition(text, { vowel, consonant })   // Korean particle helper (은/는, 이/가, …)
+StringUtils.appendPostposition(text, { vowel, consonant })   // appends `consonant` if text ends in a final consonant (batchim), else `vowel`
 StringUtils.escapeSpecialCharacterRegExp(str)
 ```
 

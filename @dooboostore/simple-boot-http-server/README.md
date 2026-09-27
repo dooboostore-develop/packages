@@ -14,10 +14,11 @@
 - **Dependency Injection (DI)**: Manage dependencies between services automatically using the `@Sim` decorator — the exact same DI/AOP container as `@dooboostore/simple-boot`.
 - **Middleware & Filters**: Systematically separate pre/post-processing logic (CORS, caching, auth, logging, OpenAPI generation, etc.) through the `Filter` interface.
 - **Powerful Exception Handling**: Leverage AOP-based `GlobalAdvice` to isolate business logic from error handling logic.
-- **Manual Response Streaming**: Opt out of the automatic response pipeline with `res: { manual: true }` to stream Server-Sent Events, NDJSON, or any long-lived response directly from the injected `ServerResponse`.
+- **Generator Streaming**: Return a (async) generator and each yielded value is written to the body immediately after the headers — SSE with no plumbing.
+- **Manual Response Streaming**: Opt out of the automatic response pipeline with `res: 'manual'` to stream Server-Sent Events, NDJSON, or any long-lived response directly from the injected `ServerResponse`.
 - **Real-time WebSocket Protocol**: A topic-based pub/sub protocol over a single socket — subscribe/unsubscribe, request/response, *and* server-initiated events the server can `await` a client reply for — with automatic reconnection and re-subscription.
 - **Binary File Transfer over WebSocket**: `Buffer`/`File` values anywhere in a message are detected automatically and shipped as raw bytes in a compact binary frame (length header + JSON metadata + concatenated buffers) instead of being bloated with base64 — no separate upload endpoint needed.
-- **Resource Resolvers**: Provides `ResourceResolver` for serving static files and templates effortlessly.
+- **Resource Resolvers**: `ResourceResolver` (set via `@GET({ resolver: ResourceResolver })`) writes a file/resource as the response; `ResourceFilter` serves static paths.
 
 ---
 
@@ -109,8 +110,42 @@ export class MyAuthFilter implements Filter {
 }
 ```
 
+Built-in filters and end points (all exported from the package root):
+
+| Class | Use |
+|---|---|
+| `ResourceFilter(distPath, [regex \| { request, dist }])` / `ResourceFilter([{ request, response }])` | Serve static files or generated data for matching requests |
+| `CacheFilter({ config: { cacheDir?, lifeTime, startUpClean? }, key, filter? })` | Response cache keyed per request |
+| `OpenApi3Filter({ path, excludePath? }, openApiConfig?)` | Serve an OpenAPI 3 document generated from routes |
+| `TopicProtocolFilter` | Handle the topic protocol over HTTP multipart (`X-Simple-Boot-Http-Topic-Protocol: topic`) |
+| `IntentSchemeFilter` | Route requests to `IntentManager` |
+| `HttpStatusFilter(status)` / `ThrowFilter(error)` | Respond with a fixed status / throw a fixed error |
+| `HeaderEndPoint(headers)` / `CrossDomainHeaderEndPoint(config?)` | `requestEndPoints` that add response headers / CORS headers |
+
+Other `HttpServerOption` fields: `serverOption` (HTTP/HTTPS), `listen`, `filters`, `requestEndPoints`, `closeEndPoints`, `errorEndPoints`, `webSocketEndPoints`, `sessionOption` (`key`, `expiredTime`, `provider`), `globalAdvice`, `fileUploadTempPath`, `noSuchRouteEndPointMappingThrow`, `transactionManagerFactory`.
+
+### Generator Streaming (SSE)
+Return a generator (`function*` or `async function*`) and the server streams it: headers (`status`, `header`, `contentType` from `res`) are sent immediately, then every yielded value is written to the body right away (strings/Buffers as-is, anything else as JSON), and the response ends when the generator finishes. If the client disconnects, the generator is stopped with `return()`, so its `finally` block runs. If the request's `Accept-Encoding` includes `gzip`, the stream is gzip-compressed and flushed (`Z_SYNC_FLUSH`) after every chunk, so events still arrive immediately. Headers are sent before the first chunk, so set them in `res` or in a before-filter — `setHeader` after that throws `ERR_HTTP_HEADERS_SENT`.
+
+```typescript
+@Route({ path: '/events' })
+@GET({ res: { contentType: 'text/event-stream', header: { 'Cache-Control': 'no-cache' } } })
+async *events(signal: AbortSignal) {
+  try {
+    while (!signal.aborted) {
+      const msg = await nextMessage(signal); // rejects as soon as the client disconnects
+      yield `data: ${JSON.stringify(msg)}\n\n`; // SSE framing is up to you
+    }
+  } finally {
+    // runs when the client disconnects — release subscriptions here
+  }
+}
+```
+
+Every handler can take an `AbortSignal` parameter (injected by type, like `ReqJsonBody`). It aborts when the client disconnects before the response finishes. Pass it to anything that waits (`fetch`, `timers/promises`, `events.once`, ...) — a generator suspended on an `await` isn't stopped by `return()` until its next `yield`, so the signal is what releases an event wait. Errors thrown after the client disconnected (e.g. that `AbortError`) are swallowed.
+
 ### Manual Response Streaming (SSE / NDJSON)
-By default, a route's return value is automatically serialized and written as a single response. Set `res: { manual: true }` to skip that entirely and take direct control of the injected `ServerResponse` — the request handler's promise simply stays pending until you're done, so nothing else writes to the response underneath you.
+By default, a route's return value is automatically serialized and written as a single response. Set `res: 'manual'` to skip that entirely and take direct control of the injected `ServerResponse` — the request handler's promise simply stays pending until you're done, so nothing else writes to the response underneath you.
 
 ```typescript
 import { ServerResponse } from 'http';
@@ -118,7 +153,7 @@ import { Route } from '@dooboostore/simple-boot';
 import { GET } from '@dooboostore/simple-boot-http-server';
 
 @Route({ path: '/stream/time' })
-@GET({ res: { manual: true } }) // status/header/body auto-write is skipped
+@GET({ res: 'manual' }) // status/header/body auto-write is skipped
 streamTime(res: ServerResponse) {
   res.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache' });
 
@@ -131,7 +166,7 @@ streamTime(res: ServerResponse) {
 }
 ```
 
-`res: { manual: true }` is a discriminated union with the normal `{ status, header, contentType }` shape, so TypeScript won't let you accidentally combine them — a route is either auto-written or fully manual.
+`MappingConfig` is a union: either `res: { status, header, contentType }` (+ `resolver`) or `res: 'manual'`, so TypeScript won't let you combine them — a route is either auto-written or fully manual.
 
 ### WebSocket: Topic Protocol + Binary File Transfer
 Register `WebSocketManager` as a `webSocketEndPoints` entry to get a topic-based pub/sub protocol over a single connection — subscribe/unsubscribe, request/response, and **server-initiated events the server can `await` a client reply for**.
@@ -156,7 +191,7 @@ export class UserService {
 }
 ```
 
-`WebSocketClient` (the browser-side counterpart) ships as its own standalone UMD bundle at `dist/umd-bundle/websocket-client.umd.js` — it's *not* resolvable through the package's `exports` map, it's meant to be loaded with a plain `<script>` tag:
+`WebSocketClient` (the browser-side counterpart) is not exported from the package root. Import it through the `./*` subpath with a bundler (`@dooboostore/simple-boot-http-server/websocket/WebSocketClient`), or load the standalone UMD bundle `dist/umd-bundle/websocket-client.umd.js` (built by `pnpm run build:client`) with a plain `<script>` tag:
 
 ```html
 <script src="./node_modules/@dooboostore/simple-boot-http-server/dist/umd-bundle/websocket-client.umd.js"></script>
@@ -184,14 +219,14 @@ say(message: any) {
 }
 ```
 
-See the [WebSocket Detailed Guide](https://github.com/dooboostore-develop/packages/tree/main/simple-boot-http-server/document/websocket) for the full wire protocol.
+See the [WebSocket Detailed Guide](https://github.com/dooboostore-develop/packages/tree/main/@dooboostore/simple-boot-http-server/document/websocket) for the full wire protocol.
 
 ---
 
 ## 📖 Learn More
 Check out the detailed guides and tutorials in the `document` folder.
-- [WebSocket Detailed Guide](https://github.com/dooboostore-develop/packages/tree/main/simple-boot-http-server/document/websocket)
-- [Project Template Generator](https://github.com/dooboostore-develop/packages/tree/main/simple-boot-http-server/create)
+- [WebSocket Detailed Guide](https://github.com/dooboostore-develop/packages/tree/main/@dooboostore/simple-boot-http-server/document/websocket)
+- [Project Template Generator](https://github.com/dooboostore-develop/packages/tree/main/@dooboostore/simple-boot-http-server/create)
 
 ---
 

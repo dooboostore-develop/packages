@@ -13,12 +13,12 @@
 - **Storage** – `StorageUtils` (Local/Session storage, explicit `window` per call) and `CookieUtils`
 - **Data Conversion** – `ConvertUtils` (Canvas/ImageBitmap/File/Blob ⇄ Base64/ArrayBuffer, image compression), `ClipBoardUtils`, `DownloadUtils`
 - **Network** – `HttpDomParserFetcher`, an `HttpFetcher` (from `@dooboostore/core`) subclass that auto-parses HTML/XML/SVG responses into a `Document`
-- **Script Loading** – `ScriptUtils` for injecting `<script>`/`<link>` tags
+- **Script Loading** – `ScriptUtils` for injecting `<script>`/`<link>` tags and evaluating script strings
 - **Routing** – a reactive `Router` family (`PathRouter`, `HashRouter`, `LocationRouter`) backed by a `BehaviorSubject` of route changes
 - **Styling** – `StyleCssUtils` for computed styles and CSS custom properties
 - **Animation** – `AnimationFrameUtils` for FPS measurement over `requestAnimationFrame`
 - **Platform Detection** – `ValidUtils` for browser/webview/mobile checks
-- **Zero runtime dependencies** besides `@dooboostore/core` (workspace peer)
+- **Minimal dependencies** – `@dooboostore/core` is the only runtime dependency (`reflect-metadata` is a peer dependency)
 
 ## Installation
 
@@ -28,7 +28,7 @@ npm install @dooboostore/core-web
 pnpm add @dooboostore/core-web
 ```
 
-All exports are available from the package root only (`import { ... } from '@dooboostore/core-web'`) — there is no subpath export map.
+All exports are available from the package root (`import { ... } from '@dooboostore/core-web'`); the only other `exports` entry is `./bundle-entry`.
 
 ### Module Organization
 
@@ -76,6 +76,8 @@ const cloned = ElementUtils.cloneNodeList(fragment);
 // querySelector/All also accept a { start, end } sibling range instead of an Element
 const one = ElementUtils.querySelector(container, '.item');
 const ranged = ElementUtils.querySelectorAll({ start: markerA, end: markerB }, '.item');
+const els = ElementUtils.selectorElements('.item', container);   // Element[] (root defaults to document)
+const nodes = ElementUtils.selectorNodes('.item');               // raw NodeList
 
 const attrsObj = ElementUtils.getAttributeToObject(el);   // { [attrName]: value }
 const styleObj = ElementUtils.getStyleToObject(el);        // { [cssProp]: value }
@@ -132,8 +134,8 @@ const marked = DocumentUtils.querySelectorAllByAttributeName(document, 'data-tra
 // -> [{ element, value }, ...]
 
 // Note: despite the `document` parameter, this binds via window.addEventListener internally
-const resize$ = DocumentUtils.eventObservable(document, 'scroll');
-resize$.subscribe(e => console.log('scrolled'));
+const scroll$ = DocumentUtils.eventObservable(document, 'scroll');
+scroll$.subscribe(e => console.log('scrolled'));
 ```
 
 ### EventUtils / WindowUtils
@@ -164,6 +166,7 @@ const prefs = StorageUtils.getLocalStorageJsonItem<{ fontSize: number }>('prefs'
 
 StorageUtils.removeLocalStorageItem('theme', window);
 const cut = StorageUtils.cutLocalStorageItem('theme', window);    // get then remove
+const cutPrefs = StorageUtils.cutLocalStorageJsonItem<{ fontSize: number }>('prefs', window); // JSON get then remove
 StorageUtils.clearLocalStorage(window);
 
 // Session-storage equivalents mirror every method above:
@@ -258,6 +261,13 @@ import { ScriptUtils } from '@dooboostore/core-web';
 await ScriptUtils.loadScript(document, 'https://cdn.example.com/lib.js', { async: 'true' });
 await ScriptUtils.loadStyleSheet(document, '/theme.css');
 await ScriptUtils.loadScriptBody(document, 'console.log("inline")');
+
+// Generic: create any tag with attributes/body; `created` decides where to insert it
+await ScriptUtils.loadElement(document, 'script', { attribute: { src: '/a.js' }, created: el => document.body.append(el) });
+
+// Evaluate a function body with `this` bound to thisTarget (thin wrappers over core's `ObjectUtils.Script`; both are marked deprecated)
+const sum = ScriptUtils.evaluate<number>('return this.a + this.b', { a: 1, b: 2 });   // 3
+const same = ScriptUtils.evaluateReturn<number>('this.a + this.b', { a: 1, b: 2 });   // wraps in `return` for you
 ```
 
 ### ImageUtils

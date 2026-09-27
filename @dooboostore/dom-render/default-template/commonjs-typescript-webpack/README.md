@@ -29,8 +29,7 @@ pnpm start
 │   ├── index.html       # Main HTML file
 │   └── index.ts         # Application entry point
 ├── package.json         # Project dependencies and scripts
-├── tsconfig.json        # TypeScript configuration
-└── webpack.config.js    # Webpack bundler configuration
+└── tsconfig.json        # TypeScript configuration
 ```
 
 ## 🔑 Key Concepts
@@ -52,7 +51,7 @@ class App {
 
 #### Variable Interpolation
 ```html
-<div>\${@this@.propertyName}$</div>
+<div>${@this@.propertyName}$</div>
 ```
 
 #### Event Binding
@@ -73,7 +72,7 @@ private items = new Appender<ComponentSet>();
 
 // In template:
 <div dr-appender="@this@.items">
-  <div>\${#it#.name}$</div>
+  <div>${#it#.name}$</div>
 </div>
 ```
 
@@ -91,7 +90,7 @@ const component = new ComponentSet(
 
 The template includes a working demo with:
 
-✅ **Two-way data binding** - Type in the input field to see live updates  
+✅ **Two-way data binding** - Type in the input field (`dr-value-link`) to see live updates  
 ✅ **Dynamic list management** - Add, update, and clear items  
 ✅ **Reactive rendering** - DOM updates automatically when data changes  
 ✅ **Event handling** - Button clicks trigger methods  
@@ -107,7 +106,7 @@ The template includes a working demo with:
 ## 📚 Core API
 
 ### DomRender.run()
-Initialize and run Dom Render:
+Initialize and run Dom Render (returns the proxied `rootObject`):
 
 ```typescript
 DomRender.run({
@@ -124,10 +123,11 @@ DomRender.run({
 Manage dynamic lists:
 
 ```typescript
-appender.push(item)          // Add item to end
-appender.set(item, index)    // Update item at index
+appender.push(...items)      // Add items to end
+appender.set(key, ...items)  // Add/replace items under a key
+appender.delete(key)         // Remove items under a key
 appender.clear()             // Remove all items
-appender.size()              // Get item count
+appender.length              // Item count
 ```
 
 ## 🎯 Creating Components
@@ -191,19 +191,11 @@ class TodoList {
 
 ## 🐛 Debugging
 
-The app exposes a global `__domRender` object for debugging:
-
-```javascript
-// In browser console:
-__domRender.app.add()      // Add a new item
-__domRender.app.change()   // Change the last item
-__domRender.app.clear()    // Clear all items
-__domRender.app.name = 'Your Name'  // Update name
-```
+`DomRender.run()` returns the proxied root object (`domRenderInstance` in `src/index.ts`). The template does not expose it globally; assign it yourself (e.g. `(window as any).app = domRenderInstance`) to call `app.add()`, `app.change()`, `app.clear()` or set `app.name` from the browser console.
 
 ## 📖 Learn More
 
-- **Dom Render Repository**: [GitHub](https://github.com/visualkhh/dom-render)
+- **Dom Render Repository**: [GitHub](https://github.com/dooboostore-develop/packages/tree/main/%40dooboostore/dom-render)
 - **TypeScript Documentation**: [typescriptlang.org](https://www.typescriptlang.org/)
 - **Webpack Documentation**: [webpack.js.org](https://webpack.js.org/)
 
@@ -211,12 +203,12 @@ __domRender.app.name = 'Your Name'  // Update name
 
 1. **Reactivity**: Dom Render tracks changes to your properties and updates the DOM automatically
 2. **Performance**: Use `dr-if` instead of showing/hiding with CSS for better performance
-3. **Debugging**: Check browser console for logs and use `__domRender` for runtime debugging
+3. **Debugging**: Check the browser console for logs
 4. **Type Safety**: TypeScript provides full type checking for your components
 
 ## 🎯 What's Included
 
-✅ TypeScript with strict mode  
+✅ TypeScript (`strict: false` in tsconfig)  
 ✅ Webpack with hot reload  
 ✅ Reactive data binding  
 ✅ Event handling  

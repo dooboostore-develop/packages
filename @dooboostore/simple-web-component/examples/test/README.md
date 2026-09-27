@@ -26,10 +26,14 @@ src/
 │   ├── HomePage.ts / CartPage.ts / CheckoutPage.ts / OrdersPage.ts
 │   ├── ProductPage.ts       # @attribute('product-id')
 │   ├── TimerTestPage.ts          # @setInterval / @setTimeout / @requestAnimationFrame
-│   ├── SlotTestPage.ts           # @applySlot family + <!--[[ id ]]--> template directive
+│   ├── SlotTestPage.ts           # slot decorators (@appendHtmlSlot/...) + <!--[[ id ]]--> template directive
 │   ├── RxjsOperatorsTestPage.ts  # @addEventListener debounceTime/throttleTime/distinctUntilChanged/filter
 │   ├── EventDelegateTestPage.ts  # delegate:true (bubbling) vs delegate:'mutation'
-│   └── LifecycleParamTestPage.ts # @eventObject/@matchedElement/@hostSet/... parameter decorators
+│   ├── LifecycleParamTestPage.ts # @eventObject/@matchedElement/@hostSet/... parameter decorators
+│   ├── AroundStateTestPage.ts    # @around (methods/async/fields) + @state instance isolation
+│   ├── BeforeFilterReturnTestPage.ts # async filter, before hook, @eventBeforeReturn
+│   ├── ObserverHooksTestPage.ts  # observer/changedAttribute/timer filter/before/finally + *BeforeReturn
+│   └── MessageSubjectTestPage.ts # @subscribeSwcAppMessage(type, { subject }) live/behavior/replay
 ├── services/
 │   ├── index.ts             # Exports: serviceFactories
 │   └── ProductService.ts / CartService.ts / OrderService.ts
@@ -111,7 +115,9 @@ class RootRouter extends w.HTMLElement {
     return message;
   }
 
-  @subscribeSwcAppRouteChange(['', '/', '/product/{id}', '/cart', '/checkout', '/orders', '/timer-test', '/slot-test', '/rxjs-operators-test', '/event-delegate-test', '/lifecycle-param-test'])
+  // also: a '/hook-guard-test' route and a 'hooktest' message subscriber that exercise async filter/before/finally
+
+  @subscribeSwcAppRouteChange(['', '/', '/product/{id}', '/cart', '/checkout', '/orders', '/timer-test', '/slot-test', '/rxjs-operators-test', '/event-delegate-test', '/lifecycle-param-test', '/around-state-test', '/before-filter-return-test', '/observer-hooks-test', '/message-subject-test'])
   @innerHtmlLight
   routeChanged(routerPathSet: RouterEventType) {
     if (['', '/'].includes(routerPathSet.path)) return `<swc-example-commerce-home-page/>`;
@@ -200,10 +206,14 @@ Beyond the storefront pages, this app doubles as a live test bed for framework f
 | Route | Page | Demonstrates |
 |---|---|---|
 | `/timer-test` | `TimerTestPage.ts` | `@setInterval` / `@setTimeout` / `@requestAnimationFrame` — `type: 'onConnected'` vs `'returnValue'` modes, `parameter`/`created` callbacks, `valueKey` fallback, and safe stacking with `@applyNode` regardless of decorator order. |
-| `/slot-test` | `SlotTestPage.ts` | `@applySlot` (`@appendSlot`/`@prependSlot`/`@replaceChildrenSlot`/`@clearSlot`) using the `<!--[[ id ]]-->` template directive — the declarative way to embed a slot marker (`SwcUtils.projectProcessHtml` converts it automatically; no manual `NodeSlot` construction needed). |
+| `/slot-test` | `SlotTestPage.ts` | The `@applySlot` family (`@appendHtmlSlot`/`@replaceChildrenTextSlot`/`@clearSlot`) using the `<!--[[ id ]]-->` template directive — the declarative way to embed a slot marker (`SwcUtils.projectProcessHtml` converts it automatically; no manual `NodeSlot` construction needed). |
 | `/rxjs-operators-test` | `RxjsOperatorsTestPage.ts` | `@addEventListener`'s RxJS-style options: `debounceTime`, `throttleTime`, `distinctUntilChanged`, `filter`. Includes the gotcha that `debounceTime`/`throttleTime` defer processing past the point where a shadow-crossing event's `.target` is still reliable — read live DOM state instead of the event inside a delayed handler. |
 | `/event-delegate-test` | `EventDelegateTestPage.ts` | `eventDelegateLight`/`eventDelegateShadow` (`delegate: true`, bubbling-based — one listener, catches elements added *after* connect with zero rebinding, but only for bubbling events) vs `eventMutation` (`delegate: 'mutation'`, MutationObserver-based — binds directly per element, so it also covers non-bubbling events like `focus`). |
 | `/lifecycle-param-test` | `LifecycleParamTestPage.ts` | The order-independent parameter decorators (below), including mixing `@dooboostore/simple-boot`'s `@Inject` with SWC's own `@hostSet`/`@helperHostSet`/`@helperSet` on the *same* method, and route-change / app-message subscribers receiving their payload via `@routerEvent` / `@appMessage`. |
+| `/around-state-test` | `AroundStateTestPage.ts` | `@around` on methods (before/after, async) and on initialized fields, plus `@state` isolation between two instances of the same child. Self-checks on connect; a button re-runs it. |
+| `/before-filter-return-test` | `BeforeFilterReturnTestPage.ts` | Async `filter` (awaited `Promise<boolean>` gating), the `before` hook (awaited right before the handler), `@eventBeforeReturn` (injects the `before` hook's return value), and `finally`. |
+| `/observer-hooks-test` | `ObserverHooksTestPage.ts` | Async `filter`/`before`/`finally` and the `@xxxBeforeReturn` parameters for `@mutationObserver`, `@resizeObserver`, `@changedAttribute`, `@setInterval`/`@setTimeout` (`type: 'onConnected'`). Logs go to `window.__obs[kind]`. |
+| `/message-subject-test` | `MessageSubjectTestPage.ts` | `@subscribeSwcAppMessage(type, { subject })`: `behavior` (late subscribers get the last message), `replay` (late subscribers get the whole buffer in order), unset (live only). |
 
 ## Order-Independent Parameter Decorators (`@dooboostore/simple-web-component` → `decorators/parameter.ts`)
 
@@ -218,6 +228,7 @@ Handlers for `@addEventListener` (incl. delegate variants), SWC lifecycle method
 | `@helperSet` | `HelperSet` — `$d`/`$w`/`$q`/`$qa`/`$qi` (pure DOM/window helpers, no host-tree info) | all four families |
 | `@routerEvent` | `{ ...RouterEventType, pathData }` | `@subscribeSwcAppRouteChange` handlers |
 | `@appMessage` | the `SwcAppMessage` payload | `@subscribeSwcAppMessage` handlers |
+| `@eventBeforeReturn`, `@routeChangeBeforeReturn`, `@appMessageBeforeReturn`, `@mutationObserverBeforeReturn`, ... | the value the matching decorator's `before` hook returned for this call (`undefined` without `before`) | the matching decorator's handlers |
 
 If a method uses **none** of these, it falls back to the exact legacy positional call — fully backward compatible.
 

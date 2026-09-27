@@ -13,7 +13,7 @@ import {Filter} from './filters/Filter';
 import {ExceptionHandlerSituationType, targetExceptionHandler} from '@dooboostore/simple-boot';
 import {getInject, SituationTypeContainer, SituationTypeContainers} from '@dooboostore/simple-boot';
 import {EndPoint} from './endpoints/EndPoint';
-import {ReflectUtils} from '@dooboostore/core';
+import {ReflectUtils, ValidUtils} from '@dooboostore/core';
 import {ReqFormUrlBody} from './models/datas/body/ReqFormUrlBody';
 import {ReqJsonBody} from './models/datas/body/ReqJsonBody';
 import {ReqHeader} from './models/datas/ReqHeader';
@@ -140,6 +140,13 @@ export class SimpleBootHttpServer extends SimpleApplication {
       otherStorage.set(RequestResponse, rr);
       otherStorage.set(IncomingMessage, req);
       otherStorage.set(ServerResponse, res);
+      // 클라이언트가 응답 완료 전에 끊으면 abort. 핸들러는 파라미터 타입 AbortSignal 로 주입받아
+      // fetch/timers/events.once 등에 넘기면 대기 중이어도 바로 풀린다 (제너레이터 스트림의 이벤트 대기 누수 방지)
+      const abortController = new AbortController();
+      res.once('close', () => {
+        if (!res.writableFinished) abortController.abort();
+      });
+      otherStorage.set(AbortSignal, abortController.signal);
       try {
         transactionManager?.try();
         if (this.option.requestEndPoints) {
@@ -327,12 +334,21 @@ export class SimpleBootHttpServer extends SimpleApplication {
                   ...
                */
               const resConfig = it.config?.res;
-              if (resConfig?.manual === true) {
+              if (resConfig === 'manual') {
                 // 핸들러가 ServerResponse를 직접 주입받아 스스로 write/end를 제어한다 (예: SSE 스트리밍)
+              } else if (ValidUtils.isGenerator(data) || ValidUtils.isAsyncGenerator(data)) {
+                // 제너레이터 리턴: 헤더 먼저 보내고, yield 된 값을 하나씩 바로 body 로 흘려보낸다 (예: SSE)
+                const headers = resConfig?.header ?? {};
+                if (resConfig?.contentType) {
+                  headers[HttpHeaders.ContentType] = resConfig.contentType;
+                }
+                rr.resSetHeaders(headers);
+                rr.resSetStatusCode(resConfig?.status ?? HttpStatus.Ok);
+                await rr.resStream(data);
               } else {
                 if (it.config?.resolver) {
                   const execute = typeof it.config.resolver === 'function' ? this.simstanceManager.getOrNewSim({target: it.config.resolver}) : it.config.resolver;
-                  data = await execute?.resolve?.(data, rr);
+                  data = await execute?.resolve?.(data, rr, resConfig);
                 }
                 const status = resConfig?.status ?? HttpStatus.Ok;
                 const headers = resConfig?.header ?? {};

@@ -108,3 +108,49 @@
 
 ### E-5. `dooboostore.github.io/apps/center`가 제거된 API 사용 — 🟡 열림
 - `RootRouter.ts` 등에서 `subscribeSwcAppRouteChangeWhileConnected`(21곳). 오래된 `dist/types` 덕에 타입체크만 통과 — 서브모듈을 올리면 깨짐. `subscribeSwcAppRouteChange`로 이름 변경 필요.
+
+---
+
+## README 전수 검토(2026-09-28)에서 나온 코드 의심 사항
+
+README 는 코드에 맞춰 고쳤고, 아래는 **코드 쪽** 문제라 손대지 않은 것들.
+
+### R-1. simple-web-component — 🟡 열림
+- bare `@query` / `@queryAll`(인자 없이 필드)이 아무 것도 안 함 — 인자 없는 분기가 데코레이터를 만들어 리턴만 하고 적용하지 않음. 예전 `@attribute` 와 같은 패턴.
+- `ATTRIBUTE_CHANGED_WILDCARD = '*'` export 만 되고 어디서도 검사 안 함.
+- behavior replay(`_replayMessagesTo`)가 `subject` 없는 구독자까지 재생하고, 타입 기준으로만 중복 제거.
+
+### R-2. swc examples / test — 🟡 열림
+- `test/case/src` 가 export 안 되는 API 를 import (`onConnectedInnerHtml`, `setAttributeHost`, `updateAttribute`, `replaceChildrenNode` …) → 빌드 불가 추정. spa/ 는 컴포넌트에 `@Router`/`@Sim`.
+- commerce `components/Header.ts`: `CartService`·`Subscription` 중복 import, `inject`/`Inject` 혼용 → 식별자 중복.
+- commerce `HomePage.ts`, stock `MainPage.ts`: 패키지 대신 `"../../../../src"` 에서 import.
+- commerce `pages/index.ts`: 도달 불가 `/detail/` 분기가 accommodation 태그를 렌더.
+- accommodation 디버그 흔적: `@attribute('product-id22')`, `@query('$this') gg`, `@state('ww')`(금지 규칙), `wow() { alert(1) }`.
+- `BeforeFilterReturnTestPage.ts` 헤더 주석이 `@eventBeforeReturn` 을 "이전 호출 리턴값"이라 설명 — 실제는 `before` 훅 리턴값.
+
+### R-3. swc lsp / intellij — 🟡 열림
+- `SwcHighlightingListener` 가 `lsp/out/server/highlight.js` 를 실행하는데 lsp/src 에 해당 소스 없음 → 동작 안 함.
+- `gradle/wrapper/gradle-wrapper.jar` 없음 → `./gradlew` 실행 불가 추정. lsp 의 `.vscode/launch.json` 도 없음.
+
+### R-4. core 계열 — 🟡 열림
+- core: `AsyncSubject` 구현돼 있지만 export 안 됨. `src/open-api`, `ObjectPathParser` 도 미노출. `ScheduleBase` 의 `abstract name?/description?` 가 optional 인데 구현 강제.
+- core-node `FileUtils.File`: 생성자가 `updateStats()` 를 await 안 함 → `size` 경쟁, 경로 없으면 unhandled rejection. `copy()` 가 자기 경로를 사본으로 바꿈. `'/'` split 이라 Windows 비호환. `existes` 오타 API.
+- core-web `DocumentUtils.eventObservable(document, …)` 가 `document` 인자 무시하고 전역 `window` 에 바인딩.
+- algorithm: 실패 `reason` 이 한글 문자열 리터럴(`'잔액부족'` 등) — 소비자가 한글로 비교해야 함. 타입명 `TendRange` 오타(`TrendRange`).
+
+### R-5. dom-render / lib / swc-library — 🟡 열림
+- create-dom-render `package.json` bin 이름이 `create-simple-boot*` → `npm init @dooboostore/dom-render` 가 bin 을 못 찾을 수 있음. 설명문도 "simple-boot or Sapper"/"Svelte".
+- dom-render 템플릿에 `webpack.config.js` 없는데 스크립트는 `webpack serve`.
+- dom-render 루트가 `query`/`event` 데코레이터 미export(`attribute` 는 export). `OnChildRawSetRendered` 인터페이스 미export.
+- lib-node `RandomImage.say()` 디버그 잔재. lib-web `src/canvas/angle/index.ts` 가 로드 시 실행되는 데모.
+- swc-library `BubbleChart` 축 포맷이 한글 단위(조/억/만)를 캔버스에 그림.
+
+### R-6. simple-boot / front / http-server / ssr — 🟡 열림
+- http-server manual 응답 리팩터(`res: 'manual'`) 진행 중 — `example/src/routers/ApiRouter.ts:144` 가 아직 `res: { manual: true }`. README 는 `res: 'manual'` 기준으로 맞춤(되돌리면 문서도 되돌려야 함).
+- `SimFrontOptionConfig.using` / `SimOption.using` 저장만 되고 어디서도 안 읽음.
+- webpack 설정 누락: front default-template, SSR default-template/example/test 가 존재하지 않는 `webpack.config.js` 참조.
+- SSR 템플릿·example·test 의 `backend:inspect:run` 이 없는 `front:build` 호출(실제는 `frontend:build`).
+- `@dooboostore/core/runs/Runnable`, `@dooboostore/core/logger/Logger` 딥 import — core exports map 에 없어 tsconfig paths 로만 동작.
+- simple-boot example: 메뉴는 AOP 라는데 예제는 예외 처리. `console.log('11', require.resolve(...))` 디버그 잔재.
+- front default-template: `hello.component.*` 와 `HelloComponent.*` 중복(같은 selector).
+- http-server default-template `AppRouter` HTML 이 없는 `@PUT`/`@DELETE` 를 광고.

@@ -55,22 +55,22 @@ import 'reflect-metadata';
 import {
 	SimpleApplication,
 	Sim,
-	Inject,
 	Router,
 	Route,
 	Cache
 } from '@dooboostore/simple-boot';
 
-@Sim()
+@Sim
 class UserRepository {
 	findById(id: string) {
 		return { id, name: 'dooboostore' };
 	}
 }
 
-@Sim()
+@Sim
 class UserService {
-	constructor(@Inject() private readonly repo: UserRepository) {}
+	// Constructor params are resolved from `design:paramtypes`; use @Inject(Type | Symbol | config) to override
+	constructor(private readonly repo: UserRepository) {}
 
 	@Cache({ key: (id: string) => `user:${id}`, ms: 30000 })
 	getUser(id: string) {
@@ -78,10 +78,10 @@ class UserService {
 	}
 }
 
-@Sim()
+@Sim
 @Router({ path: '/users' })
 class UserController {
-	constructor(@Inject() private readonly userService: UserService) {}
+	constructor(private readonly userService: UserService) {}
 
 	// Path params use {name} (or {name:regex}), not Express-style :name
 	@Route({ path: '/{id}' })
@@ -103,6 +103,21 @@ console.log(userService.getUser('100'));
 - `alert/*`, `cache/*`, `decorators/*`, `errors/*`, `fetch/*`
 - `intent/*`, `lifecycle/*`, `proxy/*`, `route/*`, `simstance/*`, `throwable/*`, `types/*`
 - `Core` namespace re-export from `@dooboostore/core` (bundle-entry only)
+
+## Decorator Reference
+
+| Decorator | Purpose |
+|---|---|
+| `@Sim` / `@Sim({ symbol, scope, using, ... })` | Register a class in the container (`scope: Lifecycle.Singleton` default, or `Lifecycle.Transient`) |
+| `@Inject(Type \| Symbol \| config)` | Override constructor/method parameter resolution |
+| `@PostConstruct` | Run a method after the instance is constructed |
+| `@SimNoProxy` | Exclude a class (or a property) from proxying |
+| `@Router({ path })` / `@Route({ path })` | Declare a router class and its route methods |
+| `@Before` / `@After` / `@Around` | AOP advice on methods |
+| `@ExceptionHandler({ type })` | Handle errors thrown from managed methods |
+| `@Cache({ key \| deleteKey \| setKey, ms })` | Method-level caching |
+| `@EventListener({ target, name })` | Event-listener method metadata |
+| `@Validation(validator)` + `@Valid` | Declarative validation; built-in validators `NotNull`, `NotEmpty`, `Regexp(re)` |
 
 ## Common Patterns
 

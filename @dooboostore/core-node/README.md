@@ -11,7 +11,7 @@ A comprehensive Node.js-specific utility library extending `@dooboostore/core` w
 
 ## ✨ Key Features
 
--   **📁 Rich File System Operations**: `File<E>` class with read/write/copy/move/delete/rename operations—no raw fs callbacks
+-   **📁 Rich File System Operations**: `FileUtils.File<E>` class with copy/move/delete/rename operations plus promise/sync read/write helpers—no raw fs callbacks
 -   **📄 Buffer & Data Conversion**: String ↔ Buffer conversions with Base64 support (data URLs compatible)
 -   **🌐 Batch URL Processing**: `HttpPageDownloader` for SSR to static HTML generation (pre-rendering workflows)
 -   **⚙️ Process & Environment Access**: PID, platform, architecture, environment variables, CLI argv
@@ -19,7 +19,7 @@ A comprehensive Node.js-specific utility library extending `@dooboostore/core` w
 -   **🛣️ Path Operations**: Thin, typed wrapper around Node.js's `path` module
 -   **🔌 Node.js Built-ins Only**: Implemented on top of `fs`/`path`/`process`/`v8`/`os` — no third-party runtime deps
 -   **🎯 TypeScript Support**: Full TypeScript definitions with generics and advanced types
--   **🪶 Tree-Shaking Friendly**: Only import what you need from the root entry point
+-   **📦 Entry Points**: import everything from the package root; the only other `exports` entry is `./bundle-entry`
 
 ---
 
@@ -46,7 +46,7 @@ yarn add @dooboostore/core-node reflect-metadata
 
 | Module | Purpose | Key Exports |
 |--------|---------|------------|
-| **file** | File system operations | `FileUtils`, `File<E>` class |
+| **file** | File system operations | `FileUtils`, `FileUtils.File<E>` class |
 | **fetch** | HTTP page downloading | `HttpPageDownloader` |
 | **process** | Process information | `ProcessUtils` (PID, platform, env) |
 | **memory** | Memory profiling | `MemoryUtils` (heap snapshots, monitoring) |
@@ -59,27 +59,32 @@ yarn add @dooboostore/core-node reflect-metadata
 
 ### 1️⃣ **File System Operations** (FileUtils)
 
-Complete file system abstraction with an object-oriented `File<E>` class.
+File system helpers plus an object-oriented `FileUtils.File<E>` class (a namespace member, not a top-level export).
 
 #### File Class
 
 ```typescript
+// FileUtils.File
 class File<E = any> {
+  constructor(data: { path: string; originalName?: string; etcData?: E })
+  // Note: the constructor calls updateStats() without awaiting it, so `size` is filled asynchronously.
+  // Call `await file.updateStats()` before reading `size` on a freshly constructed File.
+
   // Properties
   get path(): string                      // Full file path
   get fileName(): string                  // Just the filename (substring after the last '/')
   get directory(): string                 // Directory path (substring before the last '/')
-  get extension(): string | undefined     // File extension (undefined if there is no '.')
+  get extension(): string | undefined     // Text after the last '.' (undefined only if the path ends in '.')
   get originalName(): string | undefined  // Original filename passed in when constructed
-  size?: number                           // File size in bytes (populated by updateStats())
-  etcData?: E                             // Generic metadata
+  size: number | undefined                // File size in bytes (populated by updateStats())
+  etcData: E                              // Generic metadata
 
   // Methods
   async updateStats(): Promise<void>      // Refresh file stats
   async delete(): Promise<void>           // Delete the file
-  async copy(newPath: string): Promise<void>       // Copy to new location
-  async move(newPath: string): Promise<void>       // Move (creates dirs if needed)
-  async rename(newName: string): Promise<void>     // Rename file
+  async copy(newPath: string): Promise<void>       // Copy to newPath; this File then points at the copy
+  async move(newPath: string): Promise<void>       // Move to newPath (a full path incl. file name; creates dirs if needed)
+  async rename(newName: string): Promise<void>     // Rename within the same directory
 }
 ```
 
@@ -145,15 +150,16 @@ async function handleFileUpload(buffer: Buffer, metadata: UploadMetadata) {
     etcData: metadata
   });
 
+  await file.updateStats();   // size is filled asynchronously by the constructor
   console.log(`File saved: ${file.path}`);
   console.log(`Size: ${file.size} bytes`);
   console.log(`User ID: ${file.etcData?.userId}`);
 
-  // Copy to backup
-  await file.copy('./backups/document.pdf');
-
-  // Rename after processing
+  // Rename after processing (in ./uploads/user-files)
   await file.rename('document-processed.pdf');
+
+  // Copy to backup — note: `file` now points at the backup copy
+  await file.copy('./backups/document-processed.pdf');
 
   return file;
 }
@@ -171,15 +177,17 @@ Batch download HTML pages from a running server for SSR pre-rendering workflows.
 class HttpPageDownloader {
   constructor(
     baseUrl: string,                               // e.g., 'http://localhost:3000'
-    httpFetcher?: HttpFetcher                      // Optional custom fetcher
+    httpFetcher: HttpFetcher = new HttpFetcher()   // Optional custom fetcher
   )
 
   // Methods
-  async download(route: string): Promise<string>  // Fetch HTML for a route
-  async downloadAndSave(outputDir: string, route: string): Promise<void>
-  async downloadAndSaveAll(outputDir: string, routes: string[]): Promise<void>
+  async download(route: string): Promise<string>  // GET `${baseUrl}${route}` and return the body text
+  async downloadAndSave(outputDir: string, route: string): Promise<void>     // writes <outputDir>/<route>/index.html ('/' -> <outputDir>/index.html); logs and swallows errors
+  async downloadAndSaveAll(outputDir: string, routes: string[]): Promise<void> // calls downloadAndSave for each route sequentially
 }
 ```
+
+Because `downloadAndSave` catches and logs errors instead of throwing, `downloadAndSaveAll` never rejects on a failed route — check the console output.
 
 #### Example: SSR Static Site Generation
 
@@ -402,8 +410,9 @@ async function handleUpload(buffer: Buffer, userId: string) {
     }
   });
 
+  await file.updateStats();
   console.log(`✅ Saved: ${file.fileName} (${file.size} bytes)`);
-  await file.copy(`./backups/${userId}-${Date.now()}.pdf`);
+  await file.copy(`./backups/${userId}-${Date.now()}.pdf`);   // `file` now points at the backup
   
   return file;
 }
@@ -469,7 +478,7 @@ MemoryUtils.startMemoryMonitoring(30_000, 500, './heap-dumps');
 
 ## 🎓 Best Practices
 
-1. **Use `File<E>` for type-safe metadata** — `etcData` carries whatever metadata you need alongside the file.
+1. **Use `FileUtils.File<E>` for type-safe metadata** — `etcData` carries whatever metadata you need alongside the file.
 2. **Register a SIGUSR2 heap dump handler in production** — `MemoryUtils.registerHeapDumpSignal(dir)` lets you trigger a heap snapshot on demand via `kill -SIGUSR2 <pid>`, without restarting the process.
 3. **Use `ProcessUtils` for environment checks** — `isProduction()`/`isDevelopment()`/`isTest()` read `NODE_ENV` consistently.
 4. **Use `PathUtils` for cross-platform path handling** instead of string concatenation.

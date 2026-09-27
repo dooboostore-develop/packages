@@ -12,14 +12,14 @@ Components watch their own children with `@mutationObserverLight` and re-collect
 
 ## Public API
 
-`@dooboostore/simple-web-component-library` root currently exposes `componentFactories: ComponentFactory[]` — six factory functions (`(w: Window) => CustomElementCtor`), one per component below. Each factory registers its tag on `w.customElements` the first time it's called (idempotent — returns the existing constructor on subsequent calls) and is meant to be handed to SWC's app bootstrap (`onStartedLazyDefineComponent: [...componentFactories]`) alongside your own page/component factories, the same way `apps/center` wires it up.
+`@dooboostore/simple-web-component-library` root currently exposes `componentFactories: ComponentFactory[]` — six factory functions (`(w: Window) => CustomElementCtor`), one per component below. Each factory registers its tag on `w.customElements` the first time it's called (idempotent — returns the existing constructor on subsequent calls) and is meant to be handed to SWC's app bootstrap (`onStartedLazyDefineComponent: [...componentFactories]`) alongside your own page/component factories (see `simple-web-component/examples/stock`).
 
 ```typescript
 import { componentFactories } from '@dooboostore/simple-web-component-library';
 // componentFactories: [StockChart, RadarChart, BubbleChart, RangeSlider, CartesianChart, CartesianChart3D]
 ```
 
-Individual named exports (types + the factory) are also available per component, e.g. `import CartesianChart, { CartesianChartData } from '@dooboostore/simple-web-component-library/CartesianChart'` — see each component's source file for its exact export list.
+The package `exports` map only exposes the root (`.`), which exports `componentFactories` and the `ComponentFactory` type. Per-component types (`CartesianChartData`, `StockChartPoint`, `CandleInfo`, `BubbleChartPoint`, `RangeThumbValues`, ...) live in each component's source file (`src/*.ts`) and are not re-exported from the root.
 
 ## Installation
 
@@ -116,7 +116,7 @@ Child elements:
 
 | Tag | Attributes | Meaning |
 |---|---|---|
-| `<candle>` | `date`, `open`, `high`, `low`, `close`, `volume`; nested `<line width color target>` / `<tooltip position label color line-color label-color line-width>` (`position`: `top`\|`bottom`\|`candle-top`\|`candle-bottom`) | One OHLCV bar, with optional per-candle overlay line(s)/tooltip(s) — e.g. marking a buy/sell signal |
+| `<candle>` | `date`, `open`, `high`, `low`, `close`, `volume`; `name`; nested `<line width color target>` / `<tooltip position label color\|fill-color line-color label-color line-width>` (`position`: `top`\|`bottom`\|`candle-top`\|`candle-bottom`) | One OHLCV bar, with optional per-candle overlay line(s)/tooltip(s) — e.g. marking a buy/sell signal |
 | `<ma>` | `period` (or `size`), `color`, `type` (`sma`\|`exponential`, default `sma`) | A moving-average overlay line |
 | `<series>` | `values="n n n"`, `color`, `dash`, `width`, `label`, `anchor` (`after-last` default, or `at:INDEX`), `extend` | A domain-agnostic overlay polyline (predictions, targets, comparison lines) drawn over/after the candles, display-only (excluded from indicator math) |
 | `<volume>` | *(no attributes — presence alone enables the volume sub-panel)* | Volume bars panel |
@@ -137,6 +137,8 @@ getCandleInfos(keys?: (string | number)[]): CandleInfo[];
 getCandleInfoByName(name: string): CandleInfo | null;      // by <candle name="..."> (falls back to date)
 getCandleInfoByNames(names?: string[]): CandleInfo[];
 ```
+
+Each child `<candle>` also gets a `.value` property (`CandleInfo`, including indicator values) injected after every redraw.
 
 Also dispatches a `view-edge` `CustomEvent` (`detail: { edge: 'start' | 'end' }`) the first time the visible window reaches either end of the data — useful for triggering lazy-loading of more history.
 
