@@ -1,2 +1,8 @@
 packages:
   - '@dooboostore/**'
+
+# 루트와 동일: pnpm 12(postinstall 승인제). 없으면 CI에서 ERR_PNPM_IGNORED_BUILDS
+allowBuilds:
+  canvas: true
+  esbuild: true
+  protobufjs: true
