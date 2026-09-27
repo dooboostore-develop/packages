@@ -1,4 +1,4 @@
-import {innerHtml, elementDefine, onConnected} from '@dooboostore/simple-web-component';
+import { innerHtml, elementDefine, onConnectedBody } from '@dooboostore/simple-web-component';
 
 import type {Accommodation} from '../services/AccommodationService';
 
@@ -84,7 +84,7 @@ export default (w: Window) => {
       }
     }
 
-    @onConnected({ useShadow: true })
+    @onConnectedBody({ useShadow: true })
     render() {
       return `
       <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />

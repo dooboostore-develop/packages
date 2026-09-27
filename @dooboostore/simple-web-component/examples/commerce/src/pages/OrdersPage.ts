@@ -1,4 +1,4 @@
-import {applyNode, attributeThis, elementDefine, onConnected, onConnectedBefore} from '@dooboostore/simple-web-component';
+import { applyNode, attribute, elementDefine, onConnectedBody, onConnectedBefore } from '@dooboostore/simple-web-component';
 import {Inject} from '@dooboostore/simple-boot';
 import {SubscriptionLike} from '@dooboostore/core';
 import {OrderService} from '../services/OrderService';
@@ -51,7 +51,7 @@ export default (w: Window) => {
     // @setAttributeThis('vv')
     // testsvvs(){
     // }
-    // @emitCustomEventThis('vv')
+    // @emitThis('vv', { attributeName: 'on-emit-vv' })
     // testss(){
     //
     // }
@@ -142,7 +142,7 @@ export default (w: Window) => {
       `;
     }
 
-    @onConnected({ useShadow: true })
+    @onConnectedBody({ useShadow: true })
     render() {
       return `
         <style>

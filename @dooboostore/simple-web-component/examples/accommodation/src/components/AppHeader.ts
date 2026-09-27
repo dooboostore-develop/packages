@@ -1,4 +1,4 @@
-import {addEventListener, elementDefine, emitCustomEvent, onConnected} from '@dooboostore/simple-web-component';
+import { addEventListener, elementDefine, emitCustomEvent, onConnectedBody } from '@dooboostore/simple-web-component';
 
 
 export default (w: Window) => {
@@ -10,7 +10,7 @@ export default (w: Window) => {
 
   @elementDefine(tagName, { window: w })
   class AppHeader extends w.HTMLElement {
-    @onConnected({ useShadow: true })
+    @onConnectedBody({ useShadow: true })
     render() {
       return `
       <style>

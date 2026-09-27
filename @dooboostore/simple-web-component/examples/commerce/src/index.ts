@@ -3,7 +3,7 @@ import { SwcAppInterface } from '@dooboostore/simple-web-component';
 import { UrlUtils } from "@dooboostore/core";
 import { componentFactories } from "./components";
 import { pageFactories  } from "./pages";
-import {defineSwcAppBody} from "@dooboostore/simple-web-component";
+import { defineSwcAppBody } from "@dooboostore/simple-web-component";
 import {serviceFactories} from "./services";
 const w = window;
 

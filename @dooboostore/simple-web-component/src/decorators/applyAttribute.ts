@@ -263,8 +263,8 @@ export function applyAttribute(selector: AttributeSelector, targetAttributeNameO
          * Uses valueKey from options if provided, otherwise uses ATTRIBUTE_METADATA_KEY.
          * 
          * Example:
-         * @setAttribute('selector1', { valueKey: 'attr1' })
-         * @setAttribute('selector2', { valueKey: 'attr2' })
+         * @attribute('selector1', 'attr1-name', { valueKey: 'attr1' })
+         * @attribute('selector2', 'attr2-name', { valueKey: 'attr2' })
          * myMethod() {
          *   return {
          *     attr1: 'attribute-value1',
@@ -325,83 +325,53 @@ export function applyAttribute(selector: AttributeSelector, targetAttributeNameO
 // ============================================
 
 /**
- * @attribute - Field decorator for binding element attributes (read/write)
- * 
- * Intelligently distinguishes between attribute names and CSS selectors:
- * 
- * Usage patterns:
- * - @attribute('product-id') - Attribute name on $this (auto-detected)
- * - @attribute('#user', 'product-id') - Attribute name on selector
- * - @attribute('product-id', options) - Attribute name on $this with options
- * - @attribute('#user', 'product-id', options) - Attribute name on selector with options
- * - @attribute((this, helper) => 'selector', 'product-id') - Function-based selector
- * - @attribute - Bare decorator (uses property name as attribute on $this)
- * 
- * Note: This decorator is for FIELDS ONLY. For methods, use @setAttribute.
- */
-export function attribute(target: Object, propertyKey: string | symbol):  void;
-export function attribute(target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor): PropertyDescriptor | void;
-export function attribute(attributeName: string, options?: AttributeQueryOptions): PropertyDecorator;
-export function attribute(selector: string, attributeName: string, options?: AttributeQueryOptions): PropertyDecorator;
-export function attribute(selector: AttributeFnSelector, attributeName: string, options?: AttributeNonQueryOptions): PropertyDecorator;
-export function attribute(selectorOrAttributeOrTarget?: AttributeSelector | Object, attributeNameOrOptions?: any, optionsOrDescriptor?: any): any {
-  // Bare decorator: @attribute
-  if (optionsOrDescriptor !== undefined && (typeof attributeNameOrOptions === 'string' || typeof attributeNameOrOptions === 'symbol')) {
-    return applyAttribute('$this', undefined as any, {})(selectorOrAttributeOrTarget as Object, attributeNameOrOptions, optionsOrDescriptor as PropertyDescriptor);
-  }
-  
-  // With string as first parameter — 무조건 셀렉터(querySelector 문자열).
-  // $this 등 특수 키워드도 셀렉터로 그대로 전달. $this 속성은 '@x($this, 'attr')' 형태로 명시.
-  if (typeof selectorOrAttributeOrTarget === 'string') {
-    return applyAttribute(selectorOrAttributeOrTarget, attributeNameOrOptions as any, optionsOrDescriptor as AttributeOptions);
-  }
-  
-  // Without selector (defaults to $this with options)
-  return applyAttribute('$this', undefined as any, selectorOrAttributeOrTarget as AttributeOptions);
-}
-
-/**
- * @setAttribute - Method decorator for setting element attributes from method return value
- * 
- * 문자열 첫 인자는 무조건 셀렉터(querySelector 문자열). 내용 추측 없음.
- * $this 속성은 '@setAttribute($this, 'attr')' 형태로 명시.
+ * @attribute - 필드/메서드 공용. 붙은 곳에 따라 동작이 갈린다.
+ * - 필드: 엘리먼트 attribute 를 읽고 쓰는 getter/setter
+ * - 메서드: 리턴값을 엘리먼트 attribute 에 적용 (null 이면 제거, undefined 면 무시)
  *
- * Usage patterns:
- * - @setAttribute('nav', 'data-active') - Attribute on selector
- * - @setAttribute('#user', 'data-id') - Attribute on selector
- * - @setAttribute($this, 'data-id') - Attribute on $this
- * - @setAttribute((this, helper) => 'selector', 'data-id') - Function-based selector
- * - @setAttribute - Bare decorator (uses method name as attribute on $this)
- * 
- * Note: This decorator is for METHODS ONLY. For fields, use @attribute.
- * 
+ * 문자열이 하나면 자기 자신($this)의 attribute 이름, 둘이면 (셀렉터, attribute 이름).
+ * - @attribute - $this 의 attribute, 이름은 필드/메서드 이름
+ * - @attribute('product-id') / @attribute('product-id', options) - $this 의 product-id
+ * - @attribute('#user', 'product-id', options?) - 셀렉터 대상의 product-id
+ * - @attribute((this, helper) => el, 'product-id') - 함수 셀렉터
+ * - @attribute(options) - $this, 이름은 options.name 또는 필드/메서드 이름
+ *
  * Example:
- * @setAttribute('.card', 'data-status')
- * updateStatus() {
- *   return 'active';
- * }
+ * @attribute('product-id') productId: string;
+ *
+ * @attribute('.card', 'data-status')
+ * updateStatus() { return 'active'; }
  */
-export function setAttribute(selector: string, attributeName: string, options?: AttributeQueryOptions): MethodDecorator;
-export function setAttribute(selector: AttributeFnSelector, attributeName: string, options?: AttributeNonQueryOptions): MethodDecorator;
-export function setAttribute(attributeName: string, options?: AttributeQueryOptions): MethodDecorator;
-export function setAttribute(selectorOrAttributeOrOptions?: AttributeSelector | AttributeOptions, attributeNameOrOptions?: any, optionsOrUndefined?: AttributeOptions): MethodDecorator {
-  // Function selector: @setAttribute((c, helper) => ..., 'attr', options?)
-  if (typeof selectorOrAttributeOrOptions === 'function') {
-    return applyAttribute(selectorOrAttributeOrOptions as AttributeSelector, attributeNameOrOptions as any, optionsOrUndefined as AttributeOptions) as MethodDecorator;
+export function attribute(attributeName: string, options?: AttributeQueryOptions): MethodDecorator & PropertyDecorator;
+export function attribute(selector: string, attributeName: string, options?: AttributeQueryOptions): MethodDecorator & PropertyDecorator;
+export function attribute(selector: AttributeFnSelector, attributeName: string, options?: AttributeNonQueryOptions): MethodDecorator & PropertyDecorator;
+export function attribute(options: AttributeOptions): MethodDecorator & PropertyDecorator;
+// bare(@attribute) 시그니처는 맨 뒤 — 앞에 있으면 문자열 두 개짜리 호출이 (target, key) 로 먼저 잡혀 TS1240
+export function attribute(target: Object, propertyKey: string | symbol): void;
+export function attribute(target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor): PropertyDescriptor | void;
+export function attribute(selectorOrAttributeOrTarget?: AttributeSelector | AttributeOptions | Object, attributeNameOrOptions?: any, optionsOrDescriptor?: any): any {
+  // 문자열: 하나면 $this 의 attribute 이름, 둘이면 (셀렉터, attribute 이름)
+  if (typeof selectorOrAttributeOrTarget === 'string') {
+    if (typeof attributeNameOrOptions !== 'string') {
+      return applyAttribute('$this', selectorOrAttributeOrTarget, attributeNameOrOptions as AttributeOptions);
+    }
+    return applyAttribute(selectorOrAttributeOrTarget, attributeNameOrOptions, optionsOrDescriptor as AttributeOptions);
   }
-  // With string as first parameter — 무조건 셀렉터(querySelector 문자열).
-  // $this 등 특수 키워드도 셀렉터로 그대로 전달. $this 속성은 '@x($this, 'attr')' 형태로 명시.
-  if (typeof selectorOrAttributeOrOptions === 'string') {
-    return applyAttribute(selectorOrAttributeOrOptions, attributeNameOrOptions as any, optionsOrUndefined as AttributeOptions) as MethodDecorator;
+  // 함수 셀렉터
+  if (typeof selectorOrAttributeOrTarget === 'function') {
+    return applyAttribute(selectorOrAttributeOrTarget as AttributeFnSelector, attributeNameOrOptions, optionsOrDescriptor as AttributeOptions);
   }
-  
-  // Without selector (defaults to $this with options)
-  return applyAttribute('$this', undefined as any, selectorOrAttributeOrOptions as AttributeOptions) as MethodDecorator;
+  // bare: @attribute — 데코레이터로 바로 호출됨 (target=prototype, key[, descriptor])
+  if (selectorOrAttributeOrTarget && (typeof attributeNameOrOptions === 'string' || typeof attributeNameOrOptions === 'symbol')) {
+    return applyAttribute('$this', {})(selectorOrAttributeOrTarget as Object, attributeNameOrOptions, optionsOrDescriptor as PropertyDescriptor);
+  }
+  // 옵션만: $this
+  return applyAttribute('$this', selectorOrAttributeOrTarget as AttributeOptions);
 }
 
 /**
  * @removeAttribute - 메서드 실행 시 엘리먼트 속성 제거 (반환값 그대로 통과).
- * 라우트 구독처럼 값을 리턴하면 안 되는 곳에서 setAttribute(null) 대신 명시적으로 사용.
+ * 라우트 구독처럼 값을 리턴하면 안 되는 곳에서 @attribute 에 null 을 리턴하는 대신 명시적으로 사용.
  *
  * Usage:
  * - @removeAttribute('nav', 'href') - Remove attribute from selector
@@ -449,7 +419,7 @@ export const findAllAttributeApplyMetadata = (target: any): Map<string | symbol,
 };
 
 // ─── Aliases ───
-// attribute(필드) / setAttribute(메서드)와 구분되는 일반 데코레이터 단축명
+// applyAttribute 단축명
 export const attr = applyAttribute;
 
 // ─── 편의 헬퍼 (selector/root 생략) ───

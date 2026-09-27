@@ -26,7 +26,7 @@ src/
 ├── pages/
 │   ├── index.ts                # Exports: pageFactories, rootRouterFactory
 │   ├── MainPage.ts             # 대시보드 페이지
-│   └── DetailPage.ts           # 종목 상세 페이지 (@attributeThis)
+│   └── DetailPage.ts           # 종목 상세 페이지 (@attribute)
 └── services/
     ├── index.ts                # Exports: serviceFactories
     └── StockService.ts         # 주식 데이터 관리
@@ -146,7 +146,7 @@ export default (w: Window) => {
     private stockService: StockService;
     private stockId: string = '';
 
-    @attributeThis('stock-id')
+    @attribute('stock-id')
     stockIdAttr: string = '';
 
     @onInitialize
@@ -191,7 +191,7 @@ export default (w: Window) => {
 
   @elementDefine(tagName, { window: w })
   class StockHeader extends w.HTMLElement {
-    @emitCustomEventThis('navigate')
+    @emitThis('navigate', { attributeName: 'on-navigate' })
     @addEventListener('.nav-link', 'click', { delegate: true })
     onNavClick(e: any) {
       const path = e.target.closest('[data-path]')?.dataset?.path;
@@ -245,7 +245,7 @@ rootRouterFactory (@subscribeSwcAppRouteChange)
     ↓
 페이지 (속성을 통한 데이터 수신)
     ↓
-컴포넌트 (@emitCustomEventThis로 이벤트 전파)
+컴포넌트 (@emitThis로 이벤트 전파)
     ↓
 UI 렌더링 (순수 Web Components)
 ```
@@ -352,7 +352,7 @@ routeMethod(router: RouterEventType, pathData: any) {
 
 ```typescript
 // 헤더 emit
-@emitCustomEventThis('navigate')
+@emitThis('navigate', { attributeName: 'on-navigate' })
 onNavClick() { return { path: '/stock/123' }; }
 
 // 루트라우터 수신

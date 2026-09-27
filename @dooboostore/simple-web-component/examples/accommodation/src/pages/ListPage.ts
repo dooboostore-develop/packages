@@ -1,4 +1,4 @@
-import {appendHtmlSlot, innerHtml, state, addEventListener, elementDefine, onConnected, onConnectedAfter, updateClass} from '@dooboostore/simple-web-component';
+import { appendHtmlSlot, innerHtml, state, addEventListener, elementDefine, onConnectedBody, onConnectedAfter, updateClass } from '@dooboostore/simple-web-component';
 import {Inject} from '@dooboostore/simple-boot';
 import {Router} from '@dooboostore/core-web';
 import {type Accommodation, AccommodationService} from '../services/AccommodationService';
@@ -151,7 +151,7 @@ export default (w: Window) => {
     }
 
 
-    @onConnected({ useShadow: true })
+    @onConnectedBody({ useShadow: true })
     render() {
       return `
       <style>

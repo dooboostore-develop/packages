@@ -409,7 +409,7 @@ async onLogin() {
 **@emitCustomEvent Decorator Variants:**
 - `emitCustomEvent(target, type, options)` - Full form
 - `emit(target, type, options)` - Short alias
-- `emitCustomEventThis(type, options)` - Emit from $this element
+- `emitThis(type, options)` - Emit from $this element (`emitAppHost` / `emitWindow` / `emitDocument` / `emitLight` / `emitShadow` / `emitAll` 도 있음)
 
 #### @publishSwcAppMessage
 Publish messages through the message bus when method completes.
@@ -452,14 +452,16 @@ handleMultipleEvents() {
 }
 ```
 
-#### @emitCustomEventThis
-Emit events from a method with custom event name mapping.
+#### @emitThis
+Emit events from $this. `attributeName` 을 주면 부모가 그 attribute 로 핸들러를 걸 수 있다
+(기본 attribute 이름은 없음 — 쓰려면 명시).
 
 ```typescript
-@emitCustomEventThis('navigate', { attributeName: 'on-navigate' })
+@emitThis('navigate', { attributeName: 'on-emit-navigate' })
 onNavClick(e: any) {
   return { path: e.target.dataset.path };
 }
+// 부모: <app-header on-emit-navigate="$host.onHeaderNavigate(event, $data)"></app-header>
 ```
 
 #### @addEventListenerThis
@@ -537,71 +539,48 @@ printTag() {
 
 ### 6. **Attribute Binding**
 
-#### @attribute (Field Decorator)
-Bind HTML attributes to properties with automatic read/write synchronization.
+#### @attribute (Field / Method Decorator)
+필드와 메서드에 모두 붙는다. 붙은 곳에 따라 동작이 갈린다.
+- **필드**: 엘리먼트 attribute 를 읽고 쓰는 getter/setter (`type` 으로 Number/Boolean 변환)
+- **메서드**: 리턴값을 attribute 에 적용. `null` 이면 **제거**, `undefined` 면 아무것도 안 함
 
-문자열 첫 인자는 **무조건 셀렉터** — `$this` 속성은 `@attribute('$this', 'attr')` 형태로 명시한다.
+문자열이 **하나면 자기 자신(`$this`)의 attribute 이름**, **둘이면 (셀렉터, attribute 이름)**.
 
 ```typescript
 @elementDefine('product-card')
 class ProductCard extends HTMLElement {
-  // Attribute on $this (explicit)
-  @attribute('$this', 'product-id')
+  // 필드 — $this 의 product-id
+  @attribute('product-id')
   productId: string;
 
-  // Attribute on selector
+  // 필드 — 셀렉터 대상의 data-id
   @attribute('#user', 'data-id')
   userId: string;
 
-  // Bare decorator (uses field name as attribute)
+  // 필드 — bare (필드 이름 = attribute 이름)
   @attribute
   title: string;
 
-  @onInitialize
-  onconstructor() {
-    if (this.productId) {
-      this.loadProduct(this.productId);
-    }
-  }
-}
-```
-
-#### @setAttribute (Method Decorator)
-Set element attributes from method return values.
-
-문자열 첫 인자는 **무조건 셀렉터**(querySelector 문자열) — 내용 추측 없음.
-`$this` 속성은 `@setAttribute('$this', 'attr')` 형태로 명시한다.
-메서드가 `null`을 리턴하면 해당 속성을 **제거**한다.
-
-```typescript
-@elementDefine('status-updater')
-class StatusUpdater extends HTMLElement {
-  // Set attribute on selector (tag name works too)
-  @setAttribute('nav', 'data-active')
+  // 메서드 — 리턴값을 nav[data-active] 에 (null → 제거)
+  @attribute('nav', 'data-active')
   updateNav() {
-    return this.section; // 'releases' | null (null → 속성 제거)
+    return this.section; // 'releases' | null
   }
 
-  // Set attribute on $this explicitly
-  @setAttribute('$this', 'data-name')
+  // 메서드 — $this 의 data-name
+  @attribute('data-name')
   setUserName() {
     return this.userName;
   }
-
-  // Bare decorator (uses method name as attribute on $this)
-  @setAttribute
-  setValue() {
-    return this.computedValue;
-  }
 }
 ```
 
-**@setAttribute Patterns:**
-- `@setAttribute('selector', 'attr-name')` - Set attribute on selector (`nav`, `#user`, `.card` 모두 가능)
-- `@setAttribute('$this', 'attr-name')` - Set attribute on $this
-- `@setAttribute('selector', 'attr-name', options)` - With options
-- `@setAttribute('$this', 'attr-name', { valueKey: 'k' })` - 리턴 객체에서 `k`만 뽑아 세팅
-- `@setAttribute` - Bare decorator (uses method name as attribute on $this)
+**Patterns:**
+- `@attribute` - `$this`, 이름은 필드/메서드 이름
+- `@attribute('attr-name', options?)` - `$this` 의 attr-name
+- `@attribute('selector', 'attr-name', options?)` - 셀렉터 대상 (`nav`, `#user`, `.card`, `$appHost` 모두 가능)
+- `@attribute((this, helper) => el, 'attr-name')` - 함수 셀렉터
+- `@attribute('selector', 'attr-name', { valueKey: 'k' })` - (메서드) 리턴 객체에서 `k`만 뽑아 세팅
 
 #### @removeAttribute (Method Decorator)
 메서드 실행 시 속성을 무조건 제거한다. 리턴값은 그대로 통과시키므로,
@@ -648,65 +627,45 @@ class ReactiveComponent extends HTMLElement {
 
 ### 6.5 **Property Binding**
 
-#### @property (Field Decorator)
-Bind element properties to component fields with automatic read/write synchronization.
+#### @property (Field / Method Decorator)
+필드와 메서드에 모두 붙는다.
+- **필드**: 대상 엘리먼트의 프로퍼티를 읽고 쓰는 getter/setter
+  - bare `@property`(= `$this` + 같은 이름)는 getter/setter 없이 순수 필드로 두고 **SSR 하이드레이션 대상**으로만 등록된다
+- **메서드**: 리턴값을 대상 엘리먼트 프로퍼티에 대입 (`undefined` 면 무시)
 
-```typescript
-@elementDefine('input-wrapper')
-class InputWrapper extends HTMLElement {
-  // Property on $this (auto-detected)
-  @property('value')
-  inputValue: string;
-
-  // Property on selector
-  @property('#submit-btn', 'disabled')
-  isSubmitDisabled: boolean;
-
-  // Bare decorator (uses field name as property)
-  @property
-  checked: boolean;
-}
-```
-
-#### @setProperty (Method Decorator)
-Set element properties from method return values.
+`@attribute` 와 달리 **첫 문자열은 항상 셀렉터**다. 자기 자신의 프로퍼티는 필드 그 자체라, 이름만 받는 형태는 의미가 없다.
 
 ```typescript
 @elementDefine('form-handler')
 class FormHandler extends HTMLElement {
-  // Set property on $this
-  @setProperty('disabled')
-  disableForm() {
-    return !this.isValid();
-  }
+  // 필드 — bare: 자기 필드 (SSR 하이드레이션 대상)
+  @property
+  declare rows: Row[];
 
-  // Set property on selector
-  @setProperty('#submit-btn', 'disabled')
+  // 필드 — 셀렉터 대상의 프로퍼티
+  @property('#chart', 'data')
+  chartData: number[];
+
+  // 메서드 — 리턴값을 #submit-btn.disabled 에
+  @property('#submit-btn', 'disabled')
   updateSubmitState() {
     return this.hasErrors;
   }
 
-  // Bare decorator (uses method name as property)
-  @setProperty
-  setValue() {
-    return this.computedValue;
+  // 메서드 — 셀렉터 대상의 같은 이름 프로퍼티 (input.value)
+  @property('input')
+  value() {
+    return this.initialValue;
   }
 }
 ```
 
-**Usage Patterns:**
-- `@property('propertyName')` - Property on $this
-- `@property('#selector', 'propertyName')` - Property on selector
-- `@property('propertyName', options)` - Property on $this with options
-- `@property('#selector', 'propertyName', options)` - Property on selector with options
-- `@property` - Bare decorator (uses field name as property on $this)
-
-**@setProperty Patterns:**
-- `@setProperty('propertyName')` - Set property on $this
-- `@setProperty('#selector', 'propertyName')` - Set property on selector
-- `@setProperty('propertyName', options)` - Set property on $this with options
-- `@setProperty('#selector', 'propertyName', options)` - Set property on selector with options
-- `@setProperty` - Bare decorator (uses method name as property on $this)
+**Patterns:**
+- `@property` - `$this`, 이름은 필드/메서드 이름
+- `@property('selector', options?)` - 대상의 같은 이름 프로퍼티
+- `@property('selector', 'propertyName', options?)` - 대상의 propertyName
+- `@property((this, helper) => el, 'propertyName')` - 함수 셀렉터
+- 대상 메서드를 호출하려면 `@callProperty('selector', 'methodName')`
 
 ### 6.6 **DOM Observers (@mutationObserver, @resizeObserver, @intersectionObserver)**
 
@@ -988,9 +947,10 @@ class MyComponent extends HTMLElement {
     // Called after element connects to DOM
   }
 
-  @onConnected
-  onConnected() {
-    // Called when element enters DOM
+  @onConnectedBody
+  render() {
+    // Called when element enters DOM — 리턴한 HTML 을 렌더 (@onConnectedBodyShadow / @onConnectedBodyLight 변형)
+    return `<div>...</div>`;
   }
 
   @onDisconnectedBefore
@@ -1030,7 +990,7 @@ class MyComponent extends HTMLElement {
 - `@onInitialize` - Component construction
 - `@onConnectedBefore` - Before DOM connection
 - `@onConnectedAfter` - After DOM connection
-- `@onConnected` - DOM connection (with HTML rendering)
+- `@onConnectedBody` (`Shadow` / `Light`) - DOM connection (with HTML rendering, SSR 렌더된 엘리먼트는 건너뜀)
 - `@onConnectedSwcApp` - After SwcApp initialization
 - `@onConnectedCompleted` - All connected hooks done
 - `@onDisconnectedBefore` - Before DOM disconnection
@@ -1095,7 +1055,7 @@ poll() {
 }
 ```
 
-**Why no wrapping is needed:** unlike `@applyAttribute`/`@setAttribute` (which must wrap the method because it can be called by arbitrary code — event handlers, other decorators, etc.), the timer's own `LifeCycler` is the one calling `inst[propertyKey](...)` every tick/fire — it already has the return value in hand at that call site, so it can read `valueKey` off of it without ever needing to intercept the method.
+**Why no wrapping is needed:** unlike `@applyAttribute`/`@attribute` (which must wrap the method because it can be called by arbitrary code — event handlers, other decorators, etc.), the timer's own `LifeCycler` is the one calling `inst[propertyKey](...)` every tick/fire — it already has the return value in hand at that call site, so it can read `valueKey` off of it without ever needing to intercept the method.
 
 > `@requestAnimationFrame` is not implemented yet.
 
@@ -1520,7 +1480,7 @@ handleAdminSection(routerPathSet: RouterEventType) {
 ```typescript
 @replaceChildrenLight({ valueKey: 'element' })
 @subscribeSwcAppRouteChange('/releases')
-@setAttribute('nav', 'href', { valueKey: 'href' })
+@attribute('nav', 'href', { valueKey: 'href' })
 handleExplore() {
   return { element: ExplorePage(w), href: 'releases' }; // nav 강조 + 페이지 렌더
 }
@@ -1576,8 +1536,8 @@ import {
 
 @elementDefine('multi-decorator-example')
 class MultiDecoratorExample extends HTMLElement {
-  @setAttribute('selector')
-  @setProperty('selector')
+  @attribute('selector', 'data-state')
+  @property('selector', 'value')
   @updateStyle()
   @updateClass()
   handleUpdate() {
@@ -1598,8 +1558,8 @@ For more readable code, use the `valueKey` option to specify custom keys:
 ```typescript
 @elementDefine('custom-key-example')
 class CustomKeyExample extends HTMLElement {
-  @setAttribute('selector', { valueKey: 'attrValue' })
-  @setProperty('selector', { valueKey: 'propValue' })
+  @attribute('selector', 'data-state', { valueKey: 'attrValue' })
+  @property('selector', 'value', { valueKey: 'propValue' })
   @updateStyle({ valueKey: 'styleValue' })
   @updateClass({ valueKey: 'classValue' })
   handleUpdate() {
@@ -1620,8 +1580,8 @@ You can mix both approaches in the same method:
 ```typescript
 @elementDefine('mixed-keys-example')
 class MixedKeysExample extends HTMLElement {
-  @setAttribute('selector')  // Uses default ATTRIBUTE_METADATA_KEY
-  @setProperty('selector', { valueKey: 'customProp' })  // Uses custom key
+  @attribute('selector', 'data-state')  // Uses default ATTRIBUTE_METADATA_KEY
+  @property('selector', 'value', { valueKey: 'customProp' })  // Uses custom key
   @updateStyle({ valueKey: 'styles' })  // Uses custom key
   handleUpdate() {
     return {
@@ -1634,8 +1594,8 @@ class MixedKeysExample extends HTMLElement {
 ```
 
 **Supported Decorators with valueKey:**
-- `@applyAttribute` / `@setAttribute`
-- `@applyProperty` / `@setProperty`
+- `@applyAttribute` / `@attribute`
+- `@applyProperty` / `@property`
 - `@applySlot` / `@clearSlot` / `@appendHtmlSlot` / etc.
 - `@applyNode` / `@replaceChildrenNode` / etc.
 - `@applyStyle` / `@updateStyle` / etc.
@@ -1725,12 +1685,10 @@ method() { ... }
 - `removeStyle(selector?, options?)` - Remove specific styles
 
 **applyProperty.ts:**
-- `property(selector?, options?)` - Get/set element properties
-- `setProperty(selector?, options?)` - Set element properties
+- `property(selector?, propertyKey?, options?)` - 필드: 프로퍼티 get/set, 메서드: 리턴값 → 프로퍼티
 
 **applyAttribute.ts:**
-- `attribute(selector?, options?)` - Get/set element attributes
-- `setAttribute(selector?, options?)` - Set element attributes
+- `attribute(attrName | selector?, attrName?, options?)` - 필드: attribute get/set, 메서드: 리턴값 → attribute (문자열 하나면 $this)
 
 **query.ts:**
 - `query(selector?, options?)` - Query single element (supports $this, $host, $appHost, etc.)
@@ -1757,14 +1715,14 @@ class MyComponent extends HTMLElement {
     return { color: this.theme.color, fontSize: '16px' };
   }
 
-  // Property binding - all default to $this
-  @setProperty()
+  // Property binding - 첫 문자열은 셀렉터
+  @property('input', 'value')
   updateValue() {
     return this.computedValue;
   }
 
-  // Attribute binding - all default to $this
-  @setAttribute()
+  // Attribute binding - 문자열 하나면 $this 의 attribute
+  @attribute('data-id')
   updateId() {
     return this.elementId;
   }
@@ -1900,18 +1858,37 @@ async load(@appMessage msg: SwcAppMessage<User | null>) { ... }
 Route subscribers (`@subscribeSwcAppRouteChange`) accept the same `trigger`.
 Live broadcasts always reach everyone regardless of trigger.
 
-## 🔌 App Host Hook (onConnected)
+## 🔌 App Host Hooks (onConnected / onSwcAppConnected / onDisconnected)
 
-`SwcAppMixin` calls the `onConnected()` hook after `connect()` finishes.
+`SwcAppMixin` 의 호스트 훅 세 개는 **abstract** — 상속한 클래스가 반드시 구현한다 (할 일 없으면 빈 메서드).
 `@inject` parameters are resolved via DI (host element itself included).
+
+- `onConnected()` - connectedCallback 시점 (DOM 에 붙을 때마다). `connect()` 전이라 DI 컨테이너가 아직 없을 수 있다
+- `onSwcAppConnected()` - `connect()` 완료 후 (DI 컨테이너·라우터 준비됨). **서비스 호출은 여기서**
+- `onDisconnected()` - disconnectedCallback 시점. `onConnected` 에서 만든 구독 등을 해제
 
 ```typescript
 class MyAppBody extends SwcAppMixin(w.HTMLBodyElement) {
-  override async onConnected(@inject(AuthService.SYMBOL) auth: AuthService) {
+  onConnected() {}
+  async onSwcAppConnected(@inject(AuthService.SYMBOL) auth: AuthService) {
     this.publishMessage({ type: 'auth-changed', data: await auth.me().catch(() => null) });
   }
+  onDisconnected() {}
 }
 ```
+
+### observeMessage — 메시지 버스를 Observable 로
+
+```typescript
+host.observeMessage()                                    // 모든 타입, live 만
+host.observeMessage('auth-changed')                      // 특정 타입
+host.observeMessage('auth-changed', { subject: 'behavior' }) // 타입 + 마지막 값 replay
+host.observeMessage({ type: 'auth-changed', subject: 'replay' }) // 옵션 객체 형태
+```
+
+- `subject`: `'behavior'`(마지막 1개) / `'replay'`(쌓인 것 전부) 를 구독 시점에 먼저 받고 이어서 live.
+- replay 는 `type` 이 있을 때만 — 타입 없이 옵션만 주면 live 만 받는다.
+- 리턴은 `Observable` — `subscribe()` 한 `Subscription` 은 직접 `unsubscribe()` (보통 `onDisconnected`).
 
 When publishing from the host itself, call `this.publishMessage` directly.
 The `@publishSwcAppMessage` decorator publishes through the parent host, and the

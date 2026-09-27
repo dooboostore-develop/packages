@@ -27,7 +27,7 @@ src/
 ├── pages/
 │   ├── index.ts            # Exports: pageFactories, rootRouterFactory
 │   ├── HomePage.ts         # Factory returns tagName
-│   ├── ProductPage.ts      # @attributeThis('product-id')
+│   ├── ProductPage.ts      # @attribute('product-id')
 │   ├── CartPage.ts
 │   ├── CheckoutPage.ts
 │   └── OrdersPage.ts
@@ -166,7 +166,7 @@ export default (w: Window) => {
     private productService: ProductService;
     private productId: string = '';
 
-    @attributeThis('product-id')
+    @attribute('product-id')
     productIdAttr: string = '';
 
     @onInitialize
@@ -201,7 +201,7 @@ export default (w: Window) => {
 ```
 
 ### 4. Component Emitting Events (components/Header.ts)
-Components emit navigation events via `@emitCustomEventThis`:
+Components emit navigation events via `@emitThis`:
 
 ```typescript
 export default (w: Window) => {
@@ -211,7 +211,7 @@ export default (w: Window) => {
 
   @elementDefine(tagName, { window: w })
   class Header extends w.HTMLElement {
-    @emitCustomEventThis('navigate')
+    @emitThis('navigate', { attributeName: 'on-navigate' })
     @addEventListener('.nav-link', 'click', { delegate: true })
     onNavClick(e: any) {
       const path = e.target.closest('[data-path]')?.dataset?.path;
@@ -266,7 +266,7 @@ rootRouterFactory (@subscribeSwcAppRouteChange)
     ↓
 Pages (receive data via attributes)
     ↓
-Components (emit events via @emitCustomEventThis)
+Components (emit events via @emitThis)
     ↓
 UI Rendering (Pure Web Components)
 ```
@@ -371,7 +371,7 @@ Header → emit → RootRouter → navigate:
 
 ```typescript
 // Header emits
-@emitCustomEventThis('navigate')
+@emitThis('navigate', { attributeName: 'on-navigate' })
 onNavClick() { return { path: '/product/123' }; }
 
 // RootRouter receives

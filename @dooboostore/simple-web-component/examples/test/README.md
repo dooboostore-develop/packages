@@ -4,7 +4,7 @@ A small e-commerce SPA built with **@dooboostore/simple-web-component**, doublin
 
 ## Features
 
-- ✅ Route-driven SPA via a single `RootRouter` (`@subscribeSwcAppRouteChangeWhileConnected`)
+- ✅ Route-driven SPA via a single `RootRouter` (`@subscribeSwcAppRouteChange`)
 - ✅ Dependency Injection via `@dooboostore/simple-boot`'s `@Inject`, mixed with SWC's own parameter decorators
 - ✅ Event-driven navigation via custom events (`@emitCustomEvent` / `on-navigate`)
 - ✅ Live test pages for: timers/animation frames, slots, RxJS-style event operators, event delegation, and order-independent parameter injection
@@ -88,7 +88,7 @@ w.document.addEventListener('DOMContentLoaded', async () => {
 
 ### 2. Root Router (pages/index.ts)
 
-A single `RootRouter` owns all routing via `@subscribeSwcAppRouteChangeWhileConnected` — no `@Router`/`@Sim` on the Web Component itself:
+A single `RootRouter` owns all routing via `@subscribeSwcAppRouteChange` — no `@Router`/`@Sim` on the Web Component itself:
 
 ```typescript
 @elementDefine('commerce-root-router', { window: w })
@@ -111,7 +111,7 @@ class RootRouter extends w.HTMLElement {
     return message;
   }
 
-  @subscribeSwcAppRouteChangeWhileConnected(['', '/', '/product/{id}', '/cart', '/checkout', '/orders', '/timer-test', '/slot-test', '/rxjs-operators-test', '/event-delegate-test', '/lifecycle-param-test'])
+  @subscribeSwcAppRouteChange(['', '/', '/product/{id}', '/cart', '/checkout', '/orders', '/timer-test', '/slot-test', '/rxjs-operators-test', '/event-delegate-test', '/lifecycle-param-test'])
   @innerHtmlLight
   routeChanged(routerPathSet: RouterEventType) {
     if (['', '/'].includes(routerPathSet.path)) return `<swc-example-commerce-home-page/>`;
@@ -207,7 +207,7 @@ Beyond the storefront pages, this app doubles as a live test bed for framework f
 
 ## Order-Independent Parameter Decorators (`@dooboostore/simple-web-component` → `decorators/parameter.ts`)
 
-Handlers for `@addEventListener` (incl. delegate variants), SWC lifecycle methods (`@onConnected*`), `@subscribeSwcAppRouteChangeWhileConnected`, and `@subscribeSwcAppMessageWhileConnected` are normally called with **fixed positional arguments**. These parameter decorators let you request exactly the values you need, **in any order**, mirroring `@dooboostore/simple-boot`'s `@Inject` (index-based metadata, not call-order-based):
+Handlers for `@addEventListener` (incl. delegate variants), SWC lifecycle methods (`@onConnected*`), `@subscribeSwcAppRouteChange`, and `@subscribeSwcAppMessage` are normally called with **fixed positional arguments**. These parameter decorators let you request exactly the values you need, **in any order**, mirroring `@dooboostore/simple-boot`'s `@Inject` (index-based metadata, not call-order-based):
 
 | Decorator | Injects | Usable in |
 |---|---|---|
@@ -216,8 +216,8 @@ Handlers for `@addEventListener` (incl. delegate variants), SWC lifecycle method
 | `@hostSet` | `HostSet` — `$host`/`$hosts`/`$firstHost`/`$appHost`/... (host-tree info only) | all four families below |
 | `@helperHostSet` | `HelperHostSet` — `HelperSet & HostSet & {$this}` (everything) | all four families |
 | `@helperSet` | `HelperSet` — `$d`/`$w`/`$q`/`$qa`/`$qi` (pure DOM/window helpers, no host-tree info) | all four families |
-| `@routerEvent` | `{ ...RouterEventType, pathData }` | `@subscribeSwcAppRouteChangeWhileConnected` handlers |
-| `@appMessage` | the `SwcAppMessage` payload | `@subscribeSwcAppMessageWhileConnected` handlers |
+| `@routerEvent` | `{ ...RouterEventType, pathData }` | `@subscribeSwcAppRouteChange` handlers |
+| `@appMessage` | the `SwcAppMessage` payload | `@subscribeSwcAppMessage` handlers |
 
 If a method uses **none** of these, it falls back to the exact legacy positional call — fully backward compatible.
 

@@ -219,7 +219,7 @@ export function applyProperty(selector: PropertySelector, targetPropertyKeyOrOpt
          * use that value. Otherwise use the entire return value.
          * 
          * Example:
-         * @setProperty('selector')
+         * @property('selector')
          * myMethod() {
          *   return {
          *     [PROPERTY_METADATA_KEY]: 'property-value',
@@ -298,82 +298,42 @@ export function applyProperty(selector: PropertySelector, targetPropertyKeyOrOpt
 // ============================================
 
 /**
- * @property - Field decorator for binding element properties (read/write)
- * 
- * Usage:
- * - @property('selector', 'propertyName') - Bind to specific property
- * - @property('selector') - Use field name as property name
- * - @property('selector', options) - Bind with options
- * - @property((this, helper) => 'selector', 'propertyName') - Function-based selector
- * - @property - Bare decorator (binds to $this with field name)
- * 
- * Note: This decorator is for FIELDS ONLY. For methods, use @setProperty.
+ * @property - 필드/메서드 공용. 붙은 곳에 따라 동작이 갈린다.
+ * - 필드: 대상 엘리먼트 프로퍼티를 읽고 쓰는 getter/setter ($this + 같은 이름이면 순수 필드로 두고 하이드레이션만 등록)
+ * - 메서드: 리턴값을 대상 엘리먼트 프로퍼티에 대입 (undefined 면 무시)
+ *
+ * 첫 문자열은 항상 셀렉터. 자기 자신의 프로퍼티는 필드 그 자체라 이름만 받는 형태는 의미가 없다.
+ * - @property - $this, 이름은 필드/메서드 이름
+ * - @property('selector') / @property('selector', options) - 대상의 같은 이름 프로퍼티
+ * - @property('selector', 'propertyName', options?) - 대상의 propertyName
+ * - @property((this, helper) => el, 'propertyName') - 함수 셀렉터
+ * - @property(options) - $this, 이름은 options.name 또는 필드/메서드 이름
+ *
+ * Example:
+ * @property('#chart', 'data') chartData: number[];
+ *
+ * @property('button', 'disabled')
+ * lock() { return true; }
  */
-export function property(selector: string, targetPropertyKey: string | symbol, options?: PropertyQueryOptions): PropertyDecorator;
-export function property(selector: PropertyFnSelector, targetPropertyKey: string | symbol, options?: PropertyNonQueryOptions): PropertyDecorator;
-export function property(selector: string, options?: PropertyQueryOptions): PropertyDecorator;
-export function property(selector: PropertyFnSelector, options?: PropertyNonQueryOptions): PropertyDecorator;
+export function property(selector: string, targetPropertyKey: string | symbol, options?: PropertyQueryOptions): MethodDecorator & PropertyDecorator;
+export function property(selector: PropertyFnSelector, targetPropertyKey: string | symbol, options?: PropertyNonQueryOptions): MethodDecorator & PropertyDecorator;
+export function property(selector: string, options?: PropertyQueryOptions): MethodDecorator & PropertyDecorator;
+export function property(selector: PropertyFnSelector, options?: PropertyNonQueryOptions): MethodDecorator & PropertyDecorator;
+export function property(options: PropertyOptions): MethodDecorator & PropertyDecorator;
+// bare(@property) 시그니처는 맨 뒤 — 앞에 있으면 문자열 두 개짜리 호출이 (target, key) 로 먼저 잡혀 TS1240
 export function property(target: Object, propertyKey: string | symbol): void;
 export function property(target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor): PropertyDescriptor | void;
-export function property(selectorOrTarget?: PropertySelector | Object, targetPropertyKeyOrOptions?: any, optionsOrDescriptor?: any): any {
-  // Bare decorator direct invocation: @property on field/method passes (target, key[, descriptor]).
-  // NOTE: (selector-string, key, options) factory form must NOT enter here — target is never string/function.
-  if (optionsOrDescriptor !== undefined
-    && typeof selectorOrTarget !== 'string' && typeof selectorOrTarget !== 'function'
-    && (typeof targetPropertyKeyOrOptions === 'string' || typeof targetPropertyKeyOrOptions === 'symbol')) {
-    return applyProperty('$this', undefined as any, {})(selectorOrTarget as Object, targetPropertyKeyOrOptions, optionsOrDescriptor as PropertyDescriptor);
+export function property(selectorOrTarget?: PropertySelector | PropertyOptions | Object, targetPropertyKeyOrOptions?: any, optionsOrDescriptor?: any): any {
+  // 셀렉터 (문자열 / 함수)
+  if (typeof selectorOrTarget === 'string' || typeof selectorOrTarget === 'function') {
+    return applyProperty(selectorOrTarget as PropertySelector, targetPropertyKeyOrOptions as any, optionsOrDescriptor as PropertyOptions);
   }
-  // With selector
-  if (typeof selectorOrTarget === 'string') {
-    return applyProperty(selectorOrTarget, targetPropertyKeyOrOptions as any, optionsOrDescriptor as PropertyOptions);
+  // bare: @property — 데코레이터로 바로 호출됨 (target=prototype, key[, descriptor])
+  if (selectorOrTarget && (typeof targetPropertyKeyOrOptions === 'string' || typeof targetPropertyKeyOrOptions === 'symbol')) {
+    return applyProperty('$this', {})(selectorOrTarget as Object, targetPropertyKeyOrOptions, optionsOrDescriptor as PropertyDescriptor);
   }
-  // Function selector
-  if (typeof selectorOrTarget === 'function') {
-    return applyProperty(selectorOrTarget as PropertyFnSelector, targetPropertyKeyOrOptions as any, optionsOrDescriptor as PropertyOptions);
-  }
-  // Bare field decorator: @property (target=prototype, key=field name, descriptor 없음).
-  // 기존 코드는 데코레이터를 만들어만 놓고 버려서 메타데이터가 안 남았음. 즉시 적용.
-  if (selectorOrTarget && typeof selectorOrTarget === 'object'
-    && (typeof targetPropertyKeyOrOptions === 'string' || typeof targetPropertyKeyOrOptions === 'symbol')) {
-    return applyProperty('$this', undefined as any, {})(selectorOrTarget as Object, targetPropertyKeyOrOptions);
-  }
-  // Without selector (defaults to $this)
-  return applyProperty('$this', undefined as any, selectorOrTarget as PropertyOptions);
-}
-
-/**
- * @setProperty - Method decorator for setting element properties from method return value
- * 
- * Usage:
- * - @setProperty('selector', 'propertyName') - Set specific property
- * - @setProperty('selector') - Use method name as property name
- * - @setProperty('selector', options) - Set with options
- * - @setProperty((this, helper) => 'selector', 'propertyName') - Function-based selector
- * - @setProperty - Bare decorator (sets on $this with method name)
- * 
- * Note: This decorator is for METHODS ONLY. For fields, use @property.
- * 
- * Example:
- * @setProperty('selector', 'disabled')
- * disableElement() {
- *   return true;
- * }
- */
-export function setProperty(selector: string, targetPropertyKey: string | symbol, options?: PropertyQueryOptions): MethodDecorator;
-export function setProperty(selector: PropertyFnSelector, targetPropertyKey: string | symbol, options?: PropertyNonQueryOptions): MethodDecorator;
-export function setProperty(selector: string, options?: PropertyQueryOptions): MethodDecorator;
-export function setProperty(selector: PropertyFnSelector, options?: PropertyNonQueryOptions): MethodDecorator;
-export function setProperty(selectorOrOptions?: PropertySelector | PropertyOptions, targetPropertyKeyOrOptions?: any, optionsOrUndefined?: PropertyOptions): MethodDecorator {
-  // With selector
-  if (typeof selectorOrOptions === 'string') {
-    return applyProperty(selectorOrOptions, targetPropertyKeyOrOptions as any, optionsOrUndefined as PropertyOptions) as MethodDecorator;
-  }
-  // Function selector
-  if (typeof selectorOrOptions === 'function') {
-    return applyProperty(selectorOrOptions as PropertyFnSelector, targetPropertyKeyOrOptions as any, optionsOrUndefined as PropertyOptions) as MethodDecorator;
-  }
-  // Without selector (defaults to $this)
-  return applyProperty('$this', undefined as any, selectorOrOptions as PropertyOptions) as MethodDecorator;
+  // 옵션만: $this
+  return applyProperty('$this', selectorOrTarget as PropertyOptions);
 }
 
 /**
@@ -441,7 +401,7 @@ export const findAllPropertyApplyMetadata = (target: any): Map<string | symbol, 
 };
 
 // ─── Aliases ───
-// property(필드) / setProperty(메서드)와 구분되는 일반 데코레이터 단축명
+// applyProperty 단축명
 export const prop = applyProperty;
 
 // ─── 편의 헬퍼 (selector/root 생략) ───
@@ -488,25 +448,14 @@ export function propAll(selector: string, targetPropertyKey?: string | symbol, o
   return applyProperty(selector, targetPropertyKey, {...options ?? {}, root: 'all'});
 }
 
-// ─── setProperty root 별칭 (메서드 리턴값 → 타깃 프로퍼티) ───
-export function setPropertyLight(selector: string, targetPropertyKey?: string | symbol, options?: Omit<PropertyQueryOptions, 'root'>): MethodDecorator {
+// ─── property root 별칭 ───
+export function propertyLight(selector: string, targetPropertyKey?: string | symbol, options?: Omit<PropertyQueryOptions, 'root'>): MethodDecorator & PropertyDecorator {
   return applyProperty(selector, targetPropertyKey, {...options ?? {}, root: 'light'});
 }
-export function setPropertyShadow(selector: string, targetPropertyKey?: string | symbol, options?: Omit<PropertyQueryOptions, 'root'>): MethodDecorator {
+export function propertyShadow(selector: string, targetPropertyKey?: string | symbol, options?: Omit<PropertyQueryOptions, 'root'>): MethodDecorator & PropertyDecorator {
   return applyProperty(selector, targetPropertyKey, {...options ?? {}, root: 'shadow'});
 }
-export function setPropertyAll(selector: string, targetPropertyKey?: string | symbol, options?: Omit<PropertyQueryOptions, 'root'>): MethodDecorator {
-  return applyProperty(selector, targetPropertyKey, {...options ?? {}, root: 'all'});
-}
-
-// ─── property root 별칭 (필드 프록시) ───
-export function propertyLight(selector: string, targetPropertyKey?: string | symbol, options?: Omit<PropertyQueryOptions, 'root'>): PropertyDecorator {
-  return applyProperty(selector, targetPropertyKey, {...options ?? {}, root: 'light'});
-}
-export function propertyShadow(selector: string, targetPropertyKey?: string | symbol, options?: Omit<PropertyQueryOptions, 'root'>): PropertyDecorator {
-  return applyProperty(selector, targetPropertyKey, {...options ?? {}, root: 'shadow'});
-}
-export function propertyAll(selector: string, targetPropertyKey?: string | symbol, options?: Omit<PropertyQueryOptions, 'root'>): PropertyDecorator {
+export function propertyAll(selector: string, targetPropertyKey?: string | symbol, options?: Omit<PropertyQueryOptions, 'root'>): MethodDecorator & PropertyDecorator {
   return applyProperty(selector, targetPropertyKey, {...options ?? {}, root: 'all'});
 }
 

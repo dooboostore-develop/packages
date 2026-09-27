@@ -1,4 +1,4 @@
-import swcRegister, { elementDefine, onConnectedInnerHtml, changedAttribute, setAttribute, addEventListener, query, HostSet } from '@dooboostore/simple-web-component';
+import swcRegister, { elementDefine, onConnectedInnerHtml, changedAttribute, attribute, addEventListener, query, HostSet } from '@dooboostore/simple-web-component';
 
 swcRegister(window);
 @elementDefine('load-test-container', { window })
@@ -14,7 +14,7 @@ class LoadTestContainer extends HTMLElement {
     if (this.displayEl) this.displayEl.textContent = String(this.parentCount);
   }
 
-  @setAttribute(':host', 'parent-count')
+  @attribute(':host', 'parent-count')
   incParent() {
     return this.parentCount + 1;
   }
@@ -56,7 +56,7 @@ class LoadTestItem extends HTMLElement {
     if (this.titleValEl) this.titleValEl.textContent = this.titleStr;
   }
 
-  @setAttribute(':host', 'count')
+  @attribute(':host', 'count')
   updateCount(val: number) {
     return val;
   }

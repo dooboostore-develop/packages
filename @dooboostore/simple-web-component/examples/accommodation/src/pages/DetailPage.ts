@@ -1,4 +1,4 @@
-import {addEventListener, innerHtml, attribute, elementDefine, onConnected, onConnectedBefore, query, subscribeSwcAppRouteChange} from '@dooboostore/simple-web-component';
+import { addEventListener, innerHtml, attribute, elementDefine, onConnectedBody, onConnectedBefore, query, subscribeSwcAppRouteChange } from '@dooboostore/simple-web-component';
 import {Inject} from '@dooboostore/simple-boot';
 import {AccommodationService} from '../services/AccommodationService';
 import {EventService, LocalEvent} from '../services/EventService';
@@ -70,7 +70,7 @@ export default (w: Window) => {
     }
 
     @innerHtml
-    @onConnected({ useShadow: true })
+    @onConnectedBody({ useShadow: true })
     render() {
       if (!this.accommodation) return '<div>숙소를 찾을 수 없습니다.</div>';
       const { name, images, rating, reviewCount, price, description, amenities, hostName, reviews, category, floorPlanImage } = this.accommodation;

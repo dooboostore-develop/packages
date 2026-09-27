@@ -1,7 +1,7 @@
 import {describe, test} from 'node:test';
 import assert from 'node:assert/strict';
 import {DomParser} from '@dooboostore/dom-parser';
-import register, {onConnectedSwcApp, elementDefine, onConnectedInnerHtml, setAttribute, subscribeSwcAppRouteChange, SwcAppInterface, SwcUtils, query, type SwcChooseInterface, changedAttribute} from '@dooboostore/simple-web-component';
+import register, {onConnectedSwcApp, elementDefine, onConnectedInnerHtml, attribute, subscribeSwcAppRouteChange, SwcAppInterface, SwcUtils, query, type SwcChooseInterface, changedAttribute} from '@dooboostore/simple-web-component';
 import {tagName} from "../../../test-swc/src/pages/indexRoute";
 import {Router, type RouterEventType} from '@dooboostore/core-web'
 import {inject} from "@dooboostore/simple-boot/decorators/inject/Inject";
@@ -98,12 +98,12 @@ describe('DomParser Template Parsing',  () => {
         // console.log('index.router onConnectedSwcApp', router.value);
       }
 
-      @setAttribute('#title', 'value')
+      @attribute('#title', 'value')
       titlea(title: string) {
         return title;
       }
 
-      @setAttribute('#url-text', 'value')
+      @attribute('#url-text', 'value')
       go(url: string) {
         this.router?.go(url);
         return url;
@@ -122,7 +122,7 @@ describe('DomParser Template Parsing',  () => {
         // console.log('----->', tt);
       }
 
-      @setAttribute('#url-text', 'value')
+      @attribute('#url-text', 'value')
       @subscribeSwcAppRouteChange(routePaths)
       async routeChanged(router: RouterEventType) {
         // await Promises.sleep(2000);

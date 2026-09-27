@@ -3,7 +3,7 @@ import ProductPage from './ProductPage';
 import CheckoutPage from './CheckoutPage';
 import HomePage from './HomePage';
 import OrdersPage from './OrdersPage';
-import { replaceChildren, elementDefine, onConnected, onConnectedBefore, publishSwcAppMessage, innerHtmlLight, onConnectedAfter, onConnectedShadow, subscribeSwcAppRouteChange } from '@dooboostore/simple-web-component';
+import { replaceChildren, elementDefine, onConnectedBody, onConnectedBefore, publishSwcAppMessage, innerHtmlLight, onConnectedAfter, onConnectedBodyShadow, subscribeSwcAppRouteChange } from '@dooboostore/simple-web-component';
 import {Inject} from '@dooboostore/simple-boot';
 import {Router, type RouterEventType} from '@dooboostore/core-web';
 import {CartService} from '../services/CartService';
@@ -87,7 +87,7 @@ export const rootRouterFactory = (w: Window) => {
       this.router.go(path);
     }
 
-    @onConnectedShadow
+    @onConnectedBodyShadow
     render() {
       return `
         <style>

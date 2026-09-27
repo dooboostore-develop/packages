@@ -1,4 +1,4 @@
-import {addEventListener, innerHtml, elementDefine, onConnectedBefore, onConnectedBodyShadow, updateClass} from '@dooboostore/simple-web-component';
+import { addEventListener, innerHtml, elementDefine, onConnectedBefore, onConnectedBodyShadow, updateClass } from '@dooboostore/simple-web-component';
 import {Inject} from '@dooboostore/simple-boot';
 import {Router} from '@dooboostore/core-web';
 import {Stock, StockService} from '../services/StockService';

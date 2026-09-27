@@ -2,7 +2,7 @@ import swcRegister, {
   elementDefine, 
   onConnectedInnerHtml, 
   addEventListener, 
-  setAttribute, 
+  attribute, 
   updateAttribute, 
   removeAttribute,
   applyAttribute,
@@ -21,7 +21,7 @@ class ApplyAttributeTest extends HTMLElement {
     }
 
     // 2. Convenience Shorthands
-    @setAttribute('.target', 'data-info')
+    @attribute('.target', 'data-info')
     onSetAttr(val: any) {
         return val;
     }

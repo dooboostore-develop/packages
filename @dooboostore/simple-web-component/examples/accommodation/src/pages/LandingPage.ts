@@ -1,4 +1,4 @@
-import {innerHtml, onConnectedAfter, addEventListener,  elementDefine, onConnected, onConnectedBefore} from '@dooboostore/simple-web-component';
+import { innerHtml, onConnectedAfter, addEventListener, elementDefine, onConnectedBody, onConnectedBefore } from '@dooboostore/simple-web-component';
 import {Inject} from '@dooboostore/simple-boot';
 import {Router} from '@dooboostore/core-web';
 import {EventService, LocalEvent} from '../services/EventService';
@@ -56,7 +56,7 @@ export default (w: Window) => {
           `;
     }
 
-    @onConnected({ useShadow: true })
+    @onConnectedBody({ useShadow: true })
     render() {
       return `
       <style>

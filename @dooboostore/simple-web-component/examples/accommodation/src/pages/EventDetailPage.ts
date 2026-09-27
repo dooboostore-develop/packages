@@ -1,4 +1,4 @@
-import {addEventListener, innerHtml, attribute, elementDefine, onConnected, onConnectedBefore} from '@dooboostore/simple-web-component';
+import { addEventListener, innerHtml, attribute, elementDefine, onConnectedBody, onConnectedBefore } from '@dooboostore/simple-web-component';
 import {Inject} from '@dooboostore/simple-boot';
 import {EventService} from '../services/EventService';
 import {AccommodationService} from '../services/AccommodationService';
@@ -34,7 +34,7 @@ export default (w: Window) => {
     }
 
     @innerHtml
-    @onConnected({ useShadow: true })
+    @onConnectedBody({ useShadow: true })
     render() {
       if (!this.event) return '<div>행사를 찾을 수 없습니다.</div>';
       const { title, location, date, description, imageUrl, tags, category } = this.event;

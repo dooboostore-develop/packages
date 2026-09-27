@@ -26,7 +26,7 @@ Verifies the execution order and reliability of all 8 lifecycle decorators.
 
 ### 2. 🔧 Attributes (`/attr`)
 Verifies the **Method-Based Reflection** approach.
-- **`@setAttribute`**: Checks if method return values are correctly reflected to DOM attributes.
+- **`@attribute`** (on methods): Checks if method return values are correctly reflected to DOM attributes.
 - **`@changedAttribute`**: Verifies that handlers trigger on both internal and external attribute changes.
 - **Instantiation**: Tests behavior when created via `document.createElement`, `new Class()`, or `innerHTML`.
 
@@ -59,7 +59,7 @@ Tests declarative Promise state management.
 ### 7. 🌐 SPA & DI (`/spa`)
 Verifies full application orchestration.
 - **Scoped DI**: Independent dependency containers for different `<swc-app>` instances.
-- **Lifecycle @Inject**: Injecting services and routers directly into `@onConnected` methods.
+- **Lifecycle @Inject**: Injecting services and routers directly into `@onConnected*` methods.
 - **Nested Routing**: Managing complex layouts using Shadow DOM and `<slot>` based page swapping.
 
 ### 8. 🚀 Performance (`/load-test`)

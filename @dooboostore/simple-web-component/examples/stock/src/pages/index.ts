@@ -1,6 +1,6 @@
 import MainPage from './MainPage';
 import DetailPage from './DetailPage';
-import { innerHtmlLight,replaceChildren, elementDefine, onConnectedBefore, onConnectedShadow, subscribeSwcAppRouteChange } from '@dooboostore/simple-web-component';
+import { innerHtmlLight, replaceChildren, elementDefine, onConnectedBefore, onConnectedBodyShadow, subscribeSwcAppRouteChange } from '@dooboostore/simple-web-component';
 import {Inject} from '@dooboostore/simple-boot';
 import {Router, type RouterEventType} from '@dooboostore/core-web';
 import {StockService} from '../services/StockService';
@@ -63,7 +63,7 @@ export const rootRouterFactory = (w: Window) => {
       this.router.go(path);
     }
 
-    @onConnectedShadow
+    @onConnectedBodyShadow
     render() {
       return `
         <style>

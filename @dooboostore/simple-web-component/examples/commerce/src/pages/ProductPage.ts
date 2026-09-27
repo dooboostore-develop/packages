@@ -1,4 +1,4 @@
-import {attribute, elementDefine, onConnected, onConnectedBefore} from '@dooboostore/simple-web-component';
+import { attribute, elementDefine, onConnectedBody, onConnectedBefore } from '@dooboostore/simple-web-component';
 import {Inject} from '@dooboostore/simple-boot';
 import {ProductService} from '../services/ProductService';
 import {CartService} from '../services/CartService';
@@ -91,7 +91,7 @@ export default (w: Window) => {
       }
     }
 
-    @onConnected
+    @onConnectedBody
     render() {
       console.log('ProductPage render called, product:', this.product?.name);
       if (!this.product) {

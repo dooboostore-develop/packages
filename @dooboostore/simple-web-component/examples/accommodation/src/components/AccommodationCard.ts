@@ -1,4 +1,4 @@
-import {innerHtml, createElement, CreateElementConfig, elementDefine} from '@dooboostore/simple-web-component';
+import { innerHtml, createElement, CreateElementConfig, elementDefine } from '@dooboostore/simple-web-component';
 
 import type {Accommodation} from '../services/AccommodationService';
 

@@ -97,3 +97,14 @@
 
 ### E-2. `HomePage.testHyd` — 🔵 보류 (개발 중)
 - 하이드레이션 테스트용 필드가 실제 페이지에 들어가 있음. 검증 끝나면 제거.
+
+### E-3. `attribute()`/`property()` 오버로드 순서 — ✅ 해결
+- bare 시그니처 `(target: Object, propertyKey)`가 맨 앞에 있어서 `@attribute('#u', 'pid')`(필드), `@property('#chart', 'data')`, `@property('#btn', 'disabled')`(메서드)가 TS1240/1241.
+- bare 시그니처를 맨 뒤로 옮겨 해결. `set*` 제거와 함께 필드/메서드 공용 오버로드로 정리.
+- 남은 한계: 함수 셀렉터가 `any`를 리턴하면(`(t: any) => t`) 여전히 bare로 잡힘. `Element` 등으로 타입을 주면 정상.
+
+### E-4. 패키지 빌드 순서 — 🟡 열림
+- 루트 `pnpm run build`에서 `simple-web-component-library` 선언 생성이 `@dooboostore/algorithm`을 못 찾고 실패(빌드 순서). 번들은 나와서 막히진 않음.
+
+### E-5. `dooboostore.github.io/apps/center`가 제거된 API 사용 — 🟡 열림
+- `RootRouter.ts` 등에서 `subscribeSwcAppRouteChangeWhileConnected`(21곳). 오래된 `dist/types` 덕에 타입체크만 통과 — 서브모듈을 올리면 깨짐. `subscribeSwcAppRouteChange`로 이름 변경 필요.

@@ -1,4 +1,4 @@
-import { innerHtml, addEventListener, elementDefine, onConnected, onConnectedBefore, updateClass } from '@dooboostore/simple-web-component';
+import { innerHtml, addEventListener, elementDefine, onConnectedBody, onConnectedBefore, updateClass } from '@dooboostore/simple-web-component';
 import {Inject} from '@dooboostore/simple-boot';
 import {Router} from '@dooboostore/core-web';
 import {ProductService} from '../services/ProductService';
@@ -107,7 +107,7 @@ export default (w: Window) => {
       this.cartService.addItem(product, 1);
     }
 
-    @onConnected
+    @onConnectedBody
     render() {
       const categories = this.getCategories();
 

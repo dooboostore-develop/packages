@@ -124,6 +124,10 @@ server.run();
    `{ sel, prop, value }` items (`sel` = `[swc-use-ssr="<id>"]`, JSON-serializable values only).
 3. Embedded as a `<script>` that runs before the bundle: finds each node with
    `querySelector` and sets `el[prop] = value`.
+4. The JSON is escaped for inline scripts (`<` → `<`, U+2028/U+2029), so a value
+   containing `</script>` can't break out of the tag. `JSON.parse` restores it exactly.
+5. Works because a custom element keeps own properties set **before** `customElements.define` —
+   the upgrade doesn't reset them. Declare hydrated fields with `declare` (see the SWC README).
 
 ---
 

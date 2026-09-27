@@ -1,4 +1,4 @@
-import {addEventListener, applyNode, elementDefine, onConnected, onConnectedBefore} from '@dooboostore/simple-web-component';
+import { addEventListener, applyNode, elementDefine, onConnectedBody, onConnectedBefore } from '@dooboostore/simple-web-component';
 import {Inject} from '@dooboostore/simple-boot';
 import {SubscriptionLike} from '@dooboostore/core';
 import {CartService} from '../services/CartService';
@@ -89,7 +89,7 @@ export default (w: Window) => {
     }
 
     @addEventListener('.btn-clear-cart', 'click', { stopPropagation: true, delegate: true })
-    // @emitCustomEventThis('cart-cleared', { bubbles: true })
+    // @emitThis('cart-cleared', { bubbles: true })
     onClearCart() {
       if (this.cartService && confirm('Clear all items from cart?')) {
         this.cartService.clear();
@@ -198,7 +198,7 @@ export default (w: Window) => {
       `;
     }
 
-    @onConnected({ useShadow: true })
+    @onConnectedBody({ useShadow: true })
     render() {
       return `
         <style>
