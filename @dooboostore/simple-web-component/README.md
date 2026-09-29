@@ -1942,6 +1942,141 @@ host itself has no parent, so the message would be dropped.
 
 Use `connectedElements()` to get the currently connected child elements.
 
+## 🌐 @fetch — Declarative HTTP
+
+```typescript
+// bare form: GET by default
+@fetch('https://api.example.com/post/1')
+async load(@fetchSettled settled: PromiseSettledResult<any>) {
+  return settled;
+}
+
+// before (default): build request → fetch → inject settled → run method.
+// Returns the method result.
+@fetch({ url: '/api/post/1', request: 'GET' })
+async loadBefore(@fetchSettled settled: PromiseSettledResult<any>) {
+  return settled.status === 'fulfilled' ? settled.value : null;
+}
+
+// after: run method → use its return value as the body → fetch. Returns the fetch result.
+@fetch({ url: '/api/posts', trigger: 'after', process: 'json' })
+async save() {
+  return { title: 'hello' };
+}
+
+// after + valueKey: use returnValue[valueKey] as the body.
+@fetch({ url: '/api/echo', trigger: 'after', valueKey: 'form', process: 'form' })
+async saveForm() {
+  return { form: { title: 'hi' } };
+}
+```
+
+**Modes**
+- **before** (default, or `trigger: 'before'`): build request → fetch → inject the settled result via
+  `@fetchSettled` → run the method. Returns the method result. A failed fetch does not
+  throw — it arrives as `{ status: 'rejected', reason }`.
+- **after** (`trigger: 'after'`, or just `valueKey`): run the method → its return value
+  (or `returnValue[valueKey]`) becomes the body → fetch. Returns the fetch result; a failed fetch throws.
+  `valueKey` is after-only — combining it with `trigger: 'before'` is a type error.
+
+**Declarative vs manual** — pick one:
+- **Declarative**: describe the request with `url` / `request` / `process` and the framework fetches.
+- **Manual**: give `manual` and make the request yourself (a service call, your own `fetch`, ...).
+  `url` / `request` / `process` are unused then, so combining them with `manual` is a type error.
+
+```typescript
+// service call — only the result matters
+@fetch({ manual: (self) => self.myService.getProfile({}) })
+async load(@fetchSettled settled?: PromiseSettledResult<MyService.ProfileResponse>) { ... }
+
+// your own fetch — pass the signal so an abort cancels the network request too
+@fetch({ trigger: 'after', manual: (_self, _helper, _params, signal, returnValue) =>
+  window.fetch('/api/save', { method: 'POST', body: JSON.stringify(returnValue), signal }).then(r => r.json()) })
+async save() { return { title: 'hi' }; }
+```
+
+`manual(this, helper, params, signal, returnValue?)` — `signal` aborts on disconnect / `abortPrevious`;
+`returnValue` is the method's return value (or `returnValue[valueKey]`) in after mode, `undefined` in before mode.
+Its return value is the fetch result.
+
+**Options (declarative)**
+- `url`: a string/`URL`/`Request`, or a factory `(this, helper, params) => url`.
+- `request`: an HTTP method string (`'GET'`/`'POST'`/...) or a factory returning `RequestInit` —
+  `(this, helper, params) => RequestInit` in before mode, `(this, helper, params, returnValue) => RequestInit`
+  in after mode. Absent = GET, or POST when there is a body.
+- `process`: body encoding for plain values — `'json'` / `'form'` (multipart) / `'urlencoded'` / `'text'`.
+  Values that already are a `BodyInit` (string, `Blob`, `ArrayBuffer`, `FormData`, `URLSearchParams`,
+  `ReadableStream`) are sent as-is. Unset = pass through untouched.
+- Headers: `request` may return `headers` as an object, array or `Headers` instance. A `Content-Type`
+  you set wins over the one `process` would add.
+- The request uses the element's window `fetch` (the per-request window under SSR), falling back to `globalThis.fetch`.
+- Default response handling: empty body (e.g. 204) → `undefined`, JSON content types (`application/json`,
+  `*+json`) → parsed, otherwise text. A non-OK status throws `HttpResponseError` from `@dooboostore/core`
+  with `response` (status, headers) and the parsed `body`:
+
+```typescript
+@fetch('/api/post/1')
+async load(@fetchSettled settled?: PromiseSettledResult<any>) {
+  if (settled?.status === 'rejected' && isHttpResponseError(settled.reason)) {
+    return settled.reason.response?.status; // e.g. 404
+  }
+}
+```
+
+**Hooks** (same order as every other SWC decorator: `filter → before → handler → finally`)
+- `filter(this, helper, params)` → `false` skips the whole call (no method, no fetch; returns `undefined`).
+- `before(this, helper, params)` runs first after `filter` and is awaited; its return value is ignored.
+- `after(this, helper, params, settled)` runs right after the fetch settles (fulfilled or rejected).
+- `finally(this, helper, params, { args, result, error })` always runs around the whole call.
+  `result` is what the call returns (the method result in before mode, the fetch result in after mode).
+
+**Cancellation**
+- Every call gets its own `AbortController`. Declarative requests get its signal as `init.signal`
+  (merged with a `signal` you return from `request`, via `AbortSignal.any` or a fallback); `manual` gets it as
+  the `signal` argument.
+- When the element disconnects, all its in-flight `@fetch` requests are aborted. Such a call ends
+  quietly with `undefined`: the method (before mode) and the `after` hook are skipped so nothing touches
+  a detached DOM; `finally` still runs with `ctx.error` set to the `AbortError`.
+- A call that *starts* while the element is detached (e.g. a `setTimeout` scheduled just before the user
+  navigated away) is skipped the same quiet way. Elements that were never connected are not affected.
+- `manual` should pass `signal` on to its own client (`fetch`, axios, ...) so the network
+  request is actually cancelled. If it ignores the signal, the call still ends as soon as it's aborted
+  (the result is raced against the abort) — the request just keeps running in the background and its
+  late result is discarded.
+- `abortPrevious: true` aborts the previous in-flight call of the same method when it's called again
+  (search-as-you-type) — the superseded call ends quietly the same way, so a late old response can't
+  overwrite the newest result.
+- Aborting through your own signal is not quiet: it surfaces as a rejected settled result (before mode)
+  or a thrown error (after mode), like any other failure.
+
+**Aliases**
+
+| Alias | Same as |
+|---|---|
+| `@fetchManual(fn, options?)` | `@fetch({ ...options, manual: fn })` |
+| `@fetchGet(url, options?)` / `@fetchDelete(url, options?)` | before mode, `method` fixed to GET / DELETE |
+| `@fetchPost(url, options?)` / `@fetchPut(...)` / `@fetchPatch(...)` | after mode (the method's return value is the body), `method` fixed |
+| `@fetchLatest(url \| options)` | `@fetch({ ...options, abortPrevious: true })` |
+| `@fetchBefore(options)` / `@fetchAfter(options)` | `@fetch({ ...options, trigger })` |
+
+For the method aliases, `request` may only be a factory returning `RequestInit` (e.g. headers) — its `method` is overwritten.
+
+```typescript
+@fetchManual((self) => self.myService.getProfile({}))
+async load(@fetchSettled settled?: PromiseSettledResult<Profile>) { ... }
+
+@fetchPost('/api/posts', { process: 'json' })
+async save() { return { title: 'hi' }; }
+
+@fetchDelete((_self, _helper, params) => `/api/posts/${params[0]}`)
+async remove(id: number, @fetchSettled settled?: PromiseSettledResult<unknown>) { ... }
+```
+
+**Composition** — e.g. form submit:
+`@event('form', 'submit', { before: (e) => new FormData(e.target), preventDefault: true })`
+stacked on `@fetch({ url: '/api/echo', trigger: 'after', process: 'form' })`, with the method taking
+`@eventBeforeReturn formData: FormData` and returning it.
+
 ## 💧 @property Hydration Rules
 
 - Attach bare `@property` (no args) to a field to mark it as an SSR hydration target.

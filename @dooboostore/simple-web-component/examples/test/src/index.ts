@@ -14,7 +14,7 @@ w.document.addEventListener('DOMContentLoaded', async () => {
   await defineSwcAppBody(w)
   const appElement = w.document.querySelector('#app') as SwcAppInterface;
   const path = UrlUtils.getUrlPath(w.location) ?? '/';
-  
+  // Promise.allSettled()
   if (appElement) {
     appElement.connect({
       path: path,

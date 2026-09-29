@@ -104,6 +104,12 @@ export default (w: Window) => {
       return { path: '/message-subject-test' };
     }
 
+    @addEventListener('#fetch-test-link', 'click')
+    @emitCustomEvent('$this', 'navigate', { attributeName: 'on-navigate' })
+    onFetchTestClick() {
+      return { path: '/fetch-test' };
+    }
+
     @addEventListener('.cart-icon', 'click')
     @emitCustomEvent('$this', 'navigate', { attributeName: 'on-navigate' })
     onCartClick() {
@@ -239,6 +245,7 @@ export default (w: Window) => {
             <a id="before-filter-return-test-link">Before/Filter/Return</a>
             <a id="observer-hooks-test-link">Observer Hooks</a>
             <a id="message-subject-test-link">Subject Test</a>
+            <a id="fetch-test-link">Fetch Test</a>
           </div>
           <div class="cart-section">
             <span class="cart-icon" id="cart-icon">🛒</span>

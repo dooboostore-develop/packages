@@ -12,6 +12,7 @@ import AroundStateTestPage from './AroundStateTestPage';
 import BeforeFilterReturnTestPage from './BeforeFilterReturnTestPage';
 import ObserverHooksTestPage from './ObserverHooksTestPage';
 import MessageSubjectTestPage from './MessageSubjectTestPage';
+import FetchTestPage from './FetchTestPage';
 import {replaceChildren, innerHtmlLight, subscribeSwcAppRouteChange, subscribeSwcAppMessage, publishSwcAppMessage, routeChangeBeforeReturn, appMessageBeforeReturn, onConnectedBodyLight, innerHtml, onConnectedAfter, onConnectedBody, updateClass, addEventListener, applyNode, elementDefine, emitCustomEvent, onConnectedBefore, onConnectedBodyShadow, addEventListenerThis, attribute } from '@dooboostore/simple-web-component';
 import {Inject} from '@dooboostore/simple-boot';
 import {Router, type RouterEventType} from '@dooboostore/core-web';
@@ -19,7 +20,7 @@ import {CartService} from '../services/CartService';
 import {OrderService} from '../services/OrderService';
 import {ProductService} from '../services/ProductService';
 
-export { CartPage, ProductPage, CheckoutPage, HomePage, OrdersPage, TimerTestPage, SlotTestPage, RxjsOperatorsTestPage, EventDelegateTestPage, LifecycleParamTestPage, AroundStateTestPage, BeforeFilterReturnTestPage, ObserverHooksTestPage, MessageSubjectTestPage };
+export { CartPage, ProductPage, CheckoutPage, HomePage, OrdersPage, TimerTestPage, SlotTestPage, RxjsOperatorsTestPage, EventDelegateTestPage, LifecycleParamTestPage, AroundStateTestPage, BeforeFilterReturnTestPage, ObserverHooksTestPage, MessageSubjectTestPage, FetchTestPage };
 
 /**
  * Root Router Factory - Main routing hub
@@ -84,7 +85,7 @@ export const rootRouterFactory = (w: Window) => {
       return 'done';
     }
 
-    @subscribeSwcAppRouteChange(['', '/', '/product/{id}', '/cart', '/checkout', '/orders', '/timer-test', '/slot-test', '/rxjs-operators-test', '/event-delegate-test', '/lifecycle-param-test', '/around-state-test', '/before-filter-return-test', '/observer-hooks-test', '/message-subject-test'])
+    @subscribeSwcAppRouteChange(['', '/', '/product/{id}', '/cart', '/checkout', '/orders', '/timer-test', '/slot-test', '/rxjs-operators-test', '/event-delegate-test', '/lifecycle-param-test', '/around-state-test', '/before-filter-return-test', '/observer-hooks-test', '/message-subject-test', '/fetch-test'])
     @innerHtmlLight
     routeChanged(routerPathSet: RouterEventType) {
       if (['', '/'].includes(routerPathSet.path)) {
@@ -113,6 +114,8 @@ export const rootRouterFactory = (w: Window) => {
         return `<swc-example-observer-hooks-test-page/>`;
       } else if (['/message-subject-test'].includes(routerPathSet.path)) {
         return `<swc-example-message-subject-test-page/>`;
+      } else if (['/fetch-test'].includes(routerPathSet.path)) {
+        return `<swc-example-fetch-test-page/>`;
       } else if (routerPathSet.path.startsWith('/product/')) {
         return `<swc-example-commerce-product-page product-id="${routerPathSet.pathData.id}"/>`;
       } else {
@@ -155,4 +158,4 @@ export const rootRouterFactory = (w: Window) => {
   return tagName;
 };
 
-export const pageFactories = [CartPage, ProductPage, CheckoutPage, HomePage, OrdersPage, TimerTestPage, SlotTestPage, RxjsOperatorsTestPage, EventDelegateTestPage, LifecycleParamTestPage, AroundStateTestPage, BeforeFilterReturnTestPage, ObserverHooksTestPage, MessageSubjectTestPage, rootRouterFactory];
+export const pageFactories = [CartPage, ProductPage, CheckoutPage, HomePage, OrdersPage, TimerTestPage, SlotTestPage, RxjsOperatorsTestPage, EventDelegateTestPage, LifecycleParamTestPage, AroundStateTestPage, BeforeFilterReturnTestPage, ObserverHooksTestPage, MessageSubjectTestPage, FetchTestPage, rootRouterFactory];

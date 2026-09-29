@@ -25,6 +25,7 @@ import {SetIntervalLifeCycler} from "./setInterval";
 import {SetTimeoutLifeCycler} from "./setTimeout";
 import {RequestAnimationFrameLifeCycler} from "./requestAnimationFrame";
 import {EventMediaLifeCycler} from "./eventMedia";
+import {FetchLifeCycler} from "./fetch";
 
 // --- Core Interfaces & Types ---
 
@@ -298,10 +299,13 @@ const setupPrototype = (proto: any, win: Window) => {
       // @hostSet/@helperHostSet/@helperSet가 붙은 파라미터는 @Inject/situationType 기반
       // 해석보다 먼저 처리되고(firstCheckMaker), 그 외 파라미터는 기존처럼 @Inject/타입
       // 기반으로 정상 해석된다 — 같은 메서드에서 두 방식을 섞어 써도 된다.
+      // swc 파라미터 데코레이터가 붙은 자리는 DI 로 넘기지 않는다. lifecycle 이 못 채우는 kind
+      // (예: @fetchSettled — @fetch 가 나중에 채움)는 null. undefined 를 돌려주면
+      // "처리 안 함"으로 보고 DI 가 파라미터 타입(Object 등)을 resolve 하려다 SimNoSuch 로 죽는다.
       const firstCheckMaker: FirstCheckMaker = ({target, targetKey}, token, idx) => {
         const saves = getParameterMetadata(target, targetKey!);
         const found = saves.find(s => s.index === idx);
-        return found ? (kindValues as any)[found.kind] : undefined;
+        return found ? ((kindValues as any)[found.kind] ?? null) : undefined;
       };
 
       return app.simstanceManager.executeBindParameterSim(
@@ -435,6 +439,7 @@ export const elementDefine =
         new SetTimeoutLifeCycler(),
         new RequestAnimationFrameLifeCycler(),
         new EventMediaLifeCycler(),
+        new FetchLifeCycler(),
       ];
 
       // observedAttributes 기여 cycler (define-time, constructor 기반)

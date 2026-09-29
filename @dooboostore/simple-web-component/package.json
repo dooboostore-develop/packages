@@ -83,6 +83,7 @@
     "esbuild": "^0.23.0",
     "esbuild-plugin-tsc": "^0.5.0",
     "html-webpack-plugin": "^5.6.3",
+    "jsdom": "^26.0.0",
     "raw-loader": "^4.0.2",
     "reflect-metadata": "^0.2.2",
     "ts-loader": "^9.5.1",
@@ -109,8 +110,9 @@
     "publish:npm": "pnpm run build && cp package.json package.json.back && pnpm pack && TARBALL_NAME=$(ls dooboostore-simple-web-component-*.tgz | head -n 1) && tar -xzf \"$TARBALL_NAME\" -C . --strip-components=1 package/package.json && rm \"$TARBALL_NAME\" && (pnpm publish --no-git-checks || true) && cp package.json.back package.json && rm -rf package.json.back  ",
     "ts:clean": "find . -name '*.js' -o -name '*.map' -o -name '*.d.ts' | xargs rm -f",
     "typecheck": "pnpm exec tsc --noEmit",
-    "test": "echo test",
-    "test:bundle": "pnpm --filter @dooboostore/simple-web-component-bundle-test dev"
+    "test": "pnpm run test:types && node --import ./test/unit/register-loader.mjs --test --test-force-exit test/unit/index.test.ts",
+    "test:bundle": "pnpm --filter @dooboostore/simple-web-component-bundle-test dev",
+    "test:types": "tsc --noEmit -p test/unit | (! grep '^test/')"
   },
   "dependencies": {
     "@dooboostore/core": "workspace:*",

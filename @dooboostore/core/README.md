@@ -183,7 +183,7 @@ Promises.loop<T>(config: { factory: (loopInfo: { age: number }) => Promise<T>; d
 }
 
 Promises.filterCatch(promise, errorTypeOrPredicate): Promise<Error | undefined>
-Promises.abortable<T>(executor: (() => Promise<T>) | Promise<T>, signal?: AbortSignal): AbortablePromise<T>
+Promises.abortable<T>(executor: (() => Promise<T>) | Promise<T>, signal?: AbortSignal): AbortablePromise<T>  // await directly; rejects with signal.reason (AbortError); a factory isn't called if already aborted
 Promises.withResolvers<T>(): { promise, resolve, reject }         // like the stage-4 Promise.withResolvers
 
 // Wrap a promise (or a promise factory) so its state can be read synchronously

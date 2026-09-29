@@ -8,7 +8,7 @@ import { ReflectUtils } from '@dooboostore/core';
  * 데코레이터가 실행되는 순서가 아니라 실제 parameterIndex로 슬롯을 매칭하므로,
  * 사용자가 파라미터 선언 순서를 자유롭게 바꿔도 된다.
  */
-export type SwcParamKind = 'eventObject' | 'matchedElement' | 'hostSet' | 'helperHostSet' | 'helperSet' | 'routerEvent' | 'appMessage' | 'eventBeforeReturn' | 'appMessageBeforeReturn' | 'routeChangeBeforeReturn' | 'eventMediaBeforeReturn' | 'mutationObserverBeforeReturn' | 'intersectionObserverBeforeReturn' | 'resizeObserverBeforeReturn' | 'changedAttributeBeforeReturn' | 'setTimeoutBeforeReturn' | 'setIntervalBeforeReturn';
+export type SwcParamKind = 'eventObject' | 'matchedElement' | 'hostSet' | 'helperHostSet' | 'helperSet' | 'routerEvent' | 'appMessage' | 'eventBeforeReturn' | 'appMessageBeforeReturn' | 'routeChangeBeforeReturn' | 'eventMediaBeforeReturn' | 'mutationObserverBeforeReturn' | 'intersectionObserverBeforeReturn' | 'resizeObserverBeforeReturn' | 'changedAttributeBeforeReturn' | 'setTimeoutBeforeReturn' | 'setIntervalBeforeReturn' | 'fetchSettled';
 
 const SWC_PARAMETER_METADATA_KEY = Symbol.for('simple-web-component:parameter');
 
@@ -120,6 +120,14 @@ export function setTimeoutBeforeReturn(target: Object, propertyKey: string | sym
 /** @setInterval(type:'onConnected') 의 before 훅이 이번 호출에 리턴한 값을 주입한다. (before 없으면 undefined) */
 export function setIntervalBeforeReturn(target: Object, propertyKey: string | symbol, parameterIndex: number): void {
   registerParam('setIntervalBeforeReturn', target, propertyKey, parameterIndex);
+}
+
+/**
+ * @fetch(trigger:'before') 의 fetch settled 결과(PromiseSettledResult)를 주입한다.
+ * 예: save(@fetchSettled settled) { ... }
+ */
+export function fetchSettled(target: Object, propertyKey: string | symbol, parameterIndex: number): void {
+  registerParam('fetchSettled', target, propertyKey, parameterIndex);
 }
 
 export const getParameterMetadata = (target: any, propertyKey: string | symbol): SaveParamConfig[] => {
