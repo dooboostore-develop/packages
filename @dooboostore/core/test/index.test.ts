@@ -9,3 +9,4 @@ import './fetch/bug6-url-mutation.test.ts';
 import './fetch/bug7-headers-instance-dropped.test.ts';
 import './fetch/bug8-shared-config-race.test.ts';
 import './promise/abortable.test.ts';
+import './reflect/cross-realm.test.ts';

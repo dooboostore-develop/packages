@@ -19,13 +19,6 @@ export interface ChangedAttributeThisMetadata {
   options: ChangedAttributeThisOptions;
 }
 
-const convertValue = (val: any, type: any): any => {
-  if (val === null || val === undefined) return val;
-  if (type === Number) return Number(val);
-  if (type === Boolean) return val === 'false' || val === '0' ? false : true;
-  return val;
-};
-
 const applyChangedAttribute = (attributeName: string | undefined, options: ChangedAttributeThisOptions, target: Object, propertyKey: string | symbol): void => {
   const constructor = target.constructor;
   let metaList = ReflectUtils.getOwnMetadata(ON_ATTRIBUTE_CHANGED_METADATA_KEY, constructor) as ChangedAttributeThisMetadata[];
@@ -42,7 +35,7 @@ const applyChangedAttribute = (attributeName: string | undefined, options: Chang
   });
 };
 
-export function changedAttribute(attributeName?: string, options?: ChangedAttributeThisOptions): MethodDecorator;
+export function changedAttribute(attributeName: string, options?: ChangedAttributeThisOptions): MethodDecorator;
 export function changedAttribute(target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor): void;
 /**
  * @changedAttributeThis decorator - fires when any attribute on $this changes.
@@ -54,7 +47,7 @@ export function changedAttribute(attributeNameOrTarget?: string | Object, option
     applyChangedAttribute(undefined, {}, attributeNameOrTarget as Object, optionsOrPropertyKey);
     return;
   }
-  // 옵션과 함께: @changedAttribute() / @changedAttribute('name', options?)
+  // 옵션과 함께: @changedAttribute('name', options?)
   const attributeName = attributeNameOrTarget as string | undefined;
   const options = (optionsOrPropertyKey as ChangedAttributeThisOptions) ?? {};
   return (target: Object, propertyKey: string | symbol) => {
@@ -63,12 +56,12 @@ export function changedAttribute(attributeNameOrTarget?: string | Object, option
 }
 
 export const getChangedAttributeMetadata = (target: any): ChangedAttributeThisMetadata[] | undefined => {
-  const constructor = target instanceof Function ? target : target.constructor;
-  return ReflectUtils.getMetadata(ON_ATTRIBUTE_CHANGED_METADATA_KEY, constructor);
+  const constructor = typeof target === 'function' ? target : target.constructor;
+  return ReflectUtils.findAllMetadata<any[]>(ON_ATTRIBUTE_CHANGED_METADATA_KEY, constructor).flat();
 };
 
 export const findAllAttributeChangedMetadata = (target: any): Map<string, ChangedAttributeThisMetadata[]> => {
-  const constructor = target instanceof Function ? target : target.constructor;
+  const constructor = typeof target === 'function' ? target : target.constructor;
   const metaList = ReflectUtils.findAllMetadata<ChangedAttributeThisMetadata[]>(ON_ATTRIBUTE_CHANGED_METADATA_KEY, constructor) || [];
 
   const result = new Map<string, ChangedAttributeThisMetadata[]>();
@@ -91,7 +84,7 @@ export const convertAttributeValue = (val: any, type?: typeof Number | typeof Bo
 // ChangedAttributeLifeCycler
 // ─────────────────────────────────────────────────────────────────────────────
 import { ElementDefineLifeCycler, HelperHostSet } from '../types';
-import { getAttributeValue } from './applyAttribute';
+import { getAttributeValue, convertValue } from './applyAttribute';
 import { SwcUtils } from '../utils/Utils';
 import { buildSwcParameterArgs } from './parameter';
 
@@ -139,7 +132,7 @@ export class ChangedAttributeLifeCycler implements ElementDefineLifeCycler {
     const inst = helperHostSet.$this;
     const opts = meta.options;
     void (async () => {
-      const helper = SwcUtils.getHelperAndHostSet(helperHostSet.$w, inst);
+      const helper = SwcUtils.getHelperAndHostSet(inst);
       if (opts.filter && !(await opts.filter(value, { currentThis: inst, helper }))) return;
       const hostSet = SwcUtils.getHostSet(inst);
       const helperSet = SwcUtils.getHelperSet(helperHostSet.$w);

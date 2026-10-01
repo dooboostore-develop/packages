@@ -54,12 +54,12 @@ export function addEventListener<TEvent extends Event = Event>(selector: string,
 export function addEventListener<TEvent extends Event = Event>(selector: string, type: string[], options?: AddEventListenerQueryOptions<TEvent>): MethodDecorator;
 export function addEventListener<TEvent extends Event = Event>(selector: EventListenerFnSelector, type: string, options?: AddEventListenerNonQueryOptions<TEvent>): MethodDecorator;
 /**
- * @addEventListener(type, options?) — 셀렉터 생략 시 $this(컴포넌트 자신)로 바인딩
+ * @event(type, options?) — 셀렉터 생략 시 $this(컴포넌트 자신)로 바인딩
  */
 export function addEventListener<TEvent extends Event = Event>(type: string, options?: AddEventListenerQueryOptions<TEvent>): MethodDecorator;
 export function addEventListener<TEvent extends Event = Event>(type: string[], options?: AddEventListenerQueryOptions<TEvent>): MethodDecorator;
 /**
- * @addEventListener decorator to bind events to elements.
+ * @event decorator to bind events to elements.
  */
 export function addEventListener<TEvent extends Event = Event>(selectorOrType: EventListenerSelector | string | string[], typeOrOptions?: string | string[] | AddEventListenerQueryOptions<TEvent>, maybeOptions?: AddEventListenerQueryOptions<TEvent>): MethodDecorator {
   return (targetObj: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor) => {
@@ -82,7 +82,7 @@ export function addEventListener<TEvent extends Event = Event>(selectorOrType: E
 
     const constructor = targetObj.constructor;
 
-    let listeners = ReflectUtils.getMetadata<AddEventListenerMetadata<TEvent>[]>(ADD_EVENT_LISTENER_METADATA_KEY, constructor);
+    let listeners = ReflectUtils.getOwnMetadata(ADD_EVENT_LISTENER_METADATA_KEY, constructor) as AddEventListenerMetadata<TEvent>[] | undefined;
     if (!listeners) {
       listeners = [];
       ReflectUtils.defineMetadata(ADD_EVENT_LISTENER_METADATA_KEY, listeners, constructor);
@@ -137,15 +137,9 @@ export function addEventListenerAll<TEvent extends Event = Event>(selector: stri
   return addEventListener<TEvent>(selector, type, {...options??{}, root:'all'});
 }
 
-/**
- * @addEventListenerThis decorator - simplified version of @addEventListener for $this selector
- */
-export function addEventListenerThis<TEvent extends Event = Event>(type: string, options?: AddEventListenerQueryOptions<TEvent>): MethodDecorator {
-  return addEventListener<TEvent>('$this', type, options);
-}
 
 /**
- * @addEventListenerAppHost decorator - simplified version of @addEventListener for $appHost selector
+ * @eventAppHost decorator - simplified version of @event for $appHost selector
  */
 export function addEventListenerAppHost<TEvent extends Event = Event>(type: string, options?: AddEventListenerQueryOptions<TEvent>): MethodDecorator {
   return addEventListener<TEvent>('$appHost', type, options);
@@ -174,25 +168,33 @@ export const eventAll = addEventListenerAll;
 export const eventAppHost = addEventListenerAppHost;
 export const eventWindow = addEventListenerWindow;
 export const eventDocument = addEventListenerDocument;
-export const eventThis = addEventListenerThis;
 
 // ─── 이벤트 타입별 별칭 (eventClick, eventClickDelegateLight, ...) ───
 // 위 scope/delegate 축 별칭들을 특정 이벤트 타입에 고정해서 재바인딩한다.
-// 실제 타입별 export 목록(944개, 아래)은 이 팩토리로 생성 스크립트를 돌려서 만들었다.
-// selector가 필요 없는 변형(This/AppHost/Window/Document)은 options가 유일한 파라미터라
-// 괄호 없이(@eventClickThis) 바로 데코레이터로 써도, 옵션과 함께(@eventClickThis({...})) 써도
-// 동작하도록 이중 모드로 만든다. 두 번째 인자가 string|symbol이면 (target, propertyKey, descriptor)로
-// 직접 호출된 것으로 판단한다 — @attribute의 bare/factory 판별과 같은 방식.
-// 반환 타입 유니온에 MethodDecorator(함수 타입)가 섞여 있으면 TS가 "괄호 없이 쓸 때"의 데코레이터
-// 반환 타입 검사에서 이를 허용된 반환 타입(void | PropertyDescriptor)에 대입 불가로 보고 에러를 낸다
-// (실제 오버로드 함수 선언과 달리, 이렇게 값으로 만든 콜러블 타입은 인자 개수별로 다른 시그니처를
-// 골라주는 오버로드 해석을 받지 못하기 때문). 그래서 반환 타입을 any로 느슨하게 둔다 — 실사용에서는
-// 어차피 데코레이터가 어떻게 호출되든 결과를 그대로 리턴/전달하기만 하면 되므로 안전하다.
-export type BareableMethodDecorator<TOptions> = (
-  optionsOrTarget?: TOptions | Object,
-  propertyKey?: string | symbol,
-  descriptor?: PropertyDescriptor
-) => any;
+// 실제 타입별 export 목록(885개, 아래)은 이 팩토리로 생성 스크립트를 돌려서 만들었다.
+// 기본 별칭(eventClick)은 셀렉터를 빼면 자기 자신($this) — @event('click') 과 같다:
+//   @eventClick / @eventClick({...}) → $this,  @eventClick('.btn', {...}) → 셀렉터
+// selector 가 필요 없는 AppHost/Window/Document 는 options 만 받는다 (@eventClickWindow / @eventClickWindow({...})).
+// 인자가 없으면 괄호도 없다 — 빈 괄호 @eventClick() 는 시그니처가 없어 타입 에러.
+// 두 번째 인자가 string|symbol이면 (target, propertyKey, descriptor)로 직접 호출된 것으로 판단한다.
+export interface TypedEventDecorator<TEvent extends Event = Event> {
+  (selector: string | EventListenerFnSelector, options?: AddEventListenerQueryOptions<TEvent>): MethodDecorator;
+  (options: AddEventListenerQueryOptions<TEvent>): MethodDecorator;
+  (target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor): any;
+}
+
+function makeTypedEventDecorator<TEvent extends Event = Event>(type: string): TypedEventDecorator<TEvent> {
+  return ((a?: any, b?: any, c?: PropertyDescriptor): any => {
+    if (typeof b === 'string' || typeof b === 'symbol') return addEventListener<TEvent>('$this', type)(a, b, c!);
+    if (typeof a === 'string' || typeof a === 'function') return addEventListener<TEvent>(a, type, b);
+    return addEventListener<TEvent>('$this', type, a);
+  }) as TypedEventDecorator<TEvent>;
+}
+
+export interface BareableMethodDecorator<TOptions> {
+  (options: TOptions): MethodDecorator;
+  (target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor): any;
+}
 
 function makeBareableEventDecorator<TOptions>(bind: (options?: TOptions) => MethodDecorator): BareableMethodDecorator<TOptions> {
   return ((a?: any, b?: any, c?: PropertyDescriptor): any => {
@@ -205,7 +207,7 @@ function makeBareableEventDecorator<TOptions>(bind: (options?: TOptions) => Meth
 
 export function makeTypedEventAliases<TEvent extends Event = Event>(type: string) {
   return {
-    base: (selector: string, options?: AddEventListenerQueryOptions<TEvent>) => addEventListener<TEvent>(selector, type, options),
+    base: makeTypedEventDecorator<TEvent>(type),
     delegateLight: (selector: string, options?: Omit<AddEventListenerQueryOptions<TEvent>, 'delegate'>) => addEventListenerDelegateLight<TEvent>(selector, type, options),
     delegateShadow: (selector: string, options?: Omit<AddEventListenerQueryOptions<TEvent>, 'delegate'>) => addEventListenerDelegateShadow<TEvent>(selector, type, options),
     delegateAll: (selector: string, options?: Omit<AddEventListenerQueryOptions<TEvent>, 'delegate'>) => addEventListenerDelegateAll<TEvent>(selector, type, options),
@@ -217,7 +219,6 @@ export function makeTypedEventAliases<TEvent extends Event = Event>(type: string
     light: (selector: string, options?: AddEventListenerQueryOptions<TEvent>) => addEventListenerLight<TEvent>(selector, type, options),
     shadow: (selector: string, options?: AddEventListenerQueryOptions<TEvent>) => addEventListenerShadow<TEvent>(selector, type, options),
     all: (selector: string, options?: AddEventListenerQueryOptions<TEvent>) => addEventListenerAll<TEvent>(selector, type, options),
-    this: makeBareableEventDecorator<AddEventListenerQueryOptions<TEvent>>((options) => addEventListenerThis<TEvent>(type, options)),
     appHost: makeBareableEventDecorator<AddEventListenerQueryOptions<TEvent>>((options) => addEventListenerAppHost<TEvent>(type, options)),
     window: makeBareableEventDecorator<AddEventListenerQueryOptions<TEvent>>((options) => addEventListenerWindow<TEvent>(type, options)),
     document: makeBareableEventDecorator<AddEventListenerQueryOptions<TEvent>>((options) => addEventListenerDocument<TEvent>(type, options)),
@@ -226,7 +227,7 @@ export function makeTypedEventAliases<TEvent extends Event = Event>(type: string
 
 // ─── 이벤트 타입별 별칭 (eventClick, eventClickDelegateLight, eventInputThis, ...) ───
 // 위 makeTypedEventAliases 팩토리를 자주 쓰는 DOM 이벤트 타입 각각에 대해 미리 바인딩해둔 것.
-// 생성 스크립트로 만들어짐 — 새 타입을 추가하려면 같은 패턴(16개 export)을 추가하면 된다.
+// 생성 스크립트로 만들어짐 — 새 타입을 추가하려면 같은 패턴(15개 export)을 추가하면 된다.
 const clickAliases = makeTypedEventAliases<MouseEvent>('click');
 export const eventClick = clickAliases.base;
 export const eventClickDelegateLight = clickAliases.delegateLight;
@@ -240,7 +241,6 @@ export const eventClickMutation = clickAliases.mutation;
 export const eventClickLight = clickAliases.light;
 export const eventClickShadow = clickAliases.shadow;
 export const eventClickAll = clickAliases.all;
-export const eventClickThis = clickAliases.this;
 export const eventClickAppHost = clickAliases.appHost;
 export const eventClickWindow = clickAliases.window;
 export const eventClickDocument = clickAliases.document;
@@ -257,7 +257,6 @@ export const eventDblclickMutation = dblclickAliases.mutation;
 export const eventDblclickLight = dblclickAliases.light;
 export const eventDblclickShadow = dblclickAliases.shadow;
 export const eventDblclickAll = dblclickAliases.all;
-export const eventDblclickThis = dblclickAliases.this;
 export const eventDblclickAppHost = dblclickAliases.appHost;
 export const eventDblclickWindow = dblclickAliases.window;
 export const eventDblclickDocument = dblclickAliases.document;
@@ -274,7 +273,6 @@ export const eventMousedownMutation = mousedownAliases.mutation;
 export const eventMousedownLight = mousedownAliases.light;
 export const eventMousedownShadow = mousedownAliases.shadow;
 export const eventMousedownAll = mousedownAliases.all;
-export const eventMousedownThis = mousedownAliases.this;
 export const eventMousedownAppHost = mousedownAliases.appHost;
 export const eventMousedownWindow = mousedownAliases.window;
 export const eventMousedownDocument = mousedownAliases.document;
@@ -291,7 +289,6 @@ export const eventMouseupMutation = mouseupAliases.mutation;
 export const eventMouseupLight = mouseupAliases.light;
 export const eventMouseupShadow = mouseupAliases.shadow;
 export const eventMouseupAll = mouseupAliases.all;
-export const eventMouseupThis = mouseupAliases.this;
 export const eventMouseupAppHost = mouseupAliases.appHost;
 export const eventMouseupWindow = mouseupAliases.window;
 export const eventMouseupDocument = mouseupAliases.document;
@@ -308,7 +305,6 @@ export const eventMousemoveMutation = mousemoveAliases.mutation;
 export const eventMousemoveLight = mousemoveAliases.light;
 export const eventMousemoveShadow = mousemoveAliases.shadow;
 export const eventMousemoveAll = mousemoveAliases.all;
-export const eventMousemoveThis = mousemoveAliases.this;
 export const eventMousemoveAppHost = mousemoveAliases.appHost;
 export const eventMousemoveWindow = mousemoveAliases.window;
 export const eventMousemoveDocument = mousemoveAliases.document;
@@ -325,7 +321,6 @@ export const eventMouseoverMutation = mouseoverAliases.mutation;
 export const eventMouseoverLight = mouseoverAliases.light;
 export const eventMouseoverShadow = mouseoverAliases.shadow;
 export const eventMouseoverAll = mouseoverAliases.all;
-export const eventMouseoverThis = mouseoverAliases.this;
 export const eventMouseoverAppHost = mouseoverAliases.appHost;
 export const eventMouseoverWindow = mouseoverAliases.window;
 export const eventMouseoverDocument = mouseoverAliases.document;
@@ -342,7 +337,6 @@ export const eventMouseoutMutation = mouseoutAliases.mutation;
 export const eventMouseoutLight = mouseoutAliases.light;
 export const eventMouseoutShadow = mouseoutAliases.shadow;
 export const eventMouseoutAll = mouseoutAliases.all;
-export const eventMouseoutThis = mouseoutAliases.this;
 export const eventMouseoutAppHost = mouseoutAliases.appHost;
 export const eventMouseoutWindow = mouseoutAliases.window;
 export const eventMouseoutDocument = mouseoutAliases.document;
@@ -359,7 +353,6 @@ export const eventMouseenterMutation = mouseenterAliases.mutation;
 export const eventMouseenterLight = mouseenterAliases.light;
 export const eventMouseenterShadow = mouseenterAliases.shadow;
 export const eventMouseenterAll = mouseenterAliases.all;
-export const eventMouseenterThis = mouseenterAliases.this;
 export const eventMouseenterAppHost = mouseenterAliases.appHost;
 export const eventMouseenterWindow = mouseenterAliases.window;
 export const eventMouseenterDocument = mouseenterAliases.document;
@@ -376,7 +369,6 @@ export const eventMouseleaveMutation = mouseleaveAliases.mutation;
 export const eventMouseleaveLight = mouseleaveAliases.light;
 export const eventMouseleaveShadow = mouseleaveAliases.shadow;
 export const eventMouseleaveAll = mouseleaveAliases.all;
-export const eventMouseleaveThis = mouseleaveAliases.this;
 export const eventMouseleaveAppHost = mouseleaveAliases.appHost;
 export const eventMouseleaveWindow = mouseleaveAliases.window;
 export const eventMouseleaveDocument = mouseleaveAliases.document;
@@ -393,7 +385,6 @@ export const eventContextmenuMutation = contextmenuAliases.mutation;
 export const eventContextmenuLight = contextmenuAliases.light;
 export const eventContextmenuShadow = contextmenuAliases.shadow;
 export const eventContextmenuAll = contextmenuAliases.all;
-export const eventContextmenuThis = contextmenuAliases.this;
 export const eventContextmenuAppHost = contextmenuAliases.appHost;
 export const eventContextmenuWindow = contextmenuAliases.window;
 export const eventContextmenuDocument = contextmenuAliases.document;
@@ -410,7 +401,6 @@ export const eventWheelMutation = wheelAliases.mutation;
 export const eventWheelLight = wheelAliases.light;
 export const eventWheelShadow = wheelAliases.shadow;
 export const eventWheelAll = wheelAliases.all;
-export const eventWheelThis = wheelAliases.this;
 export const eventWheelAppHost = wheelAliases.appHost;
 export const eventWheelWindow = wheelAliases.window;
 export const eventWheelDocument = wheelAliases.document;
@@ -427,7 +417,6 @@ export const eventKeydownMutation = keydownAliases.mutation;
 export const eventKeydownLight = keydownAliases.light;
 export const eventKeydownShadow = keydownAliases.shadow;
 export const eventKeydownAll = keydownAliases.all;
-export const eventKeydownThis = keydownAliases.this;
 export const eventKeydownAppHost = keydownAliases.appHost;
 export const eventKeydownWindow = keydownAliases.window;
 export const eventKeydownDocument = keydownAliases.document;
@@ -444,7 +433,6 @@ export const eventKeyupMutation = keyupAliases.mutation;
 export const eventKeyupLight = keyupAliases.light;
 export const eventKeyupShadow = keyupAliases.shadow;
 export const eventKeyupAll = keyupAliases.all;
-export const eventKeyupThis = keyupAliases.this;
 export const eventKeyupAppHost = keyupAliases.appHost;
 export const eventKeyupWindow = keyupAliases.window;
 export const eventKeyupDocument = keyupAliases.document;
@@ -461,7 +449,6 @@ export const eventKeypressMutation = keypressAliases.mutation;
 export const eventKeypressLight = keypressAliases.light;
 export const eventKeypressShadow = keypressAliases.shadow;
 export const eventKeypressAll = keypressAliases.all;
-export const eventKeypressThis = keypressAliases.this;
 export const eventKeypressAppHost = keypressAliases.appHost;
 export const eventKeypressWindow = keypressAliases.window;
 export const eventKeypressDocument = keypressAliases.document;
@@ -478,7 +465,6 @@ export const eventInputMutation = inputAliases.mutation;
 export const eventInputLight = inputAliases.light;
 export const eventInputShadow = inputAliases.shadow;
 export const eventInputAll = inputAliases.all;
-export const eventInputThis = inputAliases.this;
 export const eventInputAppHost = inputAliases.appHost;
 export const eventInputWindow = inputAliases.window;
 export const eventInputDocument = inputAliases.document;
@@ -495,7 +481,6 @@ export const eventChangeMutation = changeAliases.mutation;
 export const eventChangeLight = changeAliases.light;
 export const eventChangeShadow = changeAliases.shadow;
 export const eventChangeAll = changeAliases.all;
-export const eventChangeThis = changeAliases.this;
 export const eventChangeAppHost = changeAliases.appHost;
 export const eventChangeWindow = changeAliases.window;
 export const eventChangeDocument = changeAliases.document;
@@ -512,7 +497,6 @@ export const eventSubmitMutation = submitAliases.mutation;
 export const eventSubmitLight = submitAliases.light;
 export const eventSubmitShadow = submitAliases.shadow;
 export const eventSubmitAll = submitAliases.all;
-export const eventSubmitThis = submitAliases.this;
 export const eventSubmitAppHost = submitAliases.appHost;
 export const eventSubmitWindow = submitAliases.window;
 export const eventSubmitDocument = submitAliases.document;
@@ -529,7 +513,6 @@ export const eventResetMutation = resetAliases.mutation;
 export const eventResetLight = resetAliases.light;
 export const eventResetShadow = resetAliases.shadow;
 export const eventResetAll = resetAliases.all;
-export const eventResetThis = resetAliases.this;
 export const eventResetAppHost = resetAliases.appHost;
 export const eventResetWindow = resetAliases.window;
 export const eventResetDocument = resetAliases.document;
@@ -546,7 +529,6 @@ export const eventInvalidMutation = invalidAliases.mutation;
 export const eventInvalidLight = invalidAliases.light;
 export const eventInvalidShadow = invalidAliases.shadow;
 export const eventInvalidAll = invalidAliases.all;
-export const eventInvalidThis = invalidAliases.this;
 export const eventInvalidAppHost = invalidAliases.appHost;
 export const eventInvalidWindow = invalidAliases.window;
 export const eventInvalidDocument = invalidAliases.document;
@@ -563,7 +545,6 @@ export const eventSelectMutation = selectAliases.mutation;
 export const eventSelectLight = selectAliases.light;
 export const eventSelectShadow = selectAliases.shadow;
 export const eventSelectAll = selectAliases.all;
-export const eventSelectThis = selectAliases.this;
 export const eventSelectAppHost = selectAliases.appHost;
 export const eventSelectWindow = selectAliases.window;
 export const eventSelectDocument = selectAliases.document;
@@ -580,7 +561,6 @@ export const eventFocusMutation = focusAliases.mutation;
 export const eventFocusLight = focusAliases.light;
 export const eventFocusShadow = focusAliases.shadow;
 export const eventFocusAll = focusAliases.all;
-export const eventFocusThis = focusAliases.this;
 export const eventFocusAppHost = focusAliases.appHost;
 export const eventFocusWindow = focusAliases.window;
 export const eventFocusDocument = focusAliases.document;
@@ -597,7 +577,6 @@ export const eventBlurMutation = blurAliases.mutation;
 export const eventBlurLight = blurAliases.light;
 export const eventBlurShadow = blurAliases.shadow;
 export const eventBlurAll = blurAliases.all;
-export const eventBlurThis = blurAliases.this;
 export const eventBlurAppHost = blurAliases.appHost;
 export const eventBlurWindow = blurAliases.window;
 export const eventBlurDocument = blurAliases.document;
@@ -614,7 +593,6 @@ export const eventFocusinMutation = focusinAliases.mutation;
 export const eventFocusinLight = focusinAliases.light;
 export const eventFocusinShadow = focusinAliases.shadow;
 export const eventFocusinAll = focusinAliases.all;
-export const eventFocusinThis = focusinAliases.this;
 export const eventFocusinAppHost = focusinAliases.appHost;
 export const eventFocusinWindow = focusinAliases.window;
 export const eventFocusinDocument = focusinAliases.document;
@@ -631,7 +609,6 @@ export const eventFocusoutMutation = focusoutAliases.mutation;
 export const eventFocusoutLight = focusoutAliases.light;
 export const eventFocusoutShadow = focusoutAliases.shadow;
 export const eventFocusoutAll = focusoutAliases.all;
-export const eventFocusoutThis = focusoutAliases.this;
 export const eventFocusoutAppHost = focusoutAliases.appHost;
 export const eventFocusoutWindow = focusoutAliases.window;
 export const eventFocusoutDocument = focusoutAliases.document;
@@ -648,7 +625,6 @@ export const eventDragstartMutation = dragstartAliases.mutation;
 export const eventDragstartLight = dragstartAliases.light;
 export const eventDragstartShadow = dragstartAliases.shadow;
 export const eventDragstartAll = dragstartAliases.all;
-export const eventDragstartThis = dragstartAliases.this;
 export const eventDragstartAppHost = dragstartAliases.appHost;
 export const eventDragstartWindow = dragstartAliases.window;
 export const eventDragstartDocument = dragstartAliases.document;
@@ -665,7 +641,6 @@ export const eventDragMutation = dragAliases.mutation;
 export const eventDragLight = dragAliases.light;
 export const eventDragShadow = dragAliases.shadow;
 export const eventDragAll = dragAliases.all;
-export const eventDragThis = dragAliases.this;
 export const eventDragAppHost = dragAliases.appHost;
 export const eventDragWindow = dragAliases.window;
 export const eventDragDocument = dragAliases.document;
@@ -682,7 +657,6 @@ export const eventDragendMutation = dragendAliases.mutation;
 export const eventDragendLight = dragendAliases.light;
 export const eventDragendShadow = dragendAliases.shadow;
 export const eventDragendAll = dragendAliases.all;
-export const eventDragendThis = dragendAliases.this;
 export const eventDragendAppHost = dragendAliases.appHost;
 export const eventDragendWindow = dragendAliases.window;
 export const eventDragendDocument = dragendAliases.document;
@@ -699,7 +673,6 @@ export const eventDragenterMutation = dragenterAliases.mutation;
 export const eventDragenterLight = dragenterAliases.light;
 export const eventDragenterShadow = dragenterAliases.shadow;
 export const eventDragenterAll = dragenterAliases.all;
-export const eventDragenterThis = dragenterAliases.this;
 export const eventDragenterAppHost = dragenterAliases.appHost;
 export const eventDragenterWindow = dragenterAliases.window;
 export const eventDragenterDocument = dragenterAliases.document;
@@ -716,7 +689,6 @@ export const eventDragleaveMutation = dragleaveAliases.mutation;
 export const eventDragleaveLight = dragleaveAliases.light;
 export const eventDragleaveShadow = dragleaveAliases.shadow;
 export const eventDragleaveAll = dragleaveAliases.all;
-export const eventDragleaveThis = dragleaveAliases.this;
 export const eventDragleaveAppHost = dragleaveAliases.appHost;
 export const eventDragleaveWindow = dragleaveAliases.window;
 export const eventDragleaveDocument = dragleaveAliases.document;
@@ -733,7 +705,6 @@ export const eventDragoverMutation = dragoverAliases.mutation;
 export const eventDragoverLight = dragoverAliases.light;
 export const eventDragoverShadow = dragoverAliases.shadow;
 export const eventDragoverAll = dragoverAliases.all;
-export const eventDragoverThis = dragoverAliases.this;
 export const eventDragoverAppHost = dragoverAliases.appHost;
 export const eventDragoverWindow = dragoverAliases.window;
 export const eventDragoverDocument = dragoverAliases.document;
@@ -750,7 +721,6 @@ export const eventDropMutation = dropAliases.mutation;
 export const eventDropLight = dropAliases.light;
 export const eventDropShadow = dropAliases.shadow;
 export const eventDropAll = dropAliases.all;
-export const eventDropThis = dropAliases.this;
 export const eventDropAppHost = dropAliases.appHost;
 export const eventDropWindow = dropAliases.window;
 export const eventDropDocument = dropAliases.document;
@@ -767,7 +737,6 @@ export const eventTouchstartMutation = touchstartAliases.mutation;
 export const eventTouchstartLight = touchstartAliases.light;
 export const eventTouchstartShadow = touchstartAliases.shadow;
 export const eventTouchstartAll = touchstartAliases.all;
-export const eventTouchstartThis = touchstartAliases.this;
 export const eventTouchstartAppHost = touchstartAliases.appHost;
 export const eventTouchstartWindow = touchstartAliases.window;
 export const eventTouchstartDocument = touchstartAliases.document;
@@ -784,7 +753,6 @@ export const eventTouchmoveMutation = touchmoveAliases.mutation;
 export const eventTouchmoveLight = touchmoveAliases.light;
 export const eventTouchmoveShadow = touchmoveAliases.shadow;
 export const eventTouchmoveAll = touchmoveAliases.all;
-export const eventTouchmoveThis = touchmoveAliases.this;
 export const eventTouchmoveAppHost = touchmoveAliases.appHost;
 export const eventTouchmoveWindow = touchmoveAliases.window;
 export const eventTouchmoveDocument = touchmoveAliases.document;
@@ -801,7 +769,6 @@ export const eventTouchendMutation = touchendAliases.mutation;
 export const eventTouchendLight = touchendAliases.light;
 export const eventTouchendShadow = touchendAliases.shadow;
 export const eventTouchendAll = touchendAliases.all;
-export const eventTouchendThis = touchendAliases.this;
 export const eventTouchendAppHost = touchendAliases.appHost;
 export const eventTouchendWindow = touchendAliases.window;
 export const eventTouchendDocument = touchendAliases.document;
@@ -818,7 +785,6 @@ export const eventTouchcancelMutation = touchcancelAliases.mutation;
 export const eventTouchcancelLight = touchcancelAliases.light;
 export const eventTouchcancelShadow = touchcancelAliases.shadow;
 export const eventTouchcancelAll = touchcancelAliases.all;
-export const eventTouchcancelThis = touchcancelAliases.this;
 export const eventTouchcancelAppHost = touchcancelAliases.appHost;
 export const eventTouchcancelWindow = touchcancelAliases.window;
 export const eventTouchcancelDocument = touchcancelAliases.document;
@@ -835,7 +801,6 @@ export const eventPointerdownMutation = pointerdownAliases.mutation;
 export const eventPointerdownLight = pointerdownAliases.light;
 export const eventPointerdownShadow = pointerdownAliases.shadow;
 export const eventPointerdownAll = pointerdownAliases.all;
-export const eventPointerdownThis = pointerdownAliases.this;
 export const eventPointerdownAppHost = pointerdownAliases.appHost;
 export const eventPointerdownWindow = pointerdownAliases.window;
 export const eventPointerdownDocument = pointerdownAliases.document;
@@ -852,7 +817,6 @@ export const eventPointerupMutation = pointerupAliases.mutation;
 export const eventPointerupLight = pointerupAliases.light;
 export const eventPointerupShadow = pointerupAliases.shadow;
 export const eventPointerupAll = pointerupAliases.all;
-export const eventPointerupThis = pointerupAliases.this;
 export const eventPointerupAppHost = pointerupAliases.appHost;
 export const eventPointerupWindow = pointerupAliases.window;
 export const eventPointerupDocument = pointerupAliases.document;
@@ -869,7 +833,6 @@ export const eventPointermoveMutation = pointermoveAliases.mutation;
 export const eventPointermoveLight = pointermoveAliases.light;
 export const eventPointermoveShadow = pointermoveAliases.shadow;
 export const eventPointermoveAll = pointermoveAliases.all;
-export const eventPointermoveThis = pointermoveAliases.this;
 export const eventPointermoveAppHost = pointermoveAliases.appHost;
 export const eventPointermoveWindow = pointermoveAliases.window;
 export const eventPointermoveDocument = pointermoveAliases.document;
@@ -886,7 +849,6 @@ export const eventPointeroverMutation = pointeroverAliases.mutation;
 export const eventPointeroverLight = pointeroverAliases.light;
 export const eventPointeroverShadow = pointeroverAliases.shadow;
 export const eventPointeroverAll = pointeroverAliases.all;
-export const eventPointeroverThis = pointeroverAliases.this;
 export const eventPointeroverAppHost = pointeroverAliases.appHost;
 export const eventPointeroverWindow = pointeroverAliases.window;
 export const eventPointeroverDocument = pointeroverAliases.document;
@@ -903,7 +865,6 @@ export const eventPointeroutMutation = pointeroutAliases.mutation;
 export const eventPointeroutLight = pointeroutAliases.light;
 export const eventPointeroutShadow = pointeroutAliases.shadow;
 export const eventPointeroutAll = pointeroutAliases.all;
-export const eventPointeroutThis = pointeroutAliases.this;
 export const eventPointeroutAppHost = pointeroutAliases.appHost;
 export const eventPointeroutWindow = pointeroutAliases.window;
 export const eventPointeroutDocument = pointeroutAliases.document;
@@ -920,7 +881,6 @@ export const eventPointerenterMutation = pointerenterAliases.mutation;
 export const eventPointerenterLight = pointerenterAliases.light;
 export const eventPointerenterShadow = pointerenterAliases.shadow;
 export const eventPointerenterAll = pointerenterAliases.all;
-export const eventPointerenterThis = pointerenterAliases.this;
 export const eventPointerenterAppHost = pointerenterAliases.appHost;
 export const eventPointerenterWindow = pointerenterAliases.window;
 export const eventPointerenterDocument = pointerenterAliases.document;
@@ -937,7 +897,6 @@ export const eventPointerleaveMutation = pointerleaveAliases.mutation;
 export const eventPointerleaveLight = pointerleaveAliases.light;
 export const eventPointerleaveShadow = pointerleaveAliases.shadow;
 export const eventPointerleaveAll = pointerleaveAliases.all;
-export const eventPointerleaveThis = pointerleaveAliases.this;
 export const eventPointerleaveAppHost = pointerleaveAliases.appHost;
 export const eventPointerleaveWindow = pointerleaveAliases.window;
 export const eventPointerleaveDocument = pointerleaveAliases.document;
@@ -954,7 +913,6 @@ export const eventPointercancelMutation = pointercancelAliases.mutation;
 export const eventPointercancelLight = pointercancelAliases.light;
 export const eventPointercancelShadow = pointercancelAliases.shadow;
 export const eventPointercancelAll = pointercancelAliases.all;
-export const eventPointercancelThis = pointercancelAliases.this;
 export const eventPointercancelAppHost = pointercancelAliases.appHost;
 export const eventPointercancelWindow = pointercancelAliases.window;
 export const eventPointercancelDocument = pointercancelAliases.document;
@@ -971,7 +929,6 @@ export const eventCopyMutation = copyAliases.mutation;
 export const eventCopyLight = copyAliases.light;
 export const eventCopyShadow = copyAliases.shadow;
 export const eventCopyAll = copyAliases.all;
-export const eventCopyThis = copyAliases.this;
 export const eventCopyAppHost = copyAliases.appHost;
 export const eventCopyWindow = copyAliases.window;
 export const eventCopyDocument = copyAliases.document;
@@ -988,7 +945,6 @@ export const eventCutMutation = cutAliases.mutation;
 export const eventCutLight = cutAliases.light;
 export const eventCutShadow = cutAliases.shadow;
 export const eventCutAll = cutAliases.all;
-export const eventCutThis = cutAliases.this;
 export const eventCutAppHost = cutAliases.appHost;
 export const eventCutWindow = cutAliases.window;
 export const eventCutDocument = cutAliases.document;
@@ -1005,7 +961,6 @@ export const eventPasteMutation = pasteAliases.mutation;
 export const eventPasteLight = pasteAliases.light;
 export const eventPasteShadow = pasteAliases.shadow;
 export const eventPasteAll = pasteAliases.all;
-export const eventPasteThis = pasteAliases.this;
 export const eventPasteAppHost = pasteAliases.appHost;
 export const eventPasteWindow = pasteAliases.window;
 export const eventPasteDocument = pasteAliases.document;
@@ -1022,7 +977,6 @@ export const eventAnimationstartMutation = animationstartAliases.mutation;
 export const eventAnimationstartLight = animationstartAliases.light;
 export const eventAnimationstartShadow = animationstartAliases.shadow;
 export const eventAnimationstartAll = animationstartAliases.all;
-export const eventAnimationstartThis = animationstartAliases.this;
 export const eventAnimationstartAppHost = animationstartAliases.appHost;
 export const eventAnimationstartWindow = animationstartAliases.window;
 export const eventAnimationstartDocument = animationstartAliases.document;
@@ -1039,7 +993,6 @@ export const eventAnimationendMutation = animationendAliases.mutation;
 export const eventAnimationendLight = animationendAliases.light;
 export const eventAnimationendShadow = animationendAliases.shadow;
 export const eventAnimationendAll = animationendAliases.all;
-export const eventAnimationendThis = animationendAliases.this;
 export const eventAnimationendAppHost = animationendAliases.appHost;
 export const eventAnimationendWindow = animationendAliases.window;
 export const eventAnimationendDocument = animationendAliases.document;
@@ -1056,7 +1009,6 @@ export const eventAnimationiterationMutation = animationiterationAliases.mutatio
 export const eventAnimationiterationLight = animationiterationAliases.light;
 export const eventAnimationiterationShadow = animationiterationAliases.shadow;
 export const eventAnimationiterationAll = animationiterationAliases.all;
-export const eventAnimationiterationThis = animationiterationAliases.this;
 export const eventAnimationiterationAppHost = animationiterationAliases.appHost;
 export const eventAnimationiterationWindow = animationiterationAliases.window;
 export const eventAnimationiterationDocument = animationiterationAliases.document;
@@ -1073,7 +1025,6 @@ export const eventAnimationcancelMutation = animationcancelAliases.mutation;
 export const eventAnimationcancelLight = animationcancelAliases.light;
 export const eventAnimationcancelShadow = animationcancelAliases.shadow;
 export const eventAnimationcancelAll = animationcancelAliases.all;
-export const eventAnimationcancelThis = animationcancelAliases.this;
 export const eventAnimationcancelAppHost = animationcancelAliases.appHost;
 export const eventAnimationcancelWindow = animationcancelAliases.window;
 export const eventAnimationcancelDocument = animationcancelAliases.document;
@@ -1090,7 +1041,6 @@ export const eventTransitionstartMutation = transitionstartAliases.mutation;
 export const eventTransitionstartLight = transitionstartAliases.light;
 export const eventTransitionstartShadow = transitionstartAliases.shadow;
 export const eventTransitionstartAll = transitionstartAliases.all;
-export const eventTransitionstartThis = transitionstartAliases.this;
 export const eventTransitionstartAppHost = transitionstartAliases.appHost;
 export const eventTransitionstartWindow = transitionstartAliases.window;
 export const eventTransitionstartDocument = transitionstartAliases.document;
@@ -1107,7 +1057,6 @@ export const eventTransitionendMutation = transitionendAliases.mutation;
 export const eventTransitionendLight = transitionendAliases.light;
 export const eventTransitionendShadow = transitionendAliases.shadow;
 export const eventTransitionendAll = transitionendAliases.all;
-export const eventTransitionendThis = transitionendAliases.this;
 export const eventTransitionendAppHost = transitionendAliases.appHost;
 export const eventTransitionendWindow = transitionendAliases.window;
 export const eventTransitionendDocument = transitionendAliases.document;
@@ -1124,7 +1073,6 @@ export const eventTransitioncancelMutation = transitioncancelAliases.mutation;
 export const eventTransitioncancelLight = transitioncancelAliases.light;
 export const eventTransitioncancelShadow = transitioncancelAliases.shadow;
 export const eventTransitioncancelAll = transitioncancelAliases.all;
-export const eventTransitioncancelThis = transitioncancelAliases.this;
 export const eventTransitioncancelAppHost = transitioncancelAliases.appHost;
 export const eventTransitioncancelWindow = transitioncancelAliases.window;
 export const eventTransitioncancelDocument = transitioncancelAliases.document;
@@ -1141,7 +1089,6 @@ export const eventTransitionrunMutation = transitionrunAliases.mutation;
 export const eventTransitionrunLight = transitionrunAliases.light;
 export const eventTransitionrunShadow = transitionrunAliases.shadow;
 export const eventTransitionrunAll = transitionrunAliases.all;
-export const eventTransitionrunThis = transitionrunAliases.this;
 export const eventTransitionrunAppHost = transitionrunAliases.appHost;
 export const eventTransitionrunWindow = transitionrunAliases.window;
 export const eventTransitionrunDocument = transitionrunAliases.document;
@@ -1158,7 +1105,6 @@ export const eventScrollMutation = scrollAliases.mutation;
 export const eventScrollLight = scrollAliases.light;
 export const eventScrollShadow = scrollAliases.shadow;
 export const eventScrollAll = scrollAliases.all;
-export const eventScrollThis = scrollAliases.this;
 export const eventScrollAppHost = scrollAliases.appHost;
 export const eventScrollWindow = scrollAliases.window;
 export const eventScrollDocument = scrollAliases.document;
@@ -1175,7 +1121,6 @@ export const eventResizeMutation = resizeAliases.mutation;
 export const eventResizeLight = resizeAliases.light;
 export const eventResizeShadow = resizeAliases.shadow;
 export const eventResizeAll = resizeAliases.all;
-export const eventResizeThis = resizeAliases.this;
 export const eventResizeAppHost = resizeAliases.appHost;
 export const eventResizeWindow = resizeAliases.window;
 export const eventResizeDocument = resizeAliases.document;
@@ -1192,7 +1137,6 @@ export const eventLoadMutation = loadAliases.mutation;
 export const eventLoadLight = loadAliases.light;
 export const eventLoadShadow = loadAliases.shadow;
 export const eventLoadAll = loadAliases.all;
-export const eventLoadThis = loadAliases.this;
 export const eventLoadAppHost = loadAliases.appHost;
 export const eventLoadWindow = loadAliases.window;
 export const eventLoadDocument = loadAliases.document;
@@ -1209,7 +1153,6 @@ export const eventErrorMutation = errorAliases.mutation;
 export const eventErrorLight = errorAliases.light;
 export const eventErrorShadow = errorAliases.shadow;
 export const eventErrorAll = errorAliases.all;
-export const eventErrorThis = errorAliases.this;
 export const eventErrorAppHost = errorAliases.appHost;
 export const eventErrorWindow = errorAliases.window;
 export const eventErrorDocument = errorAliases.document;
@@ -1226,13 +1169,12 @@ export const eventToggleMutation = toggleAliases.mutation;
 export const eventToggleLight = toggleAliases.light;
 export const eventToggleShadow = toggleAliases.shadow;
 export const eventToggleAll = toggleAliases.all;
-export const eventToggleThis = toggleAliases.this;
 export const eventToggleAppHost = toggleAliases.appHost;
 export const eventToggleWindow = toggleAliases.window;
 export const eventToggleDocument = toggleAliases.document;
 export const getAddEventListenerMetadata = (target: any): AddEventListenerMetadata<Event>[] | undefined => {
-  const constructor = target instanceof Function ? target : target.constructor;
-  return ReflectUtils.getMetadata(ADD_EVENT_LISTENER_METADATA_KEY, constructor);
+  const constructor = typeof target === 'function' ? target : target.constructor;
+  return ReflectUtils.findAllMetadata<any[]>(ADD_EVENT_LISTENER_METADATA_KEY, constructor).flat();
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1287,7 +1229,7 @@ export class EventListenerLifeCycler implements ElementDefineLifeCycler {
     const opts = { capture: options.capture, once: options.once, passive: options.passive };
 
     const handler = async (event: Event) => {
-      const helper = (options.filter || options.before || options.finally) ? SwcUtils.getHelperAndHostSet(currentWin, target as HTMLElement) : undefined;
+      const helper = (options.filter || options.before || options.finally) ? SwcUtils.getHelperAndHostSet(target as HTMLElement, currentWin) : undefined;
       if (options.filter) {
         if (!(await options.filter(event, { currentThis: inst, helper }))) return;
       }
@@ -1438,7 +1380,7 @@ export class EventListenerLifeCycler implements ElementDefineLifeCycler {
           const matches = sorted.map(m => ({ m, matchedEl: (event.target as HTMLElement)?.closest(m.selector as string) }));
           for (const { m, matchedEl } of matches) {
             if (matchedEl && (br as any).contains(matchedEl)) {
-              const helper = (m.options.filter || m.options.before || m.options.finally) ? SwcUtils.getHelperAndHostSet(currentWin, matchedEl as HTMLElement) : undefined;
+              const helper = (m.options.filter || m.options.before || m.options.finally) ? SwcUtils.getHelperAndHostSet(matchedEl as HTMLElement, currentWin) : undefined;
               if (m.options.filter) {
                 if (!(await m.options.filter(event, { currentThis: inst, helper }))) continue;
               }

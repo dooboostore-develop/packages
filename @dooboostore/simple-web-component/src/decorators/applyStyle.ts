@@ -39,7 +39,7 @@ export const STYLE_METADATA_KEY = Symbol.for('simple-web-component:style');
  */
 const resolveSelector = (selector: StyleSelector, inst: any, win: Window): string | HTMLElement[] => {
   if (typeof selector === 'function') {
-    const hostSet = SwcUtils.getHelperAndHostSet(win, inst);
+    const hostSet = SwcUtils.getHelperAndHostSet(inst);
     const result = selector(inst, hostSet);
     
     if (result instanceof win.Element) {
@@ -75,7 +75,7 @@ const getTargetElements = (selector: StyleSelector, inst: any, win: Window, root
   const stringSelector = resolved as string;
   const targetEls: HTMLElement[] = [];
   const host = inst as unknown as HTMLElement;
-  const hostSet = SwcUtils.getHelperAndHostSet(win, inst);
+  const hostSet = SwcUtils.getHelperAndHostSet(inst);
 
   const applyRoot = (t: any) => {
     if (!t || !(t instanceof win.HTMLElement)) return;
@@ -139,7 +139,7 @@ function createStyleDecorator(action: StyleAction) {
           if (resolvedValue !== undefined) {
             const win = (this as any).ownerDocument?.defaultView || window;
             const host = this as unknown as HTMLElement;
-            const hostSet = { ...SwcUtils.getHelperAndHostSet(win, host), $this: this };
+            const hostSet = { ...SwcUtils.getHelperAndHostSet(host), $this: this };
             const r = options.root || 'auto';
             const targetEls = getTargetElements(selector, this, win, r);
 
@@ -266,15 +266,7 @@ export const style = applyStyle;
 
 // ─── 편의 헬퍼 (selector/root 생략) ───
 
-export function styleThis(action?: StyleAction, options?: StyleQueryOptions): MethodDecorator;
-export function styleThis(target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor): PropertyDescriptor | void;
-export function styleThis(actionOrTarget?: StyleAction | Object, optionsOrPropertyKey?: StyleQueryOptions | string | symbol, descriptor?: PropertyDescriptor): any {
-  if ((typeof optionsOrPropertyKey === 'string' || typeof optionsOrPropertyKey === 'symbol') && descriptor !== undefined) {
-    return (applyStyle('$this', undefined as any, {}) as any)(actionOrTarget, optionsOrPropertyKey, descriptor);
-  }
-  return applyStyle('$this', actionOrTarget as any, optionsOrPropertyKey as StyleQueryOptions);
-}
-export function styleAppHost(action?: StyleAction, options?: StyleQueryOptions): MethodDecorator;
+export function styleAppHost(action: StyleAction, options?: StyleQueryOptions): MethodDecorator;
 export function styleAppHost(target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor): PropertyDescriptor | void;
 export function styleAppHost(actionOrTarget?: StyleAction | Object, optionsOrPropertyKey?: StyleQueryOptions | string | symbol, descriptor?: PropertyDescriptor): any {
   if ((typeof optionsOrPropertyKey === 'string' || typeof optionsOrPropertyKey === 'symbol') && descriptor !== undefined) {

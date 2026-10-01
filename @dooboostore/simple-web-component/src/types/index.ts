@@ -195,7 +195,7 @@ export interface OnConnectedResult {
  * const cyclers: ElementDefineLifeCycler[] = [eventCycler, ...];   // elementDefine 시 1회 생성
  *
  * proto.connectedCallback = async function () {
- *   const helperHostSet = SwcUtils.getHelperAndHostSet(win, this);
+ *   const helperHostSet = SwcUtils.getHelperAndHostSet(this);
  *   const results = await Promise.all(cyclers.map(c => c.onConnected?.(helperHostSet)));
  *   // results 에서 mutationObserverSet / resizeObserverSet 수집
  *   // → 필요한 경우에만 MutationObserver / ResizeObserver 생성

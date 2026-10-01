@@ -84,8 +84,8 @@ export function subscribeSwcAppMessage(targetOrMessageTypeOrOptions?: any, optio
 export const receiveMessage = subscribeSwcAppMessage;
 // Helper function to retrieve message subscribers metadata
 export const getSubscribeSwcAppMessageMetadata = (target: any): SwcAppMessageSubscriberMetadata[] | undefined => {
-  const constructor = target instanceof Function ? target : target.constructor;
-  return ReflectUtils.getOwnMetadata(SUBSCRIBE_SWC_APP_MESSAGE_METADATA_KEY, constructor);
+  const constructor = typeof target === 'function' ? target : target.constructor;
+  return ReflectUtils.findAllMetadata<any[]>(SUBSCRIBE_SWC_APP_MESSAGE_METADATA_KEY, constructor).flat();
 };
 
 // ─────────────────────────────────────────────────────────────────────────────

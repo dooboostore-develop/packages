@@ -6,7 +6,7 @@ import { elementDefine, onConnectedBodyShadow, onConnectedBodyLight, attribute, 
 
 // 회귀: 문자열 하나는 "자기 자신의 attribute 이름" (예전엔 셀렉터로 해석돼 null)
 test('@attribute(name) on a field reads the attribute on $this', async () => {
-  const { w, destroy } = createWindow();
+  const { w, destroy } = await createWindow();
   const tag = uniqueTag('attr-self');
   @elementDefine(tag, { window: w })
   class El extends w.HTMLElement {
@@ -21,7 +21,7 @@ test('@attribute(name) on a field reads the attribute on $this', async () => {
 
 // 회귀: bare @attribute 가 필드에 적용되지 않던 문제
 test('bare @attribute on a field uses the field name as the attribute name', async () => {
-  const { w, destroy } = createWindow();
+  const { w, destroy } = await createWindow();
   const tag = uniqueTag('attr-bare');
   @elementDefine(tag, { window: w })
   class El extends w.HTMLElement {
@@ -34,7 +34,7 @@ test('bare @attribute on a field uses the field name as the attribute name', asy
 
 // 회귀: 문자열 두 개(셀렉터, 이름) 필드 — 예전엔 오버로드 순서 때문에 TS1240, 3인자는 bare 분기로 빠짐
 test('@attribute(selector, name, options) on a field reads from the selected element', async () => {
-  const { w, destroy } = createWindow();
+  const { w, destroy } = await createWindow();
   const tag = uniqueTag('attr-sel');
   @elementDefine(tag, { window: w })
   class El extends w.HTMLElement {
@@ -48,7 +48,7 @@ test('@attribute(selector, name, options) on a field reads from the selected ele
 
 // 메서드: 리턴값을 셀렉터 대상 attribute 에 적용, null 이면 제거
 test('@attribute(selector, name) on a method applies the return value; null removes it', async () => {
-  const { w, destroy } = createWindow();
+  const { w, destroy } = await createWindow();
   const tag = uniqueTag('attr-method');
   @elementDefine(tag, { window: w })
   class El extends w.HTMLElement {
@@ -67,7 +67,7 @@ test('@attribute(selector, name) on a method applies the return value; null remo
 
 // 회귀: 함수 셀렉터가 옵션으로 잘못 처리되던 문제
 test('@attribute(fnSelector, name) on a method targets the element the function returns', async () => {
-  const { w, destroy } = createWindow();
+  const { w, destroy } = await createWindow();
   const tag = uniqueTag('attr-fn');
   const target = w.document.createElement('meta');
   w.document.head.appendChild(target);
@@ -83,7 +83,7 @@ test('@attribute(fnSelector, name) on a method targets the element the function 
 
 // 메서드: 문자열 하나면 $this 의 attribute
 test('@attribute(name) on a method sets the attribute on $this', async () => {
-  const { w, destroy } = createWindow();
+  const { w, destroy } = await createWindow();
   const tag = uniqueTag('attr-method-self');
   @elementDefine(tag, { window: w })
   class El extends w.HTMLElement {
@@ -97,7 +97,7 @@ test('@attribute(name) on a method sets the attribute on $this', async () => {
 
 // @property: 첫 문자열은 항상 셀렉터. 메서드는 리턴값을 대상 프로퍼티에 대입
 test('@property(selector, key) on a method assigns the return value to the target property', async () => {
-  const { w, destroy } = createWindow();
+  const { w, destroy } = await createWindow();
   const tag = uniqueTag('prop-method');
   @elementDefine(tag, { window: w })
   class El extends w.HTMLElement {
@@ -111,7 +111,7 @@ test('@property(selector, key) on a method assigns the return value to the targe
 });
 
 test('@property(selector, key) on a field proxies the target property', async () => {
-  const { w, destroy } = createWindow();
+  const { w, destroy } = await createWindow();
   const tag = uniqueTag('prop-field');
   @elementDefine(tag, { window: w })
   class El extends w.HTMLElement {
@@ -126,7 +126,7 @@ test('@property(selector, key) on a field proxies the target property', async ()
 
 // bare @property 는 getter/setter 없는 순수 필드 (하이드레이션 대상) — 값이 그대로 유지돼야 한다
 test('bare @property on a field stays a plain own field', async () => {
-  const { w, destroy } = createWindow();
+  const { w, destroy } = await createWindow();
   const tag = uniqueTag('prop-bare');
   @elementDefine(tag, { window: w })
   class El extends w.HTMLElement {

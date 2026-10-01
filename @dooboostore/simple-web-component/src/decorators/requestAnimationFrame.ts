@@ -1,5 +1,5 @@
 import { ReflectUtils } from '@dooboostore/core';
-import { ensureInit, getElementConfig } from './elementDefine';
+import { ensureInit } from './elementDefine';
 import { SwcUtils } from '../utils/Utils';
 import { ElementDefineLifeCycler, HelperHostSet } from '../types';
 
@@ -86,10 +86,9 @@ const applyRequestAnimationFrame = (options: RequestAnimationFrameOptions, targe
 
     if (frameFn) {
       ensureInit(this);
-      const conf = getElementConfig(this);
-      const win = (this as any)._resolveWindow?.(conf) || ((typeof window !== 'undefined' ? window : undefined) as Window);
+      const win = SwcUtils.resolveWindow(this);
       const id = startFrameLoop(win, getActiveEntries(this), frameFn);
-      normalizedOptions.created?.(SwcUtils.getHelperAndHostSet(win, this), id);
+      normalizedOptions.created?.(SwcUtils.getHelperAndHostSet(this), id);
     }
     return res;
   };
@@ -104,7 +103,7 @@ const applyRequestAnimationFrame = (options: RequestAnimationFrameOptions, targe
  *
  * 옵션 없이 `@requestAnimationFrame` 그대로 붙여도 되고, `@requestAnimationFrame({...})`처럼 옵션을 줄 수도 있다.
  */
-export function requestAnimationFrame(options?: RequestAnimationFrameOptions): MethodDecorator;
+export function requestAnimationFrame(options: RequestAnimationFrameOptions): MethodDecorator;
 export function requestAnimationFrame(target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor): void;
 export function requestAnimationFrame(optionsOrTarget?: RequestAnimationFrameOptions | Object, propertyKey?: string | symbol, descriptor?: PropertyDescriptor): MethodDecorator | void {
   if (propertyKey !== undefined) {
@@ -112,14 +111,14 @@ export function requestAnimationFrame(optionsOrTarget?: RequestAnimationFrameOpt
     applyRequestAnimationFrame({}, optionsOrTarget as Object, propertyKey, descriptor);
     return;
   }
-  // 옵션과 함께: @requestAnimationFrame() 또는 @requestAnimationFrame({...})
+  // 옵션과 함께: @requestAnimationFrame({...})
   return (target: Object, propertyKey: string | symbol, descriptor?: PropertyDescriptor) => {
     return applyRequestAnimationFrame((optionsOrTarget as RequestAnimationFrameOptions) ?? {}, target, propertyKey, descriptor);
   };
 }
 
 export const findAllRequestAnimationFrameMetadata = (target: any): RequestAnimationFrameMetadata[] => {
-  const constructor = target instanceof Function ? target : target.constructor;
+  const constructor = typeof target === 'function' ? target : target.constructor;
   return (ReflectUtils.findAllMetadata<RequestAnimationFrameMetadata[]>(REQUEST_ANIMATION_FRAME_METADATA_KEY, constructor) || []).flat();
 };
 

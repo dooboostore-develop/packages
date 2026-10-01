@@ -545,7 +545,7 @@ export default (w: Window): StockChartCtor => {
     }
 
      // host(컴포넌트) 크기 변경 시 재그리기
-    @resizeObserverLight()
+    @resizeObserverLight
     onHostResize(matchedEls: HTMLElement[], entries: ResizeObserverEntry[]): void {
       if (this.chartCanvas) this.drawChart();
     }

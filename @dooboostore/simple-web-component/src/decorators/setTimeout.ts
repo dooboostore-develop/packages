@@ -1,5 +1,5 @@
 import { ReflectUtils } from '@dooboostore/core';
-import { ensureInit, getElementConfig } from './elementDefine';
+import { ensureInit } from './elementDefine';
 import { SwcUtils } from '../utils/Utils';
 import { buildSwcParameterArgs } from './parameter';
 import { ElementDefineLifeCycler, HelperHostSet } from '../types';
@@ -75,8 +75,7 @@ export function setTimeout(delay: number, options: SetTimeoutOptions = {}): Meth
 
       if (tickFn) {
         ensureInit(this);
-        const conf = getElementConfig(this);
-        const win = (this as any)._resolveWindow?.(conf) || ((typeof window !== 'undefined' ? window : undefined) as Window);
+        const win = SwcUtils.resolveWindow(this);
         const id = win.setTimeout(() => {
           const entries = getActiveEntries(this);
           const idx = entries.indexOf(id);
@@ -87,7 +86,7 @@ export function setTimeout(delay: number, options: SetTimeoutOptions = {}): Meth
             console.error('[SWC] setTimeout fire error:', e);
           }
         }, delay);
-        normalizedOptions.created?.(SwcUtils.getHelperAndHostSet(win, this), id);
+        normalizedOptions.created?.(SwcUtils.getHelperAndHostSet(this), id);
         getActiveEntries(this).push(id);
       }
       return res;
@@ -97,7 +96,7 @@ export function setTimeout(delay: number, options: SetTimeoutOptions = {}): Meth
 }
 
 export const findAllSetTimeoutMetadata = (target: any): SetTimeoutMetadata[] => {
-  const constructor = target instanceof Function ? target : target.constructor;
+  const constructor = typeof target === 'function' ? target : target.constructor;
   return (ReflectUtils.findAllMetadata<SetTimeoutMetadata[]>(SET_TIMEOUT_METADATA_KEY, constructor) || []).flat();
 };
 
@@ -109,7 +108,7 @@ export class SetTimeoutLifeCycler implements ElementDefineLifeCycler {
       if (meta.options.type !== 'onConnected') continue; // returnValue 타입은 수동 호출을 기다림
       const id = helperHostSet.$w.setTimeout(() => {
         void (async () => {
-          const helper = SwcUtils.getHelperAndHostSet(helperHostSet.$w, inst);
+          const helper = SwcUtils.getHelperAndHostSet(inst);
           if (meta.options.filter && !(await meta.options.filter(helper))) return;
           const paramArgs = meta.options.parameter?.(helperHostSet) ?? [];
           const hostSet = SwcUtils.getHostSet(inst);

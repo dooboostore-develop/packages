@@ -44,18 +44,18 @@ export const ATTRIBUTE_METADATA_KEY = Symbol.for('simple-web-component:attribute
 // ============================================
 
 
-const convertValue = (val: string | null, type: any): any => {
+// 문자열(attribute 원문)은 'false'/'0' 만 false. {{= }} 결과처럼 이미 JS 값이면 그 값의 참/거짓을 따른다
+const convertValue = (val: any, type: any): any => {
   if (val === null || val === undefined) return val;
   if (type === Number) return Number(val);
-  if (type === Boolean) return val === 'false' || val === '0' ? false : true;
+  if (type === Boolean) return typeof val === 'string' ? !(val === 'false' || val === '0') : Boolean(val);
   return val;
 };
 
 export {convertValue};
 
 export const getAttributeValue = (inst: any, attrName: string, options?: AttributeOptions & { selector?: AttributeSelector }): any => {
-  const conf = getElementConfig(inst);
-  const currentWin = inst._resolveWindow?.(conf) || ((typeof window !== 'undefined' ? window : undefined) as any);
+  const currentWin = SwcUtils.resolveWindow(inst);
 
   // If selector is not provided, use inst itself
   const targets = options?.selector ? resolveAttributeTargets(inst, options.selector, options) : [inst];
@@ -73,7 +73,7 @@ export const getAttributeValue = (inst: any, attrName: string, options?: Attribu
         const result = FunctionUtils.executeReturn({
           script: ConvertUtils.decodeHtmlEntity(expr.script, currentWin.document),
           context: inst,
-          args: SwcUtils.getHelperAndHostSet(currentWin, inst)
+          args: SwcUtils.getHelperAndHostSet(inst)
         });
         return convertValue(result, options?.type);
       } catch (err) {
@@ -103,7 +103,7 @@ export const resolveAttributeTargets = (inst: any, selector: AttributeSelector, 
   // Resolve selector if it's a function
   let resolvedSelector: string | Node | Element | NodeList | Element[] | null = selector as any;
   if (typeof selector === 'function') {
-    const hostSet = SwcUtils.getHelperAndHostSet(currentWin, inst);
+    const hostSet = SwcUtils.getHelperAndHostSet(inst);
     resolvedSelector = selector(inst, hostSet);
   }
 
@@ -224,10 +224,8 @@ export function applyAttribute(selector: AttributeSelector, targetAttributeNameO
 
     // Helper: Apply resolved value to targets
     const applyValueToTargets = (inst: any, resolvedValue: any) => {
-      const conf = getElementConfig(inst);
-      const currentWin = conf.window;
       const targetEls = resolveAttributeTargets(inst, selector, finalOptions);
-      const hostSet = SwcUtils.getHelperAndHostSet(currentWin, inst);
+      const hostSet = SwcUtils.getHelperAndHostSet(inst);
 
       targetEls.forEach(targetEl => {
         // Apply filter if provided
@@ -405,7 +403,7 @@ export function removeAttribute(selector: AttributeSelector, attributeName: stri
 // ============================================
 
 export const findAllAttributeMetadata = (target: any): AttributeMetadata[] => {
-  const actualTarget = target instanceof Function ? target : target.constructor;
+  const actualTarget = typeof target === 'function' ? target : target.constructor;
   return ReflectUtils.findAllMetadata<AttributeMetadata[]>(ATTRIBUTE_METADATA_KEY, actualTarget).flat();
 };
 
@@ -424,15 +422,7 @@ export const attr = applyAttribute;
 
 // ─── 편의 헬퍼 (selector/root 생략) ───
 
-export function attrThis(targetAttributeName?: string, options?: AttributeQueryOptions): MethodDecorator;
-export function attrThis(target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor): PropertyDescriptor | void;
-export function attrThis(targetAttributeNameOrTarget?: string | Object, optionsOrPropertyKey?: AttributeQueryOptions | string | symbol, descriptor?: PropertyDescriptor): any {
-  if ((typeof optionsOrPropertyKey === 'string' || typeof optionsOrPropertyKey === 'symbol') && descriptor !== undefined) {
-    return (applyAttribute('$this', undefined as any, {}) as any)(targetAttributeNameOrTarget, optionsOrPropertyKey, descriptor);
-  }
-  return applyAttribute('$this', targetAttributeNameOrTarget as any, optionsOrPropertyKey as AttributeQueryOptions);
-}
-export function attrAppHost(targetAttributeName?: string, options?: AttributeQueryOptions): MethodDecorator;
+export function attrAppHost(targetAttributeName: string, options?: AttributeQueryOptions): MethodDecorator;
 export function attrAppHost(target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor): PropertyDescriptor | void;
 export function attrAppHost(targetAttributeNameOrTarget?: string | Object, optionsOrPropertyKey?: AttributeQueryOptions | string | symbol, descriptor?: PropertyDescriptor): any {
   if ((typeof optionsOrPropertyKey === 'string' || typeof optionsOrPropertyKey === 'symbol') && descriptor !== undefined) {

@@ -16,7 +16,8 @@ export class ElementApply {
 
   constructor(el: Element, config?: { id?: string, variableWrap?: { start: string, end: string } }) {
     this.el = el;
-    this.window = this.el.ownerDocument.defaultView;
+    // window 없는 문서(createHTMLDocument 로 옮겨진 요소 등)는 defaultView 가 null — Node/NodeFilter 상수는 어디서나 같으니 전역 것을 쓴다
+    this.window = (this.el.ownerDocument.defaultView ?? globalThis) as WindowProxy & typeof globalThis;
     this.document = this.el.ownerDocument;
     this.id = config?.id ?? el.id;
     this.variableWrap = config?.variableWrap ?? {start: '@', end: '@'};
@@ -43,6 +44,9 @@ export class ElementApply {
     let match;
     while ((match = regex.exec(script)) !== null) {
       variables.push(match[1]);
+      // @user.name@ 은 user 를 다시 대입했을 때도 갱신돼야 하므로 맨 앞 이름(user)도 변수로 둔다
+      const root = match[1].split(/[.[(]/)[0].trim();
+      if (root && root !== match[1]) variables.push(root);
     }
     return variables;
   }
@@ -180,12 +184,19 @@ export class ElementApply {
       }
 
 
+      // context 에 없는 이름은 bind(컴포넌트)의 멤버에서 찾는다 — e::click="@increment@()" 처럼 메서드를 부를 수 있게.
+      // DOM 이 원래 가진 속성(title, id, style …)까지 잡으면 전역 이름과 섞이므로 사용자 클래스/인스턴스 멤버만.
+      const bind = config?.bind;
+      const fromBind = (key: PropertyKey) => bind != null && typeof key === 'string' && !(key in (config?.context ?? {})) && ElementApply.isUserMember(bind, key);
       const context = new Proxy(config?.context ?? {}, {
+        has(target, key) {
+          return key in target || fromBind(key);
+        },
         get(target, key) {
           // @ts-ignore
-          const value = target[key]
+          const value = key in target ? target[key] : fromBind(key) ? bind[key] : undefined;
           return typeof value === 'function'
-            ? value.bind(config?.bind ?? target)
+            ? value.bind(bind ?? target)
             : value
         }
       })
@@ -219,7 +230,6 @@ export class ElementApply {
               //   data = data.bind(it.node);
               // }
 
-              console.log('------------------->',it, tit)
               if (tit.type === 'attribute' && !config?.exclude?.attribute) {
                 it.node.setAttribute(tit.name, data());
               } else if (tit.type === 'property' && !config?.exclude?.property) {
@@ -240,6 +250,16 @@ export class ElementApply {
         }
       }
     }
+  }
+
+  /** key 가 네이티브(DOM/내장) prototype 이 아니라 사용자 클래스나 인스턴스에 정의돼 있으면 true */
+  static isUserMember(obj: any, key: string): boolean {
+    for (let p = obj; p; p = Object.getPrototypeOf(p)) {
+      if (!Object.prototype.hasOwnProperty.call(p, key)) continue;
+      const ctor = p === obj ? null : p.constructor;
+      return !(typeof ctor === 'function' && /\[native code\]/.test(Function.prototype.toString.call(ctor)));
+    }
+    return false;
   }
 
   removeAllEventListener() {

@@ -1,6 +1,5 @@
 import { ReflectUtils, HttpResponseError } from '@dooboostore/core';
 import { SwcUtils } from '../utils/Utils';
-import { getElementConfig } from './elementDefine';
 import { getParameterMetadata } from './parameter';
 import type { ElementDefineLifeCycler, HelperHostSet } from '../types';
 
@@ -240,8 +239,7 @@ function createFetch(optionsOrUrl: FetchOptions | string): MethodDecorator {
       const inst = this as any;
       let helper: HelperHostSet | undefined;
       try {
-        const conf = getElementConfig(inst);
-        helper = SwcUtils.getHelperAndHostSet(conf?.window, inst);
+        helper = SwcUtils.getHelperAndHostSet(inst);
       } catch {
         helper = undefined;
       }
@@ -432,8 +430,8 @@ export function fetchAfter(options: FetchType & { valueKey?: string } & (FetchDe
 
 /** @fetch 가 붙은 메서드 목록 조회 */
 export const getFetchMetadata = (target: any): FetchMetadata[] | undefined => {
-  const constructor = target instanceof Function ? target : target.constructor;
-  return ReflectUtils.getOwnMetadata(FETCH_METADATA_KEY, constructor);
+  const constructor = typeof target === 'function' ? target : target.constructor;
+  return ReflectUtils.findAllMetadata<any[]>(FETCH_METADATA_KEY, constructor).flat();
 };
 
 /**

@@ -1,4 +1,4 @@
-import { event, innerHtml, onConnectedAfter, onConnectedBody, updateClass, applyNode, elementDefine, emitCustomEvent, onConnectedBefore, onConnectedBodyShadow, addEventListenerThis, mutationObserverDelegateShadow, eventDelegate, eventShadow, eventDelegateShadow, mutationObserverShadow, insertBeforeEndShadow, resizeObserverShadow, resizeObserverDelegateShadow, mutationObserver, resizeObserver, styleShadow, clsShadow, applyShadow, propWindow, emitThis, eventThis, intersectionObserverShadow, intersectionObserverDelegateShadow } from '@dooboostore/simple-web-component';
+import { event, innerHtml, onConnectedAfter, onConnectedBody, updateClass, applyNode, elementDefine, emitCustomEvent, onConnectedBefore, onConnectedBodyShadow, mutationObserverDelegateShadow, eventDelegate, eventShadow, eventDelegateShadow, mutationObserverShadow, insertBeforeEndShadow, resizeObserverShadow, resizeObserverDelegateShadow, mutationObserver, resizeObserver, styleShadow, clsShadow, applyShadow, propWindow, intersectionObserverShadow, intersectionObserverDelegateShadow } from '@dooboostore/simple-web-component';
 import {Inject} from '@dooboostore/simple-boot';
 import {Router} from '@dooboostore/core-web';
 import {ProductService} from '../services/ProductService';
@@ -214,7 +214,7 @@ export default (w: Window) => {
       });
     }
 
-    // ─── 편의 헬퍼 테스트 (styleShadow / clsShadow / applyShadow / propWindow / emitThis / eventThis) ───
+    // ─── 편의 헬퍼 테스트 (styleShadow / clsShadow / applyShadow / propWindow / emitCustomEvent / event) ───
     @eventShadow('.btn-helper-style', 'click')
     @styleShadow('.helper-box', 'update')
     onApplyHelperStyle() {
@@ -243,15 +243,15 @@ export default (w: Window) => {
 
     helperEventCount: number = 0;
     @eventShadow('.btn-helper-emit', 'click')
-    @emitThis('helper-custom-event')
+    @emitCustomEvent('helper-custom-event')
     onEmitHelperEvent() {
       this.helperEventCount++;
       return { count: this.helperEventCount };
     }
 
-    @eventThis('helper-custom-event')
+    @event('helper-custom-event')
     onHelperEventReceived(e: Event) {
-      console.log('[emitThis] received helper-custom-event | detail:', (e as CustomEvent).detail);
+      console.log('[emitCustomEvent] received helper-custom-event | detail:', (e as CustomEvent).detail);
     }
 
     @innerHtml('.products-grid')
@@ -744,7 +744,7 @@ export default (w: Window) => {
           </div>
 
           <div class="helper-test-section">
-            <h3 class="section-title">🧰 편의 헬퍼 Test (styleShadow/clsShadow/applyShadow/propWindow/emitThis)</h3>
+            <h3 class="section-title">🧰 편의 헬퍼 Test (styleShadow/clsShadow/applyShadow/propWindow/emitCustomEvent)</h3>
             <div class="helper-toolbar">
               <button class="btn-helper-style">스타일 적용</button>
               <button class="btn-helper-cls">클래스 토글</button>
@@ -758,7 +758,7 @@ export default (w: Window) => {
             </div>
             <div class="helper-grid"></div>
             <div class="helper-test-log">
-              window.swcHelperTest 값 확인 · 콘솔에서 <code>[emitThis] received helper-custom-event</code> 로그 확인
+              window.swcHelperTest 값 확인 · 콘솔에서 <code>[emitCustomEvent] received helper-custom-event</code> 로그 확인
             </div>
           </div>
         </div>

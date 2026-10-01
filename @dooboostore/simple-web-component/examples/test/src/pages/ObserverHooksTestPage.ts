@@ -1,5 +1,5 @@
 import {
-  elementDefine, onConnectedBodyShadow, addEventListener,
+  elementDefine, onConnectedBodyShadow, event,
   mutationObserver, resizeObserver, changedAttribute, setInterval as swcSetInterval, setTimeout as swcSetTimeout,
   mutationObserverBeforeReturn, resizeObserverBeforeReturn, changedAttributeBeforeReturn, setIntervalBeforeReturn, setTimeoutBeforeReturn
 } from '@dooboostore/simple-web-component';
@@ -75,7 +75,7 @@ export default (w: Window) => {
     }
 
     // 트리거 버튼들
-    @addEventListener('.add-child', 'click')
+    @event('.add-child', 'click')
     addChild() {
       const el = w.document.createElement('div');
       el.className = 'dyn';
@@ -83,13 +83,13 @@ export default (w: Window) => {
       this.shadowRoot!.querySelector('.mut-container')!.appendChild(el);
     }
 
-    @addEventListener('.resize-box', 'click')
+    @event('.resize-box', 'click')
     resizeBox() {
       const box = this.shadowRoot!.querySelector('.box') as HTMLElement;
       box.style.width = (100 + Math.floor(Math.random() * 200)) + 'px';
     }
 
-    @addEventListener('.set-attr', 'click')
+    @event('.set-attr', 'click')
     setAttr() {
       this.setAttribute('data-x', 'v' + Date.now());
     }

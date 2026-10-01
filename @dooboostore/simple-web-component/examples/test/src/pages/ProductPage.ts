@@ -1,4 +1,4 @@
-import { onConnectedBodyLight, innerHtml, onConnectedAfter, onConnectedBody, updateClass, addEventListener, applyNode, elementDefine, emitCustomEvent, onConnectedBefore, onConnectedBodyShadow, addEventListenerThis, attribute } from '@dooboostore/simple-web-component';
+import { onConnectedBodyLight, innerHtml, onConnectedAfter, onConnectedBody, updateClass, event, applyNode, elementDefine, emitCustomEvent, onConnectedBefore, onConnectedBodyShadow, attribute } from '@dooboostore/simple-web-component';
 import {Inject} from '@dooboostore/simple-boot';
 import {ProductService} from '../services/ProductService';
 import {CartService} from '../services/CartService';

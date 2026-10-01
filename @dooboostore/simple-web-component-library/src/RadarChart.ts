@@ -83,7 +83,7 @@ export default (w: Window): RadarChartCtor => {
       `;
     }
 
-    @resizeObserverLight()
+    @resizeObserverLight
     onHostResize(): void {
       if (this.isConnected) this.drawRadar();
     }

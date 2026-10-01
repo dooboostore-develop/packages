@@ -45,7 +45,7 @@ export interface ElementMetadata extends Omit<ElementConfig, 'window'> {
 }
 
 export const getElementConfig = (target: any): ElementMetadata | undefined => {
-  const constructor = target instanceof Function ? target : target.constructor;
+  const constructor = typeof target === 'function' ? target : target.constructor;
   return ReflectUtils.getMetadata(ELEMENT_CONFIG_KEY, constructor);
 };
 
@@ -59,7 +59,7 @@ export const ensureInit = (inst: any) => { // HTMLElement
     //   delete (inst as any)[meta.propertyKey];
     // });
 
-    const target = inst instanceof Function ? inst : inst.constructor;
+    const target = typeof inst === 'function' ? inst : inst.constructor;
 
     // ╔════════════════════════════════════════════════════════════════════════════════╗
     // ║ decorator 필드의 own property 삭제                                              ║
@@ -192,7 +192,7 @@ const handleGlobalSwcEvent = async (event: Event) => {
     if (!(node instanceof HTMLElement)) continue;
     const script = node.getAttribute?.(attrName);
     if (script && !getElementConfig(node)) {
-      const host: any = SwcUtils.findNearestSwcHostIncludingSelf(node);
+      const host: any = SwcUtils.findNearestSwcAncestorHost(node);
       if (host && host.isConnected && typeof host.__swc_executeAttributeEvent === 'function') {
         await host.__swc_executeAttributeEvent(node, attrName, script, event);
         (event as any).__swc_handled = true;
@@ -250,8 +250,7 @@ const setupPrototype = (proto: any, win: Window) => {
     const script = this.getAttribute(attrName);
     if (script) {
       try {
-        const conf = getElementConfig(this);
-        const currentWin = (this as any)._resolveWindow(conf);
+        const currentWin = SwcUtils.resolveWindow(this);
         const helpers = SwcUtils.getHelperSet(currentWin);
         const args = {...hostSet, ...helpers, ...extraArgs, $el: this, $root: this.getRootNode()};
         FunctionUtils.execute({script, context: this, args});
@@ -261,21 +260,10 @@ const setupPrototype = (proto: any, win: Window) => {
     }
   };
 
-  proto._resolveWindow = function (localConfig?: ElementConfig): Window {
-    ensureInit(this);
-    if (localConfig?.window) return localConfig.window;
-    const ancestors = SwcUtils.findAllSwcHostsIncludingSelf(this as any);
-    for (let i = ancestors.length - 1; i >= 0; i--) {
-      const aConf = getElementConfig(ancestors[i]);
-      if (aConf?.window) return aConf.window;
-    }
-    return getElementConfig(this).window ?? ((typeof window !== 'undefined' ? window : undefined) as Window);
-  };
-
   proto._invokeLifecycleMethod = function (methodName: string | symbol, hostSet?: HostSet, extraArgs: any[] = []) {
     ensureInit(this);
     if (typeof (this as any)[methodName] !== 'function') return;
-    const useHostSet = hostSet ?? SwcUtils.getHelperAndHostSet(win, this);
+    const useHostSet = hostSet ?? SwcUtils.getHelperAndHostSet(this);
     const app = useHostSet?.$appHost?.simpleApplication;
 
     // @hostSet/@helperHostSet/@helperSet(parameter.ts)를 위한 값. lifecycle 메서드는
@@ -344,8 +332,7 @@ const setupPrototype = (proto: any, win: Window) => {
 
     const handler = async (event: any) => {
       const hostSet = SwcUtils.getHostSet(el);
-      const conf = getElementConfig(this);
-      const currentWin = (this as any)._resolveWindow(conf);
+      const currentWin = SwcUtils.resolveWindow(this);
       const helpers = SwcUtils.getHelperSet(currentWin);
       const args = {
         event,
@@ -366,8 +353,7 @@ const setupPrototype = (proto: any, win: Window) => {
     ensureInit(this);
 
     const hostSet = SwcUtils.getHostSet(el);
-    const conf = getElementConfig(this);
-    const currentWin = (this as any)._resolveWindow(conf);
+    const currentWin = SwcUtils.resolveWindow(this);
     const currentHelpers = SwcUtils.getHelperSet(currentWin);
     const detail = (event as CustomEvent).detail;
     const args = {
@@ -383,6 +369,11 @@ const setupPrototype = (proto: any, win: Window) => {
     await FunctionUtils.execute({script, context: el, args});
   };
 };
+
+// 부모 클래스도 elementDefine 됐으면 proto.xxxCallback 은 부모의 swc 래퍼다 — 그걸 원래 함수로 부르면 라이프사이클이 두 번 돈다.
+// 래퍼에 기억해 둔 사용자 원래 함수(없으면 undefined)를 쓴다.
+const SWC_ORIGINAL_CALLBACK = Symbol.for('simple-web-component:original-callback');
+const userCallback = (fn: any) => (typeof fn === 'function' && SWC_ORIGINAL_CALLBACK in fn ? fn[SWC_ORIGINAL_CALLBACK] : fn);
 
 export const elementDefine =
   (name: string, config: Partial<ElementConfig> = {}): ClassDecorator =>
@@ -422,8 +413,9 @@ export const elementDefine =
       const proto = constructor.prototype;
       setupPrototype(proto, win);
 
-      // 값을 기대하지않는다.
-      let helperHostSet: HelperHostSet | null = null;
+      // helperHostSet 은 인스턴스마다 다르다 — 클래스 단위 변수로 두면 다른 인스턴스의 connect 가 덮어써서
+      // disconnect 때 엉뚱한 인스턴스가 정리된다. connect 시점 값을 인스턴스에 저장해 disconnect/adopt 에서 쓴다.
+      const connectedHelperHostSet = (inst: any): HelperHostSet => inst.__swc_helperHostSet ?? SwcUtils.getHelperAndHostSet(inst);
       // ── cyclers: 데코레이터별 라이프사이클 위임 클래스 (elementDefine 시 1회 생성, 계속 재사용) ──
       const eventCycler = new EventListenerLifeCycler();
       const cyclers: ElementDefineLifeCycler[] = [
@@ -664,26 +656,35 @@ export const elementDefine =
         inst.__swc_observers = observers;
       };
 
-      const originalConnected = proto.connectedCallback;
+      const originalConnected = userCallback(proto.connectedCallback);
       proto.connectedCallback = async function () {
         ensureInit(this);
         // 재연결 시 누적 방지 — cycler 내부 리소스 초기화
-        helperHostSet = SwcUtils.getHelperAndHostSet(win, this as any);
+        const helperHostSet = SwcUtils.getHelperAndHostSet(this as any);
+        (this as any).__swc_helperHostSet = helperHostSet;
         const appHost = helperHostSet.$appHost;
         const useSsr = isSSR(this);
+        // 연결 처리는 await 를 거친다. 그 사이 떨어지거나 다시 붙으면(disconnect / 새 connect 가 차례 번호를 올리면) 이 연결은 멈춘다 —
+        // 안 그러면 떼어진 뒤에 리스너·타이머가 등록돼 새고, 다시 붙은 연결과 겹쳐 두 번씩 돈다.
+        // (isConnected 는 보지 않는다 — 직접 호출이나 SSR 처럼 붙어 있지 않아도 라이프사이클은 돌아야 한다)
+        const gen = ((this as any).__swc_connectGen = ((this as any).__swc_connectGen ?? 0) + 1);
+        const alive = () => (this as any).__swc_connectGen === gen;
         try {
           if (appHost && typeof (appHost as any)._connected === 'function') {
             await (appHost as any)._connected(this);
+            if (!alive()) return;
           } else if (appHost && typeof (appHost as any)) {
             (appHost as any)._connected_safari_and_standby ??= [];
             (appHost as any)._connected_safari_and_standby.push(this);
           }
 
           const conf = getElementConfig(this);
-          const currentWin = (this as any)._resolveWindow(conf);
 
           // before-connected 라이프사이클 메서드 (@onConnectedBefore)
-          for (const m of findAllOnConnectedBeforeMetadata(this)) await (this as any)._invokeLifecycleMethod(m.propertyKey, helperHostSet);
+          for (const m of findAllOnConnectedBeforeMetadata(this)) {
+            await (this as any)._invokeLifecycleMethod(m.propertyKey, helperHostSet);
+            if (!alive()) return;
+          }
           (this as any)._executeSwcScript('swc-on-before-connected', helperHostSet);
 
           // ── 렌더 (@onConnected / @onConnectedBody*) — elementDefine 책임 ──
@@ -705,6 +706,7 @@ export const elementDefine =
           if (targetConnectedList.length > 0) {
             for (const meta of targetConnectedList) {
               let res = await (this as any)._invokeLifecycleMethod(meta.propertyKey, helperHostSet);
+              if (!alive()) return;
               if (typeof res === 'string') {
                 const htmlTemplateElement = doc.createElement('template');
                 htmlTemplateElement.innerHTML = res;
@@ -746,21 +748,26 @@ export const elementDefine =
           }
 
           // ── cycler 실행 (렌더 후): 모든 시클러 onConnected → observer Set 수집 → observer 생성 ──
-          // helperHostSet 은 클로저 변수라 async 흐름에서 다른 인스턴스로 덮어써질 수 있다.
-          // 반드시 현재 인스턴스(this)로 재계산한 값을 사용한다.
-          await buildObservers(SwcUtils.getHelperAndHostSet(win, this as any));
+          await buildObservers(helperHostSet);
+          if (!alive()) return;
 
           if (originalConnected) await originalConnected.apply(this);
+          if (!alive()) return;
 
           // after-connected 라이프사이클 메서드 (@onConnectedAfter)
-          for (const m of findAllOnConnectedAfterMetadata(this)) await (this as any)._invokeLifecycleMethod(m.propertyKey, helperHostSet);
+          for (const m of findAllOnConnectedAfterMetadata(this)) {
+            await (this as any)._invokeLifecycleMethod(m.propertyKey, helperHostSet);
+            if (!alive()) return;
+          }
           (this as any)._executeSwcScript('swc-on-connected', helperHostSet);
           (this as any)._executeSwcScript('swc-on-after-connected', helperHostSet);
           (this as any).__swc_connected = true;
         } finally {
-          for (const m of findAllLifecycleMetadata(this, ON_CONNECTED_COMPLETED_METADATA_KEY)) await (this as any)._invokeLifecycleMethod(m.propertyKey, helperHostSet);
+          // 멈춘 연결은 완료 훅을 부르지 않고, 앱 host 에는 중단만 알린다 (자식 연결 수만 맞추고 재생은 안 함)
+          const aborted = !alive();
+          if (!aborted) for (const m of findAllLifecycleMetadata(this, ON_CONNECTED_COMPLETED_METADATA_KEY)) await (this as any)._invokeLifecycleMethod(m.propertyKey, helperHostSet);
           if (appHost && typeof (appHost as any)._connectedDone === 'function') {
-            await (appHost as any)._connectedDone(this);
+            await (appHost as any)._connectedDone(this, { aborted });
           }
         }
       };
@@ -768,16 +775,19 @@ export const elementDefine =
       /////////////////////////////////////////////////
       // disconnectedCallback
       ////////////////////////////////////////////////
-      const originalDisconnected = proto.disconnectedCallback;
+      const originalDisconnected = userCallback(proto.disconnectedCallback);
       proto.disconnectedCallback = function () {
-        const appHost = helperHostSet?.$appHost;
+        (this as any).__swc_connectGen = ((this as any).__swc_connectGen ?? 0) + 1; // 진행 중인 연결은 멈춘다
+        // 떨어진 뒤라 DOM 으로는 $appHost 를 다시 못 찾는다 → connect 때 저장한 이 인스턴스의 값
+        const helperHostSet = connectedHelperHostSet(this);
+        const appHost = helperHostSet.$appHost;
         if (appHost && typeof (appHost as any)._disconnected === 'function') {
           (appHost as any)._disconnected(this);
         }
 
         (this as any)._executeSwcScript('swc-on-before-disconnected', helperHostSet);
         for (const m of findAllLifecycleMetadata(this, ON_BEFORE_DISCONNECTED_METADATA_KEY)) (this as any)._invokeLifecycleMethod(m.propertyKey, helperHostSet);
-        for (const c of cyclers) c.onDisconnected?.(helperHostSet!);
+        for (const c of cyclers) c.onDisconnected?.(helperHostSet);
 
         for (const o of (this as any).__swc_observers ?? []) {
           try { (o as any)?.disconnect?.(); } catch (e) { console.error('[SWC] observer disconnect error:', e); }
@@ -795,12 +805,12 @@ export const elementDefine =
         (this as any).__swc_connected = false;
       };
 
-      const originalAdopted = proto.adoptedCallback;
+      const originalAdopted = userCallback(proto.adoptedCallback);
       proto.adoptedCallback = function () {
         const hostSet = SwcUtils.getHostSet(this as any);
         (this as any)._executeSwcScript('swc-on-before-adopted', hostSet);
         for (const m of findAllLifecycleMetadata(this, ON_BEFORE_ADOPTED_METADATA_KEY)) (this as any)._invokeLifecycleMethod(m.propertyKey, hostSet);
-        for (const c of cyclers) c.onAdopted?.(helperHostSet!);
+        for (const c of cyclers) c.onAdopted?.(connectedHelperHostSet(this));
 
         if (originalAdopted) originalAdopted.apply(this);
 
@@ -809,13 +819,13 @@ export const elementDefine =
         (this as any)._executeSwcScript('swc-on-after-adopted', hostSet);
       };
 
-      const originalAttributeChanged = proto.attributeChangedCallback;
+      const originalAttributeChanged = userCallback(proto.attributeChangedCallback);
       proto.attributeChangedCallback = function (name: string, old: string | null, newVal: string | null) {
         if (originalAttributeChanged) originalAttributeChanged.apply(this, [name, old, newVal]);
 
         // attributeChangedCallback 은 connected 이전에도 호출될 수 있으므로
         // 클로저의 helperHostSet(null 가능) 대신 이 시점에 새로 계산한다.
-        const helperAndHostSet = SwcUtils.getHelperAndHostSet(win, this as any);
+        const helperAndHostSet = SwcUtils.getHelperAndHostSet(this as any);
 
         // Process expression directive before passing to handlers
         let processedVal: any = newVal;
@@ -823,8 +833,8 @@ export const elementDefine =
           const ae = new ActionExpression(newVal);
           const expr = ae.getFirstExpression('callReturn');
           if (expr) {
-            const win = (this as any)._resolveWindow?.() || ((typeof window !== 'undefined' ? window : undefined) as any);
-            const exprHelperAndHostSet = SwcUtils.getHelperAndHostSet(win, this as any);
+            const win = SwcUtils.resolveWindow(this);
+            const exprHelperAndHostSet = SwcUtils.getHelperAndHostSet(this as any);
             const script = ConvertUtils.decodeHtmlEntity(expr.script, win.document);
             try {
               const result = FunctionUtils.executeReturn({
@@ -855,6 +865,12 @@ export const elementDefine =
         get: () => mergedObservedAttributes,
         configurable: true
       });
+
+      // 이 클래스를 다시 상속해 elementDefine 하면 자식이 이 래퍼 대신 원래 사용자 함수를 부르도록 기억해 둔다
+      proto.connectedCallback[SWC_ORIGINAL_CALLBACK] = originalConnected;
+      proto.disconnectedCallback[SWC_ORIGINAL_CALLBACK] = originalDisconnected;
+      proto.adoptedCallback[SWC_ORIGINAL_CALLBACK] = originalAdopted;
+      proto.attributeChangedCallback[SWC_ORIGINAL_CALLBACK] = originalAttributeChanged;
 
       ReflectUtils.defineMetadata(ELEMENT_CONFIG_KEY, metadata, constructor);
       const registry = metadata.customElementRegistry || (win as any)?.customElements;

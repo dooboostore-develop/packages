@@ -114,7 +114,7 @@ export function applySlot(targetId: string, opt: OptionalType<ApplySlotOptions, 
       const currentWin = conf.window;
       const swcId = this._swcId;
       const currentDoc = currentWin.document;
-      const hostSet = SwcUtils.getHelperAndHostSet(currentWin, this);
+      const hostSet = SwcUtils.getHelperAndHostSet(this);
       const pos = options.position;
 
       const resToNodes = (res: string | Node) => {
@@ -216,6 +216,6 @@ export function replaceChildrenTextSlot(targetId: string): MethodDecorator {
 
 // export const findAllApplySlotMetadata = (target: any): Map<string | symbol, ApplySlotMetadata> => {
 export const findAllApplySlotMetadata = (target: any): ApplySlotMetadata[] => {
-  const constructor = target instanceof Function ? target : target.constructor;
-  return ReflectUtils.getMetadata(APPLY_SLOT_METADATA_KEY, constructor);
+  const constructor = typeof target === 'function' ? target : target.constructor;
+  return ReflectUtils.findAllMetadata<any[]>(APPLY_SLOT_METADATA_KEY, constructor).flat();
 };

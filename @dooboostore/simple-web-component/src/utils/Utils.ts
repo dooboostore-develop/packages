@@ -213,7 +213,18 @@ export namespace SwcUtils {
     } as const;
   };
 
-  export const getHelperAndHostSet = (win: Window, el: HTMLElement): HelperHostSet => {
+  /** el 의 window — 자기 elementDefine 설정 → 가까운 조상 SWC 호스트 설정 → 전역 window 순. */
+  export const resolveWindow = (el: HTMLElement | Node): Window => {
+    const hosts = findAllSwcHostsIncludingSelf(el);
+    for (let i = hosts.length - 1; i >= 0; i--) {
+      const w = getElementConfig(hosts[i])?.window;
+      if (w) return w;
+    }
+    return (typeof window !== 'undefined' ? window : undefined) as Window;
+  };
+
+  /** win 생략 시 resolveWindow(el). el 이 SWC 요소가 아니면(이벤트 target 등) 호스트의 window 를 넘긴다. */
+  export const getHelperAndHostSet = (el: HTMLElement, win: Window = resolveWindow(el)): HelperHostSet => {
     const helperSet = getHelperSet(win);
     const hostSet = getHostSet(el);
     return {
@@ -237,10 +248,10 @@ export namespace SwcUtils {
   };
 
   /**
-   * Finds the nearest logical SWC host for an element.
-   * Checks __swc_host property first, then climbs the DOM tree.
+   * Finds the nearest logical SWC host for an element (excluding self).
+   * Checks __swc_host property first, then climbs the DOM tree from the parent.
    */
-  export const findNearestSwcHostIncludingSelf = (el: HTMLElement | Node): HTMLElement | undefined => {
+  export const findNearestSwcAncestorHost = (el: HTMLElement | Node): HTMLElement | undefined => {
     const el1 = el as any;
     if (el1.__swc_host) return el1.__swc_host;
 
@@ -249,10 +260,7 @@ export namespace SwcUtils {
     const win = doc?.defaultView || ((typeof window !== 'undefined' ? window : undefined) as any);
     let guard = 0;
     while (current && current !== doc && current !== win) {
-      if (++guard > 50) {
-        console.log('[swc] DEBUG host-walk loop:', (current as any)?.tagName, 'ctor=', (current as any)?.constructor?.name);
-        break;
-      }
+      if (++guard > 50) break;
       if (current.__swc_host) return current.__swc_host;
       if (getElementConfig(current)) return current as HTMLElement;
       current = current.parentElement || (current.getRootNode?.() as any)?.host;
@@ -261,28 +269,24 @@ export namespace SwcUtils {
   };
 
   /**
-   * Returns all SWC ancestors (excluding self) in [root, ..., parent] order.
+   * Returns all SWC hosts in [root, ..., parent, self] order (self only when el is an SWC element).
    */
   export const findAllSwcHostsIncludingSelf = (el: HTMLElement | Node): HTMLElement[] => {
-    const hosts: HTMLElement[] = [];
-    let current = findNearestSwcHostIncludingSelf(el);
+    const hosts: HTMLElement[] = getElementConfig(el) ? [el as HTMLElement] : [];
+    let current = findNearestSwcAncestorHost(el);
     while (current) {
       hosts.push(current);
       // To find the next ancestor, we must start searching from the PARENT of the found host
-      current = findNearestSwcHostIncludingSelf(current);
+      current = findNearestSwcAncestorHost(current);
     }
     return hosts.reverse();
   };
 
-  export const getHosts = (el: HTMLElement): HTMLElement[] => {
-    const ancestors = findAllSwcHostsIncludingSelf(el);
-    if (getElementConfig(el)) return [...ancestors, el];
-    return ancestors;
-  };
+  export const getHosts = (el: HTMLElement): HTMLElement[] => findAllSwcHostsIncludingSelf(el);
 
   export const getHost = (el: HTMLElement): HTMLElement | undefined => {
     if (getElementConfig(el)) return el;
-    return findNearestSwcHostIncludingSelf(el);
+    return findNearestSwcAncestorHost(el);
   };
 
 
@@ -310,7 +314,6 @@ export namespace SwcUtils {
       t = SwcUtils.processHtml(id, t, {
         document: document,
         replaceWrap: {start: /a::\w+=\s*"/, end: /"\s/}, replacer: (id, script, er) => {
-          console.log('start: /a-->', er)
           const match = er.expressionStart.match(/^\w+::(\w+)="/)
           const name = match?.[1];
           return ElementApply.attribute(id, name, script)
@@ -322,7 +325,6 @@ export namespace SwcUtils {
       t = SwcUtils.processHtml(id, t, {
         document: document,
         replaceWrap: {start: /e::\w+=\s*"/, end: /"\s/}, replacer: (id, script, er) => {
-          console.log('start: /e-->', er)
           const match = er.expressionStart.match(/^\w+::(\w+)="/)
           const name = match?.[1];
           return ElementApply.event(id, name, script)
@@ -335,7 +337,6 @@ export namespace SwcUtils {
       t = SwcUtils.processHtml(id, t, {
         document: document,
         replaceWrap: {start: /p:\w+=\s*"/, end: /"\s/}, replacer: (id, script, er) => {
-          console.log('start: /p-->', er)
           const match = er.expressionStart.match(/^\w+:(\w+)="/)
           const name = match?.[1];
           return ElementApply.property(id, name, script)
@@ -533,7 +534,8 @@ export namespace SwcUtils {
   };
 
   export const getHostSet = (el: HTMLElement): HostSet => {
-    const ancestors = findAllSwcHostsIncludingSelf(el); // [root, ..., parent]
+    const hosts = findAllSwcHostsIncludingSelf(el);
+    const ancestors = hosts[hosts.length - 1] === el ? hosts.slice(0, -1) : hosts; // [root, ..., parent] — $host 는 자기 자신이 아닌 부모
 
     const $host = ancestors.length > 0 ? ancestors[ancestors.length - 1] : null;
     const $parentHost = ancestors.length > 1 ? ancestors[ancestors.length - 2] : null;

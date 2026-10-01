@@ -50,7 +50,7 @@ export function eventMediaChange(query: string, options?: EventMediaOptions): Me
 }
 
 export const findAllEventMediaMetadata = (target: any): EventMediaMetadata[] => {
-  const constructor = target instanceof Function ? target : target.constructor;
+  const constructor = typeof target === 'function' ? target : target.constructor;
   return (ReflectUtils.findAllMetadata<EventMediaMetadata[]>(EVENT_MEDIA_METADATA_KEY, constructor) || []).flat();
 };
 
@@ -68,7 +68,7 @@ export class EventMediaLifeCycler implements ElementDefineLifeCycler {
       const mql = win.matchMedia(meta.query);
       const handler = async (e: Event) => {
         try {
-          const helper = SwcUtils.getHelperAndHostSet(win, inst);
+          const helper = SwcUtils.getHelperAndHostSet(inst);
           if (meta.filter && !(await meta.filter(e as MediaQueryListEvent, { currentThis: inst, helper }))) return;
           const hostSet = SwcUtils.getHostSet(inst);
           const helperSet = SwcUtils.getHelperSet(win);

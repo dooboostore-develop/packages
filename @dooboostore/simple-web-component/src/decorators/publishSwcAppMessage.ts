@@ -100,7 +100,6 @@ function createPublishSwcAppMessage(messageType?: string, options?: PublishSwcAp
 // 오버로드 시그니처 - 직접 사용 (괄호 없음)
 export function publishSwcAppMessage(target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor): PropertyDescriptor | void;
 // 오버로드 시그니처 - 함수 호출 (괄호 있음)
-export function publishSwcAppMessage(): MethodDecorator;
 export function publishSwcAppMessage(messageType: string): MethodDecorator;
 export function publishSwcAppMessage(messageType: string, options: PublishSwcAppMessageOptions): MethodDecorator;
 export function publishSwcAppMessage(options: PublishSwcAppMessageOptions): MethodDecorator;
@@ -114,7 +113,7 @@ export function publishSwcAppMessage(targetOrMessageTypeOrOptions?: any, propert
     return createPublishSwcAppMessage()(target, propertyKeyOrOptions, descriptor);
   }
 
-  // 함수로 호출된 경우 (괄호 있음): @publishSwcAppMessage() / @publishSwcAppMessage('messageType') / @publishSwcAppMessage({...})
+  // 함수로 호출된 경우 (인자 있음): @publishSwcAppMessage('messageType') / @publishSwcAppMessage({...})
   let messageType: string | undefined;
   let options: PublishSwcAppMessageOptions | undefined;
 
@@ -138,6 +137,6 @@ export const publishMessage = publishSwcAppMessage;
 
 // Helper function to retrieve publish message metadata
 export const getPublishSwcAppMessageMetadata = (target: any): PublishSwcAppMessageMetadata[] | undefined => {
-  const constructor = target instanceof Function ? target : target.constructor;
-  return ReflectUtils.getOwnMetadata(PUBLISH_SWC_APP_MESSAGE_METADATA_KEY, constructor);
+  const constructor = typeof target === 'function' ? target : target.constructor;
+  return ReflectUtils.findAllMetadata<any[]>(PUBLISH_SWC_APP_MESSAGE_METADATA_KEY, constructor).flat();
 };

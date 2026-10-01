@@ -1,7 +1,7 @@
-import { elementDefine, onConnectedBodyShadow, addEventListener, eventDelegateLight, eventDelegateShadow, eventMutation, eventObject, matchedElement, hostSet, helperHostSet, helperSet, eventClickThis } from '@dooboostore/simple-web-component';
+import { elementDefine, onConnectedBodyShadow, event, eventDelegateLight, eventDelegateShadow, eventMutation, eventObject, matchedElement, hostSet, helperHostSet, helperSet, eventClick } from '@dooboostore/simple-web-component';
 
 /**
- * @addEventListener의 delegate 계열 테스트 페이지 — 핵심 확인 포인트:
+ * @event의 delegate 계열 테스트 페이지 — 핵심 확인 포인트:
  * "이벤트 바인딩 시점에 존재하지 않던, 나중에 동적으로 추가된 엘리먼트에도 이벤트가 걸리는가"
  *
  * 두 가지 서로 다른 메커니즘을 비교한다:
@@ -36,7 +36,7 @@ export default (w: Window) => {
     hostSetOk = false;
     helperHostSetOk = false;
     helperSetOk = false;
-    // @eventClickThis 검증용 — 괄호 없는 bare 형태로도 동작하는지 확인
+    // @eventClick 검증용 — 괄호 없는 bare 형태로도 동작하는지 확인
     thisClickCount = 0;
 
     // 라이트 DOM, 버블링 기반 delegate — root:'light'라서 this(호스트) 자체에 리스너 하나만 건다.
@@ -98,15 +98,15 @@ export default (w: Window) => {
       this.updateStatus();
     }
 
-    // @eventClickThis - 괄호 없는 bare 형태 (options 필요 없을 때). $this(shadowRoot)에 걸리므로
+    // @eventClick - 괄호 없는 bare 형태 (options 필요 없을 때). $this(shadowRoot)에 걸리므로
     // shadow 템플릿 안 어디를 클릭해도(버블링) 잡힌다.
-    @eventClickThis
+    @eventClick
     onAnyClickInsideShadow() {
       this.thisClickCount++;
       this.updateStatus();
     }
 
-    @addEventListener('.add-light-btn', 'click')
+    @event('.add-light-btn', 'click')
     onAddLightBtn() {
       this.dynCounter++;
       const btn = w.document.createElement('button');
@@ -116,7 +116,7 @@ export default (w: Window) => {
       this.appendChild(btn);
     }
 
-    @addEventListener('.add-shadow-btn', 'click')
+    @event('.add-shadow-btn', 'click')
     onAddShadowBtn() {
       this.dynCounter++;
       const btn = w.document.createElement('button');
@@ -125,7 +125,7 @@ export default (w: Window) => {
       this.shadowRoot?.querySelector('.shadow-container')?.appendChild(btn);
     }
 
-    @addEventListener('.add-input-btn', 'click')
+    @event('.add-input-btn', 'click')
     onAddInputBtn() {
       this.dynCounter++;
       const input = w.document.createElement('input');
@@ -137,7 +137,7 @@ export default (w: Window) => {
     updateStatus() {
       const el = this.shadowRoot?.querySelector('.status') as HTMLElement | null;
       if (el) {
-        el.textContent = `light-click: count=${this.lightClickCount} last="${this.lightLastLabel}" | light-click-v2(@param, reversed): count=${this.lightClickCountV2} last="${this.lightLastLabelV2}" | shadow-click: count=${this.shadowClickCount} | hostSetOk: ${this.hostSetOk} | helperHostSetOk: ${this.helperHostSetOk} | helperSetOk: ${this.helperSetOk} | eventClickThis(bare): count=${this.thisClickCount} | focus-via-delegate(should stay 0): count=${this.focusViaDelegateCount} | focus-via-mutation: count=${this.focusViaMutationCount}`;
+        el.textContent = `light-click: count=${this.lightClickCount} last="${this.lightLastLabel}" | light-click-v2(@param, reversed): count=${this.lightClickCountV2} last="${this.lightLastLabelV2}" | shadow-click: count=${this.shadowClickCount} | hostSetOk: ${this.hostSetOk} | helperHostSetOk: ${this.helperHostSetOk} | helperSetOk: ${this.helperSetOk} | eventClick(bare): count=${this.thisClickCount} | focus-via-delegate(should stay 0): count=${this.focusViaDelegateCount} | focus-via-mutation: count=${this.focusViaMutationCount}`;
       }
     }
 

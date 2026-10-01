@@ -1,4 +1,4 @@
-import { elementDefine, onConnectedBodyShadow, applyNode, addEventListener, setInterval, setTimeout, requestAnimationFrame, SET_INTERVAL_METADATA_KEY, mutationObserverThis, propWindow, eventMediaChange, HelperHostSet } from '@dooboostore/simple-web-component';
+import { elementDefine, onConnectedBodyShadow, applyNode, event, setInterval, setTimeout, requestAnimationFrame, SET_INTERVAL_METADATA_KEY, propWindow, eventMediaChange, HelperHostSet, mutationObserver } from '@dooboostore/simple-web-component';
 
 /**
  * appendCount 두 개는 @setInterval을 다른 wrapping 데코레이터(@applyNode)와
@@ -100,7 +100,7 @@ export default (w: Window) => {
       };
     }
 
-    @addEventListener('.btn-start-return-value', 'click')
+    @event('.btn-start-return-value', 'click')
     onStartReturnValueClick() {
       this.startReturnValueInterval(); // 누를 때마다 완전히 새로운 타이머가 하나씩 더 생김
     }
@@ -120,18 +120,18 @@ export default (w: Window) => {
       };
     }
 
-    @addEventListener('.btn-start-default-key', 'click')
+    @event('.btn-start-default-key', 'click')
     onStartDefaultKeyClick() {
       this.startDefaultKeyInterval();
     }
 
-    // 6-2. bare 데코레이터(괄호 없음) 스모크 테스트 — mutationObserverThis / propWindow
+    // 6-2. bare 데코레이터(괄호 없음) 스모크 테스트 — mutationObserver / propWindow
     bareMutationCount = 0;
 
-    @mutationObserverThis
+    @mutationObserver
     onBareMutation() {
       this.bareMutationCount++;
-      console.log('[bare @mutationObserverThis] fired | count:', this.bareMutationCount);
+      console.log('[bare @mutationObserver] fired | count:', this.bareMutationCount);
       this.renderStatus();
     }
 
@@ -152,9 +152,9 @@ export default (w: Window) => {
       this.renderStatus();
     }
 
-    @addEventListener('.btn-bare-test', 'click')
+    @event('.btn-bare-test', 'click')
     onBareTestClick() {
-      // bare @mutationObserverThis 기본 root:'auto' + shadowRoot 있음 → shadow 쪽을 관찰하므로 shadowRoot에 자식을 추가해서 트리거
+      // bare @mutationObserver 기본 root:'auto' + shadowRoot 있음 → shadow 쪽을 관찰하므로 shadowRoot에 자식을 추가해서 트리거
       const marker = document.createElement('span');
       marker.style.display = 'none';
       this.shadowRoot?.appendChild(marker);
@@ -201,7 +201,7 @@ export default (w: Window) => {
       };
     }
 
-    @addEventListener('.btn-start-raf', 'click')
+    @event('.btn-start-raf', 'click')
     onStartRafClick() {
       this.rafReturnValueDone = false;
       this.startRafReturnValue();
@@ -243,7 +243,7 @@ export default (w: Window) => {
         <div>valueKey callback count: <b>${this.valueKeyCallbackCount}</b> (last timer id: <b>${this.valueKeyLastId}</b>)</div>
         <div>returnValue tick count: <b>${this.returnValueTickCount}</b> (last timer id: <b>${this.returnValueLastId}</b>)</div>
         <div>default-key(valueKey 없음) tick count: <b>${this.defaultKeyTickCount}</b></div>
-        <div>bare @mutationObserverThis count: <b>${this.bareMutationCount}</b></div>
+        <div>bare @mutationObserver count: <b>${this.bareMutationCount}</b></div>
         <div>@eventMediaChange('(max-width:600px)') matches: <b>${this.mediaMatchesNarrow}</b> (change count: <b>${this.mediaChangeCount}</b>)</div>
         <div>rAF onConnected frame count: <b>${this.rafOnConnectedFrameCount}</b> ${this.rafOnConnectedFrameCount >= 30 ? '(종료됨)' : ''}</div>
         <div>rAF returnValue frame count: <b>${this.rafReturnValueFrameCount}</b> ${this.rafReturnValueDone ? '(2초 경과 - 종료됨)' : ''}</div>
@@ -295,7 +295,7 @@ export default (w: Window) => {
             <p class="hint" style="margin-top:6px;">버튼을 눌러야만 시작됨 (connect 시 자동 실행 안 됨). 여러 번 누르면 그때마다 별도의 새 타이머가 생겨서 tick count가 더 빨리 올라감.</p>
             <button class="btn-start-return-value">타이머 시작 (700ms)</button>
             <button class="btn-start-return-value btn-start-default-key">valueKey 없이 시작 (600ms, 기본 키로 폴백돼야 함)</button>
-            <button class="btn-start-return-value btn-bare-test">bare 데코레이터 테스트 (@mutationObserverThis + @propWindow)</button>
+            <button class="btn-start-return-value btn-bare-test">bare 데코레이터 테스트 (@mutationObserver + @propWindow)</button>
           </div>
 
           <div class="raf-section">

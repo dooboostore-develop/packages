@@ -1,5 +1,5 @@
 import {
-  addEventListener,
+  event,
   changedAttribute,
   elementDefine,
   eventShadow,
@@ -923,7 +923,7 @@ export default (w: Window): RangeSliderCtor => {
       this.fill.style.background = gc0 ?? '';
     }
 
-    @addEventListener('.rs-thumb-multi', 'pointerdown', { root: 'shadow', delegate: true })
+    @event('.rs-thumb-multi', 'pointerdown', { root: 'shadow', delegate: true })
     onMultiThumbDown(e: PointerEvent) {
       const th = (e.target as HTMLElement)?.closest?.('.rs-thumb-multi') as HTMLElement | null;
       const name = th?.dataset?.name;
@@ -933,7 +933,7 @@ export default (w: Window): RangeSliderCtor => {
       try { (e.target as Element).setPointerCapture?.(e.pointerId); } catch { /* noop */ }
     }
 
-    @addEventListener('.rs-thumb-multi', 'keydown', { root: 'shadow', delegate: true })
+    @event('.rs-thumb-multi', 'keydown', { root: 'shadow', delegate: true })
     onMultiThumbKey(e: KeyboardEvent) {
       const th = (e.target as HTMLElement)?.closest?.('.rs-thumb-multi') as HTMLElement | null;
       const name = th?.dataset?.name;
@@ -959,7 +959,7 @@ export default (w: Window): RangeSliderCtor => {
       this.emit('change', name);
     }
 
-    @addEventListener('.rs-group-bar', 'pointerdown', { root: 'shadow', delegate: true })
+    @event('.rs-group-bar', 'pointerdown', { root: 'shadow', delegate: true })
     onGroupBarDown(e: PointerEvent) {
       const bar = (e.target as HTMLElement)?.closest?.('.rs-group-bar') as HTMLElement | null;
       const group = bar?.dataset?.group;
@@ -970,7 +970,7 @@ export default (w: Window): RangeSliderCtor => {
       try { (e.target as Element).setPointerCapture?.(e.pointerId); } catch { /* noop */ }
     }
 
-    @addEventListener('.rs-group-bar', 'keydown', { root: 'shadow', delegate: true })
+    @event('.rs-group-bar', 'keydown', { root: 'shadow', delegate: true })
     onGroupBarKey(e: KeyboardEvent) {
       const bar = (e.target as HTMLElement)?.closest?.('.rs-group-bar') as HTMLElement | null;
       const group = bar?.dataset?.group;

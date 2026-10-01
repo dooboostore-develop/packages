@@ -1,7 +1,6 @@
 import { ReflectUtils } from '@dooboostore/core';
 import type { RouteAction, Router, RouterMethodOptions } from '@dooboostore/core-web';
 import { SwcUtils } from '../utils/Utils';
-import { getElementConfig } from './elementDefine';
 import type { HelperHostSet } from '../types';
 
 export const SWC_APP_ROUTE_METADATA_KEY = Symbol.for('simple-web-component:swc-app-route');
@@ -110,7 +109,7 @@ function createSwcAppRoute(options?: SwcAppRouteOptions): MethodDecorator {
           return;
         }
         if (options?.filter) {
-          const helper = SwcUtils.getHelperAndHostSet(getElementConfig(this).window, this as HTMLElement);
+          const helper = SwcUtils.getHelperAndHostSet(this as HTMLElement);
           if (!options.filter(router, value, { currentThis: this, helper })) return;
         }
         const type = options?.type ?? 'go';
@@ -173,7 +172,6 @@ function createSwcAppRoute(options?: SwcAppRouteOptions): MethodDecorator {
 // 오버로드 시그니처 - 직접 사용 (괄호 없음)
 export function swcAppRoute(target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor): PropertyDescriptor | void;
 // 오버로드 시그니처 - 함수 호출 (괄호 있음)
-export function swcAppRoute(): MethodDecorator;
 export function swcAppRoute(options: SwcAppRouteOptions): MethodDecorator;
 
 export function swcAppRoute(targetOrOptions?: any, propertyKey?: string | symbol, descriptor?: PropertyDescriptor): any {
@@ -181,7 +179,7 @@ export function swcAppRoute(targetOrOptions?: any, propertyKey?: string | symbol
   if (targetOrOptions && typeof targetOrOptions === 'object' && propertyKey && (typeof propertyKey === 'string' || typeof propertyKey === 'symbol') && descriptor) {
     return createSwcAppRoute()(targetOrOptions, propertyKey, descriptor);
   }
-  // 함수로 호출된 경우 (괄호 있음): @swcAppRoute() / @swcAppRoute({...})
+  // 함수로 호출된 경우 (인자 있음): @swcAppRoute({...})
   return createSwcAppRoute(targetOrOptions as SwcAppRouteOptions | undefined);
 }
 
@@ -193,7 +191,7 @@ type SwcAppRouteTypedOptions<T extends SwcAppRouteType> = T extends 'go'
   : Omit<SwcAppRouteOptions, 'type' | 'replace' | 'scrollToTop'>;
 type SwcAppRouteTypedDecorator<T extends SwcAppRouteType> = {
   (target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor): PropertyDescriptor | void;
-  (options?: SwcAppRouteTypedOptions<T>): MethodDecorator;
+  (options: SwcAppRouteTypedOptions<T>): MethodDecorator; // 빈 괄호 금지 — 인자가 없으면 bare
 };
 const typedRoute = <T extends SwcAppRouteType>(type: T): SwcAppRouteTypedDecorator<T> =>
   ((targetOrOptions?: any, propertyKey?: string | symbol, descriptor?: PropertyDescriptor): any => {
@@ -228,6 +226,6 @@ export const swcAppRouteReplaceUpsertSearchParam = typedRoute('replaceUpsertSear
 
 // Helper function to retrieve route metadata
 export const getSwcAppRouteMetadata = (target: any): SwcAppRouteMetadata[] | undefined => {
-  const constructor = target instanceof Function ? target : target.constructor;
-  return ReflectUtils.getOwnMetadata(SWC_APP_ROUTE_METADATA_KEY, constructor);
+  const constructor = typeof target === 'function' ? target : target.constructor;
+  return ReflectUtils.findAllMetadata<any[]>(SWC_APP_ROUTE_METADATA_KEY, constructor).flat();
 };

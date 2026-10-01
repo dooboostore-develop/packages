@@ -33,12 +33,14 @@ export namespace ReflectUtils {
     if (target == null) return undefined;
     let searchTarget = typeof target === 'object' && typeof target !== 'function' ? target.constructor : target;
 
-    while (searchTarget && searchTarget !== Object) {
+    // 다른 window(iframe) 의 클래스는 그 realm 의 Object/Function.prototype 으로 끝나 아래 Object 비교에 안 걸린다 → 본 대상이면 멈춤
+    const seen = new Set<any>();
+    while (searchTarget && searchTarget !== Object && !seen.has(searchTarget)) {
+      seen.add(searchTarget);
       const data = propertyKey ? Reflect.getOwnMetadata(metadataKey, searchTarget, propertyKey) : Reflect.getOwnMetadata(metadataKey, searchTarget);
       if (data !== undefined) return data;
       const proto = Object.getPrototypeOf(searchTarget);
       searchTarget = proto && typeof proto === 'function' ? proto : proto?.constructor || null;
-      if (searchTarget === target) break;
     }
     return undefined;
   };
@@ -51,12 +53,14 @@ export namespace ReflectUtils {
     if (target == null) return results;
     let searchTarget = typeof target === 'object' && typeof target !== 'function' ? target.constructor : target;
 
-    while (searchTarget && searchTarget !== Object) {
+    // 다른 window(iframe) 의 클래스는 그 realm 의 Object/Function.prototype 으로 끝나 아래 Object 비교에 안 걸린다 → 본 대상이면 멈춤
+    const seen = new Set<any>();
+    while (searchTarget && searchTarget !== Object && !seen.has(searchTarget)) {
+      seen.add(searchTarget);
       const data = propertyKey ? Reflect.getOwnMetadata(metadataKey, searchTarget, propertyKey) : Reflect.getOwnMetadata(metadataKey, searchTarget);
       if (data !== undefined) results.unshift(data); // 부모 데이터를 앞에 추가
       const proto = Object.getPrototypeOf(searchTarget);
       searchTarget = proto && typeof proto === 'function' ? proto : proto?.constructor || null;
-      if (searchTarget === target) break;
     }
     return results;
   };

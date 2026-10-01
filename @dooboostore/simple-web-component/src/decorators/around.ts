@@ -1,5 +1,5 @@
 import { ReflectUtils } from '@dooboostore/core';
-import { ensureInit, getElementConfig } from './elementDefine';
+import { ensureInit } from './elementDefine';
 import { SwcUtils } from '../utils/Utils';
 import { HelperHostSet } from '../types';
 
@@ -66,9 +66,7 @@ export interface AroundOptions<Args extends any[] = any[], Return = any> {
 const resolveHelperHostSet = (inst: any): HelperHostSet => {
   try {
     ensureInit(inst);
-    const conf = getElementConfig(inst);
-    const win = inst._resolveWindow?.(conf) ?? (typeof window !== 'undefined' ? window : undefined);
-    return SwcUtils.getHelperAndHostSet(win, inst);
+    return SwcUtils.getHelperAndHostSet(inst);
   } catch {
     return { $this: inst } as HelperHostSet;
   }
@@ -157,7 +155,7 @@ export function around(options: any = {}): MethodDecorator & PropertyDecorator {
     // 필드 이니셜라이저가 있으면 own property가 accessor를 가리므로 getter가 영원히 안 불림 —
     // getter 안의 자체이주는 마지막 안전망일 뿐, 실질적인 살림은 ensureInit이 한다.
     const constructor = (target as any).constructor;
-    let aroundList = ReflectUtils.getMetadata<AroundMetadata[]>(AROUND_METADATA_KEY, constructor);
+    let aroundList = ReflectUtils.getOwnMetadata(AROUND_METADATA_KEY, constructor) as AroundMetadata[] | undefined;
     if (!aroundList) {
       aroundList = [];
       ReflectUtils.defineMetadata(AROUND_METADATA_KEY, aroundList, constructor);
@@ -193,6 +191,6 @@ export function around(options: any = {}): MethodDecorator & PropertyDecorator {
 }
 
 export const findAllAroundMetadata = (target: any): AroundMetadata[] => {
-  const constructor = target instanceof Function ? target : target.constructor;
-  return ReflectUtils.getMetadata(AROUND_METADATA_KEY, constructor) ?? [];
+  const constructor = typeof target === 'function' ? target : target.constructor;
+  return ReflectUtils.findAllMetadata<any[]>(AROUND_METADATA_KEY, constructor).flat();
 };

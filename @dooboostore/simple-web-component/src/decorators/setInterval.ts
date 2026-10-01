@@ -1,5 +1,5 @@
 import { ReflectUtils } from '@dooboostore/core';
-import { ensureInit, getElementConfig } from './elementDefine';
+import { ensureInit } from './elementDefine';
 import { SwcUtils } from '../utils/Utils';
 import { buildSwcParameterArgs } from './parameter';
 import { ElementDefineLifeCycler, HelperHostSet } from '../types';
@@ -75,8 +75,7 @@ export function setInterval(interval: number, options: SetIntervalOptions = {}):
 
       if (tickFn) {
         ensureInit(this);
-        const conf = getElementConfig(this);
-        const win = (this as any)._resolveWindow?.(conf) || ((typeof window !== 'undefined' ? window : undefined) as Window);
+        const win = SwcUtils.resolveWindow(this);
         const id = win.setInterval(() => {
           try {
             tickFn(id);
@@ -84,7 +83,7 @@ export function setInterval(interval: number, options: SetIntervalOptions = {}):
             console.error('[SWC] setInterval tick error:', e);
           }
         }, interval);
-        normalizedOptions.created?.(SwcUtils.getHelperAndHostSet(win, this), id);
+        normalizedOptions.created?.(SwcUtils.getHelperAndHostSet(this), id);
         getActiveEntries(this).push(id);
       }
       return res;
@@ -94,7 +93,7 @@ export function setInterval(interval: number, options: SetIntervalOptions = {}):
 }
 
 export const findAllSetIntervalMetadata = (target: any): SetIntervalMetadata[] => {
-  const constructor = target instanceof Function ? target : target.constructor;
+  const constructor = typeof target === 'function' ? target : target.constructor;
   return (ReflectUtils.findAllMetadata<SetIntervalMetadata[]>(SET_INTERVAL_METADATA_KEY, constructor) || []).flat();
 };
 
@@ -106,7 +105,7 @@ export class SetIntervalLifeCycler implements ElementDefineLifeCycler {
       if (meta.options.type !== 'onConnected') continue; // returnValue 타입은 수동 호출을 기다림
       const id = helperHostSet.$w.setInterval(() => {
         void (async () => {
-          const helper = SwcUtils.getHelperAndHostSet(helperHostSet.$w, inst);
+          const helper = SwcUtils.getHelperAndHostSet(inst);
           if (meta.options.filter && !(await meta.options.filter(helper))) return;
           const paramArgs = meta.options.parameter?.(helperHostSet) ?? [];
           const hostSet = SwcUtils.getHostSet(inst);

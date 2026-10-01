@@ -48,7 +48,7 @@ export function onConnectedBefore(target: Object, propertyKey: string | symbol, 
 export function onConnectedBefore(arg1?: OnConnectedOptions | Object, arg2?: string | symbol, arg3?: PropertyDescriptor): MethodDecorator | void {
   const decorator = (options: OnConnectedOptions, target: Object, propertyKey: string | symbol) => {
     const constructor = target.constructor;
-    let list = ReflectUtils.getMetadata<OnConnectedMetadata[]>(ON_BEFORE_CONNECTED_METADATA_KEY, constructor);
+    let list = ReflectUtils.getOwnMetadata(ON_BEFORE_CONNECTED_METADATA_KEY, constructor) as OnConnectedMetadata[] | undefined;
     if (!list) {
       list = [];
       ReflectUtils.defineMetadata(ON_BEFORE_CONNECTED_METADATA_KEY, list, constructor);
@@ -70,7 +70,7 @@ export function onConnectedAfter(target: Object, propertyKey: string | symbol, d
 export function onConnectedAfter(arg1?: OnConnectedOptions | Object, arg2?: string | symbol, arg3?: PropertyDescriptor): MethodDecorator | void {
   const decorator = (options: OnConnectedOptions, target: Object, propertyKey: string | symbol) => {
     const constructor = target.constructor;
-    let list = ReflectUtils.getMetadata<OnConnectedMetadata[]>(ON_AFTER_CONNECTED_METADATA_KEY, constructor);
+    let list = ReflectUtils.getOwnMetadata(ON_AFTER_CONNECTED_METADATA_KEY, constructor) as OnConnectedMetadata[] | undefined;
     if (!list) {
       list = [];
       ReflectUtils.defineMetadata(ON_AFTER_CONNECTED_METADATA_KEY, list, constructor);
@@ -116,7 +116,7 @@ export function onConnectedAfter(arg1?: OnConnectedOptions | Object, arg2?: stri
 //   ) as any;
 // }
 
-// Helper to handle both @decorator and @decorator() syntax
+// Helper: bare @decorator 와 옵션 @decorator({...}) (빈 괄호 @decorator() 는 타입에서 막음)
 function createLifecycleDecoratorWithOptions(metadataKey: symbol) {
   return function(optionOrTarget?: LifecycleOptions | Object, propertyKey?: string | symbol): MethodDecorator | void {
     if (propertyKey) {
@@ -144,19 +144,19 @@ function createLifecycleDecoratorWithOptions(metadataKey: symbol) {
   };
 }
 
-export function onInitialize(options?: LifecycleOptions): MethodDecorator;
+export function onInitialize(options: LifecycleOptions): MethodDecorator;
 export function onInitialize(target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor): void;
 export function onInitialize(optionOrTarget?: LifecycleOptions | Object, propertyKey?: string | symbol): MethodDecorator | void {
   return createLifecycleDecoratorWithOptions(ON_INITIALIZE_METADATA_KEY)(optionOrTarget, propertyKey);
 }
 
-export function onDisconnectedBefore(options?: LifecycleOptions): MethodDecorator;
+export function onDisconnectedBefore(options: LifecycleOptions): MethodDecorator;
 export function onDisconnectedBefore(target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor): void;
 export function onDisconnectedBefore(optionOrTarget?: LifecycleOptions | Object, propertyKey?: string | symbol): MethodDecorator | void {
   return createLifecycleDecoratorWithOptions(ON_BEFORE_DISCONNECTED_METADATA_KEY)(optionOrTarget, propertyKey);
 }
 
-export function onDisconnectedAfter(options?: LifecycleOptions): MethodDecorator;
+export function onDisconnectedAfter(options: LifecycleOptions): MethodDecorator;
 export function onDisconnectedAfter(target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor): void;
 export function onDisconnectedAfter(optionOrTarget?: LifecycleOptions | Object, propertyKey?: string | symbol): MethodDecorator | void {
   return createLifecycleDecoratorWithOptions(ON_AFTER_DISCONNECTED_METADATA_KEY)(optionOrTarget, propertyKey);
@@ -164,13 +164,13 @@ export function onDisconnectedAfter(optionOrTarget?: LifecycleOptions | Object, 
 
 export const onDisconnected = onDisconnectedAfter;
 
-export function onAdoptedBefore(options?: LifecycleOptions): MethodDecorator;
+export function onAdoptedBefore(options: LifecycleOptions): MethodDecorator;
 export function onAdoptedBefore(target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor): void;
 export function onAdoptedBefore(optionOrTarget?: LifecycleOptions | Object, propertyKey?: string | symbol): MethodDecorator | void {
   return createLifecycleDecoratorWithOptions(ON_BEFORE_ADOPTED_METADATA_KEY)(optionOrTarget, propertyKey);
 }
 
-export function onAdoptedAfter(options?: LifecycleOptions): MethodDecorator;
+export function onAdoptedAfter(options: LifecycleOptions): MethodDecorator;
 export function onAdoptedAfter(target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor): void;
 export function onAdoptedAfter(optionOrTarget?: LifecycleOptions | Object, propertyKey?: string | symbol): MethodDecorator | void {
   return createLifecycleDecoratorWithOptions(ON_AFTER_ADOPTED_METADATA_KEY)(optionOrTarget, propertyKey);
@@ -178,13 +178,13 @@ export function onAdoptedAfter(optionOrTarget?: LifecycleOptions | Object, prope
 
 export const onAdopted = onAdoptedAfter;
 
-export function onConnectedSwcApp(options?: LifecycleOptions): MethodDecorator;
+export function onConnectedSwcApp(options: LifecycleOptions): MethodDecorator;
 export function onConnectedSwcApp(target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor): void;
 export function onConnectedSwcApp(optionOrTarget?: LifecycleOptions | Object, propertyKey?: string | symbol): MethodDecorator | void {
   return createLifecycleDecoratorWithOptions(ON_CONNECTED_SWC_APP_METADATA_KEY)(optionOrTarget, propertyKey);
 }
 
-export function onConnectedCompleted(options?: LifecycleOptions): MethodDecorator;
+export function onConnectedCompleted(options: LifecycleOptions): MethodDecorator;
 export function onConnectedCompleted(target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor): void;
 export function onConnectedCompleted(optionOrTarget?: LifecycleOptions | Object, propertyKey?: string | symbol): MethodDecorator | void {
   return createLifecycleDecoratorWithOptions(ON_CONNECTED_COMPLETED_METADATA_KEY)(optionOrTarget, propertyKey);
@@ -196,7 +196,7 @@ export function onConnectedCompleted(optionOrTarget?: LifecycleOptions | Object,
 
 const decorator = (options: OnConnectedAppendChildOptions, target: Object, propertyKey: string | symbol) => {
   const constructor = target.constructor;
-  let list = ReflectUtils.getMetadata<OnConnectedAppendChildOptionsMetadata[]>(ON_CONNECTED_BODY_METADATA_KEY, constructor);
+  let list = ReflectUtils.getOwnMetadata(ON_CONNECTED_BODY_METADATA_KEY, constructor) as OnConnectedAppendChildOptionsMetadata[] | undefined;
   if (!list) {
     list = [];
     ReflectUtils.defineMetadata(ON_CONNECTED_BODY_METADATA_KEY, list, constructor);
@@ -210,7 +210,7 @@ export function onConnectedBodyShadow(optionOrTarget: Omit<OnConnectedAppendChil
   if (propertyKey) { // no parameter option  @decorator
     return decorator({useShadow: true}, optionOrTarget!, propertyKey);
   }
-  // parameter option @decorator()
+  // parameter option @decorator({...})
   return (target: Object, propertyKey: string | symbol) => {
     decorator({...optionOrTarget??{}, useShadow: true}, target, propertyKey);
   };
@@ -222,7 +222,7 @@ export function onConnectedBodyLight(optionOrTarget: Omit<OnConnectedAppendChild
   if (propertyKey) { // no parameter option  @decorator
     return decorator({useShadow: false}, optionOrTarget!, propertyKey);
   }
-  // parameter option @decorator()
+  // parameter option @decorator({...})
   return (target: Object, propertyKey: string | symbol) => {
     decorator({...optionOrTarget??{}, useShadow: false}, target, propertyKey);
   };
@@ -233,7 +233,7 @@ export function onConnectedBody(optionOrTarget: OnConnectedAppendChildOptions | 
   if (propertyKey) { // no parameter option  @decorator
     return decorator({}, optionOrTarget!, propertyKey);
   }
-  // parameter option @decorator()
+  // parameter option @decorator({...})
   return (target: Object, propertyKey: string | symbol) => {
     decorator((optionOrTarget as OnConnectedAppendChildOptions) || {}, target, propertyKey);
   };
@@ -243,15 +243,15 @@ export function onConnectedBody(optionOrTarget: OnConnectedAppendChildOptions | 
  * 프로토타입 체인을 순회하며 모든 라이프사이클 메서드를 수집합니다.
  */
 export const findAllLifecycleMetadata = (target: any, metadataKey: symbol): LifecycleMetadata[] => {
-  const constructor = target instanceof Function ? target : target.constructor;
-  const results = ReflectUtils.getOwnMetadata(metadataKey, constructor) as LifecycleMetadata[] ?? [];
+  const constructor = typeof target === 'function' ? target : target.constructor;
+  const results = ReflectUtils.findAllMetadata<LifecycleMetadata[]>(metadataKey, constructor).flat();
   // Sort by order (default 0 if not specified)
   return [...results].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
 };
 
 export const findAllOnConnectedMetadata = (target: any): OnConnectedAppendChildOptionsMetadata[] => {
-  const constructor = target instanceof Function ? target : target.constructor;
-  const results = ReflectUtils.getMetadata<OnConnectedAppendChildOptionsMetadata[]>(ON_CONNECTED_BODY_METADATA_KEY, constructor) ?? [];
+  const constructor = typeof target === 'function' ? target : target.constructor;
+  const results = ReflectUtils.findAllMetadata<OnConnectedAppendChildOptionsMetadata[]>(ON_CONNECTED_BODY_METADATA_KEY, constructor).flat();
   // Sort by order (default 0 if not specified)
   return [...results].sort((a, b) => {
     const orderA = a.options?.order ?? 0;
@@ -261,15 +261,15 @@ export const findAllOnConnectedMetadata = (target: any): OnConnectedAppendChildO
 };
 
 export const findAllOnConnectedBeforeMetadata = (target: any): OnConnectedMetadata[] => {
-  const constructor = target instanceof Function ? target : target.constructor;
-  const results = ReflectUtils.getMetadata<OnConnectedMetadata[]>(ON_BEFORE_CONNECTED_METADATA_KEY, constructor) ?? [];
+  const constructor = typeof target === 'function' ? target : target.constructor;
+  const results = ReflectUtils.findAllMetadata<OnConnectedMetadata[]>(ON_BEFORE_CONNECTED_METADATA_KEY, constructor).flat();
   // Sort by order
   return [...results].sort((a, b) => (a.options?.order ?? 0) - (b.options?.order ?? 0));
 };
 
 export const findAllOnConnectedAfterMetadata = (target: any): OnConnectedMetadata[] => {
-  const constructor = target instanceof Function ? target : target.constructor;
-  const results = ReflectUtils.getMetadata<OnConnectedMetadata[]>(ON_AFTER_CONNECTED_METADATA_KEY, constructor) ?? [];
+  const constructor = typeof target === 'function' ? target : target.constructor;
+  const results = ReflectUtils.findAllMetadata<OnConnectedMetadata[]>(ON_AFTER_CONNECTED_METADATA_KEY, constructor).flat();
   // Sort by order
   return [...results].sort((a, b) => (a.options?.order ?? 0) - (b.options?.order ?? 0));
 };

@@ -37,7 +37,7 @@ export const INTERSECTION_OBSERVER_METADATA_KEY = Symbol.for('simple-web-compone
 
 const applyIntersectionObserver = (selector: SwcSelector, options: IntersectionObserverOptions, targetObj: Object, propertyKey: string | symbol): void => {
   const constructor = targetObj.constructor;
-  let observers = ReflectUtils.getMetadata<IntersectionObserverMetadata[]>(INTERSECTION_OBSERVER_METADATA_KEY, constructor);
+  let observers = ReflectUtils.getOwnMetadata(INTERSECTION_OBSERVER_METADATA_KEY, constructor) as IntersectionObserverMetadata[] | undefined;
   if (!observers) {
     observers = [];
     ReflectUtils.defineMetadata(INTERSECTION_OBSERVER_METADATA_KEY, observers, constructor);
@@ -57,7 +57,7 @@ const resolveIntersectionObserverArgs = (
 };
 
 /**
- * bare(@decorator)와 factory(@decorator()/@decorator(...)) 호출을 모두 처리하는 공통 디스패처.
+ * bare(@decorator)와 factory(@decorator(...), 빈 괄호는 타입에서 막음) 호출을 모두 처리하는 공통 디스패처.
  * extra는 Light/Shadow/All/Delegate 변형이 강제로 덧씌우는 옵션(root, delegate 등)이다.
  */
 const dispatchIntersectionObserver = (
@@ -71,7 +71,7 @@ const dispatchIntersectionObserver = (
     applyIntersectionObserver('$this', { ...extra }, selectorOrOptionsOrTarget as Object, maybeOptionsOrPropertyKey);
     return;
   }
-  // 옵션과 함께: @decorator() / @decorator(selector, options) / @decorator(options)
+  // 옵션과 함께: @decorator(selector, options) / @decorator(options)
   const { selector, options } = resolveIntersectionObserverArgs(
     selectorOrOptionsOrTarget as SwcSelector | IntersectionObserverOptions | undefined,
     maybeOptionsOrPropertyKey as IntersectionObserverOptions | undefined,
@@ -85,7 +85,7 @@ const dispatchIntersectionObserver = (
 export function intersectionObserver(target: SpecialSelector, options?: IntersectionObserverQueryOptions): MethodDecorator;
 export function intersectionObserver(selector: string, options?: IntersectionObserverQueryOptions): MethodDecorator;
 export function intersectionObserver(selector: SwcFnSelector, options?: IntersectionObserverNonQueryOptions): MethodDecorator;
-export function intersectionObserver(options?: IntersectionObserverQueryOptions): MethodDecorator;
+export function intersectionObserver(options: IntersectionObserverQueryOptions): MethodDecorator;
 export function intersectionObserver(target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor): void;
 /**
  * @intersectionObserver decorator to observe element intersection changes.
@@ -98,37 +98,32 @@ export function intersectionObserver(selectorOrOptionsOrTarget?: SwcSelector | I
   return dispatchIntersectionObserver(selectorOrOptionsOrTarget, maybeOptionsOrPropertyKey, descriptor, {});
 }
 
-export function intersectionObserverThis(options?: IntersectionObserverQueryOptions): MethodDecorator;
-export function intersectionObserverThis(target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor): void;
-export function intersectionObserverThis(optionsOrTarget?: IntersectionObserverQueryOptions | Object, propertyKey?: string | symbol, descriptor?: PropertyDescriptor): MethodDecorator | void {
-  return dispatchIntersectionObserver(optionsOrTarget, propertyKey, descriptor, {});
-}
 
 // ─── root별 delegate 헬퍼 (root 주입 → 문자열 셀렉터 전용) ───
 
 export function intersectionObserverDelegateLight(selector: string, options?: Omit<IntersectionObserverQueryOptions, 'delegate'>): MethodDecorator;
-export function intersectionObserverDelegateLight(options?: Omit<IntersectionObserverQueryOptions, 'delegate'>): MethodDecorator;
+export function intersectionObserverDelegateLight(options: Omit<IntersectionObserverQueryOptions, 'delegate'>): MethodDecorator;
 export function intersectionObserverDelegateLight(target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor): void;
 export function intersectionObserverDelegateLight(selectorOrOptionsOrTarget?: string | Omit<IntersectionObserverQueryOptions, 'delegate'> | Object, maybeOptionsOrPropertyKey?: Omit<IntersectionObserverQueryOptions, 'delegate'> | string | symbol, descriptor?: PropertyDescriptor): MethodDecorator | void {
   return dispatchIntersectionObserver(selectorOrOptionsOrTarget as any, maybeOptionsOrPropertyKey as any, descriptor, { root: 'light', delegate: true });
 }
 
 export function intersectionObserverDelegateShadow(selector: string, options?: Omit<IntersectionObserverQueryOptions, 'delegate'>): MethodDecorator;
-export function intersectionObserverDelegateShadow(options?: Omit<IntersectionObserverQueryOptions, 'delegate'>): MethodDecorator;
+export function intersectionObserverDelegateShadow(options: Omit<IntersectionObserverQueryOptions, 'delegate'>): MethodDecorator;
 export function intersectionObserverDelegateShadow(target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor): void;
 export function intersectionObserverDelegateShadow(selectorOrOptionsOrTarget?: string | Omit<IntersectionObserverQueryOptions, 'delegate'> | Object, maybeOptionsOrPropertyKey?: Omit<IntersectionObserverQueryOptions, 'delegate'> | string | symbol, descriptor?: PropertyDescriptor): MethodDecorator | void {
   return dispatchIntersectionObserver(selectorOrOptionsOrTarget as any, maybeOptionsOrPropertyKey as any, descriptor, { root: 'shadow', delegate: true });
 }
 
 export function intersectionObserverDelegateAll(selector: string, options?: Omit<IntersectionObserverQueryOptions, 'delegate'>): MethodDecorator;
-export function intersectionObserverDelegateAll(options?: Omit<IntersectionObserverQueryOptions, 'delegate'>): MethodDecorator;
+export function intersectionObserverDelegateAll(options: Omit<IntersectionObserverQueryOptions, 'delegate'>): MethodDecorator;
 export function intersectionObserverDelegateAll(target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor): void;
 export function intersectionObserverDelegateAll(selectorOrOptionsOrTarget?: string | Omit<IntersectionObserverQueryOptions, 'delegate'> | Object, maybeOptionsOrPropertyKey?: Omit<IntersectionObserverQueryOptions, 'delegate'> | string | symbol, descriptor?: PropertyDescriptor): MethodDecorator | void {
   return dispatchIntersectionObserver(selectorOrOptionsOrTarget as any, maybeOptionsOrPropertyKey as any, descriptor, { root: 'all', delegate: true });
 }
 
 export function intersectionObserverDelegate(selector: string, options?: Omit<IntersectionObserverQueryOptions, 'delegate'>): MethodDecorator;
-export function intersectionObserverDelegate(options?: Omit<IntersectionObserverQueryOptions, 'delegate'>): MethodDecorator;
+export function intersectionObserverDelegate(options: Omit<IntersectionObserverQueryOptions, 'delegate'>): MethodDecorator;
 export function intersectionObserverDelegate(target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor): void;
 export function intersectionObserverDelegate(selectorOrOptionsOrTarget?: string | Omit<IntersectionObserverQueryOptions, 'delegate'> | Object, maybeOptionsOrPropertyKey?: Omit<IntersectionObserverQueryOptions, 'delegate'> | string | symbol, descriptor?: PropertyDescriptor): MethodDecorator | void {
   return dispatchIntersectionObserver(selectorOrOptionsOrTarget as any, maybeOptionsOrPropertyKey as any, descriptor, { root: 'auto', delegate: true });
@@ -137,29 +132,29 @@ export function intersectionObserverDelegate(selectorOrOptionsOrTarget?: string 
 // ─── root별 일반 헬퍼 (delegate 없이, 셀렉터 생략 시 $this) ───
 
 export function intersectionObserverLight(selector: string, options?: IntersectionObserverQueryOptions): MethodDecorator;
-export function intersectionObserverLight(options?: IntersectionObserverQueryOptions): MethodDecorator;
+export function intersectionObserverLight(options: IntersectionObserverQueryOptions): MethodDecorator;
 export function intersectionObserverLight(target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor): void;
 export function intersectionObserverLight(selectorOrOptionsOrTarget?: string | IntersectionObserverQueryOptions | Object, maybeOptionsOrPropertyKey?: IntersectionObserverQueryOptions | string | symbol, descriptor?: PropertyDescriptor): MethodDecorator | void {
   return dispatchIntersectionObserver(selectorOrOptionsOrTarget as any, maybeOptionsOrPropertyKey as any, descriptor, { root: 'light' });
 }
 
 export function intersectionObserverShadow(selector: string, options?: IntersectionObserverQueryOptions): MethodDecorator;
-export function intersectionObserverShadow(options?: IntersectionObserverQueryOptions): MethodDecorator;
+export function intersectionObserverShadow(options: IntersectionObserverQueryOptions): MethodDecorator;
 export function intersectionObserverShadow(target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor): void;
 export function intersectionObserverShadow(selectorOrOptionsOrTarget?: string | IntersectionObserverQueryOptions | Object, maybeOptionsOrPropertyKey?: IntersectionObserverQueryOptions | string | symbol, descriptor?: PropertyDescriptor): MethodDecorator | void {
   return dispatchIntersectionObserver(selectorOrOptionsOrTarget as any, maybeOptionsOrPropertyKey as any, descriptor, { root: 'shadow' });
 }
 
 export function intersectionObserverAll(selector: string, options?: IntersectionObserverQueryOptions): MethodDecorator;
-export function intersectionObserverAll(options?: IntersectionObserverQueryOptions): MethodDecorator;
+export function intersectionObserverAll(options: IntersectionObserverQueryOptions): MethodDecorator;
 export function intersectionObserverAll(target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor): void;
 export function intersectionObserverAll(selectorOrOptionsOrTarget?: string | IntersectionObserverQueryOptions | Object, maybeOptionsOrPropertyKey?: IntersectionObserverQueryOptions | string | symbol, descriptor?: PropertyDescriptor): MethodDecorator | void {
   return dispatchIntersectionObserver(selectorOrOptionsOrTarget as any, maybeOptionsOrPropertyKey as any, descriptor, { root: 'all' });
 }
 
 export function getIntersectionObserverMetadata(target: any): IntersectionObserverMetadata[] | undefined {
-  const constructor = target instanceof Function ? target : target.constructor;
-  return ReflectUtils.getMetadata(INTERSECTION_OBSERVER_METADATA_KEY, constructor);
+  const constructor = typeof target === 'function' ? target : target.constructor;
+  return ReflectUtils.findAllMetadata<any[]>(INTERSECTION_OBSERVER_METADATA_KEY, constructor).flat();
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -208,7 +203,7 @@ export class IntersectionObserverLifeCycler implements ElementDefineLifeCycler {
           if (matchedEls.length === 0) continue;
           const opts = m.options;
           void (async () => {
-            const helper = SwcUtils.getHelperAndHostSet(helperHostSet.$w, inst);
+            const helper = SwcUtils.getHelperAndHostSet(inst);
             if (opts.filter && !(await opts.filter(matchedEls, { currentThis: inst, helper }))) return;
             const hostSet = SwcUtils.getHostSet(inst);
             const helperSet = SwcUtils.getHelperSet(helperHostSet.$w);

@@ -3546,9 +3546,9 @@ importers:
       html-webpack-plugin:
         specifier: ^5.6.3
         version: 5.6.6(webpack@5.105.4(esbuild@0.23.1)(webpack-cli@5.1.4))
-      jsdom:
-        specifier: ^26.0.0
-        version: 26.1.0(canvas@3.2.3)
+      playwright:
+        specifier: ^1.63.0
+        version: 1.63.0
       raw-loader:
         specifier: ^4.0.2
         version: 4.0.2(webpack@5.105.4(esbuild@0.23.1)(webpack-cli@5.1.4))
@@ -3811,82 +3811,6 @@ importers:
       serve:
         specifier: ^14.2.3
         version: 14.2.6
-
-  '@dooboostore/simple-web-component/test/case':
-    dependencies:
-      '@dooboostore/core':
-        specifier: workspace:*
-        version: link:../../../core
-      '@dooboostore/core-node':
-        specifier: workspace:*
-        version: link:../../../core-node
-      '@dooboostore/core-web':
-        specifier: workspace:*
-        version: link:../../../core-web
-      '@dooboostore/simple-boot':
-        specifier: workspace:*
-        version: link:../../../simple-boot
-      '@dooboostore/simple-web-component':
-        specifier: workspace:*
-        version: link:../..
-      reflect-metadata:
-        specifier: ^0.2.2
-        version: 0.2.2
-    devDependencies:
-      '@babel/core':
-        specifier: ^7.24.0
-        version: 7.29.0
-      '@babel/plugin-proposal-class-properties':
-        specifier: ^7.18.6
-        version: 7.18.6(@babel/core@7.29.0)
-      '@babel/plugin-proposal-decorators':
-        specifier: ^7.24.0
-        version: 7.29.0(@babel/core@7.29.0)
-      '@babel/plugin-transform-private-property-in-object':
-        specifier: ^7.25.9
-        version: 7.28.6(@babel/core@7.29.0)
-      '@babel/preset-env':
-        specifier: ^7.24.0
-        version: 7.29.2(@babel/core@7.29.0)
-      '@babel/preset-typescript':
-        specifier: ^7.24.0
-        version: 7.28.5(@babel/core@7.29.0)
-      '@types/jest':
-        specifier: ^26.0.22
-        version: 26.0.24
-      '@typescript-eslint/eslint-plugin':
-        specifier: ^4.16.1
-        version: 4.33.0(@typescript-eslint/parser@4.33.0(eslint@7.32.0)(typescript@5.9.3))(eslint@7.32.0)(typescript@5.9.3)
-      '@typescript-eslint/parser':
-        specifier: ^4.16.1
-        version: 4.33.0(eslint@7.32.0)(typescript@5.9.3)
-      html-loader:
-        specifier: ^5.1.0
-        version: 5.1.0(webpack@5.105.4(webpack-cli@5.1.4))
-      html-webpack-plugin:
-        specifier: ^5.6.3
-        version: 5.6.6(webpack@5.105.4(webpack-cli@5.1.4))
-      ts-loader:
-        specifier: ^9.5.2
-        version: 9.5.7(typescript@5.9.3)(webpack@5.105.4(webpack-cli@5.1.4))
-      tsconfig-paths-webpack-plugin:
-        specifier: ^4.2.0
-        version: 4.2.0
-      tslib:
-        specifier: ^2.8.1
-        version: 2.8.1
-      typescript:
-        specifier: ^5.9.2
-        version: 5.9.3
-      webpack:
-        specifier: ^5.98.0
-        version: 5.105.4(webpack-cli@5.1.4)
-      webpack-cli:
-        specifier: ^5.1.4
-        version: 5.1.4(webpack-dev-server@5.2.3)(webpack@5.105.4)
-      webpack-dev-server:
-        specifier: ^5.2.0
-        version: 5.2.3(tslib@2.8.1)(webpack-cli@5.1.4)(webpack@5.105.4)
 
 packages:
 
@@ -8796,6 +8720,7 @@ packages:
 
   uuid@8.3.2:
     resolution: {integrity: sha512-+NYs2QeMWy+GWFOEm9xnn6HCDp0l7QBD7ml8zLUmJ+93Q5NF0NocErnwkTkXVFNiX3/fpC6afS8Dhb/gz7R7eg==}
+    deprecated: uuid@10 and below is no longer supported.  For ESM codebases, update to uuid@latest.  For CommonJS codebases, use uuid@11 (but be aware this version will likely be deprecated in 2028).
     hasBin: true
 
   v8-compile-cache-lib@3.0.1:
@@ -10897,9 +10822,9 @@ snapshots:
       webpack: 5.105.4(webpack-cli@5.1.4)
       webpack-cli: 5.1.4(webpack-dev-server@4.15.2)(webpack@5.105.4)
 
-  '@webpack-cli/configtest@2.1.1(webpack-cli@5.1.4(webpack-dev-server@5.2.3)(webpack@5.105.4))(webpack@5.105.4(esbuild@0.23.1)(webpack-cli@5.1.4))':
+  '@webpack-cli/configtest@2.1.1(webpack-cli@5.1.4(webpack-dev-server@5.2.3)(webpack@5.105.4))(webpack@5.105.4(webpack-cli@5.1.4))':
     dependencies:
-      webpack: 5.105.4(esbuild@0.23.1)(webpack-cli@5.1.4)
+      webpack: 5.105.4(webpack-cli@5.1.4)
       webpack-cli: 5.1.4(webpack-dev-server@5.2.3)(webpack@5.105.4)
 
   '@webpack-cli/configtest@2.1.1(webpack-cli@5.1.4(webpack@5.105.4))(webpack@5.105.4(esbuild@0.23.1)(webpack-cli@5.1.4))':
@@ -10912,9 +10837,9 @@ snapshots:
       webpack: 5.105.4(webpack-cli@5.1.4)
       webpack-cli: 5.1.4(webpack-dev-server@4.15.2)(webpack@5.105.4)
 
-  '@webpack-cli/info@2.0.2(webpack-cli@5.1.4(webpack-dev-server@5.2.3)(webpack@5.105.4))(webpack@5.105.4(esbuild@0.23.1)(webpack-cli@5.1.4))':
+  '@webpack-cli/info@2.0.2(webpack-cli@5.1.4(webpack-dev-server@5.2.3)(webpack@5.105.4))(webpack@5.105.4(webpack-cli@5.1.4))':
     dependencies:
-      webpack: 5.105.4(esbuild@0.23.1)(webpack-cli@5.1.4)
+      webpack: 5.105.4(webpack-cli@5.1.4)
       webpack-cli: 5.1.4(webpack-dev-server@5.2.3)(webpack@5.105.4)
 
   '@webpack-cli/info@2.0.2(webpack-cli@5.1.4(webpack@5.105.4))(webpack@5.105.4(esbuild@0.23.1)(webpack-cli@5.1.4))':
@@ -10929,9 +10854,9 @@ snapshots:
     optionalDependencies:
       webpack-dev-server: 4.15.2(webpack-cli@5.1.4)(webpack@5.105.4)
 
-  '@webpack-cli/serve@2.0.5(webpack-cli@5.1.4(webpack-dev-server@5.2.3)(webpack@5.105.4))(webpack-dev-server@5.2.3(tslib@2.8.1)(webpack-cli@5.1.4)(webpack@5.105.4))(webpack@5.105.4(esbuild@0.23.1)(webpack-cli@5.1.4))':
+  '@webpack-cli/serve@2.0.5(webpack-cli@5.1.4(webpack-dev-server@5.2.3)(webpack@5.105.4))(webpack-dev-server@5.2.3(tslib@2.8.1)(webpack-cli@5.1.4)(webpack@5.105.4))(webpack@5.105.4(webpack-cli@5.1.4))':
     dependencies:
-      webpack: 5.105.4(esbuild@0.23.1)(webpack-cli@5.1.4)
+      webpack: 5.105.4(webpack-cli@5.1.4)
       webpack-cli: 5.1.4(webpack-dev-server@5.2.3)(webpack@5.105.4)
     optionalDependencies:
       webpack-dev-server: 5.2.3(tslib@2.8.1)(webpack-cli@5.1.4)(webpack@5.105.4)
@@ -14903,9 +14828,9 @@ snapshots:
   webpack-cli@5.1.4(webpack-dev-server@5.2.3)(webpack@5.105.4):
     dependencies:
       '@discoveryjs/json-ext': 0.5.7
-      '@webpack-cli/configtest': 2.1.1(webpack-cli@5.1.4(webpack-dev-server@5.2.3)(webpack@5.105.4))(webpack@5.105.4(esbuild@0.23.1)(webpack-cli@5.1.4))
-      '@webpack-cli/info': 2.0.2(webpack-cli@5.1.4(webpack-dev-server@5.2.3)(webpack@5.105.4))(webpack@5.105.4(esbuild@0.23.1)(webpack-cli@5.1.4))
-      '@webpack-cli/serve': 2.0.5(webpack-cli@5.1.4(webpack-dev-server@5.2.3)(webpack@5.105.4))(webpack-dev-server@5.2.3(tslib@2.8.1)(webpack-cli@5.1.4)(webpack@5.105.4))(webpack@5.105.4(esbuild@0.23.1)(webpack-cli@5.1.4))
+      '@webpack-cli/configtest': 2.1.1(webpack-cli@5.1.4(webpack-dev-server@5.2.3)(webpack@5.105.4))(webpack@5.105.4(webpack-cli@5.1.4))
+      '@webpack-cli/info': 2.0.2(webpack-cli@5.1.4(webpack-dev-server@5.2.3)(webpack@5.105.4))(webpack@5.105.4(webpack-cli@5.1.4))
+      '@webpack-cli/serve': 2.0.5(webpack-cli@5.1.4(webpack-dev-server@5.2.3)(webpack@5.105.4))(webpack-dev-server@5.2.3(tslib@2.8.1)(webpack-cli@5.1.4)(webpack@5.105.4))(webpack@5.105.4(webpack-cli@5.1.4))
       colorette: 2.0.20
       commander: 10.0.1
       cross-spawn: 7.0.6
@@ -14914,7 +14839,7 @@ snapshots:
       import-local: 3.2.0
       interpret: 3.1.1
       rechoir: 0.8.0
-      webpack: 5.105.4(esbuild@0.23.1)(webpack-cli@5.1.4)
+      webpack: 5.105.4(webpack-cli@5.1.4)
       webpack-merge: 5.10.0
     optionalDependencies:
       webpack-dev-server: 5.2.3(tslib@2.8.1)(webpack-cli@5.1.4)(webpack@5.105.4)
@@ -14945,7 +14870,7 @@ snapshots:
       schema-utils: 4.3.3
       webpack: 5.105.4(webpack-cli@5.1.4)
 
-  webpack-dev-middleware@7.4.5(tslib@2.8.1)(webpack@5.105.4(esbuild@0.23.1)(webpack-cli@5.1.4)):
+  webpack-dev-middleware@7.4.5(tslib@2.8.1)(webpack@5.105.4(webpack-cli@5.1.4)):
     dependencies:
       colorette: 2.0.20
       memfs: 4.57.1(tslib@2.8.1)
@@ -14954,7 +14879,7 @@ snapshots:
       range-parser: 1.2.1
       schema-utils: 4.3.3
     optionalDependencies:
-      webpack: 5.105.4(esbuild@0.23.1)(webpack-cli@5.1.4)
+      webpack: 5.105.4(webpack-cli@5.1.4)
     transitivePeerDependencies:
       - tslib
 
@@ -15027,10 +14952,10 @@ snapshots:
       serve-index: 1.9.2
       sockjs: 0.3.24
       spdy: 4.0.2
-      webpack-dev-middleware: 7.4.5(tslib@2.8.1)(webpack@5.105.4(esbuild@0.23.1)(webpack-cli@5.1.4))
+      webpack-dev-middleware: 7.4.5(tslib@2.8.1)(webpack@5.105.4(webpack-cli@5.1.4))
       ws: 8.20.0
     optionalDependencies:
-      webpack: 5.105.4(esbuild@0.23.1)(webpack-cli@5.1.4)
+      webpack: 5.105.4(webpack-cli@5.1.4)
       webpack-cli: 5.1.4(webpack-dev-server@5.2.3)(webpack@5.105.4)
     transitivePeerDependencies:
       - bufferutil
@@ -15107,7 +15032,7 @@ snapshots:
       watchpack: 2.5.1
       webpack-sources: 3.3.4
     optionalDependencies:
-      webpack-cli: 5.1.4(webpack-dev-server@5.2.3)(webpack@5.105.4)
+      webpack-cli: 5.1.4(webpack@5.105.4)
     transitivePeerDependencies:
       - '@swc/core'
       - esbuild

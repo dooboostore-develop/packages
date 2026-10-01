@@ -1,4 +1,4 @@
-import { addEventListener, applyNode, elementDefine, emitCustomEvent, onConnectedBefore, onConnectedBodyShadow } from '@dooboostore/simple-web-component';
+import { event, applyNode, elementDefine, emitCustomEvent, onConnectedBefore, onConnectedBodyShadow } from '@dooboostore/simple-web-component';
 import {CartService} from "../services/CartService";
 import {Subscription} from "@dooboostore/core";
 import {inject} from "@dooboostore/simple-boot";
@@ -32,85 +32,85 @@ export default (w: Window) => {
       this.updateCartCount();
     }
 
-    @addEventListener('.logo', 'click')
+    @event('.logo', 'click')
     @emitCustomEvent('$this', 'navigate', { attributeName: 'on-navigate' })
     onLogoClick() {
       return { path: '/' };
     }
 
-    @addEventListener('#home-link', 'click')
+    @event('#home-link', 'click')
     @emitCustomEvent('$this', 'navigate', { attributeName: 'on-navigate' })
     onHomeClick() {
       return { path: '/' };
     }
 
-    @addEventListener('#orders-link', 'click')
+    @event('#orders-link', 'click')
     @emitCustomEvent('$this', 'navigate', { attributeName: 'on-navigate' })
     onOrdersClick() {
       return { path: '/orders' };
     }
 
-    @addEventListener('#timer-test-link', 'click')
+    @event('#timer-test-link', 'click')
     @emitCustomEvent('$this', 'navigate', { attributeName: 'on-navigate' })
     onTimerTestClick() {
       return { path: '/timer-test' };
     }
 
-    @addEventListener('#slot-test-link', 'click')
+    @event('#slot-test-link', 'click')
     @emitCustomEvent('$this', 'navigate', { attributeName: 'on-navigate' })
     onSlotTestClick() {
       return { path: '/slot-test' };
     }
 
-    @addEventListener('#rxjs-test-link', 'click')
+    @event('#rxjs-test-link', 'click')
     @emitCustomEvent('$this', 'navigate', { attributeName: 'on-navigate' })
     onRxjsTestClick() {
       return { path: '/rxjs-operators-test' };
     }
 
-    @addEventListener('#delegate-test-link', 'click')
+    @event('#delegate-test-link', 'click')
     @emitCustomEvent('$this', 'navigate', { attributeName: 'on-navigate' })
     onDelegateTestClick() {
       return { path: '/event-delegate-test' };
     }
 
-    @addEventListener('#lifecycle-test-link', 'click')
+    @event('#lifecycle-test-link', 'click')
     @emitCustomEvent('$this', 'navigate', { attributeName: 'on-navigate' })
     onLifecycleTestClick() {
       return { path: '/lifecycle-param-test' };
     }
 
-    @addEventListener('#around-state-test-link', 'click')
+    @event('#around-state-test-link', 'click')
     @emitCustomEvent('$this', 'navigate', { attributeName: 'on-navigate' })
     onAroundStateTestClick() {
       return { path: '/around-state-test' };
     }
 
-    @addEventListener('#before-filter-return-test-link', 'click')
+    @event('#before-filter-return-test-link', 'click')
     @emitCustomEvent('$this', 'navigate', { attributeName: 'on-navigate' })
     onBeforeFilterReturnTestClick() {
       return { path: '/before-filter-return-test' };
     }
 
-    @addEventListener('#observer-hooks-test-link', 'click')
+    @event('#observer-hooks-test-link', 'click')
     @emitCustomEvent('$this', 'navigate', { attributeName: 'on-navigate' })
     onObserverHooksTestClick() {
       return { path: '/observer-hooks-test' };
     }
 
-    @addEventListener('#message-subject-test-link', 'click')
+    @event('#message-subject-test-link', 'click')
     @emitCustomEvent('$this', 'navigate', { attributeName: 'on-navigate' })
     onMessageSubjectTestClick() {
       return { path: '/message-subject-test' };
     }
 
-    @addEventListener('#fetch-test-link', 'click')
+    @event('#fetch-test-link', 'click')
     @emitCustomEvent('$this', 'navigate', { attributeName: 'on-navigate' })
     onFetchTestClick() {
       return { path: '/fetch-test' };
     }
 
-    @addEventListener('.cart-icon', 'click')
+    @event('.cart-icon', 'click')
     @emitCustomEvent('$this', 'navigate', { attributeName: 'on-navigate' })
     onCartClick() {
       return { path: '/cart' };

@@ -2,7 +2,7 @@ import { ReflectUtils } from '@dooboostore/core';
 
 /**
  * @eventObject/@matchedElement/@hostSet/@helperHostSet/@helperSet/@swcAppRouterEvent/@appMessage/@eventBeforeReturn —
- * @addEventListener/lifecycle/subscribeSwcAppRouteChange/subscribeSwcAppMessage
+ * @event/lifecycle/subscribeSwcAppRouteChange/subscribeSwcAppMessage
  * 계열 핸들러의 파라미터를 순서 무관하게 선언할 수 있게 해주는 파라미터 데코레이터.
  * @dooboostore/simple-boot의 @Inject와 동일한 인덱스 기반 메타데이터 패턴을 따른다:
  * 데코레이터가 실행되는 순서가 아니라 실제 parameterIndex로 슬롯을 매칭하므로,
@@ -68,7 +68,7 @@ export function appMessage(target: Object, propertyKey: string | symbol, paramet
 }
 
 /**
- * @addEventListener 계열의 before 훅이 이번 호출에 리턴한 값을 주입한다.
+ * @event 계열의 before 훅이 이번 호출에 리턴한 값을 주입한다.
  * (before에서 async로 준비한 데이터를 핸들러가 받는 용도. before 없으면 undefined)
  * 예: @eventClick({ before: () => loadUser() }) onClick(@eventBeforeReturn user) { ... }
  */
@@ -141,7 +141,7 @@ export function fetchSettled(target: Object, propertyKey: string | symbol, param
 }
 
 export const getParameterMetadata = (target: any, propertyKey: string | symbol): SaveParamConfig[] => {
-  const constructor = target instanceof Function ? target : target.constructor;
+  const constructor = typeof target === 'function' ? target : target.constructor;
   return ReflectUtils.getMetadata(SWC_PARAMETER_METADATA_KEY, constructor, propertyKey) ?? [];
 };
 

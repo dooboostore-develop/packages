@@ -55,7 +55,7 @@ export const resolvePropertyTargets = (inst: any, selector: PropertySelector, op
   // Resolve selector if it's a function
   let resolvedSelector: string | Node | Element | NodeList | Element[] | null = selector as any;
   if (typeof selector === 'function') {
-    const hostSet = SwcUtils.getHelperAndHostSet(currentWin, inst);
+    const hostSet = SwcUtils.getHelperAndHostSet(inst);
     resolvedSelector = selector(inst, hostSet);
   }
 
@@ -182,9 +182,7 @@ export function applyProperty(selector: PropertySelector, targetPropertyKeyOrOpt
       if (resolvedValue === undefined) return resolvedValue;
 
       const targetEls = resolvePropertyTargets(inst, selector, finalOptions);
-      const conf = getElementConfig(inst);
-      const currentWin = conf.window;
-      const hostSet = SwcUtils.getHelperAndHostSet(currentWin, inst);
+      const hostSet = SwcUtils.getHelperAndHostSet(inst);
 
       targetEls.forEach(targetEl => {
         // Apply filter if provided
@@ -265,9 +263,7 @@ export function applyProperty(selector: PropertySelector, targetPropertyKeyOrOpt
         ensureInit(this);
         // Read from matched elements
         const targetEls = resolvePropertyTargets(this, selector, finalOptions);
-        const conf = getElementConfig(this);
-        const currentWin = conf.window;
-        const hostSet = SwcUtils.getHelperAndHostSet(currentWin, this);
+        const hostSet = SwcUtils.getHelperAndHostSet(this);
 
         // Apply filter
         const filtered = targetEls.filter(el => {
@@ -387,7 +383,7 @@ export function callPropertyAll(selector: string, targetMethodKey?: string | sym
 // ============================================
 
 export const findAllPropertyMetadata = (target: any): PropertyMetadata[] => {
-  const actualTarget = target instanceof Function ? target : target.constructor;
+  const actualTarget = typeof target === 'function' ? target : target.constructor;
   return ReflectUtils.findAllMetadata<PropertyMetadata[]>(PROPERTY_METADATA_KEY, actualTarget).flat();
 };
 
@@ -418,22 +414,17 @@ const dispatchPropConvenience = (
   return applyProperty(selector, targetPropertyKeyOrTarget as any, optionsOrPropertyKey as PropertyQueryOptions);
 };
 
-export function propThis(targetPropertyKey?: string | symbol, options?: PropertyQueryOptions): MethodDecorator;
-export function propThis(target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor): PropertyDescriptor | void;
-export function propThis(targetPropertyKeyOrTarget?: string | symbol | Object, optionsOrPropertyKey?: PropertyQueryOptions | string | symbol, descriptor?: PropertyDescriptor): any {
-  return dispatchPropConvenience('$this', targetPropertyKeyOrTarget, optionsOrPropertyKey, descriptor);
-}
-export function propAppHost(targetPropertyKey?: string | symbol, options?: PropertyQueryOptions): MethodDecorator;
+export function propAppHost(targetPropertyKey: string | symbol, options?: PropertyQueryOptions): MethodDecorator;
 export function propAppHost(target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor): PropertyDescriptor | void;
 export function propAppHost(targetPropertyKeyOrTarget?: string | symbol | Object, optionsOrPropertyKey?: PropertyQueryOptions | string | symbol, descriptor?: PropertyDescriptor): any {
   return dispatchPropConvenience('$appHost', targetPropertyKeyOrTarget, optionsOrPropertyKey, descriptor);
 }
-export function propWindow(targetPropertyKey?: string | symbol, options?: PropertyQueryOptions): MethodDecorator;
+export function propWindow(targetPropertyKey: string | symbol, options?: PropertyQueryOptions): MethodDecorator;
 export function propWindow(target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor): PropertyDescriptor | void;
 export function propWindow(targetPropertyKeyOrTarget?: string | symbol | Object, optionsOrPropertyKey?: PropertyQueryOptions | string | symbol, descriptor?: PropertyDescriptor): any {
   return dispatchPropConvenience('$window', targetPropertyKeyOrTarget, optionsOrPropertyKey, descriptor);
 }
-export function propDocument(targetPropertyKey?: string | symbol, options?: PropertyQueryOptions): MethodDecorator;
+export function propDocument(targetPropertyKey: string | symbol, options?: PropertyQueryOptions): MethodDecorator;
 export function propDocument(target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor): PropertyDescriptor | void;
 export function propDocument(targetPropertyKeyOrTarget?: string | symbol | Object, optionsOrPropertyKey?: PropertyQueryOptions | string | symbol, descriptor?: PropertyDescriptor): any {
   return dispatchPropConvenience('$document', targetPropertyKeyOrTarget, optionsOrPropertyKey, descriptor);

@@ -1,4 +1,4 @@
-import { elementDefine, onConnectedBodyShadow, onConnectedAfter, addEventListener, appendHtmlSlot, replaceChildrenTextSlot, clearSlot } from '@dooboostore/simple-web-component';
+import { elementDefine, onConnectedBodyShadow, onConnectedAfter, event, appendHtmlSlot, replaceChildrenTextSlot, clearSlot } from '@dooboostore/simple-web-component';
 
 /**
  * @applySlot(및 @appendSlot/@replaceChildrenTextSlot/@clearSlot) 데코레이터 테스트 페이지.
@@ -52,18 +52,18 @@ export default (w: Window) => {
       return undefined as any;
     }
 
-    @addEventListener('.add-btn', 'click')
+    @event('.add-btn', 'click')
     onAddClick() {
       this.addItem();
       this.setStatus(`count=${this.count}`);
     }
 
-    @addEventListener('.empty-btn', 'click')
+    @event('.empty-btn', 'click')
     onEmptyClick() {
       this.appendNothing();
     }
 
-    @addEventListener('.clear-btn', 'click')
+    @event('.clear-btn', 'click')
     onClearClick() {
       this.clearItems();
       this.setStatus('cleared');

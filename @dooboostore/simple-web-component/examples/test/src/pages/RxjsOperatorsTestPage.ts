@@ -1,7 +1,7 @@
-import { elementDefine, onConnectedBodyShadow, addEventListener } from '@dooboostore/simple-web-component';
+import { elementDefine, onConnectedBodyShadow, event } from '@dooboostore/simple-web-component';
 
 /**
- * @addEventListener의 RxJS 스타일 operator 옵션(debounceTime/throttleTime/distinctUntilChanged/filter)
+ * @event의 RxJS 스타일 operator 옵션(debounceTime/throttleTime/distinctUntilChanged/filter)
  * 테스트 페이지. src/examples/RxJSOperatorsExample.ts(패키지 소스에 잘못 섞여 있던 문서용 예제 코드)를
  * 실제로 동작하는 라이브 테스트로 옮겨온 것 — @dooboostore/core/message/operators를 그대로 파이프라인에
  * 태우는 진짜 구현이라 문서/코드 스니펫만 존재하고 브라우저에서 검증된 적이 없었다.
@@ -34,7 +34,7 @@ export default (w: Window) => {
     // retargeting되어버린다(composedPath()도 빈 배열이 됨) — 이건 DOM 스펙 동작이지 이 라이브러리의
     // 버그가 아니고, debounce/throttle처럼 처리를 지연시키는 구현이면 다 겪는 문제다. 그래서
     // event.target을 나중에 읽지 말고, 필요한 시점에 라이브 DOM을 직접 쿼리해야 한다.
-    @addEventListener('.debounce-input', 'input', { debounceTime: 300 })
+    @event('.debounce-input', 'input', { debounceTime: 300 })
     onDebouncedInput(e: Event) {
       this.debounceCount++;
       this.debounceLastValue = (this.shadowRoot?.querySelector('.debounce-input') as HTMLInputElement)?.value ?? '';
@@ -42,7 +42,7 @@ export default (w: Window) => {
     }
 
     // 500ms에 최대 1번만 발동 — 빠르게 여러 번 클릭해도 카운트는 훨씬 적게 올라감
-    @addEventListener('.throttle-btn', 'click', { throttleTime: 500 })
+    @event('.throttle-btn', 'click', { throttleTime: 500 })
     onThrottledClick() {
       this.throttleCount++;
       this.updateStatus();
@@ -54,7 +54,7 @@ export default (w: Window) => {
     // (prev, curr) => prev.target.value === curr.target.value 식으로 비교해도 안 된다. prev는
     // 이미 자기 dispatch가 끝난 이벤트라 target을 못 믿기 때문(디바운스와 동일한 이유). curr만
     // 신뢰하고 이전 값은 바깥 클로저 변수(lastDistinctValue)로 직접 추적해야 한다.
-    @addEventListener('.distinct-input', 'input', {
+    @event('.distinct-input', 'input', {
       distinctUntilChanged: (prev: Event, curr: Event) => {
         const currentValue = (curr.target as HTMLInputElement)?.value;
         const isSame = currentValue === lastDistinctValue;
@@ -72,7 +72,7 @@ export default (w: Window) => {
     }
 
     // filter 콜백이 false를 리턴하면 핸들러 자체가 호출 안 됨 (체크박스로 on/off)
-    @addEventListener('.filtered-btn', 'click', {
+    @event('.filtered-btn', 'click', {
       filter: (event, meta) => (meta.currentThis as RxjsOperatorsTestPage).allowFilteredClicks
     })
     onFilteredClick() {
@@ -80,7 +80,7 @@ export default (w: Window) => {
       this.updateStatus();
     }
 
-    @addEventListener('.allow-checkbox', 'change')
+    @event('.allow-checkbox', 'change')
     onToggleAllow(e: Event) {
       this.allowFilteredClicks = (e.target as HTMLInputElement).checked;
     }

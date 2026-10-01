@@ -1,7 +1,6 @@
 import {ReflectUtils} from '@dooboostore/core';
 import {ElementApply} from "@dooboostore/core-web";
 import {SwcUtils} from "../utils/Utils";
-import {getElementConfig} from "./elementDefine";
 
 export interface StateMetadata {
   propertyKey: string | symbol;
@@ -15,9 +14,8 @@ export const STATE_METADATA_KEY = Symbol.for('simple-web-component:state');
 export function state(target: Object, propertyKey: string | symbol): void;
 export function state(name: string): PropertyDecorator;
 /**
- * Supports both forms:
+ * Forms (빈 괄호 @state() 는 타입 에러):
  * - @state
- * - @state()
  * - @state('selector')
  */
 export function state(nameOrTarget?: string | Object, propertyKey?: string | symbol): any {
@@ -30,9 +28,8 @@ export function state(nameOrTarget?: string | Object, propertyKey?: string | sym
     Object.defineProperty(targetObj, stateMetadata.propertyKey, {
       set(this: any, nv: string) {
         this[storageKey] = nv;
-        const config = getElementConfig(this)
         const ea = new ElementApply(this, {id: this._swcId});
-        const helperHostSet = SwcUtils.getHelperAndHostSet(config.window, this);
+        const helperHostSet = SwcUtils.getHelperAndHostSet(this);
         const stateContext: any = {...helperHostSet};
         findAllStateMetadata(this).forEach(it => {
           stateContext[it.name] = this[it.propertyKey]
@@ -60,7 +57,7 @@ export function state(nameOrTarget?: string | Object, propertyKey?: string | sym
     const targetObj = nameOrTarget as Object;
     const name = String(propertyKey);
     const constructor = (targetObj as any).constructor;
-    let states = ReflectUtils.getMetadata<StateMetadata[]>(STATE_METADATA_KEY, constructor);
+    let states = ReflectUtils.getOwnMetadata(STATE_METADATA_KEY, constructor) as StateMetadata[] | undefined;
     if (!states) {
       states = [];
       ReflectUtils.defineMetadata(STATE_METADATA_KEY, states, constructor);
@@ -75,7 +72,7 @@ export function state(nameOrTarget?: string | Object, propertyKey?: string | sym
   return (targetObj: Object, propertyKey: string | symbol): void => {
     const name = String(nameOrTarget);
     const constructor = targetObj.constructor;
-    let states = ReflectUtils.getMetadata<StateMetadata[]>(STATE_METADATA_KEY, constructor);
+    let states = ReflectUtils.getOwnMetadata(STATE_METADATA_KEY, constructor) as StateMetadata[] | undefined;
     if (!states) {
       states = [];
       ReflectUtils.defineMetadata(STATE_METADATA_KEY, states, constructor);
@@ -87,6 +84,6 @@ export function state(nameOrTarget?: string | Object, propertyKey?: string | sym
 }
 
 export const findAllStateMetadata = (target: any): StateMetadata[] => {
-  const constructor = target instanceof Function ? target : target.constructor;
-  return ReflectUtils.getMetadata(STATE_METADATA_KEY, constructor) ?? [];
+  const constructor = typeof target === 'function' ? target : target.constructor;
+  return ReflectUtils.findAllMetadata<any[]>(STATE_METADATA_KEY, constructor).flat();
 };

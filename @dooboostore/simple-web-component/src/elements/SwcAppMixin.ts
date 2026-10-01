@@ -99,11 +99,6 @@ export function SwcAppMixin<T extends { new (...args: any[]): HTMLElement }>(Bas
      */
     _connected_safari_and_standby = [];
 
-    constructor(...args: any[]) {
-      super(...args);
-      console.log('[SWC-APP-MIXIN] constructor');
-    }
-
     get simpleApplication() {
       return this.__swc_engine.simpleApplication;
     }
@@ -178,11 +173,10 @@ export function SwcAppMixin<T extends { new (...args: any[]): HTMLElement }>(Bas
             const pathDataAll = match ? match.pathDataAll : prev?.pathDataAll ?? {};
 
             const filter = metadata.options?.filter;
-            const hostSet = SwcUtils.getHelperAndHostSet(this.config.window, this);
-            const filterPassed = !filter || (await filter(this.router!, { helper: hostSet, currentThis: instance }));
+            const instanceHelperHostSet = SwcUtils.getHelperAndHostSet(instance, this.config.window);
+            const filterPassed = !filter || (await filter(this.router!, { helper: instanceHelperHostSet, currentThis: instance }));
             if (!filterPassed) continue;
 
-            const instanceHelperHostSet = SwcUtils.getHelperAndHostSet(this.config.window, instance);
             const before = metadata.options?.before;
             const finaly = metadata.options?.finally;
             // before를 먼저 돌려 리턴값을 @routeChangeBeforeReturn 으로 주입할 수 있게 캡처.
@@ -219,7 +213,7 @@ export function SwcAppMixin<T extends { new (...args: any[]): HTMLElement }>(Bas
 
     /** 라우트 핸들러 인자: @swcAppRouterEvent / host 계열 / @routeChangeBeforeReturn / 라우트 파라미터(query·path 변수) */
     _buildRouteArgs(instance: any, methodName: string | symbol, routeEventValue: any, pathDataAll: { [k: string]: string[] }, beforeReturn: any) {
-      const instanceHelperHostSet = SwcUtils.getHelperAndHostSet(this.config.window, instance);
+      const instanceHelperHostSet = SwcUtils.getHelperAndHostSet(instance, this.config.window);
       const sp: URLSearchParams = routeEventValue.searchParams ?? new URLSearchParams(routeEventValue.search ?? '');
       return buildSwcParameterArgs(
         instance,
@@ -251,9 +245,8 @@ export function SwcAppMixin<T extends { new (...args: any[]): HTMLElement }>(Bas
             const fromMatch = matchRoute(metadata.options?.path, instance, from);
             if (!fromMatch || matchRoute(metadata.options?.path, instance, to)) return true; // 이 라우트를 떠나는 경우만
             const filter = metadata.options?.filter;
-            const hostSet = SwcUtils.getHelperAndHostSet(this.config.window, this);
-            if (filter && !(await filter(this.router!, { helper: hostSet, currentThis: instance }))) return true;
-            const helper = SwcUtils.getHelperAndHostSet(this.config.window, instance);
+            const helper = SwcUtils.getHelperAndHostSet(instance, this.config.window);
+            if (filter && !(await filter(this.router!, { helper, currentThis: instance }))) return true;
             const beforeReturn = metadata.options?.before ? await metadata.options.before(this.router!, { helper, currentThis: instance }) : undefined;
             const routeEventValue = { ...from, pathData: fromMatch.pathData, to };
             const args = this._buildRouteArgs(instance, metadata.propertyKey, routeEventValue, fromMatch.pathDataAll, beforeReturn);
@@ -283,10 +276,14 @@ export function SwcAppMixin<T extends { new (...args: any[]): HTMLElement }>(Bas
           this._connectedInvocations++;
         }
         this._swc_connected_instance.add(instance);
+        // await 사이에 요소가 떨어지거나 다시 붙으면(elementDefine 의 차례 번호가 바뀌면) 나머지(가드 등록·재생)는 건너뛴다
+        const gen = (instance as any).__swc_connectGen;
+        const stale = () => (instance as any).__swc_connectGen !== gen;
 
         const connectedSwcAppCallBacks = findAllLifecycleMetadata(instance, ON_CONNECTED_SWC_APP_METADATA_KEY);
         for (let connectedSwcAppCallBack of connectedSwcAppCallBacks) {
           await (instance as any)?._invokeLifecycleMethod?.(connectedSwcAppCallBack.propertyKey);
+          if (stale()) return this;
         }
 
         if (this._childrenConnectedDoneInterval) {
@@ -312,6 +309,7 @@ export function SwcAppMixin<T extends { new (...args: any[]): HTMLElement }>(Bas
             throw e;
           }
         }
+        if (stale()) return this;
 
         if (this.simpleApplication) this._registerLeaveGuards(instance);
 
@@ -319,7 +317,6 @@ export function SwcAppMixin<T extends { new (...args: any[]): HTMLElement }>(Bas
         this._replayMessagesTo(instance);
 
         const isBrowser = ValidUtils.isBrowser();
-        console.log('------>', isBrowser, this.config?.ssr);
         if (!isBrowser && this.config?.ssr) {
           setSSRAttribute(instance);
         } else {
@@ -331,8 +328,9 @@ export function SwcAppMixin<T extends { new (...args: any[]): HTMLElement }>(Bas
       return this;
     }
 
-    async _connectedDone(instance: any) {
+    async _connectedDone(instance: any, option?: { aborted?: boolean }) {
       try {
+        if (option?.aborted) return; // 중간에 멈춘 연결: 재생 없이 연결 수만 맞춘다
         // trigger 'connectedDone' 구독에만 버퍼 재생 (render 완료 후라 DOM 타겟 안전)
         this._replayMessagesTo(instance, 'connectedDone');
         if (this.simpleApplication) {
@@ -368,7 +366,6 @@ export function SwcAppMixin<T extends { new (...args: any[]): HTMLElement }>(Bas
     }
 
     async connect(config?: SwcAttributeConfigType) {
-      console.log('[SWC-MIXIN] connect');
       const swcConfig = {
         routeType: 'element',
         window: config?.window,
@@ -384,18 +381,11 @@ export function SwcAppMixin<T extends { new (...args: any[]): HTMLElement }>(Bas
 
       // 라우터 변경 구독
       if (!this._routerSubscription && this.router) {
-        const config = this.__swc_engine.config;
-
         this._routerSubscription = this.router.observable.subscribe(async (route: RouterEventType) => {
-          console.log('[SWC-MIXIN] Router event received:', route.triggerPoint);
           if (route.triggerPoint === 'end') {
             await this._handleRouteChange(route);
           }
         });
-
-        if (config?.path) {
-          console.log('[DEBUG] Navigating to initial path:', config.path);
-        }
       }
 
       // onSwcAppConnected 훅 (@inject 파라미터 있으면 DI 해결 — _invokeLifecycleMethod 경로)
@@ -414,7 +404,7 @@ export function SwcAppMixin<T extends { new (...args: any[]): HTMLElement }>(Bas
           const userConfig = FunctionUtils.executeReturn({
             script: configStr,
             context: this,
-            args: SwcUtils.getHelperAndHostSet(win, this)
+            args: SwcUtils.getHelperAndHostSet(this, win)
           });
           if (userConfig instanceof Promise) {
             userConfig
@@ -569,7 +559,7 @@ export function SwcAppMixin<T extends { new (...args: any[]): HTMLElement }>(Bas
       if (filter && !(await filter(message, instance))) return;
       if (typeof instance[methodName] !== 'function') return;
 
-      const instanceHelperHostSet = SwcUtils.getHelperAndHostSet(this.config.window, instance);
+      const instanceHelperHostSet = SwcUtils.getHelperAndHostSet(instance, this.config.window);
       const instanceHelperSet = SwcUtils.getHelperSet(this.config.window);
       // before를 먼저 돌려 리턴값을 @appMessageBeforeReturn 으로 주입할 수 있게 캡처.
       const beforeReturn = before ? await before(message, instance) : undefined;

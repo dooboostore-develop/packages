@@ -237,7 +237,7 @@ export default (w: Window): CartesianChart3DCtor => {
       if (this.canvas) this.draw();
     }
 
-    @resizeObserverLight()
+    @resizeObserverLight
     onResize() {
       if (!this.canvas) return;
       if (this.resizeRaf) cancelAnimationFrame(this.resizeRaf);

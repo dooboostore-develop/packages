@@ -1,4 +1,4 @@
-import { addEventListener, applyNode, elementDefine, emitCustomEvent, onConnectedBefore, onConnectedBodyShadow, addEventListenerThis } from '@dooboostore/simple-web-component';
+import { event, applyNode, elementDefine, emitCustomEvent, onConnectedBefore, onConnectedBodyShadow } from '@dooboostore/simple-web-component';
 
 export default (w: Window) => {
   const tagName = 'swc-example-commerce-checkout-page';

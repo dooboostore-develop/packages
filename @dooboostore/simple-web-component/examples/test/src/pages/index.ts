@@ -13,7 +13,7 @@ import BeforeFilterReturnTestPage from './BeforeFilterReturnTestPage';
 import ObserverHooksTestPage from './ObserverHooksTestPage';
 import MessageSubjectTestPage from './MessageSubjectTestPage';
 import FetchTestPage from './FetchTestPage';
-import {replaceChildren, innerHtmlLight, subscribeSwcAppRouteChange, subscribeSwcAppMessage, publishSwcAppMessage, routeChangeBeforeReturn, appMessageBeforeReturn, onConnectedBodyLight, innerHtml, onConnectedAfter, onConnectedBody, updateClass, addEventListener, applyNode, elementDefine, emitCustomEvent, onConnectedBefore, onConnectedBodyShadow, addEventListenerThis, attribute } from '@dooboostore/simple-web-component';
+import { replaceChildren, innerHtmlLight, subscribeSwcAppRouteChange, subscribeSwcAppMessage, publishSwcAppMessage, routeChangeBeforeReturn, appMessageBeforeReturn, onConnectedBodyLight, innerHtml, onConnectedAfter, onConnectedBody, updateClass, event, applyNode, elementDefine, emitCustomEvent, onConnectedBefore, onConnectedBodyShadow, attribute } from '@dooboostore/simple-web-component';
 import {Inject} from '@dooboostore/simple-boot';
 import {Router, type RouterEventType} from '@dooboostore/core-web';
 import {CartService} from '../services/CartService';

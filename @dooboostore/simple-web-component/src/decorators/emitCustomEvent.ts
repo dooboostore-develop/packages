@@ -1,6 +1,6 @@
 import {ReflectUtils} from '@dooboostore/core';
 import { SpecialSelector, SwcQueryOptions, SwcFnSelector, SwcSelector, HelperHostSet } from '../types';
-import {ensureInit, getElementConfig} from './elementDefine';
+import { ensureInit } from './elementDefine';
 import {SwcUtils} from '../utils/Utils';
 
 export type EmitCustomEventFnSelector = SwcFnSelector;
@@ -90,7 +90,7 @@ function createEmitDecorator(selector: EmitCustomEventSelector, type: string, op
     if (fullOptions.bubbles === undefined) fullOptions.bubbles = true;
     if (fullOptions.composed === undefined) fullOptions.composed = true;
 
-    let list = ReflectUtils.getMetadata<EmitCustomEventMetadata[]>(EMIT_CUSTOM_EVENT_METADATA_KEY, constructor);
+    let list = ReflectUtils.getOwnMetadata(EMIT_CUSTOM_EVENT_METADATA_KEY, constructor) as EmitCustomEventMetadata[] | undefined;
     if (!list) {
       list = [];
       ReflectUtils.defineMetadata(EMIT_CUSTOM_EVENT_METADATA_KEY, list, constructor);
@@ -102,7 +102,15 @@ function createEmitDecorator(selector: EmitCustomEventSelector, type: string, op
       ensureInit(this);
       const res = original.apply(this, args);
 
-      const handleResult = (detail: any) => {
+      // 리턴값이 객체이고 valueKey(기본 EMIT_CUSTOM_EVENT_METADATA_KEY) 를 가지면 그 값, 아니면 리턴값 전체를 detail 로
+      const extractValue = (v: any) => {
+        const keyToUse = fullOptions.valueKey ?? EMIT_CUSTOM_EVENT_METADATA_KEY;
+        if (v && typeof v === 'object' && keyToUse in v) return v[keyToUse];
+        return v;
+      };
+
+      const handleResult = (result: any) => {
+        const detail = extractValue(result);
         const event = new CustomEvent(type, {
           detail,
           bubbles: fullOptions.bubbles,
@@ -110,9 +118,8 @@ function createEmitDecorator(selector: EmitCustomEventSelector, type: string, op
           cancelable: fullOptions.cancelable
         });
 
-        const conf = getElementConfig(this);
-        const currentWin = (this as any)._resolveWindow?.(conf) || ((typeof window !== 'undefined' ? window : undefined) as Window);
-        const hostSet = SwcUtils.getHelperAndHostSet(currentWin, this as any);
+        const currentWin = SwcUtils.resolveWindow(this);
+        const hostSet = SwcUtils.getHelperAndHostSet(this as any);
 
         const eventTargets: EventTarget[] = [];
         
@@ -126,7 +133,7 @@ function createEmitDecorator(selector: EmitCustomEventSelector, type: string, op
         if (resolvedSelector instanceof currentWin.Element) {
           eventTargets.push(resolvedSelector as EventTarget);
         } else if (resolvedSelector instanceof currentWin.NodeList) {
-          eventTargets.push(...Array.from(resolvedSelector as EventTarget[]));
+          eventTargets.push(...Array.from(resolvedSelector as NodeList));
         } else if (Array.isArray(resolvedSelector)) {
           eventTargets.push(...(resolvedSelector as EventTarget[]));
         } else if (resolvedSelector === null) {
@@ -181,7 +188,7 @@ function createEmitDecorator(selector: EmitCustomEventSelector, type: string, op
           t.dispatchEvent(event);
         });
 
-        return detail;
+        return result;
       };
 
       if (res instanceof Promise) {
@@ -194,8 +201,8 @@ function createEmitDecorator(selector: EmitCustomEventSelector, type: string, op
 }
 
 export const getEmitCustomEventMetadataList = (target: any): EmitCustomEventMetadata[] | undefined => {
-  const constructor = target instanceof Function ? target : target.constructor;
-  return ReflectUtils.getMetadata(EMIT_CUSTOM_EVENT_METADATA_KEY, constructor);
+  const constructor = typeof target === 'function' ? target : target.constructor;
+  return ReflectUtils.findAllMetadata<any[]>(EMIT_CUSTOM_EVENT_METADATA_KEY, constructor).flat();
 };
 
 // --- Aliases: emit... ---
@@ -203,9 +210,6 @@ export const emit = emitCustomEvent;
 
 // ─── 편의 헬퍼 (selector/root 생략) ───
 
-export function emitThis(type: string, options?: EmitCustomEventQueryOptions): MethodDecorator {
-  return emitCustomEvent('$this', type, options);
-}
 export function emitAppHost(type: string, options?: EmitCustomEventQueryOptions): MethodDecorator {
   return emitCustomEvent('$appHost', type, options);
 }

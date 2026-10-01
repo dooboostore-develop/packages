@@ -39,7 +39,7 @@ export const resolveQueryElements = (
   options: QueryOptions,
   win: Window
 ): HTMLElement[] => {
-  const hostSet = SwcUtils.getHelperAndHostSet(win, inst);
+  const hostSet = SwcUtils.getHelperAndHostSet(inst);
   let all: HTMLElement[] = [];
 
   if (typeof selector === 'function') {
@@ -95,10 +95,11 @@ export const pickElements = (
   return all.length ? all[0] : null;
 };
 
-export function query(target: Object, propertyKey: string | symbol, descriptor?: PropertyDescriptor): PropertyDescriptor | void;
 export function query(selector: string, options?: QueryOptions): PropertyDecorator;
 export function query(selector: QueryFnSelector, options?: QueryNonQueryOptions): PropertyDecorator;
-export function query(options?: QueryOptions): PropertyDecorator;
+export function query(options: QueryOptions): PropertyDecorator;
+// bare(@query) 시그니처는 맨 뒤 — @attribute 와 같은 이유 (TS1240/TS1271)
+export function query(target: Object, propertyKey: string | symbol): void;
 /**
  * @query decorator — 클래스 필드에 요소를 주입한다.
  *
@@ -111,6 +112,10 @@ export function query(selectorOrTarget?: string | ((currentThis: any, helper: He
   if (descriptor !== undefined && (typeof optionsOrPropertyKey === 'string' || typeof optionsOrPropertyKey === 'symbol')) {
     throw new Error(`@query decorator cannot be used on methods. (Method: ${String(optionsOrPropertyKey)})`);
   }
+  // bare: @query — 자기 자신($this). 빈 괄호 @query() 는 타입에서 막는다 (인자가 없으면 괄호도 없다)
+  if (selectorOrTarget && (typeof optionsOrPropertyKey === 'string' || typeof optionsOrPropertyKey === 'symbol')) {
+    return query('$this')(selectorOrTarget, optionsOrPropertyKey);
+  }
   // With selector
   if (typeof selectorOrTarget === 'string' || typeof selectorOrTarget === 'function') {
     return (targetObj: Object, propertyKey: string | symbol, descriptor?: never): void => {
@@ -119,7 +124,7 @@ export function query(selectorOrTarget?: string | ((currentThis: any, helper: He
       }
 
       const constructor = targetObj.constructor;
-      let queries = ReflectUtils.getMetadata<QueryMetadata[]>(QUERY_METADATA_KEY, constructor);
+      let queries = ReflectUtils.getOwnMetadata(QUERY_METADATA_KEY, constructor) as QueryMetadata[] | undefined;
       if (!queries) {
         queries = [];
         ReflectUtils.defineMetadata(QUERY_METADATA_KEY, queries, constructor);
@@ -157,26 +162,29 @@ export function query(selectorOrTarget?: string | ((currentThis: any, helper: He
       });
     };
   }
-  // Without selector (defaults to $this)
+  // 옵션만: $this
   return query('$this', selectorOrTarget as QueryOptions);
 }
 
 export const getQueryMetadata = (target: any): QueryMetadata[]  => {
-  const constructor = target instanceof Function ? target : target.constructor;
-  return ReflectUtils.getMetadata(QUERY_METADATA_KEY, constructor) ?? [];
+  const constructor = typeof target === 'function' ? target : target.constructor;
+  return ReflectUtils.findAllMetadata<any[]>(QUERY_METADATA_KEY, constructor).flat();
 };
 
 // ─── queryAll (query의 pick:'all' 편의 래퍼 — 호환용) ───
 export const QUERY_ALL_METADATA_KEY = QUERY_METADATA_KEY;
 
-export function queryAll(target: Object, propertyKey: string | symbol, descriptor?: PropertyDescriptor): PropertyDescriptor | void;
 export function queryAll(selector: string, options?: Omit<QueryOptions, 'pick'>): PropertyDecorator;
 export function queryAll(selector: QueryFnSelector, options?: Omit<QueryNonQueryOptions, 'pick'>): PropertyDecorator;
-export function queryAll(options?: Omit<QueryOptions, 'pick'>): PropertyDecorator;
+export function queryAll(options: Omit<QueryOptions, 'pick'>): PropertyDecorator;
+export function queryAll(target: Object, propertyKey: string | symbol): void;
 export function queryAll(selectorOrTarget?: any, optionsOrPropertyKey?: any, descriptor?: PropertyDescriptor): any {
-  // bare(필드 직접 적용)는 query로 위임
   if (descriptor !== undefined && (typeof optionsOrPropertyKey === 'string' || typeof optionsOrPropertyKey === 'symbol')) {
-    return query(selectorOrTarget, optionsOrPropertyKey, descriptor);
+    throw new Error(`@queryAll decorator cannot be used on methods. (Method: ${String(optionsOrPropertyKey)})`);
+  }
+  // bare: @queryAll — [$this]. 빈 괄호 @queryAll() 는 타입에서 막는다
+  if (selectorOrTarget && (typeof optionsOrPropertyKey === 'string' || typeof optionsOrPropertyKey === 'symbol')) {
+    return query('$this', { pick: 'all' })(selectorOrTarget, optionsOrPropertyKey);
   }
   if (typeof selectorOrTarget === 'string' || typeof selectorOrTarget === 'function') {
     return query(selectorOrTarget, {...(optionsOrPropertyKey ?? {}), pick: 'all'});
@@ -235,9 +243,9 @@ export function queryAllAll(selector: string | QueryFnSelector, options?: QueryB
  * first/last/even/odd/all/number를 모두 지원하는 데코레이터를 생성한다.
  *
  * @example
- * @queryIn('shadow', 'even')('.item')   // shadow DOM 짝수 인덱스들
- * @queryIn('light', 2)('.item')         // light DOM 3번째 요소
- * @queryIn('all')('.item')              // root all, pick 기본 first
+ * @(queryIn('shadow', 'even')('.item'))   // shadow DOM 짝수 인덱스들 (호출이 이어지면 바깥 괄호 필요)
+ * @(queryIn('light', 2)('.item'))         // light DOM 3번째 요소
+ * @(queryIn('all')('.item'))              // root all, pick 기본 first
  */
 export const queryIn = (root: SwcRootType, pick?: QueryPick) =>
   (selector: string | QueryFnSelector, options?: QueryBaseOptions): PropertyDecorator =>

@@ -4,55 +4,40 @@
     <meta charset="UTF-8" />
     <title>UMD Bundle Test</title>
     <script src="node_modules/@dooboostore/simple-web-component/dist/umd-bundle/dooboostore-simple-web-component.umd.js"></script>
-    <style>
-      .container {
-        margin: 20px;
-        font-family: sans-serif;
-      }
-      .box {
-        border: 1px solid #ccc;
-        padding: 10px;
-        margin-top: 10px;
-      }
-    </style>
   </head>
   <body>
-    <div class="container">
-      <h1>UMD Bundle Test</h1>
-      <div class="box">
-        <swc-object id="my-obj" as="u">
-          <div>Name: <strong>{{u.name}}</strong></div>
-          <div>Age: <strong>{{u.age}}</strong></div>
-        </swc-object>
-      </div>
-
-      <div class="box">
-        <ul id="my-list-container">
-          <swc-for-of id="my-list" as="item">
-            <li>{{index}}: {{item.name}}</li>
-          </swc-for-of>
-        </ul>
-      </div>
-
-      <div class="box">
-        <button id="update-btn">Update Data</button>
-      </div>
-    </div>
-
+    <h1>UMD Bundle Test</h1>
+    <p>Status: <strong id="status">running…</strong></p>
+    <bundle-counter></bundle-counter>
     <script>
-      const { SwcObject, SwcForOf } = dooboostoreSimpleWebComponent;
+      const { elementDefine, onConnectedBodyShadow, eventShadow, innerHtml, Core } = dooboostoreSimpleWebComponent;
+      // 데코레이터 문법 없이 함수로 적용한다 (위 → 아래 순서로 적고, TS 처럼 아래부터 적용)
+      const decorate = (Class, key, ...decorators) => {
+        let desc = Object.getOwnPropertyDescriptor(Class.prototype, key);
+        for (const d of [...decorators].reverse()) desc = d(Class.prototype, key, desc) || desc;
+        Object.defineProperty(Class.prototype, key, desc);
+      };
 
-      const objEl = document.getElementById('my-obj');
-      objEl.swcValue = { name: 'UMD User', age: 30 };
+      class BundleCounter extends HTMLElement {
+        count = 0;
+        render() { return `<button class="inc">+1</button> <span class="out">0</span>`; }
+        onInc() { this.count++; return String(this.count); }
+      }
+      decorate(BundleCounter, 'render', onConnectedBodyShadow); // bare
+      decorate(BundleCounter, 'onInc', eventShadow('.inc', 'click'), innerHtml('.out'));
+      elementDefine('bundle-counter', { window })(BundleCounter);
 
-      const listEl = document.getElementById('my-list');
-      listEl.swcValue = [{ name: 'Item 1' }, { name: 'Item 2' }];
-
-      document.getElementById('update-btn').addEventListener('click', () => {
-        objEl.swcValue.name = 'Updated UMD User';
-        objEl.swcValue.age = Math.floor(Math.random() * 100);
-        listEl.swcValue.push({ name: 'New Item ' + listEl.swcValue.length });
-      });
+      // 스스로 확인: 두 번 클릭 → .out 이 2, Core 재export 도 보이는지
+      setTimeout(() => {
+        const el = document.querySelector('bundle-counter');
+        const btn = el.shadowRoot?.querySelector('.inc');
+        btn?.click(); btn?.click();
+        const out = el.shadowRoot?.querySelector('.out')?.textContent;
+        const ok = out === '2' && typeof Core === 'object';
+        const status = document.getElementById('status');
+        status.textContent = ok ? 'PASS' : `FAIL (out=${out}, Core=${typeof Core})`;
+        status.style.color = ok ? 'green' : 'red';
+      }, 100);
     </script>
   </body>
 </html>

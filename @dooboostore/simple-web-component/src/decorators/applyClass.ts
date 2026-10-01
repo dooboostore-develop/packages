@@ -13,7 +13,7 @@ export type ClassAction = 'set' | 'update' | 'add' | 'remove' | 'toggle';
  */
 const resolveSelector = (selector: ClassSelector, inst: any, win: Window): string | HTMLElement[] => {
   if (typeof selector === 'function') {
-    const hostSet = SwcUtils.getHelperAndHostSet(win, inst);
+    const hostSet = SwcUtils.getHelperAndHostSet(inst);
     const result = selector(inst, hostSet);
     
     if (result instanceof win.Element) {
@@ -49,7 +49,7 @@ const getTargetElements = (selector: ClassSelector, inst: any, win: Window, root
   const stringSelector = resolved as string;
   const targetEls: HTMLElement[] = [];
   const host = inst as unknown as HTMLElement;
-  const hostSet = SwcUtils.getHelperAndHostSet(win, inst);
+  const hostSet = SwcUtils.getHelperAndHostSet(inst);
 
   const applyRoot = (t: any) => {
     if (!t || !(t instanceof win.HTMLElement)) return;
@@ -149,7 +149,7 @@ function createClassDecorator(action: ClassAction) {
           if (resolvedValue !== undefined) {
             const win = (this as any).ownerDocument?.defaultView || window;
             const host = this as unknown as HTMLElement;
-            const hostSet = { ...SwcUtils.getHelperAndHostSet(win, host), $this: this };
+            const hostSet = { ...SwcUtils.getHelperAndHostSet(host), $this: this };
             const r = finalOptions.root || 'auto';
             const targetEls = getTargetElements(selector, this, win, r);
 
@@ -325,15 +325,7 @@ export const cls = applyClass;
 
 // ─── 편의 헬퍼 (selector/root 생략) ───
 
-export function clsThis(action?: ClassAction, options?: ClassQueryOptions): MethodDecorator;
-export function clsThis(target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor): PropertyDescriptor | void;
-export function clsThis(actionOrTarget?: ClassAction | Object, optionsOrPropertyKey?: ClassQueryOptions | string | symbol, descriptor?: PropertyDescriptor): any {
-  if ((typeof optionsOrPropertyKey === 'string' || typeof optionsOrPropertyKey === 'symbol') && descriptor !== undefined) {
-    return (applyClass('$this', undefined as any, {}) as any)(actionOrTarget, optionsOrPropertyKey, descriptor);
-  }
-  return applyClass('$this', actionOrTarget as any, optionsOrPropertyKey as ClassQueryOptions);
-}
-export function clsAppHost(action?: ClassAction, options?: ClassQueryOptions): MethodDecorator;
+export function clsAppHost(action: ClassAction, options?: ClassQueryOptions): MethodDecorator;
 export function clsAppHost(target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor): PropertyDescriptor | void;
 export function clsAppHost(actionOrTarget?: ClassAction | Object, optionsOrPropertyKey?: ClassQueryOptions | string | symbol, descriptor?: PropertyDescriptor): any {
   if ((typeof optionsOrPropertyKey === 'string' || typeof optionsOrPropertyKey === 'symbol') && descriptor !== undefined) {

@@ -1,4 +1,4 @@
-import { elementDefine, onConnectedBodyShadow, onConnectedAfter, applyNode, addEventListener, around, state, HelperHostSet } from '@dooboostore/simple-web-component';
+import { elementDefine, onConnectedBodyShadow, onConnectedAfter, applyNode, event, around, state, HelperHostSet } from '@dooboostore/simple-web-component';
 
 /**
  * @around / @state 테스트 페이지 (자가검증 — connect되면 자동 실행, 버튼으로 재실행)
@@ -16,7 +16,7 @@ export default (w: Window) => {
     class StateChild extends w.HTMLElement {
       @state count: number = 0;
 
-      @addEventListener('.btn-inc', 'click')
+      @event('.btn-inc', 'click')
       onInc() {
         this.count = (this.count ?? 0) + 1;
         this.renderCount();
@@ -103,7 +103,7 @@ export default (w: Window) => {
       return `echo:${text}`;
     }
 
-    @addEventListener('.btn-promise', 'click')
+    @event('.btn-promise', 'click')
     async onPromiseClick() {
       this.renderPromise('⏳ pending... (after의 Promise 대기 중)');
       try {
@@ -131,7 +131,7 @@ export default (w: Window) => {
       return n;
     }
 
-    @addEventListener('.btn-async-before', 'click')
+    @event('.btn-async-before', 'click')
     async onAsyncBeforeClick() {
       this.renderAsyncBefore('⏳ pending... (before의 Promise 대기 중)');
       try {
@@ -189,7 +189,7 @@ export default (w: Window) => {
       this.runChecks();
     }
 
-    @addEventListener('.btn-run', 'click')
+    @event('.btn-run', 'click')
     async onRunClick() {
       await this.runChecks();
     }

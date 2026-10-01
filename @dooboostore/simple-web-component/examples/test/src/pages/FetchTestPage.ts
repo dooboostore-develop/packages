@@ -1,6 +1,5 @@
 import {
-  elementDefine, onConnectedBodyLight, fetch, fetchManual, fetchGet, fetchPost, fetchPut, fetchPatch, fetchDelete, fetchLatest, fetchBefore, fetchAfter,
-  fetchSettled, addEventListener, event, eventObject, eventBeforeReturn
+  elementDefine, onConnectedBodyLight, fetch, fetchManual, fetchGet, fetchPost, fetchPut, fetchPatch, fetchDelete, fetchLatest, fetchBefore, fetchAfter, fetchSettled, event, eventObject, eventBeforeReturn
 } from '@dooboostore/simple-web-component';
 
 /**
@@ -139,7 +138,7 @@ export default (w: Window) => {
       return settled?.status === 'fulfilled' ? settled.value.n : settled?.status;
     }
 
-    @addEventListener('#btn-abort', 'click')
+    @event('#btn-abort', 'click')
     async onAbortClick() {
       this.say('#out-abort', 'loading...');
       const el = document.createElement(probeTag) as FetchAbortProbe;
@@ -203,7 +202,7 @@ export default (w: Window) => {
 
     localEcho(v: string) { return Promise.resolve(`echo:${v}`); }
 
-    @addEventListener('#btn-aliases', 'click')
+    @event('#btn-aliases', 'click')
     async onAliasesClick() {
       const r: any = {};
       r.get = await this.aliasGet();
@@ -219,7 +218,7 @@ export default (w: Window) => {
       this.say('#out-aliases', `<pre id="aliases-json">${JSON.stringify(r)}</pre>`);
     }
 
-    @addEventListener('#btn-fixes', 'click')
+    @event('#btn-fixes', 'click')
     async onFixesClick() {
       const r: any = {};
       r.filtered = await this.loadFiltered();
@@ -272,7 +271,7 @@ export default (w: Window) => {
       this.say('#out-collab-c', `<b>collab-c:</b> title=${fd.get('title')}`);
     }
 
-    @addEventListener('#btn-before', 'click')
+    @event('#btn-before', 'click')
     async onBeforeClick() {
       this.say('#out-before', 'loading...');
       try {
@@ -285,7 +284,7 @@ export default (w: Window) => {
       }
     }
 
-    @addEventListener('#btn-default', 'click')
+    @event('#btn-default', 'click')
     async onDefaultClick() {
       this.say('#out-default', 'loading...');
       try {
@@ -298,7 +297,7 @@ export default (w: Window) => {
       }
     }
 
-    @addEventListener('#btn-hooks', 'click')
+    @event('#btn-hooks', 'click')
     async onHooksClick() {
       this.say('#out-hooks', 'loading...');
       try {
@@ -309,7 +308,7 @@ export default (w: Window) => {
         this.say('#out-hooks', `<b>에러:</b> ${e}`);
       }
     }
-    @addEventListener('#btn-after', 'click')
+    @event('#btn-after', 'click')
     async onAfterClick() {
       this.say('#out-after', 'loading...');
       try {
@@ -320,7 +319,7 @@ export default (w: Window) => {
       }
     }
 
-    @addEventListener('#btn-custom', 'click')
+    @event('#btn-custom', 'click')
     async onCustomClick() {
       this.say('#out-custom', 'loading...');
       try {
@@ -333,7 +332,7 @@ export default (w: Window) => {
       }
     }
 
-    @addEventListener('#btn-form', 'click')
+    @event('#btn-form', 'click')
     async onFormClick() {
       this.say('#out-form', 'loading...');
       try {
@@ -344,7 +343,7 @@ export default (w: Window) => {
       }
     }
 
-    @addEventListener('#btn-urlencoded', 'click')
+    @event('#btn-urlencoded', 'click')
     async onUrlencodedClick() {
       this.say('#out-urlencoded', 'loading...');
       try {

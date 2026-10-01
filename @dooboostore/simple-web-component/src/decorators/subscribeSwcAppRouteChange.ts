@@ -57,7 +57,6 @@ function createSubscribeSwcAppRouteChange(options?: SwcAppRouteChangeOptions): M
 // 오버로드 시그니처 - 직접 사용 (괄호 없음)
 export function subscribeSwcAppRouteChange(target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor): PropertyDescriptor | void;
 // 오버로드 시그니처 - 함수 호출 (괄호 있음)
-export function subscribeSwcAppRouteChange(): MethodDecorator;
 export function subscribeSwcAppRouteChange(pathPattern: RoutePathType): MethodDecorator;
 export function subscribeSwcAppRouteChange<BeforeReturn = any, Result = any>(pathPattern: RoutePathType, config: Omit<SwcAppRouteChangeOptions<NoInfer<BeforeReturn>, NoInfer<Result>>, 'path'>): MethodDecorator;
 export function subscribeSwcAppRouteChange<BeforeReturn = any, Result = any>(options: SwcAppRouteChangeOptions<NoInfer<BeforeReturn>, NoInfer<Result>>): MethodDecorator;
@@ -70,7 +69,7 @@ export function subscribeSwcAppRouteChange(targetOrOptions?: any, propertyKeyOrC
     return createSubscribeSwcAppRouteChange({})(targetOrOptions, propertyKeyOrConfig, descriptor);
   }
 
-  // 함수로 호출된 경우 (괄호 있음): @subscribeSwcAppRouteChange() / @subscribeSwcAppRouteChange('/path')
+  // 함수로 호출된 경우 (인자 있음): @subscribeSwcAppRouteChange('/path')
   let options: SwcAppRouteChangeOptions = {};
 
   if (Array.isArray(targetOrOptions)) {
@@ -98,8 +97,8 @@ export const changedRoute = subscribeSwcAppRouteChange;
 
 // Helper function to retrieve route change subscribers metadata
 export const getSubscribeSwcAppRouteChangeMetadata = (target: any): SwcAppRouteChangeSubscriberMetadata[] => {
-  const constructor = target instanceof Function ? target : target.constructor;
-  const results = ReflectUtils.getOwnMetadata(SUBSCRIBE_SWC_APP_ROUTE_CHANGE_METADATA_KEY, constructor);
+  const constructor = typeof target === 'function' ? target : target.constructor;
+  const results = ReflectUtils.findAllMetadata<any[]>(SUBSCRIBE_SWC_APP_ROUTE_CHANGE_METADATA_KEY, constructor).flat();
   if (!results) return [];
   
   // Sort by order (default 0 if not specified)

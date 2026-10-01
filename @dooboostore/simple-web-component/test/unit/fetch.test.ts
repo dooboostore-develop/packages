@@ -22,7 +22,7 @@ const mockFetch = (w: any, respond: (c: Call) => Response | Promise<Response> = 
 const json = (v: any, status = 200) => new Response(JSON.stringify(v), { status, headers: { 'Content-Type': 'application/json' } });
 
 test('before mode: settled result is injected via @fetchSettled', async () => {
-  const { w, destroy } = createWindow();
+  const { w, destroy } = await createWindow();
   const calls = mockFetch(w, () => json({ title: 'post' }));
   const tag = uniqueTag('f-before');
   @elementDefine(tag, { window: w })
@@ -38,7 +38,7 @@ test('before mode: settled result is injected via @fetchSettled', async () => {
 
 // 회귀: headers 를 객체 spread 로 합쳐 Headers 인스턴스가 사라지던 문제 / 사용자 Content-Type 우선
 test('after mode: process json encodes the return value; Headers instances and user Content-Type are kept', async () => {
-  const { w, destroy } = createWindow();
+  const { w, destroy } = await createWindow();
   const calls = mockFetch(w);
   const tag = uniqueTag('f-after');
   @elementDefine(tag, { window: w })
@@ -60,7 +60,7 @@ test('after mode: process json encodes the return value; Headers instances and u
 
 // 회귀: Blob 을 JSON.stringify 해서 '{}' 가 전송되던 문제
 test('process does not re-encode values that already are a BodyInit (Blob)', async () => {
-  const { w, destroy } = createWindow();
+  const { w, destroy } = await createWindow();
   const calls = mockFetch(w);
   const tag = uniqueTag('f-blob');
   const blob = new Blob(['raw'], { type: 'text/plain' });
@@ -76,7 +76,7 @@ test('process does not re-encode values that already are a BodyInit (Blob)', asy
 
 // 회귀: 실패가 문자열 Error 라 status 를 꺼낼 수 없던 문제
 test('a non-OK response rejects with HttpResponseError carrying the response and parsed body', async () => {
-  const { w, destroy } = createWindow();
+  const { w, destroy } = await createWindow();
   mockFetch(w, () => json({ message: 'nope' }, 404));
   const tag = uniqueTag('f-404');
   @elementDefine(tag, { window: w })
@@ -93,7 +93,7 @@ test('a non-OK response rejects with HttpResponseError carrying the response and
 });
 
 test('filter false skips the whole call (no fetch, no method)', async () => {
-  const { w, destroy } = createWindow();
+  const { w, destroy } = await createWindow();
   const calls = mockFetch(w);
   const tag = uniqueTag('f-filter');
   let ran = false;
@@ -109,7 +109,7 @@ test('filter false skips the whole call (no fetch, no method)', async () => {
 });
 
 test('manual: gets params and signal; in after mode also the return value', async () => {
-  const { w, destroy } = createWindow();
+  const { w, destroy } = await createWindow();
   const tag = uniqueTag('f-manual');
   let got: any;
   @elementDefine(tag, { window: w })
@@ -129,7 +129,7 @@ test('manual: gets params and signal; in after mode also the return value', asyn
 
 // 회귀: 떨어진 요소의 DOM 을 건드리지 않게 — disconnect 되면 진행 중 호출은 조용히 끝나고 method/after 는 안 돈다
 test('disconnect aborts an in-flight call: ends with undefined, method and after skipped, finally gets AbortError', async () => {
-  const { w, destroy } = createWindow();
+  const { w, destroy } = await createWindow();
   const tag = uniqueTag('f-disconnect');
   const seen = { method: false, after: false, finallyError: '' };
   let signalAborted = false;
@@ -156,7 +156,7 @@ test('disconnect aborts an in-flight call: ends with undefined, method and after
 
 // 회귀: 떠나기 직전 걸어둔 setTimeout 등, disconnect 뒤에 새로 시작하는 호출
 test('a call that starts after disconnect is skipped; reconnecting re-enables it', async () => {
-  const { w, destroy } = createWindow();
+  const { w, destroy } = await createWindow();
   const tag = uniqueTag('f-detached');
   let runs = 0;
   @elementDefine(tag, { window: w })
@@ -176,7 +176,7 @@ test('a call that starts after disconnect is skipped; reconnecting re-enables it
 });
 
 test('an element that was never connected can still call @fetch', async () => {
-  const { w, destroy } = createWindow();
+  const { w, destroy } = await createWindow();
   const tag = uniqueTag('f-never');
   @elementDefine(tag, { window: w })
   class El extends w.HTMLElement {
@@ -188,7 +188,7 @@ test('an element that was never connected can still call @fetch', async () => {
 });
 
 test('abortPrevious / fetchLatest: an older in-flight call ends quietly, only the latest resolves', async () => {
-  const { w, destroy } = createWindow();
+  const { w, destroy } = await createWindow();
   const tag = uniqueTag('f-latest');
   @elementDefine(tag, { window: w })
   class El extends w.HTMLElement {
@@ -203,7 +203,7 @@ test('abortPrevious / fetchLatest: an older in-flight call ends quietly, only th
 });
 
 test('method aliases fix the HTTP method and mode', async () => {
-  const { w, destroy } = createWindow();
+  const { w, destroy } = await createWindow();
   const calls = mockFetch(w, c => json({ method: c.method }));
   const tag = uniqueTag('f-alias');
   @elementDefine(tag, { window: w })

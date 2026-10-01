@@ -1,5 +1,5 @@
 import { ReflectUtils } from '@dooboostore/core';
-import { ensureInit, getElementConfig } from './elementDefine';
+import { ensureInit } from './elementDefine';
 import {SpecialSelector, SwcQueryOptions, SwcFnSelector, SwcSelector, HelperHostSet, SwcRootType} from '../types';
 import { SwcUtils} from "../utils/Utils";
 import {findAllStateMetadata} from "./state";
@@ -49,7 +49,7 @@ export const APPLY_NODE_METADATA_KEY = Symbol.for('simple-web-component:apply-no
  */
 const resolveSelector = (selector: ApplyNodeSelector, inst: any, win: Window): string | HTMLElement | null => {
   if (typeof selector === 'function') {
-    const hostSet = SwcUtils.getHelperAndHostSet(win, inst);
+    const hostSet = SwcUtils.getHelperAndHostSet(inst);
     const result = selector(inst, hostSet);
     
     if (result instanceof win.Element) {
@@ -78,7 +78,7 @@ const resolveSelector = (selector: ApplyNodeSelector, inst: any, win: Window): s
 //   });
 // };
 
-const applyToDom = (currentThis: any, targetEl: HTMLElement, res: Node | string, pos: ApplyNodePosition, win: Window, host?: any) => {
+const applyToDom = (currentThis: any, targetEl: HTMLElement, res: Node | string | (Node | string)[] | NodeList, pos: ApplyNodePosition, win: Window, host?: any) => {
   if (!targetEl) return;
   
   // Handle clearChildren - ignore return value and always clear
@@ -88,20 +88,21 @@ const applyToDom = (currentThis: any, targetEl: HTMLElement, res: Node | string,
   }
   
   const doc = win.document;
-  const hostSet = SwcUtils.getHelperAndHostSet(win, currentThis);
+  const hostSet = SwcUtils.getHelperAndHostSet(currentThis);
   const id = currentThis._swcId;
 
-  const nodes: Node[] = [];
-
-  if (res instanceof win.Node) {
-    nodes.push(res);
-  } else if (typeof res === 'string' && pos === 'innerHtml') {
-    const t = win.document.createElement('template');
-    t.innerHTML = res;
-    nodes.push(...Array.from(t.content.childNodes));
-  } else if (typeof res === 'string' && pos === 'innerText') {
-    nodes.push(win.document.createTextNode(res));
-  }
+  // 리턴값 → 노드: Node 그대로 / 문자열은 innerText 면 텍스트, 그 외 위치는 HTML / 배열·NodeList 는 항목마다.
+  // Node 판단은 nodeType 으로 — 다른 window(iframe) 에서 만든 노드는 instanceof win.Node 가 false 라서.
+  const toNodes = (v: any): Node[] => {
+    if (v === null || v === undefined || v === false) return [];
+    if (typeof v === 'object' && typeof v.nodeType === 'number') return [v];
+    if (typeof v === 'object' && typeof v.length === 'number') return Array.from(v as ArrayLike<any>).flatMap(toNodes);
+    if (pos === 'innerText') return [doc.createTextNode(String(v))];
+    const t = doc.createElement('template');
+    t.innerHTML = String(v);
+    return Array.from(t.content.childNodes);
+  };
+  const nodes: Node[] = toNodes(res);
 
   SwcUtils.projectProcessHtml(id, nodes, doc);
 
@@ -170,10 +171,9 @@ export function applyNode(selectorOrOptions: ApplyNodeSelector | ApplyNodeOption
     descriptor.value = function (...args: any[]) {
       ensureInit(this);
 
-      const conf = getElementConfig(this);
-      const currentWin = (this as any)._resolveWindow?.(conf) || ((typeof window !== 'undefined' ? window : undefined) as Window);
+      const currentWin = SwcUtils.resolveWindow(this);
       const currentDoc = currentWin.document;
-      const hostSet = SwcUtils.getHelperAndHostSet(currentWin, this);
+      const hostSet = SwcUtils.getHelperAndHostSet(this);
 
       const getTarget = () => {
         const r = options.root || 'auto';
@@ -306,7 +306,7 @@ export function replaceChildren(selectorOrOptions?: ApplyNodeSelector | Omit<App
  * - @clearChildrenNode - Bare decorator, clears children of $this
  */
 export function clearChildrenNode(selector: ApplyNodeSelector, options?: Omit<ApplyNodeOptions, 'position'>): MethodDecorator;
-export function clearChildrenNode(options?: Omit<ApplyNodeOptions, 'position'>): MethodDecorator;
+export function clearChildrenNode(options: Omit<ApplyNodeOptions, 'position'>): MethodDecorator;
 export function clearChildrenNode(target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor): PropertyDescriptor | void;
 export function clearChildrenNode(selectorOrOptions?: ApplyNodeSelector | Omit<ApplyNodeOptions, 'position'> | Object, maybeOptions?: Omit<ApplyNodeOptions, 'position'> | string | symbol, descriptor?: PropertyDescriptor): MethodDecorator | PropertyDescriptor | void {
   // Bare decorator usage: @clearChildrenNode
@@ -332,7 +332,7 @@ export const clearNode = clearChildrenNode;
  * - @innerHtmlNode - Bare decorator, sets innerHTML of $this
  */
 export function innerHtml(selector: ApplyNodeSelector, options?: Omit<ApplyNodeOptions, 'position'>): MethodDecorator;
-export function innerHtml(options?: Omit<ApplyNodeOptions, 'position'>): MethodDecorator;
+export function innerHtml(options: Omit<ApplyNodeOptions, 'position'>): MethodDecorator;
 export function innerHtml(target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor): PropertyDescriptor | void;
 export function innerHtml(selectorOrOptions?: ApplyNodeSelector | Omit<ApplyNodeOptions, 'position'> | Object, maybeOptions?: Omit<ApplyNodeOptions, 'position'> | string | symbol, descriptor?: PropertyDescriptor): MethodDecorator | PropertyDescriptor | void {
   // Bare decorator usage: @innerHtmlNode
@@ -358,7 +358,7 @@ export function innerHtml(selectorOrOptions?: ApplyNodeSelector | Omit<ApplyNode
  * - @innerHtmlLightNode - Bare decorator, sets innerHTML of $this in light DOM
  */
 export function innerHtmlLight(selector: ApplyNodeSelector, options?: Omit<ApplyNodeOptions, 'position' | 'root'>): MethodDecorator;
-export function innerHtmlLight(options?: Omit<ApplyNodeOptions, 'position' | 'root'>): MethodDecorator;
+export function innerHtmlLight(options: Omit<ApplyNodeOptions, 'position' | 'root'>): MethodDecorator;
 export function innerHtmlLight(target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor): PropertyDescriptor | void;
 export function innerHtmlLight(selectorOrOptions?: ApplyNodeSelector | Omit<ApplyNodeOptions, 'position' | 'root'> | Object, maybeOptions?: Omit<ApplyNodeOptions, 'position' | 'root'> | string | symbol, descriptor?: PropertyDescriptor): MethodDecorator | PropertyDescriptor | void {
   // Bare decorator usage: @innerHtmlLightNode
@@ -382,7 +382,7 @@ export function innerHtmlLight(selectorOrOptions?: ApplyNodeSelector | Omit<Appl
  * - @innerHtmlShadowNode - Bare decorator, sets innerHTML of $this in shadow DOM
  */
 export function innerHtmlShadow(selector: ApplyNodeSelector, options?: Omit<ApplyNodeOptions, 'position' | 'root'>): MethodDecorator;
-export function innerHtmlShadow(options?: Omit<ApplyNodeOptions, 'position' | 'root'>): MethodDecorator;
+export function innerHtmlShadow(options: Omit<ApplyNodeOptions, 'position' | 'root'>): MethodDecorator;
 export function innerHtmlShadow(target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor): PropertyDescriptor | void;
 export function innerHtmlShadow(selectorOrOptions?: ApplyNodeSelector | Omit<ApplyNodeOptions, 'position' | 'root'> | Object, maybeOptions?: Omit<ApplyNodeOptions, 'position' | 'root'> | string | symbol, descriptor?: PropertyDescriptor): MethodDecorator | PropertyDescriptor | void {
   // Bare decorator usage: @innerHtmlShadowNode
@@ -406,7 +406,7 @@ export function innerHtmlShadow(selectorOrOptions?: ApplyNodeSelector | Omit<App
  * - @innerTextNode - Bare decorator, sets innerText of $this
  */
 export function innerText(selector: ApplyNodeSelector, options?: Omit<ApplyNodeOptions, 'position'>): MethodDecorator;
-export function innerText(options?: Omit<ApplyNodeOptions, 'position'>): MethodDecorator;
+export function innerText(options: Omit<ApplyNodeOptions, 'position'>): MethodDecorator;
 export function innerText(target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor): PropertyDescriptor | void;
 export function innerText(selectorOrOptions?: ApplyNodeSelector | Omit<ApplyNodeOptions, 'position'> | Object, maybeOptions?: Omit<ApplyNodeOptions, 'position'> | string | symbol, descriptor?: PropertyDescriptor): MethodDecorator | PropertyDescriptor | void {
   // Bare decorator usage: @innerTextNode
@@ -430,7 +430,7 @@ export function innerText(selectorOrOptions?: ApplyNodeSelector | Omit<ApplyNode
  * - @innerTextLightNode - Bare decorator, sets innerText of $this in light DOM
  */
 export function innerTextLight(selector: ApplyNodeSelector, options?: Omit<ApplyNodeOptions, 'position' | 'root'>): MethodDecorator;
-export function innerTextLight(options?: Omit<ApplyNodeOptions, 'position' | 'root'>): MethodDecorator;
+export function innerTextLight(options: Omit<ApplyNodeOptions, 'position' | 'root'>): MethodDecorator;
 export function innerTextLight(target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor): PropertyDescriptor | void;
 export function innerTextLight(selectorOrOptions?: ApplyNodeSelector | Omit<ApplyNodeOptions, 'position' | 'root'> | Object, maybeOptions?: Omit<ApplyNodeOptions, 'position' | 'root'> | string | symbol, descriptor?: PropertyDescriptor): MethodDecorator | PropertyDescriptor | void {
   // Bare decorator usage: @innerTextLightNode
@@ -453,7 +453,7 @@ export function innerTextLight(selectorOrOptions?: ApplyNodeSelector | Omit<Appl
  * - @innerTextShadowNode - Bare decorator, sets innerText of $this in shadow DOM
  */
 export function innerTextShadow(selector: ApplyNodeSelector, options?: Omit<ApplyNodeOptions, 'position' | 'root'>): MethodDecorator;
-export function innerTextShadow(options?: Omit<ApplyNodeOptions, 'position' | 'root'>): MethodDecorator;
+export function innerTextShadow(options: Omit<ApplyNodeOptions, 'position' | 'root'>): MethodDecorator;
 export function innerTextShadow(target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor): PropertyDescriptor | void;
 export function innerTextShadow(selectorOrOptions?: ApplyNodeSelector | Omit<ApplyNodeOptions, 'position' | 'root'> | Object, maybeOptions?: Omit<ApplyNodeOptions, 'position' | 'root'> | string | symbol, descriptor?: PropertyDescriptor): MethodDecorator | PropertyDescriptor | void {
   // Bare decorator usage: @innerTextShadowNode
@@ -476,7 +476,7 @@ export function innerTextShadow(selectorOrOptions?: ApplyNodeSelector | Omit<App
  * - @beforeEndNode - Bare decorator, appends to $this
  */
 export function insertBeforeEnd(selector: ApplyNodeSelector, options?: Omit<ApplyNodeOptions, 'position'>): MethodDecorator;
-export function insertBeforeEnd(options?: Omit<ApplyNodeOptions, 'position'>): MethodDecorator;
+export function insertBeforeEnd(options: Omit<ApplyNodeOptions, 'position'>): MethodDecorator;
 export function insertBeforeEnd(target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor): PropertyDescriptor | void;
 export function insertBeforeEnd(selectorOrOptions?: ApplyNodeSelector | Omit<ApplyNodeOptions, 'position'> | Object, maybeOptions?: Omit<ApplyNodeOptions, 'position'> | string | symbol, descriptor?: PropertyDescriptor): MethodDecorator | PropertyDescriptor | void {
   // Bare decorator usage: @beforeEndNode
@@ -500,7 +500,7 @@ export function insertBeforeEnd(selectorOrOptions?: ApplyNodeSelector | Omit<App
  * - @beforeEndLightNode - Bare decorator, appends to $this in light DOM
  */
 export function insertBeforeEndLight(selector: ApplyNodeSelector, options?: Omit<ApplyNodeOptions, 'position' | 'root'>): MethodDecorator;
-export function insertBeforeEndLight(options?: Omit<ApplyNodeOptions, 'position' | 'root'>): MethodDecorator;
+export function insertBeforeEndLight(options: Omit<ApplyNodeOptions, 'position' | 'root'>): MethodDecorator;
 export function insertBeforeEndLight(target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor): PropertyDescriptor | void;
 export function insertBeforeEndLight(selectorOrOptions?: ApplyNodeSelector | Omit<ApplyNodeOptions, 'position' | 'root'> | Object, maybeOptions?: Omit<ApplyNodeOptions, 'position' | 'root'> | string | symbol, descriptor?: PropertyDescriptor): MethodDecorator | PropertyDescriptor | void {
   // Bare decorator usage: @beforeEndLightNode
@@ -524,7 +524,7 @@ export function insertBeforeEndLight(selectorOrOptions?: ApplyNodeSelector | Omi
  * - @beforeEndShadowNode - Bare decorator, appends to $this in shadow DOM
  */
 export function insertBeforeEndShadow(selector: ApplyNodeSelector, options?: Omit<ApplyNodeOptions, 'position' | 'root'>): MethodDecorator;
-export function insertBeforeEndShadow(options?: Omit<ApplyNodeOptions, 'position' | 'root'>): MethodDecorator;
+export function insertBeforeEndShadow(options: Omit<ApplyNodeOptions, 'position' | 'root'>): MethodDecorator;
 export function insertBeforeEndShadow(target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor): PropertyDescriptor | void;
 export function insertBeforeEndShadow(selectorOrOptions?: ApplyNodeSelector | Omit<ApplyNodeOptions, 'position' | 'root'> | Object, maybeOptions?: Omit<ApplyNodeOptions, 'position' | 'root'> | string | symbol, descriptor?: PropertyDescriptor): MethodDecorator | PropertyDescriptor | void {
   // Bare decorator usage: @beforeEndShadowNode
@@ -548,7 +548,7 @@ export function insertBeforeEndShadow(selectorOrOptions?: ApplyNodeSelector | Om
  * - @afterBeginNode - Bare decorator, prepends to $this
  */
 export function insertAfterBegin(selector: ApplyNodeSelector, options?: Omit<ApplyNodeOptions, 'position'>): MethodDecorator;
-export function insertAfterBegin(options?: Omit<ApplyNodeOptions, 'position'>): MethodDecorator;
+export function insertAfterBegin(options: Omit<ApplyNodeOptions, 'position'>): MethodDecorator;
 export function insertAfterBegin(target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor): PropertyDescriptor | void;
 export function insertAfterBegin(selectorOrOptions?: ApplyNodeSelector | Omit<ApplyNodeOptions, 'position'> | Object, maybeOptions?: Omit<ApplyNodeOptions, 'position'> | string | symbol, descriptor?: PropertyDescriptor): MethodDecorator | PropertyDescriptor | void {
   // Bare decorator usage: @afterBeginNode
@@ -572,7 +572,7 @@ export function insertAfterBegin(selectorOrOptions?: ApplyNodeSelector | Omit<Ap
  * - @afterBeginLightNode - Bare decorator, prepends to $this in light DOM
  */
 export function insertAfterBeginLight(selector: ApplyNodeSelector, options?: Omit<ApplyNodeOptions, 'position' | 'root'>): MethodDecorator;
-export function insertAfterBeginLight(options?: Omit<ApplyNodeOptions, 'position' | 'root'>): MethodDecorator;
+export function insertAfterBeginLight(options: Omit<ApplyNodeOptions, 'position' | 'root'>): MethodDecorator;
 export function insertAfterBeginLight(target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor): PropertyDescriptor | void;
 export function insertAfterBeginLight(selectorOrOptions?: ApplyNodeSelector | Omit<ApplyNodeOptions, 'position' | 'root'> | Object, maybeOptions?: Omit<ApplyNodeOptions, 'position' | 'root'> | string | symbol, descriptor?: PropertyDescriptor): MethodDecorator | PropertyDescriptor | void {
   // Bare decorator usage: @afterBeginLightNode
@@ -596,7 +596,7 @@ export function insertAfterBeginLight(selectorOrOptions?: ApplyNodeSelector | Om
  * - @replaceChildrenLightNode - Bare decorator, replaces children of $this in light DOM
  */
 export function replaceChildrenLight(selector: ApplyNodeSelector, options?: Omit<ApplyNodeOptions, 'position' | 'root'>): MethodDecorator;
-export function replaceChildrenLight(options?: Omit<ApplyNodeOptions, 'position' | 'root'>): MethodDecorator;
+export function replaceChildrenLight(options: Omit<ApplyNodeOptions, 'position' | 'root'>): MethodDecorator;
 export function replaceChildrenLight(target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor): PropertyDescriptor | void;
 export function replaceChildrenLight(selectorOrOptions?: ApplyNodeSelector | Omit<ApplyNodeOptions, 'position' | 'root'> | Object, maybeOptions?: Omit<ApplyNodeOptions, 'position' | 'root'> | string | symbol, descriptor?: PropertyDescriptor): MethodDecorator | PropertyDescriptor | void {
   // Bare decorator usage: @replaceChildrenLightNode
@@ -619,7 +619,7 @@ export function replaceChildrenLight(selectorOrOptions?: ApplyNodeSelector | Omi
  * - @clearChildrenLightNode - Bare decorator, clears children of $this in light DOM
  */
 export function clearChildrenLight(selector: ApplyNodeSelector, options?: Omit<ApplyNodeOptions, 'position' | 'root'>): MethodDecorator;
-export function clearChildrenLight(options?: Omit<ApplyNodeOptions, 'position' | 'root'>): MethodDecorator;
+export function clearChildrenLight(options: Omit<ApplyNodeOptions, 'position' | 'root'>): MethodDecorator;
 export function clearChildrenLight(target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor): PropertyDescriptor | void;
 export function clearChildrenLight(selectorOrOptions?: ApplyNodeSelector | Omit<ApplyNodeOptions, 'position' | 'root'> | Object, maybeOptions?: Omit<ApplyNodeOptions, 'position' | 'root'> | string | symbol, descriptor?: PropertyDescriptor): MethodDecorator | PropertyDescriptor | void {
   // Bare decorator usage: @clearChildrenLightNode
@@ -642,15 +642,7 @@ export const node = applyNode;
 
 // ─── 편의 헬퍼 (selector/root 생략) ───
 
-export function applyThis(options?: ApplyNodeQueryOptions): MethodDecorator;
-export function applyThis(target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor): PropertyDescriptor | void;
-export function applyThis(optionsOrTarget?: ApplyNodeQueryOptions | Object, propertyKey?: string | symbol, descriptor?: PropertyDescriptor): MethodDecorator | PropertyDescriptor | void {
-  if ((typeof propertyKey === 'string' || typeof propertyKey === 'symbol') && descriptor !== undefined) {
-    return (applyNode('$this', {}) as any)(optionsOrTarget, propertyKey, descriptor);
-  }
-  return applyNode('$this', optionsOrTarget as ApplyNodeQueryOptions);
-}
-export function applyAppHost(options?: ApplyNodeQueryOptions): MethodDecorator;
+export function applyAppHost(options: ApplyNodeQueryOptions): MethodDecorator;
 export function applyAppHost(target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor): PropertyDescriptor | void;
 export function applyAppHost(optionsOrTarget?: ApplyNodeQueryOptions | Object, propertyKey?: string | symbol, descriptor?: PropertyDescriptor): MethodDecorator | PropertyDescriptor | void {
   if ((typeof propertyKey === 'string' || typeof propertyKey === 'symbol') && descriptor !== undefined) {

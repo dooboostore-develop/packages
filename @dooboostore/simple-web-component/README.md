@@ -10,6 +10,8 @@
 
 ## 🎯 Core Features
 
+> **No arguments → no parentheses.** Every decorator that can run without arguments is used bare (`@query`, `@innerHtml`, `@eventClick`, `@swcAppRouteGo`, ...). The empty-call form `@x()` is a type error; pass arguments only when you have them (`@innerHtml('.wrap')`, `@eventClick({ once: true })`).
+
 ### 1. **@elementDefine** - Component Registration
 Register Web Components with automatic lifecycle management and DI support.
 
@@ -23,6 +25,20 @@ class MyComponent extends HTMLElement {
 ```
 
 **`@elementDefine(name, options?)` options:** `window`, `extends` (customized built-in, e.g. `'body'`), `useShadow` (`true | 'open' | 'closed'`), `observedAttributes`, `customElementRegistry`.
+`window` may be another window than the one running the code (an iframe's, or a server-side DOM window) — the class then extends that window's `HTMLElement` (`class X extends w.HTMLElement`).
+
+**Inheritance:** decorators on a base class apply to its subclasses — lifecycle hooks, events, observers, timers, message/route subscriptions, `@changedAttribute`, `@query`, `@state` …
+- hooks on both run parent first, then child
+- a subclass's own decorators never leak into the base class or into sibling subclasses
+- a subclass of a class that is itself `@elementDefine`d runs each lifecycle once (not once per level)
+
+```typescript
+class BasePage extends HTMLElement {
+  @onInitialize init(@inject(AuthService.SYMBOL) auth: AuthService) { this.auth = auth; }
+  @onDisconnected cleanup() { /* … */ }
+}
+@elementDefine('my-page') class MyPage extends BasePage {}   // init / cleanup run for <my-page>
+```
 
 ### 2. **Dependency Injection (@onInitialize)**
 Inject services into Web Components using the `@onInitialize` decorator.
@@ -78,7 +94,7 @@ Manage dynamic content insertion into named slots using slot decorators. Slots a
 @elementDefine('content-manager')
 class ContentManager extends HTMLElement {
   // Method: Replace children in slot with HTML
-  @addEventListener('.update-btn', 'click')
+  @event('.update-btn', 'click')
   @replaceChildrenHtmlSlot('main-content')
   updateContent() {
     return '<div>Updated content here</div>';
@@ -97,7 +113,7 @@ class ContentManager extends HTMLElement {
   }
 
   // Method: Clear slot content
-  @addEventListener('.clear-btn', 'click')
+  @event('.clear-btn', 'click')
   @clearSlot('main-content')
   clearContent() {
     return true;
@@ -168,7 +184,7 @@ class CounterApp extends HTMLElement {
   @state('isActive')
   isActive: boolean = false;
 
-  @addEventListener('button', 'click')
+  @event('button', 'click')
   increment() {
     this.count++;  // Triggers automatic DOM update
   }
@@ -181,7 +197,7 @@ class CounterApp extends HTMLElement {
         <!--[html @message@ ]-->
         
         <!-- Text directive: render as text -->
-        <!--[text Count: @count@ ]-->
+        <!--[text 'Count: ' + @count@ ]-->
         
         <!-- Attribute binding with a:: prefix -->
         <div a::title="'Count is'+@count@"></div>
@@ -229,7 +245,7 @@ State values accessed in templates via `@stateName@` syntax are read-only. You c
 
 ```typescript
 // ✅ CORRECT - Update state from method
-@addEventListener('button', 'click')
+@event('button', 'click')
 increment() {
   this.count++;  // Direct property assignment in code
 }
@@ -251,7 +267,7 @@ class UserProfile extends HTMLElement {
   @state('isEditing')
   isEditing = false;
 
-  @addEventListener('.edit-btn', 'click')
+  @event('.edit-btn', 'click')
   toggleEdit() {
     this.isEditing = !this.isEditing;
   }
@@ -278,17 +294,17 @@ class UserProfile extends HTMLElement {
 
 ### 4. **Event Handling**
 
-#### @addEventListener
+#### @event
 Attach event listeners to elements with optional filter support.
 
 ```typescript
-@addEventListener('#submit-btn', 'click')
+@event('#submit-btn', 'click')
 onSubmit(event: Event) {
   console.log('Submitted');
 }
 
 // Filter events - only process matching events
-@addEventListener('button', 'click', {
+@event('button', 'click', {
   filter: (event, meta) => {
     return (event.target as HTMLElement)?.id === 'critical-button';
   }
@@ -298,27 +314,22 @@ onCriticalClick(event: Event) {
 }
 ```
 
-**@addEventListener Decorator Variants:**
-- `addEventListener(selector, type, options)` - Full form
-- `event(selector, type, options)` - Short alias
-- `addEventListenerThis(type, options)` - Listen on $this element
-- `addEventListenerAppHost(type, options)` - Listen on $appHost
-- `addEventListenerWindow(type, options)` - Listen on window
-- `addEventListenerDocument(type, options)` - Listen on document
-- `addEventListenerDelegate(selector, type, options)` - Event delegation
-- `eventDelegate(selector, type, options)` - Short alias
-- `addEventListenerDelegateLight(selector, type, options)` - Delegate in light DOM
-- `eventDelegateLight(selector, type, options)` - Short alias
-- `addEventListenerDelegateShadow(selector, type, options)` - Delegate in shadow DOM
-- `eventDelegateShadow(selector, type, options)` - Short alias
-- `addEventListenerDelegateAll(selector, type, options)` - Delegate in all DOM
-- `eventDelegateAll(selector, type, options)` - Short alias
-- `addEventListenerLight(selector, type, options)` / `eventLight(...)` - Bind (non-delegated) in light DOM
-- `addEventListenerShadow(selector, type, options)` / `eventShadow(...)` - Bind (non-delegated) in shadow DOM
-- `addEventListenerAll(selector, type, options)` / `eventAll(...)` - Bind (non-delegated) in both light & shadow DOM
-- `addEventListenerMutation(selector, type, options)` / `eventMutation(...)` - Delegate via `MutationObserver` instead of event bubbling (useful for non-bubbling events like `focus`/`blur`); `*Light`/`*Shadow`/`*All` variants also available
+**@event Decorator Variants:**
+- `event(selector, type, options)` - Full form
+- `event(type, options)` (no selector) - Listen on $this element. With the default `root: 'auto'` it binds to the shadowRoot when the element has one (clicks inside the shadow bubble to it, but events dispatched on the element itself — `el.click()`, a parent's `el.dispatchEvent(...)` — never go down into it); use `{ root: 'light' }` to bind the element itself, `{ root: 'all' }` for both
+- `eventAppHost(type, options)` - Listen on $appHost
+- `eventWindow(type, options)` - Listen on window
+- `eventDocument(type, options)` - Listen on document
+- `eventDelegate(selector, type, options)` - Event delegation
+- `eventDelegateLight(selector, type, options)` - Delegate in light DOM
+- `eventDelegateShadow(selector, type, options)` - Delegate in shadow DOM
+- `eventDelegateAll(selector, type, options)` - Delegate in all DOM
+- `eventLight(selector, type, options)` - Bind (non-delegated) in light DOM
+- `eventShadow(selector, type, options)` - Bind (non-delegated) in shadow DOM
+- `eventAll(selector, type, options)` - Bind (non-delegated) in both light & shadow DOM
+- `eventMutation(selector, type, options)` - Delegate via `MutationObserver` instead of event bubbling (useful for non-bubbling events like `focus`/`blur`); `*Light`/`*Shadow`/`*All` variants also available
 
-**@addEventListener Options:**
+**@event Options:**
 - `capture` / `once` / `passive` - standard listener options
 - `preventDefault` / `stopPropagation` / `stopImmediatePropagation` - applied before the handler runs
 - `filter: (event, { currentThis, helper }) => boolean | Promise<boolean>` - skip the handler when it returns false
@@ -327,7 +338,7 @@ onCriticalClick(event: Event) {
 - `debounceTime` / `throttleTime` (ms) / `distinctUntilChanged` - rate-limit the event stream
 - `removeListener: (target, options) => void` - cleanup callback on disconnect
 
-**Event-Type-Specific Aliases (eventClick, eventInputThis, ...):**
+**Event-Type-Specific Aliases (eventClick, eventInputDelegateShadow, ...):**
 
 Beyond the generic `event(selector, type, options)` form, every scope/delegate variant above is also pre-bound to ~59 common DOM event types, so you don't have to repeat the type string:
 
@@ -335,23 +346,22 @@ Beyond the generic `event(selector, type, options)` form, every scope/delegate v
 @eventClick('.logo')
 onLogoClick() { ... }
 
+// No selector → the element itself (same as @event('click')); bare form, no parens
+@eventClick
+onClick(event: MouseEvent) { ... }
+
+// Options without a selector → still the element itself
+@eventKeydown({ filter: (e, meta) => !meta.currentThis.isLocked })
+onKeydown(event: KeyboardEvent) { ... }
+
 // Same as: @eventDelegateLight('.item', 'click')
 @eventClickDelegateLight('.item')
 onItemClick(event: Event) { ... }
-
-// Same as: @addEventListenerThis('keydown')
-// No selector/options needed → bare form works too (no parens)
-@eventKeydownThis
-onKeydown(event: KeyboardEvent) { ... }
-
-// Still callable with options when you need them
-@eventKeydownThis({ filter: (e, meta) => !meta.currentThis.isLocked })
-onKeydownFiltered(event: KeyboardEvent) { ... }
 ```
 
-Naming pattern: `event` + `PascalCase(type)` + scope suffix (`''`(base) / `DelegateLight` / `DelegateShadow` / `DelegateAll` / `Delegate` / `MutationLight` / `MutationShadow` / `MutationAll` / `Mutation` / `Light` / `Shadow` / `All` / `This` / `AppHost` / `Window` / `Document`) — e.g. `eventClick`, `eventClickDelegateShadow`, `eventDblclickThis`, `eventPointerdownDelegateAll`, `eventKeydownWindow`.
+Naming pattern: `event` + `PascalCase(type)` + scope suffix (`''`(base) / `DelegateLight` / `DelegateShadow` / `DelegateAll` / `Delegate` / `MutationLight` / `MutationShadow` / `MutationAll` / `Mutation` / `Light` / `Shadow` / `All` / `AppHost` / `Window` / `Document`) — e.g. `eventClick`, `eventClickDelegateShadow`, `eventDblclick`, `eventPointerdownDelegateAll`, `eventKeydownWindow`.
 
-The `This`/`AppHost`/`Window`/`Document` variants (e.g. `eventClickThis`, `eventClickWindow`) take no selector — only an optional `options`, so they support both bare usage (`@eventClickThis`) and factory usage (`@eventClickThis({...})`), the same dual-mode pattern `@subscribeSwcAppRouteChange`/`@subscribeSwcAppMessage` already use. The `Delegate*`/`Light`/`Shadow`/`All`/base variants still require a `selector` as their first argument, so they must always be called with parens.
+The base alias (`eventClick`) takes an optional selector: bare `@eventClick` or `@eventClick({...})` listens on the element itself, `@eventClick('.btn', {...})` on the selector (there is no separate `…This` variant). The `AppHost`/`Window`/`Document` variants take no selector — only options — so they are used bare (`@eventClickWindow`) or with options. Never use empty parens. The `Delegate*`/`Light`/`Shadow`/`All` variants require a `selector`.
 
 Covered event types include mouse (`click`, `dblclick`, `mousedown`, `mouseup`, `mousemove`, `mouseover`, `mouseout`, `mouseenter`, `mouseleave`, `contextmenu`, `wheel`), keyboard (`keydown`, `keyup`, `keypress`), form (`input`, `change`, `submit`, `reset`, `invalid`, `select`), focus (`focus`, `blur`, `focusin`, `focusout`), drag & drop (`dragstart`, `drag`, `dragend`, `dragenter`, `dragleave`, `dragover`, `drop`), touch (`touchstart`, `touchmove`, `touchend`, `touchcancel`), pointer (`pointerdown`, `pointerup`, `pointermove`, `pointerover`, `pointerout`, `pointerenter`, `pointerleave`, `pointercancel`), clipboard (`copy`, `cut`, `paste`), animation/transition (`animationstart/end/iteration/cancel`, `transitionstart/end/cancel/run`), and misc (`scroll`, `resize`, `load`, `error`, `toggle`).
 
@@ -359,27 +369,27 @@ These aliases are generated in `addEventListener.ts` from a small internal `make
 
 #### Order-Independent Parameter Decorators (@eventObject, @matchedElement, @hostSet, @helperHostSet, @helperSet)
 
-`@addEventListener`-bound handlers normally receive fixed positional arguments (`(event, legacyHelper1, legacyHelper2)`). If you'd rather not memorize that order, decorate individual parameters instead — order and position no longer matter, and any parameter left undecorated in a method that uses none of these decorators still gets the legacy positional arguments (fully backward-compatible):
+`@event`-bound handlers normally receive fixed positional arguments (`(event, legacyHelper1, legacyHelper2)`). If you'd rather not memorize that order, decorate individual parameters instead — order and position no longer matter, and any parameter left undecorated in a method that uses none of these decorators still gets the legacy positional arguments (fully backward-compatible):
 
 ```typescript
-import { addEventListener, eventObject, matchedElement, hostSet, helperHostSet, helperSet } from '@dooboostore/simple-web-component';
+import { event, eventObject, matchedElement, hostSet, helperHostSet, helperSet } from '@dooboostore/simple-web-component';
 
 @elementDefine('product-list')
 class ProductList extends HTMLElement {
   // Order can be anything you like
-  @addEventListenerDelegateLight('.item', 'click')
+  @eventDelegateLight('.item', 'click')
   onItemClick(@matchedElement $item: Element, @eventObject event: Event) {
     console.log('clicked item:', $item, event);
   }
 
   // Only need the host tree info? Just ask for @hostSet.
-  @eventClickThis()
+  @eventClick
   onHostClick(@hostSet hs: HostSet) {
     console.log(hs.$appHost, hs.$hosts);
   }
 
   // Need DOM helpers ($q, $qa, ...) too? Use @helperHostSet (superset of @hostSet) or @helperSet (helpers only).
-  @eventClickThis()
+  @eventClick
   onHostClickFull(@helperHostSet full: HelperHostSet, @helperSet helpers: HelperSet) { ... }
 }
 ```
@@ -389,6 +399,8 @@ class ProductList extends HTMLElement {
 - `@hostSet` - host-ancestor-tree info only (`$host`, `$parentHost`, `$hosts`, `$appHost`, `$appHosts`, `$firstHost`, `$lastHost`, `$firstAppHost`, `$lastAppHost`)
 - `@helperHostSet` - `@hostSet` + DOM/window helpers (`$d`, `$w`, `$q`, `$qa`, `$qi`) + `$this`
 - `@helperSet` - DOM/window helpers only (`$d`, `$w`, `$q`, `$qa`, `$qi`), no host-tree info
+
+`$w`/`$d` (and the `helper` passed to every decorator's `filter`/`before`/`finally`) come from the element's window, resolved the same way everywhere: its own `@elementDefine({ window })` → the nearest ancestor SWC host's → the global `window`. Route subscribers (`@subscribeSwcAppRouteChange`) and app messages use the SwcApp's runtime `window` instead (the per-request window under SSR).
 
 The same mechanism (and the same 5 decorators, plus two more) also applies to:
 - **`@onInitialize`/`@onConnectedBefore`/`@onConnectedAfter`/... lifecycle methods** — can freely mix `@hostSet`/`@helperHostSet`/`@helperSet` with `@inject(...)` on the same method.
@@ -423,8 +435,9 @@ async onLogin() {
 **@emitCustomEvent Decorator Variants:**
 - `emitCustomEvent(target, type, options)` - Full form
 - `emit(target, type, options)` - Short alias
-- `emitThis(type, options)` - Emit from $this element (`emitAppHost` / `emitWindow` / `emitDocument` take `(type, options)`; `emitLight` / `emitShadow` / `emitAll` take `(selector, type, options)`)
+- `emitCustomEvent(type, options)` - Without a selector it emits from the element itself (`emitAppHost` / `emitWindow` / `emitDocument` take `(type, options)`; `emitLight` / `emitShadow` / `emitAll` take `(selector, type, options)`)
 - Options: `bubbles`, `composed`, `cancelable`, `filter`, `valueKey`, `attributeName`, `root`
+- `valueKey`: if the returned object has that key, only its value becomes `detail` (otherwise the whole return value); default key `EMIT_CUSTOM_EVENT_METADATA_KEY`. The method still returns the full value, so several emit/publish decorators can share one return object
 
 #### @publishSwcAppMessage
 Publish messages through the message bus when method completes.
@@ -445,12 +458,11 @@ updateProfile() {
 ```
 
 **@publishSwcAppMessage Decorator Variants:**
-- `publishSwcAppMessage` - Bare decorator, publish without message type (equivalent to `publishSwcAppMessage()`)
-- `publishSwcAppMessage()` - Same as bare, but as a factory call — useful when you need the call-with-parens form for consistency with a neighboring decorator
+- `publishSwcAppMessage` - Bare decorator, publish without message type
 - `publishSwcAppMessage(messageType)` - Publish with specific message type
 - `publishSwcAppMessage(messageType, { valueKey: 'customKey' })` - Publish with custom value extraction
 - `publishSwcAppMessage({ messageType: 'type', valueKey: 'customKey' })` - Publish with options object
-- `publishMessage` / `publishMessage()` - Short alias, same bare/factory duality
+- `publishMessage` - Short alias
 - `publishMessage(messageType)` - Short alias with message type
 - `publishMessage(messageType, options)` - Short alias with options
 
@@ -467,40 +479,40 @@ handleMultipleEvents() {
 }
 ```
 
-#### @emitThis
-Emit events from $this. Pass `attributeName` so a parent can attach a handler through that attribute
+#### Emitting from the element itself
+`@emitCustomEvent(type, options)` without a selector emits from $this. Pass `attributeName` so a parent can attach a handler through that attribute
 (there is no default attribute name; set it explicitly). The attribute script gets `event` and `$data` (= `event.detail`).
 
 ```typescript
-@emitThis('navigate', { attributeName: 'on-emit-navigate' })
+@emitCustomEvent('navigate', { attributeName: 'on-emit-navigate' })
 onNavClick(e: any) {
   return { path: e.target.dataset.path };
 }
 // Parent: <app-header on-emit-navigate="$host.onHeaderNavigate(event, $data)"></app-header>
 ```
 
-#### @addEventListenerThis
-Listen to events on the component element itself (`$this` selector).
+#### Listening on the element itself
+`@event(type, options)` without a selector (or a typed alias without one, e.g. bare `@eventClick`) listens on the component element itself (`$this`). If the element has a shadow root, the default `root: 'auto'` binds to the shadowRoot — clicks inside the shadow are received, events dispatched on the element itself are not. Use `@event('click', { root: 'light' })` (or `'all'`) to also catch those.
 
 ```typescript
-@addEventListenerThis('click')
+@event('click')
 onHostClick(event: Event) {
   console.log('Host element clicked');
 }
 ```
 
-#### @addEventListenerAppHost
+#### @eventAppHost
 Listen to events on the app root host element (`$appHost` selector). Enables selective event handling with filters.
 
 ```typescript
 // Listen to all user-action events from $appHost
-@addEventListenerAppHost('user-action')
+@eventAppHost('user-action')
 onUserAction(e: CustomEvent) {
   console.log('User action:', e.detail);
 }
 
 // Filter specific events - loose coupling pattern
-@addEventListenerAppHost('user-action', {
+@eventAppHost('user-action', {
   filter: (event, helper) => event.detail?.type === 'login'
 })
 onUserLogin(e: CustomEvent) {
@@ -508,7 +520,7 @@ onUserLogin(e: CustomEvent) {
 }
 
 // Different component filtering same event differently
-@addEventListenerAppHost('user-action', {
+@eventAppHost('user-action', {
   filter: (event, helper) => event.detail?.type === 'logout'
 })
 onUserLogout(e: CustomEvent) {
@@ -544,13 +556,13 @@ listItems?: HTMLLIElement[];
 Special selectors: `$this`, `$host`, `$parentHost`, `$appHost`, `$firstHost`, `$lastHost`, `$firstAppHost`, `$lastAppHost`, `$hosts`, `$appHosts`, `$window`, `$document`. A function selector `(currentThis, helper) => Element | Element[] | NodeList | null` is also accepted (no `root` option).
 
 ```typescript
-@query('$this')
-self?: HTMLElement;          // the component itself
+@query                       // bare = the component itself (same as @query('$this')); @queryAll → [itself]
+self?: HTMLElement;          // no arguments → no parentheses: @query() / @queryAll() are type errors
 
 @query('.item', { pick: 'last' })   // 'first' (default) | 'last' | number → single; 'all' | 'even' | 'odd' → array
 lastItem?: HTMLElement;
 
-@queryIn('shadow', 'even')('.row')  // root + pick factory
+@(queryIn('shadow', 'even')('.row'))  // root + pick factory — the chained call needs the outer parentheses
 evenRows?: HTMLElement[];
 ```
 
@@ -602,7 +614,7 @@ class ProductCard extends HTMLElement {
 - `@attribute('selector', 'attr-name', options?)` - selector target (`nav`, `#user`, `.card`, `$appHost`, ...)
 - `@attribute((this, helper) => el, 'attr-name')` - function selector
 - `@attribute('selector', 'attr-name', { valueKey: 'k' })` - (method) set only `k` from the returned object
-- Options: `type`, `filter`, `valueKey`, `root`. Shorthands: `attrThis`, `attrAppHost`, `attrLight`, `attrShadow`, `attrAll`
+- Options: `type`, `filter`, `valueKey`, `root`. Shorthands: `attrAppHost`, `attrLight`, `attrShadow`, `attrAll` (for $this just give the name: `@attribute('name')`)
 - A field getter evaluates a `{{= expr }}` attribute value (see "Attribute Expressions")
 
 #### @removeAttribute (Method Decorator)
@@ -645,7 +657,7 @@ class ReactiveComponent extends HTMLElement {
 - `attributeName` - Attribute name to listen for (optional, defaults to method name)
 - `type` - Type converter: `Number`, `Boolean`, or `String`
 - `while` - `'connected'`: skip changes while disconnected, and run once on connect with the current value (if set)
-- `filter` / `before` / `finally` - same hook pattern as `@addEventListener` (`before` result → `@changedAttributeBeforeReturn`)
+- `filter` / `before` / `finally` - same hook pattern as `@event` (`before` result → `@changedAttributeBeforeReturn`)
 
 ### 6.5 **Property Binding**
 
@@ -714,7 +726,7 @@ class ListObserver extends HTMLElement {
 ```
 
 **Callback signature:**
-- `matchedEls: HTMLElement[]` - Elements matching the selector (1st arg)
+- `matchedEls: HTMLElement[]` - Elements matching the selector (1st arg). For the element itself (bare `@mutationObserver` / `$this`) it is just `[element]` — the added/removed nodes are in `mutations`
 - `mutations: MutationRecord[]` - Original mutation records (2nd arg)
 - `observer: MutationObserver` - The observer instance (3rd arg)
 
@@ -746,7 +758,7 @@ Detect element size changes and react automatically.
 @elementDefine('chart-widget')
 class ChartWidget extends HTMLElement {
   // Re-render when component size changes (selector defaults to $this)
-  @resizeObserverLight()
+  @resizeObserverLight
   onResize(matchedEls: HTMLElement[], entries: ResizeObserverEntry[], observer: ResizeObserver) {
     this.redraw(entries[0]?.contentRect);
   }
@@ -838,20 +850,20 @@ Surgically add, replace, or remove nodes in the DOM with fine-grained control.
 ```typescript
 @elementDefine('content-updater')
 class ContentUpdater extends HTMLElement {
-  @addEventListener('button', 'click')
-  @replaceChildren()
+  @event('button', 'click')
+  @replaceChildren
   updateContent() {
     return `<div>New content</div>`;
   }
 
-  @addEventListener('.append-btn', 'click')
-  @insertBeforeEnd()
+  @event('.append-btn', 'click')
+  @insertBeforeEnd
   appendContent() {
     return `<p>Appended content</p>`;
   }
 
-  @addEventListener('.prepend-btn', 'click')
-  @insertAfterBegin()
+  @event('.prepend-btn', 'click')
+  @insertAfterBegin
   prependContent() {
     return `<p>Prepended content</p>`;
   }
@@ -870,13 +882,13 @@ class ContentUpdater extends HTMLElement {
 ```
 
 **@applyNode Decorator Variants:**
-- `applyNode(selector?, options?)` / `apply` / `node` - Full form (selector defaults to `$this`, position defaults to `replaceChildren`); `applyThis` / `applyAppHost` / `applyLight` / `applyShadow` / `applyAll`
-- `replaceChildren()` / `replaceChildrenLight()` - Replace all children
-- `insertBeforeEnd()` / `insertBeforeEndLight()` / `insertBeforeEndShadow()` - Append to end
-- `insertAfterBegin()` / `insertAfterBeginLight()` - Prepend to beginning
-- `innerHtml()` / `innerHtmlLight()` / `innerHtmlShadow()` - Set innerHTML
-- `innerText()` / `innerTextLight()` / `innerTextShadow()` - Set innerText
-- `clearChildrenNode()` / `clearChildrenLight()` - Remove all children
+- `applyNode(selector?, options?)` / `apply` / `node` - Full form (selector defaults to `$this`). Position: with no options at all it is `replaceChildren`; once you pass an options object without `position` it is `beforeEnd` (append) — bare `@applyAppHost` appends too. Pass `position` explicitly when it matters; `applyAppHost` / `applyLight` / `applyShadow` / `applyAll`
+- `@replaceChildren` / `@replaceChildrenLight` - Replace all children
+- `@insertBeforeEnd` / `@insertBeforeEndLight` / `@insertBeforeEndShadow` - Append to end
+- `@insertAfterBegin` / `@insertAfterBeginLight` - Prepend to beginning
+- `@innerHtml` / `@innerHtmlLight` / `@innerHtmlShadow` - Set innerHTML
+- `@innerText` / `@innerTextLight` / `@innerTextShadow` - Set innerText
+- `@clearChildrenNode` / `@clearChildrenLight` - Remove all children
 - Options: `position`, `root`, `filter`, `fallback`, `valueKey`. Ready-made `filter` helpers: `skipIfSameTagPresent`, `skipIfExists(selector)`, `skipIfEmpty`, `applyIfChanged` (e.g. `@innerHtmlLight({ filter: skipIfExists('my-page') })`)
 
 **Position Options:**
@@ -904,7 +916,7 @@ class StyledComponent extends HTMLElement {
   @state('isActive')
   isActive = false;
 
-  @addEventListener('button', 'click')
+  @event('button', 'click')
   @updateStyle
   toggleStyle() {
     return {
@@ -913,7 +925,7 @@ class StyledComponent extends HTMLElement {
     };
   }
 
-  @addEventListener('.toggle-btn', 'click')
+  @event('.toggle-btn', 'click')
   @updateClass
   toggleState() {
     return {
@@ -938,13 +950,13 @@ class StyledComponent extends HTMLElement {
 - `setStyle` - Clear and set styles
 - `updateStyle` - Update/merge styles
 - `removeStyle` - Remove specific styles
-- `applyStyle(selector, action?)` / `style` - action `'set' | 'update' | 'remove'` (default `'update'`); `styleThis(action?)` / `styleAppHost` / `styleLight` / `styleShadow` / `styleAll`
+- `applyStyle(selector, action?)` / `style` - action `'set' | 'update' | 'remove'` (default `'update'`); `styleAppHost` / `styleLight` / `styleShadow` / `styleAll` (for $this use bare `@setStyle` / `@updateStyle` / `@removeStyle`)
 
 **@applyClass Variants:** (each takes `(selector?, classMapOrOptions?, options?)`; bare form targets `$this`)
 - `setClass` - Replace all classes
 - `updateClass` - Toggle classes by a `{ className: boolean }` map
 - `addClass` / `removeClass` / `toggleClass`
-- `applyClass(selector, action?)` / `cls` - action `'set' | 'update' | 'add' | 'remove' | 'toggle'` (default `'update'`); `clsThis(action?)` / `clsAppHost` / `clsLight` / `clsShadow` / `clsAll`
+- `applyClass(selector, action?)` / `cls` - action `'set' | 'update' | 'add' | 'remove' | 'toggle'` (default `'update'`); `clsAppHost` / `clsLight` / `clsShadow` / `clsAll` (for $this use bare `@setClass` / `@updateClass` / `@addClass` / `@removeClass` / `@toggleClass`)
 - Note: for the class decorators, an options object in the 2nd position must contain `root` (e.g. `{ root: 'auto', valueKey: 'k' }`); an object without `root` is read as a class map
 
 ### 8.5 **Lifecycle Hooks**
@@ -1172,11 +1184,11 @@ class LoginForm extends HTMLElement {
 ```
 
 **@publishSwcAppMessage Decorator Variants:**
-- `publishSwcAppMessage` / `publishSwcAppMessage()` - Publish without message type (bare or factory form, both equivalent)
+- `publishSwcAppMessage` - Publish without message type (bare)
 - `publishSwcAppMessage(messageType)` - Publish with specific message type
 - `publishSwcAppMessage(messageType, { valueKey: 'customKey' })` - Publish with custom value extraction
 - `publishSwcAppMessage({ messageType: 'type', valueKey: 'customKey' })` - Publish with options object
-- `publishMessage` / `publishMessage()` - Short alias
+- `publishMessage` - Short alias
 - `publishMessage(messageType)` - Short alias with message type
 - `publishMessage(messageType, options)` - Short alias with options
 
@@ -1795,7 +1807,7 @@ Most DOM decorators take an **optional selector** that defaults to `$this` when 
 @applyClass('selector', 'update')
 method() { ... }
 
-@applyClass('$this', 'update')  // a single string is treated as the selector, so name $this explicitly (or use @clsThis('update'))
+@applyClass('$this', 'update')  // a single string is treated as the selector, so name $this explicitly (or use bare @updateClass)
 method() { ... }
 
 @applyClass  // Bare decorator - selector defaults to $this
@@ -1870,7 +1882,7 @@ class MyComponent extends HTMLElement {
   listItems?: HTMLLIElement[];
 
   // Emit custom events
-  @addEventListener('button', 'click')
+  @event('button', 'click')
   @emitCustomEvent('$this', 'item-selected')
   onItemSelect() {
     return { itemId: this.selectedId };
@@ -1940,6 +1952,20 @@ constructor(private service: Service) { super(); }  // Web Components can't have
 
 ---
 
+## 🧪 Testing
+
+`pnpm test` type-checks the tests and runs them in a real browser (Chromium via Playwright, falling back to the installed Chrome) — no jsdom. Each test gets its own same-origin iframe window, so custom elements, `history` and `location` never leak between tests.
+
+```bash
+pnpm test                                            # type checks + all tests
+node test/unit/run.mjs query event                   # only files whose name contains "query" / "event"
+SWC_TEST_GREP='bare @query' node test/unit/run.mjs   # only tests whose name matches
+SWC_TEST_DEBUG=1 node test/unit/run.mjs route        # print the page console
+SWC_TEST_SERVE=1 node test/unit/run.mjs route        # just serve the pages and open them yourself
+```
+
+Test files are plain `node:test` / `node:assert` code (`test/unit/*.test.ts`); the runner maps those imports to small in-browser versions. `test/unit/empty-parens.types.ts` is checked by `tsc` only and guards the "no arguments → no parentheses" rule.
+
 ## 📚 Examples
 
 - **[Commerce (E-Commerce SPA)](https://github.com/dooboostore-develop/packages/tree/main/%40dooboostore/simple-web-component/examples/commerce)** - Full shopping cart example
@@ -1998,7 +2024,11 @@ Live broadcasts always reach everyone regardless of trigger.
 The three host hooks of `SwcAppMixin` are **abstract**: a subclass must implement them (use an empty method if there is nothing to do).
 `@inject` parameters are resolved via DI (host element itself included).
 
-- `onConnected()` - at connectedCallback (every time it is attached). It runs before `connect()`, so the DI container may not exist yet
+- `onConnected()` - at connectedCallback (every time it is attached). It runs one async step after attaching, so its order relative to `connect()` depends on when you call `connect()`:
+  - `connect()` right after attaching → `connect()` → `onSwcAppConnected()` → `onConnected()` (DI already exists)
+  - `connect()` later → `onConnected()` (no DI yet) → `connect()` → `onSwcAppConnected()`
+
+  So don't rely on DI or on ordering here — keep it to DOM/attribute work and subscriptions; call services in `onSwcAppConnected()`
 - `onSwcAppConnected()` - after `connect()` completes (DI container and router are ready). **Call services here**
 - `onDisconnected()` - at disconnectedCallback. Release subscriptions created in `onConnected`
 

@@ -260,7 +260,7 @@ export default (w: Window): BubbleChartCtor => {
     }
 
     private resizeRaf = 0;
-    @resizeObserverLight()
+    @resizeObserverLight
     onResize() {
       if (!this.canvas || this.points.length === 0) return;
       if (this.resizeRaf) cancelAnimationFrame(this.resizeRaf);
