@@ -603,6 +603,28 @@ export namespace SwcUtils {
     return result;
   };
 
+  /**
+   * parsePathPattern 과 같은 매칭이지만, 같은 이름의 변수가 여러 번 나오면 모든 값을 순서대로 모은다.
+   * '/a/{id}/b/{id}' ← '/a/1/b/2' → { id: ['1', '2'] }  (parsePathPattern 은 마지막 값 '2' 로 덮어씀)
+   */
+  export const parsePathPatternAll = (pattern: string | undefined, currentPath: string): { [key: string]: string[] } | null => {
+    if (pattern === null || pattern === undefined) return {};
+    const trimmedPattern = pattern.trim();
+    if (trimmedPattern === '' && pattern !== '') return {};
+    const paramNames: string[] = [];
+    const regexPattern = trimmedPattern.replace(/{(\w+)(?::(.+?))?}/g, (match, paramName, customRegex) => {
+      paramNames.push(paramName);
+      return `(${customRegex || '[^/]+'})`;
+    });
+    const match = currentPath.match(new RegExp(`^${regexPattern}$`));
+    if (!match) return null;
+    const result: { [key: string]: string[] } = {};
+    paramNames.forEach((name, index) => {
+      (result[name] ??= []).push(match[index + 1]);
+    });
+    return result;
+  };
+
 
 }
 ;

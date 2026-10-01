@@ -5,6 +5,50 @@ import { debounceTimeIntervalLock, FunctionUtils, Subscription, Subject, Observa
 import {RouterEventType, ValidUtils} from '@dooboostore/core-web';
 import { SwcUtils } from '../utils/Utils';
 
+type RouteSubscriberState = { matched: boolean; signature: string; pathData?: { [k: string]: string }; pathDataAll?: { [k: string]: string[] } };
+const routeStateOf = (instance: any): Map<string | symbol, RouteSubscriberState> => (instance.__swc_routeState ??= new Map());
+
+/** 라우트 파라미터 데코레이터 값 (kind 이름 = 데코레이터 이름). 키를 받는 것은 (key) => 값 */
+const routeParamValues = (sp: URLSearchParams, pathDataAll: { [k: string]: string[] }) => {
+  const queryAll: { [k: string]: string[] } = Object.fromEntries([...new Set(sp.keys())].map(k => [k, sp.getAll(k)]));
+  const pick = (all: { [k: string]: string[] }, at: 'first' | 'last') =>
+    Object.fromEntries(Object.entries(all).map(([k, v]) => [k, at === 'first' ? v[0] : v[v.length - 1]]));
+  const lastOf = (v: string[] | undefined) => (v && v.length ? v[v.length - 1] : undefined);
+  const firstQuery = (k: string) => sp.get(k);
+  const firstPath = (k: string) => pathDataAll[k]?.[0];
+  return {
+    swcAppRouteQueryParam: firstQuery,
+    swcAppRouteFirstQueryParam: firstQuery,
+    swcAppRouteLastQueryParam: (k: string) => lastOf(sp.getAll(k)) ?? null,
+    swcAppRouteQueryParams: (k: string) => sp.getAll(k),
+    swcAppRouteQueryParamObject: pick(queryAll, 'first'),
+    swcAppRouteFirstQueryParamObject: pick(queryAll, 'first'),
+    swcAppRouteLastQueryParamObject: pick(queryAll, 'last'),
+    swcAppRouteQueryParamsObject: queryAll,
+    swcAppRouteURLSearchParams: sp,
+    swcAppRoutePathVariable: firstPath,
+    swcAppRouteFirstPathVariable: firstPath,
+    swcAppRouteLastPathVariable: (k: string) => lastOf(pathDataAll[k]),
+    swcAppRoutePathVariables: (k: string) => pathDataAll[k] ?? [],
+    swcAppRoutePathVariableObject: pick(pathDataAll, 'first'),
+    swcAppRouteFirstPathVariableObject: pick(pathDataAll, 'first'),
+    swcAppRouteLastPathVariableObject: pick(pathDataAll, 'last'),
+    swcAppRoutePathVariablesObject: pathDataAll
+  };
+};
+
+/** 구독자의 path(문자열/배열/함수/없음)를 route 에 매칭. 안 맞으면 null */
+const matchRoute = (pathOption: any, instance: any, re: { path?: string }): { pathData: { [k: string]: string }; pathDataAll: { [k: string]: string[] } } | null => {
+  let pattern = typeof pathOption === 'function' ? pathOption(instance) : pathOption;
+  if (!pattern) return { pathData: {}, pathDataAll: {} };
+  const path = re.path || '/';
+  for (const p of Array.isArray(pattern) ? pattern : [pattern]) {
+    const pathData = SwcUtils.parsePathPattern(p, path);
+    if (pathData !== null) return { pathData, pathDataAll: SwcUtils.parsePathPatternAll(p, path) ?? {} };
+  }
+  return null;
+};
+
 export const isSSR = (i: HTMLElement) => {
   return i.hasAttribute('swc-use-ssr');
 };
@@ -99,11 +143,14 @@ export function SwcAppMixin<T extends { new (...args: any[]): HTMLElement }>(Bas
           // Subscribers are already sorted by order from getSubscribeSwcAppRouteChangeMetadata
           // Execute subscribers in order, stop if one returns a value.
           // live는 전부 실행, replay는 해당 trigger 구독자만 실행.
+          // on(enter/update/leave) 판정을 위해 구독자별 직전 매칭 상태를 기억한다 (멈춘 뒤에도 상태는 계속 갱신).
+          const state = routeStateOf(instance);
+          let stopped = false;
           for (const metadata of routeChangeSubscribers) {
             if (phase !== 'live' && (metadata.options?.trigger ?? 'connected') !== phase) continue;
+            const on = metadata.options?.on ?? 'match';
+            if (on === 'beforeLeave') continue; // 라우터 가드로 처리 (_registerLeaveGuards)
             const methodName = metadata.propertyKey;
-            let pathPattern = metadata.options?.path as any;
-            const filter = metadata.options?.filter;
             const extractValue = (v: any) => {
               const keyToUse = metadata.options?.valueKey ?? SUBSCRIBE_SWC_APP_ROUTE_CHANGE_METADATA_KEY;
               if (v && typeof v === 'object' && keyToUse in v) {
@@ -112,67 +159,49 @@ export function SwcAppMixin<T extends { new (...args: any[]): HTMLElement }>(Bas
               return v;
             };
 
-            if (typeof pathPattern === 'function') {
-              pathPattern = (pathPattern as Function)(instance);
-            }
+            const match = matchRoute(metadata.options?.path, instance, re);
+            const prev = state.get(methodName);
+            // update 판정 기준: 경로 + query (path 변수는 경로에서 나오므로 포함됨. 패턴 없는 bare 구독도 경로 변경을 감지)
+            const signature = match ? JSON.stringify([re.path ?? '', re.search ?? '']) : '';
+            state.set(methodName, match ? { matched: true, signature, pathData: match.pathData, pathDataAll: match.pathDataAll } : { matched: false, signature: '' });
 
-            let pathMatched = false;
-            let pathData: any = null;
+            const shouldRun =
+              on === 'match' ? !!match
+              : on === 'enter' ? !!match && !prev?.matched
+              : on === 'update' ? !!match && !!prev?.matched && prev.signature !== signature
+              : on === 'leave' ? !match && !!prev?.matched
+              : false;
+            if (stopped || !shouldRun || !instance[methodName]) continue;
 
-            if (!pathPattern) {
-              pathMatched = true;
-              pathData = {};
-            } else if (Array.isArray(pathPattern)) {
-              for (const pattern of pathPattern) {
-                const data = SwcUtils.parsePathPattern(pattern, re.path || '/');
-                if (data !== null) {
-                  pathMatched = true;
-                  pathData = data;
-                  break;
-                }
-              }
-            } else {
-              pathData = SwcUtils.parsePathPattern(pathPattern, re.path || '/');
-              pathMatched = pathData !== null;
-            }
+            // leave 는 지금 경로가 안 맞으므로 직전 매칭의 pathData 로 준다
+            const pathData = match ? match.pathData : prev?.pathData ?? {};
+            const pathDataAll = match ? match.pathDataAll : prev?.pathDataAll ?? {};
 
+            const filter = metadata.options?.filter;
             const hostSet = SwcUtils.getHelperAndHostSet(this.config.window, this);
             const filterPassed = !filter || (await filter(this.router!, { helper: hostSet, currentThis: instance }));
+            if (!filterPassed) continue;
 
-            if (pathMatched && filterPassed && instance[methodName]) {
-              const routeEventValue = { ...re, pathData: pathData };
-              const instanceHelperHostSet = SwcUtils.getHelperAndHostSet(this.config.window, instance);
-              const instanceHelperSet = SwcUtils.getHelperSet(this.config.window);
-              const before = metadata.options?.before;
-              const finaly = metadata.options?.finally;
-              // before를 먼저 돌려 리턴값을 @routeChangeBeforeReturn 으로 주입할 수 있게 캡처.
-              const beforeReturn = before ? await before(this.router!, { helper: instanceHelperHostSet, currentThis: instance }) : undefined;
-              const args = buildSwcParameterArgs(
-                instance,
-                methodName,
-                {
-                  routerEvent: routeEventValue,
-                  hostSet: instanceHelperHostSet,
-                  helperHostSet: instanceHelperHostSet,
-                  helperSet: instanceHelperSet,
-                  routeChangeBeforeReturn: beforeReturn
-                },
-                [routeEventValue]
-              );
-              let rawResult: any, error: any;
-              try {
-                rawResult = await instance[methodName](...args);
-              } catch (e) {
-                error = e;
-              } finally {
-                if (finaly) await finaly(this.router!, { helper: instanceHelperHostSet, currentThis: instance }, { args, result: rawResult, error });
-              }
-              if (error) throw error;
-              const result = extractValue(rawResult);
-              // If handler returns a value, stop propagation to next handlers
-              if (result !== undefined && result !== null) {
-                break;
-              }
+            const instanceHelperHostSet = SwcUtils.getHelperAndHostSet(this.config.window, instance);
+            const before = metadata.options?.before;
+            const finaly = metadata.options?.finally;
+            // before를 먼저 돌려 리턴값을 @routeChangeBeforeReturn 으로 주입할 수 있게 캡처.
+            const beforeReturn = before ? await before(this.router!, { helper: instanceHelperHostSet, currentThis: instance }) : undefined;
+            const routeEventValue = { ...re, pathData };
+            const args = this._buildRouteArgs(instance, methodName, routeEventValue, pathDataAll, beforeReturn);
+            let rawResult: any, error: any;
+            try {
+              rawResult = await instance[methodName](...args);
+            } catch (e) {
+              error = e;
+            } finally {
+              if (finaly) await finaly(this.router!, { helper: instanceHelperHostSet, currentThis: instance }, { args, result: rawResult, error });
+            }
+            if (error) throw error;
+            const result = extractValue(rawResult);
+            // If handler returns a value, stop propagation to next handlers
+            if (result !== undefined && result !== null) {
+              stopped = true;
             }
           }
         }
@@ -186,6 +215,60 @@ export function SwcAppMixin<T extends { new (...args: any[]): HTMLElement }>(Bas
         }
         this._routeChangeInvocations = Math.max(0, this._routeChangeInvocations - 1);
       }
+    }
+
+    /** 라우트 핸들러 인자: @swcAppRouterEvent / host 계열 / @routeChangeBeforeReturn / 라우트 파라미터(query·path 변수) */
+    _buildRouteArgs(instance: any, methodName: string | symbol, routeEventValue: any, pathDataAll: { [k: string]: string[] }, beforeReturn: any) {
+      const instanceHelperHostSet = SwcUtils.getHelperAndHostSet(this.config.window, instance);
+      const sp: URLSearchParams = routeEventValue.searchParams ?? new URLSearchParams(routeEventValue.search ?? '');
+      return buildSwcParameterArgs(
+        instance,
+        methodName,
+        {
+          swcAppRouterEvent: routeEventValue,
+          hostSet: instanceHelperHostSet,
+          helperHostSet: instanceHelperHostSet,
+          helperSet: SwcUtils.getHelperSet(this.config.window),
+          routeChangeBeforeReturn: beforeReturn,
+          ...routeParamValues(sp, pathDataAll)
+        },
+        [routeEventValue]
+      );
+    }
+
+    /**
+     * on: 'beforeLeave' 구독을 라우터 가드로 등록. 지금 경로는 맞고 다음 경로는 안 맞을 때 핸들러를 부르고,
+     * false 를 리턴하면 이동을 취소한다. 요소가 떨어지면 _disconnected 에서 해제.
+     */
+    _registerLeaveGuards(instance: any) {
+      if (!this.router?.addLeaveGuard) return;
+      instance.__swc_leaveGuardOffs?.forEach((off: () => void) => off());
+      instance.__swc_leaveGuardOffs = getSubscribeSwcAppRouteChangeMetadata(instance)
+        .filter(m => m.options?.on === 'beforeLeave')
+        .map(metadata =>
+          this.router!.addLeaveGuard(async (to, from) => {
+            if (instance.isConnected === false || !instance[metadata.propertyKey]) return true;
+            const fromMatch = matchRoute(metadata.options?.path, instance, from);
+            if (!fromMatch || matchRoute(metadata.options?.path, instance, to)) return true; // 이 라우트를 떠나는 경우만
+            const filter = metadata.options?.filter;
+            const hostSet = SwcUtils.getHelperAndHostSet(this.config.window, this);
+            if (filter && !(await filter(this.router!, { helper: hostSet, currentThis: instance }))) return true;
+            const helper = SwcUtils.getHelperAndHostSet(this.config.window, instance);
+            const beforeReturn = metadata.options?.before ? await metadata.options.before(this.router!, { helper, currentThis: instance }) : undefined;
+            const routeEventValue = { ...from, pathData: fromMatch.pathData, to };
+            const args = this._buildRouteArgs(instance, metadata.propertyKey, routeEventValue, fromMatch.pathDataAll, beforeReturn);
+            let result: any, error: any;
+            try {
+              result = await instance[metadata.propertyKey](...args);
+            } catch (e) {
+              error = e;
+            } finally {
+              if (metadata.options?.finally) await metadata.options.finally(this.router!, { helper, currentThis: instance }, { args, result, error });
+            }
+            if (error) throw error;
+            return result !== false;
+          })
+        );
     }
 
     async _connected(instance: HTMLElement, option?: { noIncrements: boolean }) {
@@ -230,6 +313,8 @@ export function SwcAppMixin<T extends { new (...args: any[]): HTMLElement }>(Bas
           }
         }
 
+        if (this.simpleApplication) this._registerLeaveGuards(instance);
+
         // replay 버퍼가 있으면 신규 인스턴스에만 재생 (fire-and-forget, 연결 블로킹 안 함)
         this._replayMessagesTo(instance);
 
@@ -267,6 +352,10 @@ export function SwcAppMixin<T extends { new (...args: any[]): HTMLElement }>(Bas
     _disconnected(instance: any) {
       if (instance) {
         this._swc_connected_instance.delete(instance);
+        // beforeLeave 가드 해제 + on 판정 상태 초기화 (다시 붙으면 enter 부터)
+        instance.__swc_leaveGuardOffs?.forEach((off: () => void) => off());
+        instance.__swc_leaveGuardOffs = undefined;
+        instance.__swc_routeState = undefined;
         this.config?.onDisconnectedChildAfter?.(instance);
       }
     }

@@ -14,6 +14,7 @@ export * from './applyStyle';
 export * from './applyAttribute';
 export * from './applyProperty';
 export * from './subscribeSwcAppRouteChange';
+export * from './swcAppRoute';
 export * from './subscribeSwcAppMessage';
 export * from './publishSwcAppMessage';
 export * from './applySlot';

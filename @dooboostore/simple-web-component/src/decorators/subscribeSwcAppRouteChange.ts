@@ -27,6 +27,14 @@ export interface SwcAppRouteChangeOptions<BeforeReturn = any, Result = any> {
    * - live 라우트 변경(전체 방송) 때는 항상 실행. replay에만 적용.
    */
   trigger?: 'connected' | 'connectedDone';
+  /**
+   * 언제 실행할지. 기본 'match'(경로가 맞을 때마다 — 기존 동작).
+   * - 'enter': 안 맞다가 맞게 됐을 때 (처음 붙을 때의 재생 포함)
+   * - 'update': 계속 맞는데 경로나 query 가 바뀌었을 때
+   * - 'leave': 맞다가 안 맞게 됐을 때 (요소가 붙어 있을 때만 — 교체되는 페이지는 onDisconnected 가 담당)
+   * - 'beforeLeave': 이 경로를 떠나기 전. false(또는 Promise<false>)를 리턴하면 이동 취소 (router.go / 뒤로·앞으로 가기)
+   */
+  on?: 'match' | 'enter' | 'update' | 'leave' | 'beforeLeave';
 }
 
 function createSubscribeSwcAppRouteChange(options?: SwcAppRouteChangeOptions): MethodDecorator {

@@ -392,7 +392,7 @@ class ProductList extends HTMLElement {
 
 The same mechanism (and the same 5 decorators, plus two more) also applies to:
 - **`@onInitialize`/`@onConnectedBefore`/`@onConnectedAfter`/... lifecycle methods** — can freely mix `@hostSet`/`@helperHostSet`/`@helperSet` with `@inject(...)` on the same method.
-- **`@subscribeSwcAppRouteChange`** — add `@routerEvent` to receive the `RouterEventType` regardless of position.
+- **`@subscribeSwcAppRouteChange`** — add `@swcAppRouterEvent` to receive the `RouterEventType` regardless of position.
 - **`@subscribeSwcAppMessage`** — add `@appMessage` to receive the `SwcAppMessage` regardless of position.
 - **`before` hook results** — `@eventBeforeReturn`, `@routeChangeBeforeReturn`, `@appMessageBeforeReturn`, `@changedAttributeBeforeReturn`, `@mutationObserverBeforeReturn`, `@resizeObserverBeforeReturn`, `@intersectionObserverBeforeReturn`, `@eventMediaBeforeReturn`, `@setIntervalBeforeReturn`, `@setTimeoutBeforeReturn` inject the value returned by that decorator's `before` option.
 
@@ -403,7 +403,7 @@ Note: once any parameter of a method is decorated, only decorated parameters rec
 onconstructor(@inject(UserService.SYMBOL) userService: UserService, @hostSet hs: HostSet) { ... }
 
 @subscribeSwcAppRouteChange
-onRouteChanged(@helperSet helpers: HelperSet, @routerEvent re: RouterEventType) { ... }
+onRouteChanged(@helperSet helpers: HelperSet, @swcAppRouterEvent re: RouterEventType) { ... }
 
 @subscribeSwcAppMessage
 onMessage(@hostSet hs: HostSet, @appMessage msg: SwcAppMessage) { ... }
@@ -1427,6 +1427,95 @@ onRouteChange(routerPathSet: RouterEventType) {
   // No return value → continues to next handler
 }
 ```
+
+**4. When to run: `on`** (default `'match'` — the behavior above)
+
+| `on` | Runs when |
+|---|---|
+| `'match'` | the path matches (every route change) |
+| `'enter'` | it didn't match before and matches now (also the replay when the element connects) |
+| `'update'` | it keeps matching but the path or query changed |
+| `'leave'` | it matched before and doesn't now — only for elements that stay connected (a page that gets replaced should clean up in `onDisconnected`) |
+| `'beforeLeave'` | before leaving this route; return `false` (or `Promise<false>`) to cancel the navigation |
+
+A bare `@subscribeSwcAppRouteChange` (no path) matches every route: with `'match'` it runs on every change, `'update'` on every URL change, `'enter'` once.
+
+```typescript
+@subscribeSwcAppRouteChange('/releases/{releaseSeq}/tasks/{taskSeq}', { on: 'update' })
+@innerHtml('.card')
+swapCard(@swcAppRoutePathVariable('taskSeq') taskSeq: string) { ... }   // same page, only the card changes
+
+@subscribeSwcAppRouteChange('/edit/{id}', { on: 'beforeLeave' })
+confirmLeave() { return this.dirty ? confirm('Discard your changes?') : true; }
+```
+
+`beforeLeave` covers `router.go(...)` and the browser back/forward buttons. Back/forward have already changed the history when the guard runs, so a cancel restores the previous URL with `pushState`. Calling `pushState`/`replaceState` directly and closing the tab (`beforeunload`) are not covered. The handler receives the route being left with `to` (the target `RouteData`).
+
+**5. Route parameter decorators**
+
+No prefix means *first*; `First`/`Last` pick the first/last value when a key repeats; plural forms return every value.
+
+| Query (`?tag=a&tag=b`) | Value | Path (`/a/{id}/b/{id}` ← `/a/1/b/2`) | Value |
+|---|---|---|---|
+| `@swcAppRouteQueryParam('tag')` | `'a'` (`null` if absent) | `@swcAppRoutePathVariable('id')` | `'1'` |
+| `@swcAppRouteFirstQueryParam('tag')` | `'a'` | `@swcAppRouteFirstPathVariable('id')` | `'1'` |
+| `@swcAppRouteLastQueryParam('tag')` | `'b'` | `@swcAppRouteLastPathVariable('id')` | `'2'` |
+| `@swcAppRouteQueryParams('tag')` | `['a','b']` | `@swcAppRoutePathVariables('id')` | `['1','2']` |
+| `@swcAppRouteQueryParamObject` | `{ tag: 'a' }` | `@swcAppRoutePathVariableObject` | `{ id: '1' }` |
+| `@swcAppRouteFirstQueryParamObject` | `{ tag: 'a' }` | `@swcAppRouteFirstPathVariableObject` | `{ id: '1' }` |
+| `@swcAppRouteLastQueryParamObject` | `{ tag: 'b' }` | `@swcAppRouteLastPathVariableObject` | `{ id: '2' }` |
+| `@swcAppRouteQueryParamsObject` | `{ tag: ['a','b'] }` | `@swcAppRoutePathVariablesObject` | `{ id: ['1','2'] }` |
+| `@swcAppRouteURLSearchParams` | `URLSearchParams` | | |
+
+```typescript
+@subscribeSwcAppRouteChange('/releases/{releaseSeq}')
+load(@swcAppRoutePathVariable('releaseSeq') seq: string, @swcAppRouteQueryParam('tab') tab: string | null) { ... }
+```
+
+- Once any parameter is decorated, the positional route argument is no longer passed — add `@swcAppRouterEvent` for the whole event.
+- `route.pathData` keeps its old behavior: a repeated variable name holds the **last** value. Use the decorators above to pick first/last explicitly.
+
+**6. Navigating: `@swcAppRoute` / `@swcAppRouteGo`**
+
+The method returns where to go; the decorator calls the element's SwcApp router — no `Router` injection needed. `@swcAppRoute({ type })` picks the Router method (default `'go'`); `@swcAppRouteGo`, `@swcAppRoutePush`, ... are aliases with the type fixed.
+
+```typescript
+@eventDelegateAll('[data-href]', 'click')
+@swcAppRouteGo
+onNavigate(@matchedElement el: Element) {
+  return el.getAttribute('data-href');
+}
+
+@eventShadow('form', 'submit', { preventDefault: true })
+@swcAppRouteGo
+async onSubmit() {
+  await this.authService.login(...);
+  return '/releases';            // after an async body too
+}
+```
+
+| Return value (`go`) | Result |
+|---|---|
+| `'/path'` / `{ path, searchParams }` | `router.go(...)` |
+| `{ path, replace?, state?, scrollToTop? }` | `router.go` with those options |
+| a number | history move (`-1` = back) |
+| `undefined` / `null` / `false` | no navigation (conditional) |
+
+- Other Router methods: `@swcAppRoute({ type: 'push' })` or the alias with the type fixed (`@swcAppRoutePush` / `@swcAppRoutePush({ state, valueKey })`):
+
+| Alias | `type` | Return value |
+|---|---|---|
+| `@swcAppRouteGo` | `go` (default) | see the table above |
+| `@swcAppRoutePush` / `@swcAppRouteReplace` | `push` / `replace` | `RouteAction` |
+| `@swcAppRoutePushUpsertSearchParam` / `@swcAppRouteReplaceUpsertSearchParam` | `pushUpsertSearchParam` / `replaceUpsertSearchParam` | `{ key: value \| value[] }` |
+| `@swcAppRoutePushAddSearchParam` / `@swcAppRouteReplaceAddSearchParam` | `pushAddSearchParam` / `replaceAddSearchParam` | `[[key, value], ...]` |
+| `@swcAppRoutePushDeleteSearchParam` / `@swcAppRouteReplaceDeleteSearchParam` | `pushDeleteSearchParam` / `replaceDeleteSearchParam` | `string \| string[]` |
+| `@swcAppRoutePushDeleteHashSearchParam` / `@swcAppRouteReplaceDeleteHashSearchParam` | `pushDeleteHashSearchParam` / `replaceDeleteHashSearchParam` | `string \| string[]` |
+
+  `push`/`replace` go through `beforeLeave` guards like `go`. The search-param methods keep the path, so they don't count as leaving and skip the guards.
+- Options: `@swcAppRoute({ type, state, valueKey, filter })`, plus `replace` / `scrollToTop` for `go` (`@swcAppRouteGo({ replace: true })`). `valueKey` picks the target out of a return object when stacked with other output decorators (default key `SWC_APP_ROUTE_METADATA_KEY`).
+- `filter(router, value, { currentThis, helper })` → `false` skips the navigation (same shape as the other output decorators' `filter`; `value` is after `valueKey` extraction). E.g. `@swcAppRouteGo({ filter: (router, to) => to !== router.value.path })`.
+- The original return value still passes through, and navigation goes through `router.go`, so `beforeLeave` guards apply.
 
 #### Advanced Example with Logging
 

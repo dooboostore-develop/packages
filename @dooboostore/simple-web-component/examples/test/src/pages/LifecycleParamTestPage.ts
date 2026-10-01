@@ -1,4 +1,4 @@
-import { elementDefine, onConnectedAfter, onConnectedBodyShadow, hostSet, helperHostSet, helperSet, subscribeSwcAppRouteChange, subscribeSwcAppMessage, routerEvent, appMessage } from '@dooboostore/simple-web-component';
+import { elementDefine, onConnectedAfter, onConnectedBodyShadow, hostSet, helperHostSet, helperSet, subscribeSwcAppRouteChange, subscribeSwcAppMessage, swcAppRouterEvent, appMessage } from '@dooboostore/simple-web-component';
 import { Inject } from '@dooboostore/simple-boot';
 import { ProductService } from '../services/ProductService';
 
@@ -46,10 +46,10 @@ export default (w: Window) => {
       this.updateStatus();
     }
 
-    // 라우트 변경 구독 — 일부러 순서를 뒤집어서(@helperSet이 먼저, @routerEvent가 나중) 선언.
+    // 라우트 변경 구독 — 일부러 순서를 뒤집어서(@helperSet이 먼저, @swcAppRouterEvent가 나중) 선언.
     // 이 컴포넌트가 connect될 때 SwcAppMixin._connected가 마지막 라우터 이벤트로 즉시 호출해준다.
     @subscribeSwcAppRouteChange
-    onRouteChangedV2(@helperSet helpers: any, @routerEvent re: any) {
+    onRouteChangedV2(@helperSet helpers: any, @swcAppRouterEvent re: any) {
       this.routeChangedOk = !!helpers && typeof helpers.$q === 'function' && !!re && typeof re.path === 'string';
       this.updateStatus();
     }
@@ -65,7 +65,7 @@ export default (w: Window) => {
     updateStatus() {
       const el = this.shadowRoot?.querySelector('.status') as HTMLElement | null;
       if (el) {
-        el.textContent = `mixedInjectOk(@Inject+@hostSet 공존): ${this.mixedInjectOk} | hostSetOk: ${this.hostSetOk} | helperHostSetOk: ${this.helperHostSetOk} | helperSetOk: ${this.helperSetOk} | routeChangedOk(@helperSet+@routerEvent, reversed): ${this.routeChangedOk} | messageOk(@hostSet+@appMessage, reversed): ${this.messageOk} last="${this.lastMessageData}"`;
+        el.textContent = `mixedInjectOk(@Inject+@hostSet 공존): ${this.mixedInjectOk} | hostSetOk: ${this.hostSetOk} | helperHostSetOk: ${this.helperHostSetOk} | helperSetOk: ${this.helperSetOk} | routeChangedOk(@helperSet+@swcAppRouterEvent, reversed): ${this.routeChangedOk} | messageOk(@hostSet+@appMessage, reversed): ${this.messageOk} last="${this.lastMessageData}"`;
       }
     }
 

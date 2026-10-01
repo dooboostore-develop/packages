@@ -324,6 +324,14 @@ router.getPathData('/users/{id}');  // extract path params against a pattern, or
 
 `HashRouter` reads/writes `location.hash` instead of `pathname` (e.g. for static hosting without server-side routing); `LocationRouter` performs a real navigation (`location.href =`/`location.replace()`) instead of using the History API.
 
+**Leave guards** — `addLeaveGuard((to, from) => boolean | Promise<boolean>)` registers a guard and returns a function that removes it. Guards run before `go(...)` navigates and on browser back/forward; any `false` cancels (back/forward is undone by pushing the previous URL back). With no guards registered, `go(...)` stays synchronous as before. `canLeave(to, from)` evaluates the registered guards.
+
+```typescript
+const off = router.addLeaveGuard(async (to) => !(dirty && to.path !== '/edit'));
+// ...
+off();
+```
+
 ### StyleCssUtils
 
 ```typescript

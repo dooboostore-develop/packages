@@ -23,6 +23,8 @@ export type StateOptions = { data?: any, title?: string, config?: ChangeStateCon
 export type RouterMethodOptions = { data?: any, title?: string, config?: ChangeStateConfig };
 
 export type RouterEventType = RouteData & { triggerPoint: 'start' | 'end' | 'first-end' };
+/** 이동 전에 불린다. false(또는 Promise<false>)를 리턴하면 이동을 취소한다. */
+export type LeaveGuard = (to: RouteData, from: RouteData) => boolean | void | Promise<boolean | void>;
 
 // popstate 이벤트 무시를 위한 마커
 const ROUTER_NO_EVENT_MARKER = '__ROUTER_NO_EVENT__';
@@ -30,6 +32,7 @@ const ROUTER_NO_EVENT_MARKER = '__ROUTER_NO_EVENT__';
 export abstract class Router<T = any> {
   private behaviorSubject: BehaviorSubject<RouterEventType>;
   private _config: RouterConfig<T>;
+  private leaveGuards = new Set<LeaveGuard>();
 
   constructor(config: RouterConfig<any>) {
     this._config = config;
@@ -57,14 +60,44 @@ export abstract class Router<T = any> {
       // noEventAndPublish 마커가 있으면 이벤트 발행하지 않음
       // if (event.state && event.state[ROUTER_NO_EVENT_MARKER]) {
       // } else {
-        const routeData: RouterEventType = {...this.getRouteData(), triggerPoint: 'end'};
-        this.behaviorSubject.next(routeData);
+        const publish = () => this.behaviorSubject.next({...this.getRouteData(), triggerPoint: 'end'});
+        if (!this.leaveGuards.size) return publish();
+        // 뒤로/앞으로 가기는 history 가 이미 바뀐 뒤라, 가드가 막으면 이전 url 로 되돌린다 (end 발행 안 함)
+        const from = this.value;
+        void this.canLeave(this.getRouteData(), from).then(ok => {
+          if (ok) publish();
+          else this.config.window.history?.pushState(from.data ?? null, '', from.url);
+        });
       // }
     })
   }
 
   get value() {
     return this.behaviorSubject.getValue()
+  }
+
+  /**
+   * 이동 전 가드 등록. go() 와 뒤로/앞으로 가기(popstate)에 적용된다 (pushState/replaceState 직접 호출은 제외).
+   * 리턴한 함수를 부르면 해제된다.
+   */
+  addLeaveGuard(guard: LeaveGuard): () => void {
+    this.leaveGuards.add(guard);
+    return () => {
+      this.leaveGuards.delete(guard);
+    };
+  }
+
+  /** 가드가 하나라도 있는지 (없으면 호출자가 동기로 진행해도 된다) */
+  get hasLeaveGuards(): boolean {
+    return this.leaveGuards.size > 0;
+  }
+
+  /** 등록된 가드를 순서대로 평가. 하나라도 false 면 false */
+  async canLeave(to: RouteData, from: RouteData): Promise<boolean> {
+    for (const guard of [...this.leaveGuards]) {
+      if ((await guard(to, from)) === false) return false;
+    }
+    return true;
   }
 
   get observable(): Observable<RouterEventType> {
@@ -243,20 +276,29 @@ export abstract class Router<T = any> {
     if (typeof config === 'string') {
       config = {path: config};
     }
+    const target = config;
 
-    if (config?.replace) {
-      this.replace(config.path, config.state);
-    } else {
-      this.push(config.path, config.state);
-    }
-
-    // 스크롤 제어 (기본값: true - 맨 위로 스크롤)
-    if (config.scrollToTop !== false) {
-      try {
-        this._config.window?.scrollTo?.(0, 0);
-      } catch (e) {
+    const navigate = () => {
+      if (target?.replace) {
+        this.replace(target.path, target.state);
+      } else {
+        this.push(target.path, target.state);
       }
-    }
+
+      // 스크롤 제어 (기본값: true - 맨 위로 스크롤)
+      if (target.scrollToTop !== false) {
+        try {
+          this._config.window?.scrollTo?.(0, 0);
+        } catch (e) {
+        }
+      }
+    };
+
+    // 가드가 없으면 기존처럼 동기로 이동 (타이밍 변화 없음)
+    if (!this.leaveGuards.size) return navigate();
+    return this.canLeave(this.getRouteData({pathOrUrl: this.toUrl(target.path)}), this.value).then(ok => {
+      if (ok) navigate();
+    });
   }
 
   toUrl(data: RouteAction) {
