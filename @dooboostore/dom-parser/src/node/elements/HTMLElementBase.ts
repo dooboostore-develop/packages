@@ -1,3 +1,4 @@
+import { NodeClassRegistry } from '../NodeClassRegistry';
 import {ElementBase} from './ElementBase';
 import {StylePropertyMapImpl} from "../collection/StylePropertyMapImpl";
 
@@ -247,7 +248,7 @@ export abstract class HTMLElementBase extends ElementBase implements HTMLElement
   set outerText(value: string) {
     this._outerText = value;
     if (this.parentNode) {
-      const { TextBase } = require('../TextBase');
+      const { TextBase } = NodeClassRegistry;
       const textNode = new TextBase(value, this._ownerDocument);
       this.parentNode.replaceChild(textNode, this);
     }

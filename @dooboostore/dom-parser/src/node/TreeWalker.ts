@@ -1,3 +1,4 @@
+import { NodeClassRegistry } from './NodeClassRegistry';
 import {NodeFilter} from "./NodeFilter";
 
 /**
@@ -278,3 +279,5 @@ export class TreeWalker {
     return NodeFilter.FILTER_ACCEPT;
   }
 }
+
+NodeClassRegistry.TreeWalker = TreeWalker;

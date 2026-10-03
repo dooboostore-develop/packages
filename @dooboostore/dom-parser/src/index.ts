@@ -1,3 +1,4 @@
+import './node/registerNodeClasses';
 import {DomParser, DomParserOptions} from './DomParser';
 
 // Main exports - what users actually need

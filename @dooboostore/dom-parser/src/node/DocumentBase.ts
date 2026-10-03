@@ -1,3 +1,4 @@
+import { NodeClassRegistry } from './NodeClassRegistry';
 import { ParentNodeBase } from './ParentNodeBase';
 import {  DOCUMENT_NODE } from './Node';
 import { HTMLCollectionOfImp } from './collection/HTMLCollectionOfImp';
@@ -215,12 +216,12 @@ export class DocumentBase extends ParentNodeBase implements Document {
   }
 
   createComment(data: string): any {
-    const { Comment } = require('./Comment');
+    const { Comment } = NodeClassRegistry;
     return new Comment(data, this);
   }
 
   createDocumentFragment(): any {
-    const { DocumentFragmentBase } = require('./DocumentFragmentBase');
+    const { DocumentFragmentBase } = NodeClassRegistry;
     return new DocumentFragmentBase(this);
   }
 
@@ -239,7 +240,7 @@ export class DocumentBase extends ParentNodeBase implements Document {
   }
 
   createNodeIterator(root: Node, whatToShow: number = 0xffffffff, filter: any = null): any {
-    const { NodeIterator } = require('./NodeIterator');
+    const { NodeIterator } = NodeClassRegistry;
     return new NodeIterator(root, whatToShow, filter);
   }
 
@@ -252,12 +253,12 @@ export class DocumentBase extends ParentNodeBase implements Document {
   }
 
   createTextNode(data: string): any {
-    const { TextBase } = require('./TextBase');
+    const { TextBase } = NodeClassRegistry;
     return new TextBase(data, this);
   }
 
   createTreeWalker(root: Node, whatToShow: number = 0xffffffff, filter: any = null): any {
-    const { TreeWalker } = require('./TreeWalker');
+    const { TreeWalker } = NodeClassRegistry;
     return new TreeWalker(root, whatToShow, filter);
   }
 

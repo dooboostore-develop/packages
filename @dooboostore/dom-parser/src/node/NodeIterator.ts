@@ -1,3 +1,4 @@
+import { NodeClassRegistry } from './NodeClassRegistry';
 
 /**
  * NodeIterator implementation for traversing DOM nodes
@@ -143,3 +144,5 @@ export class NodeIterator {
     return true;
   }
 }
+
+NodeClassRegistry.NodeIterator = NodeIterator;

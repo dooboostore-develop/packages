@@ -1,3 +1,4 @@
+import { NodeClassRegistry } from '../NodeClassRegistry';
 import { DocumentFragmentBase } from '../DocumentFragmentBase';
 import { TEXT_NODE } from '../Node';
 import { HTMLElement } from './HTMLElement';
@@ -95,7 +96,7 @@ export class HTMLTemplateElement extends HTMLElement {
   private _parseHTMLIntoContent(html: string): void {
     // Better approach: Create a temporary container and leverage ElementBase's innerHTML
     // This avoids code duplication and ensures consistency
-    const tempContainer = new (require('./ElementBase').ElementBase)('div', this._ownerDocument);
+    const tempContainer = new NodeClassRegistry.ElementBase('div', this._ownerDocument);
 
     // Mark as inert parsing so children are not upgraded
     (tempContainer as any)._isInertHTMLParsing = true;

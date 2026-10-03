@@ -1,3 +1,4 @@
+import { NodeClassRegistry } from './NodeClassRegistry';
 import { ELEMENT_NODE, ATTRIBUTE_NODE, TEXT_NODE, CDATA_SECTION_NODE, ENTITY_REFERENCE_NODE, ENTITY_NODE, PROCESSING_INSTRUCTION_NODE, COMMENT_NODE, DOCUMENT_NODE, DOCUMENT_TYPE_NODE, DOCUMENT_FRAGMENT_NODE, NOTATION_NODE, DOCUMENT_POSITION_DISCONNECTED, DOCUMENT_POSITION_PRECEDING, DOCUMENT_POSITION_FOLLOWING, DOCUMENT_POSITION_CONTAINS, DOCUMENT_POSITION_CONTAINED_BY, DOCUMENT_POSITION_IMPLEMENTATION_SPECIFIC } from './Node';
 import { NodeListOfImp } from './collection/NodeListOfImp';
 import { GetRootNodeOptions } from './GetRootNodeOptions';
@@ -194,7 +195,7 @@ export abstract class NodeBase implements Node {
     if (stringValue) {
       // Create text node implementation with escaped value for innerHTML
       const escapedValue = this.escapeHTMLEntities(stringValue);
-      const { TextBase } = require('./TextBase');
+      const { TextBase } = NodeClassRegistry;
       const textNode = new TextBase(escapedValue, this._ownerDocument);
       this._childNodesInternal.push(textNode);
       textNode._parentNodeInternal = this;

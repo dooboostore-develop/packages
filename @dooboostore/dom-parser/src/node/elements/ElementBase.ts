@@ -1,3 +1,4 @@
+import { NodeClassRegistry } from '../NodeClassRegistry';
 import { ParentNodeBase } from '../ParentNodeBase';
 import { HTMLCollectionImp, HTMLCollectionOfImp } from '../collection';
 import { ELEMENT_NODE, TEXT_NODE, ATTRIBUTE_NODE } from '../Node';
@@ -1048,3 +1049,5 @@ class NamedNodeMapImpl implements NamedNodeMap {
   }
   [index: number]: any;
 }
+
+NodeClassRegistry.ElementBase = ElementBase;

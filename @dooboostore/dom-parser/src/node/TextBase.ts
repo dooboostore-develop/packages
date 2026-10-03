@@ -1,3 +1,4 @@
+import { NodeClassRegistry } from './NodeClassRegistry';
 import { ChildNodeBase } from './ChildNodeBase';
 import { TEXT_NODE } from './Node';
 
@@ -109,3 +110,5 @@ export class TextBase extends ChildNodeBase implements Text {
     return this._data;
   }
 }
+
+NodeClassRegistry.TextBase = TextBase;

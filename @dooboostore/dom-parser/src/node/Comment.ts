@@ -1,3 +1,4 @@
+import { NodeClassRegistry } from './NodeClassRegistry';
 import { ChildNodeBase } from './ChildNodeBase';
 import { COMMENT_NODE } from './Node';
 
@@ -96,3 +97,5 @@ export class Comment extends ChildNodeBase {
     return `<!--${this._data}-->`;
   }
 }
+
+NodeClassRegistry.Comment = Comment;

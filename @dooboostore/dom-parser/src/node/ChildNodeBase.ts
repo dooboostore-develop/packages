@@ -1,3 +1,4 @@
+import { NodeClassRegistry } from './NodeClassRegistry';
 import { ELEMENT_NODE } from './Node';
 import { NodeBase } from './NodeBase';
 
@@ -35,7 +36,7 @@ export abstract class ChildNodeBase extends NodeBase implements ChildNode {
     const nextSibling = this.nextSibling;
     for (const node of nodes) {
       if (typeof node === 'string') {
-        const { TextBase } = require('./TextBase');
+        const { TextBase } = NodeClassRegistry;
         const textNode = new TextBase(node, this._ownerDocument);
         this.parentNode.insertBefore(textNode, nextSibling);
       } else {
@@ -49,7 +50,7 @@ export abstract class ChildNodeBase extends NodeBase implements ChildNode {
 
     for (const node of nodes) {
       if (typeof node === 'string') {
-        const { TextBase } = require('./TextBase');
+        const { TextBase } = NodeClassRegistry;
         const textNode = new TextBase(node, this._ownerDocument);
         this.parentNode.insertBefore(textNode, this as unknown as Node);
       } else {

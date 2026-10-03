@@ -1,3 +1,4 @@
+import './node/registerNodeClasses';
 import { DocumentBase } from './node/DocumentBase';
 import { TextBase } from './node/TextBase';
 import { Comment } from './node/Comment';

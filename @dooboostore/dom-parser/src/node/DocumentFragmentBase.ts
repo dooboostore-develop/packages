@@ -1,3 +1,4 @@
+import { NodeClassRegistry } from './NodeClassRegistry';
 import { ParentNodeBase } from './ParentNodeBase';
 import {DOCUMENT_FRAGMENT_NODE, ELEMENT_NODE} from './Node';
 import { NodeBase } from './NodeBase';
@@ -102,3 +103,5 @@ export class DocumentFragmentBase extends ParentNodeBase implements DocumentFrag
         return super.appendChild(node);
     }
 }
+
+NodeClassRegistry.DocumentFragmentBase = DocumentFragmentBase;
