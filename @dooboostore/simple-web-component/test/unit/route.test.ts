@@ -11,7 +11,7 @@ import {
   swcAppRouteFirstQueryParamObject, swcAppRouteLastQueryParamObject, swcAppRouteQueryParamsObject, swcAppRouteURLSearchParams,
   swcAppRoutePathVariable, swcAppRouteFirstPathVariable, swcAppRouteLastPathVariable, swcAppRoutePathVariables,
   swcAppRoutePathVariableObject, swcAppRouteFirstPathVariableObject, swcAppRouteLastPathVariableObject,
-  swcAppRoutePathVariablesObject
+  swcAppRoutePathVariablesObject, innerHtmlLight
 } from '../../src/index.ts';
 
 const appHtml = (inner: string) => `<!DOCTYPE html><html><body><div id="app" is="swc-app-div">${inner}</div></body></html>`;
@@ -385,5 +385,29 @@ test('subscribeSwcAppRouteChange filter: helper is built on the subscribing elem
   await go('/b');
   assert.ok(el);
   assert.deepStrictEqual(seen, ['match:true', 'beforeLeave:true']);
+  destroy();
+});
+
+// 서버가 이 경로로 그려 보낸 엘리먼트(swc-use-ssr)는 브라우저 첫 라우트에서 다시 그리지 않는다 — 그래야 하이드레이션 값이 산다
+test('an SSR-painted element skips re-rendering its first route, then routes normally', async () => {
+  const calls: string[] = [];
+  const tag = uniqueTag('ssr-route');
+  const { w, destroy } = await createWindow(appHtml(`<${tag} swc-use-ssr="x1"><p class="server">from server</p></${tag}>`));
+  await bootApp(w, [(win: any) => {
+    @elementDefine(tag, { window: win })
+    class R extends win.HTMLElement {
+      @subscribeSwcAppRouteChange(['', '/']) @innerHtmlLight home() { calls.push('home'); return '<p class="client">client</p>'; }
+      @subscribeSwcAppRouteChange(['/other']) @innerHtmlLight other() { calls.push('other'); return '<p>other</p>'; }
+    }
+    return tag;
+  }]);
+  const el = w.document.querySelector(tag);
+  assert.deepStrictEqual(calls, []);
+  assert.ok(el.querySelector('.server'), 'server markup kept');
+  const app: any = w.document.querySelector('#app');
+  await app.router.go('/other'); await sleep(40);
+  await app.router.go('/'); await sleep(40);
+  assert.deepStrictEqual(calls, ['other', 'home']);
+  assert.ok(el.querySelector('.client'));
   destroy();
 });

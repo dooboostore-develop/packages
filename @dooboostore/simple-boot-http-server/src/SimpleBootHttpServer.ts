@@ -191,7 +191,11 @@ export class SimpleBootHttpServer extends SimpleApplication {
         }
 
         // body.. something..
-        if (!rr.resIsDone()) {
+        // 라우터 없이 필터만으로 도는 서버(예: SSR 전용)면, 어느 필터도 처리하지 않은 요청은 404 로 끝낸다
+        // (브라우저가 알아서 보내는 /favicon.ico, /.well-known/... 같은 것 — 예전엔 'no router' 에러로 500 + 로그)
+        if (!rr.resIsDone() && !this.option.rootRouter) {
+          rr.resStatusCode(HttpStatus.NotFound);
+        } else if (!rr.resIsDone()) {
           const routerModule = await super.routing(rr.reqIntent);
           otherStorage.set(RouterModule, routerModule);
           const moduleInstance = routerModule?.getModuleInstance?.();

@@ -316,3 +316,21 @@ test('@eventAppHost receives events dispatched on the app host, with filter', as
   assert.deepStrictEqual(log, ['kim']);
   destroy();
 });
+
+// 회귀: debounce 뒤에 핸들러가 돌면 event.currentTarget 은 이미 null (dispatch 종료) → @matchedElement 가 null 이었다
+test('@matchedElement survives debounceTime (captured at dispatch, not read later)', async () => {
+  const { w, destroy } = await createWindow();
+  const tag = uniqueTag('ev-debounce');
+  const got: any[] = [];
+  @elementDefine(tag, { window: w })
+  class El extends w.HTMLElement {
+    @onConnectedBodyShadow render() { return '<input class="q" />'; }
+    @event('.q', 'input', { debounceTime: 30 }) onQ(@matchedElement input: HTMLInputElement) { got.push(input?.value); }
+  }
+  const el = await mount(w, tag);
+  const input = el.shadowRoot.querySelector('.q');
+  for (const v of ['a', 'ab', 'abc']) { input.value = v; input.dispatchEvent(new w.Event('input', { bubbles: true })); }
+  await sleep(80);
+  assert.deepStrictEqual(got, ['abc']);
+  destroy();
+});

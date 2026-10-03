@@ -355,7 +355,8 @@ export class SimstanceManager implements Runnable<void, Map<ConstructorType<any>
     // const da = JSON.stringify(this.storage);
     // this.storage map to json String
 
-    const loopCount = Math.max(paramTypes.length, parameterCount ?? 0);
+    // design:paramtypes 가 없는 빌드(esbuild/Vite/tsx)에서도 @inject 붙은 파라미터까지는 돈다
+    const loopCount = Math.max(paramTypes.length, parameterCount ?? 0, ...(injects ?? []).map(it => it.index + 1));
 
     injections = [];
     for (let idx = 0; idx < loopCount; idx++) {

@@ -1,6 +1,6 @@
 {
   "name": "@dooboostore/simple-web-component-library",
-  "version": "1.0.0",
+  "version": "1.0.3",
   "type": "module",
   "main": "./dist/cjs/index.js",
   "module": "./dist/esm/index.js",
@@ -22,7 +22,9 @@
     "build": "node build.mjs all",
     "watch": "node build.mjs all --watch",
     "typecheck": "tsc --noEmit -p tsconfig.test.json",
-    "test": "webpack --config webpack.test.config.cjs && node --test dist-test/indicators.test.cjs"
+    "test": "webpack --config webpack.test.config.cjs && node --test dist-test/indicators.test.cjs",
+    "prepublishOnly": "pnpm run build",
+    "publish:npm": "pnpm run build && pnpm publish --no-git-checks"
   },
   "peerDependencies": {
     "reflect-metadata": "^0.2.2"
@@ -44,5 +46,13 @@
     "@dooboostore/core-web": "workspace:*",
     "@dooboostore/algorithm": "workspace:*",
     "@dooboostore/simple-web-component": "workspace:*"
+  },
+  "files": [
+    "dist",
+    "src",
+    "README.md"
+  ],
+  "publishConfig": {
+    "access": "public"
   }
 }

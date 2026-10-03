@@ -1,6 +1,6 @@
 {
   "name": "@dooboostore/algorithm",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "type": "module",
   "main": "./dist/cjs/index.js",
   "module": "./dist/esm/index.js",
@@ -22,7 +22,9 @@
     "build": "node build.mjs all",
     "watch": "node build.mjs all --watch",
     "typecheck": "tsc --noEmit -p tsconfig.test.json",
-    "test": "webpack --config webpack.test.config.cjs && node --test dist-test/full.test.cjs"
+    "test": "webpack --config webpack.test.config.cjs && node --test dist-test/full.test.cjs",
+    "prepublishOnly": "pnpm run build",
+    "publish:npm": "pnpm run build && pnpm publish --no-git-checks"
   },
   "peerDependencies": {},
   "devDependencies": {
@@ -37,5 +39,13 @@
   },
   "dependencies": {
     "@dooboostore/core": "workspace:*"
+  },
+  "files": [
+    "dist",
+    "src",
+    "README.md"
+  ],
+  "publishConfig": {
+    "access": "public"
   }
 }

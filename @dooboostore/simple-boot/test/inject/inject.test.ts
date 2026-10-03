@@ -77,3 +77,23 @@ describe('Inject Tests', () => {
     assert.ok(testProxy, 'TestProxy should be created');
   });
 });
+
+// esbuild/Vite/tsx 는 design:paramtypes 를 안 만든다 — 그래도 @Inject 붙은 파라미터는 채워져야 한다
+const NO_META_SYMBOL = Symbol.for('NoMetaService');
+@Sim({ symbol: NO_META_SYMBOL })
+class NoMetaService {
+  hello() { return 'hi'; }
+}
+class NoMetaCaller {
+  run(@Inject({ symbol: NO_META_SYMBOL }) s: NoMetaService) { return s?.hello(); }
+}
+Reflect.deleteMetadata('design:paramtypes', NoMetaCaller.prototype, 'run');
+
+describe('Inject without emitDecoratorMetadata', () => {
+  test('resolves @Inject(symbol) parameters', () => {
+    const app = new SimpleApplication();
+    app.run();
+    const r = app.simstanceManager.executeBindParameterSim({ target: new NoMetaCaller(), targetKey: 'run' });
+    assert.strictEqual(r, 'hi');
+  });
+});
