@@ -1048,15 +1048,14 @@ onSecond() { }
 
 Declaratively schedule work tied to the component. Every timer the decorator starts is cleared automatically on disconnect. There are two modes (`type` option):
 
-- `type: 'returnValue'` (**default**) - nothing starts automatically. When you call the method, its return value (a function, or the function under `valueKey`) becomes the repeating/delayed callback, called with `(id: number)`. The original return value passes through.
-- `type: 'onConnected'` - starts on connect and calls the decorated method itself on every tick/fire.
+- `type: 'onConnected'` (**default**) - starts on connect and calls the decorated method itself on every tick/fire.
+- `type: 'returnValue'` - nothing starts automatically. When you call the method, its return value (a function, or the function under `valueKey`) becomes the repeating/delayed callback, called with `(id: number)`. The original return value passes through. Aliases: `@setIntervalReturnValue`, `@setTimeoutReturnValue`, `@requestAnimationFrameReturnValue`.
 
 ```typescript
 @elementDefine('live-clock')
 class LiveClock extends HTMLElement {
   // Auto-start on connect
   @setInterval(1000, {
-    type: 'onConnected',
     parameter: (set) => [Date.now()],
     created: (set, id) => console.log('interval started, timer id:', id)
   })
@@ -1065,13 +1064,13 @@ class LiveClock extends HTMLElement {
   }
 
   // Fires once, 3 seconds after connect
-  @setTimeout(3000, { type: 'onConnected' })
+  @setTimeout(3000)
   onceAfter3s() {
     console.log('3 seconds have passed');
   }
 
-  // Default 'returnValue': starts when you call startPolling()
-  @setInterval(900)
+  // 'returnValue': starts when you call startPolling()
+  @setIntervalReturnValue(900)
   startPolling() {
     return (id: number) => console.log('interval', id, 'ticked');
   }
@@ -1080,7 +1079,7 @@ class LiveClock extends HTMLElement {
 
 **`@setInterval(interval, options?)` / `@setTimeout(delay, options?)`:**
 - `interval` / `delay` - milliseconds. `setInterval` repeats; `setTimeout` fires once.
-- `type` - `'returnValue'` (default) | `'onConnected'`
+- `type` - `'onConnected'` (default) | `'returnValue'`
 - `parameter?: (set: HelperHostSet) => any[]` - (`onConnected`) arguments for each tick/fire; omitted → no arguments.
 - `created?: (set: HelperHostSet, id: number) => void` - called once right after the timer is armed. For logging only; cleanup is automatic.
 - `filter` / `before` / `finally` - (`onConnected`) per-tick hooks; `before` result → `@setIntervalBeforeReturn` / `@setTimeoutBeforeReturn`.
@@ -1089,7 +1088,7 @@ class LiveClock extends HTMLElement {
 **`@requestAnimationFrame(options?)`** (bare form also works) - same two modes. The frame callback is `(timestamp, prevValue) => any`: return `undefined`/`null` to stop the loop, anything else is passed as `prevValue` to the next frame. Options: `type`, `created`, `valueKey`.
 
 ```typescript
-@requestAnimationFrame
+@requestAnimationFrameReturnValue   // starts when you call animate()
 animate() {
   return (ts: number, prev = 0) => (prev < 100 ? prev + 1 : null); // stops at 100
 }

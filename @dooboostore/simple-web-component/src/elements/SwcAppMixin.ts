@@ -56,6 +56,8 @@ export const setSSRAttribute = (i: HTMLElement) => {
   i.setAttribute('swc-use-ssr', (i as any)._swcId ?? '');
 };
 export const removeSSRAttribute = (i: HTMLElement) => {
+  // 표식은 지워도 "서버가 그린 엘리먼트"였다는 건 기억한다 → 첫 라우트(같은 경로)를 다시 그리지 않게 (_invokeRouteChangeSubscribers)
+  if (isSSR(i)) (i as any).__swc_ssrRoute ??= true;
   i.removeAttribute('swc-use-ssr');
 };
 
@@ -142,6 +144,14 @@ export function SwcAppMixin<T extends { new (...args: any[]): HTMLElement }>(Bas
           // live는 전부 실행, replay는 해당 trigger 구독자만 실행.
           // on(enter/update/leave) 판정을 위해 구독자별 직전 매칭 상태를 기억한다 (멈춘 뒤에도 상태는 계속 갱신).
           const state = routeStateOf(instance);
+          // 서버가 이미 이 경로로 그려 보낸 엘리먼트는 같은 경로에 대해 다시 그리지 않는다 (@onConnected 렌더를 건너뛰는 것과 같은 규칙).
+          // 연결 때(connected)와 라우터 시작 때(live) 두 번 오므로 경로를 기억해 둘 다 건너뛰고, 다른 경로로 가면 잊는다.
+          // 매칭 상태는 아래에서 그대로 기록해 이후 enter/update/leave 판정은 정상으로 돈다.
+          const routeSig = JSON.stringify([re.path ?? '', re.search ?? '']);
+          if (ValidUtils.isBrowser() && isSSR(instance)) (instance as any).__swc_ssrRoute ??= true;
+          if ((instance as any).__swc_ssrRoute === true) (instance as any).__swc_ssrRoute = routeSig;
+          const ssrPainted = (instance as any).__swc_ssrRoute === routeSig;
+          if (!ssrPainted) delete (instance as any).__swc_ssrRoute;
           let stopped = false;
           for (const metadata of routeChangeSubscribers) {
             if (phase !== 'live' && (metadata.options?.trigger ?? 'connected') !== phase) continue;
@@ -168,7 +178,7 @@ export function SwcAppMixin<T extends { new (...args: any[]): HTMLElement }>(Bas
               : on === 'update' ? !!match && !!prev?.matched && prev.signature !== signature
               : on === 'leave' ? !match && !!prev?.matched
               : false;
-            if (stopped || !shouldRun || !instance[methodName]) continue;
+            if (stopped || ssrPainted || !shouldRun || !instance[methodName]) continue;
 
             // leave 는 지금 경로가 안 맞으므로 직전 매칭의 pathData 로 준다
             const pathData = match ? match.pathData : prev?.pathData ?? {};

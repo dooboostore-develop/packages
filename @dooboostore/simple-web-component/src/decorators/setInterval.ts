@@ -10,8 +10,8 @@ export type SetIntervalType = 'onConnected' | 'returnValue';
 
 export interface SetIntervalOptions {
   /**
-   * 'onConnected' (connect 시 자동으로 시작, disconnect 시 자동 정리) |
-   * 'returnValue' (기본값 - 자동 시작 없음. 개발자가 이 메서드를 직접 호출해야 시작되고,
+   * 'onConnected' (기본값 - connect 시 자동으로 시작, disconnect 시 자동 정리) |
+   * 'returnValue' (자동 시작 없음. 개발자가 이 메서드를 직접 호출해야 시작되고,
    *   그 호출의 리턴값이 실제로 반복 실행될 함수가 된다 - 아래 설명 참고).
    */
   type?: SetIntervalType;
@@ -43,8 +43,8 @@ export interface SetIntervalMetadata {
 const getActiveEntries = (inst: any): number[] => (inst.__swc_intervalIds ??= []);
 
 /**
- * type:'onConnected' - connect 시 자동으로 setInterval을 걸고, disconnect 시 자동으로 clearInterval 한다.
- * type:'returnValue'(기본값) - 메서드를 감싸지 않는 대신, 호출될 때마다(개발자가 직접 호출) 원본 로직을
+ * type:'onConnected'(기본값) - connect 시 자동으로 setInterval을 걸고, disconnect 시 자동으로 clearInterval 한다.
+ * type:'returnValue' (@setIntervalReturnValue) - 메서드를 감싸지 않는 대신, 호출될 때마다(개발자가 직접 호출) 원본 로직을
  *   그대로 실행하고 리턴값(또는 valueKey로 뽑은 값)이 함수면 그 함수를 새 setInterval의 반복 콜백으로 등록한다.
  *   호출할 때마다 별도의 새 타이머가 생기며, disconnect 시 전부 정리된다. 원본 리턴값은 그대로 통과시키므로
  *   다른 데코레이터와 같은 메서드에 스택해도 순서에 상관없이 안전하다.
@@ -52,7 +52,7 @@ const getActiveEntries = (inst: any): number[] => (inst.__swc_intervalIds ??= []
 export function setInterval(interval: number, options: SetIntervalOptions = {}): MethodDecorator {
   return (target: Object, propertyKey: string | symbol, descriptor?: PropertyDescriptor) => {
     const constructor = target.constructor;
-    const normalizedOptions: SetIntervalOptions = { ...options, type: options.type ?? 'returnValue' };
+    const normalizedOptions: SetIntervalOptions = { ...options, type: options.type ?? 'onConnected' };
 
     let metaList = ReflectUtils.getOwnMetadata(SET_INTERVAL_METADATA_KEY, constructor) as SetIntervalMetadata[];
     if (!metaList) {
@@ -145,3 +145,7 @@ export class SetIntervalLifeCycler implements ElementDefineLifeCycler {
     inst.__swc_intervalIds = [];
   }
 }
+
+/** 수동 시작: 메서드를 직접 호출해야 시작된다. = @setInterval(interval, { type: 'returnValue' }) */
+export const setIntervalReturnValue = (interval: number, options: Omit<SetIntervalOptions, 'type'> = {}): MethodDecorator =>
+  setInterval(interval, { ...options, type: 'returnValue' });

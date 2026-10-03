@@ -10,8 +10,8 @@ export type SetTimeoutType = 'onConnected' | 'returnValue';
 
 export interface SetTimeoutOptions {
   /**
-   * 'onConnected' (connect 시 자동으로 예약, disconnect 시 자동 정리) |
-   * 'returnValue' (기본값 - 자동 예약 없음. 개발자가 이 메서드를 직접 호출해야 예약되고,
+   * 'onConnected' (기본값 - connect 시 자동으로 예약, disconnect 시 자동 정리) |
+   * 'returnValue' (자동 예약 없음. 개발자가 이 메서드를 직접 호출해야 예약되고,
    *   그 호출의 리턴값이 실제로 실행될 함수가 된다 - 아래 설명 참고).
    */
   type?: SetTimeoutType;
@@ -43,8 +43,8 @@ export interface SetTimeoutMetadata {
 const getActiveEntries = (inst: any): number[] => (inst.__swc_timeoutIds ??= []);
 
 /**
- * type:'onConnected' - connect 시 자동으로 setTimeout을 걸고, disconnect 시 (아직 실행 전이라면) 자동으로 clearTimeout 한다.
- * type:'returnValue'(기본값) - 메서드를 감싸지 않는 대신, 호출될 때마다(개발자가 직접 호출) 원본 로직을
+ * type:'onConnected'(기본값) - connect 시 자동으로 setTimeout을 걸고, disconnect 시 (아직 실행 전이라면) 자동으로 clearTimeout 한다.
+ * type:'returnValue' (@setTimeoutReturnValue) - 메서드를 감싸지 않는 대신, 호출될 때마다(개발자가 직접 호출) 원본 로직을
  *   그대로 실행하고 리턴값(또는 valueKey로 뽑은 값)이 함수면 그 함수를 새 setTimeout으로 예약한다.
  *   호출할 때마다 별도의 새 타이머가 생기며, disconnect 시 (아직 실행 전인 것들은) 전부 정리된다.
  *   원본 리턴값은 그대로 통과시키므로 다른 데코레이터와 같은 메서드에 스택해도 순서에 상관없이 안전하다.
@@ -52,7 +52,7 @@ const getActiveEntries = (inst: any): number[] => (inst.__swc_timeoutIds ??= [])
 export function setTimeout(delay: number, options: SetTimeoutOptions = {}): MethodDecorator {
   return (target: Object, propertyKey: string | symbol, descriptor?: PropertyDescriptor) => {
     const constructor = target.constructor;
-    const normalizedOptions: SetTimeoutOptions = { ...options, type: options.type ?? 'returnValue' };
+    const normalizedOptions: SetTimeoutOptions = { ...options, type: options.type ?? 'onConnected' };
 
     let metaList = ReflectUtils.getOwnMetadata(SET_TIMEOUT_METADATA_KEY, constructor) as SetTimeoutMetadata[];
     if (!metaList) {
@@ -148,3 +148,7 @@ export class SetTimeoutLifeCycler implements ElementDefineLifeCycler {
     inst.__swc_timeoutIds = [];
   }
 }
+
+/** 수동 예약: 메서드를 직접 호출해야 예약된다. = @setTimeout(delay, { type: 'returnValue' }) */
+export const setTimeoutReturnValue = (delay: number, options: Omit<SetTimeoutOptions, 'type'> = {}): MethodDecorator =>
+  setTimeout(delay, { ...options, type: 'returnValue' });

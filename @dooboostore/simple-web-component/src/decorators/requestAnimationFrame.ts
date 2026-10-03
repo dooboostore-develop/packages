@@ -9,8 +9,8 @@ export type RequestAnimationFrameType = 'onConnected' | 'returnValue';
 
 export interface RequestAnimationFrameOptions {
   /**
-   * 'onConnected' - connect 시 자동으로 루프 시작 (매 프레임 데코레이트된 메서드를 직접 호출), disconnect 시 자동 정리.
-   * 'returnValue'(기본값) - 자동 시작 없음. 개발자가 이 메서드를 직접 호출해야 시작되고,
+   * 'onConnected'(기본값) - connect 시 자동으로 루프 시작 (매 프레임 데코레이트된 메서드를 직접 호출), disconnect 시 자동 정리.
+   * 'returnValue' - 자동 시작 없음. 개발자가 이 메서드를 직접 호출해야 시작되고,
    *   그 호출의 리턴값(또는 valueKey로 뽑은 값)이 실제로 매 프레임 호출될 함수가 된다.
    */
   type?: RequestAnimationFrameType;
@@ -63,7 +63,7 @@ const startFrameLoop = (win: Window, entries: number[], frameFn: FrameCallback):
 
 const applyRequestAnimationFrame = (options: RequestAnimationFrameOptions, target: Object, propertyKey: string | symbol, descriptor?: PropertyDescriptor): PropertyDescriptor | void => {
   const constructor = target.constructor;
-  const normalizedOptions: RequestAnimationFrameOptions = { ...options, type: options.type ?? 'returnValue' };
+  const normalizedOptions: RequestAnimationFrameOptions = { ...options, type: options.type ?? 'onConnected' };
 
   let metaList = ReflectUtils.getOwnMetadata(REQUEST_ANIMATION_FRAME_METADATA_KEY, constructor) as RequestAnimationFrameMetadata[];
   if (!metaList) {
@@ -96,8 +96,8 @@ const applyRequestAnimationFrame = (options: RequestAnimationFrameOptions, targe
 };
 
 /**
- * type:'onConnected' - connect 시 자동으로 매 프레임 루프를 시작하고, disconnect 시 자동으로 cancelAnimationFrame 한다.
- * type:'returnValue'(기본값) - 메서드를 감싸지 않는 대신, 호출될 때마다(개발자가 직접 호출) 원본 로직을
+ * type:'onConnected'(기본값) - connect 시 자동으로 매 프레임 루프를 시작하고, disconnect 시 자동으로 cancelAnimationFrame 한다.
+ * type:'returnValue' (@requestAnimationFrameReturnValue) - 메서드를 감싸지 않는 대신, 호출될 때마다(개발자가 직접 호출) 원본 로직을
  *   그대로 실행하고 리턴값(또는 valueKey로 뽑은 값)이 함수면 그 함수를 매 프레임 호출되는 루프로 등록한다.
  *   원본 리턴값은 그대로 통과시키므로 다른 데코레이터와 같은 메서드에 스택해도 순서에 상관없이 안전하다.
  *
@@ -146,4 +146,16 @@ export class RequestAnimationFrameLifeCycler implements ElementDefineLifeCycler 
     }
     inst.__swc_requestAnimationFrameIds = [];
   }
+}
+
+/** 수동 시작: 메서드를 직접 호출해야 시작되고, 그 리턴 함수가 매 프레임 돈다. = @requestAnimationFrame({ type: 'returnValue' }) */
+export function requestAnimationFrameReturnValue(options: Omit<RequestAnimationFrameOptions, 'type'>): MethodDecorator;
+export function requestAnimationFrameReturnValue(target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor): void;
+export function requestAnimationFrameReturnValue(optionsOrTarget?: Omit<RequestAnimationFrameOptions, 'type'> | Object, propertyKey?: string | symbol, descriptor?: PropertyDescriptor): MethodDecorator | void {
+  if (propertyKey !== undefined) {
+    applyRequestAnimationFrame({ type: 'returnValue' }, optionsOrTarget as Object, propertyKey, descriptor);
+    return;
+  }
+  return (target: Object, propertyKey: string | symbol, descriptor?: PropertyDescriptor) =>
+    applyRequestAnimationFrame({ ...((optionsOrTarget as RequestAnimationFrameOptions) ?? {}), type: 'returnValue' }, target, propertyKey, descriptor);
 }

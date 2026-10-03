@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import assert from 'node:assert';
 import { createWindow, bootApp, sleep, uniqueTag } from './dom.ts';
 import {
-  elementDefine, onConnectedBodyShadow, publishSwcAppMessage, publishMessage, subscribeSwcAppMessage, receiveMessage, appMessage,
+  elementDefine, onConnectedBodyShadow, publishSwcAppMessage, publishMessage, subscribeSwcAppMessage, subscribeSwcAppMessageBehavior, subscribeSwcAppMessageReplay, receiveMessage, appMessage,
   appMessageBeforeReturn, hostSet
 } from '../../src/index.ts';
 
@@ -138,6 +138,27 @@ test("late subscriber: 'behavior' replays the last message, 'replay' the whole b
   app.publishMessage({ type: 'c', data: 3 });
   await sleep(10);
   assert.deepStrictEqual(log.at(-1), 'live:3', 'live messages reach it once connected');
+  destroy();
+});
+
+test('subscribeSwcAppMessageBehavior / subscribeSwcAppMessageReplay = subject option in the name (options still pass through)', async () => {
+  const log: string[] = [];
+  const { app, attach, destroy } = await setup({
+    late: (win, tag) => {
+      @elementDefine(tag, { window: win })
+      class L extends win.HTMLElement {
+        @subscribeSwcAppMessageBehavior('a') onA(m: any) { log.push(`behavior:${m.data}`); }
+        @subscribeSwcAppMessageReplay('b') onB(m: any) { log.push(`replay:${m.data}`); }
+        @subscribeSwcAppMessageBehavior('d', { filter: (m: any) => m.data !== 2 }) onD(m: any) { log.push(`filtered:${m.data}`); }
+      }
+    }
+  }, []);
+  for (const t of ['a', 'b', 'd']) { app.publishMessage({ type: t, data: 1 }); app.publishMessage({ type: t, data: 2 }); }
+  await attach('late');
+  assert.deepStrictEqual(log, ['behavior:2', 'replay:1', 'replay:2']);
+  app.publishMessage({ type: 'd', data: 3 });
+  await sleep(10);
+  assert.deepStrictEqual(log.at(-1), 'filtered:3');
   destroy();
 });
 

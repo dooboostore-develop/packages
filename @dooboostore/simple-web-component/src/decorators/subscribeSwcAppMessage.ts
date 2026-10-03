@@ -82,6 +82,33 @@ export function subscribeSwcAppMessage(targetOrMessageTypeOrOptions?: any, optio
 }
 
 export const receiveMessage = subscribeSwcAppMessage;
+
+// ── subject 를 이름에 박은 별칭: @subscribeSwcAppMessageBehavior('auth') = @subscribeSwcAppMessage('auth', { subject: 'behavior' }) ──
+type SubjectlessOptions<Data, BeforeReturn, Result> = Omit<SwcAppMessageOptions<Data, BeforeReturn, Result>, 'subject'>;
+
+const withSubject = (subject: SwcAppMessageSubject, a?: any, b?: any, descriptor?: PropertyDescriptor): any => {
+  if (descriptor) return createSubscribeSwcAppMessage({ subject })(a, b, descriptor); // 괄호 없이
+  if (typeof a === 'string') return createSubscribeSwcAppMessage({ ...(b ?? {}), subject }, a);
+  return createSubscribeSwcAppMessage({ ...(a ?? {}), subject });
+};
+
+/** 늦게 붙어도 마지막 메시지 1개를 받는다 (subject: 'behavior') */
+export function subscribeSwcAppMessageBehavior(target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor): PropertyDescriptor | void;
+export function subscribeSwcAppMessageBehavior(messageType: string): MethodDecorator;
+export function subscribeSwcAppMessageBehavior<Data = any, BeforeReturn = any, Result = any>(options: SubjectlessOptions<NoInfer<Data>, NoInfer<BeforeReturn>, NoInfer<Result>>): MethodDecorator;
+export function subscribeSwcAppMessageBehavior<Data = any, BeforeReturn = any, Result = any>(messageType: string, options: SubjectlessOptions<NoInfer<Data>, NoInfer<BeforeReturn>, NoInfer<Result>>): MethodDecorator;
+export function subscribeSwcAppMessageBehavior(a?: any, b?: any, descriptor?: PropertyDescriptor): any {
+  return withSubject('behavior', a, b, descriptor);
+}
+
+/** 늦게 붙어도 지나간 메시지를 전부 시간순으로 받는다 (subject: 'replay') */
+export function subscribeSwcAppMessageReplay(target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor): PropertyDescriptor | void;
+export function subscribeSwcAppMessageReplay(messageType: string): MethodDecorator;
+export function subscribeSwcAppMessageReplay<Data = any, BeforeReturn = any, Result = any>(options: SubjectlessOptions<NoInfer<Data>, NoInfer<BeforeReturn>, NoInfer<Result>>): MethodDecorator;
+export function subscribeSwcAppMessageReplay<Data = any, BeforeReturn = any, Result = any>(messageType: string, options: SubjectlessOptions<NoInfer<Data>, NoInfer<BeforeReturn>, NoInfer<Result>>): MethodDecorator;
+export function subscribeSwcAppMessageReplay(a?: any, b?: any, descriptor?: PropertyDescriptor): any {
+  return withSubject('replay', a, b, descriptor);
+}
 // Helper function to retrieve message subscribers metadata
 export const getSubscribeSwcAppMessageMetadata = (target: any): SwcAppMessageSubscriberMetadata[] | undefined => {
   const constructor = typeof target === 'function' ? target : target.constructor;

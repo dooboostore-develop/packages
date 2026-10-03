@@ -2,16 +2,16 @@ import 'reflect-metadata';
 import { test } from 'node:test';
 import assert from 'node:assert';
 import { createWindow, mount, sleep, uniqueTag } from './dom.ts';
-import { elementDefine, setInterval, setTimeout, requestAnimationFrame, around, eventMedia, eventMediaChange, SET_TIMEOUT_METADATA_KEY } from '../../src/index.ts';
+import { elementDefine, setInterval, setTimeout, requestAnimationFrame, setIntervalReturnValue, setTimeoutReturnValue, requestAnimationFrameReturnValue, around, eventMedia, eventMediaChange, SET_TIMEOUT_METADATA_KEY } from '../../src/index.ts';
 
-test("@setInterval type 'onConnected': ticks with parameter, created gets the id, stops on disconnect", async () => {
+test("@setInterval default 'onConnected': ticks with parameter, created gets the id, stops on disconnect", async () => {
   const { w, destroy } = await createWindow();
   const tag = uniqueTag('iv');
   const ticks: number[] = [];
   const created: number[] = [];
   @elementDefine(tag, { window: w })
   class El extends w.HTMLElement {
-    @setInterval(10, { type: 'onConnected', parameter: () => [7], created: (_s, id) => created.push(id) })
+    @setInterval(10, { parameter: () => [7], created: (_s, id) => created.push(id) })
     tick(n: number) { ticks.push(n); }
   }
   const el = await mount<any>(w, tag, {}, 60);
@@ -26,14 +26,14 @@ test("@setInterval type 'onConnected': ticks with parameter, created gets the id
   destroy();
 });
 
-test("@setInterval default 'returnValue': nothing auto-starts; calling starts the returned fn, return passes through", async () => {
+test("@setIntervalReturnValue: nothing auto-starts; calling starts the returned fn, return passes through", async () => {
   const { w, destroy } = await createWindow();
   const tag = uniqueTag('iv-rv');
   const ids: number[] = [];
   let createdId = -1;
   @elementDefine(tag, { window: w })
   class El extends w.HTMLElement {
-    @setInterval(10, { created: (_s, id) => { createdId = id; } })
+    @setIntervalReturnValue(10, { created: (_s, id) => { createdId = id; } })
     start() { return (id: number) => { ids.push(id); }; }
   }
   const el = await mount<any>(w, tag, {}, 40);
@@ -51,13 +51,13 @@ test("@setInterval default 'returnValue': nothing auto-starts; calling starts th
   destroy();
 });
 
-test("@setTimeout type 'onConnected': fires once; disconnect before the delay cancels it", async () => {
+test("@setTimeout default 'onConnected': fires once; disconnect before the delay cancels it", async () => {
   const { w, destroy } = await createWindow();
   const tag = uniqueTag('to');
   let fired = 0;
   @elementDefine(tag, { window: w })
   class El extends w.HTMLElement {
-    @setTimeout(10, { type: 'onConnected' }) once() { fired++; }
+    @setTimeout(10) once() { fired++; }
   }
   await mount(w, tag, {}, 50);
   assert.strictEqual(fired, 1);
@@ -71,14 +71,14 @@ test("@setTimeout type 'onConnected': fires once; disconnect before the delay ca
   destroy();
 });
 
-test("@setTimeout 'returnValue': callback under the default valueKey key fires once with its id", async () => {
+test("@setTimeoutReturnValue: callback under the default valueKey key fires once with its id", async () => {
   const { w, destroy } = await createWindow();
   const tag = uniqueTag('to-rv');
   const fired: number[] = [];
   let createdId = -1;
   @elementDefine(tag, { window: w })
   class El extends w.HTMLElement {
-    @setTimeout(10, { created: (_s, id) => { createdId = id; } })
+    @setTimeoutReturnValue(10, { created: (_s, id) => { createdId = id; } })
     later() { return { other: 1, [SET_TIMEOUT_METADATA_KEY]: (id: number) => fired.push(id) }; }
   }
   const el = await mount<any>(w, tag);
@@ -109,13 +109,13 @@ test('two instances: disconnecting one stops only its own interval', async () =>
   destroy();
 });
 
-test('bare @requestAnimationFrame: returned frame fn loops with prevValue until it returns null', async () => {
+test('bare @requestAnimationFrameReturnValue: returned frame fn loops with prevValue until it returns null', async () => {
   const { w, destroy } = await createWindow();
   const tag = uniqueTag('raf');
   const seen: (number | undefined)[] = [];
   @elementDefine(tag, { window: w })
   class El extends w.HTMLElement {
-    @requestAnimationFrame
+    @requestAnimationFrameReturnValue
     animate() {
       return (ts: number, prev?: number) => {
         assert.strictEqual(typeof ts, 'number');
@@ -132,14 +132,14 @@ test('bare @requestAnimationFrame: returned frame fn loops with prevValue until 
   destroy();
 });
 
-test("@requestAnimationFrame type 'onConnected': calls the method each frame, cancelled on disconnect", async () => {
+test("bare @requestAnimationFrame (default 'onConnected'): calls the method each frame, cancelled on disconnect", async () => {
   const { w, destroy } = await createWindow();
   const tag = uniqueTag('raf-c');
   let frames = 0;
   let createdId = -1;
   @elementDefine(tag, { window: w })
   class El extends w.HTMLElement {
-    @requestAnimationFrame({ type: 'onConnected', created: (_s, id) => { createdId = id; } })
+    @requestAnimationFrame({ created: (_s, id) => { createdId = id; } })
     frame() { frames++; return true; }
   }
   const el = await mount<any>(w, tag, {}, 80);
@@ -149,6 +149,20 @@ test("@requestAnimationFrame type 'onConnected': calls the method each frame, ca
   const count = frames;
   await sleep(60);
   assert.strictEqual(frames, count);
+  destroy();
+});
+
+test('bare @requestAnimationFrame with no options auto-starts (default onConnected)', async () => {
+  const { w, destroy } = await createWindow();
+  const tag = uniqueTag('raf-bare');
+  let frames = 0;
+  @elementDefine(tag, { window: w })
+  class El extends w.HTMLElement {
+    @requestAnimationFrame
+    frame() { frames++; return frames < 3 ? true : null; }
+  }
+  await mount<any>(w, tag, {}, 80);
+  assert.strictEqual(frames, 3, 'runs on its own, stops when it returns null');
   destroy();
 });
 

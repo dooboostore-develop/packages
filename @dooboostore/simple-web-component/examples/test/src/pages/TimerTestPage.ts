@@ -1,4 +1,4 @@
-import { elementDefine, onConnectedBodyShadow, applyNode, event, setInterval, setTimeout, requestAnimationFrame, SET_INTERVAL_METADATA_KEY, propWindow, eventMediaChange, HelperHostSet, mutationObserver } from '@dooboostore/simple-web-component';
+import { elementDefine, onConnectedBodyShadow, applyNode, event, setInterval, setTimeout, requestAnimationFrame, SET_INTERVAL_METADATA_KEY, propWindow, eventMediaChange, HelperHostSet, mutationObserver, requestAnimationFrameReturnValue, setIntervalReturnValue } from '@dooboostore/simple-web-component';
 
 /**
  * appendCount 두 개는 @setInterval을 다른 wrapping 데코레이터(@applyNode)와
@@ -29,7 +29,7 @@ export default (w: Window) => {
     timeoutWithParamFired = false;
 
     // 1. type:'onConnected' - connect 시 자동 시작, 인자 없이 1초마다 호출
-    @setInterval(1000, { type: 'onConnected' })
+    @setInterval(1000)
     onTick() {
       this.intervalTickCount++;
       console.log('[setInterval onConnected] tick', this.intervalTickCount);
@@ -38,7 +38,6 @@ export default (w: Window) => {
 
     // 2. type:'onConnected' + parameter + created - 1.5초마다, 인자 2개 전달
     @setInterval(1500, {
-      type: 'onConnected',
       parameter: (set: HelperHostSet) => [Date.now(), 'hello'],
       created: (set: HelperHostSet, id: number) => console.log('[setInterval created] timer id:', id)
     })
@@ -49,7 +48,7 @@ export default (w: Window) => {
     }
 
     // 3. type:'onConnected' - connect 3초 뒤 1회만 실행
-    @setTimeout(3000, { type: 'onConnected' })
+    @setTimeout(3000)
     onFire() {
       this.timeoutFired = true;
       console.log('[setTimeout onConnected] fired once');
@@ -58,7 +57,6 @@ export default (w: Window) => {
 
     // 4. type:'onConnected' + parameter + created - connect 2초 뒤 1회, 인자 1개 전달
     @setTimeout(2000, {
-      type: 'onConnected',
       parameter: (set: HelperHostSet) => [42],
       created: (set: HelperHostSet, id: number) => console.log('[setTimeout created] timer id:', id)
     })
@@ -72,7 +70,7 @@ export default (w: Window) => {
     valueKeyCallbackCount = 0;
     valueKeyLastId: number | null = null;
 
-    @setInterval(900, { type: 'onConnected', valueKey: 'onTick' })
+    @setInterval(900, { valueKey: 'onTick' })
     onValueKeyTick() {
       return {
         onTick: (id: number) => {
@@ -84,12 +82,12 @@ export default (w: Window) => {
       };
     }
 
-    // 6. type:'returnValue'(기본값) - 자동 시작 없음. 버튼 클릭으로 직접 호출해야 시작되고,
+    // 6. type:'returnValue' - 자동 시작 없음. 버튼 클릭으로 직접 호출해야 시작되고,
     //    리턴한 함수가 그대로 반복 실행될 tick 콜백이 된다 (호출할 때마다 새 타이머 생성).
     returnValueTickCount = 0;
     returnValueLastId: number | null = null;
 
-    @setInterval(700)
+    @setIntervalReturnValue(700)
     startReturnValueInterval() {
       console.log('[setInterval returnValue] armed - 이 시점엔 아직 tick 콜백이 실행 안 됨');
       return (id: number) => {
@@ -108,7 +106,7 @@ export default (w: Window) => {
     // 6-1. valueKey를 안 줬을 때 SET_INTERVAL_METADATA_KEY로 폴백하는지 확인 (applyAttribute.ts/applyNode.ts와 동일 컨벤션)
     defaultKeyTickCount = 0;
 
-    @setInterval(600)
+    @setIntervalReturnValue(600)
     startDefaultKeyInterval() {
       console.log('[setInterval default-key] armed - valueKey 안 줬으니 SET_INTERVAL_METADATA_KEY로 폴백해야 함');
       return {
@@ -166,7 +164,7 @@ export default (w: Window) => {
     //    (30프레임 채우면 null을 리턴해서 다음 프레임을 예약 안 함 - 개발자가 종료를 제어)
     rafOnConnectedFrameCount = 0;
 
-    @requestAnimationFrame({ type: 'onConnected', created: (set: HelperHostSet, id: number) => console.log('[rAF onConnected] loop started | id:', id) })
+    @requestAnimationFrame({ created: (set: HelperHostSet, id: number) => console.log('[rAF onConnected] loop started | id:', id) })
     onAnimationFrame(timestamp: number, prevValue?: number) {
       const count = (prevValue ?? 0) + 1;
       this.rafOnConnectedFrameCount = count;
@@ -178,12 +176,12 @@ export default (w: Window) => {
       return count; // 다음 호출의 prevValue로 그대로 전달됨
     }
 
-    // 8. requestAnimationFrame type:'returnValue'(기본값) - 버튼 클릭으로 시작, 누적 상태(count, startTime)를
+    // 8. requestAnimationFrame type:'returnValue' - 버튼 클릭으로 시작, 누적 상태(count, startTime)를
     //    prevValue로 계속 실어나르다가 2초 지나면 스스로 종료
     rafReturnValueFrameCount = 0;
     rafReturnValueDone = false;
 
-    @requestAnimationFrame
+    @requestAnimationFrameReturnValue
     startRafReturnValue() {
       console.log('[rAF returnValue] armed');
       return (timestamp: number, prevValue?: { count: number; startTime: number }) => {
@@ -212,7 +210,7 @@ export default (w: Window) => {
     appendCountB = 0;
 
     // 순서 A: @setInterval이 위, @applyNode가 아래
-    @setInterval(1200, { type: 'onConnected' })
+    @setInterval(1200)
     @applyNode('.append-log-a', { position: 'beforeEnd' })
     onTickAppendA() {
       this.appendCountA++;
@@ -224,7 +222,7 @@ export default (w: Window) => {
 
     // 순서 B: @applyNode가 위, @setInterval이 아래 (반대 순서)
     @applyNode('.append-log-b', { position: 'beforeEnd' })
-    @setInterval(1300, { type: 'onConnected' })
+    @setInterval(1300)
     onTickAppendB() {
       this.appendCountB++;
       const div = document.createElement('div');
@@ -291,7 +289,7 @@ export default (w: Window) => {
           </p>
 
           <div class="return-value-section">
-            <h3>🖱️ type:'returnValue'(기본값) 테스트</h3>
+            <h3>🖱️ type:'returnValue' 테스트</h3>
             <p class="hint" style="margin-top:6px;">버튼을 눌러야만 시작됨 (connect 시 자동 실행 안 됨). 여러 번 누르면 그때마다 별도의 새 타이머가 생겨서 tick count가 더 빨리 올라감.</p>
             <button class="btn-start-return-value">타이머 시작 (700ms)</button>
             <button class="btn-start-return-value btn-start-default-key">valueKey 없이 시작 (600ms, 기본 키로 폴백돼야 함)</button>
@@ -300,7 +298,7 @@ export default (w: Window) => {
 
           <div class="raf-section">
             <h3>🎞️ @requestAnimationFrame 테스트</h3>
-            <p class="hint" style="margin-top:6px;">onConnected: connect되면 자동으로 시작해서 30프레임 채우면 스스로 종료 (null 리턴). returnValue(기본값): 버튼 눌러야 시작, 2초 지나면 스스로 종료 - 누적 상태(count, startTime)가 매 프레임 prevValue로 전달됨.</p>
+            <p class="hint" style="margin-top:6px;">onConnected: connect되면 자동으로 시작해서 30프레임 채우면 스스로 종료 (null 리턴). returnValue: 버튼 눌러야 시작, 2초 지나면 스스로 종료 - 누적 상태(count, startTime)가 매 프레임 prevValue로 전달됨.</p>
             <button class="btn-start-raf">requestAnimationFrame 시작 (2초 후 자동 종료)</button>
           </div>
 

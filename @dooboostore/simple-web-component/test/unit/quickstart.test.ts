@@ -6,6 +6,9 @@ import { elementDefine, onConnectedBodyShadow, event, innerHtml, defineSwcAppAll
 
 // 쇼케이스 사이트 /start 페이지의 퀵스타트 코드와 같은 것 — 문서가 거짓이 되지 않게 실제로 돌린다.
 // (사이트 쪽: src/pages/start/index.ts. 한쪽을 바꾸면 다른 쪽도 맞출 것)
+// 사용자 프로젝트의 env.d.ts 와 같은 선언 (w.HTMLElement 를 쓰려면 필요)
+declare global { interface Window { HTMLElement: typeof HTMLElement } }
+
 const helloCard = (w: Window) => {
   const tag = 'hello-card';
   if (w.customElements.get(tag)) return tag;

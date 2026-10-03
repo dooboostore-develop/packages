@@ -1228,7 +1228,11 @@ export class EventListenerLifeCycler implements ElementDefineLifeCycler {
     const { type, options } = meta;
     const opts = { capture: options.capture, once: options.once, passive: options.passive };
 
+    // event.currentTarget 은 dispatch 가 끝나면 null 이 된다 (표준). debounce/throttle 이나 async filter 뒤에 읽으면 이미 null 이라
+    // 리스너가 불리는 순간에 잡아 둔다 → @matchedElement 가 항상 채워진다.
+    const matchedTargets = new WeakMap<Event, EventTarget | null>();
     const handler = async (event: Event) => {
+      const matchedElement = matchedTargets.get(event) ?? event.currentTarget;
       const helper = (options.filter || options.before || options.finally) ? SwcUtils.getHelperAndHostSet(target as HTMLElement, currentWin) : undefined;
       if (options.filter) {
         if (!(await options.filter(event, { currentThis: inst, helper }))) return;
@@ -1237,12 +1241,12 @@ export class EventListenerLifeCycler implements ElementDefineLifeCycler {
       if (options.stopImmediatePropagation) event.stopImmediatePropagation();
       if (options.preventDefault) event.preventDefault();
       const currentHostSet = SwcUtils.getHostSet(inst);
-      const legacyArgs = [event, { currentHostSet, $matchedElement: event.currentTarget }, { event, ...currentHostSet, $el: target, $root: target }];
+      const legacyArgs = [event, { currentHostSet, $matchedElement: matchedElement }, { event, ...currentHostSet, $el: target, $root: target }];
       const currentHelperSet = SwcUtils.getHelperSet(currentWin);
       const currentHelperHostSet = { ...currentHelperSet, ...currentHostSet, $this: inst };
       const buildArgs = (beforeReturn: any) => buildSwcParameterArgs(inst, meta.propertyKey, {
         eventObject: event,
-        matchedElement: event.currentTarget,
+        matchedElement,
         hostSet: currentHostSet,
         helperHostSet: currentHelperHostSet,
         helperSet: currentHelperSet,
@@ -1283,7 +1287,10 @@ export class EventListenerLifeCycler implements ElementDefineLifeCycler {
       error: (err: any) => console.error('Event stream error:', err),
     });
 
-    const wrappedHandler = (event: Event) => eventSubject.next(event);
+    const wrappedHandler = (event: Event) => {
+      matchedTargets.set(event, event.currentTarget);
+      eventSubject.next(event);
+    };
     target.addEventListener(type, wrappedHandler, opts);
 
     const onRemoves: Array<{ fn: any; opts: any }> =
