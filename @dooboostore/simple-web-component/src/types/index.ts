@@ -205,6 +205,13 @@ export interface OnConnectedResult {
  * };
  * ```
  */
+// observer 메타 phase 분류: 자기 자신(bare/$this, non-delegate)은 렌더 전에, 나머지는 렌더 후에 붙는다.
+export type ObserverScope = 'self' | 'rest';
+export const isSelfObserverMeta = (m: { selector?: unknown; options?: { delegate?: boolean } }): boolean =>
+  !m.options?.delegate && (m.selector === '$this' || m.selector === '');
+export const inObserverScope = (m: { selector?: unknown; options?: { delegate?: boolean } }, scope?: ObserverScope): boolean =>
+  !scope || (scope === 'self') === isSelfObserverMeta(m);
+
 export interface ElementDefineLifeCycler {
   /**
    * connectedCallback 시 호출.
@@ -212,8 +219,9 @@ export interface ElementDefineLifeCycler {
    * 필요 없으면 void / undefined 를 반환한다.
    * @param helperHostSet 현재 엘리먼트 인스턴스($this)를 포함한 컨텍스트
    * @param resizeObserverSet 이전 시클러가 반환한 resize observer set (mutation 시클러가 주입받아 사용)
+   * @param scope observer 시클러 전용 — 'self'(렌더 전, 자기 자신 메타만) / 'rest'(렌더 후, 나머지). 없으면 전부.
    */
-  onConnected?(helperHostSet: HelperHostSet, resizeObserverSet?: ResizeObserverSet): OnConnectedResult | void | Promise<OnConnectedResult | void>;
+  onConnected?(helperHostSet: HelperHostSet, resizeObserverSet?: ResizeObserverSet, scope?: ObserverScope): OnConnectedResult | void | Promise<OnConnectedResult | void>;
 
   /** disconnectedCallback 시 호출. 등록한 리소스를 해제한다. */
   onDisconnected?(helperHostSet: HelperHostSet): void;

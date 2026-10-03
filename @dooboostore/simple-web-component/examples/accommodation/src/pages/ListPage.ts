@@ -1,4 +1,4 @@
-import { appendHtmlSlot, innerHtml, state, addEventListener, elementDefine, onConnectedBody, onConnectedAfter, updateClass } from '@dooboostore/simple-web-component';
+import { appendHtmlSlot, innerHtml, state, event, elementDefine, onConnectedBody, onConnectedAfter, updateClass } from '@dooboostore/simple-web-component';
 import {Inject} from '@dooboostore/simple-boot';
 import {Router} from '@dooboostore/core-web';
 import {type Accommodation, AccommodationService} from '../services/AccommodationService';
@@ -136,7 +136,7 @@ export default (w: Window) => {
       this.updateMapMarkers();
     }
 
-    @addEventListener('.c-btn', 'click')
+    @event('.c-btn', 'click')
     wow(){
       alert(1)
       this.ww = '<i>aaaaaaa</i>'
@@ -293,19 +293,19 @@ export default (w: Window) => {
       `;
     }
 
-    @addEventListener('.filter-chip', 'click', { delegate: true })
+    @event('.filter-chip', 'click', { delegate: true })
     onFilterClick(e: any) {
       const filter = e.target.closest('.filter-chip').dataset.filter;
       this.toggleFilter(filter);
     }
 
-    @addEventListener('#reset-filters', 'click', { delegate: true })
+    @event('#reset-filters', 'click', { delegate: true })
     onResetFilters() {
       this.activeFilters.clear();
       this.applyFilters();
     }
 
-    @addEventListener('.card-item', 'click', { delegate: true })
+    @event('.card-item', 'click', { delegate: true })
     onCardClick(e: any) {
       const id = e.target.closest('swc-example-accommodation-accommodation-card').dataset.id;
       this.router.go(`/detail/${id}`);

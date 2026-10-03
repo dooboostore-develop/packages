@@ -1,4 +1,4 @@
-import { innerHtml, addEventListener, applyNode, attribute, changedAttribute, elementDefine, emitCustomEvent, onConnectedBefore, subscribeSwcAppMessage, type SwcAppMessage } from '@dooboostore/simple-web-component';
+import { innerHtml, event, applyNode, attribute, changedAttribute, elementDefine, emitCustomEvent, onConnectedBefore, subscribeSwcAppMessage, type SwcAppMessage } from '@dooboostore/simple-web-component';
 import {ProductService} from "../services/ProductService";
 import {inject} from "@dooboostore/simple-boot";
 
@@ -206,14 +206,14 @@ export default (w: Window) => {
     //   return this.#getTemplate();
     // }
 
-    @addEventListener('.card', 'click', { delegate: true })
+    @event('.card', 'click', { delegate: true })
     @emitCustomEvent('$this', 'view-product', { bubbles: true, attributeName: 'on-view-product' })
     onCardClick(event: Event) {
       console.log('vv');
       return { productId: this.#product?.id };
     }
 
-    @addEventListener('.btn-add-cart', 'click', { stopPropagation: true, delegate: true })
+    @event('.btn-add-cart', 'click', { stopPropagation: true, delegate: true })
     @emitCustomEvent('$this', 'add-to-cart', { bubbles: true, attributeName: 'on-add-to-cart' })
     onAddToCart(event: Event) {
       return { product: this.#product };

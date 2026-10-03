@@ -209,9 +209,11 @@ function createClassDecorator(action: ClassAction) {
         };
 
         if (res instanceof Promise) {
-          return res.then((v: any) => handleResult(extractValue(v)));
+          // 자기 몫(valueKey)만 적용하고 원래 반환값은 그대로 위로 넘긴다 — 위에 쌓인 다른 아웃풋도 자기 키를 찾게
+          return res.then((v: any) => { handleResult(extractValue(v)); return v; });
         } else {
-          return handleResult(extractValue(res));
+          handleResult(extractValue(res));
+          return res;
         }
       };
       return descriptor;

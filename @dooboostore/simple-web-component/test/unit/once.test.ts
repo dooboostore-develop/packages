@@ -43,15 +43,16 @@ test('mount / reconnect / move: every lifecycle hook once, every listener once, 
     return take();
   };
   const listenersOnce = { click: 1, resize: 1, changedAttribute: 1, mutation: 1 };
-  assert.deepStrictEqual(take(), { init: 1, before: 1, render: 1, after: 1, completed: 1 }, 'first mount');
+  // bare @mutationObserver 는 렌더 전에 붙으므로 매 연결의 첫 렌더도 한 번 본다
+  assert.deepStrictEqual(take(), { init: 1, before: 1, render: 1, mutation: 1, after: 1, completed: 1 }, 'first mount');
   assert.deepStrictEqual(await actions(), listenersOnce, 'after first mount');
 
   el.remove(); await sleep(10); w.document.body.appendChild(el); await sleep(40);
-  assert.deepStrictEqual(take(), { disconnected: 1, before: 1, render: 1, after: 1, completed: 1 }, 'reconnect (no second init)');
+  assert.deepStrictEqual(take(), { disconnected: 1, before: 1, render: 1, mutation: 1, after: 1, completed: 1 }, 'reconnect (no second init)');
   assert.deepStrictEqual(await actions(), listenersOnce, 'after reconnect');
 
   const box = w.document.createElement('section'); w.document.body.appendChild(box); box.appendChild(el); await sleep(40);
-  assert.deepStrictEqual(take(), { disconnected: 1, before: 1, render: 1, after: 1, completed: 1 }, 'move');
+  assert.deepStrictEqual(take(), { disconnected: 1, before: 1, render: 1, mutation: 1, after: 1, completed: 1 }, 'move');
   assert.deepStrictEqual(await actions(), listenersOnce, 'after move');
 
   el.remove(); await sleep(10); take();

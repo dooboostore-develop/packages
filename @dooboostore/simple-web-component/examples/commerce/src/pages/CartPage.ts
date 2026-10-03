@@ -1,4 +1,4 @@
-import { addEventListener, applyNode, elementDefine, onConnectedBody, onConnectedBefore } from '@dooboostore/simple-web-component';
+import { event, applyNode, elementDefine, onConnectedBody, onConnectedBefore } from '@dooboostore/simple-web-component';
 import {Inject} from '@dooboostore/simple-boot';
 import {SubscriptionLike} from '@dooboostore/core';
 import {CartService} from '../services/CartService';
@@ -55,7 +55,7 @@ export default (w: Window) => {
       return `${count} ${count === 1 ? 'item' : 'items'} in cart`;
     }
 
-    @addEventListener('.btn-quantity-decrease', 'click', { delegate: true, stopPropagation: true })
+    @event('.btn-quantity-decrease', 'click', { delegate: true, stopPropagation: true })
     onQuantityDecrease(event: Event) {
       const btn = event.target as HTMLElement;
       const productId = btn.getAttribute('data-product-id');
@@ -67,7 +67,7 @@ export default (w: Window) => {
       }
     }
 
-    @addEventListener('.btn-quantity-increase', 'click', { delegate: true, stopPropagation: true })
+    @event('.btn-quantity-increase', 'click', { delegate: true, stopPropagation: true })
     onQuantityIncrease(event: Event) {
       const btn = event.target as HTMLElement;
       const productId = btn.getAttribute('data-product-id');
@@ -79,7 +79,7 @@ export default (w: Window) => {
       }
     }
 
-    @addEventListener('.btn-remove-item', 'click', { delegate: true, stopPropagation: true })
+    @event('.btn-remove-item', 'click', { delegate: true, stopPropagation: true })
     onRemoveItem(event: Event) {
       const btn = event.target as HTMLElement;
       const productId = btn.getAttribute('data-product-id');
@@ -88,7 +88,7 @@ export default (w: Window) => {
       }
     }
 
-    @addEventListener('.btn-clear-cart', 'click', { stopPropagation: true, delegate: true })
+    @event('.btn-clear-cart', 'click', { stopPropagation: true, delegate: true })
     // @emitThis('cart-cleared', { bubbles: true })
     onClearCart() {
       if (this.cartService && confirm('Clear all items from cart?')) {
@@ -97,7 +97,7 @@ export default (w: Window) => {
       }
     }
 
-    @addEventListener('.btn-checkout', 'click', { stopPropagation: true, delegate: true })
+    @event('.btn-checkout', 'click', { stopPropagation: true, delegate: true })
     onCheckout() {
       if (!this.cartService || !this.orderService || this.cartService.isEmpty()) {
         return;

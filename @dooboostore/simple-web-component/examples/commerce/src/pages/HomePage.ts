@@ -1,4 +1,4 @@
-import { innerHtml, addEventListener, elementDefine, onConnectedBody, onConnectedBefore, updateClass } from '@dooboostore/simple-web-component';
+import { innerHtml, event, elementDefine, onConnectedBody, onConnectedBefore, updateClass } from '@dooboostore/simple-web-component';
 import {Inject} from '@dooboostore/simple-boot';
 import {Router} from '@dooboostore/core-web';
 import {ProductService} from '../services/ProductService';
@@ -80,7 +80,7 @@ export default (w: Window) => {
       };
     }
 
-    @addEventListener('.category-btn', 'click', { delegate: true })
+    @event('.category-btn', 'click', { delegate: true })
     onCategorySelect(event: Event) {
       const btn = event.target as HTMLElement;
       const category = btn.getAttribute('data-category') || 'All';

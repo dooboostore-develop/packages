@@ -1,4 +1,4 @@
-import { addEventListenerThis, applyNode, elementDefine, emitCustomEvent, onConnectedBody } from '@dooboostore/simple-web-component';
+import { event, applyNode, elementDefine, emitCustomEvent, onConnectedBody } from '@dooboostore/simple-web-component';
 
 /**
  * Cart Button Component Factory - Custom built-in button element
@@ -21,7 +21,7 @@ export default (w: Window) => {
     this.updateDisplay();
   }
 
-  @addEventListenerThis('click')
+  @event('click')
   @emitCustomEvent('$this', 'navigate', { attributeName: 'on-navigate' })
   onClick(event: MouseEvent) {
     return { path: '/cart' };

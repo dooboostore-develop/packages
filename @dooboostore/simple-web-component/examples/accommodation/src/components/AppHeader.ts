@@ -1,4 +1,4 @@
-import { addEventListener, elementDefine, emitCustomEvent, onConnectedBody } from '@dooboostore/simple-web-component';
+import { event, elementDefine, emitCustomEvent, onConnectedBody } from '@dooboostore/simple-web-component';
 
 
 export default (w: Window) => {
@@ -53,7 +53,7 @@ export default (w: Window) => {
       `;
     }
 
-    @addEventListener('.nav-item, #logo', 'click', { delegate: true })
+    @event('.nav-item, #logo', 'click', { delegate: true })
     @emitCustomEvent('navigate', { bubbles: true, attributeName: 'on-navigate' })
     onNavigate(e: any) {
       const target = e.target.closest('[data-path]');

@@ -98,6 +98,8 @@ export function SwcAppMixin<T extends { new (...args: any[]): HTMLElement }>(Bas
      * 부모가 자식들을 강제로 등록해주는 형태로 처리
      */
     _connected_safari_and_standby = [];
+    // connect() 전에 붙은 자식들이 기다리는 곳 — connect() 가 엔진을 띄운 뒤 깨운다
+    _appReadyWaiters: Array<() => void> = [];
 
     get simpleApplication() {
       return this.__swc_engine.simpleApplication;
@@ -267,8 +269,14 @@ export function SwcAppMixin<T extends { new (...args: any[]): HTMLElement }>(Bas
     async _connected(instance: HTMLElement, option?: { noIncrements: boolean }) {
       if (instance) {
         if (!this.simpleApplication && !this.config) {
-          this._connected_safari_and_standby.push(instance);
-          return;
+          // 자기 자신은 connect() 가 나중에 재생한다
+          if (instance === (this as any)) {
+            this._connected_safari_and_standby.push(instance);
+            return;
+          }
+          // 앱이 아직 connect 전: 준비될 때까지 기다린다. 안 기다리면 이미 정의된 자식이 DI·라우터 없이
+          // 라이프사이클(@inject 등)을 먼저 돌려 undefined 를 받는다 (elementDefine 이 이 await 뒤에 렌더한다).
+          await new Promise<void>(resolve => this._appReadyWaiters.push(resolve));
         }
 
         this.config.onConnectedChildBefore?.(instance);
@@ -373,6 +381,7 @@ export function SwcAppMixin<T extends { new (...args: any[]): HTMLElement }>(Bas
       } as SwcConfigType;
 
       await this.__swc_engine.connect(swcConfig);
+      this._appReadyWaiters.splice(0).forEach(resolve => resolve());
 
       // Safari is 속성 처리
       this._connected_safari_and_standby.forEach((instance: any) => {

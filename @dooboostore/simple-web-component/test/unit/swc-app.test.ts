@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import assert from 'node:assert';
 import { Sim, inject } from '@dooboostore/simple-boot';
 import { createWindow, sleep, uniqueTag } from './dom.ts';
-import { elementDefine, onConnectedBodyShadow, defineSwcAppAll, SwcAppMixin } from '../../src/index.ts';
+import { elementDefine, onConnectedBodyShadow, onConnectedBefore, defineSwcAppAll, SwcAppMixin } from '../../src/index.ts';
 
 test('defineSwcAppAll registers every SwcApp variant', async () => {
   const { w, destroy } = await createWindow();
@@ -89,5 +89,31 @@ test('custom SwcAppMixin host: onSwcAppConnected resolves @inject after connect(
   await sleep(10);
   await app.connect({ container, window: w });
   assert.deepStrictEqual(log, ['connected', 'swcApp:me']);
+  destroy();
+});
+
+// 회귀: 이미 정의된 자식이 앱 connect() 보다 먼저 붙으면, 앱이 준비되기 전에 라이프사이클이 돌아 @inject 가 undefined 였다
+// (예제 페이지 재방문: commerce → stock → commerce 에서 Header 의 CartService 가 undefined)
+test('a child defined before its app connects waits for connect(): @inject resolves, render happens after', async () => {
+  const container = Symbol('late-app');
+  const SYMBOL = Symbol('CartService');
+  @Sim({ symbol: SYMBOL, container })
+  class CartService { load() { return 'loaded'; } }
+  const tag = uniqueTag('early-child');
+  const { w, destroy } = await createWindow(`<!DOCTYPE html><html><body><div id="app" is="swc-app-div"><${tag}></${tag}></div></body></html>`);
+  await defineSwcAppAll(w);
+  const seen: string[] = [];
+  @elementDefine(tag, { window: w })
+  class Child extends w.HTMLElement {
+    @onConnectedBefore before(@inject(SYMBOL) cart: CartService) { seen.push(`before:${cart?.load()}`); }
+    @onConnectedBodyShadow render() { seen.push('render'); return '<p class="ok">ok</p>'; }
+  }
+  await sleep(30);
+  assert.deepStrictEqual(seen, [], 'nothing runs before the app connects');
+  const app: any = w.document.querySelector('#app');
+  await app.connect({ path: '/', routeType: 'path', container, window: w });
+  await sleep(50);
+  assert.deepStrictEqual(seen, ['before:loaded', 'render']);
+  assert.ok(w.document.querySelector(tag).shadowRoot?.querySelector('.ok'));
   destroy();
 });

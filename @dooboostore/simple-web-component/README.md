@@ -727,7 +727,9 @@ class ListObserver extends HTMLElement {
 
 **Callback signature:**
 - `matchedEls: HTMLElement[]` - Elements matching the selector (1st arg). For the element itself (bare `@mutationObserver` / `$this`) it is just `[element]` — the added/removed nodes are in `mutations`
-- `mutations: MutationRecord[]` - Original mutation records (2nd arg)
+- `mutations: MutationRecord[]` - Mutation records for this method's own targets (2nd arg)
+
+Bare `@mutationObserver` (no arguments) watches the element's whole subtree (`childList` + `subtree`) and is attached **before** the first render, so it sees the render itself. Pass options to narrow it (e.g. `@mutationObserver({ childList: true })` = direct children only).
 - `observer: MutationObserver` - The observer instance (3rd arg)
 
 **How delegate works:**

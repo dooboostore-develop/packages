@@ -19,6 +19,8 @@ export interface OnConnectedAppendChildOptions {
   // replaceWrap?:{ start: string, end:string},
   useShadow?: boolean;
   order?: number;
+  // 비동기 렌더가 끝나기 전까지 먼저 보여줄 내용. resolve되면 제거되고 실제 결과가 들어감.
+  fallback?: string | ((helper: any) => string | Node | Node[] | DocumentFragment);
 }
 export interface OnConnectedAppendChildOptionsMetadata {
   propertyKey: string | symbol;

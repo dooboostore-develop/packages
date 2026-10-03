@@ -1,4 +1,4 @@
-import { addEventListener, innerHtml, attribute, elementDefine, onConnectedBody, onConnectedBefore } from '@dooboostore/simple-web-component';
+import { event, innerHtml, attribute, elementDefine, onConnectedBody, onConnectedBefore } from '@dooboostore/simple-web-component';
 import {Inject} from '@dooboostore/simple-boot';
 import {EventService} from '../services/EventService';
 import {AccommodationService} from '../services/AccommodationService';
@@ -164,7 +164,7 @@ export default (w: Window) => {
       `;
     }
 
-    @addEventListener('.acc-mini-card', 'click', { delegate: true })
+    @event('.acc-mini-card', 'click', { delegate: true })
     onAccClick(e: any) {
       const id = e.target.closest('.acc-mini-card').dataset.id;
       this.router.go(`/detail/${id}`);

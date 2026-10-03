@@ -4,7 +4,7 @@ import assert from 'node:assert';
 import { createWindow, mount, sleep, uniqueTag } from './dom.ts';
 import {
   elementDefine, onConnectedBodyShadow, applyStyle, setStyle, updateStyle, removeStyle, applyClass, setClass, updateClass, addClass,
-  removeClass, toggleClass
+  removeClass, toggleClass, innerHtml
 } from '../../src/index.ts';
 
 // 옛 test/case(apply-style / apply-class / apply-advanced)의 *Host 데코레이터는
@@ -140,5 +140,27 @@ test('class on the host: bare @setClass / @updateClass / @addClass target the el
   assert.deepStrictEqual([...el.classList].sort(), ['flagged', 'host-merged', 'is-loaded', 'marked']);
   el.merged(false); el.flag(false); await sleep();
   assert.deepStrictEqual([...el.classList].sort(), ['is-loaded', 'marked']);
+  destroy();
+});
+
+// 회귀: @updateStyle / @updateClass 가 원래 반환값 대신 자기 몫(valueKey)만 돌려줘서,
+// 그 위에 쌓인 @innerHtml(valueKey) 이 자기 키를 못 찾고 객체 통째로("[object Object]") 그렸다
+test('stacked outputs: @updateStyle / @updateClass pass the original return value up to @innerHtml', async () => {
+  const { w, destroy } = await createWindow();
+  const tag = uniqueTag('stack-pass');
+  @elementDefine(tag, { window: w })
+  class El extends w.HTMLElement {
+    @onConnectedBodyShadow render() { return '<p class="t"></p><div class="box"></div>'; }
+    @innerHtml('.t', { valueKey: 'text' })
+    @updateStyle('.box', { valueKey: 'style' })
+    @updateClass('.box', { root: 'auto', valueKey: 'cls' })
+    paint() { return { text: 'hello', style: { color: 'red' }, cls: { on: true } }; }
+  }
+  const el = await mount<any>(w, tag);
+  const ret = el.paint();
+  assert.deepStrictEqual(ret, { text: 'hello', style: { color: 'red' }, cls: { on: true } }, 'method still returns the whole object');
+  assert.strictEqual(el.shadowRoot.querySelector('.t').textContent, 'hello');
+  assert.strictEqual(el.shadowRoot.querySelector('.box').style.color, 'red');
+  assert.ok(el.shadowRoot.querySelector('.box').classList.contains('on'));
   destroy();
 });

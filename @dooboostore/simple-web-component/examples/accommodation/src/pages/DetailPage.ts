@@ -1,4 +1,4 @@
-import { addEventListener, innerHtml, attribute, elementDefine, onConnectedBody, onConnectedBefore, query, subscribeSwcAppRouteChange } from '@dooboostore/simple-web-component';
+import { event, innerHtml, attribute, elementDefine, onConnectedBody, onConnectedBefore, query, subscribeSwcAppRouteChange } from '@dooboostore/simple-web-component';
 import {Inject} from '@dooboostore/simple-boot';
 import {AccommodationService} from '../services/AccommodationService';
 import {EventService, LocalEvent} from '../services/EventService';
@@ -248,13 +248,13 @@ export default (w: Window) => {
       `;
     }
 
-    @addEventListener('.exp-card', 'click', { delegate: true })
+    @event('.exp-card', 'click', { delegate: true })
     onEventClick(e: any) {
       const id = e.target.closest('.exp-card').dataset.id;
       this.router.go(`/event/${id}`);
     }
 
-    @addEventListener('#reserve-btn', 'click')
+    @event('#reserve-btn', 'click')
     onReserve() {
       alert('STAY LUXE: 예약 시스템이 곧 오픈됩니다!');
     }

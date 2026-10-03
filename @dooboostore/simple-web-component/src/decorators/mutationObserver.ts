@@ -63,8 +63,8 @@ const dispatchMutationObserver = (
   extra: Partial<MutationObserverQueryOptions>
 ): MethodDecorator | void => {
   if ((typeof maybeOptionsOrPropertyKey === 'string' || typeof maybeOptionsOrPropertyKey === 'symbol') && descriptor !== undefined) {
-    // 옵션 없이: @decorator
-    applyMutationObserver('$this', { ...extra }, selectorOrOptionsOrTarget as Object, maybeOptionsOrPropertyKey);
+    // 옵션 없이: @decorator — 자기 자신의 하위 전체(childList + subtree)를 본다. 범위를 좁히려면 옵션을 명시.
+    applyMutationObserver('$this', { subtree: true, ...extra }, selectorOrOptionsOrTarget as Object, maybeOptionsOrPropertyKey);
     return;
   }
   // 옵션과 함께: @decorator(selector, options) / @decorator(options)
@@ -155,20 +155,21 @@ export function getMutationObserverMetadata(target: any): MutationObserverMetada
 // observer 를 직접 생성하지 않고 OnConnectedResult 를 반환한다.
 // elementDefine 이 수집된 MutationObserverSet 으로 observer 를 생성한다.
 // ─────────────────────────────────────────────────────────────────────────────
-import { ElementDefineLifeCycler, MutationObserverSet, MutationObserverSetEntry, ObserverObserveTarget, OnConnectedResult } from '../types';
+import { ElementDefineLifeCycler, inObserverScope, MutationObserverSet, MutationObserverSetEntry, ObserverObserveTarget, ObserverScope, OnConnectedResult, ResizeObserverSet } from '../types';
 import { SwcUtils } from '../utils/Utils';
 
 export class MutationObserverLifeCycler implements ElementDefineLifeCycler {
   private readonly removeObserverCallbacksMap = new WeakMap<Element, Array<{ fn: (target: Element, opts: unknown) => void; target: any; opts: unknown }>>();
 
-  onConnected(helperHostSet: HelperHostSet): OnConnectedResult | void {
+  onConnected(helperHostSet: HelperHostSet, _set?: ResizeObserverSet, scope?: ObserverScope): OnConnectedResult | void {
     const inst = helperHostSet.$this;
     const currentWin = helperHostSet.$w;
 
-    const removeObserverCallbacks: Array<{ fn: (target: Element, opts: unknown) => void; target: any; opts: unknown }> = [];
+    // 'rest' 는 같은 connect 의 'self' 뒤에 오므로 이어 붙이고, 그 외(새 connect)는 새로 시작한다.
+    const removeObserverCallbacks = (scope === 'rest' && this.removeObserverCallbacksMap.get(inst)) || [];
     this.removeObserverCallbacksMap.set(inst, removeObserverCallbacks);
 
-    const allMeta = getMutationObserverMetadata(inst) ?? [];
+    const allMeta = (getMutationObserverMetadata(inst) ?? []).filter(m => inObserverScope(m, scope));
     // 처리할 메타가 없으면 observer 불필요
     if (allMeta.length === 0) return;
 
@@ -198,13 +199,19 @@ export class MutationObserverLifeCycler implements ElementDefineLifeCycler {
         return init;
       };
 
-      const fnObservedSets = new Map<MutationObserverMetadata, WeakSet<Element>>();
+      // non-delegate 메타별 observe 대상. MO 는 인스턴스당 1개를 모든 메타가 공유하므로(옵션도 합집합),
+      // 메타는 자기 대상(subtree 면 그 하위)에서 온 레코드만 받는다.
+      const observedNodes = new Map<MutationObserverMetadata, Node[]>();
+      const owns = (meta: MutationObserverMetadata, m: MutationRecord): boolean =>
+        (observedNodes.get(meta) ?? []).some(o => o === m.target || (!!meta.options.subtree && o.contains(m.target)));
 
       const callback = (mutations: MutationRecord[], obs: MutationObserver) => {
         // ── MutationObserver 메타 콜백 ──
         for (const meta of metas) {
           const { selector, options } = meta;
           let matchedEls: HTMLElement[] = [];
+          // 핸들러에 넘길 레코드 — non-delegate 는 자기 대상 레코드만 (옵저버는 공유라 배치에 다른 대상 레코드가 섞인다)
+          let records = mutations;
 
           const typeMatches = (m: MutationRecord): boolean => {
             const has = !!(options.childList || options.attributes || options.characterData);
@@ -214,8 +221,8 @@ export class MutationObserverLifeCycler implements ElementDefineLifeCycler {
             return true;
           };
 
-          const collect = (matchesSel: (n: any) => boolean) =>
-            mutations.flatMap(m => {
+          const collect = (matchesSel: (n: any) => boolean, records: MutationRecord[] = mutations) =>
+            records.flatMap(m => {
               if (!typeMatches(m)) return [];
               const els: HTMLElement[] = [];
               if (matchesSel(m.target)) els.push(m.target as HTMLElement);
@@ -226,7 +233,8 @@ export class MutationObserverLifeCycler implements ElementDefineLifeCycler {
 
           if (typeof selector === 'string' && (selector === '$this' || selector === '')) {
             // 자기 자신을 볼 때는 바뀐/추가된 노드가 아니라 자기 자신 하나 — 해당 종류의 변화가 있었으면 [inst]
-            matchedEls = mutations.some(typeMatches) ? [inst as HTMLElement] : [];
+            records = mutations.filter(m => typeMatches(m) && owns(meta, m));
+            matchedEls = records.length ? [inst as HTMLElement] : [];
           } else if (options.delegate && typeof selector === 'string') {
             matchedEls = collect(n => {
               if (!n || n.nodeType !== 1) return false;
@@ -234,15 +242,16 @@ export class MutationObserverLifeCycler implements ElementDefineLifeCycler {
               return el.matches?.(selector) || !!el.closest?.(selector);
             });
           } else if (typeof selector === 'string') {
-            matchedEls = collect(n => {
+            records = mutations.filter(m => owns(meta, m));
+            matchedEls = records.length ? collect(n => {
               if (!n || n.nodeType !== 1) return false;
               return (n as HTMLElement).matches?.(selector);
-            });
+            }, records) : [];
           } else if (typeof selector === 'function') {
-            const set = fnObservedSets.get(meta);
-            matchedEls = mutations.filter(m => typeMatches(m))
-              .map(m => m.target as HTMLElement)
-              .filter(t => t && t.nodeType === 1 && (set ? set.has(t) : false));
+            // 레코드가 속한 observe 대상 요소 (subtree 면 하위 변경도 그 대상으로 묶는다)
+            records = mutations.filter(m => typeMatches(m) && owns(meta, m));
+            matchedEls = (observedNodes.get(meta) ?? []).filter(o =>
+              records.some(m => o === m.target || (!!options.subtree && o.contains(m.target)))) as HTMLElement[];
           } else {
             matchedEls = mutations.filter(m => typeMatches(m))
               .map(m => m.target as HTMLElement)
@@ -256,7 +265,7 @@ export class MutationObserverLifeCycler implements ElementDefineLifeCycler {
             if (options.filter && !(await options.filter(matchedEls, { currentThis: inst, helper }))) return;
             const hostSet = SwcUtils.getHostSet(inst);
             const helperSet = SwcUtils.getHelperSet(helperHostSet.$w);
-            const legacyArgs = [matchedEls, mutations, obs, { ...hostSet, $root: root }];
+            const legacyArgs = [matchedEls, records, obs, { ...hostSet, $root: root }];
             const buildArgs = (beforeReturn: any) => buildSwcParameterArgs(inst, meta.propertyKey, {
               hostSet, helperHostSet: helper, helperSet, mutationObserverBeforeReturn: beforeReturn
             }, [...legacyArgs, beforeReturn]);
@@ -285,20 +294,17 @@ export class MutationObserverLifeCycler implements ElementDefineLifeCycler {
         const { selector, options } = m;
         const mInit = initFrom(options);
         if (typeof selector === 'string') {
-          if (selector === '$this' || selector === '') {
-            observeTargets.push({ target: root, options: mInit });
-          } else {
-            root.querySelectorAll(selector).forEach(el => observeTargets.push({ target: el as Element, options: mInit }));
-          }
+          const nodes: Node[] = selector === '$this' || selector === '' ? [root] : Array.from(root.querySelectorAll(selector));
+          for (const n of nodes) observeTargets.push({ target: n as Element, options: mInit });
+          observedNodes.set(m, nodes);
         } else if (typeof selector === 'function') {
           const res = (selector as any)(inst, helperHostSet);
           let targets: HTMLElement[] = [];
           if (res instanceof currentWin.HTMLElement) targets = [res as HTMLElement];
           else if (res instanceof currentWin.NodeList) targets = Array.from(res as NodeList).filter((e: any) => e instanceof currentWin.HTMLElement) as HTMLElement[];
           else if (Array.isArray(res)) targets = res.filter((e: any) => e instanceof currentWin.HTMLElement) as HTMLElement[];
-          const set = new WeakSet<Element>();
-          for (const el of targets) { set.add(el); observeTargets.push({ target: el, options: mInit }); }
-          fnObservedSets.set(m, set);
+          for (const el of targets) observeTargets.push({ target: el, options: mInit });
+          observedNodes.set(m, targets);
         }
       }
 

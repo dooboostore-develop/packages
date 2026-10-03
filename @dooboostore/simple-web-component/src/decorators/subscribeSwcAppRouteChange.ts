@@ -95,6 +95,12 @@ export function subscribeSwcAppRouteChange(targetOrOptions?: any, propertyKeyOrC
 }
 export const changedRoute = subscribeSwcAppRouteChange;
 
+// 늦게 붙은 인스턴스도 렌더 완료 후 마지막 라우트를 재생 — DOM 타겟 핸들러용.
+// @subscribeSwcAppRouteChange(path, { trigger: 'connectedDone' }) 의 단축형.
+export function subscribeSwcAppRouteChangeConnectedDone<BeforeReturn = any, Result = any>(pathPattern: RoutePathType, config?: Omit<SwcAppRouteChangeOptions<NoInfer<BeforeReturn>, NoInfer<Result>>, 'path' | 'trigger'>): MethodDecorator {
+  return subscribeSwcAppRouteChange(pathPattern, { ...config, trigger: 'connectedDone' });
+}
+
 // Helper function to retrieve route change subscribers metadata
 export const getSubscribeSwcAppRouteChangeMetadata = (target: any): SwcAppRouteChangeSubscriberMetadata[] => {
   const constructor = typeof target === 'function' ? target : target.constructor;

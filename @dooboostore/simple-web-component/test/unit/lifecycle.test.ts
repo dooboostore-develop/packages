@@ -4,7 +4,7 @@ import assert from 'node:assert';
 import { Sim, inject } from '@dooboostore/simple-boot';
 import { createWindow, bootApp, mount, sleep, uniqueTag } from './dom.ts';
 import {
-  elementDefine, onInitialize, onConnectedBefore, onConnectedAfter, onConnectedCompleted, onConnectedBodyShadow, onConnectedSwcApp,
+  elementDefine, onInitialize, onConnectedBefore, onConnectedAfter, onConnectedCompleted, onConnectedBodyShadow, onConnectedBodyLight, onConnectedSwcApp,
   onDisconnected, onDisconnectedBefore, onDisconnectedAfter, onAdopted, onAdoptedBefore, onAdoptedAfter
 } from '../../src/index.ts';
 
@@ -189,5 +189,83 @@ test('in an app: @onInitialize resolves @inject parameters through DI', async ()
   await sleep(100);
   assert.ok(seen.service instanceof GreetService);
   assert.strictEqual(seen.service?.hello(), 'hello');
+  destroy();
+});
+
+test('@onConnectedBody fallback shows while async render pends, then replaced', async () => {
+  const { w, destroy } = await createWindow();
+  const tag = uniqueTag('lc-fallback');
+  @elementDefine(tag, { window: w })
+  class El extends w.HTMLElement {
+    @onConnectedBodyShadow({ fallback: '<p class="fb">loading…</p>' })
+    async render() {
+      await sleep(300);
+      return '<p class="real">done</p>';
+    }
+  }
+  const el = await mount<any>(w, tag, {}, 50);
+  assert.ok(el.shadowRoot.querySelector('p.fb'), 'fallback visible while pending');
+  await sleep(500);
+  assert.strictEqual(el.shadowRoot.querySelector('p.fb'), null, 'fallback removed');
+  assert.strictEqual(el.shadowRoot.querySelector('p.real')?.textContent, 'done');
+  destroy();
+});
+
+test('@onConnectedBodyLight fallback shows while pending, then replaced', async () => {
+  const { w, destroy } = await createWindow();
+  const tag = uniqueTag('fb-light');
+  @elementDefine(tag, { window: w })
+  class El extends w.HTMLElement {
+    @onConnectedBodyLight({ fallback: '<p class="fb">loading</p>' }) async render() { await sleep(200); return '<p class="real">done</p>'; }
+  }
+  const el = await mount<any>(w, tag, {}, 50);
+  assert.ok(el.querySelector('.fb'), 'fallback visible');
+  await sleep(300);
+  assert.strictEqual(el.querySelector('.fb'), null); assert.ok(el.querySelector('.real'));
+  destroy();
+});
+
+test('@onConnectedBody fallback can be a function', async () => {
+  const { w, destroy } = await createWindow();
+  const tag = uniqueTag('fb-fn');
+  @elementDefine(tag, { window: w })
+  class El extends w.HTMLElement {
+    @onConnectedBodyShadow({ fallback: () => '<p class="fb">fn</p>' }) async render() { await sleep(200); return '<p class="real">done</p>'; }
+  }
+  const el = await mount<any>(w, tag, {}, 50);
+  assert.ok(el.shadowRoot.querySelector('.fb'));
+  await sleep(300);
+  assert.strictEqual(el.shadowRoot.querySelector('.fb'), null);
+  destroy();
+});
+
+test('fallback stays until every render method is done (no blank gap)', async () => {
+  const { w, destroy } = await createWindow();
+  const tag = uniqueTag('fb-two');
+  @elementDefine(tag, { window: w })
+  class El extends w.HTMLElement {
+    @onConnectedBodyShadow({ fallback: '<p class="fb">loading</p>' }) async a() { await sleep(100); return '<p class="a">a</p>'; }
+    @onConnectedBodyShadow async b() { await sleep(400); return '<p class="b">b</p>'; }
+  }
+  const el = await mount<any>(w, tag, {}, 250); // a 끝남, b 대기 중
+  const html = el.shadowRoot.innerHTML;
+  assert.ok(html.trim().length > 0, `something visible while b pends, got: "${html}"`);
+  await sleep(400);
+  assert.strictEqual(el.shadowRoot.querySelector('.fb'), null);
+  destroy();
+});
+
+test('fallback removed when the element is detached while rendering, none left after re-attach', async () => {
+  const { w, destroy } = await createWindow();
+  const tag = uniqueTag('fb-abort');
+  let n = 0;
+  @elementDefine(tag, { window: w })
+  class El extends w.HTMLElement {
+    @onConnectedBodyLight({ fallback: '<p class="fb">loading</p>' }) async render() { n++; await sleep(150); return n === 1 ? '<p class="real">1</p>' : ''; }
+  }
+  const el = await mount<any>(w, tag, {}, 30);
+  el.remove(); await sleep(10); w.document.body.appendChild(el);
+  await sleep(400);
+  assert.strictEqual(el.querySelectorAll('.fb').length, 0, `stale fallbacks: ${el.innerHTML}`);
   destroy();
 });

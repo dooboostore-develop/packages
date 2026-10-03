@@ -1,4 +1,4 @@
-import { innerHtml, onConnectedAfter, addEventListener, elementDefine, onConnectedBody, onConnectedBefore } from '@dooboostore/simple-web-component';
+import { innerHtml, onConnectedAfter, event, elementDefine, onConnectedBody, onConnectedBefore } from '@dooboostore/simple-web-component';
 import {Inject} from '@dooboostore/simple-boot';
 import {Router} from '@dooboostore/core-web';
 import {EventService, LocalEvent} from '../services/EventService';
@@ -266,12 +266,12 @@ export default (w: Window) => {
       `;
     }
 
-    @addEventListener('#start-discovery, #explore-stays', 'click')
+    @event('#start-discovery, #explore-stays', 'click')
     onExplore() {
       this.router.go('/list');
     }
 
-    @addEventListener('.event-large-card, .event-small-card', 'click', { delegate: true })
+    @event('.event-large-card, .event-small-card', 'click', { delegate: true })
     onEventClick(e: any) {
       const id = e.target.closest('[data-id]').dataset.id;
       this.router.go(`/event/${id}`);

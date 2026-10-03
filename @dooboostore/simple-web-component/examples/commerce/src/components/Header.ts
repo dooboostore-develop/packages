@@ -1,4 +1,4 @@
-import { addEventListener, applyNode, elementDefine, emitCustomEvent, onConnectedBody, onConnectedBefore } from '@dooboostore/simple-web-component';
+import { event, applyNode, elementDefine, emitCustomEvent, onConnectedBody, onConnectedBefore } from '@dooboostore/simple-web-component';
 import {CartService} from "../services/CartService";
 import {Subscription} from "@dooboostore/core";
 import {inject} from "@dooboostore/simple-boot";
@@ -37,26 +37,26 @@ export default (w: Window) => {
       this.updateCartCount();
     }
 
-    @addEventListener('.logo', 'click')
+    @event('.logo', 'click')
     @emitCustomEvent('$this', 'navigate', { attributeName: 'on-navigate' })
     onLogoClick() {
       return { path: '/' };
     }
 
-    @addEventListener('#home-link', 'click')
+    @event('#home-link', 'click')
     @emitCustomEvent('$this', 'navigate', { attributeName: 'on-navigate' })
     onHomeClick(event: Event,h : any) {
       console.log('-!!', event, h)
       return { path: '/' };
     }
 
-    @addEventListener('#orders-link', 'click')
+    @event('#orders-link', 'click')
     @emitCustomEvent('$this', 'navigate', { attributeName: 'on-navigate' })
     onOrdersClick() {
       return { path: '/orders' };
     }
 
-    @addEventListener('.cart-icon', 'click')
+    @event('.cart-icon', 'click')
     @emitCustomEvent('$this', 'navigate', { attributeName: 'on-navigate' })
     onCartClick() {
       return { path: '/cart' };

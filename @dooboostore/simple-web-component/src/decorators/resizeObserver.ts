@@ -157,20 +157,21 @@ export function getResizeObserverMetadata(target: any): ResizeObserverMetadata[]
 // elementDefine 이 수집된 ResizeObserverSet 으로 observer 를 생성하고,
 // observe/unobserve 함수를 주입해 MutationObserver delegate 추적이 사용할 수 있게 한다.
 // ─────────────────────────────────────────────────────────────────────────────
-import { ElementDefineLifeCycler, OnConnectedResult, ResizeObserverSet, ResizeObserverSetEntry } from '../types';
+import { ElementDefineLifeCycler, inObserverScope, ObserverScope, OnConnectedResult, ResizeObserverSet, ResizeObserverSetEntry } from '../types';
 import { SwcUtils } from '../utils/Utils';
 
 export class ResizeObserverLifeCycler implements ElementDefineLifeCycler {
   private readonly removeObserverCallbacksMap = new WeakMap<Element, Array<{ fn: (target: Element, opts: unknown) => void; target: any; opts: unknown }>>();
 
-  onConnected(helperHostSet: HelperHostSet): OnConnectedResult | void {
+  onConnected(helperHostSet: HelperHostSet, _set?: ResizeObserverSet, scope?: ObserverScope): OnConnectedResult | void {
     const inst = helperHostSet.$this;
     const currentWin = helperHostSet.$w;
 
-    const removeObserverCallbacks: Array<{ fn: (target: Element, opts: unknown) => void; target: any; opts: unknown }> = [];
+    // 'rest' 는 같은 connect 의 'self' 뒤에 오므로 이어 붙이고, 그 외(새 connect)는 새로 시작한다.
+    const removeObserverCallbacks = (scope === 'rest' && this.removeObserverCallbacksMap.get(inst)) || [];
     this.removeObserverCallbacksMap.set(inst, removeObserverCallbacks);
 
-    const allMeta = getResizeObserverMetadata(inst) ?? [];
+    const allMeta = (getResizeObserverMetadata(inst) ?? []).filter(m => inObserverScope(m, scope));
     if (allMeta.length === 0) return;
 
     const root: HTMLElement | ShadowRoot = inst.shadowRoot || inst;
@@ -179,6 +180,9 @@ export class ResizeObserverLifeCycler implements ElementDefineLifeCycler {
     for (const m of allMeta) {
       if (m.options.removeObserver) removeObserverCallbacks.push({ fn: m.options.removeObserver, target: root, opts: m.options });
     }
+
+    // non-delegate 메타별 observe 대상 — 콜백은 모든 메타가 공유하므로, 엔트리를 자기 대상에만 배달한다.
+    const metaTargets = new Map<typeof allMeta[number], WeakSet<Element>>();
 
     // ── ResizeObserver 콜백 ──
     const callback: ResizeObserverSetEntry['callback'] = (entries, obs) => {
@@ -192,7 +196,8 @@ export class ResizeObserverLifeCycler implements ElementDefineLifeCycler {
             return el.matches?.(m.selector as string) || !!el.closest?.(m.selector as string);
           });
         } else {
-          matchedEls = entries.map(e => e.target as HTMLElement).filter(t => t && t.nodeType === 1);
+          const set = metaTargets.get(m);
+          matchedEls = entries.map(e => e.target as HTMLElement).filter(t => t && t.nodeType === 1 && !!set?.has(t));
         }
         if (matchedEls.length === 0) continue;
         const opts = m.options;
@@ -201,7 +206,8 @@ export class ResizeObserverLifeCycler implements ElementDefineLifeCycler {
           if (opts.filter && !(await opts.filter(matchedEls, { currentThis: inst, helper }))) return;
           const hostSet = SwcUtils.getHostSet(inst);
           const helperSet = SwcUtils.getHelperSet(helperHostSet.$w);
-          const legacyArgs = [matchedEls, entries, obs, { ...hostSet, $root: root }];
+          // entries 도 이 메서드 대상 것만 (옵저버는 공유라 배치에 다른 대상 엔트리가 섞인다)
+          const legacyArgs = [matchedEls, entries.filter(e => matchedEls.includes(e.target as HTMLElement)), obs, { ...hostSet, $root: root }];
           const buildArgs = (beforeReturn: any) => buildSwcParameterArgs(inst, m.propertyKey, {
             hostSet, helperHostSet: helper, helperSet, resizeObserverBeforeReturn: beforeReturn
           }, [...legacyArgs, beforeReturn]);
@@ -249,6 +255,7 @@ export class ResizeObserverLifeCycler implements ElementDefineLifeCycler {
           }
         }
       }
+      metaTargets.set(m, new WeakSet(targets));
       for (const el of targets) resizeObserverSet.push({ target: el, options: m.options.box ? { box: m.options.box } : undefined, callback });
     }
 
