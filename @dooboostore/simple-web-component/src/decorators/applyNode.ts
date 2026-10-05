@@ -86,6 +86,12 @@ const applyToDom = (currentThis: any, targetEl: HTMLElement, res: Node | string 
     targetEl.replaceChildren();
     return [];
   }
+
+  // remove: 대상 자체를 DOM에서 뗀다. $this 처럼 shadow root 로 잡혔으면 그 주인 엘리먼트를 뗀다.
+  if (pos === 'remove') {
+    (targetEl instanceof win.ShadowRoot ? (targetEl as any).host : targetEl).remove();
+    return [];
+  }
   
   const doc = win.document;
   const hostSet = SwcUtils.getHelperAndHostSet(currentThis);
@@ -230,8 +236,20 @@ export function applyNode(selectorOrOptions: ApplyNodeSelector | ApplyNodeOption
         return v;
       };
 
+      // remove / clearChildren: 이름에 이미 의도가 있으니 반환값과 상관없이 실행한다.
+      // valueKey 를 줬을 때만 그 키 값이 truthy 인지 본다 (키가 없거나 falsy 면 안 함).
+      const decide = (raw: any) => {
+        if (options.position === 'remove' || options.position === 'clearChildren') {
+          if (options.valueKey === undefined) return true;
+          return raw && typeof raw === 'object' ? raw[options.valueKey] : undefined;
+        }
+        return extractValue(raw);
+      };
+
       const runApply = (target: any, val: any) => {
         const pos = options.position || 'beforeEnd';
+        // remove / clearChildren: valueKey 로 뽑은 값이 falsy 면 안 한다 (valueKey 없으면 decide 가 항상 true)
+        if ((pos === 'remove' || pos === 'clearChildren') && !val) return;
         // Delegate HTML/node processing to applyToDom which centralizes
         // processing. runApply should not call processHtml itself to avoid
         // duplicate processing.
@@ -253,13 +271,13 @@ export function applyNode(selectorOrOptions: ApplyNodeSelector | ApplyNodeOption
 
       if (res instanceof Promise) {
         return res.then(finalRes => {
-          const extracted = extractValue(finalRes);
+          const extracted = decide(finalRes);
           fallbackNodes.forEach((it: any)=>it.remove());
           if (extracted !== undefined && targetEl) runApply(targetEl, extracted);
           return finalRes;
         });
       } else {
-        const extracted = extractValue(res);
+        const extracted = decide(res);
         if (extracted !== undefined && targetEl) runApply(targetEl, extracted);
         return res;
       }
@@ -299,6 +317,7 @@ export function replaceChildren(selectorOrOptions?: ApplyNodeSelector | Omit<App
 
 /**
  * @clearChildrenNode decorator - clears all children of target element
+ * 반환값과 상관없이 비운다. valueKey 를 줬을 때만 그 키 값이 truthy 일 때 비운다 (@removeNode 와 같은 규칙).
  * 
  * Overloads:
  * - clearChildrenNode(selector, options) - Clear children of specific selector
@@ -322,6 +341,29 @@ export function clearChildrenNode(selectorOrOptions?: ApplyNodeSelector | Omit<A
 
 // Alias for clearChildrenNode
 export const clearNode = clearChildrenNode;
+
+/**
+ * @removeNode - 메서드가 끝나면 대상 엘리먼트를 DOM에서 제거한다. 반환값은 그대로 통과.
+ * - 이름에 의도가 있으니 반환값과 상관없이 지운다.
+ * - valueKey 를 줬을 때만 그 키 값을 본다: truthy 면 지우고, 키가 없거나 falsy 면 안 지운다.
+ * 선택자에 맞는 첫 번째 엘리먼트를 지운다. 선택자가 없거나 '$this' 면 자기 자신을 지운다.
+ *
+ * - @removeNode('.toast')  /  @removeNode('.toast', { valueKey: 'close' })
+ * - @removeNode({ valueKey: 'done' })  ($this)
+ * - @removeNode  ($this, bare)
+ */
+export function removeNode(selector: ApplyNodeSelector, options?: Omit<ApplyNodeOptions, 'position'>): MethodDecorator;
+export function removeNode(options: Omit<ApplyNodeOptions, 'position'>): MethodDecorator;
+export function removeNode(target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor): PropertyDescriptor | void;
+export function removeNode(selectorOrOptions?: ApplyNodeSelector | Omit<ApplyNodeOptions, 'position'> | Object, maybeOptions?: Omit<ApplyNodeOptions, 'position'> | string | symbol, descriptor?: PropertyDescriptor): MethodDecorator | PropertyDescriptor | void {
+  if (descriptor !== undefined && (typeof maybeOptions === 'symbol' || typeof maybeOptions === 'string')) {
+    return applyNode({position: 'remove'})(selectorOrOptions as Object, maybeOptions, descriptor);
+  }
+  if (typeof selectorOrOptions === 'string' || typeof selectorOrOptions === 'function') {
+    return applyNode(selectorOrOptions as any, {...maybeOptions as Omit<ApplyNodeOptions, 'position'>, position: 'remove'});
+  }
+  return applyNode({...selectorOrOptions as Omit<ApplyNodeOptions, 'position'>, position: 'remove'});
+}
 
 /**
  * @innerHtmlNode decorator - sets innerHTML of target element

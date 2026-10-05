@@ -69,6 +69,7 @@ export class BareMethods extends HTMLElement {
   @d.clearChildrenLight m_clearChildrenLight() {}
   @d.clearChildrenNode m_clearChildrenNode() {}
   @d.clearNode m_clearNode() {}
+  @d.removeNode m_removeNode() {}
   @d.clsAppHost m_clsAppHost() {}
   @d.eventAnimationcancelAppHost m_eventAnimationcancelAppHost() {}
   @d.eventAnimationcancelDocument m_eventAnimationcancelDocument() {}
@@ -452,6 +453,8 @@ export const emptyParens = () => {
   d.clearChildrenNode();
   // @ts-expect-error
   d.clearNode();
+  // @ts-expect-error
+  d.removeNode();
   // @ts-expect-error
   d.clsAppHost();
   // @ts-expect-error

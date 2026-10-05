@@ -5,7 +5,7 @@ import { createWindow, mount, bootApp, sleep, uniqueTag } from './dom.ts';
 import {
   elementDefine, onConnectedBodyShadow, onConnectedBodyLight, applyNode, replaceChildren, replaceChildrenLight, innerHtml,
   innerHtmlLight, innerHtmlShadow, innerText, innerTextLight, innerTextShadow, insertBeforeEnd, insertBeforeEndLight,
-  insertBeforeEndShadow, insertAfterBegin, insertAfterBeginLight, clearChildrenNode, clearChildrenLight, applyAppHost,
+  insertBeforeEndShadow, insertAfterBegin, insertAfterBeginLight, clearChildrenNode, clearChildrenLight, removeNode, applyAppHost,
   skipIfSameTagPresent, skipIfExists, skipIfEmpty, applyIfChanged
 } from '../../src/index.ts';
 
@@ -192,6 +192,52 @@ test('@clearChildrenNode / @clearChildrenLight empty the target regardless of th
   assert.strictEqual(el.childNodes.length, 1, 'light DOM untouched');
   el.clearLight();
   assert.strictEqual(el.childNodes.length, 0);
+  destroy();
+});
+
+test('@removeNode: removes whatever is returned; only with valueKey does a falsy key keep it', async () => {
+  const { w, destroy } = await createWindow();
+  const tag = uniqueTag('remove');
+  @elementDefine(tag, { window: w })
+  class El extends w.HTMLElement {
+    @onConnectedBodyShadow render() { return `<p class="a">a</p><p class="b">b</p><p class="c">c</p><p class="d">d</p>`; }
+    @removeNode('.a') removeA(v: any) { return v; }
+    @removeNode('.b', { valueKey: 'go' }) removeB(r: any) { return r; }
+    @removeNode('.c') close() { }
+    @removeNode('.d') async later() { await sleep(5); }
+    @removeNode removeSelf() { }
+  }
+  const el = await mount<any>(w, tag);
+  const has = (c: string) => !!el.shadowRoot.querySelector('.' + c);
+  assert.strictEqual(el.removeA(false), false, 'removes even on false, return value passes through');
+  assert.ok(!has('a'));
+  el.close();
+  assert.ok(!has('c'), 'no return value removes');
+  await el.later();
+  assert.ok(!has('d'), 'async with no return value removes after it resolves');
+  for (const r of [{ other: 1 }, { go: undefined }, { go: null }, { go: false }]) el.removeB(r);
+  assert.ok(has('b'), 'with valueKey: missing / undefined / falsy key keeps it');
+  el.removeB({ go: true });
+  assert.ok(!has('b'));
+  el.removeSelf();
+  assert.strictEqual(el.isConnected, false, 'bare @removeNode removes the element itself (not its shadow root)');
+  destroy();
+});
+
+test('@clearChildrenNode clears even with no return value; with valueKey only when the key is truthy', async () => {
+  const { w, destroy } = await createWindow();
+  const tag = uniqueTag('clear-rule');
+  @elementDefine(tag, { window: w })
+  class El extends w.HTMLElement {
+    @onConnectedBodyShadow render() { return `<ul class="a"><li>1</li></ul><ul class="b"><li>1</li></ul>`; }
+    @clearChildrenNode('.a') clearA() { }
+    @clearChildrenNode('.b', { valueKey: 'go' }) clearB(r: any) { return r; }
+  }
+  const el = await mount<any>(w, tag);
+  const n = (c: string) => el.shadowRoot.querySelector('.' + c).childNodes.length;
+  el.clearA(); assert.strictEqual(n('a'), 0, 'no return clears');
+  el.clearB({ go: false }); assert.strictEqual(n('b'), 1, 'falsy key keeps');
+  el.clearB({ go: true }); assert.strictEqual(n('b'), 0);
   destroy();
 });
 

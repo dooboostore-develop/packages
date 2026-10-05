@@ -164,3 +164,32 @@ test('stacked outputs: @updateStyle / @updateClass pass the original return valu
   assert.ok(el.shadowRoot.querySelector('.box').classList.contains('on'));
   destroy();
 });
+
+// 클래스 이름을 선언에 적은 add/remove/toggle: 이름에 의도가 있으니 반환값과 상관없이 실행. valueKey 를 줬을 때만 그 키를 본다.
+// (예전엔 반환값이 없으면 아무 일도 안 했고, false/null 을 반환하면 "false"/"null" 이라는 클래스가 붙었다)
+test('@addClass / @removeClass / @toggleClass with a class name: the declaration is the action', async () => {
+  const { w, destroy } = await createWindow();
+  const tag = uniqueTag('cls-fixed');
+  @elementDefine(tag, { window: w })
+  class El extends w.HTMLElement {
+    @onConnectedBodyShadow render() { return `<p id="p" class="x"></p>`; }
+    @addClass('#p', 'on') on(v?: any) { return v; }
+    @removeClass('#p', 'on') off(v?: any) { return v; }
+    @addClass('#p', 'gated', { valueKey: 'go' }) gate(r: any) { return r; }
+    @toggleClass('#p', 'open') flip(v?: any) { return v; }
+  }
+  const el = await mount<any>(w, tag);
+  const p = el.shadowRoot.querySelector('#p');
+  el.on(); assert.ok(p.classList.contains('on'), 'no return adds');
+  el.off(false); assert.ok(!p.classList.contains('on'), 'false still removes');
+  el.on(null);
+  assert.ok(p.classList.contains('on') && !p.classList.contains('null'), 'no "null" class leaks in');
+  for (const r of [{ other: 1 }, { go: undefined }, { go: false }]) el.gate(r);
+  assert.ok(!p.classList.contains('gated'), 'valueKey missing / falsy skips');
+  el.gate({ go: 1 }); assert.ok(p.classList.contains('gated'));
+  el.flip(); assert.ok(p.classList.contains('open'), 'no return toggles on');
+  el.flip(); assert.ok(!p.classList.contains('open'), 'no return toggles off');
+  el.flip(false); assert.ok(!p.classList.contains('open'), 'false forces off');
+  el.flip(true); el.flip(true); assert.ok(p.classList.contains('open'), 'true forces on');
+  destroy();
+});

@@ -22,6 +22,25 @@ test('@removeAttribute(selector, name) removes the attribute and passes the retu
   destroy();
 });
 
+test('@removeAttribute: removes whatever is returned; only with valueKey does a falsy key keep it', async () => {
+  const { w, destroy } = await createWindow();
+  const tag = uniqueTag('rmattr-cancel');
+  @elementDefine(tag, { window: w })
+  class El extends w.HTMLElement {
+    @removeAttribute('$this', 'data-a') a(v: any) { return v; }
+    @removeAttribute('$this', 'data-b', { valueKey: 'go' }) b(r: any) { return r; }
+  }
+  const el = await mount<any>(w, tag);
+  el.setAttribute('data-a', '1'); el.setAttribute('data-b', '1');
+  el.a(false);
+  assert.ok(!el.hasAttribute('data-a'), 'removes even on false');
+  for (const r of [{ other: 1 }, { go: undefined }, { go: false }]) el.b(r);
+  assert.ok(el.hasAttribute('data-b'), 'missing / undefined / falsy key keeps it');
+  el.b({ go: true });
+  assert.ok(!el.hasAttribute('data-b'));
+  destroy();
+});
+
 test('@removeAttribute on an async method removes after the promise resolves', async () => {
   const { w, destroy } = await createWindow();
   const tag = uniqueTag('rm-attr-async');

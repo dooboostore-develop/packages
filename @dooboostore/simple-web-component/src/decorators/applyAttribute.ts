@@ -369,6 +369,7 @@ export function attribute(selectorOrAttributeOrTarget?: AttributeSelector | Attr
 
 /**
  * @removeAttribute - 메서드 실행 시 엘리먼트 속성 제거 (반환값 그대로 통과).
+ * 반환값과 상관없이 지운다. valueKey 를 줬을 때만 그 키 값이 truthy 인지 본다 (@removeNode 와 같은 규칙).
  * 라우트 구독처럼 값을 리턴하면 안 되는 곳에서 @attribute 에 null 을 리턴하는 대신 명시적으로 사용.
  *
  * Usage:
@@ -382,16 +383,20 @@ export function removeAttribute(selector: AttributeSelector, attributeName: stri
     const original = descriptor.value;
     descriptor.value = function (...args: any[]) {
       const res = (original as any).apply(this, args);
-      const doRemove = () => {
+      // 이름에 이미 의도가 있으니 반환값과 상관없이 지운다. valueKey 를 줬을 때만 그 키 값이 truthy 인지 본다.
+      const doRemove = (v: any) => {
+        const vk = options?.valueKey;
+        const go = vk !== undefined ? (v && typeof v === 'object' ? v[vk] : undefined) : true;
+        if (!go) return;
         resolveAttributeTargets(this, selector, options ?? {}).forEach((el) => el.removeAttribute(attributeName));
       };
       if (res instanceof Promise) {
         return res.then((v: any) => {
-          doRemove();
+          doRemove(v);
           return v;
         });
       }
-      doRemove();
+      doRemove(res);
       return res;
     };
     return descriptor;

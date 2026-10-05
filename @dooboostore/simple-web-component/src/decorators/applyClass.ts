@@ -208,11 +208,31 @@ function createClassDecorator(action: ClassAction) {
           return resolvedValue;
         };
 
+        // 클래스 이름을 선언에 적은 add/remove/toggle 은 이름에 이미 의도가 있다 — 반환값과 상관없이 실행.
+        // valueKey 를 줬을 때만 그 키 값을 본다: add/remove 는 truthy 일 때만, toggle 은 true/false 로 켜고 끔.
+        // toggle 은 valueKey 없이 반환값이 없으면 그냥 토글, true/false 를 반환하면 그대로 켜고 끈다.
+        const fixedName = typeof classMap === 'string' && (action === 'add' || action === 'remove' || action === 'toggle') ? classMap : undefined;
+        const applyFixed = (raw: any) => {
+          const vk = finalOptions.valueKey;
+          const v = vk !== undefined ? (raw && typeof raw === 'object' ? raw[vk] : undefined) : action === 'toggle' ? raw : true;
+          if (vk !== undefined && (action === 'toggle' ? v === undefined : !v)) return;
+          const win = (this as any).ownerDocument?.defaultView || window;
+          const hostSet = { ...SwcUtils.getHelperAndHostSet(this as unknown as HTMLElement), $this: this };
+          getTargetElements(selector, this, win, finalOptions.root || 'auto').forEach(el => {
+            if (finalOptions.filter && !finalOptions.filter(el, v, { currentThis: this, helper: hostSet })) return;
+            if (action === 'add') el.classList.add(fixedName!);
+            else if (action === 'remove') el.classList.remove(fixedName!);
+            else if (v === undefined) el.classList.toggle(fixedName!);
+            else el.classList.toggle(fixedName!, !!v);
+          });
+        };
+        const run = (raw: any) => (fixedName ? applyFixed(raw) : handleResult(extractValue(raw)));
+
         if (res instanceof Promise) {
           // 자기 몫(valueKey)만 적용하고 원래 반환값은 그대로 위로 넘긴다 — 위에 쌓인 다른 아웃풋도 자기 키를 찾게
-          return res.then((v: any) => { handleResult(extractValue(v)); return v; });
+          return res.then((v: any) => { run(v); return v; });
         } else {
-          handleResult(extractValue(res));
+          run(res);
           return res;
         }
       };

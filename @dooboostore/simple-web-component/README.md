@@ -618,7 +618,8 @@ class ProductCard extends HTMLElement {
 - A field getter evaluates a `{{= expr }}` attribute value (see "Attribute Expressions")
 
 #### @removeAttribute (Method Decorator)
-Always removes the attribute when the method runs. The return value passes through unchanged,
+Always removes the attribute when the method runs — the name already says what to do, so the return value doesn't matter.
+With `valueKey`, it removes only when that key is truthy. The return value passes through unchanged,
 so it is safe on subscriber handlers that must not return a value (e.g. route changes).
 
 ```typescript
@@ -891,6 +892,20 @@ class ContentUpdater extends HTMLElement {
 - `@innerHtml` / `@innerHtmlLight` / `@innerHtmlShadow` - Set innerHTML
 - `@innerText` / `@innerTextLight` / `@innerTextShadow` - Set innerText
 - `@clearChildrenNode` / `@clearChildrenLight` - Remove all children
+- `@removeNode` - Remove the target element itself (bare / `'$this'` removes the component)
+
+**Declaration = action** (`@removeNode`, `@clearChildrenNode`, `@removeAttribute`, and `@addClass` / `@removeClass` / `@toggleClass` with the class name written in the decorator):
+they run whatever the method returns. Give a `valueKey` to decide per call — then they run only when that key is truthy
+(`@toggleClass('.x', 'open')`: no return toggles, `true` / `false` forces on / off).
+
+```typescript
+@eventClick('.close')
+@removeNode('.toast')                          // always removes
+close() {}
+
+@removeNode('.editor', { valueKey: 'close' })  // removes only when close is truthy
+save() { return { close: this.saved }; }
+```
 - Options: `position`, `root`, `filter`, `fallback`, `valueKey`. Ready-made `filter` helpers: `skipIfSameTagPresent`, `skipIfExists(selector)`, `skipIfEmpty`, `applyIfChanged` (e.g. `@innerHtmlLight({ filter: skipIfExists('my-page') })`)
 
 **Position Options:**
@@ -957,7 +972,7 @@ class StyledComponent extends HTMLElement {
 **@applyClass Variants:** (each takes `(selector?, classMapOrOptions?, options?)`; bare form targets `$this`)
 - `setClass` - Replace all classes
 - `updateClass` - Toggle classes by a `{ className: boolean }` map
-- `addClass` / `removeClass` / `toggleClass`
+- `addClass` / `removeClass` / `toggleClass` — with the class name in the decorator (`@addClass('.x', 'on')`) the declaration is the action (see "Declaration = action" above)
 - `applyClass(selector, action?)` / `cls` - action `'set' | 'update' | 'add' | 'remove' | 'toggle'` (default `'update'`); `clsAppHost` / `clsLight` / `clsShadow` / `clsAll` (for $this use bare `@setClass` / `@updateClass` / `@addClass` / `@removeClass` / `@toggleClass`)
 - Note: for the class decorators, an options object in the 2nd position must contain `root` (e.g. `{ root: 'auto', valueKey: 'k' }`); an object without `root` is read as a class map
 
