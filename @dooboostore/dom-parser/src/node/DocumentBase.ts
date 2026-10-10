@@ -1,9 +1,13 @@
-import { NodeClassRegistry } from './NodeClassRegistry';
 import { ParentNodeBase } from './ParentNodeBase';
 import {  DOCUMENT_NODE } from './Node';
 import { HTMLCollectionOfImp } from './collection/HTMLCollectionOfImp';
 import { NodeListOfImp } from './collection/NodeListOfImp';
 import { ElementFactory } from '../factory/ElementFactory';
+import { TreeWalker } from './TreeWalker';
+import { NodeIterator } from './NodeIterator';
+import { TextBase } from './TextBase';
+import { Comment } from './Comment';
+import { DocumentFragmentBase } from './DocumentFragmentBase';
 
 export class DocumentBase extends ParentNodeBase implements Document {
   [key: string]: any;
@@ -216,13 +220,11 @@ export class DocumentBase extends ParentNodeBase implements Document {
   }
 
   createComment(data: string): any {
-    const { Comment } = NodeClassRegistry;
     return new Comment(data, this);
   }
 
   createDocumentFragment(): any {
-    const { DocumentFragmentBase } = NodeClassRegistry;
-    return new DocumentFragmentBase(this);
+    return new DocumentFragmentBase(this as unknown as Document);
   }
 
   createElement<K extends keyof HTMLElementTagNameMap>(tagName: K, options?: ElementCreationOptions): HTMLElementTagNameMap[K];
@@ -240,7 +242,6 @@ export class DocumentBase extends ParentNodeBase implements Document {
   }
 
   createNodeIterator(root: Node, whatToShow: number = 0xffffffff, filter: any = null): any {
-    const { NodeIterator } = NodeClassRegistry;
     return new NodeIterator(root, whatToShow, filter);
   }
 
@@ -253,12 +254,10 @@ export class DocumentBase extends ParentNodeBase implements Document {
   }
 
   createTextNode(data: string): any {
-    const { TextBase } = NodeClassRegistry;
     return new TextBase(data, this);
   }
 
   createTreeWalker(root: Node, whatToShow: number = 0xffffffff, filter: any = null): any {
-    const { TreeWalker } = NodeClassRegistry;
     return new TreeWalker(root, whatToShow, filter);
   }
 
