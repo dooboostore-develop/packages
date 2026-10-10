@@ -1,6 +1,6 @@
 import { ReflectUtils } from '@dooboostore/core';
 import { SpecialSelector, SwcQueryOptions, SwcSelector, SwcFnSelector, HelperHostSet } from '../types';
-import { buildSwcParameterArgs } from './parameter';
+import { buildSwcParameterArgs, buildCommonKindValues } from './parameter';
 
 // 공통 옵션 — root·delegate 없음 (MutationObserverInit + filter/removeObserver)
 export interface MutationObserverBaseOptions extends MutationObserverInit {
@@ -263,11 +263,10 @@ export class MutationObserverLifeCycler implements ElementDefineLifeCycler {
           void (async () => {
             const helper = SwcUtils.getHelperAndHostSet(inst);
             if (options.filter && !(await options.filter(matchedEls, { currentThis: inst, helper }))) return;
-            const hostSet = SwcUtils.getHostSet(inst);
-            const helperSet = SwcUtils.getHelperSet(helperHostSet.$w);
-            const legacyArgs = [matchedEls, records, obs, { ...hostSet, $root: root }];
+            const common = buildCommonKindValues(inst, helperHostSet.$w);
+            const legacyArgs = [matchedEls, records, obs, { ...common.hostSet, $root: root }];
             const buildArgs = (beforeReturn: any) => buildSwcParameterArgs(inst, meta.propertyKey, {
-              hostSet, helperHostSet: helper, helperSet, mutationObserverBeforeReturn: beforeReturn
+              ...common, mutationObserverBeforeReturn: beforeReturn
             }, [...legacyArgs, beforeReturn]);
             let args = buildArgs(undefined);
             if (options.before) { const br = await options.before(matchedEls, { currentThis: inst, helper }); args = buildArgs(br); }

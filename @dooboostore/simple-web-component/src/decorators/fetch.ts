@@ -152,8 +152,20 @@ function createFetch(optionsOrUrl: FetchOptions | string): MethodDecorator {
     if (!descriptor) return descriptor;
     const originalMethod = descriptor.value;
 
+    // Runtime guard (TS cannot check this at declaration): the wrapper below is
+    // always async, so a sync method's declared return type never matches the
+    // actual Promise return. Async methods and explicit Promise returns are fine.
+    let warnedSync = false;
+    const isPromiseLike = (v: any) => v instanceof Promise || (v && typeof v.then === 'function');
+    const guardSync = (raw: any) => {
+      if (!warnedSync && originalMethod?.constructor?.name !== 'AsyncFunction' && !isPromiseLike(raw)) {
+        warnedSync = true;
+        console.warn(`[SWC] @fetch on "${String(propertyKey)}" always returns a Promise: declare the method async (or with an explicit Promise return type) so the signature matches.`);
+      }
+    };
+
     const extractBody = (v: any) => {
-      const keyToUse = (options as { valueKey?: symbol | string }).valueKey ?? FETCH_METADATA_KEY;
+        const keyToUse = (options as { valueKey?: symbol | string }).valueKey ?? FETCH_METADATA_KEY;
       if (v && typeof v === 'object' && keyToUse in v) {
         return v[keyToUse];
       }
@@ -297,7 +309,9 @@ function createFetch(optionsOrUrl: FetchOptions | string): MethodDecorator {
         const isAfter = trigger === 'after' || (trigger !== 'before' && 'valueKey' in options);
         if (isAfter) {
           // after: 메서드 실행 → body 추출 → request 와 합쳐 fetch → fetch 결과 리턴.
-          const returned = await originalMethod.apply(inst, callArgs);
+          const rawReturned = originalMethod.apply(inst, callArgs);
+          guardSync(rawReturned);
+          const returned = await rawReturned;
           const body = extractBody(returned);
           let settled: PromiseSettledResult<any>;
           if (manual) {
@@ -326,7 +340,9 @@ function createFetch(optionsOrUrl: FetchOptions | string): MethodDecorator {
             return undefined;
           }
           callArgs = injectSettled(inst, propertyKey, args, settled);
-          result = await originalMethod.apply(inst, callArgs);
+          const rawResult = originalMethod.apply(inst, callArgs);
+          guardSync(rawResult);
+          result = await rawResult;
         }
         return result;
       } catch (e) {

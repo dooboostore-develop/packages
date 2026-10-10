@@ -1172,6 +1172,22 @@ export const eventToggleAll = toggleAliases.all;
 export const eventToggleAppHost = toggleAliases.appHost;
 export const eventToggleWindow = toggleAliases.window;
 export const eventToggleDocument = toggleAliases.document;
+const visibilitychangeAliases = makeTypedEventAliases<Event>('visibilitychange');
+export const eventVisibilitychange = visibilitychangeAliases.base;
+export const eventVisibilitychangeDelegateLight = visibilitychangeAliases.delegateLight;
+export const eventVisibilitychangeDelegateShadow = visibilitychangeAliases.delegateShadow;
+export const eventVisibilitychangeDelegateAll = visibilitychangeAliases.delegateAll;
+export const eventVisibilitychangeDelegate = visibilitychangeAliases.delegate;
+export const eventVisibilitychangeMutationLight = visibilitychangeAliases.mutationLight;
+export const eventVisibilitychangeMutationShadow = visibilitychangeAliases.mutationShadow;
+export const eventVisibilitychangeMutationAll = visibilitychangeAliases.mutationAll;
+export const eventVisibilitychangeMutation = visibilitychangeAliases.mutation;
+export const eventVisibilitychangeLight = visibilitychangeAliases.light;
+export const eventVisibilitychangeShadow = visibilitychangeAliases.shadow;
+export const eventVisibilitychangeAll = visibilitychangeAliases.all;
+export const eventVisibilitychangeAppHost = visibilitychangeAliases.appHost;
+export const eventVisibilitychangeWindow = visibilitychangeAliases.window;
+export const eventVisibilitychangeDocument = visibilitychangeAliases.document;
 export const getAddEventListenerMetadata = (target: any): AddEventListenerMetadata<Event>[] | undefined => {
   const constructor = typeof target === 'function' ? target : target.constructor;
   return ReflectUtils.findAllMetadata<any[]>(ADD_EVENT_LISTENER_METADATA_KEY, constructor).flat();
@@ -1184,7 +1200,7 @@ import { ElementDefineLifeCycler, MutationObserverSetEntry, OnConnectedResult } 
 import { Subject } from '@dooboostore/core';
 import { debounceTime, distinctUntilChanged, throttleTime } from '@dooboostore/core/message/operators';
 import { SwcUtils } from '../utils/Utils';
-import { buildSwcParameterArgs } from './parameter';
+import { buildSwcParameterArgs, buildCommonKindValues } from './parameter';
 
 export interface BoundListenerEntry {
   target: EventTarget;
@@ -1240,16 +1256,12 @@ export class EventListenerLifeCycler implements ElementDefineLifeCycler {
       if (options.stopPropagation) event.stopPropagation();
       if (options.stopImmediatePropagation) event.stopImmediatePropagation();
       if (options.preventDefault) event.preventDefault();
-      const currentHostSet = SwcUtils.getHostSet(inst);
-      const legacyArgs = [event, { currentHostSet, $matchedElement: matchedElement }, { event, ...currentHostSet, $el: target, $root: target }];
-      const currentHelperSet = SwcUtils.getHelperSet(currentWin);
-      const currentHelperHostSet = { ...currentHelperSet, ...currentHostSet, $this: inst };
+      const common = buildCommonKindValues(inst, currentWin);
+      const legacyArgs = [event, { currentHostSet: common.hostSet, $matchedElement: matchedElement }, { event, ...common.hostSet, $el: target, $root: target }];
       const buildArgs = (beforeReturn: any) => buildSwcParameterArgs(inst, meta.propertyKey, {
+        ...common,
         eventObject: event,
         matchedElement,
-        hostSet: currentHostSet,
-        helperHostSet: currentHelperHostSet,
-        helperSet: currentHelperSet,
         eventBeforeReturn: beforeReturn
       }, legacyArgs);
       // before를 먼저 돌려 그 리턴값을 @eventBeforeReturn 으로 주입. before엔 (아직 자기 리턴 전이라
@@ -1394,16 +1406,12 @@ export class EventListenerLifeCycler implements ElementDefineLifeCycler {
               if (m.options.stopPropagation) event.stopPropagation();
               if (m.options.stopImmediatePropagation) event.stopImmediatePropagation();
               if (m.options.preventDefault) event.preventDefault();
-              const hs = SwcUtils.getHostSet(inst);
-              const legacyArgs = [event, { ...hs, $matchedElement: matchedEl }, { event, ...hs, $el: matchedEl, $root: br }];
-              const helperSetForMatch = SwcUtils.getHelperSet(currentWin);
-              const helperHostSetForMatch = { ...helperSetForMatch, ...hs, $this: inst };
+              const common = buildCommonKindValues(inst, currentWin);
+              const legacyArgs = [event, { ...common.hostSet, $matchedElement: matchedEl }, { event, ...common.hostSet, $el: matchedEl, $root: br }];
               const buildArgs = (beforeReturn: any) => buildSwcParameterArgs(inst, m.propertyKey, {
+                ...common,
                 eventObject: event,
                 matchedElement: matchedEl,
-                hostSet: hs,
-                helperHostSet: helperHostSetForMatch,
-                helperSet: helperSetForMatch,
                 eventBeforeReturn: beforeReturn
               }, legacyArgs);
               // before를 먼저 돌려 그 리턴값을 @eventBeforeReturn 으로 주입.

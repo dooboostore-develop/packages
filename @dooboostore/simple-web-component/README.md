@@ -399,16 +399,20 @@ class ProductList extends HTMLElement {
 - `@hostSet` - host-ancestor-tree info only (`$host`, `$parentHost`, `$hosts`, `$appHost`, `$appHosts`, `$firstHost`, `$lastHost`, `$firstAppHost`, `$lastAppHost`)
 - `@helperHostSet` - `@hostSet` + DOM/window helpers (`$d`, `$w`, `$q`, `$qa`, `$qi`) + `$this`
 - `@helperSet` - DOM/window helpers only (`$d`, `$w`, `$q`, `$qa`, `$qi`), no host-tree info
+- `@swcAppRouter` - the `Router` instance (`$appHost.router`) directly, no `@inject`/DI container needed; `undefined` outside a `SwcApp` tree
+- `@swcAppSimpleApplication` - the `SimpleApplication` (DI container) instance (`$appHost.simpleApplication`) directly; `undefined` outside a `SwcApp` tree or without a DI container. `@inject` is usually what you want instead — reach for this only when you need the container itself (e.g. `simstanceManager`).
+- `@swcAppHost` - the `SwcApp` host element itself (`$appHost`) directly, when you just need the host and not the whole `HostSet`; `null` outside a `SwcApp` tree (matches `HostSet.$appHost`'s own type, unlike the two above which use optional chaining down to `undefined`)
 
 `$w`/`$d` (and the `helper` passed to every decorator's `filter`/`before`/`finally`) come from the element's window, resolved the same way everywhere: its own `@elementDefine({ window })` → the nearest ancestor SWC host's → the global `window`. Route subscribers (`@subscribeSwcAppRouteChange`) and app messages use the SwcApp's runtime `window` instead (the per-request window under SSR).
 
-The same mechanism (and the same 5 decorators, plus two more) also applies to:
-- **`@onInitialize`/`@onConnectedBefore`/`@onConnectedAfter`/... lifecycle methods** — can freely mix `@hostSet`/`@helperHostSet`/`@helperSet` with `@inject(...)` on the same method.
+The same mechanism (and the same 8 decorators, plus two more) also applies to:
+- **`@onInitialize`/`@onConnectedBefore`/`@onConnectedAfter`/... lifecycle methods** — can freely mix `@hostSet`/`@helperHostSet`/`@helperSet`/`@swcAppRouter`/`@swcAppSimpleApplication`/`@swcAppHost` with `@inject(...)` on the same method.
 - **`@subscribeSwcAppRouteChange`** — add `@swcAppRouterEvent` to receive the `RouterEventType` regardless of position.
 - **`@subscribeSwcAppMessage`** — add `@appMessage` to receive the `SwcAppMessage` regardless of position.
 - **`before` hook results** — `@eventBeforeReturn`, `@routeChangeBeforeReturn`, `@appMessageBeforeReturn`, `@changedAttributeBeforeReturn`, `@mutationObserverBeforeReturn`, `@resizeObserverBeforeReturn`, `@intersectionObserverBeforeReturn`, `@eventMediaBeforeReturn`, `@setIntervalBeforeReturn`, `@setTimeoutBeforeReturn` inject the value returned by that decorator's `before` option.
+- **DOM/storage/fetch values** — `@querySelectorParam`, `@attributeParam`, `@localStorageParam`/`@sessionStorageParam`/`@cookieParam`/`@indexedDbParam`, `@fetchParam` go a step further and actively compute/fetch a value instead of just handing you context — see "Value-Injecting Parameter Decorators" below.
 
-Note: once any parameter of a method is decorated, only decorated parameters receive values (the legacy positional arguments are no longer passed).
+Note: once any parameter of a method is decorated, every parameter still gets a value — decorated ones receive their injected value, and any parameter left undecorated falls back to its legacy positional argument. So mixing is safe: `onChanged(nv, @querySelectorParam('#x') el, name)` still gets `nv`/`name` from the usual positional arguments.
 
 ```typescript
 @onConnectedAfter
@@ -1500,7 +1504,7 @@ No prefix means *first*; `First`/`Last` pick the first/last value when a key rep
 load(@swcAppRoutePathVariable('releaseSeq') seq: string, @swcAppRouteQueryParam('tab') tab: string | null) { ... }
 ```
 
-- Once any parameter is decorated, the positional route argument is no longer passed — add `@swcAppRouterEvent` for the whole event.
+- Add `@swcAppRouterEvent` for the whole event — any parameter left undecorated still gets the positional route argument even after others are decorated (see the parameter-decorator note earlier in this doc).
 - `route.pathData` keeps its old behavior: a repeated variable name holds the **last** value. Use the decorators above to pick first/last explicitly.
 
 **6. Navigating: `@swcAppRoute` / `@swcAppRouteGo`**
@@ -2211,6 +2215,124 @@ async remove(id: number, @fetchSettled settled?: PromiseSettledResult<unknown>) 
 `@event('form', 'submit', { before: (e) => new FormData(e.target), preventDefault: true })`
 stacked on `@fetch({ url: '/api/echo', trigger: 'after', process: 'form' })`, with the method taking
 `@eventBeforeReturn formData: FormData` and returning it.
+
+## 🧩 Value-Injecting Parameter Decorators (@querySelectorParam, @attributeParam, @local/session/cookie/indexedDbParam, @fetchParam, @swcAppRouter)
+
+Unlike `@hostSet`/`@helperSet`/`@helperHostSet` (which just hand you context objects), these decorators actively **go compute or fetch a value** and inject it — once, at the moment the method's trigger fires (`@onConnectedAfter` and friends, `@addEventListener`, `@setInterval`/`@setTimeout`, the observer decorators, `@eventMedia`, route/message subscribers, ...). They only work inside such auto-triggered methods — a plain method you call yourself gets `undefined` for these parameters, since nothing builds the lookup for it.
+
+> Unlike `@query`/`@queryAll` (lazy — re-queries the DOM on every read), these resolve **once per call**, as a plain captured value, not a live reference. If the DOM/storage changes after the method runs, the parameter you already received does not change.
+
+### @querySelectorParam / @querySelectorAllParam
+Same engine as the field decorators `@query`/`@queryAll` (`root`, `pick`, `filter`, function selectors all supported) — named "querySelector" instead of "query" so it doesn't read like a URL query parameter.
+
+```typescript
+@onConnectedAfter
+onReady(
+  @querySelectorParam('#name') input: HTMLInputElement,
+  @querySelectorAllParam('.item', { root: 'all' }) items: HTMLElement[]
+) {
+  input.focus();
+}
+
+@addEventListener('#save', 'click')
+onSave(@querySelectorShadowParam('.form') form: HTMLFormElement) { ... }
+```
+- Root/pick shorthands mirror `@query`'s own family: `querySelectorShadowParam` / `querySelectorLightParam` / `querySelectorAllRootsParam` (single), `querySelectorAllShadowParam` / `querySelectorAllLightParam` / `querySelectorAllAllParam` (arrays).
+
+### @attributeParam
+Same engine as the field/method `@attribute`.
+
+```typescript
+onReady(
+  @attributeParam('data-x') ownAttr: string,
+  @attributeParam('#child', 'data-y', { root: 'shadow' }) childAttr: string
+) { ... }
+```
+- One string = this element's own attribute; `(selector, name, options?)` = another element's attribute (same two-form shape as the field decorator).
+- `options.type` converts to `Number`/`Boolean`, same as the field decorator; missing attribute/target → `null`.
+
+### @localStorageParam / @sessionStorageParam / @cookieParam / @indexedDbParam
+Inject a persisted value by key (see "Persisted State" below for the backing storage). `@indexedDbParam` is async, so it injects a **Promise** rather than the resolved value — the surrounding resolution has to stay synchronous:
+
+```typescript
+onReady(
+  @localStorageParam('theme') theme: string,
+  @indexedDbParam('draft') draftPromise: Promise<string>
+) {
+  this.applyTheme(theme);
+  draftPromise.then(d => this.restoreDraft(d));
+}
+```
+
+### @fetchParam
+A minimal, hook-free fetch — no abort-on-disconnect, no `before`/`after`/`finally` (reach for `@fetch`/`@fetchManual` + `@fetchSettled` when you need those). It injects a **Promise** that resolves to the parsed JSON/text body, or rejects with an `Error` on a non-OK status.
+
+```typescript
+@onConnectedAfter
+async onReady(@fetchParam('/api/products/1') p: Promise<Product>) {
+  this.product = await p;
+}
+
+// url/init accept (currentThis, helper) => ... callbacks too, same shape as @fetch's factories —
+// handy for referencing instance fields to build a dynamic URL or body.
+@addEventListener('#save', 'click')
+async onSave(@fetchParam(
+  (self) => `/api/products/${self.productId}`,
+  (self) => ({ method: 'POST', body: JSON.stringify({ qty: self.qty }) })
+) p: Promise<any>) {
+  await p;
+}
+```
+
+### @swcAppRouter / @swcAppSimpleApplication / @swcAppHost
+Documented above alongside `@hostSet`/`@helperSet` — these just hand you a context reference (the `Router`, the DI container, or the `SwcApp` host element itself), they don't compute anything the way the rest of this section's decorators do.
+
+## 💾 Persisted State (@localStorage, @sessionStorage, @cookie, @indexedDb, @persistState)
+
+Field or method decorator that mirrors a value to a storage backend. Survives disconnect/reconnect and page reloads — the whole point is that **element lifecycle never clears it**; only you do (see "Removing a key" below).
+
+```typescript
+class Settings extends HTMLElement {
+  // Field — bare key defaults to the field name; the stored value wins over the initializer on reconnect
+  @localStorage theme: string = 'dark';
+
+  // Explicit key
+  @sessionStorage('draft-id') draftId?: string;
+
+  @cookie('session-token', { maxAge: 3600, sameSite: 'Strict' })
+  token?: string;
+
+  // Method — persists the return value (JSON-serialized) each time it runs
+  @localStorage('last-search')
+  search(q: string) { return q; }
+}
+```
+
+- **Field**: getter/setter. Reading re-hydrates from storage on first access; assigning writes through. Assigning `undefined` **removes** the key (and clears the in-memory value too).
+- **Method**: the return value is persisted after the method runs (`valueKey` picks one field out of an object return).
+- Backends: `local` / `session` / `cookie` (sync) and `indexeddb` (async). The generic form is `@persistState(key?, { storage, ... })`; `@localStorage`/`@sessionStorage`/`@cookie`/`@indexedDb` are storage-fixed aliases.
+- `@indexedDb` on a field: reading can't `await`, so the first read returns the initializer immediately and the stored value lands right after (a console warning flags this once per class) — prefer calling `persistReadAsync` directly, or a `Promise`-typed field, for async backends.
+- Options: `valueKey`, `serialize`/`deserialize` (default `JSON.stringify`/`JSON.parse`); `cookie` also takes `path`/`domain`/`maxAge`/`expires`/`secure`/`sameSite`.
+
+**Removing a key**
+```typescript
+class Settings extends HTMLElement {
+  @localStorage theme: string = 'dark';
+
+  @removeLocalStorage('theme')
+  clearTheme() {}
+}
+```
+- `@removeLocalStorage` / `@removeSessionStorage` / `@removeCookie` / `@removeIndexedDb` (method-only) — call them, or just assign `undefined` to the field directly (`this.theme = undefined`), which does the same thing and also clears the live value.
+- Generic form: `@removePersistState(key?, options?)`.
+
+**Direct function access** (no decorator needed) — for a plain method body, or the async backend:
+```typescript
+import { persistRead, persistWrite, persistRemove, persistReadAsync, persistWriteAsync, persistRemoveAsync } from '@dooboostore/simple-web-component';
+
+const cached = persistRead(this, 'theme', { storage: 'local' });
+const draft = await persistReadAsync(this, 'draft', { storage: 'indexeddb' });
+```
 
 ## 💧 @property Hydration Rules
 

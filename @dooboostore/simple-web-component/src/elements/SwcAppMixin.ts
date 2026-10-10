@@ -232,6 +232,9 @@ export function SwcAppMixin<T extends { new (...args: any[]): HTMLElement }>(Bas
         methodName,
         {
           swcAppRouterEvent: routeEventValue,
+          swcAppRouter: this.router,
+          swcAppSimpleApplication: this.simpleApplication,
+          swcAppHost: this,
           hostSet: instanceHelperHostSet,
           helperHostSet: instanceHelperHostSet,
           helperSet: SwcUtils.getHelperSet(this.config.window),
@@ -587,6 +590,9 @@ export function SwcAppMixin<T extends { new (...args: any[]): HTMLElement }>(Bas
         methodName,
         {
           appMessage: message,
+          swcAppRouter: this.router,
+          swcAppSimpleApplication: this.simpleApplication,
+          swcAppHost: this,
           hostSet: instanceHelperHostSet,
           helperHostSet: instanceHelperHostSet,
           helperSet: instanceHelperSet,

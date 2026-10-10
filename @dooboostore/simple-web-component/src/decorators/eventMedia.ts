@@ -1,7 +1,7 @@
 import { ReflectUtils } from '@dooboostore/core';
 import { ElementDefineLifeCycler, HelperHostSet } from '../types';
 import { SwcUtils } from '../utils/Utils';
-import { buildSwcParameterArgs } from './parameter';
+import { buildSwcParameterArgs, buildCommonKindValues } from './parameter';
 
 export const EVENT_MEDIA_METADATA_KEY = Symbol.for('simple-web-component:event-media');
 
@@ -70,14 +70,11 @@ export class EventMediaLifeCycler implements ElementDefineLifeCycler {
         try {
           const helper = SwcUtils.getHelperAndHostSet(inst);
           if (meta.filter && !(await meta.filter(e as MediaQueryListEvent, { currentThis: inst, helper }))) return;
-          const hostSet = SwcUtils.getHostSet(inst);
-          const helperSet = SwcUtils.getHelperSet(win);
+          const common = buildCommonKindValues(inst, win);
           const legacyArgs = [e, helperHostSet];
           const buildArgs = (beforeReturn: any) => buildSwcParameterArgs(inst, meta.propertyKey, {
+            ...common,
             eventObject: e,
-            hostSet,
-            helperHostSet: helper,
-            helperSet,
             eventMediaBeforeReturn: beforeReturn
           }, legacyArgs);
           // before를 먼저 돌려 그 리턴값을 @eventMediaBeforeReturn 으로 주입.

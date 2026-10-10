@@ -4,7 +4,7 @@ import assert from 'node:assert';
 import { createWindow, bootApp, sleep, uniqueTag } from './dom.ts';
 import {
   elementDefine, onConnectedBodyShadow, publishSwcAppMessage, publishMessage, subscribeSwcAppMessage, subscribeSwcAppMessageBehavior, subscribeSwcAppMessageReplay, receiveMessage, appMessage,
-  appMessageBeforeReturn, hostSet
+  appMessageBeforeReturn, hostSet, swcAppRouter, swcAppSimpleApplication, swcAppHost
 } from '../../src/index.ts';
 
 const appHtml = (inner: string) => `<!DOCTYPE html><html><body><div id="app" is="swc-app-div">${inner}</div></body></html>`;
@@ -117,6 +117,25 @@ test('@appMessage and @hostSet are injected regardless of position', async () =>
   assert.strictEqual(got.msg.data, 7);
   assert.strictEqual(got.hs.$appHost, app);
   assert.ok(el('sub'));
+  destroy();
+});
+
+test('@swcAppRouter/@swcAppSimpleApplication/@swcAppHost are also injected on a message subscriber', async () => {
+  let got: any;
+  const { app, destroy } = await setup({
+    sub: (win, tag) => {
+      @elementDefine(tag, { window: win })
+      class S extends win.HTMLElement {
+        @subscribeSwcAppMessage('r') onR(@appMessage msg: any, @swcAppRouter router: any, @swcAppSimpleApplication simpleApp: any, @swcAppHost appHost: any) { got = { msg, router, simpleApp, appHost }; }
+      }
+    }
+  });
+  app.publishMessage({ type: 'r', data: 1 });
+  await sleep(10);
+  assert.strictEqual(got.msg.data, 1);
+  assert.strictEqual(typeof got.router?.go, 'function');
+  assert.strictEqual(got.simpleApp, (app as any).simpleApplication);
+  assert.strictEqual(got.appHost, app);
   destroy();
 });
 

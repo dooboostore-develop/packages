@@ -86,7 +86,7 @@ export const convertAttributeValue = (val: any, type?: typeof Number | typeof Bo
 import { ElementDefineLifeCycler, HelperHostSet } from '../types';
 import { getAttributeValue, convertValue } from './applyAttribute';
 import { SwcUtils } from '../utils/Utils';
-import { buildSwcParameterArgs } from './parameter';
+import { buildSwcParameterArgs, buildCommonKindValues } from './parameter';
 
 export class ChangedAttributeLifeCycler implements ElementDefineLifeCycler {
   private attrChangeMap: Map<string, ChangedAttributeThisMetadata[]> | null = null;
@@ -134,11 +134,10 @@ export class ChangedAttributeLifeCycler implements ElementDefineLifeCycler {
     void (async () => {
       const helper = SwcUtils.getHelperAndHostSet(inst);
       if (opts.filter && !(await opts.filter(value, { currentThis: inst, helper }))) return;
-      const hostSet = SwcUtils.getHostSet(inst);
-      const helperSet = SwcUtils.getHelperSet(helperHostSet.$w);
+      const common = buildCommonKindValues(inst, helperHostSet.$w);
       const legacyArgs = [value, old, name, helper];
       const buildArgs = (beforeReturn: any) => buildSwcParameterArgs(inst, meta.propertyKey, {
-        hostSet, helperHostSet: helper, helperSet, changedAttributeBeforeReturn: beforeReturn
+        ...common, changedAttributeBeforeReturn: beforeReturn
       }, [...legacyArgs, beforeReturn]);
       let args = buildArgs(undefined);
       if (opts.before) { const br = await opts.before(value, { currentThis: inst, helper }); args = buildArgs(br); }

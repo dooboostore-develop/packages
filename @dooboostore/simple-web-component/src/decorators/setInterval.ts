@@ -1,7 +1,7 @@
 import { ReflectUtils } from '@dooboostore/core';
 import { ensureInit } from './elementDefine';
 import { SwcUtils } from '../utils/Utils';
-import { buildSwcParameterArgs } from './parameter';
+import { buildSwcParameterArgs, buildCommonKindValues } from './parameter';
 import { ElementDefineLifeCycler, HelperHostSet } from '../types';
 
 export const SET_INTERVAL_METADATA_KEY = Symbol.for('simple-web-component:set-interval');
@@ -108,10 +108,9 @@ export class SetIntervalLifeCycler implements ElementDefineLifeCycler {
           const helper = SwcUtils.getHelperAndHostSet(inst);
           if (meta.options.filter && !(await meta.options.filter(helper))) return;
           const paramArgs = meta.options.parameter?.(helperHostSet) ?? [];
-          const hostSet = SwcUtils.getHostSet(inst);
-          const helperSet = SwcUtils.getHelperSet(helperHostSet.$w);
+          const common = buildCommonKindValues(inst, helperHostSet.$w);
           const buildArgs = (beforeReturn: any) => buildSwcParameterArgs(inst, meta.propertyKey, {
-            hostSet, helperHostSet: helper, helperSet, setIntervalBeforeReturn: beforeReturn
+            ...common, setIntervalBeforeReturn: beforeReturn
           }, [...paramArgs, beforeReturn]);
           let args = buildArgs(undefined);
           if (meta.options.before) { const br = await meta.options.before(helper); args = buildArgs(br); }

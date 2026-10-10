@@ -12,7 +12,7 @@ import {SwcUtils} from '../utils/Utils';
 import {DOM_EVENT_NAMES, HTML_TAG_ENTRIES} from '../config/config';
 import {SituationTypeContainer, SituationTypeContainers} from '@dooboostore/simple-boot/decorators/inject/Inject';
 import {FirstCheckMaker} from '@dooboostore/simple-boot';
-import {buildSwcParameterArgs, getParameterMetadata} from './parameter';
+import {buildSwcParameterArgs, buildDomStorageKindValues, getParameterMetadata} from './parameter';
 import {ElementDefineLifeCycler, HelperHostSet, HostSet, InjectSituationType, IntersectionObserverSet, MutationObserverSet, MutationObserverSetEntry, ObserverScope, OnConnectedResult, ResizeObserverSet, ResizeObserverSetEntry, SwcRootType} from '../types';
 import {ConvertUtils, ElementApply} from '@dooboostore/core-web';
 import {isSSR} from "../elements/SwcAppMixin";
@@ -266,11 +266,17 @@ const setupPrototype = (proto: any, win: Window) => {
     const useHostSet = hostSet ?? SwcUtils.getHelperAndHostSet(this);
     const app = useHostSet?.$appHost?.simpleApplication;
 
-    // @hostSet/@helperHostSet/@helperSet(parameter.ts)를 위한 값. lifecycle 메서드는
-    // event/matched 개념이 없으므로 이 세 가지만 채운다.
+    // @hostSet/@helperHostSet/@helperSet/@swcAppRouter(parameter.ts)를 위한 값. lifecycle 메서드는
+    // event/matched 개념이 없으므로 이것들만 채운다.
     const helperSetValue = SwcUtils.getHelperSet(win);
     const helperHostSetValue = {...helperSetValue, ...useHostSet, $this: this};
-    const kindValues = {hostSet: useHostSet, helperHostSet: helperHostSetValue, helperSet: helperSetValue};
+    const kindValues = {
+      hostSet: useHostSet, helperHostSet: helperHostSetValue, helperSet: helperSetValue,
+      swcAppRouter: useHostSet?.$appHost?.router,
+      swcAppSimpleApplication: useHostSet?.$appHost?.simpleApplication,
+      swcAppHost: useHostSet?.$appHost,
+      ...buildDomStorageKindValues(this, win)
+    };
 
     // console.log('---->hh',app, this, methodName);
     if (app) {
@@ -293,7 +299,11 @@ const setupPrototype = (proto: any, win: Window) => {
       const firstCheckMaker: FirstCheckMaker = ({target, targetKey}, token, idx) => {
         const saves = getParameterMetadata(target, targetKey!);
         const found = saves.find(s => s.index === idx);
-        return found ? ((kindValues as any)[found.kind] ?? null) : undefined;
+        if (!found) return undefined;
+        const value = (kindValues as any)[found.kind];
+        // 키를 받는 kind(@querySelectorParam/@attributeParam/@local·session·cookieParam 등)는
+        // buildSwcParameterArgs와 동일하게 value(key)로 해석한다 — 아니면 리졸버 함수 자체가 주입된다.
+        return (found.key !== undefined && typeof value === 'function' ? value(found.key) : value) ?? null;
       };
 
       return app.simstanceManager.executeBindParameterSim(

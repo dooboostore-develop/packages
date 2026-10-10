@@ -1,6 +1,6 @@
 import { ReflectUtils } from '@dooboostore/core';
 import { SpecialSelector, SwcQueryOptions, SwcFnSelector, SwcSelector, HelperHostSet } from '../types';
-import { buildSwcParameterArgs } from './parameter';
+import { buildSwcParameterArgs, buildCommonKindValues } from './parameter';
 
 // 공통 옵션 — root·delegate 없음
 export interface ResizeObserverBaseOptions {
@@ -204,12 +204,11 @@ export class ResizeObserverLifeCycler implements ElementDefineLifeCycler {
         void (async () => {
           const helper = SwcUtils.getHelperAndHostSet(inst);
           if (opts.filter && !(await opts.filter(matchedEls, { currentThis: inst, helper }))) return;
-          const hostSet = SwcUtils.getHostSet(inst);
-          const helperSet = SwcUtils.getHelperSet(helperHostSet.$w);
+          const common = buildCommonKindValues(inst, helperHostSet.$w);
           // entries 도 이 메서드 대상 것만 (옵저버는 공유라 배치에 다른 대상 엔트리가 섞인다)
-          const legacyArgs = [matchedEls, entries.filter(e => matchedEls.includes(e.target as HTMLElement)), obs, { ...hostSet, $root: root }];
+          const legacyArgs = [matchedEls, entries.filter(e => matchedEls.includes(e.target as HTMLElement)), obs, { ...common.hostSet, $root: root }];
           const buildArgs = (beforeReturn: any) => buildSwcParameterArgs(inst, m.propertyKey, {
-            hostSet, helperHostSet: helper, helperSet, resizeObserverBeforeReturn: beforeReturn
+            ...common, resizeObserverBeforeReturn: beforeReturn
           }, [...legacyArgs, beforeReturn]);
           let args = buildArgs(undefined);
           if (opts.before) { const br = await opts.before(matchedEls, { currentThis: inst, helper }); args = buildArgs(br); }

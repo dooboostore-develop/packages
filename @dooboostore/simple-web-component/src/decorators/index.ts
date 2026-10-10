@@ -26,3 +26,4 @@ export * from './eventMedia';
 export * from './parameter';
 export * from './fetch';
 export * from './around';
+export * from './persistState';

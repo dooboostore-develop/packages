@@ -1,6 +1,6 @@
 import { ReflectUtils } from '@dooboostore/core';
 import { SpecialSelector, SwcQueryOptions, SwcFnSelector, SwcSelector, HelperHostSet } from '../types';
-import { buildSwcParameterArgs } from './parameter';
+import { buildSwcParameterArgs, buildCommonKindValues } from './parameter';
 
 // 공통 옵션 — IntersectionObserverInit + filter/removeObserver. root·delegate 제외.
 // 주의: 데코레이터의 root(light/shadow/all/auto) 는 셀렉터 스코프 선택용이다.
@@ -205,11 +205,10 @@ export class IntersectionObserverLifeCycler implements ElementDefineLifeCycler {
           void (async () => {
             const helper = SwcUtils.getHelperAndHostSet(inst);
             if (opts.filter && !(await opts.filter(matchedEls, { currentThis: inst, helper }))) return;
-            const hostSet = SwcUtils.getHostSet(inst);
-            const helperSet = SwcUtils.getHelperSet(helperHostSet.$w);
-            const legacyArgs = [matchedEls, entries, obs, { ...hostSet, $root: root }];
+            const common = buildCommonKindValues(inst, helperHostSet.$w);
+            const legacyArgs = [matchedEls, entries, obs, { ...common.hostSet, $root: root }];
             const buildArgs = (beforeReturn: any) => buildSwcParameterArgs(inst, m.propertyKey, {
-              hostSet, helperHostSet: helper, helperSet, intersectionObserverBeforeReturn: beforeReturn
+              ...common, intersectionObserverBeforeReturn: beforeReturn
             }, [...legacyArgs, beforeReturn]);
             let args = buildArgs(undefined);
             if (opts.before) { const br = await opts.before(matchedEls, { currentThis: inst, helper }); args = buildArgs(br); }

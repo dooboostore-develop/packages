@@ -223,3 +223,23 @@ test('method aliases fix the HTTP method and mode', async () => {
   assert.strictEqual(calls[2].body, '{"v":2}');
   destroy();
 });
+
+test('fetch on a sync method warns: the wrapper always returns a Promise', async () => {
+  const { w, destroy } = await createWindow();
+  const calls = mockFetch(w, () => json({ ok: true }));
+  const tag = uniqueTag('f-sync-guard');
+  const warns: string[] = [];
+  const origWarn = console.warn;
+  console.warn = (...a: any[]) => { warns.push(String(a[0])); };
+  try {
+    @elementDefine(tag, { window: w })
+    class El extends w.HTMLElement {
+      @fetch('/api/sync') load() { return 'plain'; }
+    }
+    const el = await mount<any>(w, tag);
+    const out = await el.load();
+    assert.strictEqual(out, 'plain', 'sync return still flows through');
+    assert.ok(warns.some((m) => m.includes('always returns a Promise')), `expected Promise-mismatch guard, got: ${warns.join(' | ')}`);
+  } finally { console.warn = origWarn; }
+  destroy();
+});

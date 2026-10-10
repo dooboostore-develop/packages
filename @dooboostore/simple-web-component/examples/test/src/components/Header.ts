@@ -110,6 +110,12 @@ export default (w: Window) => {
       return { path: '/fetch-test' };
     }
 
+    @event('#param-dom-storage-test-link', 'click')
+    @emitCustomEvent('$this', 'navigate', { attributeName: 'on-navigate' })
+    onParamDomStorageTestClick() {
+      return { path: '/param-dom-storage-test' };
+    }
+
     @event('.cart-icon', 'click')
     @emitCustomEvent('$this', 'navigate', { attributeName: 'on-navigate' })
     onCartClick() {
@@ -246,6 +252,7 @@ export default (w: Window) => {
             <a id="observer-hooks-test-link">Observer Hooks</a>
             <a id="message-subject-test-link">Subject Test</a>
             <a id="fetch-test-link">Fetch Test</a>
+            <a id="param-dom-storage-test-link">Param DOM/Storage</a>
           </div>
           <div class="cart-section">
             <span class="cart-icon" id="cart-icon">🛒</span>
