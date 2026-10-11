@@ -28,6 +28,7 @@ import {URLSearchParams} from 'url';
 import {HttpMethod} from './codes/HttpMethod';
 import {SessionManager} from './session/SessionManager';
 import {InjectSituationType} from './inject/InjectSituationType';
+import {ContentTypeGenerator} from './generators/ContentTypeGenerator';
 import {ReqSearchParamsObj} from "./models/datas/path/ReqSearchParamsObj";
 import {SimConfig} from '@dooboostore/simple-boot';
 import {ReqPathData} from './models/datas/path/ReqPathData';
@@ -342,13 +343,16 @@ export class SimpleBootHttpServer extends SimpleApplication {
                 // 핸들러가 ServerResponse를 직접 주입받아 스스로 write/end를 제어한다 (예: SSE 스트리밍)
               } else if (ValidUtils.isGenerator(data) || ValidUtils.isAsyncGenerator(data)) {
                 // 제너레이터 리턴: 헤더 먼저 보내고, yield 된 값을 하나씩 바로 body 로 흘려보낸다 (예: SSE)
+                // ContentTypeGenerator.Stream 이면 Content-Type(boundary 포함)·압축 여부를 스트림이 정한다
+                const stream = ContentTypeGenerator.isStream(data) ? data : undefined;
                 const headers = resConfig?.header ?? {};
-                if (resConfig?.contentType) {
-                  headers[HttpHeaders.ContentType] = resConfig.contentType;
+                const contentType = stream?.contentType ?? resConfig?.contentType;
+                if (contentType) {
+                  headers[HttpHeaders.ContentType] = contentType;
                 }
                 rr.resSetHeaders(headers);
                 rr.resSetStatusCode(resConfig?.status ?? HttpStatus.Ok);
-                await rr.resStream(data);
+                await rr.resStream(data, { compress: stream?.compress });
               } else {
                 if (it.config?.resolver) {
                   const execute = typeof it.config.resolver === 'function' ? this.simstanceManager.getOrNewSim({target: it.config.resolver}) : it.config.resolver;

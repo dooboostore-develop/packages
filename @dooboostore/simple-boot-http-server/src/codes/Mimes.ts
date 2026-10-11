@@ -26,6 +26,8 @@ export enum Mimes {
   MultipartFormData = 'multipart/form-data',
   TextEventStream = 'text/event-stream', // SSE 실시간 텍스트 스트리밍
   ApplicationXndjson = 'application/x-ndjson',
+  ApplicationJsonSeq = 'application/json-seq', // RFC 7464 JSON Text Sequences
+  TextCsv = 'text/csv',
   ApplicationJsonPostSimpleBootSsrIntentScheme = 'application/json-post+simple-boot-ssr-intent-scheme',
   Intent = 'intent'
 }

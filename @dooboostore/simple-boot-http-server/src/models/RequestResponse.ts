@@ -564,11 +564,12 @@ export class RequestResponse {
    * - 문자열/Buffer 는 그대로, 그 외는 JSON.stringify
    * - Accept-Encoding 에 gzip 이 있으면 gzip 스트림으로 압축하고, 청크마다 Z_SYNC_FLUSH 로 바로 내보낸다
    *   (flush 없이 쓰면 zlib 내부 버퍼에 모였다가 늦게 나가서 SSE 실시간성이 깨짐)
+   *   option.compress === false 면 압축 안 함 (MJPEG 처럼 이미 압축된 내용 — CPU만 쓰고, gzip 못 푸는 클라이언트도 있음)
    * - 클라이언트가 끊으면 source.return() 으로 제너레이터를 종료시켜 finally 가 돌게 한다
    */
-  async resStream(source: Iterable<any> | AsyncIterable<any>) {
+  async resStream(source: Iterable<any> | AsyncIterable<any>, option: { compress?: boolean } = {}) {
     const res = this.res;
-    const gz = this.reqHeaderFirst(HttpHeaders.AcceptEncoding)?.includes('gzip') ? createGzip() : undefined;
+    const gz = option.compress !== false && this.reqHeaderFirst(HttpHeaders.AcceptEncoding)?.includes('gzip') ? createGzip() : undefined;
     if (gz) {
       res.setHeader(HttpHeaders.ContentEncoding, 'gzip');
       res.removeHeader(HttpHeaders.ContentLength);

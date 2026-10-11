@@ -15,6 +15,7 @@
 - **Middleware & Filters**: Systematically separate pre/post-processing logic (CORS, caching, auth, logging, OpenAPI generation, etc.) through the `Filter` interface.
 - **Powerful Exception Handling**: Leverage AOP-based `GlobalAdvice` to isolate business logic from error handling logic.
 - **Generator Streaming**: Return a (async) generator and each yielded value is written to the body immediately after the headers — SSE with no plumbing.
+- **Content-Type Streams**: `ContentTypeGenerator` adds the wire format for SSE, MJPEG/multipart, NDJSON, JSON Text Sequences, streamed JSON arrays, CSV, and text lines — pull from your generator or `push()` into a channel.
 - **Manual Response Streaming**: Opt out of the automatic response pipeline with `res: 'manual'` to stream Server-Sent Events, NDJSON, or any long-lived response directly from the injected `ServerResponse`.
 - **Real-time WebSocket Protocol**: A topic-based pub/sub protocol over a single socket — subscribe/unsubscribe, request/response, *and* server-initiated events the server can `await` a client reply for — with automatic reconnection and re-subscription.
 - **Binary File Transfer over WebSocket**: `Buffer`/`File` values anywhere in a message are detected automatically and shipped as raw bytes in a compact binary frame (length header + JSON metadata + concatenated buffers) instead of being bloated with base64 — no separate upload endpoint needed.
@@ -134,7 +135,7 @@ async *events(signal: AbortSignal) {
   try {
     while (!signal.aborted) {
       const msg = await nextMessage(signal); // rejects as soon as the client disconnects
-      yield `data: ${JSON.stringify(msg)}\n\n`; // SSE framing is up to you
+      yield `data: ${JSON.stringify(msg)}\n\n`; // SSE framing is up to you — or let ContentTypeGenerator do it (below)
     }
   } finally {
     // runs when the client disconnects — release subscriptions here
@@ -143,6 +144,62 @@ async *events(signal: AbortSignal) {
 ```
 
 Every handler can take an `AbortSignal` parameter (injected by type, like `ReqJsonBody`). It aborts when the client disconnects before the response finishes. Pass it to anything that waits (`fetch`, `timers/promises`, `events.once`, ...) — a generator suspended on an `await` isn't stopped by `return()` until its next `yield`, so the signal is what releases an event wait. Errors thrown after the client disconnected (e.g. that `AbortError`) are swallowed.
+
+### Content-Type Streams (`ContentTypeGenerator`)
+Yielding raw chunks means writing the wire format yourself — SSE `data:` lines, multipart boundaries + `Content-Length`, NDJSON newlines, CSV escaping. `ContentTypeGenerator` does that part: you hand it the **content** and get back a stream that carries its own `contentType` (boundary included) and `compress` flag. Return it from a handler — no `contentType` needed in the decorator (if one is set, the stream's wins; other `res.header`s still apply).
+
+Two ways to feed it:
+
+- **pull** — wrap a generator you loop in yourself: `CTG.ndjson(rows())`. Client disconnect calls `return()` on your generator, so its `finally` runs.
+- **push** — `CTG.ndjson.channel({ signal })` gives a stream you `push()` into from callbacks/events. It queues values and yields them; `close()` ends the response after the queue drains, and `onClose(fn)` runs once on close, abort, or client disconnect (even while idle — the place to unsubscribe).
+
+```typescript
+import { ContentTypeGenerator as CTG } from '@dooboostore/simple-boot-http-server';
+
+// pull: MJPEG from a generator of frames (Content-Type / Content-Length per part are filled in)
+@Route({ path: '/camera.mjpeg' })
+@GET
+camera(signal: AbortSignal) {
+  return CTG.multipartReplace(this.frames(signal), { boundary: 'frame' });
+}
+
+// push: job progress as SSE, released when the client leaves
+@Route({ path: '/jobs/progress' })
+@GET
+progress(signal: AbortSignal) {
+  const out = CTG.sse.channel({ signal, heartbeatMs: 15000 });
+  const onProgress = (p: number) => out.push({ event: 'progress', data: { p } });
+  job.on('progress', onProgress);
+  job.once('done', () => out.close());
+  out.onClose(() => job.off('progress', onProgress));
+  return out;
+}
+
+// CSV download that opens in Excel without breaking Korean text
+@Route({ path: '/rows.csv' })
+@GET({ res: { header: { 'Content-Disposition': 'attachment; filename="rows.csv"' } } })
+rows() {
+  return CTG.csv(db.cursor(), { columns: ['name', 'memo'], bom: true });
+}
+```
+
+| pull / push | Content-Type | You give | Framing added |
+|---|---|---|---|
+| `sse(src, { heartbeatMs? })` / `sse.channel()` | `text/event-stream` | `string` or `{ data, event, id, retry, comment }` | `data:` per line (multi-line safe), field lines, blank line; `: ping` heartbeat while idle |
+| `multipartReplace(src, { boundary?, type? })` / `.channel()` | `multipart/x-mixed-replace; boundary=…` | `Buffer` / `Uint8Array` / `string` / `{ body, type?, name?, headers? }` | `--boundary`, `Content-Type`, `Content-Length` (bytes), CRLFs. **Not gzipped** (frames are already compressed) |
+| `multipartMixed(src, { boundary?, type? })` / `.channel()` | `multipart/mixed; boundary=…` | same as above | same, plus `--boundary--` at the end |
+| `ndjson(src)` / `.channel()` | `application/x-ndjson` | any JSON value | `JSON + \n` |
+| `jsonSeq(src)` / `.channel()` | `application/json-seq` (RFC 7464) | any JSON value | `\x1e JSON \n` |
+| `jsonArray(src)` / `.channel()` | `application/json` | any JSON value | `[`, `,` between items, `]` — the client just calls `res.json()` |
+| `csv(src, { columns?, bom? })` / `.channel()` | `text/csv; charset=utf-8` | row arrays, or objects mapped by `columns` | RFC 4180 quoting, CRLF, header row from `columns`, optional UTF-8 BOM |
+| `text(src)` / `.channel()` | `text/plain; charset=utf-8` | strings (others as JSON) | `\n` per item |
+
+- `src` is any iterable or async iterable (array, `function*`, `async function*`).
+- A part's MIME type is resolved as the part's `type` > `mime-types` lookup of its `name` > then for string bodies the stream's `type` option or `text/plain; charset=utf-8`, for bytes sniffing (JPEG/PNG/GIF/WEBP) > the `type` option > `application/octet-stream`.
+- A missing `boundary` is randomized; an invalid one (RFC 2046) throws when the stream is created.
+- Channel options: `signal` (closes on abort), `keep: 'queue'` (default, every value in order, up to `max` = 1000, oldest dropped) or `keep: 'latest'` (only the newest pending value — video frames).
+- `jsonArray` is valid JSON only once it finishes; for streams that may be cut off, prefer `ndjson` / `jsonSeq`.
+- The per-item formatters are exported too: `sseChunk`, `ssePing`, `multipartPart`, `multipartEnd`, `partType`, `ndjsonLine`, `jsonSeqRecord`, `csvCell`, `csvRow`, `textLine`, `boundary`, and `isStream`.
 
 ### Manual Response Streaming (SSE / NDJSON)
 By default, a route's return value is automatically serialized and written as a single response. Set `res: 'manual'` to skip that entirely and take direct control of the injected `ServerResponse` — the request handler's promise simply stays pending until you're done, so nothing else writes to the response underneath you.
