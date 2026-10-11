@@ -13,7 +13,7 @@ import type { HelperHostSet } from '../types';
  * 데코레이터가 실행되는 순서가 아니라 실제 parameterIndex로 슬롯을 매칭하므로,
  * 사용자가 파라미터 선언 순서를 자유롭게 바꿔도 된다.
  */
-export type SwcParamKind = 'eventObject' | 'matchedElement' | 'hostSet' | 'helperHostSet' | 'helperSet' | 'swcAppRouterEvent' | 'swcAppRouter' | 'swcAppSimpleApplication' | 'swcAppHost' | 'appMessage' | 'eventBeforeReturn' | 'appMessageBeforeReturn' | 'routeChangeBeforeReturn' | 'eventMediaBeforeReturn' | 'mutationObserverBeforeReturn' | 'intersectionObserverBeforeReturn' | 'resizeObserverBeforeReturn' | 'changedAttributeBeforeReturn' | 'setTimeoutBeforeReturn' | 'setIntervalBeforeReturn' | 'fetchSettled'
+export type SwcParamKind = 'eventObject' | 'matchedElement' | 'hostSet' | 'helperHostSet' | 'helperSet' | 'swcAppRouterEvent' | 'swcAppRouter' | 'swcAppSimpleApplication' | 'swcAppHost' | 'appMessage' | 'eventBeforeReturn' | 'appMessageBeforeReturn' | 'routeChangeBeforeReturn' | 'eventMediaBeforeReturn' | 'mutationObserverBeforeReturn' | 'intersectionObserverBeforeReturn' | 'resizeObserverBeforeReturn' | 'changedAttributeBeforeReturn' | 'setTimeoutBeforeReturn' | 'setIntervalBeforeReturn' | 'fetchPromise'
   | 'querySelectorParam' | 'querySelectorAllParam' | 'attributeParam' | 'localStorageParam' | 'sessionStorageParam' | 'cookieParam' | 'indexedDbParam' | 'fetchParam'
   | SwcRouteParamKind;
 
@@ -164,11 +164,12 @@ export function setIntervalBeforeReturn(target: Object, propertyKey: string | sy
 }
 
 /**
- * @fetch(trigger:'before') 의 fetch settled 결과(PromiseSettledResult)를 주입한다.
- * 예: save(@fetchSettled settled) { ... }
+ * @fetch(before 모드)가 시작한 요청의 Promise 를 주입한다. 메서드는 요청을 기다리지 않고 바로 불리고,
+ * 기다릴지·어떻게 처리할지(then/catch/finally)는 메서드가 정한다. 실패는 reject, 프레임워크가 끊으면 끝나지 않는다.
+ * 예: load(@fetchPromise p: Promise<Post>) { return p.then(post => post.title); }
  */
-export function fetchSettled(target: Object, propertyKey: string | symbol, parameterIndex: number): void {
-  registerParam('fetchSettled', target, propertyKey, parameterIndex);
+export function fetchPromise(target: Object, propertyKey: string | symbol, parameterIndex: number): void {
+  registerParam('fetchPromise', target, propertyKey, parameterIndex);
 }
 
 /**
@@ -255,7 +256,7 @@ export type FetchParamInitFactory = (currentThis: any, helper: HelperHostSet) =>
 /**
  * 간단 버전 fetch — 네이티브 fetch(url, init) 그대로, 성공하면 Content-Type 보고 JSON/텍스트로 파싱한 뒤
  * **그 Promise를 주입**한다 (indexedDbParam과 동일한 계약 — 비동기라 resolve된 값이 아니라 Promise 자체).
- * abort/abortPrevious/before/after/finally 같은 건 없다 — 그런 게 필요하면 @fetch/@fetchManual + @fetchSettled를 쓴다
+ * abort/abortPrevious 같은 건 없다 — 그런 게 필요하면 @fetch/@fetchManual + @fetchPromise를 쓴다
  * (disconnect 시 자동 abort까지 되는 더 안전한 버전). 이건 딱 "그냥 fetch 결과를 파라미터로 받고 싶다"는 경우용.
  *
  * url/init은 고정값뿐 아니라 (currentThis, helper) => ... 콜백도 받는다 — 인스턴스 필드를 참조해서

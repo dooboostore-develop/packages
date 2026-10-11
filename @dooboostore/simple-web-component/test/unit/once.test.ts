@@ -5,7 +5,7 @@ import { createWindow, mount, bootApp, sleep, uniqueTag } from './dom.ts';
 import {
   elementDefine, onConnectedBodyShadow, onInitialize, onConnectedBefore, onConnectedAfter, onConnectedCompleted, onDisconnected,
   eventDelegateShadow, eventWindow, emitCustomEvent, subscribeSwcAppMessage, publishSwcAppMessage, subscribeSwcAppRouteChange,
-  mutationObserver, changedAttribute, setInterval, fetchManual, fetchSettled, swcAppRouteGo, innerHtml
+  mutationObserver, changedAttribute, setInterval, fetchManual, fetchPromise, swcAppRouteGo, innerHtml
 } from '../../src/index.ts';
 
 // window 이벤트는 브라우저가 스스로 보내지 않는 이름(swc-test-ping)을 쓴다 — iframe 이 생길 때 진짜 resize 가 한 번 온다
@@ -125,7 +125,7 @@ test('stacked decorators on one method: the method body and each effect run once
       @publishSwcAppMessage('went', { valueKey: 'msg' })
       @emitCustomEvent('went', { valueKey: 'msg' })
       @fetchManual(() => 'f')
-      async go(@fetchSettled s?: PromiseSettledResult<string>) { hit('body'); return { to: '/next', msg: s?.status }; }
+      async go(@fetchPromise p: Promise<string>) { hit('body'); return { to: '/next', msg: await p }; }
       @subscribeSwcAppMessage('went') onWent() { hit('message'); }
       @subscribeSwcAppRouteChange('/next') onNext() { hit('route'); }
     }

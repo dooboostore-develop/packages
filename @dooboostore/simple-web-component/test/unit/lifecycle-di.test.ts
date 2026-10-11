@@ -2,32 +2,32 @@ import 'reflect-metadata';
 import { test } from 'node:test';
 import assert from 'node:assert';
 import { createWindow, bootApp, sleep, uniqueTag } from './dom.ts';
-import { elementDefine, onConnectedAfter, onConnectedBodyShadow, addEventListener, fetchManual, fetchSettled, subscribeSwcAppRouteChange, querySelectorParam, querySelectorAllParam, attributeParam, localStorageParam, sessionStorageParam, indexedDbParam, persistWriteAsync, persistRemoveAsync, swcAppRouter, swcAppRouterEvent, swcAppSimpleApplication, swcAppHost } from '../../src/index.ts';
+import { elementDefine, onConnectedAfter, onConnectedBodyShadow, addEventListener, fetchManual, fetchPromise, subscribeSwcAppRouteChange, querySelectorParam, querySelectorAllParam, attributeParam, localStorageParam, sessionStorageParam, indexedDbParam, persistWriteAsync, persistRemoveAsync, swcAppRouter, swcAppRouterEvent, swcAppSimpleApplication, swcAppHost } from '../../src/index.ts';
 
 const appHtml = (inner: string) => `<!DOCTYPE html><html><body><div id="app" is="swc-app-div">${inner}</div></body></html>`;
 
-// 회귀: DI 앱에서 lifecycle 메서드의 swc 파라미터(@fetchSettled)를 DI 가 타입(Object)으로 resolve 하려다 SimNoSuch 로 죽던 문제
-test('DI app: @onConnectedAfter + @fetchManual + @fetchSettled does not fall through to DI', async () => {
+// 회귀: DI 앱에서 lifecycle 메서드의 swc 파라미터(@fetchPromise)를 DI 가 타입(Object)으로 resolve 하려다 SimNoSuch 로 죽던 문제
+test('DI app: @onConnectedAfter + @fetchManual + @fetchPromise does not fall through to DI', async () => {
   const tag = uniqueTag('di-page');
   const { w, destroy } = await createWindow(appHtml(`<${tag}></${tag}>`));
-  const seen: { settled?: PromiseSettledResult<number> } = {};
+  const seen: { value?: number } = {};
   const errors: string[] = [];
   const onRejection = (e: PromiseRejectionEvent) => { errors.push(String(e.reason?.message ?? e.reason)); e.preventDefault(); };
-  addEventListener('unhandledrejection', onRejection);
+  globalThis.addEventListener('unhandledrejection', onRejection);
   const factory = (win: Window) => {
     @elementDefine(tag, { window: win })
     class Page extends (win as any).HTMLElement {
       @onConnectedBodyShadow render() { return '<p>x</p>'; }
       @onConnectedAfter
       @fetchManual(() => Promise.resolve(42))
-      async load(@fetchSettled settled?: PromiseSettledResult<number>) { seen.settled = settled; }
+      async load(@fetchPromise p: Promise<number>) { seen.value = await p; }
     }
     return tag;
   };
   await bootApp(w, [factory]);
-  removeEventListener('unhandledrejection', onRejection);
+  globalThis.removeEventListener('unhandledrejection', onRejection);
   assert.deepStrictEqual(errors, []);
-  assert.deepStrictEqual(seen.settled, { status: 'fulfilled', value: 42 });
+  assert.strictEqual(seen.value, 42);
   destroy();
 });
 

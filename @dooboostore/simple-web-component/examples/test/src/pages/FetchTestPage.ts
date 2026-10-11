@@ -1,57 +1,42 @@
 import {
-  elementDefine, onConnectedBodyLight, fetch, fetchManual, fetchGet, fetchPost, fetchPut, fetchPatch, fetchDelete, fetchLatest, fetchBefore, fetchAfter, fetchSettled, event, eventObject, eventBeforeReturn
+  elementDefine, onConnectedBodyLight, fetch, fetchManual, fetchGet, fetchPost, fetchPut, fetchPatch, fetchDelete, fetchLatest, fetchBefore, fetchAfter, fetchPromise, event, eventObject, eventBeforeReturn
 } from '@dooboostore/simple-web-component';
 
 /**
  * @fetch before/after 검증 페이지.
- * - before: GET → settled를 @fetchSettled 자리에 주입받아 실행
+ * - before: GET 을 시작하고 그 Promise 를 @fetchPromise 자리에 넣어 메서드를 바로 실행
  * - after: 메서드 리턴을 body로 POST → fetch 결과 표시
  */
+// 이 페이지의 버튼들은 결과를 { status, value | reason } 로 보여준다 — Promise 를 그 모양으로 바꾼다
+const settle = (p: Promise<any>) => p!.then(value => ({ status: 'fulfilled', value }), reason => ({ status: 'rejected', reason }));
+const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
 export default (w: Window) => {
   const tagName = 'swc-example-fetch-test-page';
   if (w.customElements.get(tagName)) return tagName;
 
   // disconnect abort 검증용: 느린 요청 중에 제거되는 요소
   const probeTag = 'swc-example-fetch-abort-probe';
-  const probe = { methodRan: false, afterRan: false, finallyError: '', hangMethodRan: false, hangFinallyError: '' };
+  // 떨어지면 넘겨받은 Promise 는 끝나지 않아야 한다 (떨어진 DOM 에 그리지 않음)
+  const probe = { loadSettled: false, hangSettled: false };
   @elementDefine(probeTag, { window: w })
   class FetchAbortProbe extends w.HTMLElement {
-    @fetch({
-      url: 'http://127.0.0.1:8101/api/slow?n=probe',
-      after: () => { probe.afterRan = true; },
-      finally: (_c, _h, _p, ctx) => { probe.finallyError = ctx.error?.name ?? 'none'; }
-    })
-    async load(@fetchSettled settled?: PromiseSettledResult<any>) {
-      probe.methodRan = true;
-      return settled;
+    @fetch('http://127.0.0.1:8101/api/slow?n=probe')
+    load(@fetchPromise p?: Promise<any>) {
+      p!.then(() => { probe.loadSettled = true; }, () => { probe.loadSettled = true; });
     }
 
-    // signal 을 무시하고 3초 뒤에야 끝나는 사용자 manual — 그래도 abort 즉시 호출이 끝나야 한다
-    @fetch({
-      manual: () => new Promise(resolve => setTimeout(() => resolve('late'), 3000)),
-      finally: (_c, _h, _p, ctx) => { probe.hangFinallyError = ctx.error?.name ?? 'none'; }
-    })
-    async hang(@fetchSettled settled?: PromiseSettledResult<any>) {
-      probe.hangMethodRan = true;
-      return settled;
+    // signal 을 무시하고 3초 뒤에야 끝나는 사용자 manual — 그래도 떨어지면 Promise 는 끝나지 않는다
+    @fetch({ manual: () => new Promise(resolve => setTimeout(() => resolve('late'), 3000)) })
+    hang(@fetchPromise p?: Promise<any>) {
+      p!.then(() => { probe.hangSettled = true; }, () => { probe.hangSettled = true; });
     }
   }
 
   @elementDefine(tagName, { window: w })
   class FetchTestPage extends w.HTMLElement {
     @fetch('http://127.0.0.1:8101/api/post/1')
-    async loadDefault(@fetchSettled settled: PromiseSettledResult<any>) {
-      return settled;
-    }
-
-    @fetch({
-      url: 'http://127.0.0.1:8101/api/post/1',
-      request: () => ({ method: 'GET', headers: { 'X-Hook': 'before' } }),
-      after: (_c, _h, _p, settled) => { (window as any).__fetchAfter = settled.status; },
-      finally: (_c, _h, _p, ctx) => { (window as any).__fetchFinally = ctx.result.status; }
-    })
-    async loadHooks(@fetchSettled settled: PromiseSettledResult<any>) {
-      return settled;
+    loadDefault(@fetchPromise p?: Promise<any>) {
+      return settle(p!);
     }
 
     @fetch({
@@ -59,8 +44,8 @@ export default (w: Window) => {
       trigger: 'before',
       request: 'GET'
     })
-    async loadBefore(@fetchSettled settled: PromiseSettledResult<any>) {
-      return settled;
+    loadBefore(@fetchPromise p?: Promise<any>) {
+      return settle(p!);
     }
 
     @fetch({
@@ -99,20 +84,20 @@ export default (w: Window) => {
         return { ...data, via: 'custom-fetching' };
       }
     })
-    async loadCustom(@fetchSettled settled: PromiseSettledResult<any>) {
-      return settled;
+    loadCustom(@fetchPromise p?: Promise<any>) {
+      return settle(p!);
     }
 
     // filter false → 메서드도 fetch 도 실행 안 함
     @fetch({ url: 'http://127.0.0.1:8101/api/post/1', filter: () => false })
-    async loadFiltered(@fetchSettled settled?: PromiseSettledResult<any>) {
+    loadFiltered(@fetchPromise _p?: Promise<any>) {
       return 'method-ran';
     }
 
     // 404 → HttpResponseError (status 를 코드에서 꺼낼 수 있어야 함)
     @fetch('http://127.0.0.1:8101/api/missing')
-    async load404(@fetchSettled settled?: PromiseSettledResult<any>) {
-      return settled;
+    load404(@fetchPromise p?: Promise<any>) {
+      return settle(p!);
     }
 
     // Headers 인스턴스 보존 + 사용자 Content-Type 우선 (process:json 이어도)
@@ -132,10 +117,10 @@ export default (w: Window) => {
       return new Blob(['blob-raw'], { type: 'text/x-blob' });
     }
 
-    // abortPrevious: 연달아 부르면 이전 요청은 끊기고(undefined) 마지막 것만 결과
+    // abortPrevious: 연달아 부르면 이전 요청은 끊기고(Promise 가 끝나지 않음) 마지막 것만 결과
     @fetch({ url: (_c, _h, p) => `http://127.0.0.1:8101/api/slow?n=${p[0]}`, abortPrevious: true })
-    async search(n: number, @fetchSettled settled?: PromiseSettledResult<any>) {
-      return settled?.status === 'fulfilled' ? settled.value.n : settled?.status;
+    search(_n: number, @fetchPromise p?: Promise<any>) {
+      return p!.then(v => v.n);
     }
 
     @event('#btn-abort', 'click')
@@ -143,20 +128,18 @@ export default (w: Window) => {
       this.say('#out-abort', 'loading...');
       const el = document.createElement(probeTag) as FetchAbortProbe;
       this.append(el);
-      const pending = el.load();
+      el.load();
       setTimeout(() => el.remove(), 100);
-      const loadResult = await pending;
 
       const el2 = document.createElement(probeTag) as FetchAbortProbe;
       this.append(el2);
-      const t0 = performance.now();
-      const hanging = el2.hang();
+      el2.hang();
       setTimeout(() => el2.remove(), 100);
-      const hangResult = await hanging;
-      const hangMs = Math.round(performance.now() - t0);
-      await new Promise(r => setTimeout(r, 900)); // 서버 응답(0.8s) 이후까지 기다려도 메서드/after 가 안 돌아야 함
-      const [first, second] = await Promise.all([this.search(1), this.search(2)]);
-      const r = { loadResult: loadResult ?? 'undefined', ...probe, hangResult: hangResult ?? 'undefined', hangSettledFast: hangMs < 1000, first: first ?? 'undefined', second };
+      await sleep(900); // 서버 응답(0.8s) 이후까지 기다려도 넘겨받은 Promise 가 끝나지 않아야 함
+      const firstP = this.search(1);
+      const second = await this.search(2);
+      const first = await Promise.race([firstP, sleep(300).then(() => 'never-settled')]);
+      const r = { ...probe, first, second };
       this.say('#out-abort', `<pre id="abort-json">${JSON.stringify(r)}</pre>`);
     }
 
@@ -174,7 +157,7 @@ export default (w: Window) => {
 
     // ─── 별칭 ───
     @fetchGet('http://127.0.0.1:8101/api/post/1')
-    async aliasGet(@fetchSettled settled?: PromiseSettledResult<any>) { return settled?.status === 'fulfilled' ? settled.value.title : settled?.status; }
+    aliasGet(@fetchPromise p?: Promise<any>) { return p!.then(v => v.title); }
 
     @fetchPost('http://127.0.0.1:8101/api/posts', { process: 'json' })
     async aliasPost() { return { title: 'alias-post' }; }
@@ -186,16 +169,16 @@ export default (w: Window) => {
     async aliasPatch() { return 'patch-body'; }
 
     @fetchDelete((_c, _h, p) => `http://127.0.0.1:8101/api/method?id=${p[0]}`)
-    async aliasDelete(_id: number, @fetchSettled settled?: PromiseSettledResult<any>) { return settled?.status === 'fulfilled' ? settled.value.method : settled?.status; }
+    aliasDelete(_id: number, @fetchPromise p?: Promise<any>) { return p!.then(v => v.method); }
 
     @fetchManual((self: FetchTestPage) => self.localEcho('manual'))
-    async aliasManual(@fetchSettled settled?: PromiseSettledResult<any>) { return settled?.status === 'fulfilled' ? settled.value : settled?.status; }
+    aliasManual(@fetchPromise p?: Promise<any>) { return p!; }
 
     @fetchLatest({ manual: (_s, _h, p) => new Promise(r => setTimeout(() => r(p[0]), 200)) })
-    async aliasLatest(_n: number, @fetchSettled settled?: PromiseSettledResult<any>) { return settled?.status === 'fulfilled' ? settled.value : settled?.status; }
+    aliasLatest(_n: number, @fetchPromise p?: Promise<any>) { return p!; }
 
     @fetchBefore({ url: 'http://127.0.0.1:8101/api/post/1', request: 'GET' })
-    async aliasBefore(@fetchSettled settled?: PromiseSettledResult<any>) { return settled?.status === 'fulfilled' ? settled.value.id : settled?.status; }
+    aliasBefore(@fetchPromise p?: Promise<any>) { return p!.then(v => v.id); }
 
     @fetchAfter({ manual: (_s, _h, _p, _sig, rv) => `after:${rv}` })
     async aliasAfter() { return 'rv'; }
@@ -211,8 +194,9 @@ export default (w: Window) => {
       r.patch = await this.aliasPatch();
       r.delete = await this.aliasDelete(9);
       r.manual = await this.aliasManual();
-      const [l1, l2] = await Promise.all([this.aliasLatest(1), this.aliasLatest(2)]);
-      r.latest = [l1 ?? 'undefined', l2];
+      const l1 = this.aliasLatest(1);
+      const l2 = await this.aliasLatest(2);
+      r.latest = [await Promise.race([l1, sleep(300).then(() => 'never-settled')]), l2];
       r.before = await this.aliasBefore();
       r.after = await this.aliasAfter();
       this.say('#out-aliases', `<pre id="aliases-json">${JSON.stringify(r)}</pre>`);
@@ -236,23 +220,15 @@ export default (w: Window) => {
     }
 
     // 콜라보 1: event(before→FormData) + fetch(after, process:form) + eventBeforeReturn
+    // fetch 결과는 트리거(@event)의 finally 가 result 로 받아 그린다 — fetch 쪽엔 훅이 따로 없다
     @event('form.collab-a', 'submit', {
       before: (e: Event) => new FormData(e.target as HTMLFormElement),
-      preventDefault: true
-    })
-    @fetch({
-      url: 'http://127.0.0.1:8101/api/echo',
-      trigger: 'after',
-      process: 'form',
-      after: (_c, _h, _p, settled) => {
-        const page = document.querySelector('swc-example-fetch-test-page');
-        const out = page?.querySelector('#out-collab-a');
-        if (out && settled.status === 'fulfilled') {
-          out.innerHTML =
-            `<b>collab-a:</b> ${settled.value.contentType} / ${String(settled.value.body).slice(0, 90)}`;
-        }
+      preventDefault: true,
+      finally: (_e, { currentThis: c }, { result }) => {
+        if (result) (c as any).say('#out-collab-a', `<b>collab-a:</b> ${result.contentType} / ${String(result.body).slice(0, 90)}`);
       }
     })
+    @fetch({ url: 'http://127.0.0.1:8101/api/echo', trigger: 'after', process: 'form' })
     async submitCollabA(@eventBeforeReturn formData: FormData) {
       return formData;
     }
@@ -297,17 +273,6 @@ export default (w: Window) => {
       }
     }
 
-    @event('#btn-hooks', 'click')
-    async onHooksClick() {
-      this.say('#out-hooks', 'loading...');
-      try {
-        const settled = await (this as any).loadHooks();
-        const v = settled.status === 'fulfilled' ? settled.value : null;
-        this.say('#out-hooks', `<b>hooks:</b> title=${v?.title} after=${(window as any).__fetchAfter} finally=${(window as any).__fetchFinally}`);
-      } catch (e) {
-        this.say('#out-hooks', `<b>에러:</b> ${e}`);
-      }
-    }
     @event('#btn-after', 'click')
     async onAfterClick() {
       this.say('#out-after', 'loading...');
@@ -367,14 +332,13 @@ export default (w: Window) => {
         </style>
         <div class="wrap">
           <h1>fetch test</h1>
-          <p class="sub">before = GET 후 settled 주입받아 실행 / after = 리턴을 body로 POST / default = 옵션 없이</p>
+          <p class="sub">before = GET 을 시작하고 Promise 를 받아 바로 실행 / after = 리턴을 body로 POST / default = 옵션 없이</p>
           <button id="btn-before">before fetch</button>
           <button id="btn-after">after fetch</button>
           <button id="btn-custom">custom fetching</button>
           <button id="btn-form">form</button>
           <button id="btn-urlencoded">urlencoded</button>
           <button id="btn-default">default</button>
-          <button id="btn-hooks">hooks</button>
           <button id="btn-fixes">fixes</button>
           <button id="btn-abort">abort</button>
           <button id="btn-aliases">aliases</button>
@@ -384,7 +348,6 @@ export default (w: Window) => {
           <div class="out" id="out-form">-</div>
           <div class="out" id="out-urlencoded">-</div>
           <div class="out" id="out-default">-</div>
-          <div class="out" id="out-hooks">-</div>
           <div class="out" id="out-fixes">-</div>
           <div class="out" id="out-abort">-</div>
           <div class="out" id="out-aliases">-</div>

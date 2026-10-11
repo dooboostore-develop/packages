@@ -1179,6 +1179,10 @@ class NotificationPanel extends HTMLElement {
 
 **@subscribeSwcAppMessage Options:** `filter(message, currentThis)`, `before(message, currentThis)` (result → `@appMessageBeforeReturn`), `finally(message, currentThis, { args, result, error })`, `subject`, `trigger` (see "Message Replay"). Every matching subscriber runs (fire-and-forget); return values do not stop other subscribers.
 
+**Shortcuts for `subject`:** `@subscribeSwcAppMessageBehavior(type, options?)` = `{ subject: 'behavior' }` (a late subscriber gets the last message),
+`@subscribeSwcAppMessageReplay(type, options?)` = `{ subject: 'replay' }` (gets the whole buffer). Same forms as `@subscribeSwcAppMessage`
+(bare, type, options, type + options); the other options pass through.
+
 #### @publishSwcAppMessage
 Publish a message from a method's return value.
 
@@ -2018,7 +2022,7 @@ Late subscribers can receive past messages. The buffer keeps every typed message
 ```typescript
 // 'behavior' = last message only, 'replay' = whole buffer in order.
 // Unset (or 'subject') = live only.
-@subscribeSwcAppMessage('auth-changed', { subject: 'behavior' })
+@subscribeSwcAppMessageBehavior('auth-changed')   // = @subscribeSwcAppMessage('auth-changed', { subject: 'behavior' })
 onAuth(@appMessage msg: SwcAppMessage<User | null>) { ... }
 ```
 
@@ -2083,37 +2087,119 @@ Use `connectedElements()` to get the currently connected child elements.
 
 ## 🌐 @fetch — Declarative HTTP
 
+`@fetch` and its aliases (`@fetchGet`, `@fetchPost`, `@fetchLatest`, `@fetchManual`, …) go in one of three places.
+Pick by **who calls it** and **whether the result should be remembered**:
+
+| Where | Declare | Use when | Remembers the result? |
+|---|---|---|---|
+| **Method** | `load(@fetchPromise p: Promise<T>) { … }` | the framework calls it — a trigger handler (`@eventClick`, `@onConnectedAfter`, a route…) | no |
+| **Function field** | `declare getPost: (id: number) => Promise<T>;` | you call it yourself, anywhere, maybe with arguments (`this.getPost(1)`) | no — every call is a new request |
+| **Value field** | `declare me?: Promise<T>;` | data you load once and keep reading (`await this.me`) | **yes** — until you clear it |
+
+### 1. On a method — trigger handlers
+
+Stack the trigger, the outputs and `@fetch` on one method. The request starts first; its `Promise` is handed to the
+`@fetchPromise` parameter and the method runs **right away**. The method's own return value is returned unchanged, so the
+signature you wrote stays true (a sync method stays sync).
+
 ```typescript
-// bare form: GET by default
-@fetch('https://api.example.com/post/1')
-async load(@fetchSettled settled: PromiseSettledResult<any>) {
-  return settled;
-}
-
-// before (default): build request → fetch → inject settled → run method.
-// Returns the method result.
-@fetch({ url: '/api/post/1', request: 'GET' })
-async loadBefore(@fetchSettled settled: PromiseSettledResult<any>) {
-  return settled.status === 'fulfilled' ? settled.value : null;
-}
-
-// after: run method → use its return value as the body → fetch. Returns the fetch result.
-@fetch({ url: '/api/posts', trigger: 'after', process: 'json' })
-async save() {
-  return { title: 'hello' };
-}
-
-// after + valueKey: use returnValue[valueKey] as the body.
-@fetch({ url: '/api/echo', trigger: 'after', valueKey: 'form', process: 'form' })
-async saveForm() {
-  return { form: { title: 'hi' } };
+@eventClick('.load')
+@innerHtml('.out', { fallback: () => 'Loading…' })   // shown until the returned Promise settles
+@fetchLatest('/api/post/1')                           // click again → the previous request is aborted
+load(@fetchPromise p: Promise<Post>) {
+  return p.then(post => post.title, () => 'Failed');   // success / failure, no try/catch
 }
 ```
 
-**Modes**
-- **before** (default, or `trigger: 'before'`): build request → fetch → inject the settled result via
-  `@fetchSettled` → run the method. Returns the method result. A failed fetch does not
-  throw — it arrives as `{ status: 'rejected', reason }`.
+If you also call such a method yourself, declare the parameter optional (`@fetchPromise p?: Promise<T>`) — the
+framework fills it, callers don't. For a request you call yourself, a field (below) is the better fit.
+
+### 2. Function field — a request function you call
+
+The framework writes the function body; the declared type is the real signature (no injected parameter, no changed
+return type).
+
+```typescript
+// GET / DELETE: the arguments feed url / request
+@fetchGet((_self, _helper, [id]) => `/api/posts/${id}`)
+declare getPost: (id: number) => Promise<Post>;
+
+// POST / PUT / PATCH: the last argument is the body
+@fetchPost('/api/posts', { process: 'json' })
+declare createPost: (body: NewPost) => Promise<Post>;
+
+@fetchLatest({ url: (_s, _h, [q]) => `/api/search?q=${q}` })   // only the latest call settles
+declare search: (q: string) => Promise<Item[]>;
+
+// use it from a trigger handler (or anywhere)
+@eventClick('.load')
+@innerHtml('.out', { fallback: () => 'Loading…' })
+show() {
+  return this.getPost(1).then(p => p.title);
+}
+```
+
+Every call is a new request. Success resolves, failure rejects with `HttpResponseError` (see below).
+
+### 3. Value field — data that is remembered
+
+```typescript
+@fetch('/api/me')
+declare me?: Promise<User>;   // `?` so that `this.me = undefined` type-checks under `strict`
+
+await this.me;          // first read: request → remembered on success
+await this.me;          // remembered result (no request)
+
+this.me = undefined;    // forget it (null works too) …
+await this.me;          // … so this read requests again — this is how you reload
+
+this.me = savedUser;    // or seed a value yourself (e.g. data that came with SSR) — no request
+```
+
+- Declare it optional (`declare me?: Promise<T>`) if you ever clear it: under `strict`, assigning `undefined` to a
+  plain `Promise<T>` is a type error. Reading it is still `await this.me` (the result type is `T | undefined`).
+  If you never clear it, `declare me: Promise<T>` is fine.
+- Clear it by assigning, not with `delete this.me` — the memory lives behind the field's setter.
+
+- **Remembered**: success, per element. **Not remembered**: failure — the next read requests again.
+- **Forgotten**: when you assign `undefined` / `null`, and when the element disconnects (the request is aborted; a read
+  after reconnecting requests again).
+- There are no arguments — build the body in the `request` factory if the request needs one.
+- If the data must be fresh on every use, declare a function field instead (`declare loadMe: () => Promise<User>`).
+- The value is a real Promise to your code (`instanceof Promise` is true), so it can be returned straight to an output
+  decorator: `@innerHtml('.name') showName() { return this.me.then(u => u.name); }`.
+
+### Field rules (function and value fields)
+
+- **Always write `declare`.** Without it, builds with `useDefineForClassFields: true` (the default for target ES2022+)
+  create an instance field that hides what the framework put there:
+
+  | Build setting | `declare me: Promise<T>` | `me!: Promise<T>` (no `declare`) |
+  |---|---|---|
+  | `useDefineForClassFields: false` | works | works (but `strict` needs the `!`) |
+  | `useDefineForClassFields: true` / ES2022+ default | works | **broken** — reported on connect: *must be declared with `declare`* |
+
+- **Declared type is checked.** At compile time the field must be `(...args) => Promise<T>` or `Promise<T>`
+  (`string`, `() => T`, … are errors; optional `?` fields are fine; `private` / `protected` fields can't be seen by
+  TypeScript and are not checked).
+  Builds that emit `design:type` (`emitDecoratorMetadata` with tsc / ts-loader) also reject a non-function, non-Promise
+  type at runtime.
+- **Nothing else on the field.** Triggers and outputs go on a method that calls the field. Method decorators on a field
+  are already compile errors; any other SWC decorator on the same field (`@attribute`, `@query`, …, or anything via
+  `as any`) throws when the class is defined.
+- **Same in every build.** Function vs. value is decided by how you declared it, not by build metadata: the field holds
+  one object that is callable and a Promise, and TypeScript lets you use it only the way you declared it.
+- **Quiet ends.** A call skipped by `filter` or made while the element is detached, and a call aborted by the framework
+  (disconnect, `abortPrevious`), return a Promise that **never settles** — nothing draws on a detached DOM, nothing throws.
+
+### Method modes
+
+- **before** (default, or `trigger: 'before'`): start the request → inject its `Promise` via
+  `@fetchPromise` → run the method **right away**. Returns the method's own return value, so the
+  signature you wrote stays true (sync stays sync). Success resolves, failure rejects — handle both with
+  `then` / `catch` / `finally` on the Promise.
+  If you also call the method yourself, declare the parameter optional (`@fetchPromise p?: Promise<T>`) —
+  the framework fills it, callers don't.
 - **after** (`trigger: 'after'`, or just `valueKey`): run the method → its return value
   (or `returnValue[valueKey]`) becomes the body → fetch. Returns the fetch result; a failed fetch throws.
   `valueKey` is after-only — combining it with `trigger: 'before'` is a type error.
@@ -2126,7 +2212,7 @@ async saveForm() {
 ```typescript
 // service call — only the result matters
 @fetch({ manual: (self) => self.myService.getProfile({}) })
-async load(@fetchSettled settled?: PromiseSettledResult<MyService.ProfileResponse>) { ... }
+load(@fetchPromise p: Promise<MyService.ProfileResponse>) { ... }
 
 // your own fetch — pass the signal so an abort cancels the network request too
 @fetch({ trigger: 'after', manual: (_self, _helper, _params, signal, returnValue) =>
@@ -2155,38 +2241,37 @@ Its return value is the fetch result.
 
 ```typescript
 @fetch('/api/post/1')
-async load(@fetchSettled settled?: PromiseSettledResult<any>) {
-  if (settled?.status === 'rejected' && isHttpResponseError(settled.reason)) {
-    return settled.reason.response?.status; // e.g. 404
-  }
+load(@fetchPromise p: Promise<Post>) {
+  return p.catch(e => isHttpResponseError(e) ? e.response?.status : undefined); // e.g. 404
 }
 ```
 
-**Hooks** (same order as every other SWC decorator: `filter → before → handler → finally`)
-- `filter(this, helper, params)` → `false` skips the whole call (no method, no fetch; returns `undefined`).
-- `before(this, helper, params)` runs first after `filter` and is awaited; its return value is ignored.
-- `after(this, helper, params, settled)` runs right after the fetch settles (fulfilled or rejected).
-- `finally(this, helper, params, { args, result, error })` always runs around the whole call.
-  `result` is what the call returns (the method result in before mode, the fetch result in after mode).
+**filter** — the only hook
+- `filter({ self, helper, args })` → `false` skips the whole call: no request, no method. A method returns `undefined`;
+  a field returns a Promise that never settles.
+  It is synchronous: the request starts before the method runs, so "send or not" can only be decided here.
+- There is no `before` / `after` / `finally` on `@fetch`: result handling is plain Promise code
+  (`then` / `catch` / `finally`), and gating or cleanup around the call lives on the trigger you stack it with
+  (`@eventClick`, `@onConnectedAfter`, …), which already has `filter → before → handler → finally`.
 
 **Cancellation**
 - Every call gets its own `AbortController`. Declarative requests get its signal as `init.signal`
   (merged with a `signal` you return from `request`, via `AbortSignal.any` or a fallback); `manual` gets it as
   the `signal` argument.
-- When the element disconnects, all its in-flight `@fetch` requests are aborted. Such a call ends
-  quietly with `undefined`: the method (before mode) and the `after` hook are skipped so nothing touches
-  a detached DOM; `finally` still runs with `ctx.error` set to the `AbortError`.
+- When the element disconnects, all its in-flight `@fetch` requests are aborted. The injected Promise then
+  **never settles** (before mode), so nothing draws on a detached DOM and nothing throws; an after-mode call
+  ends quietly with `undefined`.
 - A call that *starts* while the element is detached (e.g. a `setTimeout` scheduled just before the user
   navigated away) is skipped the same quiet way. Elements that were never connected are not affected.
 - `manual` should pass `signal` on to its own client (`fetch`, axios, ...) so the network
   request is actually cancelled. If it ignores the signal, the call still ends as soon as it's aborted
   (the result is raced against the abort) — the request just keeps running in the background and its
   late result is discarded.
-- `abortPrevious: true` aborts the previous in-flight call of the same method when it's called again
-  (search-as-you-type) — the superseded call ends quietly the same way, so a late old response can't
+- `abortPrevious: true` aborts the previous in-flight call of the same method (per element) when it's called again
+  (search-as-you-type) — the superseded Promise never settles, so a late old response can't
   overwrite the newest result.
-- Aborting through your own signal is not quiet: it surfaces as a rejected settled result (before mode)
-  or a thrown error (after mode), like any other failure.
+- Aborting through your own signal is not quiet: it rejects the Promise (before mode)
+  or throws (after mode), like any other failure.
 
 **Aliases**
 
@@ -2202,13 +2287,13 @@ For the method aliases, `request` may only be a factory returning `RequestInit` 
 
 ```typescript
 @fetchManual((self) => self.myService.getProfile({}))
-async load(@fetchSettled settled?: PromiseSettledResult<Profile>) { ... }
+load(@fetchPromise p: Promise<Profile>) { ... }
 
 @fetchPost('/api/posts', { process: 'json' })
 async save() { return { title: 'hi' }; }
 
 @fetchDelete((_self, _helper, params) => `/api/posts/${params[0]}`)
-async remove(id: number, @fetchSettled settled?: PromiseSettledResult<unknown>) { ... }
+remove(id: number, @fetchPromise p?: Promise<unknown>) { ... }
 ```
 
 **Composition** — e.g. form submit:
@@ -2265,7 +2350,7 @@ onReady(
 ```
 
 ### @fetchParam
-A minimal, hook-free fetch — no abort-on-disconnect, no `before`/`after`/`finally` (reach for `@fetch`/`@fetchManual` + `@fetchSettled` when you need those). It injects a **Promise** that resolves to the parsed JSON/text body, or rejects with an `Error` on a non-OK status.
+A minimal fetch — no abort-on-disconnect, no `abortPrevious`, no `filter` (reach for `@fetch`/`@fetchManual` + `@fetchPromise` when you need those). It injects a **Promise** that resolves to the parsed JSON/text body, or rejects with an `Error` on a non-OK status.
 
 ```typescript
 @onConnectedAfter

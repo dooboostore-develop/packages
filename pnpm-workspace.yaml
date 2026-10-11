@@ -1,5 +1,7 @@
 packages:
   - '@dooboostore/**'
+  # 빌드 결과물(dist/cjs/package.json 등)은 워크스페이스 패키지가 아니다
+  - '!@dooboostore/**/dist/**'
 
 # 루트와 동일: pnpm 12(postinstall 승인제). 없으면 CI에서 ERR_PNPM_IGNORED_BUILDS
 allowBuilds:
