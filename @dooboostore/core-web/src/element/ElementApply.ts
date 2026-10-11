@@ -67,14 +67,14 @@ export class ElementApply {
       const endPrefix = `${eaPrefix}:${eaId}:end:${type}`;
       let next = node.nextSibling;
       while (next) {
-        if (next.nodeType === Node.COMMENT_NODE && (next as Comment).data?.trim?.()?.startsWith(endPrefix)) {
+        if (next.nodeType === this.window.Node.COMMENT_NODE && (next as Comment).data?.trim?.()?.startsWith(endPrefix)) {
           return {nodeType: 'comment', type: type as 'html' | 'text', start: node as Comment, end: next as Comment, script: script ?? '', variables: this.findVariables(script)};
         }
         next = next.nextSibling;
       }
 
 
-    } else if (node.nodeType === Node.ELEMENT_NODE) {
+    } else if (node.nodeType === this.window.Node.ELEMENT_NODE) {
       const aa = (node as Element).getAttributeNames().filter(name => {
         return name.startsWith(`ea:${id}:attribute:`) || name.startsWith(`ea:${id}:event:`) || name.startsWith(`ea:${id}:property:`);
       });
