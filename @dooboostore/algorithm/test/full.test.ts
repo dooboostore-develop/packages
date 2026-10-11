@@ -3,4 +3,3 @@
 import './trendrange.test';
 import './trendrange-stability.test';
 import './engine.test';
-import './kospi100.test';

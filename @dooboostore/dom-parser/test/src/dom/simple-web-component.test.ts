@@ -1,7 +1,7 @@
 import {describe, test} from 'node:test';
 import assert from 'node:assert/strict';
 import {DomParser} from '../../../src/DomParser';
-import register, {elementDefine, onConnectedInnerHtml, registerSwcAppBody, SwcAppInterface, SwcUtils} from '@dooboostore/simple-web-component'
+import register, {elementDefine, innerHtmlShadow, defineSwcAppBody, SwcAppInterface, SwcUtils} from '@dooboostore/simple-web-component'
 import {Router} from "@dooboostore/core-web";
 
 describe('DomParser Template Parsing', () => {
@@ -30,7 +30,7 @@ describe('DomParser Template Parsing', () => {
     const mainPageFactory = (w: Window) => {
       @elementDefine('main-page', {window: w})
       class MainPageRouter extends w.HTMLElement {
-        @onConnectedInnerHtml({useShadow: true})
+        @innerHtmlShadow
         render() {
           return `<div>Main Page</div>`;
         }
@@ -43,7 +43,7 @@ describe('DomParser Template Parsing', () => {
       @elementDefine('index-router', {window: w})
       class IndexRouter extends w.HTMLElement {
         private routerPathSet?: { path: string; searchParams: URLSearchParams; pathData?: { [p: string]: string } };
-        @onConnectedInnerHtml({useShadow: true})
+        @innerHtmlShadow
         render(router?: Router) {
           this.routerPathSet = SwcUtils.parsePathPatternsSet(routePaths, router);
           w.console.log('vvvvvvvvvvvvvv', this.routerPathSet);
@@ -63,7 +63,7 @@ describe('DomParser Template Parsing', () => {
 
     console.log('vvvvvvvvvvv')
     // await register(window, [indexRouterFactory,mainPageFactory]);
-    await registerSwcAppBody(window);
+    await defineSwcAppBody(window);
 
     const app = await new Promise(resolve => {
       const app = document.querySelector('#app') as SwcAppInterface;

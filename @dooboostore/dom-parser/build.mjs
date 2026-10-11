@@ -222,17 +222,25 @@ function addJsExtensionToImports(dir) {
       let content = fs.readFileSync(filepath, 'utf8');
       // Regex to find import/export statements with relative paths
       // and without a file extension (or with .ts extension)
+      const withExt = (p3) => {
+        if (p3.endsWith('.js') || p3.endsWith('.json') || p3.endsWith('.mjs') || p3.endsWith('.cjs')) return null;
+        const absoluteImportPath = path.resolve(path.dirname(filepath), p3);
+        if (fs.existsSync(absoluteImportPath) && fs.statSync(absoluteImportPath).isDirectory()) {
+          return p3 + '/index.js';
+        }
+        return p3 + '.js';
+      };
+      // (1) import/export ... from '...'
       const regex = /(import|export)([\s\S]*?from\s+['"])((\.?\.?\/|\/)[^'"]+)(['"];)/g;
       content = content.replace(regex, (match, p1, p2, p3, p4, p5) => {
-        if (!p3.endsWith('.js') && !p3.endsWith('.json') && !p3.endsWith('.mjs') && !p3.endsWith('.cjs')) {
-          const absoluteImportPath = path.resolve(path.dirname(filepath), p3);
-          if (fs.existsSync(absoluteImportPath) && fs.statSync(absoluteImportPath).isDirectory()) {
-            return p1 + p2 + p3 + '/index.js' + p5;
-          } else {
-            return p1 + p2 + p3 + '.js' + p5;
-          }
-        }
-        return match;
+        const fixed = withExt(p3);
+        return fixed === null ? match : p1 + p2 + fixed + p5;
+      });
+      // (2) side-effect import: import '...';  (from 없음 - 위 정규식이 놓치던 경우, ESM 로드 시 ERR_MODULE_NOT_FOUND)
+      const sideEffectRegex = /(import\s*)(['"])((\.?\.?\/)[^'"]+)(['"];)/g;
+      content = content.replace(sideEffectRegex, (match, p1, p2, p3, p4, p5) => {
+        const fixed = withExt(p3);
+        return fixed === null ? match : p1 + p2 + fixed + p5;
       });
       fs.writeFileSync(filepath, content, 'utf8');
     }
