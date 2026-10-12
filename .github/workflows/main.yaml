@@ -31,7 +31,10 @@ jobs:
         run: pnpm install
 
       - name: Install Playwright browsers
-        run: pnpm exec playwright install --with-deps chromium
+        run: |
+          pnpm --filter @dooboostore/dom-parser-test exec playwright install --with-deps chromium
+          pnpm --filter @dooboostore/simple-web-component exec playwright install chromium
+          pnpm --filter @dooboostore/simple-boot-http-server-ssr exec playwright install chromium
 
       - name: Build project
         run: pnpm run build
