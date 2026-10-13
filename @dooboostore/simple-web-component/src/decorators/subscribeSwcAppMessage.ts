@@ -6,7 +6,7 @@ export const SUBSCRIBE_SWC_APP_MESSAGE_METADATA_KEY = Symbol.for('simple-web-com
 export interface SwcAppMessageOptions<Data = any, BeforeReturn = any, Result = any> {
   /** 메시지 수신 시 핸들러 실행 여부 게이트. Promise<boolean>도 되어 async 판정 가능. false면 스킵. */
   filter?: (message: SwcAppMessage<Data>, currentThis: any) => boolean | Promise<boolean>;
-  /** filter 통과 후 핸들러 직전 훅. await되고, 리턴값은 @appMessageBeforeReturn 으로 핸들러에 주입된다. */
+  /** filter 통과 후 핸들러 직전 훅. await되고, 리턴값은 @swcAppMessageBeforeReturn 으로 핸들러에 주입된다. */
   before?: (message: SwcAppMessage<Data>, currentThis: any) => BeforeReturn | Promise<BeforeReturn>;
   /** 핸들러가 성공/실패해도 항상 실행되는 정리 훅. ctx로 핸들러 인자/결과/에러를 받는다. 에러는 삼키지 않고 전파. */
   finally?: (message: SwcAppMessage<Data>, currentThis: any, ctx: { args: any[]; result?: Result; error?: any }) => any | Promise<any>;

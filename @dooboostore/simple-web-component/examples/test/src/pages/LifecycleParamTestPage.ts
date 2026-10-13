@@ -1,4 +1,4 @@
-import { elementDefine, onConnectedAfter, onConnectedBodyShadow, hostSet, helperHostSet, helperSet, subscribeSwcAppRouteChange, subscribeSwcAppMessage, swcAppRouterEvent, appMessage } from '@dooboostore/simple-web-component';
+import { elementDefine, onConnectedAfter, onConnectedBodyShadow, hostSet, helperHostSet, helperSet, subscribeSwcAppRouteChange, subscribeSwcAppMessage, swcAppRouterEvent, swcAppMessage } from '@dooboostore/simple-web-component';
 import { Inject } from '@dooboostore/simple-boot';
 import { ProductService } from '../services/ProductService';
 
@@ -54,9 +54,9 @@ export default (w: Window) => {
       this.updateStatus();
     }
 
-    // 메시지 구독 — 순서를 뒤집어서(@hostSet이 먼저, @appMessage가 나중) 선언.
+    // 메시지 구독 — 순서를 뒤집어서(@hostSet이 먼저, @swcAppMessage가 나중) 선언.
     @subscribeSwcAppMessage
-    onMessageV2(@hostSet hs: any, @appMessage msg: any) {
+    onMessageV2(@hostSet hs: any, @swcAppMessage msg: any) {
       this.messageOk = !!hs && Array.isArray(hs.$hosts) && !!msg && typeof msg.data === 'string';
       this.lastMessageData = msg?.data ?? '';
       this.updateStatus();
@@ -65,7 +65,7 @@ export default (w: Window) => {
     updateStatus() {
       const el = this.shadowRoot?.querySelector('.status') as HTMLElement | null;
       if (el) {
-        el.textContent = `mixedInjectOk(@Inject+@hostSet 공존): ${this.mixedInjectOk} | hostSetOk: ${this.hostSetOk} | helperHostSetOk: ${this.helperHostSetOk} | helperSetOk: ${this.helperSetOk} | routeChangedOk(@helperSet+@swcAppRouterEvent, reversed): ${this.routeChangedOk} | messageOk(@hostSet+@appMessage, reversed): ${this.messageOk} last="${this.lastMessageData}"`;
+        el.textContent = `mixedInjectOk(@Inject+@hostSet 공존): ${this.mixedInjectOk} | hostSetOk: ${this.hostSetOk} | helperHostSetOk: ${this.helperHostSetOk} | helperSetOk: ${this.helperSetOk} | routeChangedOk(@helperSet+@swcAppRouterEvent, reversed): ${this.routeChangedOk} | messageOk(@hostSet+@swcAppMessage, reversed): ${this.messageOk} last="${this.lastMessageData}"`;
       }
     }
 

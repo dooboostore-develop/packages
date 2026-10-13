@@ -3,21 +3,21 @@ import { SwcUtils } from '../utils/Utils';
 import { QuerySelector, QueryOptions, QueryBaseOptions, resolveQueryElements, pickElements } from './query';
 import { AttributeOptions, AttributeSelector, getAttributeValue } from './applyAttribute';
 import { PersistOptions, persistRead, persistReadAsync } from './persistState';
-import type { HelperHostSet } from '../types';
+import type { HelperHostSet, SwcAppMessageSubject } from '../types';
 
 /**
- * @eventObject/@matchedElement/@hostSet/@helperHostSet/@helperSet/@swcAppRouterEvent/@appMessage/@eventBeforeReturn —
+ * @eventObject/@matchedElement/@hostSet/@helperHostSet/@helperSet/@swcAppRouterEvent/@swcAppMessage/@eventBeforeReturn —
  * @event/lifecycle/subscribeSwcAppRouteChange/subscribeSwcAppMessage
  * 계열 핸들러의 파라미터를 순서 무관하게 선언할 수 있게 해주는 파라미터 데코레이터.
  * @dooboostore/simple-boot의 @Inject와 동일한 인덱스 기반 메타데이터 패턴을 따른다:
  * 데코레이터가 실행되는 순서가 아니라 실제 parameterIndex로 슬롯을 매칭하므로,
  * 사용자가 파라미터 선언 순서를 자유롭게 바꿔도 된다.
  */
-export type SwcParamKind = 'eventObject' | 'matchedElement' | 'hostSet' | 'helperHostSet' | 'helperSet' | 'swcAppRouterEvent' | 'swcAppRouter' | 'swcAppSimpleApplication' | 'swcAppHost' | 'appMessage' | 'eventBeforeReturn' | 'appMessageBeforeReturn' | 'routeChangeBeforeReturn' | 'eventMediaBeforeReturn' | 'mutationObserverBeforeReturn' | 'intersectionObserverBeforeReturn' | 'resizeObserverBeforeReturn' | 'changedAttributeBeforeReturn' | 'setTimeoutBeforeReturn' | 'setIntervalBeforeReturn' | 'fetchPromise'
+export type SwcParamKind = 'eventObject' | 'matchedElement' | 'hostSet' | 'helperHostSet' | 'helperSet' | 'swcAppRouterEvent' | 'swcAppRouter' | 'swcAppSimpleApplication' | 'swcAppHost' | 'swcAppMessage' | 'eventBeforeReturn' | 'swcAppMessageBeforeReturn' | 'routeChangeBeforeReturn' | 'eventMediaBeforeReturn' | 'mutationObserverBeforeReturn' | 'intersectionObserverBeforeReturn' | 'resizeObserverBeforeReturn' | 'changedAttributeBeforeReturn' | 'setTimeoutBeforeReturn' | 'setIntervalBeforeReturn' | 'fetchPromise'
   | 'querySelectorParam' | 'querySelectorAllParam' | 'attributeParam' | 'localStorageParam' | 'sessionStorageParam' | 'cookieParam' | 'indexedDbParam' | 'fetchParam'
   | SwcRouteParamKind;
 
-/** 라우트 핸들러 전용 (subscribeSwcAppRouteChange 가 채움). kind 이름 = 데코레이터 이름 */
+/** 라우트 값 (kind 이름 = 데코레이터 이름). 파라미터면 subscribeSwcAppRouteChange 핸들러 인자로, 필드면 SwcApp 이 라우트 변경 때 채운다 */
 export type SwcRouteParamKind =
   | 'swcAppRouteQueryParam' | 'swcAppRouteFirstQueryParam' | 'swcAppRouteLastQueryParam' | 'swcAppRouteQueryParams'
   | 'swcAppRouteQueryParamObject' | 'swcAppRouteFirstQueryParamObject' | 'swcAppRouteLastQueryParamObject' | 'swcAppRouteQueryParamsObject'
@@ -93,9 +93,48 @@ export function swcAppHost(target: Object, propertyKey: string | symbol, paramet
   registerParam('swcAppHost', target, propertyKey, parameterIndex);
 }
 
-/** @subscribeSwcAppMessage 핸들러의 SwcAppMessage 페이로드를 주입한다. */
-export function appMessage(target: Object, propertyKey: string | symbol, parameterIndex: number): void {
-  registerParam('appMessage', target, propertyKey, parameterIndex);
+// ─── @swcAppMessage: 파라미터(@subscribeSwcAppMessage 핸들러의 메시지) · 필드(발행될 때마다 최신 메시지) ───
+
+/** 필드용 옵션 — @subscribeSwcAppMessage 와 같은 규칙. subject 는 messageType 이 있을 때만 의미가 있다 */
+export type SwcAppMessageFieldOptions = { messageType?: string; subject?: SwcAppMessageSubject };
+export type SwcAppMessageFieldConfig = { propertyKey: string | symbol; messageType?: string; subject?: SwcAppMessageSubject };
+/** 파라미터·필드 겸용 데코레이터. 세 번째 인자가 숫자면 파라미터, 아니면 필드 */
+export type SwcAppMessageDecorator = (target: Object, propertyKey: string | symbol | undefined, parameterIndex?: number) => void;
+
+const SWC_MESSAGE_FIELD_METADATA_KEY = Symbol.for('simple-web-component:message-field');
+
+const applySwcAppMessage = (target: Object, propertyKey: string | symbol | undefined, parameterIndex: number | undefined, options?: SwcAppMessageFieldOptions) => {
+  if (typeof parameterIndex === 'number') return registerParam('swcAppMessage', target, propertyKey, parameterIndex);
+  if (propertyKey === undefined) return;
+  const constructor = target.constructor;
+  const list = (ReflectUtils.getOwnMetadata(SWC_MESSAGE_FIELD_METADATA_KEY, constructor) ?? []) as SwcAppMessageFieldConfig[];
+  list.push({ propertyKey, ...(options?.messageType ? { messageType: options.messageType } : {}), ...(options?.subject ? { subject: options.subject } : {}) });
+  ReflectUtils.defineMetadata(SWC_MESSAGE_FIELD_METADATA_KEY, list, constructor);
+};
+
+/** 상속 체인 전체의 메시지 필드 설정 */
+export const getSwcAppMessageFieldMetadata = (target: any): SwcAppMessageFieldConfig[] => {
+  const constructor = target instanceof Function ? target : target?.constructor;
+  if (!constructor) return [];
+  return (ReflectUtils.findAllMetadata<SwcAppMessageFieldConfig[]>(SWC_MESSAGE_FIELD_METADATA_KEY, constructor) || []).flat();
+};
+
+/**
+ * 파라미터: @subscribeSwcAppMessage 핸들러의 SwcAppMessage 를 주입한다 — onMsg(@swcAppMessage m) { ... }
+ * 필드: SwcApp 이 메시지를 발행할 때마다 그 필드에 최신 SwcAppMessage 를 넣는다 (같은 요소의 구독 핸들러보다 먼저).
+ *   @swcAppMessage last?: SwcAppMessage                              전 타입 (live만)
+ *   @swcAppMessage('login') login?: SwcAppMessage                    login (live만 — subject 기본값)
+ *   @swcAppMessage('login', { subject: 'behavior' }) login?          늦게 붙어도 마지막 1개로 채움
+ *   @swcAppMessage({ messageType: 'login', subject: 'replay' }) ...   버퍼를 시간순으로 넣음 (마지막 값이 남음)
+ */
+export function swcAppMessage(target: Object, propertyKey: string | symbol | undefined, parameterIndex?: number): void;
+export function swcAppMessage(messageType: string, options?: Omit<SwcAppMessageFieldOptions, 'messageType'>): SwcAppMessageDecorator;
+export function swcAppMessage(options: SwcAppMessageFieldOptions): SwcAppMessageDecorator;
+export function swcAppMessage(a: any, b?: any, c?: any): any {
+  // 데코레이터로 바로 불렸으면 (target, propertyKey, …) — propertyKey 는 문자열/심볼
+  if (typeof b === 'string' || typeof b === 'symbol') return applySwcAppMessage(a, b, c);
+  const options: SwcAppMessageFieldOptions = typeof a === 'string' ? { ...(b ?? {}), messageType: a } : { ...(a ?? {}) };
+  return ((target, propertyKey, parameterIndex) => applySwcAppMessage(target, propertyKey, parameterIndex, options)) as SwcAppMessageDecorator;
 }
 
 /**
@@ -110,10 +149,11 @@ export function eventBeforeReturn(target: Object, propertyKey: string | symbol, 
 /**
  * @subscribeSwcAppMessage 의 before 훅이 이번 호출에 리턴한 값을 주입한다.
  * (before에서 async로 준비한 데이터를 핸들러가 받는 용도. 없으면 undefined)
- * 예: onMsg(@appMessage m, @appMessageBeforeReturn prepared) { ... }
+ * 예: onMsg(@swcAppMessage m, @swcAppMessageBeforeReturn prepared) { ... }
+ * 핸들러 호출마다 생기는 값이라 파라미터 전용이다 (필드에는 붙이지 않는다).
  */
-export function appMessageBeforeReturn(target: Object, propertyKey: string | symbol, parameterIndex: number): void {
-  registerParam('appMessageBeforeReturn', target, propertyKey, parameterIndex);
+export function swcAppMessageBeforeReturn(target: Object, propertyKey: string | symbol, parameterIndex: number): void {
+  registerParam('swcAppMessageBeforeReturn', target, propertyKey, parameterIndex);
 }
 
 /**
@@ -361,46 +401,96 @@ export const buildCommonKindValues = (inst: any, win: Window): Partial<Record<Sw
   };
 };
 
-// ─── 라우트 파라미터 (@subscribeSwcAppRouteChange 핸들러) ───
+// ─── 라우트 파라미터 (@subscribeSwcAppRouteChange 핸들러 파라미터 · 필드) ───
 // 규칙: 접두어 없음 = First, First/Last = 같은 키가 여러 번일 때 첫/마지막 값, 복수형 = 모든 값 배열.
+// 같은 데코레이터를 파라미터에도, 필드에도 붙인다. 파라미터면 핸들러 인자로, 필드면 SwcApp 이 라우트가 바뀔 때마다
+// (그리고 요소가 붙을 때 마지막 라우트로) 그 필드에 값을 넣는다 — SwcAppMixin._applyRouteFields.
 
-const keyedRouteParam = (kind: SwcRouteParamKind) => (key: string): ParameterDecorator =>
-  (target, propertyKey, parameterIndex) => registerParam(kind, target, propertyKey, parameterIndex, key);
-const routeParam = (kind: SwcRouteParamKind): ParameterDecorator =>
-  (target, propertyKey, parameterIndex) => registerParam(kind, target, propertyKey, parameterIndex);
+/** 파라미터·필드 겸용 데코레이터. 세 번째 인자가 숫자면 파라미터, 아니면(필드) undefined */
+export type SwcRouteParamDecorator = (target: Object, propertyKey: string | symbol | undefined, parameterIndex?: number) => void;
+/** path 변수 필드용 — 어떤 패턴에서 값을 뽑을지. @subscribeSwcAppRouteChange 의 path 와 같은 형태 */
+export type SwcRouteFieldOptions = { path?: string | string[] | ((currentThis: any) => string | string[]) };
+/** 맨 데코레이터로도(@swcAppRoutePathVariableObject), 옵션을 받는 팩토리로도(@swcAppRoutePathVariableObject({ path })) 쓴다 */
+export type SwcRouteParamDecoratorOrFactory = SwcRouteParamDecorator & ((options?: SwcRouteFieldOptions) => SwcRouteParamDecorator);
+
+export type SwcRouteFieldConfig = { propertyKey: string | symbol; kind: SwcRouteParamKind; key?: string; path?: SwcRouteFieldOptions['path'] };
+const SWC_ROUTE_FIELD_METADATA_KEY = Symbol.for('simple-web-component:route-field');
+
+const isPathKind = (kind: SwcRouteParamKind) => kind.includes('PathVariable');
+
+const registerRouteField = (kind: SwcRouteParamKind, target: Object, propertyKey: string | symbol, key?: string, options?: SwcRouteFieldOptions) => {
+  if (isPathKind(kind) && !options?.path) {
+    // 필드에는 @subscribeSwcAppRouteChange 처럼 매칭할 패턴이 없다 → 늘 비게 된다. 실수일 가능성이 커서 알린다.
+    console.warn(`[SWC] @${kind} on field "${String(propertyKey)}" needs { path } (e.g. { path: '/user/{id}' }) — it will stay empty without it.`);
+  }
+  const constructor = target.constructor;
+  const list = (ReflectUtils.getOwnMetadata(SWC_ROUTE_FIELD_METADATA_KEY, constructor) ?? []) as SwcRouteFieldConfig[];
+  list.push({ propertyKey, kind, ...(key !== undefined ? { key } : {}), ...(options?.path ? { path: options.path } : {}) });
+  ReflectUtils.defineMetadata(SWC_ROUTE_FIELD_METADATA_KEY, list, constructor);
+};
+
+/** 상속 체인 전체의 라우트 필드 설정 (부모 → 자식). 같은 필드를 자식이 다시 선언하면 자식 것이 뒤에 와서 이긴다 */
+export const getSwcRouteFieldMetadata = (target: any): SwcRouteFieldConfig[] => {
+  const constructor = target instanceof Function ? target : target?.constructor;
+  if (!constructor) return [];
+  return (ReflectUtils.findAllMetadata<SwcRouteFieldConfig[]>(SWC_ROUTE_FIELD_METADATA_KEY, constructor) || []).flat();
+};
+
+const applyRouteParam = (kind: SwcRouteParamKind, target: Object, propertyKey: string | symbol | undefined, parameterIndex: number | undefined, key?: string, options?: SwcRouteFieldOptions) => {
+  if (typeof parameterIndex === 'number') return registerParam(kind, target, propertyKey, parameterIndex, key);
+  if (propertyKey !== undefined) registerRouteField(kind, target, propertyKey, key, options);
+};
+
+/** 키를 받는 query 계열: @swcAppRouteQueryParam('tag') */
+const keyedQueryParam = (kind: SwcRouteParamKind) => (key: string): SwcRouteParamDecorator =>
+  (target, propertyKey, parameterIndex) => applyRouteParam(kind, target, propertyKey, parameterIndex, key);
+/** 키를 받는 path 변수 계열: @swcAppRoutePathVariable('id') · 필드면 @swcAppRoutePathVariable('id', { path: '/user/{id}' }) */
+const keyedPathParam = (kind: SwcRouteParamKind) => (key: string, options?: SwcRouteFieldOptions): SwcRouteParamDecorator =>
+  (target, propertyKey, parameterIndex) => applyRouteParam(kind, target, propertyKey, parameterIndex, key, options);
+/** 키 없는 query 계열 — 맨 데코레이터: @swcAppRouteQueryParamObject */
+const queryParam = (kind: SwcRouteParamKind): SwcRouteParamDecorator =>
+  (target, propertyKey, parameterIndex) => applyRouteParam(kind, target, propertyKey, parameterIndex);
+/** 키 없는 path 변수 계열 — 맨 데코레이터(파라미터) 또는 팩토리(필드: { path }) 둘 다 */
+const pathParam = (kind: SwcRouteParamKind): SwcRouteParamDecoratorOrFactory =>
+  function (this: unknown, ...args: any[]) {
+    // 데코레이터 호출은 (target, propertyKey, …) 로 인자가 2개 이상, 팩토리 호출은 (options?) 하나 이하
+    if (args.length >= 2) return applyRouteParam(kind, args[0], args[1], args[2]);
+    const options = args[0] as SwcRouteFieldOptions | undefined;
+    return ((target, propertyKey, parameterIndex) => applyRouteParam(kind, target, propertyKey, parameterIndex, undefined, options)) as SwcRouteParamDecorator;
+  } as SwcRouteParamDecoratorOrFactory;
 
 /** ?tag=a&tag=b → @swcAppRouteQueryParam('tag') = 'a' (없으면 null) */
-export const swcAppRouteQueryParam = keyedRouteParam('swcAppRouteQueryParam');
+export const swcAppRouteQueryParam = keyedQueryParam('swcAppRouteQueryParam');
 /** = swcAppRouteQueryParam */
-export const swcAppRouteFirstQueryParam = keyedRouteParam('swcAppRouteFirstQueryParam');
+export const swcAppRouteFirstQueryParam = keyedQueryParam('swcAppRouteFirstQueryParam');
 /** ?tag=a&tag=b → 'b' */
-export const swcAppRouteLastQueryParam = keyedRouteParam('swcAppRouteLastQueryParam');
+export const swcAppRouteLastQueryParam = keyedQueryParam('swcAppRouteLastQueryParam');
 /** ?tag=a&tag=b → ['a', 'b'] */
-export const swcAppRouteQueryParams = keyedRouteParam('swcAppRouteQueryParams');
+export const swcAppRouteQueryParams = keyedQueryParam('swcAppRouteQueryParams');
 /** ?tag=a&tag=b → { tag: 'a' } */
-export const swcAppRouteQueryParamObject = routeParam('swcAppRouteQueryParamObject');
+export const swcAppRouteQueryParamObject = queryParam('swcAppRouteQueryParamObject');
 /** = swcAppRouteQueryParamObject */
-export const swcAppRouteFirstQueryParamObject = routeParam('swcAppRouteFirstQueryParamObject');
+export const swcAppRouteFirstQueryParamObject = queryParam('swcAppRouteFirstQueryParamObject');
 /** ?tag=a&tag=b → { tag: 'b' } */
-export const swcAppRouteLastQueryParamObject = routeParam('swcAppRouteLastQueryParamObject');
+export const swcAppRouteLastQueryParamObject = queryParam('swcAppRouteLastQueryParamObject');
 /** ?tag=a&tag=b → { tag: ['a', 'b'] } */
-export const swcAppRouteQueryParamsObject = routeParam('swcAppRouteQueryParamsObject');
+export const swcAppRouteQueryParamsObject = queryParam('swcAppRouteQueryParamsObject');
 /** URLSearchParams 그대로 */
-export const swcAppRouteURLSearchParams = routeParam('swcAppRouteURLSearchParams');
+export const swcAppRouteURLSearchParams = queryParam('swcAppRouteURLSearchParams');
 
-/** '/a/{id}/b/{id}' ← '/a/1/b/2' → @swcAppRoutePathVariable('id') = '1' */
-export const swcAppRoutePathVariable = keyedRouteParam('swcAppRoutePathVariable');
+/** '/a/{id}/b/{id}' ← '/a/1/b/2' → @swcAppRoutePathVariable('id') = '1' · 필드: @swcAppRoutePathVariable('id', { path: '/a/{id}/b/{id}' }) */
+export const swcAppRoutePathVariable = keyedPathParam('swcAppRoutePathVariable');
 /** = swcAppRoutePathVariable */
-export const swcAppRouteFirstPathVariable = keyedRouteParam('swcAppRouteFirstPathVariable');
+export const swcAppRouteFirstPathVariable = keyedPathParam('swcAppRouteFirstPathVariable');
 /** → '2' */
-export const swcAppRouteLastPathVariable = keyedRouteParam('swcAppRouteLastPathVariable');
+export const swcAppRouteLastPathVariable = keyedPathParam('swcAppRouteLastPathVariable');
 /** → ['1', '2'] */
-export const swcAppRoutePathVariables = keyedRouteParam('swcAppRoutePathVariables');
-/** → { id: '1' } */
-export const swcAppRoutePathVariableObject = routeParam('swcAppRoutePathVariableObject');
+export const swcAppRoutePathVariables = keyedPathParam('swcAppRoutePathVariables');
+/** → { id: '1' } · 필드: @swcAppRoutePathVariableObject({ path: '/a/{id}/b/{id}' }) */
+export const swcAppRoutePathVariableObject = pathParam('swcAppRoutePathVariableObject');
 /** = swcAppRoutePathVariableObject */
-export const swcAppRouteFirstPathVariableObject = routeParam('swcAppRouteFirstPathVariableObject');
+export const swcAppRouteFirstPathVariableObject = pathParam('swcAppRouteFirstPathVariableObject');
 /** → { id: '2' } */
-export const swcAppRouteLastPathVariableObject = routeParam('swcAppRouteLastPathVariableObject');
+export const swcAppRouteLastPathVariableObject = pathParam('swcAppRouteLastPathVariableObject');
 /** → { id: ['1', '2'] } */
-export const swcAppRoutePathVariablesObject = routeParam('swcAppRoutePathVariablesObject');
+export const swcAppRoutePathVariablesObject = pathParam('swcAppRoutePathVariablesObject');

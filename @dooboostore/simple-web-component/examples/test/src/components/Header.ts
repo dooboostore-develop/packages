@@ -116,6 +116,12 @@ export default (w: Window) => {
       return { path: '/param-dom-storage-test' };
     }
 
+    @event('#route-field-test-link', 'click')
+    @emitCustomEvent('$this', 'navigate', { attributeName: 'on-navigate' })
+    onRouteFieldTestClick() {
+      return { path: '/route-field-test/7?tab=info&tag=a&tag=b' };
+    }
+
     @event('.cart-icon', 'click')
     @emitCustomEvent('$this', 'navigate', { attributeName: 'on-navigate' })
     onCartClick() {
@@ -253,6 +259,7 @@ export default (w: Window) => {
             <a id="message-subject-test-link">Subject Test</a>
             <a id="fetch-test-link">Fetch Test</a>
             <a id="param-dom-storage-test-link">Param DOM/Storage</a>
+            <a id="route-field-test-link">Route Fields</a>
           </div>
           <div class="cart-section">
             <span class="cart-icon" id="cart-icon">🛒</span>

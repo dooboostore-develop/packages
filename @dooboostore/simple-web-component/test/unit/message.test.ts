@@ -3,8 +3,8 @@ import { test } from 'node:test';
 import assert from 'node:assert';
 import { createWindow, bootApp, sleep, uniqueTag } from './dom.ts';
 import {
-  elementDefine, onConnectedBodyShadow, publishSwcAppMessage, publishMessage, subscribeSwcAppMessage, subscribeSwcAppMessageBehavior, subscribeSwcAppMessageReplay, receiveMessage, appMessage,
-  appMessageBeforeReturn, hostSet, swcAppRouter, swcAppSimpleApplication, swcAppHost
+  elementDefine, onConnectedBodyShadow, publishSwcAppMessage, publishMessage, subscribeSwcAppMessage, subscribeSwcAppMessageBehavior, subscribeSwcAppMessageReplay, receiveMessage, swcAppMessage,
+  swcAppMessageBeforeReturn, hostSet, swcAppRouter, swcAppSimpleApplication, swcAppHost
 } from '../../src/index.ts';
 
 const appHtml = (inner: string) => `<!DOCTYPE html><html><body><div id="app" is="swc-app-div">${inner}</div></body></html>`;
@@ -80,7 +80,7 @@ test('publish: async return, options-object form, stacked valueKey, publishMessa
   destroy();
 });
 
-test('filter / before (@appMessageBeforeReturn) / finally options', async () => {
+test('filter / before (@swcAppMessageBeforeReturn) / finally options', async () => {
   const log: any[] = [];
   const { app, destroy } = await setup({
     sub: (win, tag) => {
@@ -91,7 +91,7 @@ test('filter / before (@appMessageBeforeReturn) / finally options', async () => 
           before: (m: any) => `before:${m.data}`,
           finally: (_m: any, _t: any, ctx: any) => { log.push(['finally', ctx.result]); }
         })
-        onAdmin(@appMessageBeforeReturn b: string) { log.push(['handler', b]); return 'done'; }
+        onAdmin(@swcAppMessageBeforeReturn b: string) { log.push(['handler', b]); return 'done'; }
       }
     }
   });
@@ -102,13 +102,13 @@ test('filter / before (@appMessageBeforeReturn) / finally options', async () => 
   destroy();
 });
 
-test('@appMessage and @hostSet are injected regardless of position', async () => {
+test('@swcAppMessage and @hostSet are injected regardless of position', async () => {
   let got: any;
   const { app, el, destroy } = await setup({
     sub: (win, tag) => {
       @elementDefine(tag, { window: win })
       class S extends win.HTMLElement {
-        @subscribeSwcAppMessage('x') onX(@hostSet hs: any, @appMessage msg: any) { got = { hs, msg }; }
+        @subscribeSwcAppMessage('x') onX(@hostSet hs: any, @swcAppMessage msg: any) { got = { hs, msg }; }
       }
     }
   });
@@ -126,7 +126,7 @@ test('@swcAppRouter/@swcAppSimpleApplication/@swcAppHost are also injected on a 
     sub: (win, tag) => {
       @elementDefine(tag, { window: win })
       class S extends win.HTMLElement {
-        @subscribeSwcAppMessage('r') onR(@appMessage msg: any, @swcAppRouter router: any, @swcAppSimpleApplication simpleApp: any, @swcAppHost appHost: any) { got = { msg, router, simpleApp, appHost }; }
+        @subscribeSwcAppMessage('r') onR(@swcAppMessage msg: any, @swcAppRouter router: any, @swcAppSimpleApplication simpleApp: any, @swcAppHost appHost: any) { got = { msg, router, simpleApp, appHost }; }
       }
     }
   });
@@ -240,5 +240,72 @@ test('observeMessage: live / by type / behavior / options-object replay / unsubs
   assert.deepStrictEqual(typed, ['J']);
   assert.deepStrictEqual(behavior, [2, 3]);
   assert.deepStrictEqual(replay, [1, 2, 3]);
+  destroy();
+});
+
+// ─── @swcAppMessage 를 필드에 ───
+
+test('@swcAppMessage on fields: bare = every message, typed = only its type; the field is set before the same element\'s subscriber runs', async () => {
+  let seenInHandler: any;
+  const { app, el, destroy } = await setup({
+    sub: (win, tag) => {
+      @elementDefine(tag, { window: win })
+      class S extends win.HTMLElement {
+        @swcAppMessage last?: any;
+        @swcAppMessage('login') login?: any;
+        @subscribeSwcAppMessage('login') onLogin(@swcAppMessage m: any) { seenInHandler = this.login === m; }
+      }
+    }
+  });
+  const s = el('sub');
+  app.publishMessage({ type: 'other', data: 1 });
+  assert.strictEqual(s.last.type, 'other');
+  assert.strictEqual(s.login, undefined);
+  app.publishMessage({ type: 'login', data: { name: 'kim' } });
+  assert.deepStrictEqual([s.last.type, s.login.type, s.login.data], ['login', 'login', { name: 'kim' }]);
+  await sleep(10);
+  assert.strictEqual(seenInHandler, true, 'handler sees this.login already set to the same message');
+  destroy();
+});
+
+test("@swcAppMessage fields on a late element: default 'subject' stays empty, 'behavior'/'replay' fill from the buffer before the first render", async () => {
+  const rendered: any = {};
+  const { app, attach, destroy } = await setup({
+    late: (win, tag) => {
+      @elementDefine(tag, { window: win })
+      class L extends win.HTMLElement {
+        @swcAppMessage('a') live?: any;
+        @swcAppMessage('a', { subject: 'behavior' }) behavior?: any;
+        @swcAppMessage({ messageType: 'a', subject: 'replay' }) replay?: any;
+        @swcAppMessage('none', { subject: 'behavior' }) nothingPublished?: any;
+        @onConnectedBodyShadow render() {
+          Object.assign(rendered, { live: this.live, behavior: this.behavior?.data, replay: this.replay?.data, nothingPublished: this.nothingPublished });
+          return '<p>x</p>';
+        }
+      }
+    }
+  }, []);
+  app.publishMessage({ type: 'a', data: 1 });
+  app.publishMessage({ type: 'a', data: 2 });
+  const e = await attach('late');
+  assert.deepStrictEqual(rendered, { live: undefined, behavior: 2, replay: 2, nothingPublished: undefined });
+  app.publishMessage({ type: 'a', data: 3 });
+  assert.deepStrictEqual([e.live.data, e.behavior.data, e.replay.data], [3, 3, 3], 'after attaching, all of them follow live messages');
+  destroy();
+});
+
+test('@swcAppMessage on a parameter ignores a type passed to it (the subscriber decides what arrives)', async () => {
+  let got: any;
+  const { app, destroy } = await setup({
+    sub: (win, tag) => {
+      @elementDefine(tag, { window: win })
+      class S extends win.HTMLElement {
+        @subscribeSwcAppMessage('x') onX(@swcAppMessage('ignored') m: any) { got = m; }
+      }
+    }
+  });
+  app.publishMessage({ type: 'x', data: 9 });
+  await sleep(10);
+  assert.strictEqual(got.data, 9);
   destroy();
 });

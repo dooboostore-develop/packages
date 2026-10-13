@@ -1,6 +1,6 @@
 import {
   elementDefine, onConnectedBodyLight, publishSwcAppMessage, subscribeSwcAppMessage,
-  appMessage, onConnectedAfter
+  swcAppMessage, onConnectedAfter
 } from '@dooboostore/simple-web-component';
 import type { SwcAppMessage } from '@dooboostore/simple-web-component';
 
@@ -26,7 +26,7 @@ const defineChild = (w: Window, tagName: string, key: SubjectKey, subject?: 'sub
     private box: string[] = [];
 
     @subscribeSwcAppMessage('subject-test', subject ? { subject } : undefined)
-    onMsg(@appMessage msg: SwcAppMessage<string>) {
+    onMsg(@swcAppMessage msg: SwcAppMessage<string>) {
       this.box.push(String(msg.data));
       this.paint();
     }
@@ -74,12 +74,71 @@ const defineChild = (w: Window, tagName: string, key: SubjectKey, subject?: 'sub
   }
 };
 
+/**
+ * @swcAppMessage 를 필드에 붙인 버전. 핸들러 인자 대신 필드가 최신 메시지를 들고 있다.
+ * - 렌더 시점 값: 늦게 붙었을 때 behavior/replay 는 버퍼로 이미 채워져 있고, 기본(subject)·타입 없는 필드는 비어 있어야 한다
+ * - 지금 값: 발행될 때마다 네 필드 모두 최신 메시지 (구독 핸들러가 불릴 때 이미 갱신돼 있어서 그 자리에서 다시 그린다)
+ */
+const defineFieldChild = (w: Window, tagName: string) => {
+  if (w.customElements.get(tagName)) return;
+  @elementDefine(tagName, { window: w })
+  class MessageFieldChild extends w.HTMLElement {
+    @swcAppMessage('subject-test') liveMsg?: SwcAppMessage<string>;
+    @swcAppMessage('subject-test', { subject: 'behavior' }) behaviorMsg?: SwcAppMessage<string>;
+    @swcAppMessage({ messageType: 'subject-test', subject: 'replay' }) replayMsg?: SwcAppMessage<string>;
+    @swcAppMessage anyMsg?: SwcAppMessage;
+
+    private rows() {
+      const v = (m?: SwcAppMessage) => (m ? String(m.data) : '(비어 있음)');
+      return [
+        ['@swcAppMessage(type) — subject', v(this.liveMsg)],
+        ['{ subject: behavior }', v(this.behaviorMsg)],
+        ['{ subject: replay }', v(this.replayMsg)],
+        ['@swcAppMessage (타입 없음)', v(this.anyMsg)]
+      ];
+    }
+
+    private table(id: string) {
+      return `<table class="${id}">${this.rows().map(([k, v]) => `<tr><th>${k}</th><td>${v}</td></tr>`).join('')}</table>`;
+    }
+
+    @subscribeSwcAppMessage('subject-test')
+    onMsg() {
+      const now = this.querySelector('.now');
+      if (now) now.outerHTML = this.table('now');
+    }
+
+    @onConnectedBodyLight
+    render() {
+      return `
+        <style>
+          .sf .card { border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden; background: #fff; }
+          .sf .head { padding: 12px 16px; color: #fff; background: #b45309; }
+          .sf .head .desc { font-size: 12px; opacity: .85; margin-top: 2px; }
+          .sf .body { padding: 12px 16px; font-size: 12px; }
+          .sf h4 { margin: 8px 0 4px; font-size: 12px; color: #92400e; }
+          .sf table { width: 100%; border-collapse: collapse; }
+          .sf th, .sf td { border: 1px solid #f3e8d6; padding: 4px 6px; text-align: left; }
+          .sf th { background: #fffbeb; font-weight: 600; width: 55%; }
+        </style>
+        <div class="sf"><div class="card">
+          <div class="head"><b>@swcAppMessage 필드</b><div class="desc">렌더 시점 값 · 지금 값</div></div>
+          <div class="body">
+            <h4>렌더 시점 (붙는 순간)</h4>${this.table('at-render')}
+            <h4>지금</h4>${this.table('now')}
+          </div>
+        </div></div>`;
+    }
+  }
+};
+
 export default (w: Window) => {
   const tagName = 'swc-example-message-subject-test-page';
   if (w.customElements.get(tagName)) return tagName;
   defineChild(w, 'subject-child-behavior', 'behavior', 'behavior');
   defineChild(w, 'subject-child-replay', 'replay', 'replay');
   defineChild(w, 'subject-child-live', 'live');
+  defineFieldChild(w, 'subject-field-child');
 
   @elementDefine(tagName, { window: w })
   class MessageSubjectTestPage extends w.HTMLElement {
@@ -97,7 +156,7 @@ export default (w: Window) => {
       this.publishSubject('second');
       this.publishSubject('third');
       const slot = this.querySelector('#slot')!;
-      for (const t of ['subject-child-behavior', 'subject-child-replay', 'subject-child-live']) {
+      for (const t of ['subject-child-behavior', 'subject-child-replay', 'subject-child-live', 'subject-field-child']) {
         slot.appendChild(w.document.createElement(t));
       }
       await new Promise(r => w.setTimeout(r, 100));
@@ -112,6 +171,10 @@ export default (w: Window) => {
       this.querySelector('#append-behavior')!.addEventListener('click', () => {
         this.querySelector('#slot')!.appendChild(w.document.createElement('subject-child-behavior'));
       });
+      // 필드 자식 늦게 추가 → 렌더 시점에 behavior/replay 필드만 마지막 메시지로 채워져 있어야 함
+      this.querySelector('#append-field')!.addEventListener('click', () => {
+        this.querySelector('#slot')!.appendChild(w.document.createElement('subject-field-child'));
+      });
     }
 
     @onConnectedBodyLight
@@ -121,7 +184,8 @@ export default (w: Window) => {
           .wrap { max-width: 960px; margin: 0 auto; padding: 24px 16px 48px; }
           h1 { font-size: 22px; margin: 0 0 4px; }
           .sub { color: #6b7280; font-size: 13px; margin: 0 0 16px; }
-          #pub, #append-behavior { font-size: 14px; font-weight: 700; color: #fff; background: #111827; border: 0; border-radius: 10px; padding: 10px 20px; cursor: pointer; margin: 0 8px 16px 0; }
+          #append-field { background: #b45309 !important; }
+          #pub, #append-behavior, #append-field { font-size: 14px; font-weight: 700; color: #fff; background: #111827; border: 0; border-radius: 10px; padding: 10px 20px; cursor: pointer; margin: 0 8px 16px 0; }
           #pub:hover, #append-behavior:hover { background: #374151; }
           #append-behavior { background: #7c3aed; }
           #append-behavior:hover { background: #6d28d9; }
@@ -130,7 +194,7 @@ export default (w: Window) => {
         <div class="wrap">
           <h1>message subject test</h1>
           <p class="sub">진입 시 first/second/third 발행 → 자식 동적 부착 → fourth-live → publish 버튼 수동 발행</p>
-          <button id="pub">publish</button><button id="append-behavior">append behavior child</button>
+          <button id="pub">publish</button><button id="append-behavior">append behavior child</button><button id="append-field">append field child</button>
           <div id="slot"></div>
         </div>`;
     }

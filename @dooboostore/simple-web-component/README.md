@@ -408,8 +408,8 @@ class ProductList extends HTMLElement {
 The same mechanism (and the same 8 decorators, plus two more) also applies to:
 - **`@onInitialize`/`@onConnectedBefore`/`@onConnectedAfter`/... lifecycle methods** — can freely mix `@hostSet`/`@helperHostSet`/`@helperSet`/`@swcAppRouter`/`@swcAppSimpleApplication`/`@swcAppHost` with `@inject(...)` on the same method.
 - **`@subscribeSwcAppRouteChange`** — add `@swcAppRouterEvent` to receive the `RouterEventType` regardless of position.
-- **`@subscribeSwcAppMessage`** — add `@appMessage` to receive the `SwcAppMessage` regardless of position.
-- **`before` hook results** — `@eventBeforeReturn`, `@routeChangeBeforeReturn`, `@appMessageBeforeReturn`, `@changedAttributeBeforeReturn`, `@mutationObserverBeforeReturn`, `@resizeObserverBeforeReturn`, `@intersectionObserverBeforeReturn`, `@eventMediaBeforeReturn`, `@setIntervalBeforeReturn`, `@setTimeoutBeforeReturn` inject the value returned by that decorator's `before` option.
+- **`@subscribeSwcAppMessage`** — add `@swcAppMessage` to receive the `SwcAppMessage` regardless of position.
+- **`before` hook results** — `@eventBeforeReturn`, `@routeChangeBeforeReturn`, `@swcAppMessageBeforeReturn`, `@changedAttributeBeforeReturn`, `@mutationObserverBeforeReturn`, `@resizeObserverBeforeReturn`, `@intersectionObserverBeforeReturn`, `@eventMediaBeforeReturn`, `@setIntervalBeforeReturn`, `@setTimeoutBeforeReturn` inject the value returned by that decorator's `before` option.
 - **DOM/storage/fetch values** — `@querySelectorParam`, `@attributeParam`, `@localStorageParam`/`@sessionStorageParam`/`@cookieParam`/`@indexedDbParam`, `@fetchParam` go a step further and actively compute/fetch a value instead of just handing you context — see "Value-Injecting Parameter Decorators" below.
 
 Note: once any parameter of a method is decorated, every parameter still gets a value — decorated ones receive their injected value, and any parameter left undecorated falls back to its legacy positional argument. So mixing is safe: `onChanged(nv, @querySelectorParam('#x') el, name)` still gets `nv`/`name` from the usual positional arguments.
@@ -422,7 +422,7 @@ onconstructor(@inject(UserService.SYMBOL) userService: UserService, @hostSet hs:
 onRouteChanged(@helperSet helpers: HelperSet, @swcAppRouterEvent re: RouterEventType) { ... }
 
 @subscribeSwcAppMessage
-onMessage(@hostSet hs: HostSet, @appMessage msg: SwcAppMessage) { ... }
+onMessage(@hostSet hs: HostSet, @swcAppMessage msg: SwcAppMessage) { ... }
 ```
 
 #### @emitCustomEvent
@@ -1177,7 +1177,7 @@ class NotificationPanel extends HTMLElement {
 }
 ```
 
-**@subscribeSwcAppMessage Options:** `filter(message, currentThis)`, `before(message, currentThis)` (result → `@appMessageBeforeReturn`), `finally(message, currentThis, { args, result, error })`, `subject`, `trigger` (see "Message Replay"). Every matching subscriber runs (fire-and-forget); return values do not stop other subscribers.
+**@subscribeSwcAppMessage Options:** `filter(message, currentThis)`, `before(message, currentThis)` (result → `@swcAppMessageBeforeReturn`), `finally(message, currentThis, { args, result, error })`, `subject`, `trigger` (see "Message Replay"). Every matching subscriber runs (fire-and-forget); return values do not stop other subscribers.
 
 **Shortcuts for `subject`:** `@subscribeSwcAppMessageBehavior(type, options?)` = `{ subject: 'behavior' }` (a late subscriber gets the last message),
 `@subscribeSwcAppMessageReplay(type, options?)` = `{ subject: 'replay' }` (gets the whole buffer). Same forms as `@subscribeSwcAppMessage`
@@ -1510,6 +1510,22 @@ load(@swcAppRoutePathVariable('releaseSeq') seq: string, @swcAppRouteQueryParam(
 
 - Add `@swcAppRouterEvent` for the whole event — any parameter left undecorated still gets the positional route argument even after others are decorated (see the parameter-decorator note earlier in this doc).
 - `route.pathData` keeps its old behavior: a repeated variable name holds the **last** value. Use the decorators above to pick first/last explicitly.
+
+**On fields.** The same decorators work on fields. The SwcApp fills them on every route change and, for an element attached later, from the current route before its first render. Inside a route handler of the same element, the field already holds this route's value.
+
+```typescript
+class UserPage extends HTMLElement {
+  @swcAppRouteQueryParam('tab') tab?: string | null;                          // query: no pattern needed
+  @swcAppRoutePathVariable('id', { path: '/user/{id}' }) userId?: string;    // path variables need { path }
+  @swcAppRoutePathVariableObject({ path: ['/user/{id}', '/member/{id}'] }) vars?: { id?: string };
+
+  @onConnectedBodyShadow render() { return `<h1>${this.userId} · ${this.tab}</h1>`; }
+}
+```
+
+- `path` takes the same forms as `@subscribeSwcAppRouteChange` (string, array, or `(currentThis) => ...`). When it doesn't match the current route, path fields are empty (`undefined`, `[]`, `{}`); query fields keep updating. A path-variable field without `{ path }` warns once at definition.
+- A field is reassigned only when its value changes (object fields keep their reference otherwise), so a setter on it doesn't fire for unrelated route changes.
+- Don't name such fields after built-in `HTMLElement` properties (`id`, `lang`, `title`, `prefix`, ...): assigning to them changes the element instead.
 
 **6. Navigating: `@swcAppRoute` / `@swcAppRouteGo`**
 
@@ -2023,7 +2039,7 @@ Late subscribers can receive past messages. The buffer keeps every typed message
 // 'behavior' = last message only, 'replay' = whole buffer in order.
 // Unset (or 'subject') = live only.
 @subscribeSwcAppMessageBehavior('auth-changed')   // = @subscribeSwcAppMessage('auth-changed', { subject: 'behavior' })
-onAuth(@appMessage msg: SwcAppMessage<User | null>) { ... }
+onAuth(@swcAppMessage msg: SwcAppMessage<User | null>) { ... }
 ```
 
 `trigger` controls when replay happens (default `'connected'`).
@@ -2037,11 +2053,25 @@ onAuth(@appMessage msg: SwcAppMessage<User | null>) { ... }
 ```typescript
 @subscribeSwcAppMessage('auth-changed', { subject: 'behavior', trigger: 'connectedDone' })
 @innerHtml('.wrap')
-async load(@appMessage msg: SwcAppMessage<User | null>) { ... }
+async load(@swcAppMessage msg: SwcAppMessage<User | null>) { ... }
 ```
 
 Route subscribers (`@subscribeSwcAppRouteChange`) accept the same `trigger`.
 Live broadcasts always reach everyone regardless of trigger.
+
+### `@swcAppMessage` on fields
+
+On a field, `@swcAppMessage` holds the latest `SwcAppMessage` — set on every publish, before the same element's subscribers run. It takes the same forms and `subject` rule as `@subscribeSwcAppMessage`:
+
+```typescript
+@swcAppMessage last?: SwcAppMessage;                                         // every type, live only
+@swcAppMessage('auth-changed') auth?: SwcAppMessage<User | null>;            // live only (default 'subject')
+@swcAppMessage('auth-changed', { subject: 'behavior' }) me?: SwcAppMessage<User | null>;   // late element: last one
+@swcAppMessage({ messageType: 'auth-changed', subject: 'replay' }) all?: SwcAppMessage;    // late element: buffer in order
+```
+
+- With `'behavior'`/`'replay'` (and a type), an element attached after the publish gets the field filled from the buffer before its first render. Without a type nothing is replayed.
+- `@swcAppMessageBeforeReturn` stays parameter-only: it is the `before` hook's result for one handler call.
 
 ## 🔌 App Host Hooks (onConnected / onSwcAppConnected / onDisconnected)
 

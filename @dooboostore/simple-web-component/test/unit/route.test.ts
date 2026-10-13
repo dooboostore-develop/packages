@@ -411,3 +411,147 @@ test('an SSR-painted element skips re-rendering its first route, then routes nor
   assert.ok(el.querySelector('.client'));
   destroy();
 });
+
+// ─── 라우트 파라미터 데코레이터를 필드에 ───
+
+test('route decorators on fields: every query/path kind is filled with the same values as the parameter form', async () => {
+  const P = '/a/{id}/b/{id}';
+  const { go, el, destroy } = await setup((win, tag) => {
+    @elementDefine(tag, { window: win })
+    class El extends (win as any).HTMLElement {
+      @swcAppRouteQueryParam('tag') q?: string | null;
+      @swcAppRouteFirstQueryParam('tag') qFirst?: string | null;
+      @swcAppRouteLastQueryParam('tag') qLast?: string | null;
+      @swcAppRouteQueryParams('tag') qAll?: string[];
+      @swcAppRouteQueryParam('missing') qMissing?: string | null;
+      @swcAppRouteQueryParamObject qObj?: any;
+      @swcAppRouteFirstQueryParamObject qFirstObj?: any;
+      @swcAppRouteLastQueryParamObject qLastObj?: any;
+      @swcAppRouteQueryParamsObject qAllObj?: any;
+      @swcAppRouteURLSearchParams sp?: URLSearchParams;
+      @swcAppRoutePathVariable('id', { path: P }) v?: string;
+      @swcAppRouteFirstPathVariable('id', { path: P }) vFirst?: string;
+      @swcAppRouteLastPathVariable('id', { path: P }) vLast?: string;
+      @swcAppRoutePathVariables('id', { path: P }) vAll?: string[];
+      @swcAppRoutePathVariableObject({ path: P }) vObj?: any;
+      @swcAppRouteFirstPathVariableObject({ path: P }) vFirstObj?: any;
+      @swcAppRouteLastPathVariableObject({ path: P }) vLastObj?: any;
+      @swcAppRoutePathVariablesObject({ path: P }) vAllObj?: any;
+    }
+  });
+  await go('/a/1/b/2?tag=x&tag=y&n=3');
+  const { q, qFirst, qLast, qAll, qMissing, qObj, qFirstObj, qLastObj, qAllObj, sp, v, vFirst, vLast, vAll, vObj, vFirstObj, vLastObj, vAllObj } = el;
+  assert.deepStrictEqual(
+    { q, qFirst, qLast, qAll, qMissing, qObj, qFirstObj, qLastObj, qAllObj, spTag: sp.getAll('tag'), v, vFirst, vLast, vAll, vObj, vFirstObj, vLastObj, vAllObj },
+    {
+      q: 'x', qFirst: 'x', qLast: 'y', qAll: ['x', 'y'], qMissing: null,
+      qObj: { tag: 'x', n: '3' }, qFirstObj: { tag: 'x', n: '3' }, qLastObj: { tag: 'y', n: '3' }, qAllObj: { tag: ['x', 'y'], n: ['3'] },
+      spTag: ['x', 'y'],
+      v: '1', vFirst: '1', vLast: '2', vAll: ['1', '2'],
+      vObj: { id: '1' }, vFirstObj: { id: '1' }, vLastObj: { id: '2' }, vAllObj: { id: ['1', '2'] }
+    }
+  );
+  destroy();
+});
+
+test('route fields follow every route change; an unmatched path pattern empties path fields while query fields keep updating', async () => {
+  const { go, el, destroy } = await setup((win, tag) => {
+    @elementDefine(tag, { window: win })
+    class El extends (win as any).HTMLElement {
+      @swcAppRoutePathVariable('id', { path: '/user/{id}' }) userId?: string;
+      @swcAppRoutePathVariables('id', { path: '/user/{id}' }) ids?: string[];
+      @swcAppRoutePathVariableObject({ path: '/user/{id}' }) vars?: any;
+      @swcAppRouteQueryParam('tab') tab?: string | null;
+    }
+  });
+  await go('/user/7?tab=info');
+  assert.deepStrictEqual([el.userId, el.ids, el.vars, el.tab], ['7', ['7'], { id: '7' }, 'info']);
+  await go('/user/8?tab=posts');
+  assert.deepStrictEqual([el.userId, el.ids, el.vars, el.tab], ['8', ['8'], { id: '8' }, 'posts']);
+  await go('/settings?tab=account');
+  assert.deepStrictEqual([el.userId, el.ids, el.vars, el.tab], [undefined, [], {}, 'account']);
+  await go('/settings');
+  assert.strictEqual(el.tab, null);
+  destroy();
+});
+
+test('route fields: a late-attached element has them before its first render, and route handlers already see this.field', async () => {
+  const tag = uniqueTag('route-late');
+  const { w, destroy } = await createWindow(appHtml(''));
+  const seen: any[] = [];
+  const app = await bootApp(w, [(win: any) => {
+    @elementDefine(tag, { window: win })
+    class Late extends win.HTMLElement {
+      @swcAppRoutePathVariable('id', { path: '/user/{id}' }) userId?: string;
+      @swcAppRouteQueryParam('tab') tab?: string | null;
+      @onConnectedBodyShadow render() { return `<p class="out">${this.userId}/${this.tab}</p>`; }
+      @subscribeSwcAppRouteChange('/user/{id}') onRoute(@swcAppRoutePathVariable('id') argId: string) { seen.push([argId, this.userId, this.tab]); }
+    }
+    return tag;
+  }]);
+  await app.router.go('/user/5?tab=info'); await sleep(40);
+  const el = w.document.createElement(tag);
+  app.appendChild(el); await sleep(60);
+  assert.strictEqual(el.shadowRoot.querySelector('.out').textContent, '5/info', 'first render already has the field values');
+  await app.router.go('/user/6?tab=posts'); await sleep(40);
+  assert.deepStrictEqual(seen.at(-1), ['6', '6', 'posts'], 'handler sees the field updated for the same route');
+  destroy();
+});
+
+test('route fields: path option as array or function (gets the element), and fields declared on a parent class', async () => {
+  const { go, el, destroy } = await setup((win, tag) => {
+    class Base extends (win as any).HTMLElement {
+      @swcAppRouteQueryParam('lang') locale?: string | null;
+    }
+    @elementDefine(tag, { window: win })
+    class El extends Base {
+      shopPrefix = '/shop';
+      @swcAppRoutePathVariable('id', { path: ['/post/{id}', '/article/{id}'] }) postId?: string;
+      @swcAppRoutePathVariable('id', { path: (self: any) => `${self.shopPrefix}/{id}` }) itemId?: string;
+    }
+  });
+  await go('/article/3?lang=ko');
+  assert.deepStrictEqual([el.postId, el.itemId, el.locale], ['3', undefined, 'ko']);
+  await go('/shop/9?lang=en');
+  assert.deepStrictEqual([el.postId, el.itemId, el.locale], [undefined, '9', 'en']);
+  destroy();
+});
+
+test('route fields are not reassigned when the value is the same (object fields keep their reference)', async () => {
+  const { go, el, destroy } = await setup((win, tag) => {
+    @elementDefine(tag, { window: win })
+    class El extends (win as any).HTMLElement {
+      @swcAppRouteQueryParamObject query?: any;
+      @swcAppRouteURLSearchParams sp?: URLSearchParams;
+    }
+  });
+  await go('/a?x=1');
+  const q1 = el.query, sp1 = el.sp;
+  await go('/b?x=1');
+  assert.strictEqual(el.query, q1, 'same query → same object');
+  assert.strictEqual(el.sp, sp1);
+  await go('/b?x=2');
+  assert.notStrictEqual(el.query, q1);
+  assert.deepStrictEqual(el.query, { x: '2' });
+  destroy();
+});
+
+test('a path-variable field without { path } warns once at definition (it could never be filled)', async () => {
+  const warns: string[] = [];
+  const orig = console.warn;
+  console.warn = (...a: any[]) => { warns.push(String(a[0])); };
+  try {
+    const { destroy } = await setup((win, tag) => {
+      @elementDefine(tag, { window: win })
+      class El extends (win as any).HTMLElement {
+        @swcAppRoutePathVariable('id') userId?: string;
+        @swcAppRouteQueryParam('tab') tab?: string | null;
+      }
+    });
+    destroy();
+  } finally {
+    console.warn = orig;
+  }
+  assert.strictEqual(warns.filter(w => w.includes('needs { path }')).length, 1);
+  assert.ok(warns.some(w => w.includes('"userId"')));
+});

@@ -14,14 +14,15 @@ import ObserverHooksTestPage from './ObserverHooksTestPage';
 import MessageSubjectTestPage from './MessageSubjectTestPage';
 import FetchTestPage from './FetchTestPage';
 import ParamDomStorageTestPage from './ParamDomStorageTestPage';
-import { replaceChildren, innerHtmlLight, subscribeSwcAppRouteChange, subscribeSwcAppMessage, publishSwcAppMessage, routeChangeBeforeReturn, appMessageBeforeReturn, onConnectedBodyLight, innerHtml, onConnectedAfter, onConnectedBody, updateClass, event, applyNode, elementDefine, emitCustomEvent, onConnectedBefore, onConnectedBodyShadow, attribute } from '@dooboostore/simple-web-component';
+import RouteFieldTestPage from './RouteFieldTestPage';
+import { replaceChildren, innerHtmlLight, subscribeSwcAppRouteChange, subscribeSwcAppMessage, publishSwcAppMessage, routeChangeBeforeReturn, swcAppMessageBeforeReturn, onConnectedBodyLight, innerHtml, onConnectedAfter, onConnectedBody, updateClass, event, applyNode, elementDefine, emitCustomEvent, onConnectedBefore, onConnectedBodyShadow, attribute } from '@dooboostore/simple-web-component';
 import {Inject} from '@dooboostore/simple-boot';
 import {Router, type RouterEventType} from '@dooboostore/core-web';
 import {CartService} from '../services/CartService';
 import {OrderService} from '../services/OrderService';
 import {ProductService} from '../services/ProductService';
 
-export { CartPage, ProductPage, CheckoutPage, HomePage, OrdersPage, TimerTestPage, SlotTestPage, RxjsOperatorsTestPage, EventDelegateTestPage, LifecycleParamTestPage, AroundStateTestPage, BeforeFilterReturnTestPage, ObserverHooksTestPage, MessageSubjectTestPage, FetchTestPage, ParamDomStorageTestPage };
+export { CartPage, ProductPage, CheckoutPage, HomePage, OrdersPage, TimerTestPage, SlotTestPage, RxjsOperatorsTestPage, EventDelegateTestPage, LifecycleParamTestPage, AroundStateTestPage, BeforeFilterReturnTestPage, ObserverHooksTestPage, MessageSubjectTestPage, FetchTestPage, ParamDomStorageTestPage, RouteFieldTestPage };
 
 /**
  * Root Router Factory - Main routing hub
@@ -81,12 +82,12 @@ export const rootRouterFactory = (w: Window) => {
       before: async () => { (w as any).__msgLog.push('before'); return 'PREP'; },
       finally: async (_msg: any, _self: any, ctx: any) => { (w as any).__msgLog.push('finally:' + ctx.result + ':args' + ctx.args.length); }
     })
-    onHookTest(@appMessageBeforeReturn prepared: string) {
+    onHookTest(@swcAppMessageBeforeReturn prepared: string) {
       (w as any).__msgLog.push('handler:' + prepared);
       return 'done';
     }
 
-    @subscribeSwcAppRouteChange(['', '/', '/product/{id}', '/cart', '/checkout', '/orders', '/timer-test', '/slot-test', '/rxjs-operators-test', '/event-delegate-test', '/lifecycle-param-test', '/around-state-test', '/before-filter-return-test', '/observer-hooks-test', '/message-subject-test', '/fetch-test', '/param-dom-storage-test'])
+    @subscribeSwcAppRouteChange(['', '/', '/product/{id}', '/cart', '/checkout', '/orders', '/timer-test', '/slot-test', '/rxjs-operators-test', '/event-delegate-test', '/lifecycle-param-test', '/around-state-test', '/before-filter-return-test', '/observer-hooks-test', '/message-subject-test', '/fetch-test', '/param-dom-storage-test', '/route-field-test', '/route-field-test/{userId}'])
     @innerHtmlLight
     routeChanged(routerPathSet: RouterEventType) {
       if (['', '/'].includes(routerPathSet.path)) {
@@ -119,6 +120,8 @@ export const rootRouterFactory = (w: Window) => {
         return `<swc-example-fetch-test-page/>`;
       } else if (['/param-dom-storage-test'].includes(routerPathSet.path)) {
         return `<swc-example-param-dom-storage-test-page data-greeting="안녕 쿼리파람"><span class="item" id="light-item"></span></swc-example-param-dom-storage-test-page>`;
+      } else if (routerPathSet.path === '/route-field-test' || routerPathSet.path.startsWith('/route-field-test/')) {
+        return `<swc-example-route-field-test-page/>`;
       } else if (routerPathSet.path.startsWith('/product/')) {
         return `<swc-example-commerce-product-page product-id="${routerPathSet.pathData.id}"/>`;
       } else {
@@ -161,4 +164,4 @@ export const rootRouterFactory = (w: Window) => {
   return tagName;
 };
 
-export const pageFactories = [CartPage, ProductPage, CheckoutPage, HomePage, OrdersPage, TimerTestPage, SlotTestPage, RxjsOperatorsTestPage, EventDelegateTestPage, LifecycleParamTestPage, AroundStateTestPage, BeforeFilterReturnTestPage, ObserverHooksTestPage, MessageSubjectTestPage, FetchTestPage, ParamDomStorageTestPage, rootRouterFactory];
+export const pageFactories = [CartPage, ProductPage, CheckoutPage, HomePage, OrdersPage, TimerTestPage, SlotTestPage, RxjsOperatorsTestPage, EventDelegateTestPage, LifecycleParamTestPage, AroundStateTestPage, BeforeFilterReturnTestPage, ObserverHooksTestPage, MessageSubjectTestPage, FetchTestPage, ParamDomStorageTestPage, RouteFieldTestPage, rootRouterFactory];

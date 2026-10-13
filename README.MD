@@ -15,11 +15,11 @@ This isn't a loose bundle of packages that happen to share a scope prefix — it
 
 1. **One mechanism, everywhere: decorators + `Reflect` metadata.** Wiring a service in Node (`@Sim`/`@Inject`), binding a DOM event in the browser (`@addEventListener`), mapping an HTTP route (`@GET`/`@Route`), reacting to an attribute change (`@changedAttribute`) — under the hood it's always the same shape: a decorator stashes metadata via `Reflect`, and a lifecycle/container reads it back later. Learn that pattern once, in any package, and the internals of every other package stop looking foreign.
 
-2. **Composition over modification — extension points, not forks.** `SimstanceManager`'s `FirstCheckMaker` hook is the clearest example: it lets `simple-web-component`'s lightweight parameter decorators (`@hostSet`, `@routerEvent`, `@appMessage`, ...) resolve *alongside* `simple-boot`'s full `@Inject` container resolution — on the exact same method — without either system knowing the other exists. A brand-new capability was bolted onto an old package by using a hook that was already there, not by rewriting the container.
+2. **Composition over modification — extension points, not forks.** `SimstanceManager`'s `FirstCheckMaker` hook is the clearest example: it lets `simple-web-component`'s lightweight parameter decorators (`@hostSet`, `@routerEvent`, `@swcAppMessage`, ...) resolve *alongside* `simple-boot`'s full `@Inject` container resolution — on the exact same method — without either system knowing the other exists. A brand-new capability was bolted onto an old package by using a hook that was already there, not by rewriting the container.
 
 3. **Backward compatibility is a hard constraint, not a courtesy.** Every new decorator capability has to leave old call sites working unchanged. Order-independent parameter injection in `simple-web-component`'s `@addEventListener` falls straight back to the original positional arguments the instant a method uses none of the new parameter decorators. The framework is allowed to grow; it isn't allowed to break what already worked.
 
-4. **Explicit names over clever parameters.** Given a choice between one generic decorator with a config string (`@param('event')`) and many individually-named ones (`@eventObject`, `@matchedElement`, `@hostSet`, `@routerEvent`, `@appMessage`, ...), this ecosystem picks the latter — every time, even when it means a large export surface. `simple-web-component`'s event system alone ships `eventClick`, `eventClickDelegateLight`, `eventInputThis`, `eventKeydownWindow`... roughly **944 generated aliases** covering 59 DOM event types across every binding strategy. The cost is more exported names; the payoff is that autocomplete and the name itself teach you what a decorator does — nobody has to memorize a string enum.
+4. **Explicit names over clever parameters.** Given a choice between one generic decorator with a config string (`@param('event')`) and many individually-named ones (`@eventObject`, `@matchedElement`, `@hostSet`, `@routerEvent`, `@swcAppMessage`, ...), this ecosystem picks the latter — every time, even when it means a large export surface. `simple-web-component`'s event system alone ships `eventClick`, `eventClickDelegateLight`, `eventInputThis`, `eventKeydownWindow`... roughly **944 generated aliases** covering 59 DOM event types across every binding strategy. The cost is more exported names; the payoff is that autocomplete and the name itself teach you what a decorator does — nobody has to memorize a string enum.
 
 5. **Isomorphic by construction, not by convention.** `@Sim`/`@Inject` is the *same* container on the server (`simple-boot-http-server`) and in the browser (`simple-web-component`). A service class written once can be constructor-injected into an HTTP route handler and into a Web Component's lifecycle method, with identical syntax and identical semantics.
 
@@ -106,7 +106,7 @@ sequenceDiagram
     DI-->>C: ProductService (via @Inject)<br/>+ HostSet + RouterEventType (via parameter.ts)
     C->>C: render product page
     C->>Bus: publishSwcAppMessage(product)
-    Bus->>O: @subscribeSwcAppMessage handler (@appMessage)
+    Bus->>O: @subscribeSwcAppMessage handler (@swcAppMessage)
     O->>O: update cart badge, no direct reference to C
 ```
 

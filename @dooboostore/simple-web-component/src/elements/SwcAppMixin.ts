@@ -1,5 +1,5 @@
 import { SwcAppInterface, SwcAppMessage, SwcAppMessageObserveOptions, SwcElement } from '../types';
-import { APPLY_NODE_METADATA_KEY, findAllLifecycleMetadata, getSubscribeSwcAppMessageMetadata, getSubscribeSwcAppRouteChangeMetadata, ON_CONNECTED_SWC_APP_METADATA_KEY, SUBSCRIBE_SWC_APP_ROUTE_CHANGE_METADATA_KEY, buildSwcParameterArgs } from '../decorators';
+import { APPLY_NODE_METADATA_KEY, findAllLifecycleMetadata, getSubscribeSwcAppMessageMetadata, getSubscribeSwcAppRouteChangeMetadata, ON_CONNECTED_SWC_APP_METADATA_KEY, SUBSCRIBE_SWC_APP_ROUTE_CHANGE_METADATA_KEY, buildSwcParameterArgs, getSwcRouteFieldMetadata, getSwcAppMessageFieldMetadata } from '../decorators';
 import { SwcAppEngine, SwcAttributeConfigType, SwcConfigType } from '../SwcAppEngine';
 import { debounceTimeIntervalLock, FunctionUtils, Subscription, Subject, Observable } from '@dooboostore/core';
 import {RouterEventType, ValidUtils} from '@dooboostore/core-web';
@@ -47,6 +47,14 @@ const matchRoute = (pathOption: any, instance: any, re: { path?: string }): { pa
     if (pathData !== null) return { pathData, pathDataAll: SwcUtils.parsePathPatternAll(p, path) ?? {} };
   }
   return null;
+};
+
+/** 같은 값이면 다시 넣지 않는다 — 필드에 setter(@state 등)가 있으면 상관없는 라우트 변경마다 불리지 않게 */
+const sameRouteValue = (a: any, b: any) => {
+  if (a === b) return true;
+  if (a instanceof URLSearchParams && b instanceof URLSearchParams) return a.toString() === b.toString();
+  if (a && b && typeof a === 'object' && typeof b === 'object') return JSON.stringify(a) === JSON.stringify(b);
+  return false;
 };
 
 export const isSSR = (i: HTMLElement) => {
@@ -118,6 +126,10 @@ export function SwcAppMixin<T extends { new (...args: any[]): HTMLElement }>(Bas
     // phase: 'live'(기본, 전체 방송) | 'connected' | 'connectedDone' (replay, 해당 trigger만)
     async _invokeRouteChangeSubscribers(instance: HTMLElement, re: RouterEventType, phase: 'live' | 'connected' | 'connectedDone' = 'live') {
       if (instance.isConnected === false) return;
+
+      // 필드 주입은 핸들러보다 먼저 — 핸들러 안에서 this.필드가 이미 이번 라우트 값이다.
+      // connectedDone 재생은 같은 라우트를 connected 때 이미 넣었으므로 건너뛴다.
+      if (phase !== 'connectedDone') this._applyRouteFields(instance, re);
 
       this._routeChangeInvocations++;
 
@@ -220,6 +232,25 @@ export function SwcAppMixin<T extends { new (...args: any[]): HTMLElement }>(Bas
           removeSSRAttribute(instance);
         }
         this._routeChangeInvocations = Math.max(0, this._routeChangeInvocations - 1);
+      }
+    }
+
+    /**
+     * 필드에 붙은 라우트 파라미터 데코레이터(@swcAppRouteQueryParam('tag') tag, @swcAppRoutePathVariable('id', { path }) id …)에
+     * 지금 라우트 값을 넣는다. query 는 URL 에서 바로, path 변수는 필드의 path 패턴에 매칭해서 (안 맞으면 비어 있음 — 핸들러 인자와 같은 규칙).
+     */
+    _applyRouteFields(instance: any, re: RouterEventType) {
+      const fields = getSwcRouteFieldMetadata(instance);
+      if (!fields.length) return;
+      const sp: URLSearchParams = re.searchParams ?? new URLSearchParams(re.search ?? '');
+      const queryValues: any = routeParamValues(sp, {});
+      for (const field of fields) {
+        const values: any = field.kind.includes('PathVariable')
+          ? routeParamValues(sp, matchRoute(field.path, instance, re)?.pathDataAll ?? {})
+          : queryValues;
+        const resolver = values[field.kind];
+        const value = field.key !== undefined && typeof resolver === 'function' ? resolver(field.key) : resolver;
+        if (!sameRouteValue(instance[field.propertyKey], value)) instance[field.propertyKey] = value;
       }
     }
 
@@ -334,7 +365,8 @@ export function SwcAppMixin<T extends { new (...args: any[]): HTMLElement }>(Bas
 
         if (this.simpleApplication) this._registerLeaveGuards(instance);
 
-        // replay 버퍼가 있으면 신규 인스턴스에만 재생 (fire-and-forget, 연결 블로킹 안 함)
+        // replay 버퍼가 있으면 신규 인스턴스에만 재생 (fire-and-forget, 연결 블로킹 안 함). 필드 먼저.
+        this._replayMessageFieldsTo(instance);
         this._replayMessagesTo(instance);
 
         const isBrowser = ValidUtils.isBrowser();
@@ -487,6 +519,8 @@ export function SwcAppMixin<T extends { new (...args: any[]): HTMLElement }>(Bas
         this._replayedMessages.set(message.type, buf.slice(-Math.max(1, this.config?.messageReplayBufferSize ?? 10)));
       }
       this._swc_connected_instance.forEach((instance: any) => {
+        // 필드 먼저 — 같은 요소의 구독 핸들러 안에서 this.필드가 이미 이 메시지다
+        this._applyMessageFields(instance, message);
         this._invokeMessageSubscribers(instance, message);
       });
       this._messageSubject.next(message);
@@ -537,6 +571,25 @@ export function SwcAppMixin<T extends { new (...args: any[]): HTMLElement }>(Bas
       return manager.executeBindParameterSimPromise({ target: this, targetKey: methodName });
     }
 
+    /** 필드에 붙은 @swcAppMessage — 타입이 맞으면(타입 없으면 전부) 그 필드에 메시지를 넣는다 */
+    _applyMessageFields(instance: any, message: SwcAppMessage, fields = getSwcAppMessageFieldMetadata(instance)) {
+      for (const field of fields) {
+        if (!field.messageType || field.messageType === message.type) instance[field.propertyKey] = message;
+      }
+    }
+
+    /**
+     * 새로 붙은 인스턴스의 @swcAppMessage 필드를 버퍼로 채운다 (렌더 전). @subscribeSwcAppMessage 와 같은 규칙:
+     * 'behavior' = 마지막 1개, 'replay' = 버퍼 전체 시간순(결국 마지막 값), 미지정·'subject' = 채우지 않음. 타입이 있을 때만.
+     */
+    _replayMessageFieldsTo(instance: any) {
+      for (const field of getSwcAppMessageFieldMetadata(instance)) {
+        if (!field.messageType || (field.subject !== 'behavior' && field.subject !== 'replay')) continue;
+        const buf = this._replayedMessages.get(field.messageType) ?? [];
+        for (const message of field.subject === 'behavior' ? buf.slice(-1) : buf) this._applyMessageFields(instance, message, [field]);
+      }
+    }
+
     // 신규 연결 인스턴스 1곳에만 버퍼 재생. 구독자별 subject 선언 기준:
     // - 'behavior': 마지막 1개 / 'replay': 버퍼 전체 시간순 / 미지정·'subject': live만 (재생 안 함)
     // - trigger 'connectedDone'인 구독은 _connectedDone(render 완료 후)에서 재생. phase로 구분.
@@ -583,20 +636,20 @@ export function SwcAppMixin<T extends { new (...args: any[]): HTMLElement }>(Bas
 
       const instanceHelperHostSet = SwcUtils.getHelperAndHostSet(instance, this.config.window);
       const instanceHelperSet = SwcUtils.getHelperSet(this.config.window);
-      // before를 먼저 돌려 리턴값을 @appMessageBeforeReturn 으로 주입할 수 있게 캡처.
+      // before를 먼저 돌려 리턴값을 @swcAppMessageBeforeReturn 으로 주입할 수 있게 캡처.
       const beforeReturn = before ? await before(message, instance) : undefined;
       const args = buildSwcParameterArgs(
         instance,
         methodName,
         {
-          appMessage: message,
+          swcAppMessage: message,
           swcAppRouter: this.router,
           swcAppSimpleApplication: this.simpleApplication,
           swcAppHost: this,
           hostSet: instanceHelperHostSet,
           helperHostSet: instanceHelperHostSet,
           helperSet: instanceHelperSet,
-          appMessageBeforeReturn: beforeReturn
+          swcAppMessageBeforeReturn: beforeReturn
         },
         [message]
       );
