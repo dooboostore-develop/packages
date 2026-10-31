@@ -444,11 +444,11 @@ export abstract class ElementBase extends ParentNodeBase implements Element {
       // (style/script raw-text elements are handled separately below.)
       if (nextTagStart === -1) {
         const text = html.substring(pos);
-        if (text.trim()) this.appendTextNode(targetNode, text);
+        if (text) this.appendTextNode(targetNode, text);
         return len;
       } else if (nextTagStart > pos) {
         const text = html.substring(pos, nextTagStart);
-        if (text.trim()) this.appendTextNode(targetNode, text);
+        if (text) this.appendTextNode(targetNode, text);
       }
 
       pos = nextTagStart;

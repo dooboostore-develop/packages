@@ -1285,16 +1285,19 @@ describe('Append Tests', () => {
     template.content.append(textNode1);
     template.content.append(textNode2, textNode3);
 
-    // Verify text nodes were added
-    assert.equal(template.content.childNodes.length, 4, 'Template content should have 4 child nodes (1 div + 3 text nodes)');
+    // Verify text nodes were added (leading whitespace text is preserved like browsers:
+    // initial content is [ws, div, ws], then the 3 appended nodes)
+    assert.equal(template.content.childNodes.length, 6, 'Template content should have 6 child nodes (ws + div + ws + 3 text nodes)');
     assert.equal(template.content.children.length, 1, 'Template content should still have 1 element child');
 
     // Verify text nodes content
     const textNodes = Array.from(template.content.childNodes).filter(node => node.nodeType === 3); // TEXT_NODE = 3
-    assert.equal(textNodes.length, 3, 'Should have 3 text nodes');
-    assert.equal(textNodes[0].textContent, 'First text node', 'First text node should be correct');
-    assert.equal(textNodes[1].textContent, ' Second text node', 'Second text node should be correct');
-    assert.equal(textNodes[2].textContent, ' Third text node', 'Third text node should be correct');
+    assert.equal(textNodes.length, 5, 'Should have 5 text nodes (2 whitespace + 3 appended)');
+    assert.equal(textNodes[0].textContent!.trim(), '', 'First node should be leading whitespace');
+    assert.equal(textNodes[1].textContent!.trim(), '', 'Second node should be trailing whitespace');
+    assert.equal(textNodes[2].textContent, 'First text node', 'Third text node should be correct');
+    assert.equal(textNodes[3].textContent, ' Second text node', 'Fourth text node should be correct');
+    assert.equal(textNodes[4].textContent, ' Third text node', 'Fifth text node should be correct');
 
     // Verify original div is still there
     const container = template.content.querySelector('.container');
@@ -1308,12 +1311,12 @@ describe('Append Tests', () => {
 
     // Verify all nodes moved to target
     assert.equal(template.content.childNodes.length, 0, 'Template content should be empty after move');
-    assert.equal(target.childNodes.length, 4, 'Target should have 4 child nodes');
+    assert.equal(target.childNodes.length, 6, 'Target should have 6 child nodes');
     assert.equal(target.children.length, 1, 'Target should have 1 element child');
 
     // Verify text content in target
     const targetTextNodes = Array.from(target.childNodes).filter(node => node.nodeType === 3);
-    assert.equal(targetTextNodes.length, 3, 'Target should have 3 text nodes');
+    assert.equal(targetTextNodes.length, 5, 'Target should have 5 text nodes');
     assert.equal(target.querySelector('.container').textContent, 'Initial content', 'Container should be in target');
 
     console.log('✅ TextNode append to template.content works');
@@ -1340,8 +1343,8 @@ describe('Append Tests', () => {
     template.content.append(comment1);
     template.content.append(comment2, comment3);
 
-    // Verify comment nodes were added
-    assert.equal(template.content.childNodes.length, 4, 'Template content should have 4 child nodes (1 div + 3 comments)');
+    // Verify comment nodes were added (initial content is [ws, div, ws])
+    assert.equal(template.content.childNodes.length, 6, 'Template content should have 6 child nodes (ws + div + ws + 3 comments)');
     assert.equal(template.content.children.length, 1, 'Template content should still have 1 element child');
 
     // Verify comment nodes content
@@ -1362,7 +1365,7 @@ describe('Append Tests', () => {
 
     // Verify all nodes moved to fragment
     assert.equal(template.content.childNodes.length, 0, 'Template content should be empty after move');
-    assert.equal(fragment.childNodes.length, 4, 'Fragment should have 4 child nodes');
+    assert.equal(fragment.childNodes.length, 6, 'Fragment should have 6 child nodes');
     assert.equal(fragment.children.length, 1, 'Fragment should have 1 element child');
 
     // Verify comment nodes in fragment
@@ -1397,32 +1400,35 @@ describe('Append Tests', () => {
     template.content.append(comment2, textNode3, comment3);
 
     // Verify all nodes were added in correct order
-    assert.equal(template.content.childNodes.length, 7, 'Template content should have 7 child nodes (1 header + 6 mixed nodes)');
+    // (initial content is [ws, header, ws], then the 6 appended nodes)
+    assert.equal(template.content.childNodes.length, 9, 'Template content should have 9 child nodes (ws + header + ws + 6 mixed nodes)');
     assert.equal(template.content.children.length, 1, 'Template content should still have 1 element child');
 
     // Verify node order and types
     const allNodes = Array.from(template.content.childNodes);
-    assert.equal(allNodes[0].tagName, 'HEADER', 'First node should be header element');
-    assert.equal(allNodes[1].nodeType, 3, 'Second node should be text node'); // TEXT_NODE
-    assert.equal(allNodes[1].textContent, 'Start text', 'Second node should be start text');
-    assert.equal(allNodes[2].nodeType, 8, 'Third node should be comment node'); // COMMENT_NODE
-    assert.equal(allNodes[2].textContent, 'Start comment', 'Third node should be start comment');
-    assert.equal(allNodes[3].nodeType, 3, 'Fourth node should be text node');
-    assert.equal(allNodes[3].textContent, ' Middle text ', 'Fourth node should be middle text');
-    assert.equal(allNodes[4].nodeType, 8, 'Fifth node should be comment node');
-    assert.equal(allNodes[4].textContent, 'Middle comment', 'Fifth node should be middle comment');
+    assert.equal(allNodes[0].nodeType, 3, 'First node should be leading whitespace text');
+    assert.equal(allNodes[1].tagName, 'HEADER', 'Second node should be header element');
+    assert.equal(allNodes[2].nodeType, 3, 'Third node should be trailing whitespace text');
+    assert.equal(allNodes[3].nodeType, 3, 'Fourth node should be text node'); // TEXT_NODE
+    assert.equal(allNodes[3].textContent, 'Start text', 'Fourth node should be start text');
+    assert.equal(allNodes[4].nodeType, 8, 'Fifth node should be comment node'); // COMMENT_NODE
+    assert.equal(allNodes[4].textContent, 'Start comment', 'Fifth node should be start comment');
     assert.equal(allNodes[5].nodeType, 3, 'Sixth node should be text node');
-    assert.equal(allNodes[5].textContent, 'End text', 'Sixth node should be end text');
+    assert.equal(allNodes[5].textContent, ' Middle text ', 'Sixth node should be middle text');
     assert.equal(allNodes[6].nodeType, 8, 'Seventh node should be comment node');
-    assert.equal(allNodes[6].textContent, 'End comment', 'Seventh node should be end comment');
+    assert.equal(allNodes[6].textContent, 'Middle comment', 'Seventh node should be middle comment');
+    assert.equal(allNodes[7].nodeType, 3, 'Eighth node should be text node');
+    assert.equal(allNodes[7].textContent, 'End text', 'Eighth node should be end text');
+    assert.equal(allNodes[8].nodeType, 8, 'Ninth node should be comment node');
+    assert.equal(allNodes[8].textContent, 'End comment', 'Ninth node should be end comment');
 
     // Test cloning template.content with mixed nodes
     const clone = template.content.cloneNode(true);
-    assert.equal(clone.childNodes.length, 7, 'Clone should have same number of nodes');
+    assert.equal(clone.childNodes.length, 9, 'Clone should have same number of nodes');
 
     const cloneNodes = Array.from(clone.childNodes);
-    assert.equal(cloneNodes[1].textContent, 'Start text', 'Cloned text node should be correct');
-    assert.equal(cloneNodes[2].textContent, 'Start comment', 'Cloned comment node should be correct');
+    assert.equal(cloneNodes[3].textContent, 'Start text', 'Cloned text node should be correct');
+    assert.equal(cloneNodes[4].textContent, 'Start comment', 'Cloned comment node should be correct');
 
     // Test moving cloned content to document body
     const container = document.createElement('div');
@@ -1430,10 +1436,10 @@ describe('Append Tests', () => {
     container.append(clone);
 
     // Verify mixed content in container
-    assert.equal(container.childNodes.length, 7, 'Container should have 7 child nodes');
+    assert.equal(container.childNodes.length, 9, 'Container should have 9 child nodes');
     const containerTextNodes = Array.from(container.childNodes).filter(node => node.nodeType === 3);
     const containerComments = Array.from(container.childNodes).filter(node => node.nodeType === 8);
-    assert.equal(containerTextNodes.length, 3, 'Container should have 3 text nodes');
+    assert.equal(containerTextNodes.length, 5, 'Container should have 5 text nodes (2 whitespace + 3 appended)');
     assert.equal(containerComments.length, 3, 'Container should have 3 comment nodes');
     assert.equal(container.querySelector('header').textContent, 'Header content', 'Header should be preserved');
 
@@ -1460,25 +1466,27 @@ describe('Append Tests', () => {
     template.content.append(emptyTextNode, emptyComment);
     template.content.append(whitespaceTextNode, whitespaceComment);
 
-    // Verify empty nodes were added
-    assert.equal(template.content.childNodes.length, 5, 'Template content should have 5 child nodes');
+    // Verify empty nodes were added (initial content is [ws, div, ws])
+    assert.equal(template.content.childNodes.length, 7, 'Template content should have 7 child nodes');
     assert.equal(template.content.children.length, 1, 'Template content should still have 1 element child');
 
     // Verify empty node content
     const allNodes = Array.from(template.content.childNodes);
-    assert.equal(allNodes[1].textContent, '', 'Empty text node should have empty content');
-    assert.equal(allNodes[2].textContent, '', 'Empty comment node should have empty content');
-    assert.equal(allNodes[3].textContent, '   ', 'Whitespace text node should have whitespace content');
-    assert.equal(allNodes[4].textContent, '   ', 'Whitespace comment node should have whitespace content');
+    assert.equal(allNodes[0].textContent!.trim(), '', 'First node should be leading whitespace');
+    assert.equal(allNodes[2].textContent!.trim(), '', 'Third node should be trailing whitespace');
+    assert.equal(allNodes[3].textContent, '', 'Empty text node should have empty content');
+    assert.equal(allNodes[4].textContent, '', 'Empty comment node should have empty content');
+    assert.equal(allNodes[5].textContent, '   ', 'Whitespace text node should have whitespace content');
+    assert.equal(allNodes[6].textContent, '   ', 'Whitespace comment node should have whitespace content');
 
     // Test that empty nodes are preserved during operations
     const fragment = document.createDocumentFragment();
     fragment.append(template.content);
 
-    assert.equal(fragment.childNodes.length, 5, 'Fragment should preserve all nodes including empty ones');
+    assert.equal(fragment.childNodes.length, 7, 'Fragment should preserve all nodes including empty ones');
     const fragmentNodes = Array.from(fragment.childNodes);
-    assert.equal(fragmentNodes[1].textContent, '', 'Empty text node should be preserved in fragment');
-    assert.equal(fragmentNodes[2].textContent, '', 'Empty comment node should be preserved in fragment');
+    assert.equal(fragmentNodes[3].textContent, '', 'Empty text node should be preserved in fragment');
+    assert.equal(fragmentNodes[4].textContent, '', 'Empty comment node should be preserved in fragment');
 
     console.log('✅ Empty TextNode and Comment append to template.content works');
   });
@@ -1514,8 +1522,8 @@ describe('Append Tests', () => {
     // Add end checkpoint after appending the node
     template.content.append(endCheckpoint);
 
-    // Verify all content is preserved
-    assert.equal(template.content.childNodes.length, 4, 'Template content should have 4 nodes (div + start + p + end)');
+    // Verify all content is preserved (initial content is [ws, div, ws])
+    assert.equal(template.content.childNodes.length, 6, 'Template content should have 6 nodes (ws + div + ws + start + p + end)');
 
     // Verify original div is still there and intact
     const originalDiv = template.content.querySelector('div');
@@ -1534,11 +1542,13 @@ describe('Append Tests', () => {
     assert.equal(commentNodes[0].textContent, 'START CHECKPOINT', 'Start checkpoint should be correct');
     assert.equal(commentNodes[1].textContent, 'END CHECKPOINT', 'End checkpoint should be correct');
 
-    // Verify node order: div, start, p, end
-    assert.equal(allNodes[0].tagName, 'DIV', 'First node should be div');
-    assert.equal(allNodes[1].nodeType, 8, 'Second node should be comment (start)');
-    assert.equal(allNodes[2].tagName, 'P', 'Third node should be paragraph');
-    assert.equal(allNodes[3].nodeType, 8, 'Fourth node should be comment (end)');
+    // Verify node order: ws, div, ws, start, p, end
+    assert.equal(allNodes[0].nodeType, 3, 'First node should be leading whitespace text');
+    assert.equal(allNodes[1].tagName, 'DIV', 'Second node should be div');
+    assert.equal(allNodes[2].nodeType, 3, 'Third node should be trailing whitespace text');
+    assert.equal(allNodes[3].nodeType, 8, 'Fourth node should be comment (start)');
+    assert.equal(allNodes[4].tagName, 'P', 'Fifth node should be paragraph');
+    assert.equal(allNodes[5].nodeType, 8, 'Sixth node should be comment (end)');
 
     console.log('✅ Text preservation with start/end checkpoints works');
   });

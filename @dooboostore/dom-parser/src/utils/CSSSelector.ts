@@ -53,6 +53,23 @@ export class CSSSelector {
             i--;
         }
 
+        // A leading explicit combinator (relative selector, e.g. inside :has())
+        // constrains the element against the scope itself.
+        const first = chain[0].combinator;
+        if (first === '>') {
+            if (!current || current.parentNode !== scope) return false;
+        } else if (first === '+') {
+            if (!current || this.previousElementSibling(current) !== scope) return false;
+        } else if (first === '~') {
+            let sibling = current ? this.previousElementSibling(current) : null;
+            let found = false;
+            while (sibling) {
+                if (sibling === scope) { found = true; break; }
+                sibling = this.previousElementSibling(sibling);
+            }
+            if (!found) return false;
+        }
+
         return true;
     }
 
@@ -663,7 +680,21 @@ export class CSSSelector {
                 return this.getChildIndexOfType(element) === 0;
 
             case 'last-of-type':
-                return this.getChildIndexOfTypeFromEnd(element) === 0;
+                    return this.getChildIndexOfTypeFromEnd(element) === 0;
+
+                case 'empty':
+                    // :empty — no element children and no non-whitespace text
+                    // (comments/PIs don't disqualify; whitespace-only text doesn't either)
+                    for (const child of (element as any).childNodes ?? []) {
+                        if (child.nodeType === 1) return false;
+                        if ((child.nodeType === 3 || child.nodeType === 4)
+                            && typeof child.data === 'string' && child.data.trim() !== '') return false;
+                    }
+                    return true;
+
+                case 'root':
+                    // :root — the document element
+                    return (element as any).ownerDocument?.documentElement === element;
 
             case 'only-child':
                 return this.getChildIndex(element) === 0 && this.getElementSiblingCount(element) === 1;

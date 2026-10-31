@@ -262,7 +262,7 @@ export class DomParser {
         // decoded at parse time so Text.data holds decoded text.
         // Only all-whitespace chunks are dropped; other text is kept exactly.
         const remainingText = html.substring(pos);
-        if (remainingText.trim()) {
+        if (remainingText) {
           this.appendText(parent, remainingText);
         }
         return len;
@@ -271,7 +271,7 @@ export class DomParser {
       // Add text before tag if any
       if (tagStart > pos) {
         const textContent = html.substring(pos, tagStart);
-        if (textContent.trim()) {
+        if (textContent) {
           this.appendText(parent, textContent);
         }
       }
