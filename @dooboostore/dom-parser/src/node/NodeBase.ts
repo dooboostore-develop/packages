@@ -165,8 +165,9 @@ export abstract class NodeBase implements Node {
 
   get textContent(): string | null {
     if (this.nodeType === TEXT_NODE || this.nodeType === COMMENT_NODE) {
-      // For text nodes, decode HTML entities to return original text
-      return this._nodeValue ? this.decodeHTMLEntities(this._nodeValue) : this._nodeValue;
+      // Text/Comment node values are stored decoded (entities are decoded
+      // at parse time), so return them as-is. Comments never decode entities.
+      return this._nodeValue;
     }
 
     // For elements, return the stored original text content if available
@@ -193,10 +194,9 @@ export abstract class NodeBase implements Node {
     // Clear all children and add a single text node
     this._childNodesInternal = [];
     if (stringValue) {
-      // Create text node implementation with escaped value for innerHTML
-      const escapedValue = this.escapeHTMLEntities(stringValue);
+      // Store the literal string; escaping happens on serialization (innerHTML).
       const { TextBase } = NodeClassRegistry;
-      const textNode = new TextBase(escapedValue, this._ownerDocument);
+      const textNode = new TextBase(stringValue, this._ownerDocument);
       this._childNodesInternal.push(textNode);
       textNode._parentNodeInternal = this;
     }

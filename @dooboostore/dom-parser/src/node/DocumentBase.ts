@@ -234,7 +234,12 @@ export class DocumentBase extends ParentNodeBase implements Document {
   }
 
   createElementNS(_ns: string | null, qualifiedName: string, options?: ElementCreationOptions): any {
-    return this.createElement(qualifiedName as any, options);
+    // Route the namespace to the factory so SVG/MathML elements keep their
+    // qualified names (issue #15). `options` may be a string ("is" value).
+    const mergedOptions: any = typeof options === 'string'
+      ? { is: options, namespaceURI: _ns }
+      : { ...(options as object), namespaceURI: _ns };
+    return ElementFactory.createElement(qualifiedName, this, mergedOptions) as any;
   }
 
   createEvent(_eventInterface: string): any {

@@ -3,6 +3,7 @@ import { ParentNodeBase } from '../ParentNodeBase';
 import { HTMLCollectionImp, HTMLCollectionOfImp } from '../collection';
 import { ELEMENT_NODE, TEXT_NODE, ATTRIBUTE_NODE } from '../Node';
 import { CSSSelector } from '../../utils/CSSSelector';
+import { SVG_NAMESPACE, MATHML_NAMESPACE, elementNamespaceForTag, childNamespaceForElement } from '../../utils/namespaces';
 import { NodeBase } from '../NodeBase';
 import { ShadowRootBase } from '../ShadowRootBase';
 
@@ -123,10 +124,35 @@ export abstract class ElementBase extends ParentNodeBase implements Element {
   }
 
   get tagName(): string {
+    // Per the DOM spec, the qualified name is upper-cased only for elements
+    // in the HTML namespace; SVG/MathML elements keep their case
+    // (e.g. "path", "foreignObject"). See issue #15.
+    const ns = this.namespaceURI;
+    if (ns === SVG_NAMESPACE || ns === MATHML_NAMESPACE) {
+      return this._tagName;
+    }
     return this._tagName.toUpperCase();
   }
 
   get localName(): string {
+    // Local names preserve case except for HTML elements, whose tag names
+    // are ASCII-lowercased by the parser (stored upper-case here).
+    const ns = this.namespaceURI;
+    if (ns === SVG_NAMESPACE || ns === MATHML_NAMESPACE) {
+      return this._tagName;
+    }
+    return this._tagName.toLowerCase();
+  }
+
+  /**
+   * Tag name for serialization: lower-case for HTML elements,
+   * qualified (spec) case for SVG/MathML elements.
+   */
+  protected get serializedTagName(): string {
+    const ns = this.namespaceURI;
+    if (ns === SVG_NAMESPACE || ns === MATHML_NAMESPACE) {
+      return this._tagName;
+    }
     return this._tagName.toLowerCase();
   }
 
@@ -183,15 +209,15 @@ export abstract class ElementBase extends ParentNodeBase implements Element {
   }
 
   set innerText(value: string | null) {
-    // Clear all children and add escaped text content
+    // Clear all children and store the literal text.
+    // Escaping happens on serialization (innerHTML), not in storage.
     this._childNodesInternal = [];
     if (value !== null && value !== undefined) {
       const stringValue = String(value);
-      const escapedValue = this.escapeHTMLEntities(stringValue);
 
       const { TextBase } = ElementBase.dependencies;
       if (TextBase) {
-        const textNode = new TextBase(escapedValue, this._ownerDocument);
+        const textNode = new TextBase(stringValue, this._ownerDocument);
         this._childNodesInternal.push(textNode);
         (textNode as any)._parentNodeInternal = this;
       }
@@ -208,9 +234,11 @@ export abstract class ElementBase extends ParentNodeBase implements Element {
     }
 
     // Parse HTML and create child nodes
-    if (value.trim()) {
+    // WebIDL: DOMString coercion (number -> "1", null -> "null", etc.)
+    const stringValue = String(value);
+    if (stringValue.trim()) {
       const isInert = (this as any)._isInertHTMLParsing === true;
-      this.parseAndAppendHTML(value, this, isInert);
+      this.parseAndAppendHTML(stringValue, this, isInert);
     }
   }
 
@@ -218,10 +246,15 @@ export abstract class ElementBase extends ParentNodeBase implements Element {
    * Generate HTML for a child element without using outerHTML to avoid circular dependency
    */
   private generateChildElementHTML(element: any): string {
-    const tagName = element.tagName.toLowerCase();
+    // SVG/MathML elements serialize with their qualified (spec) case,
+    // e.g. <foreignObject>, not <foreignobject>.
+    const elementNS: string | null = element.namespaceURI ?? null;
+    const tagName = (elementNS === SVG_NAMESPACE || elementNS === MATHML_NAMESPACE)
+      ? element.tagName
+      : element.tagName.toLowerCase();
     // Get attributes
     const attrs = Array.from(element._attributes?.entries() || [])
-      .map(([name, value]: [string, string]) => (value === '' ? ` ${name}` : ` ${name}="${String(value).replace(/"/g, '&quot;')}"`))
+      .map(([name, value]: [string, string]) => (value === '' ? ` ${name}` : ` ${name}="${this.escapeAttributeValue(value)}"`))
       .join('');
 
     // Check if it's a self-closing tag
@@ -278,6 +311,14 @@ export abstract class ElementBase extends ParentNodeBase implements Element {
       return;
     }
 
+    // Namespace context for newly parsed elements: derived from the target
+    // node (<svg> children are SVG, except inside <foreignObject> which is
+    // an HTML integration point). InnerHTML recursion re-derives this from
+    // each element, so nested contexts resolve automatically.
+    const targetNS: string | null = (targetNode as any)?.namespaceURI ?? null;
+    const targetLocal: string = ((targetNode as any)?.localName ?? '') as string;
+    const parentNS: string | null = childNamespaceForElement(targetLocal, targetNS);
+
     let i = 0;
     const length = html.length;
 
@@ -285,18 +326,21 @@ export abstract class ElementBase extends ParentNodeBase implements Element {
       const nextTagStart = html.indexOf('<', i);
 
       // Handle text content before next tag
+      // Per HTML spec ("insert a character"), character references are
+      // decoded at parse time so Text.data holds decoded text.
+      // (style/script raw-text elements are handled separately below.)
       if (nextTagStart === -1) {
         let text = html.substring(i).trim();
         if (text) {
           text = this.fixBrokenClosingTags(text);
-          if (TextBase) targetNode.appendChild(new TextBase(text, this._ownerDocument));
+          if (TextBase) targetNode.appendChild(new TextBase(this.decodeHTMLEntities(text), this._ownerDocument));
         }
         break;
       } else if (nextTagStart > i) {
         let text = html.substring(i, nextTagStart).trim();
         if (text) {
           text = this.fixBrokenClosingTags(text);
-          if (TextBase) targetNode.appendChild(new TextBase(text, this._ownerDocument));
+          if (TextBase) targetNode.appendChild(new TextBase(this.decodeHTMLEntities(text), this._ownerDocument));
         }
       }
 
@@ -373,7 +417,10 @@ export abstract class ElementBase extends ParentNodeBase implements Element {
         const tagName = parts[0];
         const attributeString = tagContent.slice(tagName.length, -1).trim();
         const options = extractIsAttr(attributeString);
-        const element = ElementFactory.createElement(tagName, this._ownerDocument, options);
+        const element = ElementFactory.createElement(tagName, this._ownerDocument, {
+          ...(options as object),
+          namespaceURI: elementNamespaceForTag(tagName, parentNS)
+        });
         this.parseAttributes(element, attributeString);
         targetNode.appendChild(element); // Append LAST
         i = tagEnd + 1;
@@ -400,7 +447,10 @@ export abstract class ElementBase extends ParentNodeBase implements Element {
         const closingTagIndex = html.indexOf(closingTag, tagEnd + 1);
 
         if (closingTagIndex !== -1) {
-          const element = ElementFactory.createElement(tagName, this._ownerDocument, options);
+          const element = ElementFactory.createElement(tagName, this._ownerDocument, {
+            ...(options as object),
+            namespaceURI: elementNamespaceForTag(tagName, parentNS)
+          });
           this.parseAttributes(element, attributeString);
           
           // IMPORTANT: Append element to parent FIRST
@@ -421,7 +471,10 @@ export abstract class ElementBase extends ParentNodeBase implements Element {
       const closingTagIndex = this.findMatchingClosingTag(html, tagName, tagEnd + 1);
 
       if (closingTagIndex !== -1) {
-        const element = ElementFactory.createElement(tagName, this._ownerDocument, options);
+        const element = ElementFactory.createElement(tagName, this._ownerDocument, {
+          ...(options as object),
+          namespaceURI: elementNamespaceForTag(tagName, parentNS)
+        });
         this.parseAttributes(element, attributeString);
         
         // IMPORTANT: Append element to parent FIRST, before setting innerHTML.
@@ -442,7 +495,10 @@ export abstract class ElementBase extends ParentNodeBase implements Element {
         }
         i = closingTagIndex + (tagName.length + 3); // </tagName>
       } else {
-        const element = ElementFactory.createElement(tagName, this._ownerDocument, options);
+        const element = ElementFactory.createElement(tagName, this._ownerDocument, {
+          ...(options as object),
+          namespaceURI: elementNamespaceForTag(tagName, parentNS)
+        });
         this.parseAttributes(element, attributeString);
         targetNode.appendChild(element); // Append LAST
         i = tagEnd + 1;
@@ -564,6 +620,18 @@ export abstract class ElementBase extends ParentNodeBase implements Element {
     return str.replace(/[&<>"']/g, char => entityMap[char] || char);
   }
 
+  /**
+   * Escape an attribute value for double-quoted serialization.
+   * Per the HTML fragment serialization algorithm, only `&`, U+00A0 and
+   * `"` are escaped in attribute values (issue #16).
+   */
+  protected escapeAttributeValue(str: string): string {
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/\u00A0/g, '&nbsp;')
+      .replace(/"/g, '&quot;');
+  }
+
   protected decodeHTMLEntities(str: string): string {
     const entityMap: any = { '&amp;': '&', '&lt;': '<', '&gt;': '>', '&quot;': '"', '&#39;': "'", '&#34;': '"', '&apos;': "'", '&copy;': '©', '&reg;': '®', '&trade;': '™', '&nbsp;': ' ', '&hellip;': '…', '&mdash;': '—', '&ndash;': '–', '&lsquo;': '\u2018', '&rsquo;': '\u2019', '&ldquo;': '"', '&rdquo;': '"' };
     return str.replace(/&[a-zA-Z0-9#]+;/g, entity => {
@@ -582,11 +650,12 @@ export abstract class ElementBase extends ParentNodeBase implements Element {
 
   get outerHTML(): string {
     const attrs = Array.from(this._attributes.entries())
-      .map(([name, value]) => (value === '' ? ` ${name}` : ` ${name}="${value.replace(/"/g, '&quot;')}"`))
+      .map(([name, value]) => (value === '' ? ` ${name}` : ` ${name}="${this.escapeAttributeValue(value)}"`))
       .join('');
+    const tagName = this.serializedTagName;
     const selfClosingTags = ['img', 'input', 'br', 'hr', 'meta', 'link', 'area', 'base', 'col', 'embed', 'source', 'track', 'wbr'];
-    const isSelfClosing = selfClosingTags.includes(this.tagName.toLowerCase());
-    return isSelfClosing ? `<${this.tagName.toLowerCase()}${attrs} />` : `<${this.tagName.toLowerCase()}${attrs}>${this.innerHTML}</${this.tagName.toLowerCase()}>`;
+    const isSelfClosing = selfClosingTags.includes(tagName);
+    return isSelfClosing ? `<${tagName}${attrs} />` : `<${tagName}${attrs}>${this.innerHTML}</${tagName}>`;
   }
 
   get namespaceURI(): string | null {
@@ -914,7 +983,10 @@ export abstract class ElementBase extends ParentNodeBase implements Element {
   }
   cloneNode(deep?: boolean): any {
     const { ElementFactory } = ElementBase.dependencies;
-    const clone = ElementFactory.createElement(this.tagName, this._ownerDocument);
+    // Preserve the namespace so SVG/MathML clones keep their qualified names.
+    const clone = ElementFactory.createElement(this.tagName, this._ownerDocument, {
+      namespaceURI: (this as any).namespaceURI ?? null
+    });
     for (const [name, value] of this._attributes) clone.setAttribute(name, value);
     if (deep) for (const child of this._childNodesInternal) if (child && 'cloneNode' in child) clone.appendChild((child as any).cloneNode(true));
     return clone;

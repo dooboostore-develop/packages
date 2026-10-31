@@ -31,8 +31,9 @@ export class TextBase extends ChildNodeBase implements Text {
   }
 
   get textContent(): string | null {
-    // Decode HTML entities to return original text
-    return this._data ? this.decodeHTMLEntities(this._data) : this._data;
+    // _data always holds decoded text (entities are decoded at parse time
+    // per the HTML "insert a character" algorithm), so return it as-is.
+    return this._data;
   }
 
   set textContent(value: string | null) {

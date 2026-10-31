@@ -6,6 +6,7 @@ import { WindowBase } from './window/WindowBase';
 import { ElementBase } from './node/elements/ElementBase';
 import { ElementFactory } from './factory/ElementFactory';
 import {HTMLTemplateElement} from "./node";
+import { elementNamespaceForTag, childNamespaceForElement } from './utils/namespaces';
 
 // Inject dependencies into ElementBase to break circular references
 // without using 'require' or 'global' injection magic.
@@ -129,11 +130,12 @@ export class DomParser {
 
     if (!html) return;
 
-    // Parse HTML recursively - handles all elements including templates
-    this.parseHTMLRecursive(html, parent);
+    // Derive the initial namespace context from the parent (usually HTML).
+    const parentNS: string | null = (parent as any)?.namespaceURI ?? null;
+    this.parseHTMLRecursive(html, parent, parentNS);
   }
 
-  private parseHTMLRecursive(html: string, parent: any): void {
+  private parseHTMLRecursive(html: string, parent: any, parentNS: string | null = null): void {
     let position = 0;
 
     while (position < html.length) {
@@ -142,9 +144,11 @@ export class DomParser {
 
       if (tagStart === -1) {
         // No more tags, add remaining text if any
+        // Per HTML spec ("insert a character"), character references are
+        // decoded at parse time so Text.data holds decoded text.
         const remainingText = html.substring(position).trim();
         if (remainingText) {
-          const textNode = new TextBase(remainingText, this.document);
+          const textNode = new TextBase(this.decodeHTMLEntities(remainingText), this.document);
           parent.appendChild(textNode);
         }
         break;
@@ -154,7 +158,7 @@ export class DomParser {
       if (tagStart > position) {
         const textContent = html.substring(position, tagStart).trim();
         if (textContent) {
-          const textNode = new TextBase(textContent, this.document);
+          const textNode = new TextBase(this.decodeHTMLEntities(textContent), this.document);
           parent.appendChild(textNode);
         }
       }
@@ -250,8 +254,13 @@ export class DomParser {
         attributes = attributes.slice(0, -1).trim();
       }
 
-      // Create element
-      const element = this.document.createElement(tagName.toLowerCase(), extractIsAttr(attributes));
+      // Create element in the correct namespace: <svg>/<math> switch to
+      // their foreign namespace, everything else inherits the parent context.
+      // Per the DOM spec, tagName is upper-cased for HTML elements only,
+      // so SVG elements keep their qualified names (issue #15).
+      const elementNS = elementNamespaceForTag(tagName, parentNS);
+      const elementOptions: any = { ...(extractIsAttr(attributes) as object), namespaceURI: elementNS };
+      const element = (this.document as any).createElementNS(elementNS, tagName.toLowerCase(), elementOptions);
 
       // 1. Append to parent FIRST so parentElement is available during attributeChangedCallback
       parent.appendChild(element);
@@ -271,11 +280,14 @@ export class DomParser {
         if (closingTagIndex !== -1) {
           const innerContent = html.substring(tagEnd + 1, closingTagIndex);
           if (innerContent.trim()) {
+            // Children of <foreignObject> go back to the HTML namespace
+            // (HTML integration point); otherwise they inherit this element.
+            const childNS = childNamespaceForElement(tagName, elementNS);
             // For template elements, parse content into the content fragment
             if (tagName.toLowerCase() === 'template') {
-              this.parseHTMLRecursive(innerContent, (element as HTMLTemplateElement).content);
+              this.parseHTMLRecursive(innerContent, (element as HTMLTemplateElement).content, childNS);
             } else {
-              this.parseHTMLRecursive(innerContent, element);
+              this.parseHTMLRecursive(innerContent, element, childNS);
             }
           }
           position = closingTagIndex + closingTag.length;

@@ -1,4 +1,5 @@
-import { HTMLElementBase, htmlElements, svgElements, mathmlElements, HTMLElement } from '../node/elements';
+import { HTMLElementBase, htmlElements, svgElements, mathmlElements, HTMLElement, SVGElement, MathMLElement } from '../node/elements';
+import { SVG_NAMESPACE, MATHML_NAMESPACE, adjustSVGTagName } from '../utils/namespaces';
 
 // Global construction stack to pass attributes down to HTMLElementBase constructor
 export const constructionStack: any[] = [];
@@ -9,11 +10,54 @@ export const constructionStack: any[] = [];
 export class ElementFactory {
   static constructionStack = constructionStack;
   /**
+   * Creates an SVG/MathML element with the spec-correct qualified name.
+   * `adjustCase` maps the input to the stored qualified name
+   * (e.g. "foreignObject" for SVG, lowercase for MathML).
+   */
+  private static createForeignElement(
+    tagName: string,
+    ownerDocument: any,
+    options: any,
+    table: Record<string, any>,
+    FallbackClass: any,
+    adjustCase: (t: string) => string
+  ): HTMLElementBase {
+    const qualifiedName = adjustCase(tagName);
+    const ElementClass = (table as any)[tagName.toLowerCase()] ?? FallbackClass;
+    const element = new ElementClass(qualifiedName, ownerDocument) as any;
+    // getAttribute() must work right after construction (custom elements,
+    // attributeChangedCallback), so apply parsed attributes immediately.
+    if (options && typeof options === 'object' && options.parsedAttributes) {
+      for (const [name, value] of options.parsedAttributes.entries()) {
+        element._attributes.set(name, value);
+        if (name === 'id') element._id = value;
+        else if (name === 'class') element._className = value;
+      }
+    }
+    return element as HTMLElementBase;
+  }
+  /**
    * Creates an HTML element based on the tag name
    */
   static createElement(tagName: string, ownerDocument?: any, options?: any): HTMLElementBase {
     const normalizedTagName = tagName.toLowerCase();
     const customElements = (ownerDocument as any)?.defaultView?.customElements;
+    const namespaceURI: string | null =
+      (options && typeof options === 'object' ? options.namespaceURI : undefined) ?? null;
+
+    // Foreign namespaces before custom-element/HTML handling: the qualified
+    // name keeps its spec case (e.g. "path", "foreignObject") so that
+    // tagName is NOT upper-cased for SVG/MathML elements.
+    if (namespaceURI === SVG_NAMESPACE) {
+      return ElementFactory.createForeignElement(
+        tagName, ownerDocument, options, svgElements, SVGElement, adjustSVGTagName
+      );
+    }
+    if (namespaceURI === MATHML_NAMESPACE) {
+      return ElementFactory.createForeignElement(
+        tagName, ownerDocument, options, mathmlElements, MathMLElement, (t: string) => t.toLowerCase()
+      );
+    }
 
     // Prepare construction data
     const constructionData = {
@@ -122,19 +166,12 @@ export class ElementFactory {
       }
     }
 
-    // Check SVG elements
-    for (const [tag, ElementClass] of Object.entries(svgElements)) {
-      if (tag === normalizedTagName) {
-        return new ElementClass(tagName.toUpperCase(), ownerDocument) as HTMLElementBase;
-      }
-    }
-
-    // Check MathML elements
-    for (const [tag, ElementClass] of Object.entries(mathmlElements)) {
-      if (tag === normalizedTagName) {
-        return new ElementClass(tagName.toUpperCase(), ownerDocument) as HTMLElementBase;
-      }
-    }
+    // NOTE: no SVG/MathML table lookup here on purpose. Per the DOM spec,
+    // document.createElement() always creates HTML-namespace elements, so
+    // an SVG-named tag in an HTML context is an unknown element with an
+    // upper-cased tagName (e.g. "PATH"), exactly like browsers.
+    // SVG/MathML elements are created via the namespace-aware path above
+    // (parser context or createElementNS), which keeps the spec case.
 
     // For unknown elements, create a generic HTMLElement
     return new HTMLElement(tagName.toUpperCase(), ownerDocument);

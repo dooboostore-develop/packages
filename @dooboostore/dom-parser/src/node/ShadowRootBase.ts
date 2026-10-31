@@ -81,8 +81,10 @@ export class ShadowRootBase extends DocumentFragmentBase implements ShadowRoot {
     }
 
     // Parse HTML and create child nodes
-    if (value.trim()) {
-      (this._host as any).parseAndAppendHTML(value, this);
+    // WebIDL: DOMString coercion (number -> "1", null -> "null", etc.)
+    const stringValue = String(value);
+    if (stringValue.trim()) {
+      (this._host as any).parseAndAppendHTML(stringValue, this);
     }
 
     // Trigger connectedCallback for newly added elements if host is connected

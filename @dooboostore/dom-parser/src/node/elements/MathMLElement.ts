@@ -8,7 +8,9 @@ import {HTMLElement} from "./HTMLElement";
  */
 export class MathMLElement extends HTMLElement {
     constructor(tagName: string, ownerDocument?: any) {
-        super(tagName.toUpperCase(), ownerDocument);
+        // Preserve the qualified name case (e.g. "annotation-xml");
+        // tagName upper-casing applies to HTML-namespace elements only.
+        super(tagName, ownerDocument);
     }
 
     get namespaceURI(): string | null {
