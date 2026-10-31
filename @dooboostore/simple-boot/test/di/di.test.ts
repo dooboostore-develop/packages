@@ -119,4 +119,29 @@ describe('DI (Dependency Injection) Tests', () => {
     assert.ok(profileA, 'ProfileA should be created and found via WW');
     assert.ok(profileB, 'ProfileB should be created and found via WW');
   });
+
+  test('should throw a clear error on circular dependencies instead of stack overflow', async () => {
+    const CircA = Symbol('circ-a');
+    const CircB = Symbol('circ-b');
+
+    @Sim({ symbol: CircA })
+    class SvcA {
+      constructor(@Inject({ symbol: CircB }) public b: any) {}
+    }
+
+    @Sim({ symbol: CircB })
+    class SvcB {
+      constructor(@Inject({ symbol: CircA }) public a: any) {}
+    }
+
+    const option = new SimOption();
+    const simpleApplication = new SimpleApplication(option);
+    simpleApplication.run();
+
+    assert.throws(
+      () => simpleApplication.sim(CircA),
+      /Circular dependency detected/,
+      'circular dependencies must fail fast with the resolution path, not RangeError'
+    );
+  });
 });

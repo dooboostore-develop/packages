@@ -17,7 +17,7 @@ import { RandomUtils } from '@dooboostore/core';
 import { ValidUtils } from '@dooboostore/core';
 
 export type FirstCheckMaker = (obj: { target: Object; targetKey?: string | symbol }, token: ConstructorType<any>, idx: number, saveInjectConfig?: SaveInjectConfig) => any | undefined;
-export type Carrier = { newInstances: any[]; depth: number };
+export type Carrier = { newInstances: any[]; depth: number; resolving?: any[] };
 
 export class SimstanceManager implements Runnable<void, Map<ConstructorType<any> | Function, any>> {
   private _storage = new Map<ConstructorType<any> | Function, Map<ConstructorType<any> | Function, undefined | any>>();
@@ -238,33 +238,58 @@ export class SimstanceManager implements Runnable<void, Map<ConstructorType<any>
 
     // console.log('resolve--', targetKey, target, registed?.instance);
     if (this.storage.has(targetKey) && undefined === registed?.instance) {
-      newInstanceCarrier.depth++;
-      const newSim = this.newSim({
-        target: registed?.type ?? targetKey,
-        newInstanceCarrier: newInstanceCarrier,
-        simCreateAfter: data => {
-          // console.log('resolve--newSim', targetKey, target, data);
-          if (getSim(registed?.type ?? target ?? targetKey)?.scope === Lifecycle.Singleton) {
-            this.setStoreSet(targetKey, data, target);
-            // console.log('-----------set', targetKey, data, target, this.storage.get(targetKey))
+      // Detect circular dependencies instead of recursing until the call
+      // stack overflows: if this token is already being constructed up the
+      // chain, fail fast with the resolution path.
+      const resolving = (newInstanceCarrier.resolving ??= []);
+      if ((resolving as any[]).includes(targetKey)) {
+        const nameOf = (t: any): string =>
+          typeof t === 'symbol' ? t.toString() : (t?.name ?? String(t));
+        throw new Error(
+          `Circular dependency detected: ${[...resolving.map(nameOf), nameOf(targetKey)].join(' -> ')}`
+        );
+      }
+      resolving.push(targetKey as any);
+      let settled = false;
+      try {
+        newInstanceCarrier.depth++;
+        const newSim = this.newSim({
+          target: registed?.type ?? targetKey,
+          newInstanceCarrier: newInstanceCarrier,
+          simCreateAfter: data => {
+            // console.log('resolve--newSim', targetKey, target, data);
+            if (getSim(registed?.type ?? target ?? targetKey)?.scope === Lifecycle.Singleton) {
+              this.setStoreSet(targetKey, data, target);
+              // console.log('-----------set', targetKey, data, target, this.storage.get(targetKey))
+            }
           }
-        }
-      });
-      newInstanceCarrier.depth--;
-      // 한그룹이 끝났을때
-      if (newInstanceCarrier.depth === 0) {
-        newInstanceCarrier.newInstances.forEach(it => {
-          this.callBindPostConstruct(it);
         });
+        newInstanceCarrier.depth--;
+        resolving.pop();
+        settled = true;
+        // 한그룹이 끝났을때
+        if (newInstanceCarrier.depth === 0) {
+          newInstanceCarrier.newInstances.forEach(it => {
+            this.callBindPostConstruct(it);
+          });
+        }
+        // console.log('%c *************************','color: blue', registed?.type ?? targetKey ,newInstanceCarrier, newInstanceCarrier?.newInstances.length)
+        // console.dir(newInstanceCarrier, {depth:10});
+        // console.table(newInstanceCarrier);
+        if (isOnSimCreate(newSim)) {
+          newSim.onSimCreate();
+        }
+        // console.groupEnd();
+        return newSim;
+      } finally {
+        if (!settled) {
+          // Construction failed partway: unwind our frame so a caught
+          // error doesn't poison the carrier for sibling resolutions.
+          newInstanceCarrier.depth--;
+          const idx = (resolving as any[]).lastIndexOf(targetKey);
+          if (idx !== -1) resolving.splice(idx, 1);
+        }
       }
-      // console.log('%c *************************','color: blue', registed?.type ?? targetKey ,newInstanceCarrier, newInstanceCarrier?.newInstances.length)
-      // console.dir(newInstanceCarrier, {depth:10});
-      // console.table(newInstanceCarrier);
-      if (isOnSimCreate(newSim)) {
-        newSim.onSimCreate();
-      }
-      // console.groupEnd();
-      return newSim;
     }
     // console.log('simstanceManager', this._storage, this.name);
     const simNoSuch = new SimNoSuch('SimNoSuch: no simple instance(resolve) ' + 'name:' + targetKey?.prototype?.constructor?.name + ',' + targetKey);
