@@ -105,4 +105,15 @@ describe('selector combinators (descendant, >, +, ~)', () => {
         assert.equal(span.matches(':host(.x) span'), true);
         assert.equal(span.matches(':host(.y) span'), false);
     });
+
+    test(':nth-child() an+b microsyntax (odd/even/2n/2n+1/-n+2)', () => {
+        const doc = new DomParser('<ul><li>a</li><li>b</li><li>c</li><li>d</li><li>e</li></ul>').document as any;
+        assert.equal(doc.querySelectorAll('li:nth-child(2n)').length, 2);
+        assert.equal(doc.querySelectorAll('li:nth-child(odd)').length, 3);
+        assert.equal(doc.querySelectorAll('li:nth-child(even)').length, 2);
+        assert.equal(doc.querySelectorAll('li:nth-child(2n+1)').length, 3);
+        assert.equal(doc.querySelectorAll('li:nth-child(-n+2)').length, 2);
+        assert.equal(doc.querySelectorAll('li:nth-child(n)').length, 5);
+        assert.equal(doc.querySelectorAll('li:nth-child(3)').length, 1);
+    });
 });

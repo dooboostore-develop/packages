@@ -540,13 +540,12 @@ export class CSSSelector {
                 // :odd (0-based indexing)
                 return this.getChildIndex(element) % 2 === 1;
 
-            case 'nth-child':
-                // :nth-child(n)
-                if (pseudoParam) {
-                    const n = parseInt(pseudoParam, 10);
-                    return this.getChildIndex(element) === n - 1; // Convert to 0-based
-                }
-                return false;
+        case 'nth-child':
+            // :nth-child(an+b) — full microsyntax: odd/even/integer/n-steps
+            if (pseudoParam) {
+                return this.matchesNth(this.getChildIndex(element), pseudoParam);
+            }
+            return false;
 
             case 'eq':
                 // :eq(n) - jQuery-style
@@ -612,6 +611,37 @@ export class CSSSelector {
                 // Unsupported pseudo-class
                 return false;
         }
+    }
+
+    /**
+     * Match a 0-based element index against an :nth-child() an+b expression.
+     * Supports odd/even, plain integers and an+b steps (2n, 2n+1, -n+2, n ...).
+     */
+    private static matchesNth(index: number, expr: string): boolean {
+        const s = expr.toLowerCase().replace(/\s+/g, '');
+        let a: number;
+        let b: number;
+        if (s === 'odd') {
+            a = 2; b = 1;
+        } else if (s === 'even') {
+            a = 2; b = 0;
+        } else {
+            const intMatch = s.match(/^([+-]?\d+)$/);
+            if (intMatch) {
+                a = 0; b = parseInt(intMatch[1], 10);
+            } else {
+                const nMatch = s.match(/^([+-]?\d*)n([+-]\d+)?$/);
+                if (!nMatch) return false;
+                const aStr = nMatch[1];
+                a = aStr === '' || aStr === '+' ? 1 : aStr === '-' ? -1 : parseInt(aStr, 10);
+                b = nMatch[2] ? parseInt(nMatch[2], 10) : 0;
+            }
+        }
+        const p = index + 1; // 1-based position
+        if (a === 0) return p === b;
+        const d = p - b;
+        if (a > 0) return d >= 0 && d % a === 0;
+        return d <= 0 && d % a === 0;
     }
 
     /**
