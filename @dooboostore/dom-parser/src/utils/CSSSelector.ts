@@ -829,6 +829,22 @@ export class CSSSelector {
                 case 'read-only':
                     return !this.isReadWrite(element);
 
+                case 'target': {
+                    // :target — element whose id equals the document URL fragment.
+                    const doc: any = (element as any).ownerDocument;
+                    const href: string = doc?.URL ?? doc?.location?.href ?? '';
+                    const hashIndex = href.indexOf('#');
+                    if (hashIndex === -1) return false;
+                    let frag = href.slice(hashIndex + 1);
+                    if (!frag) return false;
+                    try {
+                        frag = decodeURIComponent(frag);
+                    } catch {
+                        // Keep the raw fragment on malformed escapes.
+                    }
+                    return (element as any).id === frag;
+                }
+
             default:
                 // Unsupported pseudo-class
                 return false;

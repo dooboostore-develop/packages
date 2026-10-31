@@ -172,4 +172,14 @@ describe('selector combinators (descendant, >, +, ~)', () => {
         assert.equal(ids(':read-only'), 'HTML,HEAD,BODY,b,c,d,f,g,i,nt');
         assert.equal(ids(':read-write'), 'a,e,h,w');
     });
+
+    test(':target matches the element addressed by the document URL fragment', () => {
+        const bare = new DomParser('<div id="a"></div><div id="b"></div>').document as any;
+        assert.equal(bare.querySelectorAll(':target').length, 0);
+        const doc = new DomParser('<div id="a"></div><div id="b"></div>').document as any;
+        doc.location = { href: 'http://x/#b' };
+        assert.deepEqual(Array.from(doc.querySelectorAll(':target')).map((e: any) => e.id), ['b']);
+        assert.equal(doc.querySelector('#b').matches(':target'), true);
+        assert.equal(doc.querySelector('#a').matches(':target'), false);
+    });
 });
