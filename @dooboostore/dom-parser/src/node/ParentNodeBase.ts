@@ -96,7 +96,7 @@ export abstract class ParentNodeBase extends ChildNodeBase implements ParentNode
         const results: E[] = [];
         
         // Split selectors by comma and process each one
-        const selectorList = selectors.split(',').map(s => s.trim());
+        const selectorList = CSSSelector.splitSelectorList(selectors).map(s => s.trim());
         
         for (const selector of selectorList) {
             if (selector) {

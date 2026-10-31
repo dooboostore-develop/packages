@@ -116,4 +116,16 @@ describe('selector combinators (descendant, >, +, ~)', () => {
         assert.equal(doc.querySelectorAll('li:nth-child(n)').length, 5);
         assert.equal(doc.querySelectorAll('li:nth-child(3)').length, 1);
     });
+
+    test(':is/:where and positional type selectors', () => {
+        const doc = new DomParser('<div><p>a</p><span>b</span></div><ul><li>x</li><span>y</span><li>z</li></ul><ol><li>only</li></ol>').document as any;
+        assert.equal(doc.querySelectorAll(':is(div, span)').length, 3);
+        assert.equal(doc.querySelectorAll(':where(div, span)').length, 3);
+        assert.equal(doc.querySelectorAll(':is(div, :not(ul))').length, 11);
+        assert.equal(doc.querySelectorAll('li:nth-of-type(2)').length, 1);
+        assert.equal(doc.querySelectorAll('li:nth-last-child(1)').length, 2);
+        assert.equal(doc.querySelectorAll('li:nth-last-of-type(1)').length, 2);
+        assert.equal(doc.querySelectorAll('span:first-of-type').length, 2);
+        assert.equal(doc.querySelectorAll('ol li:only-child').length, 1);
+    });
 });

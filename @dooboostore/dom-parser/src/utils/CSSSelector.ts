@@ -74,6 +74,15 @@ export class CSSSelector {
     }
 
     /**
+     * Split a selector list on top-level commas (ignoring commas inside
+     * brackets, parens, quotes or escapes). Use this instead of a naive
+     * split(',') anywhere functional pseudo-classes may appear.
+     */
+    static splitSelectorList(selector: string): string[] {
+        return this.splitTopLevel(selector, ',');
+    }
+
+    /**
      * Split a selector on a top-level delimiter, ignoring delimiters inside
      * brackets, parens, quotes, or behind a backslash escape
      */
@@ -493,14 +502,19 @@ export class CSSSelector {
      * Match pseudo-class selectors
      */
     private static matchesPseudoClass(element: Element, selector: string, scope?: any): boolean {
-        const pseudoClass = selector.substring(1); // Remove :
-
-        // Parse pseudo-class with parameters: nth-child(2), contains('text')
-        const match = pseudoClass.match(/^([^(]+)(?:\(([^)]*)\))?$/);
-        if (!match) return false;
-
-        const pseudoName = match[1];
-        const pseudoParam = match[2];
+        // Split "name(param)" with balanced parens (nested functionals allowed).
+        const openParen = selector.indexOf('(');
+        let pseudoName: string;
+        let pseudoParam: string | undefined;
+        if (openParen === -1) {
+            pseudoName = selector.substring(1); // Remove :
+            pseudoParam = undefined;
+        } else {
+            const closeParen = selector.lastIndexOf(')');
+            if (closeParen < openParen) return false;
+            pseudoName = selector.substring(1, openParen);
+            pseudoParam = selector.substring(openParen + 1, closeParen);
+        }
 
         switch (pseudoName) {
             case 'checked':
@@ -607,6 +621,56 @@ export class CSSSelector {
                 }
                 return false;
 
+            case 'is':
+            case 'where':
+                // :is(...) / :where(...) — forgiving selector list, any match wins
+                if (pseudoParam) {
+                    for (const part of this.splitTopLevel(pseudoParam, ',')) {
+                        const sel = part.trim();
+                        if (!sel) continue;
+                        try {
+                            if (CSSSelector.matches(element, sel, scope)) return true;
+                        } catch {
+                            continue;
+                        }
+                    }
+                    return false;
+                }
+                return false;
+
+            case 'nth-of-type':
+                // :nth-of-type(an+b) — position among same-tag siblings
+                if (pseudoParam) {
+                    return this.matchesNth(this.getChildIndexOfType(element), pseudoParam);
+                }
+                return false;
+
+            case 'nth-last-child':
+                // :nth-last-child(an+b) — position from the end among element siblings
+                if (pseudoParam) {
+                    return this.matchesNth(this.getChildIndexFromEnd(element), pseudoParam);
+                }
+                return false;
+
+            case 'nth-last-of-type':
+                // :nth-last-of-type(an+b) — position from the end among same-tag siblings
+                if (pseudoParam) {
+                    return this.matchesNth(this.getChildIndexOfTypeFromEnd(element), pseudoParam);
+                }
+                return false;
+
+            case 'first-of-type':
+                return this.getChildIndexOfType(element) === 0;
+
+            case 'last-of-type':
+                return this.getChildIndexOfTypeFromEnd(element) === 0;
+
+            case 'only-child':
+                return this.getChildIndex(element) === 0 && this.getElementSiblingCount(element) === 1;
+
+            case 'only-of-type':
+                return this.getChildIndexOfType(element) === 0 && this.getChildIndexOfTypeFromEnd(element) === 0;
+
             default:
                 // Unsupported pseudo-class
                 return false;
@@ -679,5 +743,38 @@ export class CSSSelector {
             }
         }
         return -1;
+    }
+
+    private static elementSiblings(element: Element): any[] {
+        const parent = element.parentNode as any;
+        if (!parent || !('children' in parent)) return [];
+        return Array.from(parent.children);
+    }
+
+    private static getChildIndexOfType(element: Element): number {
+        const tag = (element.tagName || '').toLowerCase();
+        let index = 0;
+        for (const sibling of this.elementSiblings(element)) {
+            if (sibling === element) return index;
+            if (((sibling.tagName || '') as string).toLowerCase() === tag) index++;
+        }
+        return -1;
+    }
+
+    private static getChildIndexFromEnd(element: Element): number {
+        const siblings = this.elementSiblings(element);
+        const i = siblings.indexOf(element as any);
+        return i === -1 ? -1 : siblings.length - 1 - i;
+    }
+
+    private static getChildIndexOfTypeFromEnd(element: Element): number {
+        const tag = (element.tagName || '').toLowerCase();
+        const same = this.elementSiblings(element).filter(s => ((s.tagName || '') as string).toLowerCase() === tag);
+        const i = same.indexOf(element as any);
+        return i === -1 ? -1 : same.length - 1 - i;
+    }
+
+    private static getElementSiblingCount(element: Element): number {
+        return this.elementSiblings(element).length;
     }
 }
