@@ -91,4 +91,18 @@ describe('selector combinators (descendant, >, +, ~)', () => {
         assert.equal(target.matches(':host span'), true);
         assert.equal(target.matches('div span'), false);
     });
+
+    test(':host() functional form matches host against its argument', () => {
+        const window = parseHTML('<div id="host" class="x"></div>') as any;
+        const document = window.document;
+        const host = document.querySelector('#host');
+        const shadowRoot = host.attachShadow({ mode: 'open' });
+        shadowRoot.innerHTML = '<span class="t"></span>';
+        const span = shadowRoot.querySelector('span');
+        assert.equal(shadowRoot.querySelectorAll(':host(.x) span').length, 1);
+        assert.equal(shadowRoot.querySelectorAll(':host(.y) span').length, 0);
+        assert.equal(host.matches(':host(.x)'), false);
+        assert.equal(span.matches(':host(.x) span'), true);
+        assert.equal(span.matches(':host(.y) span'), false);
+    });
 });

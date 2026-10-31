@@ -232,17 +232,25 @@ export class CSSSelector {
     }
 
     private static findMatchingAncestor(element: any, compound: string, scope?: any): any {
-        // :host (or :host.xxx) refers to the shadow host of the element's own
+        // :host / :host(...) refers to the shadow host of the element's own
         // tree — the only sanctioned way to cross a shadow boundary upward.
         const components = this.parseSelector(compound);
-        if (components.includes(':host')) {
+        const hostComps = components.filter(c => c === ':host' || c.startsWith(':host('));
+        if (hostComps.length > 0) {
             const root = this.getTreeRoot(element);
             const host = root && root.nodeType === 11 && (root as any).host ? (root as any).host : null;
-            if (host) {
-                const rest = components.filter(c => c !== ':host');
-                if (rest.every(c => this.matchesSingleSelector(host, c, scope))) return host;
+            if (!host) return null;
+            const rest = components.filter(c => c !== ':host' && !c.startsWith(':host('));
+            if (!rest.every(c => this.matchesSingleSelector(host, c, scope))) return null;
+            const inners = hostComps.filter(c => c !== ':host').map(c => c.slice(':host('.length, -1));
+            for (const inner of inners) {
+                try {
+                    if (!CSSSelector.matches(host, inner, scope)) return null;
+                } catch {
+                    return null;
+                }
             }
-            return null;
+            return host;
         }
         // Normal compounds never cross a shadow boundary (#2554 class):
         // selectors are scoped to the tree under evaluation. The scope root
