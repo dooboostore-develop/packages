@@ -135,6 +135,15 @@ describe('selector combinators (descendant, >, +, ~)', () => {
         assert.equal(doc.querySelectorAll('q\\:template').length, 1);
     });
 
+    test(':lang() matches own or inherited language', () => {
+        const doc = new DomParser('<div id="a" lang="en-US"><p id="p1">x</p></div><div id="b" lang="FR"><p id="p2">y</p></div><div id="c" LANG="EN"></div>').document as any;
+        const ids = (sel: string) => Array.from(doc.querySelectorAll(sel)).map((e: any) => e.id || e.tagName).join(',');
+        assert.equal(ids(':lang(en)'), 'a,p1,c');
+        assert.equal(ids(':lang(en-US)'), 'a,p1');
+        assert.equal(ids(':lang(fr)'), 'b,p2');
+        assert.equal(ids(':lang(de)'), '');
+    });
+});
     test(':host-context() matches host or its light-DOM ancestors', () => {
         const doc = new DomParser('<section id="s"><div id="host" class="x"><div id="mid"></div></div></section>').document as any;
         const host = doc.querySelector('#host');

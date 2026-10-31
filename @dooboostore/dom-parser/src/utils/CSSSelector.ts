@@ -773,6 +773,25 @@ export class CSSSelector {
             case 'only-of-type':
                 return this.getChildIndexOfType(element) === 0 && this.getChildIndexOfTypeFromEnd(element) === 0;
 
+                case 'lang': {
+                    // :lang(tag) — own or inherited language equals tag (case-insensitive),
+                    // or starts with tag + '-'. Empty lang defers to ancestors.
+                    if (!pseudoParam) return false;
+                    const wanted = pseudoParam.trim();
+                    let node: any = element;
+                    while (node) {
+                        const lang = node.getAttribute ? (node.getAttribute('lang') ?? node.getAttribute('xml:lang')) : null;
+                        if (lang) {
+                            if (wanted === '*') return true;
+                            const lower = lang.toLowerCase();
+                            const w = wanted.toLowerCase();
+                            return lower === w || lower.startsWith(w + '-');
+                        }
+                        node = node.parentNode;
+                    }
+                    return false;
+                }
+
             default:
                 // Unsupported pseudo-class
                 return false;
