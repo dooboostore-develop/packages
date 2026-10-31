@@ -691,7 +691,7 @@ export abstract class ElementBase extends ParentNodeBase implements Element {
   }
 
   protected decodeHTMLEntities(str: string): string {
-    const entityMap: any = { '&amp;': '&', '&lt;': '<', '&gt;': '>', '&quot;': '"', '&#39;': "'", '&#34;': '"', '&apos;': "'", '&copy;': '©', '&reg;': '®', '&trade;': '™', '&nbsp;': ' ', '&hellip;': '…', '&mdash;': '—', '&ndash;': '–', '&lsquo;': '\u2018', '&rsquo;': '\u2019', '&ldquo;': '"', '&rdquo;': '"' };
+    const entityMap: any = { '&amp;': '&', '&lt;': '<', '&gt;': '>', '&quot;': '"', '&#39;': "'", '&#34;': '"', '&apos;': "'", '&copy;': '©', '&reg;': '®', '&trade;': '™', '&nbsp;': '\u00A0', '&hellip;': '…', '&mdash;': '—', '&ndash;': '–', '&lsquo;': '\u2018', '&rsquo;': '\u2019', '&ldquo;': '"', '&rdquo;': '"' };
     return str.replace(/&[a-zA-Z0-9#]+;/g, entity => {
       if (entityMap[entity]) return entityMap[entity];
       if (entity.startsWith('&#') && entity.endsWith(';')) {

@@ -235,7 +235,7 @@ export abstract class NodeBase implements Node {
       '&copy;': '©',
       '&reg;': '®',
       '&trade;': '™',
-      '&nbsp;': ' ',
+      '&nbsp;': '\u00A0',
       '&hellip;': '…',
       '&mdash;': '—',
       '&ndash;': '–',

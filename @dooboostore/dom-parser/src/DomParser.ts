@@ -212,6 +212,29 @@ export class DomParser {
   }
 
   /**
+   * Quote-aware tag-end scan: the first ">" outside single/double quotes.
+   * Mirrors ElementBase.findTagEnd for the innerHTML path.
+   */
+  private findTagEnd(html: string, startIndex: number): number {
+    let i = startIndex + 1;
+    let inQuotes = false;
+    let quoteChar = '';
+    while (i < html.length) {
+      const char = html[i];
+      if (!inQuotes) {
+        if (char === '"' || char === "'") {
+          inQuotes = true;
+          quoteChar = char;
+        } else if (char === '>') return i;
+      } else if (char === quoteChar) {
+        inQuotes = false;
+      }
+      i++;
+    }
+    return -1;
+  }
+
+  /**
    * Single-pass HTML parser: scans `html` forward exactly once starting at
    * `pos`, appending nodes to `parent`. Stops after consuming this level's
    * `</stopTag>` (returns the position past it) or at end of input.
@@ -273,8 +296,9 @@ export class DomParser {
         }
       }
 
-      // Find tag end
-      const tagEnd = html.indexOf('>', tagStart);
+      // Find tag end. Attribute values may contain ">" (e.g. title="a>b"),
+      // so scan quote-aware instead of a naive indexOf('>').
+      const tagEnd = this.findTagEnd(html, tagStart);
       if (tagEnd === -1) break;
 
       const tagContent = html.substring(tagStart + 1, tagEnd);
@@ -479,7 +503,7 @@ export class DomParser {
       '&copy;': '©',
       '&reg;': '®',
       '&trade;': '™',
-      '&nbsp;': ' ',
+      '&nbsp;': '\u00A0',
       '&hellip;': '…',
       '&mdash;': '—',
       '&ndash;': '–',
