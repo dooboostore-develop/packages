@@ -55,6 +55,25 @@ describe('selector combinators (descendant, >, +, ~)', () => {
         assert.equal(doc.querySelectorAll(':not([attr2="val2"])[attr3="(val3)"]').length, 1);
     });
 
+    test(':scope is the queried root, evaluated fresh every call (nwsapi#144 class)', () => {
+        const doc = new DomParser('<!doctype html><html><head></head><body><div></div></body></html>').document as any;
+        assert.deepEqual(
+            Array.from(doc.querySelectorAll(':scope>*')).map((e: any) => e.tagName),
+            ['HEAD', 'BODY']
+        );
+        doc.body.querySelectorAll('*');
+        assert.deepEqual(
+            Array.from(doc.querySelectorAll(':scope>*')).map((e: any) => e.tagName),
+            ['HEAD', 'BODY']
+        );
+        assert.equal(doc.querySelector('div').querySelectorAll(':scope>*').length, 0);
+        assert.equal(doc.querySelector('div').matches(':scope'), true);
+        assert.deepEqual(
+            Array.from(doc.querySelectorAll(':scope')).map((e: any) => e.tagName),
+            ['HTML']
+        );
+    });
+
     test('shadow scoping: selectors never cross the shadow boundary except via :host (happy-dom#2554)', () => {
         const window = parseHTML('<div></div>') as any;
         const document = window.document;

@@ -100,7 +100,10 @@ export abstract class ParentNodeBase extends ChildNodeBase implements ParentNode
         
         for (const selector of selectorList) {
             if (selector) {
-                this._querySelectorAllRecursive(selector, results);
+                // Scope for :scope: the queried element itself, or the document
+                // element for document-wide queries (browsers scope to <html>).
+                const scopeEl = (this as any).nodeType === 9 ? ((this as any).documentElement ?? this) : this;
+                this._querySelectorAllRecursive(selector, results, scopeEl);
             }
         }
         
@@ -118,19 +121,19 @@ export abstract class ParentNodeBase extends ChildNodeBase implements ParentNode
     }
 
     // Private helper methods for querySelector
-    private _querySelectorAllRecursive(selectors: string, results: Element[]): void {
+    private _querySelectorAllRecursive(selectors: string, results: Element[], scope?: any): void {
         for (const child of this._childNodesInternal) {
             if (child && child.nodeType === ELEMENT_NODE) {
                 const element = child as unknown as Element;
 
                 // Check if this element matches the selector
-                if (CSSSelector.matches(element, selectors)) {
+                if (CSSSelector.matches(element, selectors, scope ?? this)) {
                     results.push(element);
                 }
 
                 // Recursively search in child elements
                 if (child instanceof ParentNodeBase) {
-                    child._querySelectorAllRecursive(selectors, results);
+                    child._querySelectorAllRecursive(selectors, results, scope ?? this);
                 }
             }
         }

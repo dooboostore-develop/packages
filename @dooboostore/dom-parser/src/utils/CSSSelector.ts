@@ -9,10 +9,11 @@ export class CSSSelector {
      * Handles comma lists and combinators (descendant, >, +, ~);
      * matching runs right-to-left like browsers.
      */
-    static matches(element: Element, selector: string): boolean {
+    static matches(element: Element, selector: string, scope?: any): boolean {
+        const scopeEl = scope ?? element;
         for (const part of this.splitTopLevel(selector.trim(), ',')) {
             const sel = part.trim();
-            if (sel && this.matchesComplex(element as any, sel)) {
+            if (sel && this.matchesComplex(element as any, sel, scopeEl)) {
                 return true;
             }
         }
@@ -23,13 +24,13 @@ export class CSSSelector {
     /**
      * Match a complex selector (compound selector + combinators) against an element
      */
-    private static matchesComplex(element: any, selector: string): boolean {
+    private static matchesComplex(element: any, selector: string, scope?: any): boolean {
         const chain = this.splitCombinators(selector);
         if (chain.length === 0) return false;
 
         let current: any = element;
         let i = chain.length - 1;
-        if (!this.matchesCompound(current, chain[i].compound)) return false;
+        if (!this.matchesCompound(current, chain[i].compound, scope)) return false;
 
         while (i > 0) {
             const combinator = chain[i].combinator;
@@ -37,16 +38,16 @@ export class CSSSelector {
 
             if (combinator === '>') {
                 current = current.parentNode;
-                if (!current || current.nodeType !== 1 || !this.matchesCompound(current, prev)) return false;
+                if (!current || (current !== scope && current.nodeType !== 1) || !this.matchesCompound(current, prev, scope)) return false;
             } else if (combinator === '+') {
                 current = this.previousElementSibling(current);
-                if (!current || !this.matchesCompound(current, prev)) return false;
+                if (!current || !this.matchesCompound(current, prev, scope)) return false;
             } else if (combinator === '~') {
-                current = this.findMatchingSibling(current, prev);
+                current = this.findMatchingSibling(current, prev, scope);
                 if (!current) return false;
             } else {
                 // Descendant combinator
-                current = this.findMatchingAncestor(current, prev);
+                current = this.findMatchingAncestor(current, prev, scope);
                 if (!current) return false;
             }
             i--;
@@ -58,13 +59,13 @@ export class CSSSelector {
     /**
      * Match a single compound selector (e.g., "meta[charset]", "div.class", "input#id")
      */
-    private static matchesCompound(element: any, selector: string): boolean {
+    private static matchesCompound(element: any, selector: string, scope?: any): boolean {
         // Handle compound selectors (e.g., "meta[charset]", "div.class", "input#id")
         const components = this.parseSelector(selector);
 
         // All components must match for the selector to match
         for (const component of components) {
-            if (!this.matchesSingleSelector(element, component)) {
+            if (!this.matchesSingleSelector(element, component, scope)) {
                 return false;
             }
         }
@@ -221,16 +222,16 @@ export class CSSSelector {
         return null;
     }
 
-    private static findMatchingSibling(element: any, compound: string): any {
+    private static findMatchingSibling(element: any, compound: string, scope?: any): any {
         let sibling = this.previousElementSibling(element);
         while (sibling) {
-            if (this.matchesCompound(sibling, compound)) return sibling;
+            if (this.matchesCompound(sibling, compound, scope)) return sibling;
             sibling = this.previousElementSibling(sibling);
         }
         return null;
     }
 
-    private static findMatchingAncestor(element: any, compound: string): any {
+    private static findMatchingAncestor(element: any, compound: string, scope?: any): any {
         // :host (or :host.xxx) refers to the shadow host of the element's own
         // tree — the only sanctioned way to cross a shadow boundary upward.
         const components = this.parseSelector(compound);
@@ -239,16 +240,21 @@ export class CSSSelector {
             const host = root && root.nodeType === 11 && (root as any).host ? (root as any).host : null;
             if (host) {
                 const rest = components.filter(c => c !== ':host');
-                if (rest.every(c => this.matchesSingleSelector(host, c))) return host;
+                if (rest.every(c => this.matchesSingleSelector(host, c, scope))) return host;
             }
             return null;
         }
         // Normal compounds never cross a shadow boundary (#2554 class):
-        // selectors are scoped to the tree under evaluation.
+        // selectors are scoped to the tree under evaluation. The scope root
+        // itself (document, fragment, or queried element) always matches.
         let ancestor = element.parentNode;
         while (ancestor) {
+            if (ancestor === scope) {
+                if (this.matchesCompound(ancestor, compound, scope)) return ancestor;
+                return null;
+            }
             if (ancestor.nodeType === 11) return null;
-            if (ancestor.nodeType === 1 && this.matchesCompound(ancestor, compound)) return ancestor;
+            if (ancestor.nodeType === 1 && this.matchesCompound(ancestor, compound, scope)) return ancestor;
             ancestor = ancestor.parentNode;
         }
         return null;
@@ -351,8 +357,14 @@ export class CSSSelector {
     /**
      * Match a single selector component against an element
      */
-    private static matchesSingleSelector(element: Element, selector: string): boolean {
+    private static matchesSingleSelector(element: Element, selector: string, scope?: any): boolean {
         selector = selector.trim();
+
+        // :scope matches the scoping element only (nwsapi#144 class: a cached
+        // or missing scope makes every scoped selector wrong, so there is no cache).
+        if (selector === ':scope') {
+            return element === scope;
+        }
 
         // Tag selector (e.g., "div", "dr-wow", "wow\\:zz")
         // Handle escaped colons in tag names
@@ -375,7 +387,7 @@ export class CSSSelector {
 
         // Pseudo-class selectors
         if (selector.startsWith(':')) {
-            return this.matchesPseudoClass(element, selector);
+            return this.matchesPseudoClass(element, selector, scope);
         }
 
         // Attribute selector (e.g., "[type='text']", "[disabled]", "[value*='test']")
@@ -472,7 +484,7 @@ export class CSSSelector {
     /**
      * Match pseudo-class selectors
      */
-    private static matchesPseudoClass(element: Element, selector: string): boolean {
+    private static matchesPseudoClass(element: Element, selector: string, scope?: any): boolean {
         const pseudoClass = selector.substring(1); // Remove :
 
         // Parse pseudo-class with parameters: nth-child(2), contains('text')
@@ -584,7 +596,7 @@ export class CSSSelector {
             case 'not':
                 // :not(selector) - simplified implementation
                 if (pseudoParam) {
-                    return !CSSSelector.matches(element, pseudoParam);
+                    return !CSSSelector.matches(element, pseudoParam, scope);
                 }
                 return false;
 
