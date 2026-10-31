@@ -198,6 +198,20 @@ export class DomParser {
   }
 
   /**
+   * Spec "insert a character": consecutive character data merges into the
+   * previous Text sibling instead of spawning a new Text node.
+   */
+  private appendText(parent: any, rawText: string): void {
+    const decoded = this.decodeHTMLEntities(rawText);
+    const last = parent.lastChild as any;
+    if (last && last.nodeType === 3 /* TEXT_NODE */ && typeof last.appendData === 'function') {
+      last.appendData(decoded);
+      return;
+    }
+    parent.appendChild(new TextBase(decoded, this.document));
+  }
+
+  /**
    * Single-pass HTML parser: scans `html` forward exactly once starting at
    * `pos`, appending nodes to `parent`. Stops after consuming this level's
    * `</stopTag>` (returns the position past it) or at end of input.
@@ -223,20 +237,19 @@ export class DomParser {
         // No more tags, add remaining text if any
         // Per HTML spec ("insert a character"), character references are
         // decoded at parse time so Text.data holds decoded text.
-        const remainingText = html.substring(pos).trim();
-        if (remainingText) {
-          const textNode = new TextBase(this.decodeHTMLEntities(remainingText), this.document);
-          parent.appendChild(textNode);
+        // Only all-whitespace chunks are dropped; other text is kept exactly.
+        const remainingText = html.substring(pos);
+        if (remainingText.trim()) {
+          this.appendText(parent, remainingText);
         }
         return len;
       }
 
       // Add text before tag if any
       if (tagStart > pos) {
-        const textContent = html.substring(pos, tagStart).trim();
-        if (textContent) {
-          const textNode = new TextBase(this.decodeHTMLEntities(textContent), this.document);
-          parent.appendChild(textNode);
+        const textContent = html.substring(pos, tagStart);
+        if (textContent.trim()) {
+          this.appendText(parent, textContent);
         }
       }
 
@@ -291,7 +304,19 @@ export class DomParser {
         // "<>" or "< ..." is not a tag per the HTML spec (tag open state:
         // anything but a letter, "!", "/" or "?" emits "<" as text).
         // Emit the "<" literally and resume right after it.
-        parent.appendChild(new TextBase('<', this.document));
+        this.appendText(parent, '<');
+        pos = tagStart + 1;
+        continue;
+      }
+
+      // "<3", "<%", ... is not a tag either: after the comment ("!")
+      // and closing ("/") paths handled above, the tag open state only
+      // accepts an ASCII letter. Anything else (e.g. "?") keeps its
+      // previous path; other characters emit "<" as text and reconsume.
+      const firstCode = tagContent.charCodeAt(0);
+      const isAsciiLetter = (firstCode >= 65 && firstCode <= 90) || (firstCode >= 97 && firstCode <= 122);
+      if (!isAsciiLetter && firstCode !== 33 /* ! */ && firstCode !== 63 /* ? */) {
+        this.appendText(parent, '<');
         pos = tagStart + 1;
         continue;
       }

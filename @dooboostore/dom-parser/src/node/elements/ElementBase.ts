@@ -443,18 +443,12 @@ export abstract class ElementBase extends ParentNodeBase implements Element {
       // decoded at parse time so Text.data holds decoded text.
       // (style/script raw-text elements are handled separately below.)
       if (nextTagStart === -1) {
-        let text = html.substring(pos).trim();
-        if (text) {
-          text = this.fixBrokenClosingTags(text);
-          if (TextBase) targetNode.appendChild(new TextBase(this.decodeHTMLEntities(text), this._ownerDocument));
-        }
+        const text = html.substring(pos);
+        if (text.trim()) this.appendTextNode(targetNode, text);
         return len;
       } else if (nextTagStart > pos) {
-        let text = html.substring(pos, nextTagStart).trim();
-        if (text) {
-          text = this.fixBrokenClosingTags(text);
-          if (TextBase) targetNode.appendChild(new TextBase(this.decodeHTMLEntities(text), this._ownerDocument));
-        }
+        const text = html.substring(pos, nextTagStart);
+        if (text.trim()) this.appendTextNode(targetNode, text);
       }
 
       pos = nextTagStart;
@@ -494,7 +488,19 @@ export abstract class ElementBase extends ParentNodeBase implements Element {
 
       if (!tagName) {
         // "<>" is not a tag per the HTML spec; emit "<" as text.
-        if (TextBase) targetNode.appendChild(new TextBase('<', this._ownerDocument));
+        this.appendTextNode(targetNode, '<');
+        pos = nextTagStart + 1;
+        continue;
+      }
+
+      // "<3", "<%", ... is not a tag either: after the comment ("!")
+      // and closing ("/") paths handled above, the tag open state only
+      // accepts an ASCII letter. Anything else (e.g. "?") keeps its
+      // previous path; other characters emit "<" as text and reconsume.
+      const firstCode = tagContent.charCodeAt(0);
+      const isAsciiLetter = (firstCode >= 65 && firstCode <= 90) || (firstCode >= 97 && firstCode <= 122);
+      if (!isAsciiLetter && firstCode !== 33 /* ! */ && firstCode !== 63 /* ? */) {
+        this.appendTextNode(targetNode, '<');
         pos = nextTagStart + 1;
         continue;
       }
@@ -561,6 +567,23 @@ export abstract class ElementBase extends ParentNodeBase implements Element {
       }
     }
     return pos;
+  }
+
+  /**
+   * Spec "insert a character": consecutive character data merges into the
+   * previous Text sibling instead of spawning a new Text node.
+   * Only all-whitespace chunks are dropped; other text is kept exactly.
+   */
+  private appendTextNode(targetNode: any, rawText: string): void {
+    const { TextBase } = ElementBase.dependencies as any;
+    if (!TextBase || !rawText) return;
+    const text = this.fixBrokenClosingTags(this.decodeHTMLEntities(rawText));
+    const last = targetNode.lastChild as any;
+    if (last && last.nodeType === 3 /* TEXT_NODE */ && typeof last.appendData === 'function') {
+      last.appendData(text);
+      return;
+    }
+    targetNode.appendChild(new TextBase(text, this._ownerDocument));
   }
 
   private findTagEnd(html: string, startIndex: number): number {
