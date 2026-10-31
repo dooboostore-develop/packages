@@ -69,6 +69,7 @@ export function GET(configOrTarget?: Omit<MappingConfig, 'method'> | any, proper
     process({ method: HttpMethod.GET }, configOrTarget, propertyKey, descriptor);
   } else {
     return (target: any, propertyKey: string | symbol, descriptor: PropertyDescriptor) => {
+      configOrTarget = configOrTarget ?? {};
       configOrTarget.method = HttpMethod.GET;
       process(configOrTarget, target, propertyKey, descriptor);
     };
@@ -88,6 +89,7 @@ export function POST(configOrTarget?: Omit<MappingConfig, 'method'> | any, prope
     process({ method: HttpMethod.POST }, configOrTarget, propertyKey, descriptor);
   } else {
     return (target: any, propertyKey: string | symbol, descriptor: PropertyDescriptor) => {
+      configOrTarget = configOrTarget ?? {};
       configOrTarget.method = HttpMethod.POST;
       process(configOrTarget, target, propertyKey, descriptor);
     };
@@ -107,6 +109,7 @@ export function DELETE(configOrTarget?: Omit<MappingConfig, 'method'> | any, pro
     process({ method: HttpMethod.DELETE }, configOrTarget, propertyKey, descriptor);
   } else {
     return (target: any, propertyKey: string | symbol, descriptor: PropertyDescriptor) => {
+      configOrTarget = configOrTarget ?? {};
       configOrTarget.method = HttpMethod.DELETE;
       process(configOrTarget, target, propertyKey, descriptor);
     };
@@ -126,6 +129,7 @@ export function PUT(configOrTarget?: Omit<MappingConfig, 'method'> | any, proper
     process({ method: HttpMethod.PUT }, configOrTarget, propertyKey, descriptor);
   } else {
     return (target: any, propertyKey: string | symbol, descriptor: PropertyDescriptor) => {
+      configOrTarget = configOrTarget ?? {};
       configOrTarget.method = HttpMethod.PUT;
       process(configOrTarget, target, propertyKey, descriptor);
     };
@@ -145,6 +149,7 @@ export function PATCH(configOrTarget?: Omit<MappingConfig, 'method'> | any, prop
     process({ method: HttpMethod.PATCH }, configOrTarget, propertyKey, descriptor);
   } else {
     return (target: any, propertyKey: string | symbol, descriptor: PropertyDescriptor) => {
+      configOrTarget = configOrTarget ?? {};
       configOrTarget.method = HttpMethod.PATCH;
       process(configOrTarget, target, propertyKey, descriptor);
     };
@@ -164,6 +169,7 @@ export function OPTIONS(configOrTarget?: Omit<MappingConfig, 'method'> | any, pr
     process({ method: HttpMethod.OPTIONS }, configOrTarget, propertyKey, descriptor);
   } else {
     return (target: any, propertyKey: string | symbol, descriptor: PropertyDescriptor) => {
+      configOrTarget = configOrTarget ?? {};
       configOrTarget.method = HttpMethod.OPTIONS;
       process(configOrTarget, target, propertyKey, descriptor);
     };
@@ -183,6 +189,7 @@ export function HEAD(configOrTarget?: Omit<MappingConfig, 'method'> | any, prope
     process({ method: HttpMethod.HEAD }, configOrTarget, propertyKey, descriptor);
   } else {
     return (target: any, propertyKey: string | symbol, descriptor: PropertyDescriptor) => {
+      configOrTarget = configOrTarget ?? {};
       configOrTarget.method = HttpMethod.HEAD;
       process(configOrTarget, target, propertyKey, descriptor);
     };
@@ -202,6 +209,7 @@ export function TRACE(configOrTarget?: Omit<MappingConfig, 'method'> | any, prop
     process({ method: HttpMethod.TRACE }, configOrTarget, propertyKey, descriptor);
   } else {
     return (target: any, propertyKey: string | symbol, descriptor: PropertyDescriptor) => {
+      configOrTarget = configOrTarget ?? {};
       configOrTarget.method = HttpMethod.TRACE;
       process(configOrTarget, target, propertyKey, descriptor);
     };
@@ -221,6 +229,7 @@ export function CONNECT(configOrTarget?: Omit<MappingConfig, 'method'> | any, pr
     process({ method: HttpMethod.CONNECT }, configOrTarget, propertyKey, descriptor);
   } else {
     return (target: any, propertyKey: string | symbol, descriptor: PropertyDescriptor) => {
+      configOrTarget = configOrTarget ?? {};
       configOrTarget.method = HttpMethod.CONNECT;
       process(configOrTarget, target, propertyKey, descriptor);
     };

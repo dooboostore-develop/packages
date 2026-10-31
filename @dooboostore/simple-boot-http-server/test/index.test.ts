@@ -2,3 +2,4 @@
 import 'reflect-metadata';
 import './server/server.test.ts';
 import './server/content-type-generator.test.ts';
+import './server/spa-fallback.test.ts';

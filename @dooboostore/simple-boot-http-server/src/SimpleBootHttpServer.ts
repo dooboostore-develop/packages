@@ -390,7 +390,10 @@ export class SimpleBootHttpServer extends SimpleApplication {
         console.error('request error:', e);
         transactionManager?.catch(e);
         rr.resStatusCode(e instanceof HttpError ? e.status : HttpStatus.InternalServerError)
-        const execute = typeof this.option.globalAdvice === 'function' ? this.simstanceManager.getOrNewSim(this.option.globalAdvice) : this.option.globalAdvice;
+        const globalAdvice = this.option.globalAdvice;
+        // getOrNewSim takes { target }; passing the class directly
+        // destructures to undefined and silently disables globalAdvice.
+        const execute = typeof globalAdvice === 'function' ? this.simstanceManager.getOrNewSim({ target: globalAdvice }) : globalAdvice;
         if (!execute) {
           rr.resEnd();
           // rr.resEnd().catch(e => {
