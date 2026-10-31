@@ -243,8 +243,9 @@ export abstract class ElementBase extends ParentNodeBase implements Element {
   set innerText(value: string | null) {
     // Clear all children and store the literal text.
     // Escaping happens on serialization (innerHTML), not in storage.
+    // null clears (matches browsers); everything else is String()-coerced.
     this._childNodesInternal = [];
-    if (value !== null && value !== undefined) {
+    if (value !== null) {
       const stringValue = String(value);
 
       const { TextBase } = ElementBase.dependencies;
@@ -256,7 +257,7 @@ export abstract class ElementBase extends ParentNodeBase implements Element {
     }
   }
 
-  set innerHTML(value: string) {
+  set innerHTML(value: string | null) {
     // Clear existing children
     while (this._childNodesInternal.length > 0) {
       const child = this._childNodesInternal[0];
@@ -266,8 +267,9 @@ export abstract class ElementBase extends ParentNodeBase implements Element {
     }
 
     // Parse HTML and create child nodes
-    // WebIDL: DOMString coercion (number -> "1", null -> "null", etc.)
-    const stringValue = String(value);
+    // null clears like browsers; everything else is String()-coerced
+    // (numbers become text, undefined becomes "undefined", etc.)
+    const stringValue = value === null ? '' : String(value);
     if (stringValue.trim()) {
       const isInert = (this as any)._isInertHTMLParsing === true;
       this.parseAndAppendHTML(stringValue, this, isInert);

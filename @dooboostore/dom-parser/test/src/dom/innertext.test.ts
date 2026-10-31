@@ -143,13 +143,20 @@ describe('InnerText and TextContent - HTML Entity Escaping', () => {
         testDiv.textContent = '   \n\t   ';
         assert.equal(testDiv.textContent, '   \n\t   ', 'Whitespace should be preserved');
         
-        // Test null/undefined handling
+        // Test null/undefined handling (matches browsers: null clears)
         testDiv.innerText = null as any;
-        assert.equal(testDiv.innerText, 'null', 'null should be converted to string');
-        
+        assert.equal(testDiv.innerText, '', 'null should clear');
+        assert.equal(testDiv.childNodes.length, 0, 'null should remove children');
+
         testDiv.textContent = undefined as any;
         assert.equal(testDiv.textContent, 'undefined', 'undefined should be converted to string');
-        
+
+        testDiv.textContent = null as any;
+        assert.equal(testDiv.textContent, '', 'null textContent should clear');
+
+        testDiv.innerText = 5 as any;
+        assert.equal(testDiv.innerText, '5', 'numbers should be coerced');
+
         console.log('✅ Empty and whitespace content handling works correctly');
     });
 });

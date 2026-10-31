@@ -102,8 +102,8 @@ export class ShadowRootBase extends DocumentFragmentBase implements ShadowRoot {
     }
 
     // Parse HTML and create child nodes
-    // WebIDL: DOMString coercion (number -> "1", null -> "null", etc.)
-    const stringValue = String(value);
+    // null clears (matches browsers); everything else is String()-coerced
+    const stringValue = (value as any) === null ? '' : String(value);
     if (stringValue.trim()) {
       (this._host as any).parseAndAppendHTML(stringValue, this);
     }

@@ -236,9 +236,10 @@ export abstract class HTMLElementBase extends ElementBase implements HTMLElement
     return this._innerText || this.textContent || '';
   }
 
-  set innerText(value: string) {
-    this._innerText = value;
-    this.textContent = value;
+  set innerText(value: string | null) {
+    const normalized = value === null ? '' : String(value);
+    this._innerText = normalized;
+    this.textContent = normalized;
   }
 
   get outerText(): string {

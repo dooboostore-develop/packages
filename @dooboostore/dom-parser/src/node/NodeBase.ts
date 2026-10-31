@@ -188,8 +188,8 @@ export abstract class NodeBase implements Node {
   }
 
   set textContent(value: string | null) {
-    // Convert to string (including null and undefined)
-    const stringValue = String(value);
+    // null clears (matches browsers); everything else is String()-coerced
+    const stringValue = value === null ? '' : String(value);
     // Store original text content
     this._textContent = stringValue;
     // Clear all children and add a single text node
