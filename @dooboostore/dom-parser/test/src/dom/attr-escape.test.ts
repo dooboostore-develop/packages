@@ -25,11 +25,11 @@ describe('Attribute escaping on serialize (issue #16)', () => {
         assert.equal(window2.document.querySelector('div').outerHTML, '<div data-x="A &amp; B"></div>');
     });
 
-    test('quotes are still escaped, < > are left alone in attrs', () => {
+    test('< > are escaped in attrs like browsers do (quotes too)', () => {
         const window = parseHTML('<html><body><div id="t"></div></body></html>');
         const el = window.document.getElementById('t');
         el.setAttribute('title', 'say "hi" <now>');
-        assert.equal(el.outerHTML, '<div id="t" title="say &quot;hi&quot; <now>"></div>');
+        assert.equal(el.outerHTML, '<div id="t" title="say &quot;hi&quot; &lt;now&gt;"></div>');
     });
 
     test('NBSP in attribute value is escaped', () => {

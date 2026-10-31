@@ -101,12 +101,12 @@ describe('innerHTML Complex Real-world Cases', () => {
 
     // Check innerHTML regeneration
     const regeneratedHTML = body.innerHTML;
-    assert.ok(regeneratedHTML.includes('<meta id="test-start" />'));
+    assert.ok(regeneratedHTML.includes('<meta id="test-start">'));
     assert.ok(regeneratedHTML.includes('<style id="test-style">'));
     assert.ok(regeneratedHTML.includes('</style>'));
     assert.ok(regeneratedHTML.includes('<main>'));
     assert.ok(regeneratedHTML.includes('</main>'));
-    assert.ok(regeneratedHTML.includes('<meta id="test-end" />'));
+    assert.ok(regeneratedHTML.includes('<meta id="test-end">'));
   });
 
   it('should handle deeply nested structure without breaking', () => {

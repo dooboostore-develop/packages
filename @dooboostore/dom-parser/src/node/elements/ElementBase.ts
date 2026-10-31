@@ -5,7 +5,7 @@ import { ELEMENT_NODE, TEXT_NODE, ATTRIBUTE_NODE } from '../Node';
 import { CSSSelector } from '../../utils/CSSSelector';
 import { parseNodes as parseSharedNodes, decodeHTMLEntities, type HtmlParseContext } from '../../parser';
 import { serializeChildrenWithShadow, attachDeclarativeShadowRoots, shouldIncludeShadowRoot, shadowTemplateOpenTag, type GetHTMLOptions } from '../serialize';
-import { SVG_NAMESPACE, MATHML_NAMESPACE, elementNamespaceForTag, childNamespaceForElement } from '../../utils/namespaces';
+import { SVG_NAMESPACE, MATHML_NAMESPACE, elementNamespaceForTag, childNamespaceForElement, normalizeAttributeName } from '../../utils/namespaces';
 import { NodeBase } from '../NodeBase';
 import { ShadowRootBase } from '../ShadowRootBase';
 
@@ -87,9 +87,10 @@ export abstract class ElementBase extends ParentNodeBase implements Element {
 
       if (data.parsedAttributes) {
         for (const [name, value] of data.parsedAttributes.entries()) {
-          this._attributes.set(name, value);
-          if (name === 'id') this._id = value;
-          else if (name === 'class') this._className = value;
+          const key = normalizeAttributeName(name, this.namespaceURI);
+          this._attributes.set(key, value);
+          if (key === 'id') this._id = value;
+          else if (key === 'class') this._className = value;
         }
       }
     }
@@ -335,14 +336,15 @@ export abstract class ElementBase extends ParentNodeBase implements Element {
     const isSelfClosing = selfClosingTags.includes(tagName);
 
     if (isSelfClosing) {
-      return `<${tagName}${attrs} />`;
+      return `<${tagName}${attrs}>`;
     } else {
       // Generate innerHTML directly without calling element.innerHTML to avoid recursion
       let childHTML = '';
 
-      // Add Declarative Shadow DOM if present
+      // Add Declarative Shadow DOM if present (intentional: SSR emits
+      // shadow content inline; use getHTML() for spec-exact output)
       if (element.shadowRoot) {
-        childHTML += `<template shadowrootmode="${element.shadowRoot.mode}">${element.shadowRoot.innerHTML}</template>`;
+        childHTML += `<template shadowrootmode="${(element.shadowRoot as any).mode}">${(element.shadowRoot as any).innerHTML}</template>`;
       }
 
       // Special handling for HTMLTemplateElement - use .content instead of _childNodesInternal
@@ -428,6 +430,8 @@ export abstract class ElementBase extends ParentNodeBase implements Element {
   protected escapeAttributeValue(str: string): string {
     return String(str)
       .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
       .replace(/\u00A0/g, '&nbsp;')
       .replace(/"/g, '&quot;');
   }
@@ -440,7 +444,7 @@ export abstract class ElementBase extends ParentNodeBase implements Element {
     const tagName = this.serializedTagName;
     const selfClosingTags = ['img', 'input', 'br', 'hr', 'meta', 'link', 'area', 'base', 'col', 'embed', 'source', 'track', 'wbr'];
     const isSelfClosing = selfClosingTags.includes(tagName);
-    return isSelfClosing ? `<${tagName}${attrs} />` : `<${tagName}${attrs}>${this.innerHTML}</${tagName}>`;
+    return isSelfClosing ? `<${tagName}${attrs}>` : `<${tagName}${attrs}>${this.innerHTML}</${tagName}>`;
   }
 
   get namespaceURI(): string | null {
@@ -450,10 +454,10 @@ export abstract class ElementBase extends ParentNodeBase implements Element {
     return null;
   }
   getAttribute(qualifiedName: string): string | null {
-    return this._attributes.get(qualifiedName.toLowerCase()) ?? null;
+    return this._attributes.get(normalizeAttributeName(qualifiedName, this.namespaceURI)) ?? null;
   }
   setAttribute(qualifiedName: string, value: string): void {
-    const name = qualifiedName.toLowerCase();
+    const name = normalizeAttributeName(qualifiedName, this.namespaceURI);
     const oldValue = this.getAttribute(name);
 
     this._attributes.set(name, value);
@@ -476,7 +480,7 @@ export abstract class ElementBase extends ParentNodeBase implements Element {
     }
   }
   removeAttribute(qualifiedName: string): void {
-    const name = qualifiedName.toLowerCase();
+    const name = normalizeAttributeName(qualifiedName, this.namespaceURI);
     const oldValue = this.getAttribute(name);
 
     this._attributes.delete(name);
@@ -499,7 +503,7 @@ export abstract class ElementBase extends ParentNodeBase implements Element {
     }
   }
   hasAttribute(qualifiedName: string): boolean {
-    return this._attributes.has(qualifiedName.toLowerCase());
+    return this._attributes.has(normalizeAttributeName(qualifiedName, this.namespaceURI));
   }
   closest(selectors: string): any {
     let element: Element | null = this as any;
@@ -513,7 +517,7 @@ export abstract class ElementBase extends ParentNodeBase implements Element {
     return CSSSelector.matches(this as any, selectors);
   }
   get attributes(): any {
-    return new (NamedNodeMapImpl as any)(this._attributes);
+    return new (NamedNodeMapImpl as any)(this._attributes, this.namespaceURI);
   }
   get clientHeight(): number {
     return 0;
@@ -844,12 +848,15 @@ class AttrImpl extends NodeBase implements Attr {
 }
 
 class NamedNodeMapImpl implements NamedNodeMap {
-  constructor(private attributes: Map<string, string>) {}
+  constructor(private attributes: Map<string, string>, private namespaceURI: string | null = null) {}
+  private normalize(name: string): string {
+    return normalizeAttributeName(name, this.namespaceURI);
+  }
   get length(): number {
     return this.attributes.size;
   }
   getNamedItem(qualifiedName: string): any {
-    const value = this.attributes.get(qualifiedName.toLowerCase());
+    const value = this.attributes.get(this.normalize(qualifiedName));
     return value !== undefined ? new AttrImpl(qualifiedName, value) : null;
   }
   getNamedItemNS(_ns: string | null, localName: string): any {
@@ -861,9 +868,9 @@ class NamedNodeMapImpl implements NamedNodeMap {
     return null;
   }
   removeNamedItem(qualifiedName: string): any {
-    const value = this.attributes.get(qualifiedName.toLowerCase());
+    const value = this.attributes.get(this.normalize(qualifiedName));
     if (value !== undefined) {
-      this.attributes.delete(qualifiedName.toLowerCase());
+      this.attributes.delete(this.normalize(qualifiedName));
       return new AttrImpl(qualifiedName, value);
     }
     throw new DOMException('The attribute is not found', 'NotFoundError');
@@ -872,8 +879,8 @@ class NamedNodeMapImpl implements NamedNodeMap {
     return this.removeNamedItem(localName);
   }
   setNamedItem(attr: any): any {
-    const oldValue = this.attributes.get(attr.name.toLowerCase());
-    this.attributes.set(attr.name.toLowerCase(), attr.value);
+    const oldValue = this.attributes.get(this.normalize(attr.name));
+    this.attributes.set(this.normalize(attr.name), attr.value);
     return oldValue !== undefined ? new AttrImpl(attr.name, oldValue) : null;
   }
   setNamedItemNS(attr: any): any {

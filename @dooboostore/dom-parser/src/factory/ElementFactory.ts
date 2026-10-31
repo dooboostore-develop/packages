@@ -1,5 +1,5 @@
 import { HTMLElementBase, htmlElements, svgElements, mathmlElements, HTMLElement, SVGElement, MathMLElement } from '../node/elements';
-import { SVG_NAMESPACE, MATHML_NAMESPACE, adjustSVGTagName } from '../utils/namespaces';
+import { SVG_NAMESPACE, MATHML_NAMESPACE, adjustSVGTagName, normalizeAttributeName } from '../utils/namespaces';
 
 // Global construction stack to pass attributes down to HTMLElementBase constructor
 export const constructionStack: any[] = [];
@@ -33,11 +33,14 @@ export class ElementFactory {
     const element = new ElementClass(qualifiedName, ownerDocument) as any;
     // getAttribute() must work right after construction (custom elements,
     // attributeChangedCallback), so apply parsed attributes immediately.
+    // Keys are normalized the same way setAttribute() does (no duplicates).
+    const elementNS: string | null = table === svgElementMap ? SVG_NAMESPACE : null;
     if (options && typeof options === 'object' && options.parsedAttributes) {
       for (const [name, value] of options.parsedAttributes.entries()) {
-        element._attributes.set(name, value);
-        if (name === 'id') element._id = value;
-        else if (name === 'class') element._className = value;
+        const key = normalizeAttributeName(name, elementNS);
+        element._attributes.set(key, value);
+        if (key === 'id') element._id = value;
+        else if (key === 'class') element._className = value;
       }
     }
     return element as HTMLElementBase;

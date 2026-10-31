@@ -17,7 +17,13 @@ function escapeText(str: string): string {
 }
 
 function escapeAttr(str: string): string {
-  return escapeText(str).replace(/"/g, '&quot;');
+  // Same escaping as ElementBase.escapeAttributeValue (kept byte-identical on purpose).
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/\u00A0/g, '&nbsp;')
+    .replace(/"/g, '&quot;');
 }
 
 function qualifiedTagName(element: any): string {
@@ -26,12 +32,16 @@ function qualifiedTagName(element: any): string {
   return (element.tagName as string).toLowerCase();
 }
 
+function isVoidElement(tagName: string): boolean {
+  return VOID_TAGS.includes(tagName);
+}
+
 function openTag(element: any): string {
   const tagName = qualifiedTagName(element);
   const attrs = Array.from(element._attributes?.entries?.() ?? [] as any)
     .map(([name, value]: [string, string]) => (value === '' ? ` ${name}` : ` ${name}="${escapeAttr(value)}"`))
     .join('');
-  if (VOID_TAGS.includes(tagName)) return `<${tagName}${attrs} />`;
+  // Void elements have no end tag (and no self-closing slash, like browsers).
   return `<${tagName}${attrs}>`;
 }
 
@@ -78,7 +88,7 @@ export function serializeNodeWithShadow(node: any, options?: GetHTMLOptions): st
 
 function serializeElementWithShadow(element: any, options?: GetHTMLOptions): string {
   const open = openTag(element);
-  if (open.endsWith('/>')) return open;
+  if (isVoidElement(qualifiedTagName(element))) return open;
   let inner = '';
   const shadowRoot = (element as any).shadowRoot ?? (element as any)._shadowRoot ?? null;
   if (shouldIncludeShadowRoot(shadowRoot, options)) {

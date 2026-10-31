@@ -52,11 +52,89 @@ export const svgTagFixups: Record<string, string> = {
 };
 
 /**
+ * SVG attribute name adjustments, per the HTML spec
+ * (https://html.spec.whatwg.org/multipage/parsing.html#adjust-svg-attributes).
+ * Maps the ASCII-lowercased name to the correct camelCase qualified name.
+ */
+export const svgAttrFixups: Record<string, string> = {
+  attributename: 'attributeName',
+  attributetype: 'attributeType',
+  basefrequency: 'baseFrequency',
+  baseprofile: 'baseProfile',
+  calcmode: 'calcMode',
+  clippathunits: 'clipPathUnits',
+  diffuseconstant: 'diffuseConstant',
+  edgemode: 'edgeMode',
+  filterunits: 'filterUnits',
+  glyphref: 'glyphRef',
+  gradienttransform: 'gradientTransform',
+  gradientunits: 'gradientUnits',
+  kernelmatrix: 'kernelMatrix',
+  kernelunitlength: 'kernelUnitLength',
+  keypoints: 'keyPoints',
+  keysplines: 'keySplines',
+  keytimes: 'keyTimes',
+  lengthadjust: 'lengthAdjust',
+  limitingconeangle: 'limitingConeAngle',
+  markerheight: 'markerHeight',
+  markerunits: 'markerUnits',
+  markerwidth: 'markerWidth',
+  maskcontentunits: 'maskContentUnits',
+  maskunits: 'maskUnits',
+  numoctaves: 'numOctaves',
+  pathlength: 'pathLength',
+  patterncontentunits: 'patternContentUnits',
+  patterntransform: 'patternTransform',
+  patternunits: 'patternUnits',
+  pointsatx: 'pointsAtX',
+  pointsaty: 'pointsAtY',
+  pointsatz: 'pointsAtZ',
+  preservealpha: 'preserveAlpha',
+  preserveaspectratio: 'preserveAspectRatio',
+  primitiveunits: 'primitiveUnits',
+  refx: 'refX',
+  refy: 'refY',
+  repeatcount: 'repeatCount',
+  repeatdur: 'repeatDur',
+  requiredextensions: 'requiredExtensions',
+  requiredfeatures: 'requiredFeatures',
+  specularconstant: 'specularConstant',
+  specularexponent: 'specularExponent',
+  spreadmethod: 'spreadMethod',
+  startoffset: 'startOffset',
+  stddeviation: 'stdDeviation',
+  stitchtiles: 'stitchTiles',
+  surfacescale: 'surfaceScale',
+  systemlanguage: 'systemLanguage',
+  tablevalues: 'tableValues',
+  targetx: 'targetX',
+  targety: 'targetY',
+  textlength: 'textLength',
+  viewbox: 'viewBox',
+  viewtarget: 'viewTarget',
+  xchannelselector: 'xChannelSelector',
+  ychannelselector: 'yChannelSelector',
+  zoomandpan: 'zoomAndPan',
+};
+
+/**
  * Returns the qualified (case-correct) tag name for an SVG element.
  */
 export function adjustSVGTagName(tagName: string): string {
   const lower = tagName.toLowerCase();
   return svgTagFixups[lower] ?? lower;
+}
+
+/**
+ * Normalizes a storage key for attributes: SVG elements keep the adjusted
+ * camelCase qualified name, everything else is ASCII-lowercased — matching
+ * what browsers store and serialize.
+ */
+export function normalizeAttributeName(name: string, namespaceURI: string | null): string {
+  if (namespaceURI === SVG_NAMESPACE) {
+    return svgAttrFixups[name.toLowerCase()] ?? name.toLowerCase();
+  }
+  return name.toLowerCase();
 }
 
 /**
