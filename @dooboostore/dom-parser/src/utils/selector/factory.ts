@@ -25,11 +25,31 @@ const ATTR_RE = /^([^=!*^$~|]+)(?:([=!*^$~|]+)(['"]?)([^'"]*)(['"]?))?$/;
  * Parsing is forgiving — anything unrecognized becomes a matcher
  * that matches nothing, never a throw.
  */
-export function createMatcher(selector: string): SelectorMatcher {
+const COMPILED_CACHE_MAX = 500;
+const compiledCache = new Map<string, SelectorMatcher>();
+
+function buildMatcher(selector: string): SelectorMatcher {
     const parts = splitTopLevel(selector, ',').map(s => s.trim()).filter(Boolean);
     if (parts.length === 0) return new NeverMatcher();
     if (parts.length === 1) return createComplex(parts[0]);
     return new SelectorListMatcher(parts.map(createComplex));
+}
+
+/**
+ * Cached entry point: compiled matchers are pure (match results are never
+ * stored), so caching them is safe — unlike caching *results*, which goes
+ * stale on DOM mutation (cf. happy-dom#2489).
+ */
+export function createMatcher(selector: string): SelectorMatcher {
+    const cached = compiledCache.get(selector);
+    if (cached) return cached;
+    const built = buildMatcher(selector);
+    if (compiledCache.size >= COMPILED_CACHE_MAX) {
+        const oldest = compiledCache.keys().next();
+        if (!oldest.done) compiledCache.delete(oldest.value);
+    }
+    compiledCache.set(selector, built);
+    return built;
 }
 
 export function createComplex(selector: string): SelectorMatcher {
