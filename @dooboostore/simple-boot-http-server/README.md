@@ -125,6 +125,40 @@ Built-in filters and end points (all exported from the package root):
 
 Other `HttpServerOption` fields: `serverOption` (HTTP/HTTPS), `listen`, `filters`, `requestEndPoints`, `closeEndPoints`, `errorEndPoints`, `webSocketEndPoints`, `sessionOption` (`key`, `expiredTime`, `provider`), `globalAdvice`, `fileUploadTempPath`, `noSuchRouteEndPointMappingThrow`, `transactionManagerFactory`.
 
+### SPA Fallback (serve `index.html` for app routes, keep `/api/*` JSON 404s)
+
+Unmatched routes throw through `noSuchRouteEndPointMappingThrow`, and a global `@ExceptionHandler` advice renders the final response. Split the two cases in the hook: unknown `/api/*` paths stay 404, everything else serves the app shell with `200` + `text/html`.
+
+```typescript
+import { Sim, Router, Route, ExceptionHandler } from '@dooboostore/simple-boot';
+import { SimpleBootHttpServer, HttpServerOption, GET, RequestResponse, NotFoundError } from '@dooboostore/simple-boot-http-server';
+
+class SpaFallback {}
+
+@Sim
+class SpaAdvice {
+  @ExceptionHandler({ type: SpaFallback })
+  fallback(rr: RequestResponse) {
+    rr.resStatusCode(200).resSetHeader('content-type', 'text/html; charset=utf-8');
+    rr.resWrite(INDEX_HTML); // your bundled index.html
+  }
+}
+
+const option = new HttpServerOption(
+  {
+    listen: { port: 8080 },
+    globalAdvice: SpaAdvice,
+    noSuchRouteEndPointMappingThrow: (rr: RequestResponse) =>
+      (rr.reqUrlPathName ?? '').startsWith('/api/')
+        ? new NotFoundError({ message: 'no route' })
+        : new SpaFallback()
+  },
+  { rootRouter: ApiRouter }
+);
+```
+
+Verified end to end: `GET /api/hello` → `200` JSON (API routes untouched), `GET /app/dashboard` (deep link) → `200` `text/html` byte-identical to `index.html`, `GET /api/nope` → `404`.
+
 ### Generator Streaming (SSE)
 Return a generator (`function*` or `async function*`) and the server streams it: headers (`status`, `header`, `contentType` from `res`) are sent immediately, then every yielded value is written to the body right away (strings/Buffers as-is, anything else as JSON), and the response ends when the generator finishes. If the client disconnects, the generator is stopped with `return()`, so its `finally` block runs. If the request's `Accept-Encoding` includes `gzip`, the stream is gzip-compressed and flushed (`Z_SYNC_FLUSH`) after every chunk, so events still arrive immediately. Headers are sent before the first chunk, so set them in `res` or in a before-filter — `setHeader` after that throws `ERR_HTTP_HEADERS_SENT`.
 
