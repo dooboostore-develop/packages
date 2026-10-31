@@ -1,5 +1,6 @@
 import { HTMLElementBase } from './HTMLElementBase';
 import {HTMLElement} from "./HTMLElement";
+import { formOwnerFor } from '../../utils/form-owner';
 
 /**
  * The **`HTMLInputElement`** class represents an HTML `<input>` element.
@@ -157,5 +158,9 @@ export class HTMLInputElement extends HTMLElement {
                 this._checked = false;
                 break;
         }
+    }
+
+    get form(): HTMLElement | null {
+        return formOwnerFor(this);
     }
 }

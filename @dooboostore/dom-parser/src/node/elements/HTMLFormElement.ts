@@ -1,5 +1,7 @@
 import { HTMLElementBase } from './HTMLElementBase';
 import {HTMLElement} from "./HTMLElement";
+import { HTMLCollectionImp } from '../collection/HTMLCollectionImp';
+import { formOwnerFor, isListedElement, LISTED_FORM_TAGS } from '../../utils/form-owner';
 
 /**
  * The **`HTMLFormElement`** class represents an HTML `<form>` element.
@@ -55,6 +57,36 @@ export class HTMLFormElement extends HTMLElement {
 
     get noValidate(): boolean {
         return this._noValidate;
+    }
+
+    get elements(): HTMLCollection {
+        // Listed elements whose form owner is this form, in tree order.
+        const root: any = typeof (this as any).getRootNode === 'function'
+            ? (this as any).getRootNode()
+            : (this as any).ownerDocument;
+        const scope = root || (this as any).ownerDocument;
+        const listed: Element[] = [];
+        if (scope && typeof scope.querySelectorAll === 'function') {
+            const candidates = scope.querySelectorAll(LISTED_FORM_TAGS);
+            for (let i = 0; i < candidates.length; i++) {
+                const el = candidates[i];
+                if (isListedElement(el) && formOwnerFor(el) === this) {
+                    listed.push(el);
+                }
+            }
+            // Multi-selector queries concatenate per-tag results; restore tree order.
+            const FOLLOWING = 4; // Node.DOCUMENT_POSITION_FOLLOWING
+            listed.sort((a: any, b: any) => {
+                if (a === b) return 0;
+                const pos = typeof a.compareDocumentPosition === 'function'
+                    ? a.compareDocumentPosition(b)
+                    : 0;
+                if (pos & FOLLOWING) return -1;
+                if (pos & 2) return 1; // DOCUMENT_POSITION_PRECEDING
+                return 0;
+            });
+        }
+        return new HTMLCollectionImp(listed);
     }
 
     set noValidate(value: boolean) {

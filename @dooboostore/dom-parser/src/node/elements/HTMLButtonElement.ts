@@ -1,5 +1,6 @@
 import { HTMLElementBase } from './HTMLElementBase';
 import {HTMLElement} from "./HTMLElement";
+import { formOwnerFor } from '../../utils/form-owner';
 
 /**
  * The **`HTMLButtonElement`** class represents an HTML `<button>` element.
@@ -80,5 +81,9 @@ export class HTMLButtonElement extends HTMLElement {
         this._value = '';
         break;
     }
+  }
+
+  get form(): HTMLElement | null {
+    return formOwnerFor(this);
   }
 }

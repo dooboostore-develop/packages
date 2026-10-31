@@ -1,6 +1,7 @@
 import { HTMLElementBase } from './HTMLElementBase';
 import {HTMLElement} from "./HTMLElement";
 import {HTMLOptionElement} from "./HTMLOptionElement";
+import { formOwnerFor } from '../../utils/form-owner';
 
 export class HTMLSelectElement extends HTMLElement { 
     constructor(tagName: string = 'SELECT', ownerDocument?: any) { 
@@ -94,5 +95,9 @@ export class HTMLSelectElement extends HTMLElement {
         const num = Number(val);
         const normalized = !isFinite(num) || num < 0 ? 0 : Math.floor(num);
         this.setAttribute('size', String(normalized));
+    }
+
+    get form(): HTMLElement | null {
+        return formOwnerFor(this);
     }
 }

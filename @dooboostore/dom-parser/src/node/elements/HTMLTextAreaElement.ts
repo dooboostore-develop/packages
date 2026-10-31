@@ -1,5 +1,6 @@
 import { HTMLElementBase } from './HTMLElementBase';
 import {HTMLElement} from "./HTMLElement";
+import { formOwnerFor } from '../../utils/form-owner';
 export class HTMLTextAreaElement extends HTMLElement { 
     constructor(tagName: string = 'TEXTAREA', ownerDocument?: any) { 
         super(tagName, ownerDocument); 
@@ -48,5 +49,9 @@ export class HTMLTextAreaElement extends HTMLElement {
 
     set name(value: string) {
         this.setAttribute('name', value);
+    }
+
+    get form(): HTMLElement | null {
+        return formOwnerFor(this);
     }
 }
