@@ -1,6 +1,6 @@
 {
   "name": "@dooboostore/dom-parser",
-  "version": "1.0.14",
+  "version": "1.0.15",
   "license": "MIT",
   "type": "module",
   "sideEffects": [
