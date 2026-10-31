@@ -1,5 +1,6 @@
 import { DocumentFragmentBase } from './DocumentFragmentBase';
 import { serializeChildrenWithShadow, attachDeclarativeShadowRoots, type GetHTMLOptions } from './serialize';
+import { coerceNullableString } from '../utils/coerce';
 
 /**
  * The **`ShadowRoot`** interface represents the root node of a shadow DOM subtree.
@@ -103,7 +104,7 @@ export class ShadowRootBase extends DocumentFragmentBase implements ShadowRoot {
 
     // Parse HTML and create child nodes
     // null clears (matches browsers); everything else is String()-coerced
-    const stringValue = (value as any) === null ? '' : String(value);
+    const stringValue = coerceNullableString(value);
     if (stringValue.trim()) {
       (this._host as any).parseAndAppendHTML(stringValue, this);
     }

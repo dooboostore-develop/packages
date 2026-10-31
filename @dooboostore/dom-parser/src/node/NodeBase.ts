@@ -3,6 +3,7 @@ import { ELEMENT_NODE, ATTRIBUTE_NODE, TEXT_NODE, CDATA_SECTION_NODE, ENTITY_REF
 import { NodeListOfImp } from './collection/NodeListOfImp';
 import { GetRootNodeOptions } from './GetRootNodeOptions';
 import { adjustNodeIteratorsOnRemove } from './NodeIterator';
+import { coerceNullableString } from '../utils/coerce';
 
 /**
  * Base implementation of the Node interface
@@ -189,7 +190,7 @@ export abstract class NodeBase implements Node {
 
   set textContent(value: string | null) {
     // null clears (matches browsers); everything else is String()-coerced
-    const stringValue = value === null ? '' : String(value);
+    const stringValue = coerceNullableString(value);
     // Store original text content
     this._textContent = stringValue;
     // Clear all children and add a single text node

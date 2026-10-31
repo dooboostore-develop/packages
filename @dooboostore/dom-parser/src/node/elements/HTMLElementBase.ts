@@ -1,6 +1,7 @@
 import { NodeClassRegistry } from '../NodeClassRegistry';
 import {ElementBase} from './ElementBase';
 import {StylePropertyMapImpl} from "../collection/StylePropertyMapImpl";
+import { coerceNullableString } from '../../utils/coerce';
 
 // import { HTMLElement, FocusOptions, CSSStyleDeclaration, DOMStringMap, ElementCSSInlineStyle, StylePropertyMap } from './HTMLElement';
 
@@ -237,7 +238,7 @@ export abstract class HTMLElementBase extends ElementBase implements HTMLElement
   }
 
   set innerText(value: string | null) {
-    const normalized = value === null ? '' : String(value);
+    const normalized = coerceNullableString(value);
     this._innerText = normalized;
     this.textContent = normalized;
   }

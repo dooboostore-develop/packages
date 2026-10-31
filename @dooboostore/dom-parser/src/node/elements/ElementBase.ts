@@ -8,6 +8,7 @@ import { serializeChildrenWithShadow, attachDeclarativeShadowRoots, shouldInclud
 import { SVG_NAMESPACE, MATHML_NAMESPACE, elementNamespaceForTag, childNamespaceForElement, normalizeAttributeName } from '../../utils/namespaces';
 import { NodeBase } from '../NodeBase';
 import { ShadowRootBase } from '../ShadowRootBase';
+import { coerceNullableString } from '../../utils/coerce';
 
 // Simple DOMException class for error handling
 class DOMException extends Error {
@@ -246,7 +247,7 @@ export abstract class ElementBase extends ParentNodeBase implements Element {
     // null clears (matches browsers); everything else is String()-coerced.
     this._childNodesInternal = [];
     if (value !== null) {
-      const stringValue = String(value);
+      const stringValue = coerceNullableString(value);
 
       const { TextBase } = ElementBase.dependencies;
       if (TextBase) {
@@ -269,7 +270,7 @@ export abstract class ElementBase extends ParentNodeBase implements Element {
     // Parse HTML and create child nodes
     // null clears like browsers; everything else is String()-coerced
     // (numbers become text, undefined becomes "undefined", etc.)
-    const stringValue = value === null ? '' : String(value);
+    const stringValue = coerceNullableString(value);
     if (stringValue.trim()) {
       const isInert = (this as any)._isInertHTMLParsing === true;
       this.parseAndAppendHTML(stringValue, this, isInert);
