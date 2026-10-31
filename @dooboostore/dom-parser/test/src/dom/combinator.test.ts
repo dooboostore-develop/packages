@@ -1,6 +1,6 @@
 import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
-import { DomParser } from '@dooboostore/dom-parser';
+import { DomParser, parseHTML } from '@dooboostore/dom-parser';
 
 // Ground truth: Chromium (via Playwright) for every expectation below.
 // Covers happy-dom#2505, #2507, #2550 and #2489 classes.
@@ -48,5 +48,23 @@ describe('selector combinators (descendant, >, +, ~)', () => {
     test('comma lists still work', () => {
         const doc = new DomParser('<div></div><p></p>').document as any;
         assert.equal(doc.querySelectorAll('div, p').length, 2);
+    });
+
+    test('shadow scoping: selectors never cross the shadow boundary except via :host (happy-dom#2554)', () => {
+        const window = parseHTML('<div></div>') as any;
+        const document = window.document;
+        const host = document.createElement('div');
+        host.id = 'host';
+        document.body.appendChild(host);
+        const shadowRoot = host.attachShadow({ mode: 'open' });
+        const target = document.createElement('span');
+        target.className = 'target';
+        shadowRoot.appendChild(target);
+        assert.equal(shadowRoot.querySelectorAll('#host .target').length, 0);
+        assert.equal(shadowRoot.querySelectorAll(':host .target').length, 1);
+        assert.equal(shadowRoot.querySelectorAll(':host').length, 0);
+        assert.equal(host.matches(':host'), false);
+        assert.equal(target.matches(':host span'), true);
+        assert.equal(target.matches('div span'), false);
     });
 });
