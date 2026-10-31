@@ -100,6 +100,50 @@ export class CSSSelector {
     }
 
     /**
+     * Index just past the CSS escape starting at i (selector[i] === '\\').
+     * Hex escapes (`\39 `) consume 1-6 hex digits plus one optional
+     * whitespace; anything else consumes exactly one following character.
+     */
+    private static consumeEscape(selector: string, i: number): number {
+        let j = i + 1;
+        let hex = 0;
+        while (j < selector.length && hex < 6 && /[0-9a-fA-F]/.test(selector[j])) {
+            j++;
+            hex++;
+        }
+        if (hex > 0) {
+            if (selector[j] === '\r' && selector[j + 1] === '\n') j += 2;
+            else if (selector[j] === ' ' || selector[j] === '\t' || selector[j] === '\n' || selector[j] === '\r' || selector[j] === '\f') j++;
+            return j;
+        }
+        return Math.min(j + 1, selector.length);
+    }
+
+    /**
+     * Decode CSS escape sequences (`\39 ` → '9', `\:` → ':').
+     */
+    private static cssUnescape(s: string): string {
+        let out = '';
+        for (let i = 0; i < s.length; i++) {
+            if (s[i] !== '\\' || i + 1 >= s.length) {
+                out += s[i];
+                continue;
+            }
+            const end = this.consumeEscape(s, i);
+            const body = s.slice(i + 1, end);
+            const hexMatch = body.match(/^[0-9a-fA-F]{1,6}/);
+            if (hexMatch) {
+                const cp = parseInt(hexMatch[0], 16);
+                out += (cp === 0 || cp > 0x10FFFF || (cp >= 0xD800 && cp <= 0xDFFF)) ? '�' : String.fromCodePoint(cp);
+            } else if (body !== '\n' && body !== '\r' && body !== '\r\n' && body !== '\f' && body !== '') {
+                out += body;
+            }
+            i = end - 1;
+        }
+        return out;
+    }
+
+    /**
      * Split a selector on a top-level delimiter, ignoring delimiters inside
      * brackets, parens, quotes, or behind a backslash escape
      */
@@ -131,8 +175,9 @@ export class CSSSelector {
             }
 
             if (char === '\\') {
-                current += char + (selector[i + 1] ?? '');
-                i++;
+                const end = this.consumeEscape(selector, i);
+                current += selector.slice(i, end);
+                i = end - 1;
                 continue;
             }
 
@@ -193,8 +238,9 @@ export class CSSSelector {
             }
 
             if (char === '\\') {
-                current += char + (selector[i + 1] ?? '');
-                i++;
+                const end = this.consumeEscape(selector, i);
+                current += selector.slice(i, end);
+                i = end - 1;
                 continue;
             }
 
@@ -334,6 +380,14 @@ export class CSSSelector {
                 continue;
             }
 
+            // Escaped characters (.:#[] and hex escapes like \39 ) never split.
+            if (char === '\\') {
+                const end = this.consumeEscape(selector, i);
+                current += selector.slice(i, end);
+                i = end - 1;
+                continue;
+            }
+
             // Inside functional pseudo-classes (:not(...), :has(...)) nothing
             // splits a compound — brackets belong to the inner selector.
             if (char === '(') {
@@ -400,22 +454,22 @@ export class CSSSelector {
             return element === scope;
         }
 
-        // Tag selector (e.g., "div", "dr-wow", "wow\\:zz")
-        // Handle escaped colons in tag names
-        const unescapedSelector = selector.replace(/\\:/g, ':');
+        // Tag selector (e.g., "div", "dr-wow", "wow\:zz", "q\:template")
+        // Full CSS escape decoding (single-char and \HHHHHH hex escapes).
+        const unescapedSelector = this.cssUnescape(selector);
         if (unescapedSelector.match(/^[a-zA-Z][a-zA-Z0-9:-]*$/)) {
             return element.tagName.toLowerCase() === unescapedSelector.toLowerCase();
         }
 
-        // ID selector (e.g., "#myId")
+        // ID selector (e.g., "#myId", "#\39 abc" from CSS.escape())
         if (selector.startsWith('#')) {
-            const id = selector.substring(1);
+            const id = this.cssUnescape(selector.substring(1));
             return element.id === id;
         }
 
-        // Class selector (e.g., ".myClass")
+        // Class selector (e.g., ".myClass", ".\39 abc")
         if (selector.startsWith('.')) {
-            const className = selector.substring(1);
+            const className = this.cssUnescape(selector.substring(1));
             return element.className.split(/\s+/).includes(className);
         }
 
@@ -458,12 +512,9 @@ export class CSSSelector {
 
         if (!match) return false;
 
-        let attrName = match[1].trim();
+        let attrName = this.cssUnescape(match[1].trim());
         const operator = match[2] || '';
-        const attrValue = match[4] || '';
-
-        // Handle escaped colons in attribute names
-        attrName = attrName.replace(/\\:/g, ':');
+        const attrValue = this.cssUnescape(match[4] || '');
 
         if (!operator) {
             // Just check if attribute exists: [disabled]

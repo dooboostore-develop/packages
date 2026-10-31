@@ -128,4 +128,11 @@ describe('selector combinators (descendant, >, +, ~)', () => {
         assert.equal(doc.querySelectorAll('span:first-of-type').length, 2);
         assert.equal(doc.querySelectorAll('ol li:only-child').length, 1);
     });
+
+    test('CSS escape sequences in identifiers (hex and single-char)', () => {
+        const doc = new DomParser('<div id="9abc" class="9abc"></div><q:template></q:template>').document as any;
+        assert.equal(doc.querySelectorAll('#\\39 abc').length, 1);
+        assert.equal(doc.querySelectorAll('.\\39 abc').length, 1);
+        assert.equal(doc.querySelectorAll('q\\:template').length, 1);
+    });
 });
