@@ -6,7 +6,7 @@ export class HTMLOptionElement extends HTMLElement {
     } 
 
     get value(): string {
-        return this.hasAttribute('value') ? this.getAttribute('value') || '' : this.textContent || '';
+        return this.hasAttribute('value') ? this.getAttribute('value') || '' : this.text;
     }
 
     set value(val: string) {
@@ -26,6 +26,24 @@ export class HTMLOptionElement extends HTMLElement {
     }
 
     get text(): string {
-        return this.textContent || '';
+        // HTML spec: concatenation of Text descendants (excluding script
+        // subtrees), then strip and collapse ASCII whitespace.
+        let data = '';
+        const collect = (node: any): void => {
+            for (const child of node._childNodesInternal || node.childNodes || []) {
+                const nodeType = child.nodeType;
+                if (nodeType === 3) {
+                    data += child.data ?? child.textContent ?? '';
+                } else if (nodeType === 1) {
+                    const tag = (child.tagName || '').toUpperCase();
+                    if (tag === 'SCRIPT') {
+                        continue;
+                    }
+                    collect(child);
+                }
+            }
+        };
+        collect(this);
+        return data.replace(/[\t\n\f\r ]+/g, ' ').replace(/^ | $/g, '');
     }
 }
