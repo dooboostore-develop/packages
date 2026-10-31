@@ -792,6 +792,37 @@ export class CSSSelector {
                     return false;
                 }
 
+                case 'link': {
+                    // :link — a/area/link with an href (unvisited; no history here).
+                    const tag = (element.tagName || '').toLowerCase();
+                    return (tag === 'a' || tag === 'area' || tag === 'link') && element.hasAttribute('href');
+                }
+
+                case 'visited':
+                    // :visited never matches from page CSS (privacy): no history to consult.
+                    return false;
+
+                case 'required': {
+                    // :required — requirable control carrying a required attribute.
+                    // (input type=hidden is barred from validation, buttons never qualify.)
+                    const tag = (element.tagName || '').toLowerCase();
+                    const type = (element.getAttribute?.('type') || '').toLowerCase();
+                    const requirable = tag === 'select' || tag === 'textarea'
+                        || (tag === 'input' && type !== 'hidden');
+                    return requirable && element.hasAttribute('required');
+                }
+
+                case 'optional': {
+                    // :optional — button, or input/select/textarea that isn't :required.
+                    const tag = (element.tagName || '').toLowerCase();
+                    const type = (element.getAttribute?.('type') || '').toLowerCase();
+                    if (tag === 'button') return true;
+                    const requirable = tag === 'select' || tag === 'textarea'
+                        || (tag === 'input' && type !== 'hidden');
+                    if (tag === 'input' && type === 'hidden') return true;
+                    return requirable && !element.hasAttribute('required');
+                }
+
             default:
                 // Unsupported pseudo-class
                 return false;

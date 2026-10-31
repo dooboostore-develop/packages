@@ -143,6 +143,16 @@ describe('selector combinators (descendant, >, +, ~)', () => {
         assert.equal(ids(':lang(fr)'), 'b,p2');
         assert.equal(ids(':lang(de)'), '');
     });
+
+    test(':link/:visited and :required/:optional', () => {
+        const doc = new DomParser('<a id="a1" href="/x">x</a><a id="a2">nohref</a><area id="ar" href="/y"><input id="i1" required><input id="i2"><select id="s1" required></select><textarea id="t1"></textarea><button id="b1" required>x</button><button id="b2">y</button>').document as any;
+        const ids = (sel: string) => Array.from(doc.querySelectorAll(sel)).map((e: any) => e.id).join(',');
+        assert.equal(ids(':link'), 'a1,ar');
+        assert.equal(doc.querySelectorAll(':visited').length, 0);
+        assert.equal(ids(':required'), 'i1,s1');
+        assert.equal(ids(':optional'), 'i2,t1,b1,b2');
+        assert.equal(doc.querySelector('button#b1').matches(':required'), false);
+    });
 });
     test(':host-context() matches host or its light-DOM ancestors', () => {
         const doc = new DomParser('<section id="s"><div id="host" class="x"><div id="mid"></div></div></section>').document as any;
