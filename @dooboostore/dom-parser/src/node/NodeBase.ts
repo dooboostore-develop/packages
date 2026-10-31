@@ -2,6 +2,7 @@ import { NodeClassRegistry } from './NodeClassRegistry';
 import { ELEMENT_NODE, ATTRIBUTE_NODE, TEXT_NODE, CDATA_SECTION_NODE, ENTITY_REFERENCE_NODE, ENTITY_NODE, PROCESSING_INSTRUCTION_NODE, COMMENT_NODE, DOCUMENT_NODE, DOCUMENT_TYPE_NODE, DOCUMENT_FRAGMENT_NODE, NOTATION_NODE, DOCUMENT_POSITION_DISCONNECTED, DOCUMENT_POSITION_PRECEDING, DOCUMENT_POSITION_FOLLOWING, DOCUMENT_POSITION_CONTAINS, DOCUMENT_POSITION_CONTAINED_BY, DOCUMENT_POSITION_IMPLEMENTATION_SPECIFIC } from './Node';
 import { NodeListOfImp } from './collection/NodeListOfImp';
 import { GetRootNodeOptions } from './GetRootNodeOptions';
+import { adjustNodeIteratorsOnRemove } from './NodeIterator';
 
 /**
  * Base implementation of the Node interface
@@ -358,6 +359,11 @@ export abstract class NodeBase implements Node {
     if (index === -1) {
       throw new Error('Node not found');
     }
+
+    // DOM Standard "remove a node": adjust live NodeIterators whose
+    // reference is the removed node (or its descendant) BEFORE unlinking,
+    // so traversal continues instead of dead-ending on the detached node.
+    adjustNodeIteratorsOnRemove(childBase);
 
     const wasConnected = childBase.isConnected;
 
