@@ -304,25 +304,45 @@ export class CSSSelector {
     }
 
     private static findMatchingAncestor(element: any, compound: string, scope?: any): any {
-        // :host / :host(...) refers to the shadow host of the element's own
-        // tree — the only sanctioned way to cross a shadow boundary upward.
+        // :host / :host() / :host-context() refer to the shadow host of the
+        // element's own tree — the only sanctioned way to cross a shadow
+        // boundary upward. :host-context() additionally tests the host's
+        // light-DOM ancestors.
         const components = this.parseSelector(compound);
-        const hostComps = components.filter(c => c === ':host' || c.startsWith(':host('));
+        const isHostComp = (c: string) => c === ':host' || c.startsWith(':host(') || c.startsWith(':host-context(');
+        const hostComps = components.filter(isHostComp);
         if (hostComps.length > 0) {
             const root = this.getTreeRoot(element);
             const host = root && root.nodeType === 11 && (root as any).host ? (root as any).host : null;
             if (!host) return null;
-            const rest = components.filter(c => c !== ':host' && !c.startsWith(':host('));
-            if (!rest.every(c => this.matchesSingleSelector(host, c, scope))) return null;
-            const inners = hostComps.filter(c => c !== ':host').map(c => c.slice(':host('.length, -1));
-            for (const inner of inners) {
-                try {
-                    if (!CSSSelector.matches(host, inner, scope)) return null;
-                } catch {
-                    return null;
+            const rest = components.filter(c => !isHostComp(c));
+            const contexts: any[] = [host];
+            if (hostComps.some(c => c.startsWith(':host-context('))) {
+                let above = host.parentNode;
+                while (above) {
+                    if (above.nodeType === 1) contexts.push(above);
+                    above = above.parentNode;
                 }
             }
-            return host;
+            const inners: string[] = [];
+            for (const h of hostComps) {
+                if (h === ':host') continue;
+                inners.push(h.slice(h.indexOf('(') + 1, -1));
+            }
+            for (const ctx of contexts) {
+                if (!rest.every(c => this.matchesSingleSelector(ctx, c, scope))) continue;
+                let ok = true;
+                for (const inner of inners) {
+                    try {
+                        if (!CSSSelector.matches(ctx, inner, scope)) { ok = false; break; }
+                    } catch {
+                        ok = false;
+                        break;
+                    }
+                }
+                if (ok) return ctx;
+            }
+            return null;
         }
         // Normal compounds never cross a shadow boundary (#2554 class):
         // selectors are scoped to the tree under evaluation. The scope root

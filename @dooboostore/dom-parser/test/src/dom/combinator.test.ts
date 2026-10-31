@@ -92,8 +92,7 @@ describe('selector combinators (descendant, >, +, ~)', () => {
         assert.equal(target.matches('div span'), false);
     });
 
-    test(':host() functional form matches host against its argument', () => {
-        const window = parseHTML('<div id="host" class="x"></div>') as any;
+    test(':host() functional form matches host against its argument', () => {        const window = parseHTML('<div id="host" class="x"></div>') as any;
         const document = window.document;
         const host = document.querySelector('#host');
         const shadowRoot = host.attachShadow({ mode: 'open' });
@@ -134,5 +133,18 @@ describe('selector combinators (descendant, >, +, ~)', () => {
         assert.equal(doc.querySelectorAll('#\\39 abc').length, 1);
         assert.equal(doc.querySelectorAll('.\\39 abc').length, 1);
         assert.equal(doc.querySelectorAll('q\\:template').length, 1);
+    });
+
+    test(':host-context() matches host or its light-DOM ancestors', () => {
+        const doc = new DomParser('<section id="s"><div id="host" class="x"><div id="mid"></div></div></section>').document as any;
+        const host = doc.querySelector('#host');
+        const shadowRoot = host.attachShadow({ mode: 'open' });
+        shadowRoot.innerHTML = '<span class="t"></span>';
+        const span = shadowRoot.querySelector('span');
+        assert.equal(shadowRoot.querySelectorAll(':host-context(div#host) span').length, 1);
+        assert.equal(shadowRoot.querySelectorAll(':host-context(section) span').length, 1);
+        assert.equal(shadowRoot.querySelectorAll(':host-context(article) span').length, 0);
+        assert.equal(span.matches(':host-context(div#host) span'), true);
+        assert.equal(host.matches(':host-context(section)'), false);
     });
 });
