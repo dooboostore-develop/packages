@@ -53,8 +53,25 @@ describe(':has() anchoring (matches browsers)', () => {
         assert.equal(ask('.p:has(> .a:is(.x .a))', '<section class="x"><div class="p" id="t"><b class="a"></b></div></section>'), true);
     });
 
-    test(':nth-child() of-syntax counts only matching siblings', () => {
-        const document = new DomParser('<div><i class="a"></i><b id="t"></b><i class="a"></i><b></b></div>').document as any;
+    test(':scope inside :has() binds the query scope, anchor still excluded (css-select#1931)', () => {
+        const document = new DomParser('<div id="m"><div class="a" id="s"><i class="a" id="i"><b class="b" id="b"></b></i></div></div>').document as any;
+        const m = document.getElementById('m');
+        const s = document.getElementById('s');
+        const i = document.getElementById('i');
+        const ids = (root: any, sel: string) => [...root.querySelectorAll(sel)].map((e: any) => e.getAttribute('id') || e.tagName);
+        assert.deepEqual(ids(s, ':scope:has(:scope)'), []);
+        assert.deepEqual(ids(s, ':scope:has(:scope .b)'), []);
+        assert.deepEqual(ids(s, ':scope:has(> :scope)'), []);
+        assert.deepEqual(ids(m, ':scope:has(:scope)'), []);
+        assert.deepEqual(ids(m, ':scope .a:has(:scope .b)'), []);
+        assert.deepEqual(ids(i, ':scope:has(:scope .b)'), []);
+        assert.deepEqual(ids(document, '.a:has(:scope .b)'), []);
+        // :scope itself still resolves normally outside :has()
+        assert.equal(s.matches(':scope'), true);
+        assert.deepEqual(ids(s, ':is(:scope, .b)'), ['b']);
+    });
+
+    test(':nth-child() of-syntax counts only matching siblings', () => {        const document = new DomParser('<div><i class="a"></i><b id="t"></b><i class="a"></i><b></b></div>').document as any;
         const t = document.getElementById('t');
         assert.equal(t.matches(':nth-child(2 of .a, b)'), true, 't is 2nd among .a,b siblings');
         assert.equal(t.matches(':nth-child(3 of .a, b)'), false);

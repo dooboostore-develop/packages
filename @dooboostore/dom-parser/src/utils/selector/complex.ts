@@ -43,17 +43,19 @@ export class ComplexMatcher implements SelectorMatcher {
         }
 
         // A leading explicit combinator (relative selector, e.g. inside :has())
-        // constrains the element against the scope itself.
+        // constrains the element against the relative base: the :has() anchor
+        // when one is active, otherwise the query scope.
+        const relativeBase = ctx.hasBoundary ?? ctx.scope;
         const first = chain[0].combinator;
         if (first === '>') {
-            if (!current || current.parentNode !== ctx.scope) return false;
+            if (!current || current.parentNode !== relativeBase) return false;
         } else if (first === '+') {
-            if (!current || previousElementSibling(current) !== ctx.scope) return false;
+            if (!current || previousElementSibling(current) !== relativeBase) return false;
         } else if (first === '~') {
             let sibling = current ? previousElementSibling(current) : null;
             let found = false;
             while (sibling) {
-                if (sibling === ctx.scope) { found = true; break; }
+                if (sibling === relativeBase) { found = true; break; }
                 sibling = previousElementSibling(sibling);
             }
             if (!found) return false;

@@ -186,7 +186,9 @@ export class HasMatcher implements SelectorMatcher {
     ) {}
     matches(element: any, ctx: SelectorContext): boolean {
         if (!element) return false;
-        const hasCtx: SelectorContext = { ...ctx, scope: element, hasBoundary: element };
+        // Keep the query scope for explicit :scope (css-select#1931 class);
+        // the anchor becomes an exclusive boundary instead of the scope.
+        const hasCtx: SelectorContext = { ...ctx, hasBoundary: element };
         const queue: any[] = HasMatcher.relativeRoots(element, this.raw);
         for (let head = 0; head < queue.length; head++) {
             const node = queue[head];
@@ -284,9 +286,10 @@ export class PseudoMatcher implements SelectorMatcher {
             case 'scope':
                 // :scope matches the scoping root itself (nwsapi#144 class:
                 // no caches anywhere, so the scope can never go stale).
-                // Inside :has(), an explicit :scope never matches (Chromium:
-                // :has(:scope), :has(:scope .b), :has(> :scope) are all false).
-                if (ctx.hasBoundary) return false;
+                // Inside :has(), :scope keeps the query scope (NOT the anchor:
+                // css-select#1931 class); the anchor is unreachable anyway via
+                // the exclusive boundary, so matches()/unscoped queries see
+                // it never match while scoped queries resolve it correctly.
                 return element === ctx.scope;
 
             case 'checked':
