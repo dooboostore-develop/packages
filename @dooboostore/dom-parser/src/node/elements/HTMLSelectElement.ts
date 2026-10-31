@@ -63,4 +63,36 @@ export class HTMLSelectElement extends HTMLElement {
             }
         }
     }
+
+    get multiple(): boolean {
+        return this.hasAttribute('multiple');
+    }
+
+    set multiple(val: boolean) {
+        if (val) {
+            this.setAttribute('multiple', '');
+        } else {
+            this.removeAttribute('multiple');
+        }
+    }
+
+    get size(): number {
+        // HTML spec: reflect the size content attribute, limited to
+        // non-negative integers (rules for parsing integers, fallback 0).
+        if (!this.hasAttribute('size')) {
+            return 0;
+        }
+        const match = /^\s*([+-]?\d+)/.exec(this.getAttribute('size') || '');
+        if (!match) {
+            return 0;
+        }
+        const parsed = parseInt(match[1], 10);
+        return parsed < 0 ? 0 : parsed;
+    }
+
+    set size(val: number) {
+        const num = Number(val);
+        const normalized = !isFinite(num) || num < 0 ? 0 : Math.floor(num);
+        this.setAttribute('size', String(normalized));
+    }
 }
