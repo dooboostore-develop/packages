@@ -302,20 +302,26 @@ export abstract class NodeBase implements Node {
     this._childNodesInternal.push(nodeBase);
     nodeBase._parentNodeInternal = this;
 
-    // Update ownerDocument recursively and trigger adoptedCallback
+    // Update ownerDocument recursively and trigger adoptedCallback.
+    // Fast path: same-document appends (the entire initial parse) need no walk —
+    // every node already carries this document from creation.
     const oldDocument = nodeBase._ownerDocument;
     const newDocument = this._ownerDocument;
     const documentChanged = oldDocument && newDocument && oldDocument !== newDocument;
 
-    const updateDocument = (n: any) => {
-      const prevDoc = n._ownerDocument;
-      n._ownerDocument = newDocument;
-      if (documentChanged && prevDoc && prevDoc !== newDocument && n.nodeType === 1 && typeof n.adoptedCallback === 'function') {
-        n.adoptedCallback(prevDoc, newDocument);
-      }
-      for (const c of n._childNodesInternal || []) updateDocument(c);
-    };
-    updateDocument(nodeBase);
+    if (documentChanged) {
+      const updateDocument = (n: any) => {
+        const prevDoc = n._ownerDocument;
+        n._ownerDocument = newDocument;
+        if (prevDoc && prevDoc !== newDocument && n.nodeType === 1 && typeof n.adoptedCallback === 'function') {
+          n.adoptedCallback(prevDoc, newDocument);
+        }
+        for (const c of n._childNodesInternal || []) updateDocument(c);
+      };
+      updateDocument(nodeBase);
+    } else if (nodeBase._ownerDocument == null && newDocument != null) {
+      nodeBase._ownerDocument = newDocument;
+    }
 
     // Trigger connectedCallback recursively if connected to document
     if (this.isConnected) {
@@ -457,20 +463,25 @@ export abstract class NodeBase implements Node {
     this._childNodesInternal.splice(index, 0, nodeBase);
     nodeBase._parentNodeInternal = this;
 
-    // Update ownerDocument recursively and trigger adoptedCallback
+    // Update ownerDocument recursively and trigger adoptedCallback.
+    // Fast path: same-document inserts need no subtree walk.
     const oldDocument = nodeBase._ownerDocument;
     const newDocument = this._ownerDocument;
     const documentChanged = oldDocument && newDocument && oldDocument !== newDocument;
 
-    const updateDocument = (n: any) => {
-      const prevDoc = n._ownerDocument;
-      n._ownerDocument = newDocument;
-      if (documentChanged && prevDoc && prevDoc !== newDocument && n.nodeType === 1 && typeof n.adoptedCallback === 'function') {
-        n.adoptedCallback(prevDoc, newDocument);
-      }
-      for (const c of n._childNodesInternal || []) updateDocument(c);
-    };
-    updateDocument(nodeBase);
+    if (documentChanged) {
+      const updateDocument = (n: any) => {
+        const prevDoc = n._ownerDocument;
+        n._ownerDocument = newDocument;
+        if (prevDoc && prevDoc !== newDocument && n.nodeType === 1 && typeof n.adoptedCallback === 'function') {
+          n.adoptedCallback(prevDoc, newDocument);
+        }
+        for (const c of n._childNodesInternal || []) updateDocument(c);
+      };
+      updateDocument(nodeBase);
+    } else if (nodeBase._ownerDocument == null && newDocument != null) {
+      nodeBase._ownerDocument = newDocument;
+    }
 
     // Trigger connectedCallback recursively if connected to document
     if (this.isConnected) {
