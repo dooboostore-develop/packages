@@ -469,13 +469,16 @@ export class DomParser {
       // we already injected during construction.
       const oldValue = element.getAttribute(name);
 
-      // If we already set it during construction, we still need to trigger the callback
-      // since the construction phase doesn't trigger callbacks (per web standard)
-      if (oldValue !== value) {
-        element.setAttribute(name, value);
-      } else {
+      // Always route through setAttribute: subclasses sync their IDL fields
+      // (input.value/type/checked, etc.) inside their setAttribute override,
+      // which the constructor's direct map injection bypasses.
+      // setAttribute itself never fires callbacks (callers do), so this is
+      // callback-neutral; the manual initial-parse trigger below still fires once.
+      element.setAttribute(name, value);
+      if (oldValue === value) {
         // Values match, meaning it was pre-populated during constructor.
-        // We must manually trigger setAttribute to fire the callback.
+        // We must manually trigger the callback since the construction phase
+        // doesn't trigger callbacks (per web standard).
         // Instead of remove+set (which fires callback twice), we directly fire the callback
         if (typeof element.attributeChangedCallback === 'function') {
           const ctor = element.constructor;

@@ -188,4 +188,18 @@ describe('selector combinators (descendant, >, +, ~)', () => {
         const ids = (sel: string) => Array.from(doc.querySelectorAll(sel)).map((e: any) => e.id).join(',');
         assert.equal(ids(':placeholder-shown'), 'a,n,d');
     });
+
+    test('parsed attributes sync IDL fields (value/type/checked/required/selected/readOnly)', () => {
+        const doc = new DomParser('<input id="a" type="checkbox" checked><input id="b" type="text" value="x" required><option id="c" selected></option><textarea id="d" readonly>hi</textarea>').document as any;
+        const a = doc.querySelector('#a');
+        assert.equal(a.checked, true);
+        assert.equal(a.type, 'checkbox');
+        const b = doc.querySelector('#b');
+        assert.equal(b.value, 'x');
+        assert.equal(b.required, true);
+        assert.equal(doc.querySelector('#c').selected, true);
+        const d = doc.querySelector('#d');
+        assert.equal(d.readOnly, true);
+        assert.equal(d.value, 'hi');
+    });
 });
