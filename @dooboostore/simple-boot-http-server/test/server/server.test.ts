@@ -220,6 +220,19 @@ describe('SimpleBootHttpServer', () => {
     }
   });
 
+  test('malformed JSON body defaults to 400 Bad Request, not 500', async () => {
+    const { baseUrl, close } = await startTestServer();
+    try {
+      const res = await fetch(`${baseUrl}/api/mixed-a`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: '{"q":}'
+      });
+      assert.strictEqual(res.status, 400);
+    } finally {
+      await close();
+    }
+  });
   test('unmapped route triggers noSuchRouteEndPointMappingThrow', async () => {
     const { baseUrl, close } = await startTestServer();
     try {
@@ -227,6 +240,36 @@ describe('SimpleBootHttpServer', () => {
       assert.strictEqual(res.status, 404);
     } finally {
       await close();
+    }
+  });
+
+  test('unmapped route defaults to 404 without a custom hook', async () => {
+    const option = new HttpServerOption(
+      { listen: { port: 0, hostname: '127.0.0.1' } },
+      { rootRouter: TestRouter }
+    );
+    const server = new SimpleBootHttpServer(option);
+    await new Promise<void>(resolve => {
+      option.listen.listeningListener = () => resolve();
+      server.run();
+    });
+    const address = server.server!.address();
+    const port = typeof address === 'object' && address ? address.port : option.listen.port;
+    const baseUrl = `http://127.0.0.1:${port}`;
+    try {
+      // unmatched path must not fall through to "200 OK with empty body"
+      const res = await fetch(`${baseUrl}/api/does-not-exist`);
+      assert.strictEqual(res.status, 404);
+      // wrong method on an existing path is also "no route"
+      const wrongMethod = await fetch(`${baseUrl}/api/hello`, { method: 'DELETE' });
+      assert.strictEqual(wrongMethod.status, 404);
+      // existing routes still work
+      const ok = await fetch(`${baseUrl}/api/hello`);
+      assert.strictEqual(ok.status, 200);
+    } finally {
+      await new Promise<void>((resolve, reject) =>
+        server.server!.close(err => (err ? reject(err) : resolve()))
+      );
     }
   });
 

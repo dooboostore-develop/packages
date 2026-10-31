@@ -22,6 +22,7 @@ import { FileUtils } from '@dooboostore/core-node';
 import { ConvertUtils as CoreConvertUtils } from '@dooboostore/core';
 import { ConvertUtils } from '@dooboostore/core-node';
 import {HttpMethod} from "../codes";
+import { BadRequestError } from '../errors/BadRequestError';
 
 type Config = { sessionManager?: SessionManager; option: HttpServerOption };
 
@@ -346,7 +347,14 @@ export class RequestResponse {
   }
 
   async reqBodyJsonData<T>(): Promise<T> {
-    return JSON.parse(await this.reqBodyStringData());
+    const raw = await this.reqBodyStringData();
+    try {
+      return JSON.parse(raw);
+    } catch (e: any) {
+      // Malformed JSON is a client error (400), not a server crash (500).
+      // Express-compatible: surface the parse failure as Bad Request.
+      throw new BadRequestError({ message: `Invalid JSON body: ${e?.message ?? e}` });
+    }
   }
 
   async reqBodyFormUrlData<T>(): Promise<T> {
@@ -372,7 +380,15 @@ export class RequestResponse {
 
   async reqBodyReqJsonBody(): Promise<ReqJsonBody> {
     const data = await this.reqBodyStringData();
-    return Object.assign(new ReqJsonBody(), data ? JSON.parse(data) : {});
+    if (!data) {
+      return Object.assign(new ReqJsonBody(), {});
+    }
+    try {
+      return Object.assign(new ReqJsonBody(), JSON.parse(data));
+    } catch (e: any) {
+      // Malformed JSON is a client error (400), not a server crash (500).
+      throw new BadRequestError({ message: `Invalid JSON body: ${e?.message ?? e}` });
+    }
   }
 
   resBodyJsonData<T>(): T | null {

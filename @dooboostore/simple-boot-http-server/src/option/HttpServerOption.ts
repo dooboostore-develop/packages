@@ -8,6 +8,7 @@ import { RequestResponse } from '../models/RequestResponse';
 import { SimpleBootHttpServer } from '../SimpleBootHttpServer';
 import { TransactionManager } from '@dooboostore/core';
 import { WebSocketEndPoint } from '../endpoints/WebSocketEndPoint';
+import { NotFoundError } from '../errors/NotFoundError';
 
 export type Listen = { port?: number, hostname?: string, backlog?: number, listeningListener?: (server: SimpleBootHttpServer, httpServer: HttpServer | HttpsServer) => void };
 
@@ -107,7 +108,13 @@ export class HttpServerOption extends SimOption {
     );
     this.globalAdvice = globalAdvice;
     this.fileUploadTempPath = fileUploadTempPath;
-    this.noSuchRouteEndPointMappingThrow = noSuchRouteEndPointMappingThrow;
+    // Unmatched routes must not fall through to "200 OK with empty body"
+    // like before. Default to 404 (Express-compatible); users can still
+    // override with their own noSuchRouteEndPointMappingThrow.
+    this.noSuchRouteEndPointMappingThrow =
+      noSuchRouteEndPointMappingThrow ??
+      ((rr: RequestResponse) =>
+        new NotFoundError({ message: `no route ${rr.reqMethod?.() ?? ''} ${rr.reqUrlPathName ?? ''}`.trim() }));
     this.transactionManagerFactory = transactionManagerFactory;
   }
 
