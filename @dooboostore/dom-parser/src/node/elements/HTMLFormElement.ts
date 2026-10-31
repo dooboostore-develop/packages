@@ -59,7 +59,7 @@ export class HTMLFormElement extends HTMLElement {
         return this._noValidate;
     }
 
-    get elements(): HTMLCollection {
+    get elements(): HTMLCollectionImp {
         // Listed elements whose form owner is this form, in tree order.
         const root: any = typeof (this as any).getRootNode === 'function'
             ? (this as any).getRootNode()
