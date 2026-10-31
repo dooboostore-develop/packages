@@ -10,6 +10,9 @@ describe('attribute selector modifiers and empty values', () => {
         assert.equal(doc.querySelectorAll('[type="button" i]').length, 2);
         assert.equal(doc.querySelectorAll('[type="BUTTON" I]').length, 2);
         assert.equal(doc.querySelectorAll('[type="button"]').length, 1);
+        // unquoted value with modifier also matches; bare [type i] matches nothing (browsers throw)
+        assert.equal(doc.querySelectorAll('[type=button i]').length, 2);
+        assert.equal(doc.querySelectorAll('[type i]').length, 0);
     });
 
     test('empty-string values never match substring operators', () => {
