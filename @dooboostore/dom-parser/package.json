@@ -91,7 +91,7 @@
     "node": ">=16.0.0"
   },
   "dependencies": {
-    "@dooboostore/core": "1.0.33"
+    "@dooboostore/core": "workspace:*"
   },
   "devDependencies": {
     "@types/jest": "^26.0.22",
@@ -115,6 +115,7 @@
     "build:esm-bundle": "node build.mjs esm-bundle",
     "watch:esm-bundle": "pnpm run build:esm-bundle && node build.mjs esm-bundle --watch",
     "watch": "node build.mjs all --watch",
+    "prepublishOnly": "pnpm run build",
     "publish:npm": "pnpm run build && cp package.json package.json.back && pnpm pack && TARBALL_NAME=$(ls dooboostore-dom-parser-*.tgz | head -n 1) && tar -xzf \"$TARBALL_NAME\" -C . --strip-components=1 package/package.json && rm \"$TARBALL_NAME\" && (pnpm publish --no-git-checks || true) && cp package.json.back package.json && rm -rf package.json.back",
     "ts:clean": "find . -name '*.js' -o -name '*.map' -o -name '*.d.ts' | xargs rm -f",
     "typecheck": "pnpm exec tsc --noEmit",
