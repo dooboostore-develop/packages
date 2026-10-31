@@ -9,6 +9,7 @@ import {
     NegationMatcher,
     AnyMatcher,
     HasMatcher,
+    NthChildOfMatcher,
     PseudoMatcher,
     CompoundMatcher,
     NeverMatcher,
@@ -118,9 +119,19 @@ export function createSimple(component: string): SimpleMatcher {
         }
         if (name === 'has' && arg !== undefined) {
             try {
-                return new HasMatcher(createMatcher(arg));
+                return new HasMatcher(createMatcher(arg), arg);
             } catch {
                 return new NeverMatcher();
+            }
+        }
+        if ((name === 'nth-child' || name === 'nth-last-child') && arg !== undefined) {
+            const ofMatch = /^(.*?)\s+of\s+(.+)$/i.exec(arg.trim());
+            if (ofMatch) {
+                try {
+                    return new NthChildOfMatcher(ofMatch[1].trim() || 'n', createMatcher(ofMatch[2].trim()), name === 'nth-last-child');
+                } catch {
+                    return new NeverMatcher();
+                }
             }
         }
         return new PseudoMatcher(name, arg);

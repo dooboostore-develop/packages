@@ -1,4 +1,5 @@
 import type { SelectorContext, SelectorMatcher } from './types';
+import { splitCombinators } from './parse';
 import { cssUnescape } from './parse';
 import {
     isInputElement,
@@ -98,28 +99,72 @@ export class AttrMatcher implements SelectorMatcher {
 
 /**
  * Matches when the wrapped matcher does NOT match.
+ * The content is absolute (whole-document, never relativized): inside a
+ * :has() argument it evaluates with neither scope nor boundary, so ancestor
+ * walks are unbounded while an explicit :scope still matches nothing
+ * (the anchor is gone from the context entirely).
  */
 export class NegationMatcher implements SelectorMatcher {
     constructor(private readonly inner: SelectorMatcher) {}
     matches(element: any, ctx: SelectorContext): boolean {
-        return !this.inner.matches(element, ctx);
+        return !this.inner.matches(element, NegationMatcher.absoluteCtx(ctx));
+    }
+    /** Strip :has()-relative evaluation state; top-level contexts pass through. */
+    static absoluteCtx(ctx: SelectorContext): SelectorContext {
+        if (ctx.hasBoundary === undefined) return ctx;
+        return { ...ctx, scope: undefined, hasBoundary: undefined };
     }
 }
 
 /**
  * Matches when ANY of the inner matchers matches (forgiving: an
  * unbuildable branch is skipped, never fatal).
+ * Contents are absolute (whole-document), so a :has() boundary never
+ * propagates into them.
  */
 export class AnyMatcher implements SelectorMatcher {
     constructor(private readonly alternatives: SelectorMatcher[]) {}
     matches(element: any, ctx: SelectorContext): boolean {
+        const innerCtx = NegationMatcher.absoluteCtx(ctx);
         return this.alternatives.some(m => {
             try {
-                return m.matches(element, ctx);
+                return m.matches(element, innerCtx);
             } catch {
                 return false;
             }
         });
+    }
+}
+
+/**
+ * `:nth-child(an+b [of S]?)` / `:nth-last-child(...)`: position counted
+ * only among siblings matching S (1-based, from the start or the end).
+ */
+export class NthChildOfMatcher implements SelectorMatcher {
+    constructor(
+        private readonly anb: string,
+        private readonly filter: SelectorMatcher,
+        private readonly fromEnd: boolean,
+    ) {}
+    matches(element: any, ctx: SelectorContext): boolean {
+        const parent = element ? element.parentNode : null;
+        if (!parent) return false;
+        const siblings = parent._childNodesInternal || parent.childNodes || [];
+        const matching: any[] = [];
+        for (let i = 0; i < siblings.length; i++) {
+            const node = siblings[i];
+            if (node && node.nodeType === 1) {
+                try {
+                    if (this.filter.matches(node, ctx)) matching.push(node);
+                } catch {
+                    // Forgiving: unmatchable siblings are skipped.
+                }
+            }
+        }
+        const index = matching.indexOf(element);
+        if (index === -1) return false;
+        const position = this.fromEnd ? matching.length - 1 - index : index;
+        return matchesNth(position, this.anb);
     }
 }
 
@@ -130,13 +175,19 @@ export class AnyMatcher implements SelectorMatcher {
  * anchor itself can never satisfy a compound (absolutized `:scope` binds
  * only the leading relative combinator) and an explicit `:scope` inside
  * never matches — both verified against Chromium.
+ * Sibling-axis arguments (`+`/`~`) evaluate against following siblings
+ * and their subtrees; `:is()`/`:where()`/`:not()` contents stay absolute
+ * (whole-document, never relativized to the anchor).
  */
 export class HasMatcher implements SelectorMatcher {
-    constructor(private readonly inner: SelectorMatcher) {}
+    constructor(
+        private readonly inner: SelectorMatcher,
+        private readonly raw: string,
+    ) {}
     matches(element: any, ctx: SelectorContext): boolean {
         if (!element) return false;
         const hasCtx: SelectorContext = { ...ctx, scope: element, hasBoundary: element };
-        const queue: any[] = [...(element._childNodesInternal || element.childNodes || [])];
+        const queue: any[] = HasMatcher.relativeRoots(element, this.raw);
         for (let head = 0; head < queue.length; head++) {
             const node = queue[head];
             if (!node) continue;
@@ -153,6 +204,26 @@ export class HasMatcher implements SelectorMatcher {
             }
         }
         return false;
+    }
+    /** Candidate roots: strict descendants, or following siblings (+ subtrees) for sibling axes. */
+    private static relativeRoots(element: any, raw: string): any[] {
+        const children = element._childNodesInternal || element.childNodes || [];
+        let leading: string | undefined;
+        try {
+            leading = splitCombinators(raw)[0]?.combinator;
+        } catch {
+            leading = undefined;
+        }
+        if (leading !== '+' && leading !== '~') {
+            return [...children];
+        }
+        const roots: any[] = [];
+        let sibling = element.nextSibling;
+        while (sibling) {
+            if (sibling.nodeType === 1) roots.push(sibling);
+            sibling = sibling.nextSibling;
+        }
+        return roots;
     }
 }
 
