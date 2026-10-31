@@ -63,5 +63,8 @@
   "bugs": {
     "url": "https://github.com/dooboostore-develop/packages/issues"
   },
-  "homepage": "https://dooboostore-develop.github.io/package/simple-web-component-library"
+  "homepage": "https://dooboostore-develop.github.io/package/simple-web-component-library",
+  "contributors": [
+    "visualkhh <visualkhh@gmail.com> (https://github.com/visualkhh)"
+  ]
 }

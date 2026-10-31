@@ -118,5 +118,8 @@
     "@dooboostore/core": "workspace:*",
     "@dooboostore/core-web": "workspace:*",
     "@dooboostore/simple-boot": "workspace:*"
-  }
+  },
+  "contributors": [
+    "visualkhh <visualkhh@gmail.com> (https://github.com/visualkhh)"
+  ]
 }

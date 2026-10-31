@@ -56,5 +56,8 @@
   "bugs": {
     "url": "https://github.com/dooboostore-develop/packages/issues"
   },
-  "homepage": "https://dooboostore-develop.github.io/package/algorithm"
+  "homepage": "https://dooboostore-develop.github.io/package/algorithm",
+  "contributors": [
+    "visualkhh <visualkhh@gmail.com> (https://github.com/visualkhh)"
+  ]
 }
