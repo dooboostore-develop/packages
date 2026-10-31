@@ -11,11 +11,9 @@ const COMMENT_NODE = 8;
 const VOID_TAGS = ['img', 'input', 'br', 'hr', 'meta', 'link', 'area', 'base', 'col', 'embed', 'source', 'track', 'wbr'];
 
 function escapeText(str: string): string {
-  return str
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/\u00A0/g, '&nbsp;');
+  // Same behavior as ElementBase.escapeHTMLEntities (kept byte-identical on purpose).
+  const entityMap: any = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+  return String(str).replace(/[&<>"']/g, char => entityMap[char] || char);
 }
 
 function escapeAttr(str: string): string {

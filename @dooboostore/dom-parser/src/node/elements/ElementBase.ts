@@ -3,6 +3,7 @@ import { ParentNodeBase } from '../ParentNodeBase';
 import { HTMLCollectionImp, HTMLCollectionOfImp } from '../collection';
 import { ELEMENT_NODE, TEXT_NODE, ATTRIBUTE_NODE } from '../Node';
 import { CSSSelector } from '../../utils/CSSSelector';
+import { parseNodes as parseSharedNodes, decodeHTMLEntities, type HtmlParseContext } from '../../parser';
 import { serializeChildrenWithShadow, attachDeclarativeShadowRoots, shouldIncludeShadowRoot, shadowTemplateOpenTag, type GetHTMLOptions } from '../serialize';
 import { SVG_NAMESPACE, MATHML_NAMESPACE, elementNamespaceForTag, childNamespaceForElement } from '../../utils/namespaces';
 import { NodeBase } from '../NodeBase';
@@ -19,70 +20,7 @@ class DOMException extends Error {
   }
 }
 
-// HTML void elements: no end tag, no children.
-const VOID_TAGS = new Set([
-  'area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input',
-  'link', 'meta', 'param', 'source', 'track', 'wbr'
-]);
 
-/**
- * Parses an attribute string into constructor options: the `is` value for
- * customized built-ins plus a pre-parsed attribute map, so getAttribute()
- * works during construction. Entity values are decoded (attribute values
- * are stored decoded; serialization re-escapes them).
- */
-function extractIsAttr(
-  attrStr: string,
-  decode: (s: string) => string,
-  isInert: boolean
-): any {
-  const match = attrStr ? attrStr.match(/(?:^|\s)is=(?:(['"])(.*?)\1|([^\s>]+))/i) : null;
-  const options: any = match ? { is: match[2] || match[3] } : {};
-
-  options.inert = isInert; // Always set inert, regardless of attributes
-
-  if (!attrStr) return options; // If no attributes, return options with just inert flag
-
-  const parsedAttributes = new Map<string, string>();
-  let pos = 0;
-  const len = attrStr.length;
-
-  while (pos < len) {
-    while (pos < len && /\s/.test(attrStr[pos])) pos++;
-    if (pos >= len) break;
-    const nameStart = pos;
-    while (pos < len && /[\w:-]/.test(attrStr[pos])) pos++;
-    if (pos === nameStart) {
-      pos++;
-      continue;
-    }
-    const name = attrStr.substring(nameStart, pos);
-    while (pos < len && /\s/.test(attrStr[pos])) pos++;
-    let value = '';
-    if (pos < len && attrStr[pos] === '=') {
-      pos++;
-      while (pos < len && /\s/.test(attrStr[pos])) pos++;
-      if (pos < len) {
-        const quote = attrStr[pos];
-        if (quote === '"' || quote === "'") {
-          pos++;
-          const valueStart = pos;
-          while (pos < len && attrStr[pos] !== quote) pos++;
-          value = attrStr.substring(valueStart, pos);
-          if (pos < len && attrStr[pos] === quote) pos++;
-        } else {
-          const valueStart = pos;
-          while (pos < len && !/\s/.test(attrStr[pos])) pos++;
-          value = attrStr.substring(valueStart, pos);
-        }
-      }
-    }
-    parsedAttributes.set(name, decode(value));
-  }
-
-  options.parsedAttributes = parsedAttributes;
-  return options;
-}
 
 /**
  * Base implementation of the Element interface
@@ -454,270 +392,28 @@ export abstract class ElementBase extends ParentNodeBase implements Element {
     const targetLocal: string = ((targetNode as any)?.localName ?? '') as string;
     const parentNS: string | null = childNamespaceForElement(targetLocal, targetNS);
 
-    this.parseNodesInto(html, 0, targetNode, parentNS, null, isInert);
+    const ctx: HtmlParseContext = {
+      ownerDocument: this._ownerDocument,
+      decode: decodeHTMLEntities,
+      fixText: (s) => this.fixBrokenClosingTags(s),
+      createText: (data) => (TextBase ? new TextBase(data, this._ownerDocument) : null),
+      createComment: (data) => (Comment ? new Comment(data, this._ownerDocument) : null),
+      createElement: (tagName, namespaceURI, options) =>
+        ElementFactory.createElement(tagName, this._ownerDocument, { ...(options as object), namespaceURI }),
+      appendChild: (pp, child) => pp.appendChild(child),
+      inert: isInert,
+      templateInert: true,
+    };
+    parseSharedNodes(html, 0, targetNode, parentNS, null, ctx);
   }
 
-  /**
-   * Single-pass HTML parser: scans `html` forward exactly once starting at
-   * `pos`, appending nodes to `targetNode`. Stops after consuming this
-   * level's `</stopTag>` (returns the position past it) or at end of input.
-   *
-   * Unlike the previous find-matching-close + substring + innerHTML-setter
-   * recursion (O(depth x size) rescans plus deep call stacks that could
-   * overflow on deeply nested input), every character is examined a constant
-   * number of times.
-   */
-  private parseNodesInto(
-    html: string,
-    pos: number,
-    targetNode: Node,
-    parentNS: string | null,
-    stopTag: string | null,
-    isInert: boolean
-  ): number {
-    const { ElementFactory, TextBase, Comment } = ElementBase.dependencies;
-    const len = html.length;
 
-    while (pos < len) {
-      const nextTagStart = html.indexOf('<', pos);
 
-      // Handle text content before next tag
-      // Per HTML spec ("insert a character"), character references are
-      // decoded at parse time so Text.data holds decoded text.
-      // (style/script raw-text elements are handled separately below.)
-      if (nextTagStart === -1) {
-        const text = html.substring(pos);
-        if (text) this.appendTextNode(targetNode, text);
-        return len;
-      } else if (nextTagStart > pos) {
-        const text = html.substring(pos, nextTagStart);
-        if (text) this.appendTextNode(targetNode, text);
-      }
-
-      pos = nextTagStart;
-      const tagEnd = this.findTagEnd(html, pos);
-      if (tagEnd === -1) return len;
-
-      const tagContent = html.substring(pos + 1, tagEnd);
-
-      // Handle comments
-      if (tagContent.startsWith('!--')) {
-        const commentEnd = html.indexOf('-->', pos);
-        if (commentEnd !== -1) {
-          const commentContent = html.substring(pos + 4, commentEnd);
-          if (Comment) targetNode.appendChild(new Comment(commentContent, this._ownerDocument));
-          pos = commentEnd + 3;
-          continue;
-        }
-        return len;
-      }
-
-      // Handle closing tags: only the current level's closer returns;
-      // stray closing tags are ignored per the HTML spec.
-      if (tagContent.startsWith('/')) {
-        pos = tagEnd + 1;
-        if (stopTag !== null) {
-          const closeName = tagContent.substring(1).trim().split(/\s+/, 1)[0];
-          if (closeName !== undefined && closeName.toLowerCase() === stopTag) {
-            return pos;
-          }
-        }
-        continue;
-      }
-
-      // Handle opening tags
-      const spaceIndex = tagContent.indexOf(' ');
-      const tagName = spaceIndex === -1 ? tagContent.replace('/', '') : tagContent.substring(0, spaceIndex);
-
-      if (!tagName) {
-        // "<>" is not a tag per the HTML spec; emit "<" as text.
-        this.appendTextNode(targetNode, '<');
-        pos = nextTagStart + 1;
-        continue;
-      }
-
-      // "<3", "<%", ... is not a tag either: after the comment ("!")
-      // and closing ("/") paths handled above, the tag open state only
-      // accepts an ASCII letter. Anything else (e.g. "?") keeps its
-      // previous path; other characters emit "<" as text and reconsume.
-      const firstCode = tagContent.charCodeAt(0);
-      const isAsciiLetter = (firstCode >= 65 && firstCode <= 90) || (firstCode >= 97 && firstCode <= 122);
-      if (!isAsciiLetter && firstCode !== 33 /* ! */ && firstCode !== 63 /* ? */) {
-        this.appendTextNode(targetNode, '<');
-        pos = nextTagStart + 1;
-        continue;
-      }
-
-      const attributeString = (spaceIndex === -1 ? '' : tagContent.substring(spaceIndex + 1).trim());
-      const options = extractIsAttr(attributeString, (s) => this.decodeHTMLEntities(s), isInert);
-
-      // Special handling for style and script tags (raw text elements)
-      if (tagName === 'style' || tagName === 'script') {
-        const closingTag = `</${tagName}>`;
-        const closingTagIndex = html.indexOf(closingTag, tagEnd + 1);
-
-        if (closingTagIndex !== -1) {
-          const element = ElementFactory.createElement(tagName, this._ownerDocument, {
-            ...(options as object),
-            namespaceURI: elementNamespaceForTag(tagName, parentNS)
-          });
-          this.parseAttributes(element, attributeString);
-
-          // IMPORTANT: Append element to parent FIRST
-          // This ensures we're part of the connected tree before adding text content
-          targetNode.appendChild(element);
-
-          const content = html.substring(tagEnd + 1, closingTagIndex);
-          // For style/script preserve raw content without escaping
-          if (content && TextBase) {
-            element.appendChild(new TextBase(content, this._ownerDocument));
-          }
-          pos = closingTagIndex + closingTag.length;
-          continue;
-        }
-      }
-
-      const cleanAttrs = attributeString.endsWith('/')
-        ? attributeString.slice(0, -1).trim()
-        : attributeString;
-      const element = ElementFactory.createElement(tagName, this._ownerDocument, {
-        ...(options as object),
-        namespaceURI: elementNamespaceForTag(tagName, parentNS)
-      });
-      this.parseAttributes(element, cleanAttrs);
-
-      // IMPORTANT: Append to parent FIRST, before parsing children.
-      // This ensures children can find their parent in the DOM tree
-      // (for getRootNode().parentElement, etc.)
-      targetNode.appendChild(element);
-
-      pos = tagEnd + 1;
-      // Void elements and self-closing tags have no children.
-      if (VOID_TAGS.has(tagName.toLowerCase()) || tagContent.endsWith('/')) {
-        continue;
-      }
-
-      // Children of <foreignObject> go back to the HTML namespace
-      // (HTML integration point); otherwise they inherit this element.
-      const childNS = childNamespaceForElement(tagName, elementNamespaceForTag(tagName, parentNS));
-      if (tagName.toLowerCase() === 'template' && (element as any).content) {
-        // For template elements, parse content into the content fragment.
-        // Content stays inert (no custom-element upgrade), matching the
-        // previous temp-container based parsing.
-        pos = this.parseNodesInto(html, pos, (element as any).content, childNS, 'template', true);
-      } else {
-        pos = this.parseNodesInto(html, pos, element, childNS, tagName.toLowerCase(), isInert);
-      }
-    }
-    return pos;
-  }
-
-  /**
-   * Spec "insert a character": consecutive character data merges into the
-   * previous Text sibling instead of spawning a new Text node.
-   * Only all-whitespace chunks are dropped; other text is kept exactly.
-   */
-  private appendTextNode(targetNode: any, rawText: string): void {
-    const { TextBase } = ElementBase.dependencies as any;
-    if (!TextBase || !rawText) return;
-    const text = this.fixBrokenClosingTags(this.decodeHTMLEntities(rawText));
-    const last = targetNode.lastChild as any;
-    if (last && last.nodeType === 3 /* TEXT_NODE */ && typeof last.appendData === 'function') {
-      last.appendData(text);
-      return;
-    }
-    targetNode.appendChild(new TextBase(text, this._ownerDocument));
-  }
-
-  private findTagEnd(html: string, startIndex: number): number {
-    let i = startIndex + 1;
-    let inQuotes = false;
-    let quoteChar = '';
-    while (i < html.length) {
-      const char = html[i];
-      if (!inQuotes) {
-        if (char === '"' || char === "'") {
-          inQuotes = true;
-          quoteChar = char;
-        } else if (char === '>') return i;
-      } else {
-        if (char === quoteChar) {
-          inQuotes = false;
-          quoteChar = '';
-        }
-      }
-      i++;
-    }
-    return -1;
-  }
 
   private fixBrokenClosingTags(text: string): string {
     return text.replace(/\/(\w+)>/g, '</$1>');
   }
 
-  private parseAttributes(element: any, attributeString: string): void {
-    let position = 0;
-    const length = attributeString.length;
-    while (position < length) {
-      while (position < length && /\s/.test(attributeString[position])) position++;
-      if (position >= length) break;
-      const nameStart = position;
-      while (position < length && /[\w:-]/.test(attributeString[position])) position++;
-      if (position === nameStart) {
-        position++;
-        continue;
-      }
-      const name = attributeString.substring(nameStart, position);
-      while (position < length && /\s/.test(attributeString[position])) position++;
-      let value = '';
-      if (position < length && attributeString[position] === '=') {
-        position++;
-        while (position < length && /\s/.test(attributeString[position])) position++;
-        if (position < length) {
-          const quote = attributeString[position];
-          if (quote === '"' || quote === "'") {
-            position++;
-            const valueStart = position;
-            while (position < length && attributeString[position] !== quote) position++;
-            value = attributeString.substring(valueStart, position);
-            if (position < length && attributeString[position] === quote) position++;
-          } else {
-            const valueStart = position;
-            while (position < length && !/\s/.test(attributeString[position])) position++;
-            value = attributeString.substring(valueStart, position);
-          }
-        }
-      }
-
-      const decodedValue = this.decodeHTMLEntities(value);
-      // Force trigger attributeChangedCallback if the element is already created
-      // Note: we can't just check if it's identical because the oldValue might be null
-      // in the context of attributeChangedCallback, but getAttribute() might return the value
-      // we already injected during construction.
-      const oldValue = element.getAttribute(name);
-
-      // Always route through setAttribute: subclasses sync their IDL fields
-      // (input.value/type/checked, etc.) inside their setAttribute override,
-      // which the constructor's direct map injection bypasses.
-      // setAttribute itself never fires callbacks (callers do), so this is
-      // callback-neutral; the manual initial-parse trigger below still fires once.
-      element.setAttribute(name, decodedValue);
-      if (oldValue === decodedValue) {
-        // Values match, meaning it was pre-populated during constructor.
-        // We must manually trigger the callback since the construction phase
-        // doesn't trigger callbacks (per web standard).
-        // Instead of remove+set (which fires callback twice), we directly fire the callback
-        if (typeof element.attributeChangedCallback === 'function') {
-          const ctor = element.constructor;
-          const observedAttributes = ctor.observedAttributes || [];
-          if (observedAttributes.includes(name) || observedAttributes.includes(name.toLowerCase())) {
-            // 💡 Call without old value since it's the initial parsing
-            element.attributeChangedCallback(name, null, decodedValue);
-          }
-        }
-      }
-    }
-  }
 
   protected escapeHTMLEntities(str: string): string {
     const entityMap: any = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
@@ -736,21 +432,6 @@ export abstract class ElementBase extends ParentNodeBase implements Element {
       .replace(/"/g, '&quot;');
   }
 
-  protected decodeHTMLEntities(str: string): string {
-    const entityMap: any = { '&amp;': '&', '&lt;': '<', '&gt;': '>', '&quot;': '"', '&#39;': "'", '&#34;': '"', '&apos;': "'", '&copy;': '©', '&reg;': '®', '&trade;': '™', '&nbsp;': '\u00A0', '&hellip;': '…', '&mdash;': '—', '&ndash;': '–', '&lsquo;': '\u2018', '&rsquo;': '\u2019', '&ldquo;': '"', '&rdquo;': '"' };
-    return str.replace(/&[a-zA-Z0-9#]+;/g, entity => {
-      if (entityMap[entity]) return entityMap[entity];
-      if (entity.startsWith('&#') && entity.endsWith(';')) {
-        const num = parseInt(entity.slice(2, -1), 10);
-        return isNaN(num) ? entity : String.fromCharCode(num);
-      }
-      if (entity.startsWith('&#x') && entity.endsWith(';')) {
-        const num = parseInt(entity.slice(3, -1), 16);
-        return isNaN(num) ? entity : String.fromCharCode(num);
-      }
-      return entity;
-    });
-  }
 
   get outerHTML(): string {
     const attrs = Array.from(this._attributes.entries())
