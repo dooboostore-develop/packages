@@ -378,7 +378,16 @@ export class CSSSelector {
      * Match attribute selectors with various operators
      */
     private static matchesAttributeSelector(element: Element, selector: string): boolean {
-        const attrContent = selector.slice(1, -1); // Remove [ and ]
+        let attrContent = selector.slice(1, -1); // Remove [ and ]
+
+        // Case-insensitive modifier ([attr="v" i]): a trailing i/I,
+        // whitespace-separated from a complete name[op]value.
+        let insensitive = false;
+        const modMatch = attrContent.match(/^(.*?)\s+([iI])$/);
+        if (modMatch && /[=!*^$~|]/.test(modMatch[1])) {
+            insensitive = true;
+            attrContent = modMatch[1];
+        }
 
         // Parse attribute selector: attr, attr=value, attr*=value, etc.
         const match = attrContent.match(/^([^=!*^$~|]+)(?:([=!*^$~|]+)(['"]?)([^'"]*)(['"]?))?$/);
@@ -397,37 +406,45 @@ export class CSSSelector {
             return element.hasAttribute(attrName);
         }
 
+        // Empty-string values never match for substring operators (spec).
+        if (attrValue === '' && (operator === '^=' || operator === '$=' || operator === '*=')) {
+            return false;
+        }
+
         const elementValue = element.getAttribute(attrName);
         if (elementValue === null) return false;
+
+        const lhs = insensitive ? elementValue.toLowerCase() : elementValue;
+        const rhs = insensitive ? attrValue.toLowerCase() : attrValue;
 
         switch (operator) {
             case '=':
                 // Exact match: [type="text"]
-                return elementValue === attrValue;
+                return lhs === rhs;
 
             case '!=':
                 // Not equal: [value!="test"]
-                return elementValue !== attrValue;
+                return lhs !== rhs;
 
             case '*=':
                 // Contains: [value*="test"]
-                return elementValue.includes(attrValue);
+                return lhs.includes(rhs);
 
             case '^=':
                 // Starts with: [value^="test"]
-                return elementValue.startsWith(attrValue);
+                return lhs.startsWith(rhs);
 
             case '$=':
                 // Ends with: [value$="test"]
-                return elementValue.endsWith(attrValue);
+                return lhs.endsWith(rhs);
 
             case '~=':
                 // Word match: [class~="test"]
-                return elementValue.split(/\s+/).includes(attrValue);
+                return lhs.split(/\s+/).includes(rhs);
 
             case '|=':
                 // Language match: [lang|="en"]
-                return elementValue === attrValue || elementValue.startsWith(attrValue + '-');
+                return lhs === rhs || lhs.startsWith(rhs + '-');
 
             default:
                 return false;
