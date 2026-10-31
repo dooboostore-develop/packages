@@ -4,6 +4,12 @@ import { SVG_NAMESPACE, MATHML_NAMESPACE, adjustSVGTagName } from '../utils/name
 // Global construction stack to pass attributes down to HTMLElementBase constructor
 export const constructionStack: any[] = [];
 
+// Module-level Maps for O(1) tag lookup (built once instead of scanning
+// ~110-entry tables with Object.entries on every createElement call).
+const htmlElementMap = new Map<string, any>(Object.entries(htmlElements));
+const svgElementMap = new Map<string, any>(Object.entries(svgElements));
+const mathmlElementMap = new Map<string, any>(Object.entries(mathmlElements));
+
 /**
  * Factory for creating HTML elements based on tag names
  */
@@ -18,12 +24,12 @@ export class ElementFactory {
     tagName: string,
     ownerDocument: any,
     options: any,
-    table: Record<string, any>,
+    table: Map<string, any>,
     FallbackClass: any,
     adjustCase: (t: string) => string
   ): HTMLElementBase {
     const qualifiedName = adjustCase(tagName);
-    const ElementClass = (table as any)[tagName.toLowerCase()] ?? FallbackClass;
+    const ElementClass = (table as Map<string, any>).get(tagName.toLowerCase()) ?? FallbackClass;
     const element = new ElementClass(qualifiedName, ownerDocument) as any;
     // getAttribute() must work right after construction (custom elements,
     // attributeChangedCallback), so apply parsed attributes immediately.
@@ -50,12 +56,12 @@ export class ElementFactory {
     // tagName is NOT upper-cased for SVG/MathML elements.
     if (namespaceURI === SVG_NAMESPACE) {
       return ElementFactory.createForeignElement(
-        tagName, ownerDocument, options, svgElements, SVGElement, adjustSVGTagName
+        tagName, ownerDocument, options, svgElementMap, SVGElement, adjustSVGTagName
       );
     }
     if (namespaceURI === MATHML_NAMESPACE) {
       return ElementFactory.createForeignElement(
-        tagName, ownerDocument, options, mathmlElements, MathMLElement, (t: string) => t.toLowerCase()
+        tagName, ownerDocument, options, mathmlElementMap, MathMLElement, (t: string) => t.toLowerCase()
       );
     }
 
@@ -146,24 +152,23 @@ export class ElementFactory {
       return el;
     }
 
-    // 3. Check HTML elements
-    for (const [tag, ElementClass] of Object.entries(htmlElements)) {
-      if (tag === normalizedTagName) {
-        const element = new ElementClass(tagName.toUpperCase(), ownerDocument) as HTMLElementBase;
-        // Apply attributes including 'is' if present
-        if (options && options.parsedAttributes) {
-          for (const [name, value] of options.parsedAttributes.entries()) {
-            (element as any)._attributes.set(name, value);
-            if (name === 'id') (element as any)._id = value;
-            else if (name === 'class') (element as any)._className = value;
-          }
+    // 3. Check HTML elements (O(1) Map lookup)
+    const HTMLElementClass = htmlElementMap.get(normalizedTagName);
+    if (HTMLElementClass) {
+      const element = new HTMLElementClass(tagName.toUpperCase(), ownerDocument) as HTMLElementBase;
+      // Apply attributes including 'is' if present
+      if (options && options.parsedAttributes) {
+        for (const [name, value] of options.parsedAttributes.entries()) {
+          (element as any)._attributes.set(name, value);
+          if (name === 'id') (element as any)._id = value;
+          else if (name === 'class') (element as any)._className = value;
         }
-        // Set is attribute if present
-        if (isAttribute) {
-          (element as any)._attributes.set('is', isAttribute);
-        }
-        return element;
       }
+      // Set is attribute if present
+      if (isAttribute) {
+        (element as any)._attributes.set('is', isAttribute);
+      }
+      return element;
     }
 
     // NOTE: no SVG/MathML table lookup here on purpose. Per the DOM spec,

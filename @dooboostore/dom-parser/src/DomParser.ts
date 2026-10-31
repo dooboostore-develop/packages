@@ -22,6 +22,58 @@ export interface DomParserOptions {
   fetch?: typeof globalThis.fetch;
 }
 
+/**
+ * Parses an attribute string into constructor options: the `is` value for
+ * customized built-ins plus a pre-parsed attribute map, so getAttribute()
+ * works during construction. Entity values are decoded (attribute values
+ * are stored decoded; serialization re-escapes them).
+ */
+function extractIsAttr(attrStr: string, decode: (s: string) => string): any {
+  if (!attrStr) return undefined;
+  const match = attrStr.match(/(?:^|\s)is=(?:(['"])(.*?)\1|([^\s>]+))/i);
+  const options: any = match ? { is: match[2] || match[3] } : {};
+
+  const parsedAttributes = new Map<string, string>();
+  let pos = 0;
+  const len = attrStr.length;
+
+  while (pos < len) {
+    while (pos < len && /\s/.test(attrStr[pos])) pos++;
+    if (pos >= len) break;
+    const nameStart = pos;
+    while (pos < len && /[\w:-]/.test(attrStr[pos])) pos++;
+    if (pos === nameStart) {
+      pos++;
+      continue;
+    }
+    const name = attrStr.substring(nameStart, pos);
+    while (pos < len && /\s/.test(attrStr[pos])) pos++;
+    let value = '';
+    if (pos < len && attrStr[pos] === '=') {
+      pos++;
+      while (pos < len && /\s/.test(attrStr[pos])) pos++;
+      if (pos < len) {
+        const quote = attrStr[pos];
+        if (quote === '"' || quote === "'") {
+          pos++;
+          const valueStart = pos;
+          while (pos < len && attrStr[pos] !== quote) pos++;
+          value = attrStr.substring(valueStart, pos);
+          if (pos < len && attrStr[pos] === quote) pos++;
+        } else {
+          const valueStart = pos;
+          while (pos < len && !/\s/.test(attrStr[pos])) pos++;
+          value = attrStr.substring(valueStart, pos);
+        }
+      }
+    }
+    parsedAttributes.set(name, decode(value));
+  }
+
+  options.parsedAttributes = parsedAttributes;
+  return options;
+}
+
 export class DomParser {
   private _window: Window | null;
   private _document: Document | null;
@@ -135,28 +187,53 @@ export class DomParser {
     this.parseHTMLRecursive(html, parent, parentNS);
   }
 
-  private parseHTMLRecursive(html: string, parent: any, parentNS: string | null = null): void {
-    let position = 0;
+  // HTML void elements (no end tag, no children).
+  private static readonly VOID_TAGS = new Set([
+    'area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input',
+    'link', 'meta', 'param', 'source', 'track', 'wbr'
+  ]);
 
-    while (position < html.length) {
+  private parseHTMLRecursive(html: string, parent: any, parentNS: string | null = null): void {
+    this.parseNodes(html, 0, parent, parentNS, null);
+  }
+
+  /**
+   * Single-pass HTML parser: scans `html` forward exactly once starting at
+   * `pos`, appending nodes to `parent`. Stops after consuming this level's
+   * `</stopTag>` (returns the position past it) or at end of input.
+   *
+   * Unlike the previous find-matching-close + substring + recurse design
+   * (O(depth x size)), every character is examined a constant number of
+   * times, so parsing is linear in input size.
+   */
+  private parseNodes(
+    html: string,
+    pos: number,
+    parent: any,
+    parentNS: string | null,
+    stopTag: string | null
+  ): number {
+    const len = html.length;
+
+    while (pos < len) {
       // Find next tag or comment
-      const tagStart = html.indexOf('<', position);
+      const tagStart = html.indexOf('<', pos);
 
       if (tagStart === -1) {
         // No more tags, add remaining text if any
         // Per HTML spec ("insert a character"), character references are
         // decoded at parse time so Text.data holds decoded text.
-        const remainingText = html.substring(position).trim();
+        const remainingText = html.substring(pos).trim();
         if (remainingText) {
           const textNode = new TextBase(this.decodeHTMLEntities(remainingText), this.document);
           parent.appendChild(textNode);
         }
-        break;
+        return len;
       }
 
       // Add text before tag if any
-      if (tagStart > position) {
-        const textContent = html.substring(position, tagStart).trim();
+      if (tagStart > pos) {
+        const textContent = html.substring(pos, tagStart).trim();
         if (textContent) {
           const textNode = new TextBase(this.decodeHTMLEntities(textContent), this.document);
           parent.appendChild(textNode);
@@ -164,19 +241,21 @@ export class DomParser {
       }
 
       // Check if this is a comment
-      if (html.substring(tagStart, tagStart + 4) === '<!--') {
+      if (html.charCodeAt(tagStart + 1) === 33 /* ! */
+        && html.charCodeAt(tagStart + 2) === 45 /* - */
+        && html.charCodeAt(tagStart + 3) === 45 /* - */) {
         const commentEnd = html.indexOf('-->', tagStart + 4);
         if (commentEnd !== -1) {
           const commentContent = html.substring(tagStart + 4, commentEnd);
           const commentNode = new Comment(commentContent, this.document);
           parent.appendChild(commentNode);
-          position = commentEnd + 3;
+          pos = commentEnd + 3;
           continue;
         } else {
           // Malformed comment, treat as text
           const textNode = new TextBase(html.substring(tagStart, tagStart + 4), this.document);
           parent.appendChild(textNode);
-          position = tagStart + 4;
+          pos = tagStart + 4;
           continue;
         }
       }
@@ -188,65 +267,35 @@ export class DomParser {
       const tagContent = html.substring(tagStart + 1, tagEnd);
 
       // Check if it's a closing tag
-      if (tagContent.startsWith('/')) {
-        // This is a closing tag, we should return to parent
-        position = tagEnd + 1;
-        break;
-      }
-
-      const extractIsAttr = (attrStr: string) => {
-        if (!attrStr) return undefined;
-        const match = attrStr.match(/(?:^|\s)is=(?:(['"])(.*?)\1|([^\s>]+))/i);
-        const options: any = match ? { is: match[2] || match[3] } : {};
-
-        // Parse all attributes beforehand to pass into constructor
-        const parsedAttributes = new Map<string, string>();
-        let pos = 0;
-        const len = attrStr.length;
-
-        while (pos < len) {
-          while (pos < len && /\s/.test(attrStr[pos])) pos++;
-          if (pos >= len) break;
-          const nameStart = pos;
-          while (pos < len && /[\w:-]/.test(attrStr[pos])) pos++;
-          if (pos === nameStart) {
-            pos++;
-            continue;
+      if (tagContent.charCodeAt(0) === 47 /* / */) {
+        pos = tagEnd + 1;
+        if (stopTag !== null) {
+          // End of this element's content only when the tag matches;
+          // stray closing tags are ignored per the HTML spec (the old
+          // code dropped the rest of the input here).
+          const closeName = tagContent.substring(1).trim().split(/\s+/, 1)[0];
+          if (closeName !== undefined && closeName.toLowerCase() === stopTag) {
+            return pos;
           }
-          const name = attrStr.substring(nameStart, pos);
-          while (pos < len && /\s/.test(attrStr[pos])) pos++;
-          let value = '';
-          if (pos < len && attrStr[pos] === '=') {
-            pos++;
-            while (pos < len && /\s/.test(attrStr[pos])) pos++;
-            if (pos < len) {
-              const quote = attrStr[pos];
-              if (quote === '"' || quote === "'") {
-                pos++;
-                const valueStart = pos;
-                while (pos < len && attrStr[pos] !== quote) pos++;
-                value = attrStr.substring(valueStart, pos);
-                if (pos < len && attrStr[pos] === quote) pos++;
-              } else {
-                const valueStart = pos;
-                while (pos < len && !/\s/.test(attrStr[pos])) pos++;
-                value = attrStr.substring(valueStart, pos);
-              }
-            }
-          }
-          parsedAttributes.set(name, this.decodeHTMLEntities(value));
+          continue;
         }
-
-        options.parsedAttributes = parsedAttributes;
-        return options;
-      };
-
-      // Check if it's a self-closing tag
-      const isSelfClosing = tagContent.endsWith('/') || this.isSelfClosingTag(tagContent.split(/\s+/)[0]);
+        // Top level: stray closing tag, ignore and keep parsing.
+        continue;
+      }
 
       // Parse tag name and attributes
       const spaceIndex = tagContent.indexOf(' ');
       const tagName = spaceIndex === -1 ? tagContent.replace('/', '') : tagContent.substring(0, spaceIndex);
+
+      if (!tagName) {
+        // "<>" or "< ..." is not a tag per the HTML spec (tag open state:
+        // anything but a letter, "!", "/" or "?" emits "<" as text).
+        // Emit the "<" literally and resume right after it.
+        parent.appendChild(new TextBase('<', this.document));
+        pos = tagStart + 1;
+        continue;
+      }
+
       let attributes = spaceIndex === -1 ? '' : tagContent.substring(spaceIndex + 1);
 
       // Only remove trailing slash for self-closing tags (not from attribute values)
@@ -254,12 +303,15 @@ export class DomParser {
         attributes = attributes.slice(0, -1).trim();
       }
 
+      // Check if it's a self-closing tag
+      const isSelfClosing = tagContent.endsWith('/') || DomParser.VOID_TAGS.has(tagName.toLowerCase());
+
       // Create element in the correct namespace: <svg>/<math> switch to
       // their foreign namespace, everything else inherits the parent context.
       // Per the DOM spec, tagName is upper-cased for HTML elements only,
       // so SVG elements keep their qualified names (issue #15).
       const elementNS = elementNamespaceForTag(tagName, parentNS);
-      const elementOptions: any = { ...(extractIsAttr(attributes) as object), namespaceURI: elementNS };
+      const elementOptions: any = { ...(extractIsAttr(attributes, (s) => this.decodeHTMLEntities(s)) as object), namespaceURI: elementNS };
       const element = (this.document as any).createElementNS(elementNS, tagName.toLowerCase(), elementOptions);
 
       // 1. Append to parent FIRST so parentElement is available during attributeChangedCallback
@@ -270,97 +322,22 @@ export class DomParser {
         this.parseAttributes(attributes, element);
       }
 
+      pos = tagEnd + 1;
       if (isSelfClosing) {
-        position = tagEnd + 1;
-      } else {
-        // Find matching closing tag and parse content
-        const closingTag = `</${tagName}>`;
-        const closingTagIndex = this.findMatchingClosingTag(html, tagEnd + 1, tagName);
-
-        if (closingTagIndex !== -1) {
-          const innerContent = html.substring(tagEnd + 1, closingTagIndex);
-          if (innerContent.trim()) {
-            // Children of <foreignObject> go back to the HTML namespace
-            // (HTML integration point); otherwise they inherit this element.
-            const childNS = childNamespaceForElement(tagName, elementNS);
-            // For template elements, parse content into the content fragment
-            if (tagName.toLowerCase() === 'template') {
-              this.parseHTMLRecursive(innerContent, (element as HTMLTemplateElement).content, childNS);
-            } else {
-              this.parseHTMLRecursive(innerContent, element, childNS);
-            }
-          }
-          position = closingTagIndex + closingTag.length;
-        } else {
-          // No matching closing tag found, treat as self-closing
-          position = tagEnd + 1;
-        }
-      }
-    }
-  }
-
-  private findMatchingClosingTag(html: string, startPos: number, tagName: string): number {
-    const openTag = `<${tagName}`;
-    const closeTag = `</${tagName}>`;
-    const commentStart = '<!--';
-    const commentEnd = '-->';
-    let depth = 1;
-    let pos = startPos;
-
-    while (pos < html.length && depth > 0) {
-      // Find the next occurrence of open tag, close tag, or comment start
-      const nextOpen = html.indexOf(openTag, pos);
-      const nextClose = html.indexOf(closeTag, pos);
-      const nextComment = html.indexOf(commentStart, pos);
-
-      // Determine which one comes first
-      const targets = [
-        { type: 'open', index: nextOpen },
-        { type: 'close', index: nextClose },
-        { type: 'comment', index: nextComment }
-      ].filter(t => t.index !== -1).sort((a, b) => a.index - b.index);
-
-      if (targets.length === 0) {
-        // No more relevant tags or comments
-        return -1;
-      }
-
-      const first = targets[0];
-
-      if (first.type === 'comment') {
-        // Skip comment content
-        const endComment = html.indexOf(commentEnd, first.index + commentStart.length);
-        if (endComment !== -1) {
-          pos = endComment + commentEnd.length;
-        } else {
-          // Unclosed comment, treat rest as part of comment?
-          // Browser behavior varies, but skipping to end is safest for parser
-          return -1;
-        }
         continue;
       }
 
-      if (first.type === 'open') {
-        // Check if it's a real opening tag (followed by space or >)
-        const nextChar = html[first.index + openTag.length];
-        if (nextChar === ' ' || nextChar === '>' || nextChar === '/') {
-          depth++;
-          pos = first.index + openTag.length;
-        } else {
-          // Not a real opening tag, just a prefix (e.g. <body-part)
-          pos = first.index + openTag.length;
-        }
+      // Children of <foreignObject> go back to the HTML namespace
+      // (HTML integration point); otherwise they inherit this element.
+      const childNS = childNamespaceForElement(tagName, elementNS);
+      if (tagName.toLowerCase() === 'template') {
+        // For template elements, parse content into the content fragment
+        pos = this.parseNodes(html, pos, (element as HTMLTemplateElement).content, childNS, 'template');
       } else {
-        // Found a closing tag
-        depth--;
-        if (depth === 0) {
-          return first.index;
-        }
-        pos = first.index + closeTag.length;
+        pos = this.parseNodes(html, pos, element, childNS, tagName.toLowerCase());
       }
     }
-
-    return -1;
+    return pos;
   }
 
   private parseAttributes(attributeString: string, element: any): void {
@@ -516,19 +493,31 @@ export class DomParser {
     });
   }
 
-  private isSelfClosingTag(tagName: string): boolean {
-    const selfClosingTags = ['area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input', 'link', 'meta', 'param', 'source', 'track', 'wbr'];
-    return selfClosingTags.includes(tagName.toLowerCase());
-  }
-
   /**
-   * Set up document references after HTML parsing
+   * Set up document references after HTML parsing.
+   * Collects html/head/body in a single O(n) walk instead of three
+   * full-tree querySelectorAll passes.
    */
   private setupDocumentReferences(): void {
     // Find HTML, HEAD, and BODY elements
-    const allHtmlElements = this.document.querySelectorAll('html');
-    const allHeadElements = this.document.querySelectorAll('head');
-    const allBodyElements = this.document.querySelectorAll('body');
+    const allHtmlElements: any[] = [];
+    const allHeadElements: any[] = [];
+    const allBodyElements: any[] = [];
+    const stack: any[] = [this.document];
+    while (stack.length > 0) {
+      const node = stack.pop();
+      const children = (node as any)._childNodesInternal ?? [];
+      for (let i = children.length - 1; i >= 0; i--) {
+        const child = children[i];
+        if (child.nodeType === 1) {
+          const tag = (child.tagName || '').toLowerCase();
+          if (tag === 'html') allHtmlElements.push(child);
+          else if (tag === 'head') allHeadElements.push(child);
+          else if (tag === 'body') allBodyElements.push(child);
+          stack.push(child);
+        }
+      }
+    }
 
     // Choose the HTML element with content, then attributes, then first one
     let htmlElement = null;
