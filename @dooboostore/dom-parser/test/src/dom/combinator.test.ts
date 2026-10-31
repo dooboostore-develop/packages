@@ -173,8 +173,7 @@ describe('selector combinators (descendant, >, +, ~)', () => {
         assert.equal(ids(':read-write'), 'a,e,h,w');
     });
 
-    test(':target matches the element addressed by the document URL fragment', () => {
-        const bare = new DomParser('<div id="a"></div><div id="b"></div>').document as any;
+    test(':target matches the element addressed by the document URL fragment', () => {        const bare = new DomParser('<div id="a"></div><div id="b"></div>').document as any;
         assert.equal(bare.querySelectorAll(':target').length, 0);
         const doc = new DomParser('<div id="a"></div><div id="b"></div>').document as any;
         doc.location = { href: 'http://x/#b' };
@@ -201,5 +200,12 @@ describe('selector combinators (descendant, >, +, ~)', () => {
         const d = doc.querySelector('#d');
         assert.equal(d.readOnly, true);
         assert.equal(d.value, 'hi');
+    });
+
+    test(':in-range/:out-of-range for min/max inputs', () => {
+        const doc = new DomParser('<input id="n1" type="number" min="1" max="10" value="5"><input id="n2" type="number" min="1" max="10" value="50"><input id="n3" type="number" min="1" max="10"><input id="n4" type="number"><input id="d1" type="date" min="2026-01-01" max="2026-12-31" value="2026-06-01"><input id="d2" type="date" min="2026-01-01" max="2026-12-31" value="2027-01-01"><input id="t1" type="text" min="1" max="10" value="5"><input id="x1" type="number" min="1" max="10" value="50" disabled><input id="m1" type="month" min="2026-01" max="2026-12" value="2026-06">').document as any;
+        const ids = (sel: string) => Array.from(doc.querySelectorAll(sel)).map((e: any) => e.id).join(',');
+        assert.equal(ids(':in-range'), 'n1,n3,n4,d1,m1');
+        assert.equal(ids(':out-of-range'), 'n2,d2');
     });
 });

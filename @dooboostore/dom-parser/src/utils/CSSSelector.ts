@@ -847,7 +847,7 @@ export class CSSSelector {
                     return ((element as any).getAttribute('value') ?? '') === '';
                 }
 
-                case 'target': {                    // :target — element whose id equals the document URL fragment.
+                                case 'target': {                    // :target — element whose id equals the document URL fragment.
                     const doc: any = (element as any).ownerDocument;
                     const href: string = doc?.URL ?? doc?.location?.href ?? '';
                     const hashIndex = href.indexOf('#');
@@ -862,10 +862,50 @@ export class CSSSelector {
                     return (element as any).id === frag;
                 }
 
+                case 'in-range':
+                    return this.rangeState(element) === 'in';
+
+                case 'out-of-range':
+                    return this.rangeState(element) === 'out';
+
             default:
                 // Unsupported pseudo-class
                 return false;
         }
+    }
+
+    /**
+     * Input types with min/max range validation (verified against Chromium).
+     * text-like and checkbox/radio/button types never participate.
+     */
+    private static readonly RANGE_INPUT_TYPES: ReadonlySet<string> = new Set([
+        'number', 'range', 'date', 'month', 'week', 'time', 'datetime-local', 'month',
+    ]);
+
+    /**
+     * Range validation state: 'in' | 'out' | null (not applicable:
+     * wrong element/type, or barred by disabled/readonly).
+     */
+    private static rangeState(element: any): 'in' | 'out' | null {
+        if (typeof element.getAttribute !== 'function') return null;
+        if (((element.tagName || '') as string).toLowerCase() !== 'input') return null;
+        if (element.hasAttribute('disabled') || element.hasAttribute('readonly')) return null;
+        const type = ((element.getAttribute('type') as string | null) ?? 'text').toLowerCase();
+        if (!CSSSelector.RANGE_INPUT_TYPES.has(type)) return null;
+        const value: string = typeof element.value === 'string' ? element.value : (element.getAttribute('value') ?? '');
+        if (value === '') return 'in';
+        const min = element.getAttribute('min');
+        const max = element.getAttribute('max');
+        if (type === 'number' || type === 'range') {
+            const n = parseFloat(value);
+            if (Number.isNaN(n)) return 'in'; // sanitizes to empty in browsers
+            if (min) { const m = parseFloat(min); if (!Number.isNaN(m) && n < m) return 'out'; }
+            if (max) { const m = parseFloat(max); if (!Number.isNaN(m) && n > m) return 'out'; }
+            return 'in';
+        }
+        if (min && value < min) return 'out';
+        if (max && value > max) return 'out';
+        return 'in';
     }
 
     /**
