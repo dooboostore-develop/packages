@@ -199,9 +199,14 @@ export function findMatchingSibling(element: any, test: (el: any) => boolean): a
  * Walk ancestors (stopping at the shadow root or scoping root),
  * returning the first one accepted by `test`.
  */
-export function findMatchingAncestor(element: any, test: (el: any) => boolean, scope?: any): any {
+export function findMatchingAncestor(element: any, test: (el: any) => boolean, scope?: any, exclusiveBoundary?: any): any {
     let ancestor = element.parentNode;
     while (ancestor) {
+        // :has() anchors are exclusive boundaries: compounds must never
+        // match the anchor itself (absolutized :scope semantics).
+        if (exclusiveBoundary !== undefined && ancestor === exclusiveBoundary) {
+            return null;
+        }
         if (ancestor === scope) {
             return test(ancestor) ? ancestor : null;
         }

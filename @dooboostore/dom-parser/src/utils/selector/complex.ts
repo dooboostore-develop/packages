@@ -28,12 +28,12 @@ export class ComplexMatcher implements SelectorMatcher {
             const prev = chain[i - 1].compound;
             if (combinator === '>') {
                 current = current.parentNode;
-                if (!current || (current !== ctx.scope && current.nodeType !== 1) || !prev.matches(current, ctx)) return false;
+                if (!current || (current !== ctx.scope && current.nodeType !== 1) || !this.matchCompound(prev, current, ctx)) return false;
             } else if (combinator === '+') {
                 current = previousElementSibling(current);
-                if (!current || !prev.matches(current, ctx)) return false;
+                if (!current || !this.matchCompound(prev, current, ctx)) return false;
             } else if (combinator === '~') {
-                current = findMatchingSibling(current, n => prev.matches(n, ctx));
+                current = findMatchingSibling(current, n => this.matchCompound(prev, n, ctx));
                 if (!current) return false;
             } else {
                 current = this.matchAncestor(current, prev, ctx);
@@ -62,6 +62,13 @@ export class ComplexMatcher implements SelectorMatcher {
         return true;
     }
 
+    private matchCompound(compound: CompoundMatcher, node: any, ctx: SelectorContext): boolean {
+        // :has() anchors are exclusive boundaries: no compound in the
+        // argument may match the anchor itself.
+        if (ctx.hasBoundary !== undefined && node === ctx.hasBoundary) return false;
+        return compound.matches(node, ctx);
+    }
+
     private matchAncestor(current: any, compound: CompoundMatcher, ctx: SelectorContext): any {
         if (compound.hasHost) {
             const root = getTreeRoot(current);
@@ -78,7 +85,7 @@ export class ComplexMatcher implements SelectorMatcher {
             }
             return null;
         }
-        return findMatchingAncestor(current, n => compound.matches(n, ctx), ctx.scope);
+        return findMatchingAncestor(current, n => compound.matches(n, ctx), ctx.scope, ctx.hasBoundary);
     }
 }
 

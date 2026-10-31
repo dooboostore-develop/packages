@@ -117,7 +117,11 @@ export function createSimple(component: string): SimpleMatcher {
             return new AnyMatcher(alternatives);
         }
         if (name === 'has' && arg !== undefined) {
-            return new HasMatcher(arg);
+            try {
+                return new HasMatcher(createMatcher(arg));
+            } catch {
+                return new NeverMatcher();
+            }
         }
         return new PseudoMatcher(name, arg);
     }

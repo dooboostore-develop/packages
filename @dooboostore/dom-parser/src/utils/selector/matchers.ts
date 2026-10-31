@@ -124,16 +124,32 @@ export class AnyMatcher implements SelectorMatcher {
 }
 
 /**
- * Simplified :has(): true when the element's own subtree query finds a match.
+ * `:has()`: true when a strict-relative of the element matches.
+ * The argument is precompiled by the factory; evaluation runs it against
+ * strict descendants with the anchor as an exclusive boundary, so the
+ * anchor itself can never satisfy a compound (absolutized `:scope` binds
+ * only the leading relative combinator) and an explicit `:scope` inside
+ * never matches — both verified against Chromium.
  */
 export class HasMatcher implements SelectorMatcher {
-    constructor(private readonly selector: string) {}
-    matches(element: any, _ctx: SelectorContext): boolean {
-        if (this.selector && 'querySelector' in (element as object)) {
-            try {
-                return (element as any).querySelector(this.selector) !== null;
-            } catch {
-                return false;
+    constructor(private readonly inner: SelectorMatcher) {}
+    matches(element: any, ctx: SelectorContext): boolean {
+        if (!element) return false;
+        const hasCtx: SelectorContext = { ...ctx, scope: element, hasBoundary: element };
+        const queue: any[] = [...(element._childNodesInternal || element.childNodes || [])];
+        for (let head = 0; head < queue.length; head++) {
+            const node = queue[head];
+            if (!node) continue;
+            if (node.nodeType === 1) {
+                try {
+                    if (this.inner.matches(node, hasCtx)) return true;
+                } catch {
+                    // Forgiving: an unmatchable candidate never matches.
+                }
+            }
+            const children = node._childNodesInternal || node.childNodes;
+            if (children) {
+                for (let i = 0; i < children.length; i++) queue.push(children[i]);
             }
         }
         return false;
@@ -197,6 +213,9 @@ export class PseudoMatcher implements SelectorMatcher {
             case 'scope':
                 // :scope matches the scoping root itself (nwsapi#144 class:
                 // no caches anywhere, so the scope can never go stale).
+                // Inside :has(), an explicit :scope never matches (Chromium:
+                // :has(:scope), :has(:scope .b), :has(> :scope) are all false).
+                if (ctx.hasBoundary) return false;
                 return element === ctx.scope;
 
             case 'checked':
