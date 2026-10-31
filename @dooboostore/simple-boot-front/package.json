@@ -60,14 +60,15 @@
     "Hoil-Gang (https://github.com/khl1154)",
     "hwangsero (https://github.com/hwangsero)"
   ],
-  "homepage": "https://github.com/dooboostore-develop/packages",
+  "homepage": "https://dooboostore-develop.github.io/package/simple-boot-front",
   "bugs": {
-    "url": "https://github.com/dooboostore-develop/packages",
+    "url": "https://github.com/dooboostore-develop/packages/issues",
     "email": "dooboostore@gmail.com"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/dooboostore-develop/packages"
+    "url": "git+https://github.com/dooboostore-develop/packages.git",
+    "directory": "packages/@dooboostore/simple-boot-front"
   },
   "peerDependencies": {
     "reflect-metadata": "^0.2.2"
