@@ -182,4 +182,10 @@ describe('selector combinators (descendant, >, +, ~)', () => {
         assert.equal(doc.querySelector('#b').matches(':target'), true);
         assert.equal(doc.querySelector('#a').matches(':target'), false);
     });
+
+    test(':placeholder-shown needs placeholder plus empty value on applicable controls', () => {
+        const doc = new DomParser('<input id="a" placeholder="name"><input id="b" placeholder="name" value="x"><input id="c"><input id="n" type="number" placeholder="x"><input id="cb" type="checkbox" placeholder="x"><textarea id="d" placeholder="t"></textarea><textarea id="e" placeholder="t">y</textarea>').document as any;
+        const ids = (sel: string) => Array.from(doc.querySelectorAll(sel)).map((e: any) => e.id).join(',');
+        assert.equal(ids(':placeholder-shown'), 'a,n,d');
+    });
 });

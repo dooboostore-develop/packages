@@ -829,8 +829,25 @@ export class CSSSelector {
                 case 'read-only':
                     return !this.isReadWrite(element);
 
-                case 'target': {
-                    // :target — element whose id equals the document URL fragment.
+                case 'placeholder-shown': {
+                    // :placeholder-shown — input (applicable types only) or textarea
+                    // with a placeholder attribute and an empty value.
+                    const tag = ((element.tagName || '') as string).toLowerCase();
+                    if (typeof (element as any).getAttribute !== 'function') return false;
+                    if ((element as any).getAttribute('placeholder') === null) return false;
+                    if (tag === 'textarea') {
+                        return ((element as any).textContent ?? '') === '';
+                    }
+                    if (tag !== 'input') return false;
+                    const type = (((element as any).getAttribute('type') as string | null) ?? 'text').toLowerCase();
+                    if (!CSSSelector.PLACEHOLDER_INPUT_TYPES.has(type)) return false;
+                    // NOTE: read the content attribute, not the IDL field —
+                    // the parser populates the attribute map directly and
+                    // IDL fields only sync on later setAttribute() calls.
+                    return ((element as any).getAttribute('value') ?? '') === '';
+                }
+
+                case 'target': {                    // :target — element whose id equals the document URL fragment.
                     const doc: any = (element as any).ownerDocument;
                     const href: string = doc?.URL ?? doc?.location?.href ?? '';
                     const hashIndex = href.indexOf('#');
@@ -881,6 +898,15 @@ export class CSSSelector {
         if (a > 0) return d >= 0 && d % a === 0;
         return d <= 0 && d % a === 0;
     }
+
+    /**
+     * Input types that render a placeholder (verified against Chromium;
+     * date/time/month/week/datetime-local/color/range/file/hidden and
+     * checkboxes do not, even with the attribute present).
+     */
+    private static readonly PLACEHOLDER_INPUT_TYPES: ReadonlySet<string> = new Set([
+        'text', 'search', 'tel', 'url', 'password', 'email', 'number',
+    ]);
 
     /**
      * Input types whose value is user-mutable text (verified against Chromium;
