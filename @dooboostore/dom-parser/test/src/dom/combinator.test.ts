@@ -50,6 +50,11 @@ describe('selector combinators (descendant, >, +, ~)', () => {
         assert.equal(doc.querySelectorAll('div, p').length, 2);
     });
 
+    test(':not with brackets inside keeps one compound (happy-dom#2077)', () => {
+        const doc = new DomParser('<div attr2="val2" attr3="(val3)"></div><div attr3="(val3)"></div>').document as any;
+        assert.equal(doc.querySelectorAll(':not([attr2="val2"])[attr3="(val3)"]').length, 1);
+    });
+
     test('shadow scoping: selectors never cross the shadow boundary except via :host (happy-dom#2554)', () => {
         const window = parseHTML('<div></div>') as any;
         const document = window.document;

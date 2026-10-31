@@ -270,6 +270,7 @@ export class CSSSelector {
         const components: string[] = [];
         let current = '';
         let inBrackets = false;
+        let depthParen = 0;
         let inQuotes = false;
         let quoteChar = '';
 
@@ -289,6 +290,23 @@ export class CSSSelector {
             if (char === '"' || char === "'") {
                 inQuotes = true;
                 quoteChar = char;
+                current += char;
+                continue;
+            }
+
+            // Inside functional pseudo-classes (:not(...), :has(...)) nothing
+            // splits a compound — brackets belong to the inner selector.
+            if (char === '(') {
+                depthParen++;
+                current += char;
+                continue;
+            }
+            if (char === ')') {
+                if (depthParen > 0) depthParen--;
+                current += char;
+                continue;
+            }
+            if (depthParen > 0) {
                 current += char;
                 continue;
             }
