@@ -3,6 +3,7 @@ import { ParentNodeBase } from '../ParentNodeBase';
 import { HTMLCollectionImp, HTMLCollectionOfImp } from '../collection';
 import { ELEMENT_NODE, TEXT_NODE, ATTRIBUTE_NODE } from '../Node';
 import { CSSSelector } from '../../utils/CSSSelector';
+import { serializeChildrenWithShadow, attachDeclarativeShadowRoots, shouldIncludeShadowRoot, shadowTemplateOpenTag, type GetHTMLOptions } from '../serialize';
 import { SVG_NAMESPACE, MATHML_NAMESPACE, elementNamespaceForTag, childNamespaceForElement } from '../../utils/namespaces';
 import { NodeBase } from '../NodeBase';
 import { ShadowRootBase } from '../ShadowRootBase';
@@ -331,6 +332,48 @@ export abstract class ElementBase extends ParentNodeBase implements Element {
     if (stringValue.trim()) {
       const isInert = (this as any)._isInertHTMLParsing === true;
       this.parseAndAppendHTML(stringValue, this, isInert);
+    }
+  }
+
+  /**
+   * Serializes child nodes including declarative shadow DOM for
+   * includable shadow roots (explicitly listed, or serializable ones
+   * when options.serializableShadowRoots is set). Light-DOM-only
+   * otherwise — matching browsers.
+   */
+  getHTML(options?: GetHTMLOptions): string {
+    // The host's own shadow root serializes first (as a declarative shadow
+    // DOM template when includable), followed by light-DOM children.
+    let html = '';
+    const ownShadow = (this as any).shadowRoot ?? (this as any)._shadowRoot ?? null;
+    if (shouldIncludeShadowRoot(ownShadow, options)) {
+      html += shadowTemplateOpenTag(ownShadow)
+        + serializeChildrenWithShadow((ownShadow as any)._childNodesInternal ?? [], options)
+        + '</template>';
+    }
+    return html + serializeChildrenWithShadow(this._childNodesInternal, options);
+  }
+
+  /**
+   * Parses HTML and replaces children, converting declarative shadow DOM
+   * `<template shadowrootmode=open>` children into attached shadow roots
+   * (closed ones stay inert elements, like browsers).
+   */
+  setHTMLUnsafe(html: string, _options?: any): void {
+    while (this._childNodesInternal.length > 0) {
+      const child = this._childNodesInternal[0];
+      if (child) {
+        this.removeChild(child);
+      }
+    }
+    const stringValue = String(html);
+    if (!stringValue.trim()) return;
+    const frag = (this._ownerDocument as any).createDocumentFragment();
+    const isInert = (this as any)._isInertHTMLParsing === true;
+    this.parseAndAppendHTML(stringValue, frag, isInert);
+    attachDeclarativeShadowRoots(frag);
+    for (const child of Array.from((frag.childNodes ?? []) as any)) {
+      this.appendChild(child as unknown as Node);
     }
   }
 
@@ -896,9 +939,6 @@ export abstract class ElementBase extends ParentNodeBase implements Element {
   getElementsByTagNameNS(_ns: string | null, localName: string): any {
     return this.getElementsByTagName(localName);
   }
-  getHTML(_options?: any): string {
-    return this.outerHTML;
-  }
   hasAttributeNS(_ns: string | null, localName: string): boolean {
     return this.hasAttribute(localName);
   }
@@ -1018,9 +1058,6 @@ export abstract class ElementBase extends ParentNodeBase implements Element {
   }
   setAttributeNodeNS(attr: any): any {
     return this.setAttributeNode(attr);
-  }
-  setHTMLUnsafe(html: string): void {
-    this.innerHTML = html;
   }
   setPointerCapture(_id: number): void {}
   toggleAttribute(qualifiedName: string, force?: boolean): boolean {

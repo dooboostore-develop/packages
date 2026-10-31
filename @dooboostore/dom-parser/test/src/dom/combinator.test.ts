@@ -208,4 +208,24 @@ describe('selector combinators (descendant, >, +, ~)', () => {
         assert.equal(ids(':in-range'), 'n1,n3,n4,d1,m1');
         assert.equal(ids(':out-of-range'), 'n2,d2');
     });
+
+    test('getHTML serializes declarative shadow DOM only when includable; setHTMLUnsafe attaches open DSD', () => {
+        const doc = new DomParser('<div id="host"><span>light</span></div>').document as any;
+        const host = doc.querySelector('#host');
+        assert.equal(host.getHTML(), '<span>light</span>');
+        const sr = host.attachShadow({ mode: 'open', serializable: true, clonable: true });
+        sr.innerHTML = '<b>shadow</b>';
+        const expected = '<template shadowrootmode="open" shadowrootserializable="" shadowrootclonable=""><b>shadow</b></template><span>light</span>';
+        assert.equal(host.getHTML({ serializableShadowRoots: true }), expected);
+        assert.equal(host.getHTML({ shadowRoots: [sr] }), expected);
+        assert.equal(sr.getHTML(), '<b>shadow</b>');
+        const target = doc.createElement('div');
+        target.setHTMLUnsafe('<div><template shadowrootmode="open"><span>x</span></template></div>');
+        assert.ok(target.querySelector('div').shadowRoot);
+        assert.equal(target.querySelector('div').shadowRoot.innerHTML, '<span>x</span>');
+        const target2 = doc.createElement('div');
+        target2.setHTMLUnsafe('<div><template shadowrootmode="closed"><span>y</span></template></div>');
+        assert.equal(target2.querySelector('div').shadowRoot, null);
+        assert.ok(target2.querySelector('div template'));
+    });
 });

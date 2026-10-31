@@ -1,4 +1,5 @@
 import { DocumentFragmentBase } from './DocumentFragmentBase';
+import { serializeChildrenWithShadow, attachDeclarativeShadowRoots, type GetHTMLOptions } from './serialize';
 
 /**
  * The **`ShadowRoot`** interface represents the root node of a shadow DOM subtree.
@@ -14,26 +15,42 @@ export class ShadowRootBase extends DocumentFragmentBase implements ShadowRoot {
     return 'ShadowRoot';
   }
 
-  constructor(host: Element, init: { mode: ShadowRootMode; delegatesFocus?: boolean; slotAssignment?: SlotAssignmentMode }, ownerDocument?: Document) {
+  constructor(host: Element, init: { mode: ShadowRootMode; delegatesFocus?: boolean; slotAssignment?: SlotAssignmentMode; clonable?: boolean; serializable?: boolean }, ownerDocument?: Document) {
     super(ownerDocument);
     this._host = host;
     this.mode = init.mode;
     this.delegatesFocus = init.delegatesFocus || false;
     this.slotAssignment = init.slotAssignment || 'manual';
+    this.clonable = init.clonable ?? false;
+    this.serializable = init.serializable ?? false;
 
     // Set nodeName to '#shadow-root'
     (this as any).nodeName = '#shadow-root';
   }
 
   clonable: boolean;
-  onslotchange: (this: ShadowRoot, ev: Event) => any;
   serializable: boolean;
   getHTML(options?: GetHTMLOptions): string {
-    throw new Error('Method not implemented.');
+    return serializeChildrenWithShadow((this as any)._childNodesInternal ?? [], options);
   }
+
   setHTMLUnsafe(html: string): void {
-    throw new Error('Method not implemented.');
+    while (this._childNodesInternal.length > 0) {
+      const child = this._childNodesInternal[0];
+      if (child) {
+        this.removeChild(child as unknown as Node);
+      }
+    }
+    const stringValue = String(html);
+    if (!stringValue.trim()) return;
+    const frag = (this._ownerDocument as any).createDocumentFragment();
+    (this._host as any).parseAndAppendHTML(stringValue, frag);
+    attachDeclarativeShadowRoots(frag);
+    for (const child of Array.from((frag.childNodes ?? []) as any)) {
+      this.appendChild(child as unknown as Node);
+    }
   }
+  onslotchange: (this: ShadowRoot, ev: Event) => any;
   activeElement: Element;
   adoptedStyleSheets: CSSStyleSheet[];
   fullscreenElement: Element;
