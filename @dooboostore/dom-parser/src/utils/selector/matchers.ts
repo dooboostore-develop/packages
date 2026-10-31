@@ -68,7 +68,7 @@ export class AttrMatcher implements SelectorMatcher {
         if (!this.operator) {
             return element.hasAttribute(this.name);
         }
-        if (this.value === '' && (this.operator === '^=' || this.operator === '$=' || this.operator === '*=')) {
+        if (this.value === '' && (this.operator === '~=' || this.operator === '^=' || this.operator === '$=' || this.operator === '*=')) {
             return false;
         }
         const elementValue = element.getAttribute(this.name);
