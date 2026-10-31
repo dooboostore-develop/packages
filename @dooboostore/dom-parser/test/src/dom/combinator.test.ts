@@ -144,8 +144,7 @@ describe('selector combinators (descendant, >, +, ~)', () => {
         assert.equal(ids(':lang(de)'), '');
     });
 
-    test(':link/:visited and :required/:optional', () => {
-        const doc = new DomParser('<a id="a1" href="/x">x</a><a id="a2">nohref</a><area id="ar" href="/y"><input id="i1" required><input id="i2"><select id="s1" required></select><textarea id="t1"></textarea><button id="b1" required>x</button><button id="b2">y</button>').document as any;
+    test(':link/:visited and :required/:optional', () => {        const doc = new DomParser('<a id="a1" href="/x">x</a><a id="a2">nohref</a><area id="ar" href="/y"><input id="i1" required><input id="i2"><select id="s1" required></select><textarea id="t1"></textarea><button id="b1" required>x</button><button id="b2">y</button>').document as any;
         const ids = (sel: string) => Array.from(doc.querySelectorAll(sel)).map((e: any) => e.id).join(',');
         assert.equal(ids(':link'), 'a1,ar');
         assert.equal(doc.querySelectorAll(':visited').length, 0);
@@ -165,5 +164,12 @@ describe('selector combinators (descendant, >, +, ~)', () => {
         assert.equal(shadowRoot.querySelectorAll(':host-context(article) span').length, 0);
         assert.equal(span.matches(':host-context(div#host) span'), true);
         assert.equal(host.matches(':host-context(section)'), false);
+    });
+
+    test(':read-only/:read-write', () => {
+        const doc = new DomParser('<input id="a"><input id="b" readonly><input id="c" disabled><input id="d" type="checkbox"><textarea id="e"></textarea><textarea id="f" readonly></textarea><select id="g"></select><div id="h" contenteditable></div><div id="i"></div><input id="w" type="week"><input id="nt" type="text" value="x" readonly>').document as any;
+        const ids = (sel: string) => Array.from(doc.querySelectorAll(sel)).map((e: any) => e.id || e.tagName).join(',');
+        assert.equal(ids(':read-only'), 'HTML,HEAD,BODY,b,c,d,f,g,i,nt');
+        assert.equal(ids(':read-write'), 'a,e,h,w');
     });
 });

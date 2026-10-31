@@ -823,6 +823,12 @@ export class CSSSelector {
                     return requirable && !element.hasAttribute('required');
                 }
 
+                case 'read-write':
+                    return this.isReadWrite(element);
+
+                case 'read-only':
+                    return !this.isReadWrite(element);
+
             default:
                 // Unsupported pseudo-class
                 return false;
@@ -858,6 +864,32 @@ export class CSSSelector {
         const d = p - b;
         if (a > 0) return d >= 0 && d % a === 0;
         return d <= 0 && d % a === 0;
+    }
+
+    /**
+     * Input types whose value is user-mutable text (verified against Chromium;
+     * hidden/checkbox/radio/button/submit/reset/image/file/color/range are not).
+     */
+    private static readonly MUTABLE_INPUT_TYPES: ReadonlySet<string> = new Set([
+        'text', 'search', 'tel', 'url', 'password',
+        'number', 'date', 'month', 'week', 'time', 'datetime-local', 'email',
+    ]);
+
+    /**
+     * Whether the element is user-alterable: mutable text-like inputs and
+     * textareas (not readonly/disabled), or contenteditable hosts.
+     */
+    private static isReadWrite(element: Element): boolean {
+        const tag = ((element.tagName || '') as string).toLowerCase();
+        const hasAttr = (n: string): boolean => typeof (element as any).hasAttribute === 'function' && (element as any).hasAttribute(n);
+        if (tag === 'textarea') return !hasAttr('disabled') && !hasAttr('readonly');
+        if (tag === 'input') {
+            if (hasAttr('disabled') || hasAttr('readonly')) return false;
+            const type = (((element as any).getAttribute?.('type') as string | null) ?? 'text').toLowerCase();
+            return CSSSelector.MUTABLE_INPUT_TYPES.has(type);
+        }
+        const ce = typeof (element as any).getAttribute === 'function' ? (element as any).getAttribute('contenteditable') : null;
+        return ce !== null && (ce as string).toLowerCase() !== 'false';
     }
 
     /**
