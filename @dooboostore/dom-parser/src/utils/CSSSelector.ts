@@ -5,11 +5,60 @@
  */
 export class CSSSelector {
     /**
-     * Main method to check if an element matches a CSS selector
+     * Main method to check if an element matches a CSS selector.
+     * Handles comma lists and combinators (descendant, >, +, ~);
+     * matching runs right-to-left like browsers.
      */
     static matches(element: Element, selector: string): boolean {
-        selector = selector.trim();
+        for (const part of this.splitTopLevel(selector.trim(), ',')) {
+            const sel = part.trim();
+            if (sel && this.matchesComplex(element as any, sel)) {
+                return true;
+            }
+        }
 
+        return false;
+    }
+
+    /**
+     * Match a complex selector (compound selector + combinators) against an element
+     */
+    private static matchesComplex(element: any, selector: string): boolean {
+        const chain = this.splitCombinators(selector);
+        if (chain.length === 0) return false;
+
+        let current: any = element;
+        let i = chain.length - 1;
+        if (!this.matchesCompound(current, chain[i].compound)) return false;
+
+        while (i > 0) {
+            const combinator = chain[i].combinator;
+            const prev = chain[i - 1].compound;
+
+            if (combinator === '>') {
+                current = current.parentNode;
+                if (!current || current.nodeType !== 1 || !this.matchesCompound(current, prev)) return false;
+            } else if (combinator === '+') {
+                current = this.previousElementSibling(current);
+                if (!current || !this.matchesCompound(current, prev)) return false;
+            } else if (combinator === '~') {
+                current = this.findMatchingSibling(current, prev);
+                if (!current) return false;
+            } else {
+                // Descendant combinator
+                current = this.findMatchingAncestor(current, prev);
+                if (!current) return false;
+            }
+            i--;
+        }
+
+        return true;
+    }
+
+    /**
+     * Match a single compound selector (e.g., "meta[charset]", "div.class", "input#id")
+     */
+    private static matchesCompound(element: any, selector: string): boolean {
         // Handle compound selectors (e.g., "meta[charset]", "div.class", "input#id")
         const components = this.parseSelector(selector);
 
@@ -21,6 +70,173 @@ export class CSSSelector {
         }
 
         return true;
+    }
+
+    /**
+     * Split a selector on a top-level delimiter, ignoring delimiters inside
+     * brackets, parens, quotes, or behind a backslash escape
+     */
+    private static splitTopLevel(selector: string, delimiter: string): string[] {
+        const parts: string[] = [];
+        let current = '';
+        let depthBracket = 0;
+        let depthParen = 0;
+        let inQuotes = false;
+        let quoteChar = '';
+
+        for (let i = 0; i < selector.length; i++) {
+            const char = selector[i];
+
+            if (inQuotes) {
+                current += char;
+                if (char === quoteChar && selector[i - 1] !== '\\') {
+                    inQuotes = false;
+                    quoteChar = '';
+                }
+                continue;
+            }
+
+            if (char === '"' || char === "'") {
+                inQuotes = true;
+                quoteChar = char;
+                current += char;
+                continue;
+            }
+
+            if (char === '\\') {
+                current += char + (selector[i + 1] ?? '');
+                i++;
+                continue;
+            }
+
+            if (char === '[') depthBracket++;
+            else if (char === ']') depthBracket--;
+            else if (char === '(') depthParen++;
+            else if (char === ')') depthParen--;
+
+            if (char === delimiter && depthBracket === 0 && depthParen === 0) {
+                parts.push(current);
+                current = '';
+                continue;
+            }
+
+            current += char;
+        }
+
+        parts.push(current);
+        return parts;
+    }
+
+    /**
+     * Split a complex selector into compounds joined by combinators.
+     * Whitespace around explicit combinators (>, +, ~) is ignored;
+     * a bare whitespace run is the descendant combinator.
+     */
+    private static splitCombinators(selector: string): { compound: string; combinator: ' ' | '>' | '+' | '~' }[] {
+        const parts: string[] = [];
+        const combinators: string[] = [];
+        let current = '';
+        let depthBracket = 0;
+        let depthParen = 0;
+        let inQuotes = false;
+        let quoteChar = '';
+
+        const push = () => {
+            parts.push(current);
+            current = '';
+        };
+
+        for (let i = 0; i < selector.length; i++) {
+            const char = selector[i];
+
+            if (inQuotes) {
+                current += char;
+                if (char === quoteChar && selector[i - 1] !== '\\') {
+                    inQuotes = false;
+                    quoteChar = '';
+                }
+                continue;
+            }
+
+            if (char === '"' || char === "'") {
+                inQuotes = true;
+                quoteChar = char;
+                current += char;
+                continue;
+            }
+
+            if (char === '\\') {
+                current += char + (selector[i + 1] ?? '');
+                i++;
+                continue;
+            }
+
+            if (char === '[') depthBracket++;
+            else if (char === ']') depthBracket--;
+            else if (char === '(') depthParen++;
+            else if (char === ')') depthParen--;
+
+            if (depthBracket === 0 && depthParen === 0) {
+                if (char === '>' || char === '+' || char === '~') {
+                    push();
+                    combinators.push(char);
+                    continue;
+                }
+                if (/\s/.test(char)) {
+                    push();
+                    combinators.push(' ');
+                    while (i + 1 < selector.length && /\s/.test(selector[i + 1])) i++;
+                    continue;
+                }
+            }
+
+            current += char;
+        }
+        push();
+
+        // Drop empty compounds (whitespace around explicit combinators);
+        // an explicit combinator wins over an adjacent descendant one.
+        const chain: { compound: string; combinator: ' ' | '>' | '+' | '~' }[] = [];
+        let pending: ' ' | '>' | '+' | '~' = ' ';
+        parts.forEach((part, index) => {
+            if (index > 0) {
+                const c = combinators[index - 1] as ' ' | '>' | '+' | '~';
+                if (c !== ' ') pending = c;
+            }
+            if (part.trim()) {
+                chain.push({ compound: part.trim(), combinator: pending });
+                pending = ' ';
+            }
+        });
+
+        return chain;
+    }
+
+    private static previousElementSibling(element: any): any {
+        let sibling = element.previousSibling;
+        while (sibling) {
+            if (sibling.nodeType === 1) return sibling;
+            sibling = sibling.previousSibling;
+        }
+        return null;
+    }
+
+    private static findMatchingSibling(element: any, compound: string): any {
+        let sibling = this.previousElementSibling(element);
+        while (sibling) {
+            if (this.matchesCompound(sibling, compound)) return sibling;
+            sibling = this.previousElementSibling(sibling);
+        }
+        return null;
+    }
+
+    private static findMatchingAncestor(element: any, compound: string): any {
+        let ancestor = element.parentNode;
+        while (ancestor) {
+            if (ancestor.nodeType === 1 && this.matchesCompound(ancestor, compound)) return ancestor;
+            ancestor = ancestor.parentNode;
+        }
+        return null;
     }
 
     /**

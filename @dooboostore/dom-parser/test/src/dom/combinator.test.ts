@@ -1,0 +1,52 @@
+import { describe, test } from 'node:test';
+import assert from 'node:assert/strict';
+import { DomParser } from '@dooboostore/dom-parser';
+
+// Ground truth: Chromium (via Playwright) for every expectation below.
+// Covers happy-dom#2505, #2507, #2550 and #2489 classes.
+describe('selector combinators (descendant, >, +, ~)', () => {
+    test('descendant and child combinators', () => {
+        const doc = new DomParser('<div id="o"><span>hi</span></div>').document as any;
+        assert.equal(doc.querySelectorAll('div span').length, 1);
+        assert.equal(doc.querySelectorAll('div > span').length, 1);
+        assert.equal(doc.querySelector('span').matches('div span'), true);
+    });
+
+    test('sibling combinators (happy-dom#2505)', () => {
+        const doc = new DomParser('<a></a><b></b><c></c><b></b>').document as any;
+        assert.equal(doc.querySelectorAll('a ~ b').length, 2);
+        assert.equal(doc.querySelectorAll('a ~ *').length, 3);
+        assert.equal(doc.querySelectorAll('a ~ * ~ *').length, 2);
+        assert.equal(doc.querySelectorAll('a + b').length, 1);
+        assert.equal(doc.querySelectorAll('b + b').length, 0);
+    });
+
+    test('pseudo-class between functionals needs working ">" (happy-dom#2507)', () => {
+        const doc = new DomParser('<r><c></c><d></d><e></e></r>').document as any;
+        assert.equal(doc.querySelectorAll('r > c').length, 1);
+        assert.equal(doc.querySelectorAll('r > :not(c):first-child:nth-child(2)').length, 0);
+        assert.equal(doc.querySelectorAll('r > :first-child:nth-child(2)').length, 0);
+    });
+
+    test('escaped colon in tag name, incl. descendant (happy-dom#2550)', () => {
+        const doc = new DomParser('<q:template><span id="inner"></span></q:template><span id="outer"></span>').document as any;
+        assert.equal(doc.querySelector('q\\:template')?.tagName, 'Q:TEMPLATE');
+        assert.equal(doc.getElementById('inner')?.closest('q\\:template')?.tagName, 'Q:TEMPLATE');
+        assert.equal(doc.getElementById('outer')?.closest('q\\:template'), null);
+        assert.equal(doc.querySelectorAll('q\\:template span').length, 1);
+    });
+
+    test('matches() reflects the live document (happy-dom#2489)', () => {
+        const doc = new DomParser('<header><div><span></span></div></header>').document as any;
+        const span = doc.querySelector('span');
+        assert.equal(span.matches('[data-stage] span'), false);
+        doc.querySelector('header').setAttribute('data-stage', 'lean');
+        assert.equal(span.matches('[data-stage] span'), true);
+        assert.equal(span.matches('[data-stage]  span'), true);
+    });
+
+    test('comma lists still work', () => {
+        const doc = new DomParser('<div></div><p></p>').document as any;
+        assert.equal(doc.querySelectorAll('div, p').length, 2);
+    });
+});
