@@ -73,6 +73,7 @@ import { HTMLUListElement } from './HTMLUListElement';
 import { HTMLVideoElement } from './HTMLVideoElement';
 import { MathMLElement } from './MathMLElement';
 import { SVGElement } from './SVGElement';
+import { SVGSVGElement } from './SVGSVGElement';
 import { SVGCircleElement } from './SVGCircleElement';
 import { SVGRectElement } from './SVGRectElement';
 
@@ -146,6 +147,7 @@ export {
   HTMLVideoElement,
   MathMLElement,
   SVGElement,
+  SVGSVGElement,
   SVGCircleElement,
   SVGRectElement
 };
@@ -218,7 +220,7 @@ export const htmlElements = {
 } as const;
 
 export const svgElements = {
-  svg: SVGElement,
+  svg: SVGSVGElement,
   circle: SVGCircleElement,
   rect: SVGRectElement,
   // Generic SVG elements (resolved to the SVGElement base class).
@@ -327,3 +329,21 @@ export type HTMLHeadingElement = HTMLH1Element;
 export type HTMLTableSectionElement = HTMLTbodyElement;
 export type HTMLTableCellElement = HTMLTdElement;
 export type HTMLTableRowElement = HTMLTrElement;
+
+/**
+ * Registers every built-in element constructor for ElementBase's
+ * @@toStringTag getter (see ElementBase.builtinElementCtors).
+ * Custom elements are NOT registered: the getter walks up to the nearest
+ * registered built-in, so they correctly report their base interface
+ * ("HTMLElement", "HTMLButtonElement", ...).
+ * Kept here (not in ElementBase.ts) to avoid a module cycle, since this
+ * file already imports every element class.
+ */
+(ElementBase as any).builtinElementCtors = new Set<Function>([
+  HTMLElement,
+  SVGElement,
+  MathMLElement,
+  ...Object.values(htmlElements),
+  ...Object.values(svgElements),
+  ...Object.values(mathmlElements),
+]);

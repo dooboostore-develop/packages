@@ -23,6 +23,10 @@ import { COMMENT_NODE } from './Node';
  * The **`CommentNode`** class represents a comment node in the DOM.
  */
 export class Comment extends ChildNodeBase {
+  get [Symbol.toStringTag](): string {
+    return 'Comment';
+  }
+
   private _data: string;
 
   constructor(data: string, ownerDocument?: any) {

@@ -11,6 +11,10 @@ import { NodeListOfImp } from './collection/NodeListOfImp';
  * that stores a segment of a document structure comprised of nodes just like a standard document.
  */
 export class DocumentFragmentBase extends ParentNodeBase implements DocumentFragment {
+    get [Symbol.toStringTag](): string {
+        return 'DocumentFragment';
+    }
+
     constructor(ownerDocument?: Document) {
         super(DOCUMENT_FRAGMENT_NODE, '#document-fragment', ownerDocument); // DOCUMENT_FRAGMENT_NODE = 11
     }

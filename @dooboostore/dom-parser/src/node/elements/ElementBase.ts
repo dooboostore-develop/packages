@@ -98,6 +98,33 @@ export abstract class ElementBase extends ParentNodeBase implements Element {
     Comment?: any;
   } = {};
 
+  /**
+   * Built-in element constructors, registered once from
+   * `node/elements/index.ts` (which already imports every element class).
+   * Used by the @@toStringTag getter below; kept off the imports here to
+   * avoid a module cycle (index.ts imports ElementBase subclasses).
+   */
+  public static builtinElementCtors?: Set<Function>;
+
+  /**
+   * WebIDL @@toStringTag: reports the implemented interface
+   * ("HTMLDivElement", "SVGElement", ...). Custom elements report their
+   * built-in base ("HTMLElement"), resolved by walking up to the nearest
+   * registered built-in class. Falls back to the constructor name when the
+   * registry is unavailable (direct deep imports).
+   */
+  get [Symbol.toStringTag](): string {
+    let ctor: any = this.constructor;
+    const builtins = (ElementBase as any).builtinElementCtors as Set<Function> | undefined;
+    if (builtins) {
+      while (ctor && !builtins.has(ctor)) {
+        ctor = Object.getPrototypeOf(ctor);
+      }
+      if (!ctor) return 'HTMLElement';
+    }
+    return ctor.name || 'HTMLElement';
+  }
+
   private _id: string = '';
   private _className: string = '';
   private _attributes: Map<string, string> = new Map();
@@ -1063,6 +1090,9 @@ class AttrImpl extends NodeBase implements Attr {
     public value: string
   ) {
     super(ATTRIBUTE_NODE, name);
+  }
+  get [Symbol.toStringTag](): string {
+    return 'Attr';
   }
   get localName(): string {
     return this.name;

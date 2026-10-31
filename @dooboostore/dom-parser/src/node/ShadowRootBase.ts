@@ -10,6 +10,10 @@ export class ShadowRootBase extends DocumentFragmentBase implements ShadowRoot {
   public readonly slotAssignment: SlotAssignmentMode;
   private _host: Element;
 
+  get [Symbol.toStringTag](): string {
+    return 'ShadowRoot';
+  }
+
   constructor(host: Element, init: { mode: ShadowRootMode; delegatesFocus?: boolean; slotAssignment?: SlotAssignmentMode }, ownerDocument?: Document) {
     super(ownerDocument);
     this._host = host;

@@ -46,6 +46,10 @@ export class DocumentBase extends ParentNodeBase implements Document {
     this._ownerDocument = this as any;
   }
 
+  get [Symbol.toStringTag](): string {
+    return 'HTMLDocument';
+  }
+
   get URL(): string {
     return this.location?.href || '';
   }

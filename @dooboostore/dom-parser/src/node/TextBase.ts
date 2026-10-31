@@ -11,6 +11,10 @@ export class TextBase extends ChildNodeBase implements Text {
   declare nodeType: 3;
   declare nodeName: '#text';
 
+  get [Symbol.toStringTag](): string {
+    return 'Text';
+  }
+
   constructor(data: string, ownerDocument?: any) {
     super(TEXT_NODE, '#text', ownerDocument);
     this._data = data;
