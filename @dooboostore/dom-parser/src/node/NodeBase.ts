@@ -5,6 +5,18 @@ import { GetRootNodeOptions } from './GetRootNodeOptions';
 import { adjustNodeIteratorsOnRemove } from './NodeIterator';
 import { coerceNullableString } from '../utils/coerce';
 
+// Simple DOMException class for error handling (mirrors ElementBase's;
+// NodeBase cannot import it without creating a module cycle).
+class DOMException extends Error {
+  constructor(
+    message: string,
+    public name: string = 'DOMException'
+  ) {
+    super(message);
+    this.name = name;
+  }
+}
+
 /**
  * Base implementation of the Node interface
  */
@@ -364,7 +376,7 @@ export abstract class NodeBase implements Node {
     const childBase = child as any as NodeBase; // Internal cast
     const index = this._findChildIndex(childBase);
     if (index === -1) {
-      throw new Error('Node not found');
+      throw new DOMException('Node not found', 'NotFoundError');
     }
 
     // DOM Standard "remove a node": adjust live NodeIterators whose
@@ -400,7 +412,7 @@ export abstract class NodeBase implements Node {
     const childBase = child as any as NodeBase; // Internal cast
     const index = this._findChildIndex(childBase);
     if (index === -1) {
-      throw new Error('Reference node not found');
+      throw new DOMException('Reference node not found', 'NotFoundError');
     }
 
     // Handle DocumentFragment - move all its children

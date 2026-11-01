@@ -140,6 +140,7 @@ describe('Node Cloning and Copying', () => {
         } catch (error) {
             errorThrown = true;
             assert.ok(error.message.includes('Node not found'), 'Should throw appropriate error message');
+            assert.equal(error.name, 'NotFoundError', 'Should be a NotFoundError like browsers');
         }
         
         assert.ok(errorThrown, 'Should throw error when trying to remove non-child');
@@ -149,5 +150,31 @@ describe('Node Cloning and Copying', () => {
         assert.ok(document.querySelector('#orphan'), 'Orphan should still exist');
         
         console.log('✅ removeChild() error handling works');
+    });
+
+    test('insertBefore validates before mutating (cheerio#5654 class)', () => {
+        const parser = new DomParser('<html><body><main><span>source</span><b>x</b></main></body></html>');
+        const document = parser.document;
+
+        const main = document.querySelector('main');
+        const span = document.querySelector('span');
+
+        // null reference appends (matches browsers)
+        main.insertBefore(span, null);
+        assert.equal(main.innerHTML, '<b>x</b><span>source</span>');
+
+        // invalid reference throws NotFoundError and keeps the source (matches browsers)
+        const other = document.createElement('i');
+        let thrown = null;
+        try {
+            main.insertBefore(span, other);
+        } catch (error) {
+            thrown = error;
+        }
+        assert.ok(thrown, 'Should throw for a non-child reference');
+        assert.equal(thrown.name, 'NotFoundError', 'Should be a NotFoundError like browsers');
+        assert.equal(main.innerHTML, '<b>x</b><span>source</span>', 'Source must survive the failed insert');
+
+        console.log('✅ insertBefore() validates before mutating');
     });
 });
