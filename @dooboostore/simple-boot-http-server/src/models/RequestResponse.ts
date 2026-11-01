@@ -18,6 +18,14 @@ import { Blob } from 'node:buffer';
 import * as fs from 'fs';
 import * as os from 'os';
 import { RandomUtils } from '@dooboostore/core';
+
+/**
+ * Responses with a send already in flight. Keyed by the underlying
+ * ServerResponse (shared by RequestResponse and its chains), so concurrent
+ * resEnd() calls for one response serialize instead of racing each other
+ * through gzip/setHeader into ERR_HTTP_HEADERS_SENT.
+ */
+const resEndingSet = new WeakSet<object>();
 import { FileUtils } from '@dooboostore/core-node';
 import { ConvertUtils as CoreConvertUtils } from '@dooboostore/core';
 import { ConvertUtils } from '@dooboostore/core-node';
@@ -538,39 +546,52 @@ export class RequestResponse {
   }
 
   async resEnd(chunk?: string | Buffer | Blob | ArrayBuffer | Response) {
-    if (typeof ArrayBuffer !== 'undefined' && ArrayBuffer.isView(chunk) && !Buffer.isBuffer(chunk)) {
-      // Typed-array views (incl. DataView, which Node's res.end() rejects outright)
-      // are normalized to their exact byte range. Native res.end() already honors
-      // byteOffset for typed arrays, but DataView throws ERR_INVALID_ARG_TYPE,
-      // so every non-Buffer view goes through here (expressjs/express#7510 class).
-      const view = chunk as unknown as { buffer: ArrayBuffer; byteOffset: number; byteLength: number };
-      this.resWriteChunk = Buffer.from(view.buffer, view.byteOffset, view.byteLength);
-    } else if (chunk instanceof Response) {
-      chunk.headers.forEach((value, key) => {
-        this.res.setHeader(`ORIGIN-${key}`, value);
-      });
-      if (!this.resHeader(HttpHeaders.ContentType)) {
-        const contentType = chunk.headers.get(HttpHeaders.ContentType);
-        if (contentType) this.res.setHeader(HttpHeaders.ContentType, contentType);
-      }
-      this.res.statusCode = chunk.status;
-      this.resWriteChunk = Buffer.from(await chunk.arrayBuffer());
-    } else if (chunk instanceof Blob) {
-      this.resWriteChunk = Buffer.from(await chunk.arrayBuffer());
-      if (!this.resHeader(HttpHeaders.ContentType)) {
-        this.res.setHeader(HttpHeaders.ContentType, chunk.type);
-      }
-    } else if (chunk instanceof ArrayBuffer) {
-      this.resWriteChunk = Buffer.from(chunk);
-    } else {
-      this.resWriteChunk = chunk ?? this.resWriteChunk;
+    if (resEndingSet.has(this.res) || this.resIsDone()) {
+      // A send is already in flight (or finished): concurrent resEnd() calls
+      // — e.g. a handler-sent body followed by the pipeline's final flush —
+      // must not start a second send. Without this guard the two sends race
+      // through gzip/setHeader and the loser throws ERR_HTTP_HEADERS_SENT.
+      // The set is keyed by the underlying response (shared by chains).
+      return;
     }
+    resEndingSet.add(this.res);
+    try {
+      if (typeof ArrayBuffer !== 'undefined' && ArrayBuffer.isView(chunk) && !Buffer.isBuffer(chunk)) {
+        // Typed-array views (incl. DataView, which Node's res.end() rejects outright)
+        // are normalized to their exact byte range. Native res.end() already honors
+        // byteOffset for typed arrays, but DataView throws ERR_INVALID_ARG_TYPE,
+        // so every non-Buffer view goes through here (expressjs/express#7510 class).
+        const view = chunk as unknown as { buffer: ArrayBuffer; byteOffset: number; byteLength: number };
+        this.resWriteChunk = Buffer.from(view.buffer, view.byteOffset, view.byteLength);
+      } else if (chunk instanceof Response) {
+        chunk.headers.forEach((value, key) => {
+          this.res.setHeader(`ORIGIN-${key}`, value);
+        });
+        if (!this.resHeader(HttpHeaders.ContentType)) {
+          const contentType = chunk.headers.get(HttpHeaders.ContentType);
+          if (contentType) this.res.setHeader(HttpHeaders.ContentType, contentType);
+        }
+        this.res.statusCode = chunk.status;
+        this.resWriteChunk = Buffer.from(await chunk.arrayBuffer());
+      } else if (chunk instanceof Blob) {
+        this.resWriteChunk = Buffer.from(await chunk.arrayBuffer());
+        if (!this.resHeader(HttpHeaders.ContentType)) {
+          this.res.setHeader(HttpHeaders.ContentType, chunk.type);
+        }
+      } else if (chunk instanceof ArrayBuffer) {
+        this.resWriteChunk = Buffer.from(chunk);
+      } else {
+        this.resWriteChunk = chunk ?? this.resWriteChunk;
+      }
 
-    if (this.req.readable) {
-      await this.reqBodyData();
-      await this.resEndChunk();
-    } else {
-      await this.resEndChunk();
+      if (this.req.readable) {
+        await this.reqBodyData();
+        await this.resEndChunk();
+      } else {
+        await this.resEndChunk();
+      }
+    } finally {
+      resEndingSet.delete(this.res);
     }
   }
 

@@ -372,14 +372,18 @@ export class SimpleBootHttpServer extends SimpleApplication {
                   headers[HttpHeaders.ContentType] = contentType;
                 }
                 rr.resSetHeaders(headers);
-                rr.resSetStatusCode(resConfig?.status ?? HttpStatus.Ok);
+                if (resConfig?.status !== undefined) {
+                  // Explicit decorator status wins. The Node default (200) is left
+                  // alone otherwise so a handler-set status (e.g. via resEnd(Response))
+                  // is not clobbered back to 200.
+                  rr.resSetStatusCode(resConfig.status);
+                }
                 await rr.resStream(data, { compress: stream?.compress });
               } else {
                 if (it.config?.resolver) {
                   const execute = typeof it.config.resolver === 'function' ? this.simstanceManager.getOrNewSim({target: it.config.resolver}) : it.config.resolver;
                   data = await execute?.resolve?.(data, rr, resConfig);
                 }
-                const status = resConfig?.status ?? HttpStatus.Ok;
                 const headers = resConfig?.header ?? {};
                 if (resConfig?.contentType) {
                   headers[HttpHeaders.ContentType] = resConfig.contentType;
@@ -390,7 +394,12 @@ export class SimpleBootHttpServer extends SimpleApplication {
                   data = JSON.stringify(data);
                 }
                 rr.resSetHeaders(headers)
-                rr.resSetStatusCode(status);
+                if (resConfig?.status !== undefined) {
+                  // An explicit decorator status wins. Otherwise leave the status
+                  // alone (Node defaults to 200) so a handler-set status is not
+                  // clobbered back to 200.
+                  rr.resSetStatusCode(resConfig.status);
+                }
                 rr.resWrite(data);
               }
             }
