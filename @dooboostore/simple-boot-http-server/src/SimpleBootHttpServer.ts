@@ -44,6 +44,27 @@ export class SimpleBootHttpServer extends SimpleApplication {
     this.sessionManager = new SessionManager(this.option);
   }
 
+  /**
+   * Final response flush that can never escape as an unhandled rejection.
+   * When the response is already gone (sent, closed, or destroyed mid-write),
+   * there is nobody left to send to, so gone-response write errors
+   * (ERR_HTTP_HEADERS_SENT, ERR_STREAM_ALREADY_FINISHED,
+   * ERR_STREAM_DESTROYED, ECONNRESET) are swallowed; anything else still throws.
+   */
+  private async safeResEnd(rr: RequestResponse): Promise<void> {
+    if (rr.resIsDone()) {
+      return;
+    }
+    try {
+      await rr.resEnd();
+    } catch (e: any) {
+      const code = e && (e.code || '');
+      if (code !== 'ERR_HTTP_HEADERS_SENT' && code !== 'ERR_STREAM_ALREADY_FINISHED' && code !== 'ERR_STREAM_DESTROYED' && code !== 'ECONNRESET') {
+        throw e;
+      }
+    }
+  }
+
 
   public run(otherInstanceSim?: Map<ConstructorType<any> | Function | SimConfig | symbol, any>) {
     otherInstanceSim ??= new Map<ConstructorType<any> | Function | SimConfig | symbol, any>();
@@ -95,7 +116,7 @@ export class SimpleBootHttpServer extends SimpleApplication {
         }
 
         if (!rr.resIsDone()) {
-          rr.resEnd();
+          await this.safeResEnd(rr);
         }
       });
       res.on('error', async () => {
@@ -113,7 +134,7 @@ export class SimpleBootHttpServer extends SimpleApplication {
         }
 
         if (!rr.resIsDone()) {
-          rr.resEnd();
+          await this.safeResEnd(rr);
         }
       });
 
@@ -419,7 +440,7 @@ export class SimpleBootHttpServer extends SimpleApplication {
       }
 
       if (!rr.resIsDone()) {
-        rr.resEnd();
+        await this.safeResEnd(rr);
       }
     });
 
