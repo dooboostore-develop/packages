@@ -4,3 +4,4 @@ import './server/server.test.ts';
 import './server/content-type-generator.test.ts';
 import './server/spa-fallback.test.ts';
 import './server/post-send-error.test.ts';
+import './server/data-view-body.test.ts';

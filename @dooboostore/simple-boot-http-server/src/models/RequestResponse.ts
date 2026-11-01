@@ -491,6 +491,12 @@ export class RequestResponse {
   }
 
   resWrite(chunk: string | Buffer | any, encoding: BufferEncoding = 'utf8') {
+    if (chunk === undefined) {
+      // A handler that already wrote via rr.resEnd()/resWrite() and returns
+      // undefined must not have its buffered body clobbered by the pipeline's
+      // return-value write (express#7510-class probe caught this).
+      return this.createRequestResponseChain(this.resWriteChunk);
+    }
     this.resWriteChunk = chunk;
     return this.createRequestResponseChain(this.resWriteChunk);
   }
@@ -532,7 +538,14 @@ export class RequestResponse {
   }
 
   async resEnd(chunk?: string | Buffer | Blob | ArrayBuffer | Response) {
-    if (chunk instanceof Response) {
+    if (typeof ArrayBuffer !== 'undefined' && ArrayBuffer.isView(chunk) && !Buffer.isBuffer(chunk)) {
+      // Typed-array views (incl. DataView, which Node's res.end() rejects outright)
+      // are normalized to their exact byte range. Native res.end() already honors
+      // byteOffset for typed arrays, but DataView throws ERR_INVALID_ARG_TYPE,
+      // so every non-Buffer view goes through here (expressjs/express#7510 class).
+      const view = chunk as unknown as { buffer: ArrayBuffer; byteOffset: number; byteLength: number };
+      this.resWriteChunk = Buffer.from(view.buffer, view.byteOffset, view.byteLength);
+    } else if (chunk instanceof Response) {
       chunk.headers.forEach((value, key) => {
         this.res.setHeader(`ORIGIN-${key}`, value);
       });
