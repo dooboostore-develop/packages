@@ -46,8 +46,6 @@ importers:
         specifier: ^5.1.4
         version: 5.1.4(webpack@5.105.4)
 
-  '@dooboostore/algorithm/dist/cjs': {}
-
   '@dooboostore/core':
     dependencies:
       reflect-metadata:
@@ -276,8 +274,6 @@ importers:
       webpack-dev-server:
         specifier: ^5.2.0
         version: 5.2.3(tslib@2.8.1)(webpack-cli@5.1.4)(webpack@5.105.4)
-
-  '@dooboostore/core-node/dist/cjs': {}
 
   '@dooboostore/core-node/example':
     dependencies:
@@ -544,8 +540,6 @@ importers:
         specifier: ^5.2.0
         version: 5.2.3(tslib@2.8.1)(webpack-cli@5.1.4)(webpack@5.105.4)
 
-  '@dooboostore/core-web/dist/cjs': {}
-
   '@dooboostore/core-web/example':
     dependencies:
       '@dooboostore/core':
@@ -786,8 +780,6 @@ importers:
         specifier: ^5.2.0
         version: 5.2.3(tslib@2.8.1)(webpack-cli@5.1.4)(webpack@5.105.4)
 
-  '@dooboostore/core/dist/cjs': {}
-
   '@dooboostore/core/example':
     dependencies:
       '@clack/prompts':
@@ -894,8 +886,6 @@ importers:
       typescript:
         specifier: ^5.9.2
         version: 5.9.3
-
-  '@dooboostore/dom-parser/dist/cjs': {}
 
   '@dooboostore/dom-parser/test':
     dependencies:
@@ -1228,8 +1218,6 @@ importers:
         specifier: ^5.2.0
         version: 5.2.3(tslib@2.8.1)(webpack-cli@5.1.4)(webpack@5.105.4)
 
-  '@dooboostore/dom-render/dist/cjs': {}
-
   '@dooboostore/dom-render/example':
     dependencies:
       '@dooboostore/core':
@@ -1397,8 +1385,6 @@ importers:
         specifier: ^5.9.2
         version: 5.9.3
 
-  '@dooboostore/lib-node/dist/cjs': {}
-
   '@dooboostore/lib-web':
     dependencies:
       '@dooboostore/core':
@@ -1471,8 +1457,6 @@ importers:
       webpack-dev-server:
         specifier: ^5.2.0
         version: 5.2.3(tslib@2.8.1)(webpack-cli@5.1.4)(webpack@5.105.4)
-
-  '@dooboostore/lib-web/dist/cjs': {}
 
   '@dooboostore/lib-web/example/gpsMarker':
     dependencies:
@@ -2027,8 +2011,6 @@ importers:
         specifier: ^5.2.0
         version: 5.2.3(tslib@2.8.1)(webpack-cli@5.1.4)(webpack@5.105.4)
 
-  '@dooboostore/simple-boot-front/dist/cjs': {}
-
   '@dooboostore/simple-boot-front/example':
     dependencies:
       '@dooboostore/core':
@@ -2137,8 +2119,8 @@ importers:
         specifier: ^0.2.2
         version: 0.2.2
       ws:
-        specifier: ^8.18.3
-        version: 8.20.0
+        specifier: ^8.21.0
+        version: 8.22.1
     devDependencies:
       '@babel/core':
         specifier: ^7.24.0
@@ -2545,8 +2527,6 @@ importers:
       webpack-dev-server:
         specifier: ^5.2.0
         version: 5.2.3(tslib@2.8.1)(webpack-cli@5.1.4)(webpack@5.105.4)
-
-  '@dooboostore/simple-boot-http-server-ssr/dist/cjs': {}
 
   '@dooboostore/simple-boot-http-server-ssr/example':
     dependencies:
@@ -3169,8 +3149,6 @@ importers:
         specifier: ^5.1.4
         version: 5.1.4(webpack@5.105.4)
 
-  '@dooboostore/simple-boot-http-server/dist/cjs': {}
-
   '@dooboostore/simple-boot-http-server/example':
     dependencies:
       '@dooboostore/core':
@@ -3417,8 +3395,6 @@ importers:
         specifier: ^5.2.0
         version: 5.2.3(tslib@2.8.1)(webpack-cli@5.1.4)(webpack@5.105.4)
 
-  '@dooboostore/simple-boot/dist/cjs': {}
-
   '@dooboostore/simple-boot/example':
     dependencies:
       '@clack/prompts':
@@ -3625,10 +3601,6 @@ importers:
       webpack-cli:
         specifier: ^5.1.4
         version: 5.1.4(webpack@5.105.4)
-
-  '@dooboostore/simple-web-component-library/dist/cjs': {}
-
-  '@dooboostore/simple-web-component/dist/cjs': {}
 
   '@dooboostore/simple-web-component/examples/accommodation':
     dependencies:
@@ -8968,6 +8940,18 @@ packages:
       utf-8-validate:
         optional: true
 
+  ws@8.22.1:
+    resolution: {integrity: sha512-oyL6OPYme/CmiFvNuGzeoxCJ4nOrZE2O1FwM9MWM1AsGri6nLXB2pg+lNA8aLeXMSav0J6eIVS1j6vUPzUtK9g==}
+    engines: {node: '>=10.0.0'}
+    peerDependencies:
+      bufferutil: ^4.0.1
+      utf-8-validate: '>=5.0.2'
+    peerDependenciesMeta:
+      bufferutil:
+        optional: true
+      utf-8-validate:
+        optional: true
+
   wsl-utils@0.1.0:
     resolution: {integrity: sha512-h3Fbisa2nKGPxCpm89Hk33lBLsnaGBvctQopaBSOW/uIs6FTe1ATyAnKFJrzVs9vpGdsTe73WF3V4lIsk4Gacw==}
     engines: {node: '>=18'}
@@ -10011,7 +9995,7 @@ snapshots:
       google-auth-library: 10.6.2
       p-retry: 4.6.2
       protobufjs: 7.5.4
-      ws: 8.20.0
+      ws: 8.22.1
     transitivePeerDependencies:
       - bufferutil
       - supports-color
@@ -12964,7 +12948,7 @@ snapshots:
       whatwg-encoding: 3.1.1
       whatwg-mimetype: 4.0.0
       whatwg-url: 14.2.0
-      ws: 8.20.0
+      ws: 8.22.1
       xml-name-validator: 5.0.0
     optionalDependencies:
       canvas: 3.2.3
@@ -14914,7 +14898,7 @@ snapshots:
       sockjs: 0.3.24
       spdy: 4.0.2
       webpack-dev-middleware: 5.3.4(webpack@5.105.4(webpack-cli@5.1.4))
-      ws: 8.20.0
+      ws: 8.22.1
     optionalDependencies:
       webpack: 5.105.4(webpack-cli@5.1.4)
       webpack-cli: 5.1.4(webpack-dev-server@4.15.2)(webpack@5.105.4)
@@ -15201,6 +15185,8 @@ snapshots:
       typedarray-to-buffer: 3.1.5
 
   ws@8.20.0: {}
+
+  ws@8.22.1: {}
 
   wsl-utils@0.1.0:
     dependencies:
