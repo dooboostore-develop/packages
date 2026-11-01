@@ -50,6 +50,12 @@ class VariantsRouter {
     rr.resEnd(new Uint8Array(u16.buffer, 2, 2));
   }
 
+  @Route({ path: '/u16full' })
+  @GET()
+  u16full(rr: RequestResponse) {
+    rr.resEnd(new Uint16Array(2).fill(0x0102));
+  }
+
   @Route({ path: '/write-then-undefined' })
   @GET()
   writeThenUndefined(rr: RequestResponse) {
@@ -86,6 +92,7 @@ describe('resEnd chunk-type matrix + double-end safety', () => {
           ['/t/abuf', [5, 6], 200],
           ['/t/resp', [...Buffer.from('R')], 201, { 'origin-x-k': 'v' }],
           ['/t/u16', [0x44, 0x43], 200],
+          ['/t/u16full', [0x02, 0x01, 0x02, 0x01], 200],
           ['/t/write-then-undefined', [...Buffer.from('kept')], 200],
           ['/t/empty', [], 200],
         ];
