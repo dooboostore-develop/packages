@@ -18,14 +18,6 @@ import { Blob } from 'node:buffer';
 import * as fs from 'fs';
 import * as os from 'os';
 import { RandomUtils } from '@dooboostore/core';
-
-/**
- * Responses with a send already in flight. Keyed by the underlying
- * ServerResponse (shared by RequestResponse and its chains), so concurrent
- * resEnd() calls for one response serialize instead of racing each other
- * through gzip/setHeader into ERR_HTTP_HEADERS_SENT.
- */
-const resEndingSet = new WeakSet<object>();
 import { FileUtils } from '@dooboostore/core-node';
 import { ConvertUtils as CoreConvertUtils } from '@dooboostore/core';
 import { ConvertUtils } from '@dooboostore/core-node';
@@ -43,6 +35,8 @@ export class RequestResponse {
 
   // [아키텍트님의 정석] RequestResponse 객체 고유의 속성 저장소 (트랜잭션 생명주기)
   protected attributes = new Map<string, any>();
+  // Per-request send state, shared with chains so concurrent resEnd() calls don't race into ERR_HTTP_HEADERS_SENT.
+  protected resState = { ending: false };
 
   constructor(req: IncomingMessage | RequestResponse, res: ServerResponse, config: Config) {
     if (req instanceof RequestResponse) {
@@ -50,6 +44,7 @@ export class RequestResponse {
       this.res = req.res;
       this.config = config;
       this.attributes = req.attributes;
+      this.resState = req.resState;
     } else {
       this.req = req;
       this.res = res!;
@@ -454,7 +449,7 @@ export class RequestResponse {
   resStatusCode(code: number | undefined | HttpStatus): number | RequestResponseChain<number> {
     if (code) {
       this.res.statusCode = code;
-      return new RequestResponseChain<number>(this.req, this.res, this.config, this.res.statusCode);
+      return new RequestResponseChain<number>(this, this.res, this.config, this.res.statusCode);
     } else {
       return this.res.statusCode;
     }
@@ -546,15 +541,15 @@ export class RequestResponse {
   }
 
   async resEnd(chunk?: string | Buffer | Blob | ArrayBuffer | Response) {
-    if (resEndingSet.has(this.res) || this.resIsDone()) {
+    if (this.resState.ending || this.resIsDone()) {
       // A send is already in flight (or finished): concurrent resEnd() calls
       // — e.g. a handler-sent body followed by the pipeline's final flush —
       // must not start a second send. Without this guard the two sends race
       // through gzip/setHeader and the loser throws ERR_HTTP_HEADERS_SENT.
-      // The set is keyed by the underlying response (shared by chains).
+      // resState is shared with chains, so the guard spans them.
       return;
     }
-    resEndingSet.add(this.res);
+    this.resState.ending = true;
     try {
       if (typeof ArrayBuffer !== 'undefined' && ArrayBuffer.isView(chunk) && !Buffer.isBuffer(chunk)) {
         // Typed-array views (incl. DataView, which Node's res.end() rejects outright)
@@ -591,7 +586,7 @@ export class RequestResponse {
         await this.resEndChunk();
       }
     } finally {
-      resEndingSet.delete(this.res);
+      this.resState.ending = false;
     }
   }
 
@@ -663,7 +658,7 @@ export class RequestResponse {
   }
 
   createRequestResponseChain<T = any>(data?: T) {
-    const requestResponseChain = new RequestResponseChain(this.req, this.res, this.config, data);
+    const requestResponseChain = new RequestResponseChain(this, this.res, this.config, data);
     requestResponseChain.resWriteChunk = this.resWriteChunk;
     requestResponseChain.reqBodyChunk = this.reqBodyChunk;
     return requestResponseChain;
@@ -672,7 +667,7 @@ export class RequestResponse {
 
 export class RequestResponseChain<T> extends RequestResponse {
   constructor(
-    req: IncomingMessage,
+    req: IncomingMessage | RequestResponse,
     res: ServerResponse,
     config: Config,
     public result?: T
