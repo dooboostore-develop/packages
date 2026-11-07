@@ -1,5 +1,5 @@
 import { ELEMENT_NODE, TEXT_NODE } from './Node';
-import { SVG_NAMESPACE, MATHML_NAMESPACE } from '../utils/namespaces';
+import { HTML_NAMESPACE, SVG_NAMESPACE, MATHML_NAMESPACE } from '../utils/namespaces';
 
 export interface GetHTMLOptions {
   serializableShadowRoots?: boolean;
@@ -51,6 +51,19 @@ function closeTag(element: any): string {
   return `</${tagName}>`;
 }
 
+/**
+ * Raw-text serialization applies only to HTML-namespace style/script.
+ * In foreign content (SVG/MathML) style/script are normal elements
+ * (WHATWG parsing §13.2.5.54/§13.2.6.5): entities decode on parse and
+ * must re-escape on serialize, or a literal `<` breaks out on reparse.
+ */
+export function isHtmlRawTextParent(element: any): boolean {
+  const tag = String(element?.tagName ?? '').toLowerCase();
+  if (tag !== 'style' && tag !== 'script') return false;
+  const ns = element?.namespaceURI ?? null;
+  return ns === null || ns === undefined || ns === '' || ns === HTML_NAMESPACE;
+}
+
 export function shouldIncludeShadowRoot(shadowRoot: any, options?: GetHTMLOptions): boolean {
   if (!shadowRoot) return false;
   if (options?.shadowRoots && (options.shadowRoots as any[]).includes(shadowRoot)) return true;
@@ -75,8 +88,7 @@ export function serializeNodeWithShadow(node: any, options?: GetHTMLOptions): st
   const nodeType = node?.nodeType;
   if (nodeType === TEXT_NODE) {
     const text = String((node as any).textContent ?? (node as any)._nodeValue ?? '');
-    const parentTag = ((node as any)._parentNodeInternal?.tagName ?? '').toLowerCase?.() ?? '';
-    if (parentTag === 'style' || parentTag === 'script') return text;
+    if (isHtmlRawTextParent((node as any)._parentNodeInternal)) return text;
     return escapeText(text);
   }
   if (nodeType === COMMENT_NODE) {

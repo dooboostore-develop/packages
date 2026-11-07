@@ -4,7 +4,7 @@ import { HTMLCollectionImp, HTMLCollectionOfImp } from '../collection';
 import { ELEMENT_NODE, TEXT_NODE, ATTRIBUTE_NODE } from '../Node';
 import { CSSSelector } from '../../utils/CSSSelector';
 import { parseNodes as parseSharedNodes, decodeHTMLEntities, type HtmlParseContext } from '../../parser';
-import { serializeChildrenWithShadow, attachDeclarativeShadowRoots, shouldIncludeShadowRoot, shadowTemplateOpenTag, type GetHTMLOptions } from '../serialize';
+import { serializeChildrenWithShadow, attachDeclarativeShadowRoots, shouldIncludeShadowRoot, shadowTemplateOpenTag, isHtmlRawTextParent, type GetHTMLOptions } from '../serialize';
 import { SVG_NAMESPACE, MATHML_NAMESPACE, elementNamespaceForTag, childNamespaceForElement, normalizeAttributeName } from '../../utils/namespaces';
 import { NodeBase } from '../NodeBase';
 import { ShadowRootBase } from '../ShadowRootBase';
@@ -219,8 +219,8 @@ export abstract class ElementBase extends ParentNodeBase implements Element {
       if (child.nodeType === TEXT_NODE) {
         // For text nodes, escape their text content when serializing to innerHTML
         const text = (child as any).textContent ?? (child as any)._nodeValue ?? '';
-        // For style and script tags, do not escape the text content — keep raw
-        if (this._tagName === 'style' || this._tagName === 'script') {
+        // HTML-namespace style/script keep raw text; foreign ones escape
+        if (isHtmlRawTextParent(this)) {
           html += String(text);
         } else {
           html += this.escapeHTMLEntities(String(text));
@@ -359,9 +359,9 @@ export abstract class ElementBase extends ParentNodeBase implements Element {
 
         for (const child of nodesToIterate) {
         if (child.nodeType === TEXT_NODE) {
-          // For style/script children, preserve raw text. Otherwise escape.
+          // HTML-namespace style/script keep raw text; foreign ones escape
           const text = (child as any).textContent ?? (child as any)._nodeValue ?? '';
-          if (tagName === 'style' || tagName === 'script') {
+          if (isHtmlRawTextParent(element)) {
             childHTML += String(text);
           } else {
             childHTML += this.escapeHTMLEntities(String(text));

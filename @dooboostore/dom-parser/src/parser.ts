@@ -1,4 +1,4 @@
-import { elementNamespaceForTag, childNamespaceForElement } from './utils/namespaces';
+import { elementNamespaceForTag, childNamespaceForElement, HTML_NAMESPACE } from './utils/namespaces';
 
 /**
  * Single-pass HTML parsing shared by the full-document parser (DomParser)
@@ -228,9 +228,11 @@ function applyAttributes(attributeString: string, element: any, decode: (s: stri
  * a new Text node ("insert a character"), so entities and bogus "<" runs
  * stay in a single node like browsers produce.
  */
-function appendText(parent: any, rawText: string, ctx: HtmlParseContext): void {
+function appendText(parent: any, rawText: string, ctx: HtmlParseContext, raw: boolean = false): void {
   if (!rawText) return;
-  const decoded = ctx.decode(rawText);
+  // Raw-text content (HTML style/script) is stored literally: no entity
+  // decoding, matching browsers. Everything else decodes.
+  const decoded = raw ? rawText : ctx.decode(rawText);
   const text = ctx.fixText ? ctx.fixText(decoded) : decoded;
   const last = (parent as any).lastChild as any;
   if (last && last.nodeType === 3 && typeof last.appendData === 'function') {
@@ -378,16 +380,21 @@ export function parseNodes(
       continue;
     }
 
-    // <style> and <script> are raw-text elements: their content is text,
-    // never markup (verified against Chromium).
+    // <style> and <script> are raw-text elements ONLY in the HTML namespace:
+    // their content is literal text (no entity decoding, no markup).
+    // In foreign content (SVG/MathML) they are normal elements whose children
+    // parse and decode as usual (WHATWG parsing §13.2.5.54/§13.2.6.5;
+    // verified against Chromium).
     const lowerTagName = tagName.toLowerCase();
-    if (lowerTagName === 'style' || lowerTagName === 'script') {
+    const isHtmlRawText = (lowerTagName === 'style' || lowerTagName === 'script') &&
+      (!elementNS || elementNS === HTML_NAMESPACE);
+    if (isHtmlRawText) {
       const closingTag = `</${lowerTagName}>`;
       const closingTagIndex = html.indexOf(closingTag, tagEnd + 1);
       if (closingTagIndex !== -1) {
         const content = html.substring(tagEnd + 1, closingTagIndex);
         if (content) {
-          appendText(element, content, ctx);
+          appendText(element, content, ctx, true);
         }
         pos = closingTagIndex + closingTag.length;
         continue;
@@ -395,7 +402,7 @@ export function parseNodes(
       // Unterminated raw-text element: treat the rest as text.
       const rest = html.substring(tagEnd + 1);
       if (rest) {
-        appendText(element, rest, ctx);
+        appendText(element, rest, ctx, true);
       }
       return len;
     }
