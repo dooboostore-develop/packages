@@ -7,6 +7,7 @@ import { TreeWalker } from './TreeWalker';
 import { NodeIterator } from './NodeIterator';
 import { TextBase } from './TextBase';
 import { Comment } from './Comment';
+import { ProcessingInstruction, assertValidProcessingInstruction } from './ProcessingInstruction';
 import { DocumentFragmentBase } from './DocumentFragmentBase';
 
 export class DocumentBase extends ParentNodeBase implements Document {
@@ -255,7 +256,8 @@ export class DocumentBase extends ParentNodeBase implements Document {
   }
 
   createProcessingInstruction(target: string, data: string): any {
-    return { target, data, nodeType: 7 };
+    assertValidProcessingInstruction(target, data);
+    return new ProcessingInstruction(target, data, this);
   }
 
   createRange(): any {

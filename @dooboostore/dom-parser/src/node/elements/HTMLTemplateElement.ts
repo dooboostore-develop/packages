@@ -2,6 +2,7 @@ import { NodeClassRegistry } from '../NodeClassRegistry';
 import { DocumentFragmentBase } from '../DocumentFragmentBase';
 import { TEXT_NODE } from '../Node';
 import { HTMLElement } from './HTMLElement';
+import { serializeProcessingInstruction } from '../ProcessingInstruction';
 
 /**
  * The **`HTMLTemplateElement`** class represents an HTML `<template>` element.
@@ -61,6 +62,9 @@ export class HTMLTemplateElement extends HTMLElement {
       } else if (child && child.nodeType === 8) {
         // COMMENT_NODE
         html += `<!--${(child as any).textContent || ''}-->`;
+      } else if (child && child.nodeType === 7) {
+        // PROCESSING_INSTRUCTION_NODE
+        html += serializeProcessingInstruction(child);
       }
     }
     return html;

@@ -1,6 +1,7 @@
 import { DocumentFragmentBase } from './DocumentFragmentBase';
 import { serializeChildrenWithShadow, attachDeclarativeShadowRoots, type GetHTMLOptions } from './serialize';
 import { coerceNullableString } from '../utils/coerce';
+import { serializeProcessingInstruction } from './ProcessingInstruction';
 
 /**
  * The **`ShadowRoot`** interface represents the root node of a shadow DOM subtree.
@@ -88,6 +89,9 @@ export class ShadowRootBase extends DocumentFragmentBase implements ShadowRoot {
       } else if ((child as any).nodeType === 8) {
         // COMMENT_NODE
         html += `<!--${(child as any).textContent || ''}-->`;
+      } else if ((child as any).nodeType === 7) {
+        // PROCESSING_INSTRUCTION_NODE
+        html += serializeProcessingInstruction(child);
       }
     }
     return html;
