@@ -10,6 +10,7 @@ import { SVG_NAMESPACE, MATHML_NAMESPACE, elementNamespaceForTag, childNamespace
 import { NodeBase } from '../NodeBase';
 import { ShadowRootBase } from '../ShadowRootBase';
 import { coerceNullableString } from '../../utils/coerce';
+import { assertValidAttributeName } from '../../utils/attribute-name';
 
 // Simple DOMException class for error handling
 class DOMException extends Error {
@@ -21,6 +22,13 @@ class DOMException extends Error {
     this.name = name;
   }
 }
+
+/**
+ * Attribute-name validation lives in utils/attribute-name (shared with
+ * DocumentBase.createAttribute, which cannot import this module without a
+ * cycle). See that file for the Chromium-measured rules.
+ */
+export { assertValidAttributeName };
 
 
 
@@ -467,6 +475,7 @@ export abstract class ElementBase extends ParentNodeBase implements Element {
     return this._attributes.get(normalizeAttributeName(qualifiedName, this.namespaceURI)) ?? null;
   }
   setAttribute(qualifiedName: string, value: string): void {
+    assertValidAttributeName(qualifiedName);
     const name = normalizeAttributeName(qualifiedName, this.namespaceURI);
     const oldValue = this.getAttribute(name);
 

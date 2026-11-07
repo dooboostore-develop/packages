@@ -8,6 +8,7 @@ import { NodeIterator } from './NodeIterator';
 import { TextBase } from './TextBase';
 import { Comment } from './Comment';
 import { ProcessingInstruction, assertValidProcessingInstruction } from './ProcessingInstruction';
+import { assertValidAttributeName } from '../utils/attribute-name';
 import { DocumentFragmentBase } from './DocumentFragmentBase';
 
 export class DocumentBase extends ParentNodeBase implements Document {
@@ -213,6 +214,7 @@ export class DocumentBase extends ParentNodeBase implements Document {
   close(): void {}
 
   createAttribute(localName: string): any {
+    assertValidAttributeName(localName);
     return { name: localName, value: '', nodeType: 2 };
   }
 
