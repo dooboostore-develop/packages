@@ -6,3 +6,4 @@ import './server/spa-fallback.test.ts';
 import './server/post-send-error.test.ts';
 import './server/data-view-body.test.ts';
 import './server/res-end-variants.test.ts';
+import './server/filter-halt.test.ts';

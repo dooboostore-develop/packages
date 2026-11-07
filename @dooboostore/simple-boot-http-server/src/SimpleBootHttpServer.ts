@@ -183,7 +183,8 @@ export class SimpleBootHttpServer extends SimpleApplication {
 
         const filter = {
           carrier: new Map<string, any>(),
-          filters: [] as { filter: Filter, sw: boolean }[]
+          filters: [] as { filter: Filter, sw: boolean }[],
+          halted: false
         };
         for (let i = 0; this.option.filters && i < this.option.filters.length; i++) {
           const it = this.option.filters[i];
@@ -208,6 +209,10 @@ export class SimpleBootHttpServer extends SimpleApplication {
             filter.filters.push({filter: execute, sw});
           }
           if (!sw) {
+            // The filter stops the chain. Its response may still be in flight
+            // (resEnd is async), so resIsDone() alone must not decide routing:
+            // mark the halt explicitly and skip the router below.
+            filter.halted = true;
             break;
           }
         }
@@ -215,7 +220,11 @@ export class SimpleBootHttpServer extends SimpleApplication {
         // body.. something..
         // 라우터 없이 필터만으로 도는 서버(예: SSR 전용)면, 어느 필터도 처리하지 않은 요청은 404 로 끝낸다
         // (브라우저가 알아서 보내는 /favicon.ico, /.well-known/... 같은 것 — 예전엔 'no router' 에러로 500 + 로그)
-        if (!rr.resIsDone() && !this.option.rootRouter) {
+        // 필터가 false 를 돌려줬으면(체인 중단) 그 응답이 아직 전송 중일 수 있으므로 resIsDone() 만으로
+        // 라우팅을 결정하지 않는다 — halted 면 라우터를 건너뛴다 (핸들러가 돌면 안 됨).
+        if (filter.halted) {
+          // 응답은 필터가 끝낸다 (이미 끝났으면 그대로).
+        } else if (!rr.resIsDone() && !this.option.rootRouter) {
           rr.resStatusCode(HttpStatus.NotFound);
         } else if (!rr.resIsDone()) {
           const routerModule = await super.routing(rr.reqIntent);
