@@ -77,6 +77,46 @@ export class SimpleBootHttpServer extends SimpleApplication {
     return this;
   }
 
+  /**
+   * Graceful shutdown, in the order that makes hooks safe (the contract
+   * Fastify documents, and the reason a bare `server.close()` can hang):
+   *
+   * 1. stop accepting new connections,
+   * 2. drop idle keep-alive sockets so the server can actually reach "closed"
+   *    (without this, `close()` waits forever on browsers' pooled sockets),
+   * 3. wait for in-flight requests to finish,
+   * 4. run the option's `closeEndPoints`.
+   *
+   * Resolves once the socket is closed; rejects on a close error.
+   */
+  async close(): Promise<void> {
+    const server = this.server as any;
+    if (!server) return;
+    const dropIdle = () => {
+      try {
+        server.closeIdleConnections?.();
+      } catch {
+        // Already closed.
+      }
+    };
+    dropIdle();
+    await new Promise<void>((resolve, reject) => {
+      // Keep dropping sockets that go idle as in-flight requests finish;
+      // otherwise keep-alive connections keep the handle open until their
+      // timeout (seconds of unnecessary wait).
+      const nudge = setInterval(dropIdle, 50);
+      nudge.unref?.();
+      server.close((err?: Error) => {
+        clearInterval(nudge);
+        if (err && (err as any).code !== 'ERR_SERVER_NOT_RUNNING') {
+          reject(err);
+          return;
+        }
+        resolve();
+      });
+    });
+  }
+
   private startServer() {
 
     // const a = this.option.serverOption as HttpsServerOption;
