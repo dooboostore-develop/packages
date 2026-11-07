@@ -154,6 +154,8 @@ export interface HtmlParseContext {
   createText(data: string): any;
   createComment(data: string): any;
   createElement(tagName: string, namespaceURI: string | null, options: any): any;
+  /** Creates a DocumentType node (document-level parses only). */
+  createDocumentType?(name: string, publicId: string, systemId: string): any;
   appendChild(parent: any, child: any): void;
   /** Forwarded to the `is` options as `inert` (innerHTML path only). */
   inert?: boolean;
@@ -248,6 +250,26 @@ function appendText(parent: any, rawText: string, ctx: HtmlParseContext, raw: bo
  * `pos`, appending nodes to `parent`. Stops after consuming this level's
  * `</stopTag>` (returns the position past it) or at end of input.
  */
+/**
+ * Splits a doctype body (`html`, `html PUBLIC "p" "s"`, `html SYSTEM "s"`)
+ * into name/publicId/systemId the way browsers expose it on DocumentType.
+ */
+export function parseDoctypeBody(body: string): { name: string; publicId: string; systemId: string } {
+  const trimmed = body.trim();
+  const name = trimmed.split(/\s+/, 1)[0] ?? '';
+  const rest = trimmed.slice(name.length).trim();
+
+  const publicMatch = /^PUBLIC\s+(["'])(.*?)\1(?:\s+(["'])(.*?)\3)?/i.exec(rest);
+  if (publicMatch) {
+    return { name, publicId: publicMatch[2] ?? '', systemId: publicMatch[4] ?? '' };
+  }
+  const systemMatch = /^SYSTEM\s+(["'])(.*?)\1/i.exec(rest);
+  if (systemMatch) {
+    return { name, publicId: '', systemId: systemMatch[2] ?? '' };
+  }
+  return { name, publicId: '', systemId: '' };
+}
+
 export function parseNodes(
   html: string,
   pos: number,
@@ -278,6 +300,23 @@ export function parseNodes(
       const textContent = html.substring(pos, tagStart);
       if (textContent) {
         appendText(parent, textContent, ctx);
+      }
+    }
+
+    // DOCTYPE. Browsers keep it as a DocumentType child of the document;
+    // only meaningful at document level, elsewhere it is ignored.
+    if (html.charCodeAt(tagStart + 1) === 33 /* ! */
+      && html.substring(tagStart + 2, tagStart + 9).toLowerCase() === 'doctype') {
+      const tagEndPos = findTagEnd(html, tagStart);
+      if (tagEndPos !== -1) {
+        const rawDoctype = html.substring(tagStart + 9, tagEndPos).trim();
+        if (typeof ctx.createDocumentType === 'function') {
+          const parsed = parseDoctypeBody(rawDoctype);
+          const node = ctx.createDocumentType(parsed.name, parsed.publicId, parsed.systemId);
+          if (node) ctx.appendChild(parent, node);
+        }
+        pos = tagEndPos + 1;
+        continue;
       }
     }
 

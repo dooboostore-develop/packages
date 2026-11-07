@@ -10,12 +10,14 @@ import { Comment } from './Comment';
 import { ProcessingInstruction, assertValidProcessingInstruction } from './ProcessingInstruction';
 import { assertValidAttributeName } from '../utils/attribute-name';
 import { assertValidElementName } from '../utils/element-name';
+import { DOMImplementationImpl } from './DOMImplementationImpl';
 import { DocumentFragmentBase } from './DocumentFragmentBase';
 
 export class DocumentBase extends ParentNodeBase implements Document {
   [key: string]: any;
   private _readyState: DocumentReadyState = 'loading';
   private _window: any = null;
+  private _implementation: any = null;
   public head!: any;
   public body!: any;
   public documentElement!: any;
@@ -92,7 +94,8 @@ export class DocumentBase extends ParentNodeBase implements Document {
     return this._window;
   }
   get doctype(): any {
-    return null;
+    const child = this._childNodesInternal.find((n: any) => n.nodeType === 10);
+    return child ?? null;
   }
   get documentURI(): string {
     return this.URL;
@@ -123,7 +126,10 @@ export class DocumentBase extends ParentNodeBase implements Document {
     return [];
   }
   get implementation(): any {
-    return {};
+    if (!this._implementation) {
+      this._implementation = new DOMImplementationImpl(() => this);
+    }
+    return this._implementation;
   }
   get inputEncoding(): string {
     return 'UTF-8';

@@ -2,6 +2,7 @@ import './node/registerNodeClasses';
 import { DocumentBase } from './node/DocumentBase';
 import { TextBase } from './node/TextBase';
 import { Comment } from './node/Comment';
+import { DocumentType } from './node/DocumentType';
 import { WindowBase } from './window/WindowBase';
 import { ElementBase } from './node/elements/ElementBase';
 import { ElementFactory } from './factory/ElementFactory';
@@ -126,8 +127,9 @@ export class DomParser {
   }
 
   private parseHTMLString(html: string, parent: any): void {
-    // Remove DOCTYPE if present
-    html = html.replace(/<!DOCTYPE[^>]*>/i, '').trim();
+    // The DOCTYPE is kept: the parser turns it into a DocumentType node so
+    // document.doctype and round-trips behave like browsers.
+    html = html.trim();
 
     if (!html) return;
 
@@ -160,6 +162,7 @@ export class DomParser {
       decode: decodeHTMLEntities,
       createText: (data) => new TextBase(data, this.document),
       createComment: (data) => new Comment(data, this.document),
+      createDocumentType: (name, publicId, systemId) => new DocumentType(name, publicId, systemId, this.document),
       createElement: (tagName, namespaceURI, options) =>
         (this.document as any).createElementNS(namespaceURI, tagName.toLowerCase(), options),
       appendChild: (p, c) => p.appendChild(c),

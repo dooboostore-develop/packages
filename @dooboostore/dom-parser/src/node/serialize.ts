@@ -1,6 +1,7 @@
-import { ELEMENT_NODE, TEXT_NODE, PROCESSING_INSTRUCTION_NODE } from './Node';
+import { ELEMENT_NODE, TEXT_NODE, PROCESSING_INSTRUCTION_NODE, DOCUMENT_TYPE_NODE } from './Node';
 import { HTML_NAMESPACE, SVG_NAMESPACE, MATHML_NAMESPACE } from '../utils/namespaces';
 import { serializeProcessingInstruction } from './ProcessingInstruction';
+import { serializeDocumentType } from './DocumentType';
 
 export interface GetHTMLOptions {
   serializableShadowRoots?: boolean;
@@ -97,6 +98,9 @@ export function serializeNodeWithShadow(node: any, options?: GetHTMLOptions): st
   }
   if (nodeType === PROCESSING_INSTRUCTION_NODE) {
     return serializeProcessingInstruction(node);
+  }
+  if (nodeType === DOCUMENT_TYPE_NODE) {
+    return serializeDocumentType(node);
   }
   if (nodeType !== ELEMENT_NODE) return '';
   return serializeElementWithShadow(node, options);
