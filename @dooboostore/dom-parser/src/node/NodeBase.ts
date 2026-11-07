@@ -18,6 +18,30 @@ class DOMException extends Error {
 }
 
 /**
+ * DOM pre-insertion validity, hierarchy part: inserting `node` into `parent`
+ * would create a cycle exactly when `parent` is `node` itself or a
+ * descendant of `node`. Browsers throw HierarchyRequestError instead of
+ * corrupting (or infinitely looping over) the tree.
+ */
+function assertNoCycle(parent: any, node: any): void {
+  if (node === parent) {
+    throw new DOMException('The new child is an ancestor of the parent', 'HierarchyRequestError');
+  }
+  const queue: any[] = [...((node as any)._childNodesInternal || node.childNodes || [])];
+  for (let head = 0; head < queue.length; head++) {
+    const current = queue[head];
+    if (!current) continue;
+    if (current === parent) {
+      throw new DOMException('The new child is an ancestor of the parent', 'HierarchyRequestError');
+    }
+    const children = current._childNodesInternal || current.childNodes;
+    if (children) {
+      for (let i = 0; i < children.length; i++) queue.push(children[i]);
+    }
+  }
+}
+
+/**
  * Base implementation of the Node interface
  */
 export abstract class NodeBase implements Node {
@@ -291,6 +315,9 @@ export abstract class NodeBase implements Node {
   appendChild<T extends Node>(node: T): T {
     const nodeBase = node as any as NodeBase; // Internal cast
 
+    // DOM pre-insertion validity: no cycles, before any mutation.
+    assertNoCycle(this, nodeBase);
+
     // Special handling for DocumentFragment
     if (nodeBase.nodeType === DOCUMENT_FRAGMENT_NODE) {
       // When appending a DocumentFragment, move its children instead
@@ -404,12 +431,14 @@ export abstract class NodeBase implements Node {
   }
 
   insertBefore<T extends Node>(node: T, child: Node | null): T {
+    const nodeBase = node as any as NodeBase; // Internal cast
+    const childBase = child as any as NodeBase; // Internal cast
+
+    // DOM pre-insertion validity: hierarchy first (no cycles), then reference.
+    assertNoCycle(this, nodeBase);
     if (child === null) {
       return this.appendChild(node);
     }
-
-    const nodeBase = node as any as NodeBase; // Internal cast
-    const childBase = child as any as NodeBase; // Internal cast
     const index = this._findChildIndex(childBase);
     if (index === -1) {
       throw new DOMException('Reference node not found', 'NotFoundError');

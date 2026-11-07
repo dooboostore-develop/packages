@@ -176,5 +176,36 @@ describe('Node Cloning and Copying', () => {
         assert.equal(main.innerHTML, '<b>x</b><span>source</span>', 'Source must survive the failed insert');
 
         console.log('✅ insertBefore() validates before mutating');
+
+        const doc2 = new DomParser('<html><body><div id="a"><span id="s">x</span></div></body></html>').document as any;
+        const a = doc2.getElementById('a');
+        const s = doc2.getElementById('s');
+
+        // Self-insertion must throw HierarchyRequestError, not hang or corrupt.
+        assert.throws(() => a.appendChild(a), /HierarchyRequestError/);
+        assert.equal(doc2.querySelectorAll('span').length, 1, 'tree intact after self-insert attempt');
+
+        // Inserting an ancestor into its descendant must throw as well.
+        assert.throws(() => s.appendChild(a), /HierarchyRequestError/);
+        assert.equal(doc2.querySelectorAll('span').length, 1, 'tree intact after ancestor-insert attempt');
+
+        // A fragment containing an ancestor of the target is the same cycle.
+        const doc3 = new DomParser('<html><body><div id="o"><div id="p"><span>x</span></div></div></body></html>').document as any;
+        const o3 = doc3.getElementById('o');
+        const p3 = doc3.getElementById('p');
+        const frag3 = doc3.createDocumentFragment();
+        frag3.appendChild(o3); // whole subtree (o > p) moves into the fragment
+        assert.throws(() => p3.appendChild(frag3), /HierarchyRequestError/);
+        assert.equal(frag3.querySelectorAll('span').length, 1, 'fragment untouched by failed insert');
+
+        // Normal fragment insertion still works.
+        const frag2 = doc2.createDocumentFragment();
+        const b = doc2.createElement('b');
+        b.textContent = 'B';
+        frag2.appendChild(b);
+        a.appendChild(frag2);
+        assert.equal(a.querySelectorAll('b').length, 1, 'fragment children move normally');
+
+        console.log('✅ appendChild() rejects cycles with HierarchyRequestError');
     });
 });
