@@ -807,13 +807,27 @@ class DOMTokenListImpl implements DOMTokenList {
   }
   toggle(token: string, force?: boolean): boolean {
     const hasToken = this.contains(token);
-    if (force === true || (force === undefined && !hasToken)) {
+    if (force === undefined) {
+      if (hasToken) {
+        this.remove(token);
+        return false;
+      }
       this.add(token);
       return true;
-    } else {
-      this.remove(token);
-      return false;
     }
+    // DOM Standard: coerce force to boolean first; when the element already
+    // matches the forced state, return early WITHOUT touching the attribute
+    // (no mutation record). Force-less toggling above always changes state.
+    const forceValue = !!force;
+    if (forceValue === hasToken) {
+      return forceValue;
+    }
+    if (forceValue) {
+      this.add(token);
+      return true;
+    }
+    this.remove(token);
+    return false;
   }
   replace(oldToken: string, newToken: string): boolean {
     if (this.contains(oldToken)) {
