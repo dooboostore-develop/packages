@@ -9,6 +9,7 @@ import { TextBase } from './TextBase';
 import { Comment } from './Comment';
 import { ProcessingInstruction, assertValidProcessingInstruction } from './ProcessingInstruction';
 import { assertValidAttributeName } from '../utils/attribute-name';
+import { assertValidElementName } from '../utils/element-name';
 import { DocumentFragmentBase } from './DocumentFragmentBase';
 
 export class DocumentBase extends ParentNodeBase implements Document {
@@ -237,12 +238,14 @@ export class DocumentBase extends ParentNodeBase implements Document {
   createElement<K extends keyof HTMLElementTagNameMap>(tagName: K, options?: ElementCreationOptions): HTMLElementTagNameMap[K];
   createElement(tagName: string, options?: ElementCreationOptions): HTMLElement;
   createElement(tagName: string, options?: ElementCreationOptions): HTMLElement {
+    assertValidElementName(tagName);
     return ElementFactory.createElement(tagName, this, options) as any;
   }
 
   createElementNS(_ns: string | null, qualifiedName: string, options?: ElementCreationOptions): any {
     // Route the namespace to the factory so SVG/MathML elements keep their
     // qualified names (issue #15). `options` may be a string ("is" value).
+    assertValidElementName(qualifiedName);
     const mergedOptions: any = typeof options === 'string'
       ? { is: options, namespaceURI: _ns }
       : { ...(options as object), namespaceURI: _ns };
