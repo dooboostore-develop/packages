@@ -1,6 +1,7 @@
 import { HTMLElementBase } from './HTMLElementBase';
 import {HTMLElement} from "./HTMLElement";
 import { formOwnerFor } from '../../utils/form-owner';
+import { isBarredFromValidation, createValidityState } from '../../utils/input-validation';
 
 /**
  * The **`HTMLButtonElement`** class represents an HTML `<button>` element.
@@ -11,6 +12,7 @@ export class HTMLButtonElement extends HTMLElement {
   private _type: string = 'submit';
   private _disabled: boolean = false;
   private _value: string = '';
+  private _validity: any = null;
 
   constructor(tagName: string = 'BUTTON', ownerDocument?: any) {
     super(tagName, ownerDocument);
@@ -86,4 +88,28 @@ export class HTMLButtonElement extends HTMLElement {
   get form(): HTMLElement | null {
     return formOwnerFor(this);
   }
+
+  get willValidate(): boolean {
+    return !isBarredFromValidation(this);
+  }
+
+  get validity(): any {
+    if (!this._validity) this._validity = createValidityState(this);
+    return this._validity;
+  }
+
+  get validationMessage(): string {
+    return '';
+  }
+
+  checkValidity(): boolean {
+    if (!this.willValidate) return true;
+    return this.validity.valid;
+  }
+
+  reportValidity(): boolean {
+    return this.checkValidity();
+  }
+
+  setCustomValidity(_message: string): void {}
 }

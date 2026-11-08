@@ -1,6 +1,12 @@
 import { HTMLElementBase } from './HTMLElementBase';
 import {HTMLElement} from "./HTMLElement";
 import { formOwnerFor } from '../../utils/form-owner';
+import {
+    sanitizeInputValue,
+    parseValueAsNumber,
+    isBarredFromValidation,
+    createValidityState,
+} from '../../utils/input-validation';
 
 /**
  * The **`HTMLInputElement`** class represents an HTML `<input>` element.
@@ -15,6 +21,8 @@ export class HTMLInputElement extends HTMLElement {
     private _readonly: boolean = false;
     private _required: boolean = false;
     private _checked: boolean = false;
+    private _validity: any = null;
+    private _patternMismatchPattern: string | null = null;
 
     constructor(tagName: string, ownerDocument?: any) {
         super(tagName, ownerDocument);
@@ -31,12 +39,63 @@ export class HTMLInputElement extends HTMLElement {
     }
 
     get value(): string {
-        return this._value;
+        const type = this._type.toLowerCase();
+        let sanitized = sanitizeInputValue(type, this._value);
+        if (type === 'range' && sanitized !== '') {
+            // Range additionally clamps to min/max (Chromium: 999 -> 100).
+            const min = Number(this.getAttribute('min') ?? '0');
+            const max = Number(this.getAttribute('max') ?? '100');
+            const n = Number(sanitized);
+            if (Number.isFinite(n)) {
+                const lo = Number.isFinite(min) ? min : 0;
+                const hi = Number.isFinite(max) ? max : 100;
+                sanitized = String(Math.min(hi, Math.max(lo, n)));
+            }
+        }
+        return sanitized;
     }
 
     set value(value: string) {
-        this._value = value;
-        this.setAttribute('value', value);
+        const raw = value === null || value === undefined ? '' : String(value);
+        this._value = raw;
+        this.setAttribute('value', raw);
+    }
+
+    get valueAsNumber(): number {
+        return parseValueAsNumber(this._type.toLowerCase(), this.value);
+    }
+
+    set valueAsNumber(value: number) {
+        this.value = Number.isFinite(value) ? String(value) : '';
+    }
+
+    get willValidate(): boolean {
+        return !isBarredFromValidation(this);
+    }
+
+    get validity(): any {
+        if (!this._validity) this._validity = createValidityState(this);
+        return this._validity;
+    }
+
+    get validationMessage(): string {
+        if (!this.willValidate) return '';
+        if (this.validity.valueMissing) return 'Please fill out this field.';
+        return '';
+    }
+
+    checkValidity(): boolean {
+        if (!this.willValidate) return true;
+        return this.validity.valid;
+    }
+
+    reportValidity(): boolean {
+        return this.checkValidity();
+    }
+
+    setCustomValidity(_message: string): void {
+        // Custom validity is not modelled yet; browsers store the message
+        // and surface it through validationMessage.
     }
 
     get placeholder(): string {
