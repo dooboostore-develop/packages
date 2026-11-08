@@ -4,6 +4,7 @@ import { NodeListOfImp } from './collection/NodeListOfImp';
 import { ELEMENT_NODE, TEXT_NODE } from './Node';
 import { TextBase } from './TextBase';
 import { CSSSelector } from '../utils/CSSSelector';
+import { assertValidSelector } from '../utils/selector/validate';
 
 /**
  * Base implementation of the ParentNode interface
@@ -93,6 +94,9 @@ export abstract class ParentNodeBase extends ChildNodeBase implements ParentNode
     }
 
     querySelectorAll<E extends Element = Element>(selectors: string): NodeListOf<E> {
+        // Public entry point: malformed selectors throw SyntaxError like
+        // browsers (the parser itself stays forgiving for :is()/:where()).
+        assertValidSelector(selectors);
         const results: E[] = [];
         
         // Split selectors by comma and process each one

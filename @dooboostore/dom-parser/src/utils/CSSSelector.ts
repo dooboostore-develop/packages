@@ -1,5 +1,6 @@
 import { createMatcher } from './selector/factory';
 import { splitTopLevel } from './selector/parse';
+import { assertValidSelector } from './selector/validate';
 
 /**
  * CSS Selector entry point.
@@ -19,6 +20,8 @@ export class CSSSelector {
      * matching runs right-to-left like browsers.
      */
     static matches(element: Element, selector: string, scope?: any): boolean {
+        // Public entry point: malformed selectors throw SyntaxError like browsers.
+        assertValidSelector(selector);
         const matcher = createMatcher(selector);
         return matcher.matches(element as any, { scope: scope ?? element });
     }
