@@ -11,6 +11,7 @@ import { NodeBase } from '../NodeBase';
 import { ShadowRootBase } from '../ShadowRootBase';
 import { coerceNullableString } from '../../utils/coerce';
 import { assertValidAttributeName } from '../../utils/attribute-name';
+import { queueMutation, hasRegisteredObservers } from '../MutationObserver';
 
 // Simple DOMException class for error handling
 class DOMException extends Error {
@@ -480,6 +481,13 @@ export abstract class ElementBase extends ParentNodeBase implements Element {
     const oldValue = this.getAttribute(name);
 
     this._attributes.set(name, value);
+    if (oldValue !== value) {
+      if (hasRegisteredObservers()) queueMutation({
+        type: 'attributes', target: this, addedNodes: [], removedNodes: [],
+        previousSibling: null, nextSibling: null,
+        attributeName: name, attributeNamespace: null, oldValue,
+      });
+    }
     if (name === 'id') this._id = value;
     else if (name === 'class') this._className = value;
 
@@ -503,6 +511,13 @@ export abstract class ElementBase extends ParentNodeBase implements Element {
     const oldValue = this.getAttribute(name);
 
     this._attributes.delete(name);
+    if (oldValue !== null) {
+      if (hasRegisteredObservers()) queueMutation({
+        type: 'attributes', target: this, addedNodes: [], removedNodes: [],
+        previousSibling: null, nextSibling: null,
+        attributeName: name, attributeNamespace: null, oldValue,
+      });
+    }
     if (name === 'id') this._id = '';
     else if (name === 'class') this._className = '';
 

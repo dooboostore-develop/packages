@@ -4,6 +4,7 @@ import { NodeListOfImp } from './collection/NodeListOfImp';
 import { GetRootNodeOptions } from './GetRootNodeOptions';
 import { adjustNodeIteratorsOnRemove } from './NodeIterator';
 import { coerceNullableString } from '../utils/coerce';
+import { queueMutation, addTransientObservers, hasRegisteredObservers } from './MutationObserver';
 
 // Simple DOMException class for error handling (mirrors ElementBase's;
 // NodeBase cannot import it without creating a module cycle).
@@ -341,6 +342,11 @@ export abstract class NodeBase implements Node {
 
     this._childNodesInternal.push(nodeBase);
     nodeBase._parentNodeInternal = this;
+    if (hasRegisteredObservers()) queueMutation({
+      type: 'childList', target: this, addedNodes: [nodeBase], removedNodes: [],
+      previousSibling: nodeBase.previousSibling ?? null, nextSibling: null,
+      attributeName: null, attributeNamespace: null, oldValue: null,
+    });
 
     // Update ownerDocument recursively and trigger adoptedCallback.
     // Fast path: same-document appends (the entire initial parse) need no walk —
@@ -410,11 +416,21 @@ export abstract class NodeBase implements Node {
     // reference is the removed node (or its descendant) BEFORE unlinking,
     // so traversal continues instead of dead-ending on the detached node.
     adjustNodeIteratorsOnRemove(childBase);
+    // DOM "remove" steps: keep reporting mutations inside the detached
+    // subtree until the next delivery.
+    addTransientObservers(childBase);
 
     const wasConnected = childBase.isConnected;
+    const prevSibling = index > 0 ? this._childNodesInternal[index - 1] : null;
+    const nextSibling = index + 1 < this._childNodesInternal.length ? this._childNodesInternal[index + 1] : null;
 
     this._childNodesInternal.splice(index, 1);
     childBase._parentNodeInternal = null;
+    if (hasRegisteredObservers()) queueMutation({
+      type: 'childList', target: this, addedNodes: [], removedNodes: [childBase],
+      previousSibling: prevSibling ?? null, nextSibling: nextSibling ?? null,
+      attributeName: null, attributeNamespace: null, oldValue: null,
+    });
 
     // Trigger disconnectedCallback recursively if it was connected
     if (wasConnected) {
@@ -502,8 +518,15 @@ export abstract class NodeBase implements Node {
       nodeBase._parentNodeInternal.removeChild(nodeBase);
     }
 
+    const prevSibling = index > 0 ? this._childNodesInternal[index - 1] : null;
+    const nextSibling = this._childNodesInternal[index] ?? null;
     this._childNodesInternal.splice(index, 0, nodeBase);
     nodeBase._parentNodeInternal = this;
+    if (hasRegisteredObservers()) queueMutation({
+      type: 'childList', target: this, addedNodes: [nodeBase], removedNodes: [],
+      previousSibling: prevSibling ?? null, nextSibling: nextSibling ?? null,
+      attributeName: null, attributeNamespace: null, oldValue: null,
+    });
 
     // Update ownerDocument recursively and trigger adoptedCallback.
     // Fast path: same-document inserts need no subtree walk.

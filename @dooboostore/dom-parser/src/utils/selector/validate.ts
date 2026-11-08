@@ -137,11 +137,32 @@ function assertValidCompound(compound: string, selector: string): void {
   }
 }
 
+/** Selectors already known to be valid (validation is not free). */
+const validatedCache = new Set<string>();
+const VALIDATED_CACHE_MAX = 500;
+
 /**
  * Throws a SyntaxError DOMException the way browsers do for malformed
  * selectors. Call from the public query/matches entry points only.
+ * Results are cached: a selector that validated once stays valid, since the
+ * check depends only on the string.
  */
 export function assertValidSelector(selector: string): void {
+  if (typeof selector !== 'string') {
+    throw new SyntaxErrorDOMException(`Selector must be a string.`);
+  }
+  if (validatedCache.has(selector)) return;
+
+  assertValidSelectorUncached(selector);
+
+  if (validatedCache.size >= VALIDATED_CACHE_MAX) {
+    const first = validatedCache.values().next();
+    if (!first.done) validatedCache.delete(first.value);
+  }
+  validatedCache.add(selector);
+}
+
+function assertValidSelectorUncached(selector: string): void {
   if (typeof selector !== 'string') {
     throw new SyntaxErrorDOMException(`Selector must be a string.`);
   }

@@ -72,6 +72,7 @@ import {
   HTMLVideoElement
 } from '../node/elements';
 import { CustomElementRegistryImp } from './CustomElementRegistryImp';
+import { MutationObserverImpl } from '../node/MutationObserver';
 import { ShadowRootBase } from '../node/ShadowRootBase';
 import { NodeFilter } from '../node/NodeFilter';
 import { NodeList } from '../node';
@@ -123,11 +124,9 @@ export class WindowBase implements Window {
     disconnect(): void {}
     takeRecords(): IntersectionObserverEntry[] { return []; }
   };
-  MutationObserver = class {
-    observe(_target: Node, _options?: MutationObserverInit): void {}
-    disconnect(): void {}
-    takeRecords(): MutationRecord[] { return []; }
-  };
+  // Real implementation (childList/attributes/characterData + subtree +
+  // transient observers); see node/MutationObserver.
+  MutationObserver = MutationObserverImpl;
   ResizeObserver = class {
     observe(_target: Element, _options?: ResizeObserverOptions): void {}
     unobserve(_target: Element): void {}
