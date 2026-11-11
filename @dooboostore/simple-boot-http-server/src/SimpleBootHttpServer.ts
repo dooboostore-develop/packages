@@ -183,20 +183,8 @@ export class SimpleBootHttpServer extends SimpleApplication {
           default setting first
        */
       rr.resSetHeader(HttpHeaders.Server, 'simple-boot-http-server');
-      const cookie = rr.reqCookieGet(this.option.sessionOption.key);
-      if (!cookie) {
-        const session = await this.sessionManager.session();
-
-        const cookieParts: string[] = [];
-        cookieParts.push(`${this.option.sessionOption.key}=${session.uuid}`);
-        cookieParts.push(`Path=${this.option.sessionOption.path}`);
-        if (this.option.sessionOption.httpOnly) cookieParts.push('HttpOnly');
-        if (this.option.sessionOption.secure) cookieParts.push('Secure');
-        if (this.option.sessionOption.sameSite != null && this.option.sessionOption.sameSite) cookieParts.push(`SameSite=${this.option.sessionOption.sameSite}`);
-        const maxAge = (this.option.sessionOption as any).maxAge ?? (this.sessionManager.sessionOption)?.maxAge;
-        if (maxAge != null) cookieParts.push(`Max-Age=${maxAge}`);
-        rr.resSetHeader(HttpHeaders.SetCookie, cookieParts.join('; '));
-      }
+      // Sessions are created lazily by rr.reqSession*() (SessionManager issues the cookie then).
+      // Creating one for every cookieless request let any client grow the session Map without bound.
 
       const otherStorage = new Map<ConstructorType<any>, any>();
       otherStorage.set(RequestResponse, rr);

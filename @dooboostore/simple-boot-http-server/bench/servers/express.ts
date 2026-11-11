@@ -1,0 +1,10 @@
+import express from 'express';
+import { PORT, ROUTES, UserService } from './_common.ts';
+const users = new UserService();
+const app = express();
+app.use(express.json());
+app.get('/hello', (_q, r) => r.json({ hello: 'world' }));
+app.get('/users/:id', (q, r) => r.json(users.find(q.params.id)));
+app.post('/echo', (q, r) => r.json(q.body));
+for (let i = 0; i < ROUTES; i++) app.get('/r/' + i, (_q, r) => r.json({ route: i }));
+app.listen(PORT);

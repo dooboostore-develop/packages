@@ -70,7 +70,7 @@ for (const sel of selectors) {
   scenarios.push({ name: `query \`${sel}\` (medium)`, setup: (a) => a.parse(fixtures.medium), run: (a, d) => a.query(d, sel), check: true });
 }
 scenarios.push({ name: 'mutate: create+append 2000 nodes', setup: (a) => a.parse(fixtures.small), run: (a, d) => a.mutate(d, 2000), check: true });
-scenarios.push({ name: 'innerHTML set 1000 <li>', setup: (a) => a.parse(fixtures.small), run: (a, d) => a.innerHTML(d), check: true });
+scenarios.push({ name: 'innerHTML set 1000 `<li>`', setup: (a) => a.parse(fixtures.small), run: (a, d) => a.innerHTML(d), check: true });
 scenarios.push({ name: 'serialize outerHTML (medium)', setup: (a) => a.parse(fixtures.medium), run: (a, d) => a.serialize(d) });
 
 const rows = []; // {scenario, lib, ops, rme}
@@ -120,12 +120,14 @@ for (const s of scenarioNames) {
   const best = Math.max(...rs.map((r) => r.ops));
   md += `| ${s} | ${names.map((n) => { const r = rs.find((x) => x.lib === n); return r.ops === best ? `**${fmt(r.ops)}**` : fmt(r.ops); }).join(' | ')} |\n`;
 }
-md += `\n## Cold start, memory, size\n\n| | ${names.join(' | ')} |\n|---|${names.map(() => '---:').join('|')}|\n`;
+md += `\n## Cold start, memory, size (lower is better)\n\n| | ${names.join(' | ')} |\n|---|${names.map(() => '---:').join('|')}|\n`;
 md += `| import + first parse (ms, median of 7) | ${names.map((n) => fmt(cold[n])).join(' | ')} |\n`;
 md += `| heap per parsed ~100 KB doc (KB) | ${names.map((n) => fmt(mem[n])).join(' | ')} |\n`;
 md += `| install size on disk (MB, incl. own files only) | ${names.map((n) => { const s = installSize(pkgOf[n]); return s == null ? 'n/a' : s.toFixed(1); }).join(' | ')} |\n`;
 md += `\n## Notes\n\n- cheerio is a jQuery-style API, not a DOM implementation; it is the "fast HTML parser" reference, not a like-for-like.\n- jsdom additionally implements scripting/layout-adjacent behaviour that the others skip, so parse cost differs by scope, not only by quality.\n- Install size counts the package directory only, not its dependencies.\n- Throughput says nothing about correctness; see the compat tests.\n`;
 if (warnings.length) md += `\n## ⚠ Result mismatches (libraries disagreed on the same query)\n\n${warnings.map((w) => `- ${w}`).join('\n')}\n`;
+md = decorate(md);
+md += '\n' + charts(md);
 if (existsSync(join(here, 'analysis.md'))) md += readFileSync(join(here, 'analysis.md'), 'utf8'); // hand-written commentary survives regeneration
 writeFileSync(join(here, 'RESULTS.md'), md);
 console.log('\nWrote bench/RESULTS.md');

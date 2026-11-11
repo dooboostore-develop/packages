@@ -49,6 +49,32 @@ Measured against jsdom 27, happy-dom 20, linkedom 0.18 and cheerio 1.2 on Node 2
 | Import + first parse | **4.7x faster** (48 ms vs 227 ms) | **2.6x faster** |
 | `querySelectorAll('.item')` | **1.9x faster** | **7.6x faster** |
 
+Against linkedom (the closest in size and speed), where dom-parser is ahead:
+
+| | vs linkedom |
+|---|---:|
+| `innerHTML` set (1,000 `<li>`) | **69x faster** |
+| Create + append 2000 nodes | **3.5x faster** |
+| Parse a 3 MB page | **1.7x faster** |
+| `querySelectorAll('.item')` / `'#sec-120 .cell'` | **2.0x / 1.5x faster** |
+| Memory per parsed ~100 KB document | **1.4x less** |
+
+```text
+mutate: create+append 2000 nodes
+  dom-parser  ████████████████████████████████  639  ▲
+  cheerio     ██████████                        208
+  linkedom    █████████                         181
+  jsdom       ██                                45.3
+  happy-dom   █                                 29.8
+
+heap per parsed ~100 KB doc (KB)  (lower is better)
+  dom-parser  ███                               5,026  ▲
+  cheerio     ████                              5,719
+  linkedom    █████                             6,963
+  jsdom       ██████████████                    21,947
+  happy-dom   ████████████████████████████████  48,979
+```
+
 Highlights: the fastest DOM mutation of the five libraries tested (3.1x to 21x), the lowest memory per document, and the fastest parse of large pages. That adds up to cheap SSR renders, many documents held in memory at once, and fast cold starts in serverless.
 
 Full results, including the cases where other libraries are faster, methodology and caveats: [bench/RESULTS.md](./bench/RESULTS.md). Reproduce with `pnpm bench` inside `bench/`.

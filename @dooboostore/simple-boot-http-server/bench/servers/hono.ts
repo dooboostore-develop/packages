@@ -1,0 +1,10 @@
+import { Hono } from 'hono';
+import { serve } from '@hono/node-server';
+import { PORT, ROUTES, UserService } from './_common.ts';
+const users = new UserService();
+const app = new Hono();
+app.get('/hello', (c) => c.json({ hello: 'world' }));
+app.get('/users/:id', (c) => c.json(users.find(c.req.param('id'))));
+app.post('/echo', async (c) => c.json(await c.req.json()));
+for (let i = 0; i < ROUTES; i++) app.get('/r/' + i, (c) => c.json({ route: i }));
+serve({ fetch: app.fetch, port: PORT });

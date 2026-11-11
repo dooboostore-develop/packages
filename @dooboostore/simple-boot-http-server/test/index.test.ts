@@ -8,3 +8,4 @@ import './server/data-view-body.test.ts';
 import './server/res-end-variants.test.ts';
 import './server/filter-halt.test.ts';
 import './server/graceful-close.test.ts';
+import './server/session-lazy.test.ts';

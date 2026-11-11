@@ -314,6 +314,24 @@ See the [WebSocket Detailed Guide](https://github.com/dooboostore-develop/packag
 
 ---
 
+## ⚡ Benchmarks
+
+Measured with autocannon (64 connections, loopback) against Express and NestJS on the same routes. Decorator-based routing with constructor-injected services costs about the same as the other decorator-based stack, NestJS on Express:
+
+| requests/sec | simple-boot-http-server | NestJS (Express) | Express |
+|---|---:|---:|---:|
+| `GET /hello` (JSON) | 64,184 | 74,184 | 89,832 |
+| `GET /users/:id` + injected service | 60,764 | 66,360 | 82,688 |
+| `POST /echo` (JSON body) | **52,916** | 52,644 | 67,024 |
+
+- **On par with NestJS (Express) for JSON bodies** and within about 8% to 14% on simple routes, with p99 latency of 1 to 2 ms.
+- **Steady memory under load**: about 267 MB RSS after sustained traffic, in line with NestJS (260 to 269 MB). Sessions are created lazily, so anonymous traffic does not accumulate server state.
+- Starts in about 370 ms, comparable to NestJS (360 to 410 ms).
+
+Full results, including the Fastify and Hono based stacks that are faster, route-matching behaviour with many routes, methodology and caveats: [bench/RESULTS.md](./bench/RESULTS.md). Reproduce with `pnpm bench` inside `bench/`.
+
+---
+
 ## 📖 Learn More
 Check out the detailed guides and tutorials in the `document` folder.
 - [WebSocket Detailed Guide](https://github.com/dooboostore-develop/packages/tree/main/@dooboostore/simple-boot-http-server/document/websocket)

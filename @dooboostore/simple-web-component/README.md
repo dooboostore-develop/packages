@@ -1992,6 +1992,32 @@ constructor(private service: Service) { super(); }  // Web Components can't have
 
 ---
 
+## ⚡ Benchmarks
+
+Measured in real Chrome against a hand-written `innerHTML` renderer and Lit, rendering the same 1,000-row table (state in fields, a decorated method returns the HTML, `@replaceChildren*` applies it):
+
+- **Bulk rendering keeps up with Lit.** Creating 10,000 rows takes 244 ms, versus 232 ms for Lit and 222 ms for a hand-written `innerHTML` loop.
+- **Low memory.** 1,000 rows keep about 94 KB of JS heap, 6x less than Lit (558 KB); at 10,000 rows it is 1.6 MB versus 4.9 MB (3x less). Only the data is retained, no per-row template bookkeeping.
+- **Thin layer.** Rendering through the decorators costs within about 5% to 25% of the equivalent hand-written `innerHTML` code.
+
+```text
+create 10,000 rows  (lower is better)
+  vanilla (innerHTML)   ██████████████████████████        222  ▲
+  lit                   ████████████████████████████      232
+  simple-web-component  █████████████████████████████     244
+  vanilla (DOM calls)   ████████████████████████████████  269
+
+JS heap, 1,000 rows (KB)  (lower is better)
+  vanilla (innerHTML)   ████                              73.4  ▲
+  simple-web-component  █████                             93.5
+  vanilla (DOM calls)   ███████                           119
+  lit                   ████████████████████████████████  558
+```
+
+Full results, including the operations where other approaches are faster, methodology and caveats: [bench/RESULTS.md](./bench/RESULTS.md). Reproduce with `pnpm bench` inside `bench/`.
+
+---
+
 ## 🧪 Testing
 
 `pnpm test` type-checks the tests and runs them in a real browser (Chromium via Playwright, falling back to the installed Chrome) — no jsdom. Each test gets its own same-origin iframe window, so custom elements, `history` and `location` never leak between tests.
