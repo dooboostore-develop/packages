@@ -35,6 +35,24 @@ Each item below is a passing test, not an aspiration:
 -   **Null handling**: `innerHTML` / `innerText` / `textContent` setters clear on `null` and String()-coerce everything else, exactly like browsers
 -   **Serialization**: SVG/MathML case preservation (`<path>`, not `<PATH>`), attribute escaping (`&`, `<`, `>`, non-breaking space), declarative shadow DOM round-trips
 
+## Benchmarks
+
+Measured against jsdom 27, happy-dom 20, linkedom 0.18 and cheerio 1.2 on Node 24 (same script, same machine, same run):
+
+| | vs jsdom | vs happy-dom |
+|---|---:|---:|
+| Create + append 2000 nodes | **14x faster** | **21x faster** |
+| Parse a 1 KB page | **30x faster** | **11x faster** |
+| Parse a 147 KB page | **4.5x faster** | **3.8x faster** |
+| Parse a 3 MB page | **4.2x faster** | **3.9x faster** |
+| Memory per parsed ~100 KB document | **4.4x less** (5 MB vs 22 MB) | **9.7x less** (5 MB vs 49 MB) |
+| Import + first parse | **4.7x faster** (48 ms vs 227 ms) | **2.6x faster** |
+| `querySelectorAll('.item')` | **1.9x faster** | **7.6x faster** |
+
+Highlights: the fastest DOM mutation of the five libraries tested (3.1x to 21x), the lowest memory per document, and the fastest parse of large pages. That adds up to cheap SSR renders, many documents held in memory at once, and fast cold starts in serverless.
+
+Full results, including the cases where other libraries are faster, methodology and caveats: [bench/RESULTS.md](./bench/RESULTS.md). Reproduce with `pnpm bench` inside `bench/`.
+
 ## Installation
 
 ```bash

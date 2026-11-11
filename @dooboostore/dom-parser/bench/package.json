@@ -1,0 +1,18 @@
+{
+  "name": "@dooboostore/dom-parser-bench",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "bench": "node --expose-gc --max-old-space-size=12288 run.mjs",
+    "bench:quick": "BENCH_TIME=200 node --expose-gc --max-old-space-size=12288 run.mjs"
+  },
+  "dependencies": {
+    "@dooboostore/dom-parser": "workspace:*",
+    "cheerio": "^1.0.0",
+    "happy-dom": "^20.0.0",
+    "jsdom": "^27.0.0",
+    "linkedom": "0.18.12",
+    "tinybench": "^4.0.1"
+  }
+}
