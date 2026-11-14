@@ -2088,7 +2088,14 @@ onAuth(@swcAppMessage msg: SwcAppMessage<User | null>) { ... }
 @subscribeSwcAppMessage('auth-changed', { subject: 'behavior', trigger: 'connectedDone' })
 @innerHtml('.wrap')
 async load(@swcAppMessage msg: SwcAppMessage<User | null>) { ... }
+
+// same thing, shorter (like @subscribeSwcAppRouteChangeConnectedDone)
+@subscribeSwcAppMessageBehaviorConnectedDone('auth-changed')
+@innerHtml('.wrap')
+async load(@swcAppMessage msg: SwcAppMessage<User | null>) { ... }
 ```
+
+This also covers an element that is attached again — e.g. a header re-created when a pre-rendered page boots: with the default trigger the replay lands before its render and the template's default text stays.
 
 Route subscribers (`@subscribeSwcAppRouteChange`) accept the same `trigger`.
 Live broadcasts always reach everyone regardless of trigger.

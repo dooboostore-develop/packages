@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import assert from 'node:assert';
 import { createWindow, bootApp, sleep, uniqueTag } from './dom.ts';
 import {
-  elementDefine, onConnectedBodyShadow, publishSwcAppMessage, publishMessage, subscribeSwcAppMessage, subscribeSwcAppMessageBehavior, subscribeSwcAppMessageReplay, receiveMessage, swcAppMessage,
+  elementDefine, innerHtml, onConnectedBody, onConnectedBodyShadow, publishSwcAppMessage, publishMessage, subscribeSwcAppMessage, subscribeSwcAppMessageBehavior, subscribeSwcAppMessageBehaviorConnectedDone, subscribeSwcAppMessageReplay, receiveMessage, swcAppMessage,
   swcAppMessageBeforeReturn, hostSet, swcAppRouter, swcAppSimpleApplication, swcAppHost
 } from '../../src/index.ts';
 
@@ -200,6 +200,30 @@ test("trigger 'connectedDone' replays after the element rendered its own DOM", a
   await attach('late');
   assert.strictEqual(seen.done, true);
   assert.strictEqual(seen.connected, false, "default 'connected' replays before render");
+  destroy();
+});
+
+test('subscribeSwcAppMessageBehaviorConnectedDone = behavior + trigger connectedDone (last message after the element rendered its DOM)', async () => {
+  // 쇼케이스 헤더: 정적 프리렌더 위에서 같은 헤더가 다시 붙을 때, 기본 trigger 는 렌더 전에 재생해 @innerHtml 대상이 없어
+  // 버려졌고 템플릿 기본값(EN)이 남았다. 이 별칭은 렌더 뒤에 재생한다.
+  let rendered = false;
+  let sawDom: boolean | undefined;
+  const { app, attach, destroy } = await setup({
+    late: (win, tag) => {
+      @elementDefine(tag, { window: win })
+      class L extends win.HTMLElement {
+        @onConnectedBody async render() { await sleep(20); rendered = true; return '<b class="lang">EN</b>'; }
+        @subscribeSwcAppMessageBehaviorConnectedDone('lang')
+        @innerHtml('.lang')
+        show(m: any) { sawDom = rendered && !!this.querySelector('.lang'); return m.data; }
+      }
+    }
+  }, []);
+  app.publishMessage({ type: 'lang', data: 'KO' });
+  const el: any = await attach('late');
+  await sleep(60);
+  assert.strictEqual(sawDom, true, 'replayed after render');
+  assert.strictEqual(el.querySelector('.lang').textContent, 'KO');
   destroy();
 });
 

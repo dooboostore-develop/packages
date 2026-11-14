@@ -86,10 +86,10 @@ export const receiveMessage = subscribeSwcAppMessage;
 // ── subject 를 이름에 박은 별칭: @subscribeSwcAppMessageBehavior('auth') = @subscribeSwcAppMessage('auth', { subject: 'behavior' }) ──
 type SubjectlessOptions<Data, BeforeReturn, Result> = Omit<SwcAppMessageOptions<Data, BeforeReturn, Result>, 'subject'>;
 
-const withSubject = (subject: SwcAppMessageSubject, a?: any, b?: any, descriptor?: PropertyDescriptor): any => {
-  if (descriptor) return createSubscribeSwcAppMessage({ subject })(a, b, descriptor); // 괄호 없이
-  if (typeof a === 'string') return createSubscribeSwcAppMessage({ ...(b ?? {}), subject }, a);
-  return createSubscribeSwcAppMessage({ ...(a ?? {}), subject });
+const withSubject = (subject: SwcAppMessageSubject, a?: any, b?: any, descriptor?: PropertyDescriptor, fixed: Partial<SwcAppMessageOptions> = {}): any => {
+  if (descriptor) return createSubscribeSwcAppMessage({ subject, ...fixed })(a, b, descriptor); // 괄호 없이
+  if (typeof a === 'string') return createSubscribeSwcAppMessage({ ...(b ?? {}), subject, ...fixed }, a);
+  return createSubscribeSwcAppMessage({ ...(a ?? {}), subject, ...fixed });
 };
 
 /** 늦게 붙어도 마지막 메시지 1개를 받는다 (subject: 'behavior') */
@@ -99,6 +99,19 @@ export function subscribeSwcAppMessageBehavior<Data = any, BeforeReturn = any, R
 export function subscribeSwcAppMessageBehavior<Data = any, BeforeReturn = any, Result = any>(messageType: string, options: SubjectlessOptions<NoInfer<Data>, NoInfer<BeforeReturn>, NoInfer<Result>>): MethodDecorator;
 export function subscribeSwcAppMessageBehavior(a?: any, b?: any, descriptor?: PropertyDescriptor): any {
   return withSubject('behavior', a, b, descriptor);
+}
+
+/**
+ * subscribeSwcAppMessageBehavior + trigger 'connectedDone' — 마지막 메시지를 **자기 렌더가 끝난 뒤** 받는다.
+ * 핸들러가 자기 DOM 에 쓰는 경우(@innerHtml('.x'), @updateClass 등)에 쓴다: 기본 trigger('connected')는
+ * 렌더 전에 재생해서 대상이 아직 없어 조용히 버려진다. (@subscribeSwcAppRouteChangeConnectedDone 과 같은 규칙)
+ */
+export function subscribeSwcAppMessageBehaviorConnectedDone(target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor): PropertyDescriptor | void;
+export function subscribeSwcAppMessageBehaviorConnectedDone(messageType: string): MethodDecorator;
+export function subscribeSwcAppMessageBehaviorConnectedDone<Data = any, BeforeReturn = any, Result = any>(options: Omit<SubjectlessOptions<NoInfer<Data>, NoInfer<BeforeReturn>, NoInfer<Result>>, 'trigger'>): MethodDecorator;
+export function subscribeSwcAppMessageBehaviorConnectedDone<Data = any, BeforeReturn = any, Result = any>(messageType: string, options: Omit<SubjectlessOptions<NoInfer<Data>, NoInfer<BeforeReturn>, NoInfer<Result>>, 'trigger'>): MethodDecorator;
+export function subscribeSwcAppMessageBehaviorConnectedDone(a?: any, b?: any, descriptor?: PropertyDescriptor): any {
+  return withSubject('behavior', a, b, descriptor, { trigger: 'connectedDone' });
 }
 
 /** 늦게 붙어도 지나간 메시지를 전부 시간순으로 받는다 (subject: 'replay') */
