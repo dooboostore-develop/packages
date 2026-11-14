@@ -1,46 +1,27 @@
 import * as path from 'node:path';
-import { fileURLToPath } from 'node:url';
-import { ExtensionContext, window } from 'vscode';
-import {
-  LanguageClient,
-  LanguageClientOptions,
-  ServerOptions,
-  TransportKind
-} from 'vscode-languageclient/node.js';
+import { ExtensionContext, workspace } from 'vscode';
+import { LanguageClient, TransportKind } from 'vscode-languageclient/node';
 
 let client: LanguageClient | undefined;
 
 export function activate(context: ExtensionContext) {
-  const __dirname = path.dirname(fileURLToPath(import.meta.url));
-  const serverModule = path.join(__dirname, '../server/server.js');
-
-  const serverOptions: ServerOptions = {
-    run: { module: serverModule, transport: TransportKind.stdio },
-    debug: { module: serverModule, transport: TransportKind.stdio, options: { execArgv: ['--inspect=6009'] } }
-  };
-
-  const clientOptions: LanguageClientOptions = {
-    documentSelector: [
-      { scheme: 'file', language: 'typescript' },
-      { scheme: 'file', language: 'javascript' }
-    ],
-    synchronize: {
-      configurationSection: 'simpleWebComponentLsp'
-    },
-    traceOutputChannel: window.createOutputChannel('SWC LSP Trace')
-  };
-
+  const module = context.asAbsolutePath(path.join('out', 'server', 'server.js'));
   client = new LanguageClient(
-    'simple-web-component-lsp',
-    'Simple Web Component LSP',
-    serverOptions,
-    clientOptions
+    'swc',
+    'Simple Web Component',
+    {
+      run: { module, transport: TransportKind.ipc },
+      debug: { module, transport: TransportKind.ipc, options: { execArgv: ['--nolazy', '--inspect=6009'] } },
+    },
+    {
+      documentSelector: ['typescript', 'typescriptreact', 'javascript', 'html'].map(language => ({ scheme: 'file', language })),
+      // 닫힌 파일이 바뀌어도 태그 인덱스가 따라가게
+      synchronize: { fileEvents: workspace.createFileSystemWatcher('**/*.{ts,tsx,js,mjs}') },
+    }
   );
-
-  client.start();
+  return client.start();
 }
 
-export function deactivate(): Thenable<void> | undefined {
-  if (!client) return undefined;
-  return client.stop();
+export function deactivate() {
+  return client?.stop();
 }

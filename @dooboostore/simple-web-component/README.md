@@ -2018,6 +2018,14 @@ Full results, including the operations where other approaches are faster, method
 
 ---
 
+## 🧰 Editor Support (LSP)
+
+The package ships a language server for SWC templates — `npx swc-lsp --stdio`:
+tag / attribute / `@state@` / `$host.` completion, hover, go to definition, parameter hints, and type errors inside `swc-on-*`, `{{= }}` and `@x@`
+(`swc-on-click="$host.tt(4)"` → *number is not assignable to string*).
+
+Setup for IntelliJ, VS Code and Neovim: [lsp/README.md](./lsp/README.md).
+
 ## 🧪 Testing
 
 `pnpm test` type-checks the tests and runs them in a real browser (Chromium via Playwright, falling back to the installed Chrome) — no jsdom. Each test gets its own same-origin iframe window, so custom elements, `history` and `location` never leak between tests.

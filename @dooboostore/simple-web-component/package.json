@@ -4,6 +4,9 @@
   "license": "MIT",
   "type": "module",
   "main": "./dist/cjs/index.js",
+  "bin": {
+    "swc-lsp": "lsp/bin/swc-lsp.js"
+  },
   "module": "./dist/esm/index.js",
   "types": "./dist/types/index.d.ts",
   "typesVersions": {
@@ -43,7 +46,10 @@
     "src",
     "types.d.ts",
     "LICENSE.md",
-    "tsconfig.json"
+    "/tsconfig.json",
+    "lsp/package.json",
+    "lsp/bin",
+    "lsp/out/server/server.js"
   ],
   "publishConfig": {
     "access": "public"
@@ -67,7 +73,8 @@
   },
   "author": "dooboostore <dooboostore@gmail.com> (https://github.com/dooboostore)",
   "peerDependencies": {
-    "reflect-metadata": "^0.2.2"
+    "reflect-metadata": "^0.2.2",
+    "typescript": ">=5"
   },
   "devDependencies": {
     "@babel/core": "^7.24.0",
@@ -100,7 +107,7 @@
     "watch:esm": "pnpm run build:esm && node build.mjs esm --watch",
     "build:cjs": "node build.mjs cjs",
     "watch:cjs": "pnpm run build:cjs && node build.mjs cjs --watch",
-    "build": "pnpm run clean && node build.mjs all",
+    "build": "pnpm run clean && node build.mjs all && pnpm --dir lsp run build",
     "build:umd-bundle": "node build.mjs umd-bundle",
     "watch:umd-bundle": "pnpm run build:umd-bundle && node build.mjs umd-bundle --watch",
     "build:esm-bundle": "node build.mjs esm-bundle",
@@ -110,7 +117,7 @@
     "publish:npm": "pnpm run build && cp package.json package.json.back && pnpm pack && TARBALL_NAME=$(ls dooboostore-simple-web-component-*.tgz | head -n 1) && tar -xzf \"$TARBALL_NAME\" -C . --strip-components=1 package/package.json && rm \"$TARBALL_NAME\" && (pnpm publish --no-git-checks || true) && cp package.json.back package.json && rm -rf package.json.back  ",
     "ts:clean": "find . -name '*.js' -o -name '*.map' -o -name '*.d.ts' | xargs rm -f",
     "typecheck": "pnpm exec tsc --noEmit",
-    "test": "pnpm run test:types && node test/unit/run.mjs",
+    "test": "pnpm run test:types && node test/unit/run.mjs && pnpm --dir lsp test",
     "test:bundle": "pnpm --filter @dooboostore/simple-web-component-bundle-test dev",
     "test:types": "tsc --noEmit -p test/unit | (! grep '^test/')"
   },
@@ -121,5 +128,10 @@
   },
   "contributors": [
     "visualkhh <visualkhh@gmail.com> (https://github.com/visualkhh)"
-  ]
+  ],
+  "peerDependenciesMeta": {
+    "typescript": {
+      "optional": true
+    }
+  }
 }

@@ -1,0 +1,79 @@
+{
+  "scopeName": "swc.injection",
+  "injectionSelector": "L:string.template -meta.template.expression -comment, L:string.quoted -meta.template.expression -comment, L:text.html -source -comment",
+  "patterns": [
+    { "include": "#slot" },
+    { "include": "#directive" },
+    { "include": "#swc-on" },
+    { "include": "#expression" },
+    { "include": "#bind-attribute" },
+    { "include": "#at" }
+  ],
+  "repository": {
+    "slot": {
+      "comment": "<!--[[ id ]]-->",
+      "match": "(<!--\\[\\[)\\s*([^\\]]*?)\\s*(\\]\\]-->)",
+      "captures": {
+        "1": { "name": "punctuation.definition.tag.swc" },
+        "2": { "name": "entity.name.tag.swc" },
+        "3": { "name": "punctuation.definition.tag.swc" }
+      }
+    },
+    "directive": {
+      "comment": "<!--[html expr ]--> / <!--[text expr ]-->",
+      "begin": "(<!--\\[)(html|text)\\b",
+      "beginCaptures": {
+        "1": { "name": "punctuation.definition.tag.swc" },
+        "2": { "name": "keyword.control.swc" }
+      },
+      "end": "(\\]-->)",
+      "endCaptures": { "1": { "name": "punctuation.definition.tag.swc" } },
+      "contentName": "meta.embedded.swc",
+      "patterns": [{ "include": "#at" }, { "include": "#helper" }, { "include": "source.js" }]
+    },
+    "swc-on": {
+      "comment": "swc-on-click=\"script\" — the value is JavaScript",
+      "begin": "(swc-on-[\\w-]+)\\s*(=)\\s*([\"'])",
+      "beginCaptures": {
+        "1": { "name": "entity.other.attribute-name.swc" },
+        "2": { "name": "punctuation.separator.key-value.swc" },
+        "3": { "name": "punctuation.definition.string.begin.swc" }
+      },
+      "end": "\\3",
+      "endCaptures": { "0": { "name": "punctuation.definition.string.end.swc" } },
+      "contentName": "meta.embedded.swc",
+      "patterns": [{ "include": "#helper" }, { "include": "source.js" }]
+    },
+    "expression": {
+      "comment": "{{= expression }}",
+      "begin": "\\{\\{=",
+      "beginCaptures": { "0": { "name": "punctuation.definition.template-expression.begin.swc" } },
+      "end": "\\}\\}",
+      "endCaptures": { "0": { "name": "punctuation.definition.template-expression.end.swc" } },
+      "contentName": "meta.embedded.swc",
+      "patterns": [{ "include": "#helper" }, { "include": "source.js" }]
+    },
+    "bind-attribute": {
+      "comment": "a::title / e::click / p::value",
+      "match": "(?<=\\s)([aep])(::)([\\w-]*)",
+      "captures": {
+        "1": { "name": "keyword.control.swc" },
+        "2": { "name": "punctuation.separator.swc" },
+        "3": { "name": "entity.other.attribute-name.swc" }
+      }
+    },
+    "at": {
+      "comment": "@state@ / @user.name@",
+      "match": "(?<![\\w@$.])(@)([A-Za-z_$][\\w$.]*)(@)",
+      "captures": {
+        "1": { "name": "punctuation.definition.template-expression.begin.swc" },
+        "2": { "name": "variable.other.readwrite.swc" },
+        "3": { "name": "punctuation.definition.template-expression.end.swc" }
+      }
+    },
+    "helper": {
+      "match": "\\$(?:this|host|parentHost|hosts|firstHost|lastHost|appHost|appHosts|firstAppHost|lastAppHost|d|w|q|qa|qi|el|root|event|data|detail)\\b",
+      "name": "variable.language.swc"
+    }
+  }
+}

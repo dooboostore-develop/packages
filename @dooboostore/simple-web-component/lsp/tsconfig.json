@@ -1,17 +1,13 @@
 {
   "compilerOptions": {
     "target": "ES2022",
-    "module": "Node16",
-    "moduleResolution": "Node16",
-    "lib": ["ES2022", "DOM"],
-    "outDir": "out",
-    "rootDir": "src",
+    "module": "CommonJS",
+    "moduleResolution": "Node",
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true,
-    "declaration": false,
-    "sourceMap": true
+    "noEmit": true,
+    "types": ["node", "vscode"]
   },
   "include": ["src"]
 }

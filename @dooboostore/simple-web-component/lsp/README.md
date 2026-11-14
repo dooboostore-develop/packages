@@ -1,124 +1,175 @@
-# Simple Web Component LSP — Running in VSCode (Debug)
+# SWC Language Server (`swc-lsp`)
 
-This LSP is one server plus clients: a VSCode extension client, and (optionally) IntelliJ via LSP4IJ.
-Below is how to **load the extension in VSCode with F5** and check SWC template completion, highlighting and go-to-definition.
+Language server for [Simple Web Component](../README.md) templates — the HTML you return from `@onConnectedBody*` / `@innerHtml` …, inside `.ts` / `.js` strings, and in `.html` files.
 
-## Requirements
+It runs next to your normal TypeScript support and only answers inside SWC templates.
 
-- Node.js (with `pnpm install` done at the repo root)
-- VSCode
+---
 
-## Steps
+## What you get
 
-### 1. Open the LSP folder as the workspace
-F5 uses the workspace's `.vscode/launch.json`, so **open this folder as the workspace**:
+```ts
+export default (w: Window) => {
+  const tag = 'demo-click';
 
+  @elementDefine(tag, { window: w })
+  class DemoClick extends w.HTMLElement {
+    @state('user') profile = { name: 'kim' };
+    tt(a: string) { return a; }
+
+    @onConnectedBodyShadow
+    render() {
+      return `
+        <demo-clock></demo-clock>                       ← tag completion · hover · go to definition
+        <!--[[ items ]]-->                              ← @appendHtmlSlot('items') completes / jumps here
+        <span>@user.name@</span>                        ← @state / members: completion · hover · definition
+        <button swc-on-click="$host.tt(4)">             ← $host = DemoClick: completion · definition · parameter hints
+                                                          type error: 4 is not a string
+        <input swc-on-input="this.value.trim()">        ← this = HTMLInputElement
+        <a title="{{= $appHost.router }}">              ← $appHost / $w / $d / $q … typed from SWC
+      `;
+    }
+  }
+  return tag;
+};
 ```
-packages/@dooboostore/simple-web-component/lsp
-```
 
-e.g.
+| Where | Feature |
+|---|---|
+| `<…` | tags from every `@elementDefine` in the workspace (literal or `const tag = '…'` factory pattern). Customized built-ins (`extends: 'button'`) complete in `is="…"` |
+| inside a tag | that element's attributes (`@attribute`, `@changedAttribute`, `observedAttributes`), `a::` `p::` `e::<event>`, `swc-on-*` |
+| `@x@` | `@state` names and members of the component |
+| `swc-on-*="…"`, `{{= … }}` | `$host` `$appHost` `$w` `$d` `$q` `$qa` `$qi` `$el` … (`$event` `$data` `$detail` in event scripts) |
+| after `.` | members by real type — `$host.` is the component itself, `$appHost.` is `SwcAppInterface`, `@user.` is the state's type |
+| `@appendHtmlSlot('…')` … | slot ids from `<!--[[ id ]]-->` in the same component |
+| hover · go to definition · parameter hints | tags → class, `@x@` / `$host.x` → member, slot → `<!--[[ id ]]-->`, calls in scripts |
+| errors | type errors in `swc-on-*` / `{{= }}` / `@x@`, the same tag defined twice in one package |
+| coloring | `@x@`, `a::` `e::` `p::`, `swc-on-*` (value as JS), `{{= }}`, `<!--[[ ]]-->`, `<!--[html/text ]-->` — VS Code extension only |
+
+Nothing is reported as "missing" (slots, selectors, message names, routes) — those can be created at runtime.
+
+Types come from your project: the server reads the nearest `tsconfig.json` (and the files it includes, so global `.d.ts` augmentations such as `interface Window { HTMLElement … }` apply).
+
+---
+
+## Install
+
+It ships inside `@dooboostore/simple-web-component` — if your project uses SWC, you already have it:
+
 ```sh
-code packages/@dooboostore/simple-web-component/lsp
+npm i @dooboostore/simple-web-component   # provides the `swc-lsp` command
+npx swc-lsp --stdio                       # what editors run
 ```
 
-> `.vscode/` is not committed. If it is missing, add an `extensionHost` launch config
-> (e.g. name `"Run SWC LSP Extension"`, `args: ["--extensionDevelopmentPath=${workspaceFolder}"]`,
-> `preLaunchTask: "npm: compile"`), or pick **"VS Code Extension Development"** when VSCode offers it.
+- Uses **your project's `typescript`** (optional peer dependency — install it if you write components in TypeScript, which you almost certainly do).
+- Node.js 18+.
+- The server version always matches the library version in your project.
+- Not part of your app bundle: the library build (`dist/`) does not contain it, and nothing imports it.
 
-### 2. Build
-```sh
-pnpm run build   # tsc -p . → out/
+Server path inside your project (needed by some editors):
+
 ```
-If the launch config runs `npm: compile` (tsc) as its `preLaunchTask`, **F5 builds and runs in one go**.
-
-### 3. Start debugging (F5)
-- Open **Run and Debug** (`Ctrl+Shift+D`)
-- Select the launch profile
-- Press **F5**
-
-A new **Extension Development Host** VSCode window opens with the extension loaded.
-
-### 4. Open a target project in that window
-- In the Extension Development Host window: `File → Open Folder → <a project using SWC templates>`
-- Open a `.ts`/`.js` file with SWC template markup and check the syntax features.
-
-> The original window does not load the extension. **Always check in the window opened by F5.**
-
-## What you can check
-| Feature | Input example |
-|------|-----------|
-| State/attribute/property variable completion | `{{ @a` → `@aa@` |
-| Member completion | `{{ @aa@.` → `toString`, `toFixed`, ... (by declared TS type) |
-| Reserved variable completion | `{{ $` → `$host`, `$appHost`, `$this`, ... |
-| Expression snippets | `{{`, `{{=`, `{{@` |
-| `ea:` marker snippets | `ea:` → `ea:${id}:start:html`, ... |
-| SWC highlighting | `{{ }}` (keyword), `@aa@` (variable), `swc-on-*` (function), `ea:` (macro) |
-| Hover | expressions, `$` variables, `@var@`, `ea:` markers, `swc-on-*` |
-| Diagnostics | e.g. an unclosed `{{=` |
-| Go to definition | Cmd+Click on `@aa@` → `@state('aa')` / `@attribute('aa')` |
-
-## Debugging tips
-- Extension logs: in the dev host window, **Output** tab → select `Simple Web Component LSP` (trace goes to `SWC LSP Trace`)
-- Verbose LSP trace — put this in the dev host window's `settings.json`:
-  ```json
-  "simpleWebComponentLsp.trace.server": "verbose"
-  ```
-
-## IntelliJ Support (LSP4IJ)
-
-IntelliJ uses **the same LSP server** (`out/server/server.js`) as the VSCode extension.
-LSP is "one server, many clients", so you only register a client on the IntelliJ side.
-
-> ⚠️ **Known limitation**: LSP4IJ does **not forward** the `.`, `@`, `$` completion triggers to the server, so completion does not work
-> (diagnostics, highlighting and hover do). For real completion, use the dedicated IntelliJ plugin (`../plugins/intellij`).
-
-### Requirements
-- IntelliJ IDEA 2024.2+
-- Node.js (to run the LSP server)
-- Built server: `cd packages/@dooboostore/simple-web-component/lsp && pnpm install && pnpm build`
-
-### 1. Install the LSP4IJ plugin
-`Settings → Plugins → Marketplace` → search **LSP4IJ** → Install → restart the IDE
-(by Red Hat, public on the JetBrains Marketplace)
-
-### 2. Register the language server
-`Settings → Languages & Frameworks → Language Servers` → click `+`:
-
-**Command**
+node_modules/@dooboostore/simple-web-component/lsp/bin/swc-lsp.js
 ```
-node $PROJECT_DIR$/packages/@dooboostore/simple-web-component/lsp/out/server/server.js --stdio
-```
-- `$PROJECT_DIR$` is a macro, substituted per project.
-- **Note**: the server requires the `--stdio` argument
-  (without it you get `Connection input stream is not set`).
 
-**Mappings tab**
+---
+
+## Editor setup
+
+### IntelliJ IDEA / WebStorm
+
+Versions that have **Settings → Languages & Frameworks → Language Servers** (tested on 2026.3).
+
+**Settings → Languages & Frameworks → Language Servers → `+`**
 
 | Field | Value |
 |---|---|
-| File type | TypeScript (`*.ts`) |
-| Language ID | `typescript` |
+| Name | `swc` |
+| Communication channel | `stdio` |
+| Executable path | absolute path to `node` (`which node`) — the IDE often does not see your shell `PATH` |
+| Arguments | `<project>/node_modules/@dooboostore/simple-web-component/lsp/bin/swc-lsp.js --stdio` |
+| File name patterns | `*.ts`, `*.html` (add `*.js` if you write components in JS) |
 
-**Workspace Folders tab** (optional)
-- `rootType: SOURCE_ROOTS` or `markers: ["tsconfig.json"]` → narrows the scan scope when one repo has several SWC projects.
+A `{}` widget appears in the status bar when the server is running; restart it from there after updating `@dooboostore/simple-web-component`.
 
-### 3. Verify
-- Open a `.ts` file with SWC markers (`{{ }}`, `{{= }}`, `{{@ }}`, `@var@`, `ea:`, ...).
-- Check the server state in `View → Tool Windows → LSP Console`.
-- Check that highlighting, hover and diagnostics (e.g. an unclosed `{{=`) appear.
+**Known limits in IntelliJ:** IntelliJ treats HTML inside template strings as *injected HTML*, and its built-in LSP client does not navigate there:
 
-### Troubleshooting
-
-| Symptom | Cause / Fix |
+| | IntelliJ |
 |---|---|
-| Server exits immediately | `--stdio` missing from the command |
-| No diagnostics/highlighting | TypeScript file type missing in Mappings |
-| Node module not found | Run `pnpm install` before `pnpm build` |
-| Command does not run | Use the `$PROJECT_DIR$` macro in the path, or an absolute path |
+| completion, hover (`F1` / `Ctrl+J`), errors | ✅ |
+| Cmd+Click / go to definition inside templates | ❌ (the server answers; the IDE does not jump) |
+| parameter hints (`Cmd+P`) inside templates | ❌ |
+| coloring | ❌ |
 
-### Server executable
+Use VS Code for those, or wait for the IntelliJ plugin.
+
+### VS Code
+
+VS Code has no "add a language server" setting — it needs an extension, which also adds the coloring. Until the extension is published, run it from source:
+
+```sh
+git clone https://github.com/dooboostore-develop/packages.git
+cd packages && pnpm install
+cd @dooboostore/simple-web-component/lsp && pnpm build
+code --extensionDevelopmentPath="$PWD" /path/to/your/project
 ```
-lsp/out/server/server.js    ← shared by the VSCode extension and IntelliJ
+
+After pulling changes: `pnpm build`, then **Developer: Reload Window** in that window.
+
+| Action | Key (macOS) |
+|---|---|
+| go to definition | `F12` / Cmd+Click |
+| go back | `Ctrl+-` |
+| parameter hints | `Cmd+Shift+Space` |
+| show hover | `Cmd+K Cmd+I` |
+
+All features work in VS Code.
+
+### Neovim (0.11+)
+
+```lua
+vim.lsp.config('swc', {
+  cmd = { 'npx', 'swc-lsp', '--stdio' },   -- runs the one in the project's node_modules
+  filetypes = { 'typescript', 'javascript', 'html' },
+  root_markers = { 'tsconfig.json', 'package.json', '.git' },
+})
+vim.lsp.enable('swc')
 ```
-Rebuild (`pnpm build`) and both editors pick up the latest server.
+
+It runs alongside `ts_ls`.
+
+### Other editors
+
+Any LSP client works: command `npx swc-lsp --stdio` (from the project root), languages TypeScript / JavaScript / HTML. (Tested: VS Code, IntelliJ IDEA 2026.3.)
+
+---
+
+## Troubleshooting
+
+| Symptom | Check |
+|---|---|
+| nothing happens | is the server running? (IntelliJ: `{}` widget · VS Code: Output → *Simple Web Component*) |
+| `$host.` shows only HTMLElement members | the template must be returned from inside the `@elementDefine` class |
+| first `.` completion is slow (~1s) | the project's types are loading; later requests take a few ms |
+| want to see what the editor asks | set env `SWC_LSP_LOG=/tmp/swc-lsp.log` on the server — every request is appended there |
+
+---
+
+## Development
+
+```sh
+pnpm build        # out/server/server.js, out/client/extension.js
+pnpm test         # analyzer + type tests
+pnpm typecheck
+```
+
+- `src/server/analyzer.ts` — templates, components, cursor context (syntax only, no types)
+- `src/server/typeService.ts` — TypeScript LanguageService over a virtual copy of the file with a probe method inserted into the component class, so `$host` is typed as `this`
+- `src/server/server.ts` — LSP wiring
+- `src/client/extension.ts` + `syntaxes/` — VS Code client and coloring
+
+Released with `@dooboostore/simple-web-component` — its `build` builds `lsp/` too, and its `files` include `lsp/bin`, `lsp/out/server/server.js` and `lsp/package.json` (keeps `lsp/` CommonJS inside the ESM package).
+
+## License
+
+MIT

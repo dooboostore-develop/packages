@@ -1,48 +1,56 @@
 {
   "name": "@dooboostore/simple-web-component-lsp",
-  "version": "0.0.1",
-  "description": "LSP server + VSCode client for Simple Web Component (SWC) template syntax",
-  "type": "module",
+  "displayName": "Simple Web Component",
+  "version": "0.1.0",
+  "description": "SWC language server (shipped inside @dooboostore/simple-web-component as `swc-lsp`) + VS Code client",
   "private": true,
-  "main": "./out/client/extension.js",
+  "license": "MIT",
   "publisher": "dooboostore",
+  "main": "./out/client/extension.js",
   "engines": {
+    "node": ">=18",
     "vscode": "^1.85.0"
   },
   "activationEvents": [
     "onLanguage:typescript",
-    "onLanguage:javascript"
+    "onLanguage:typescriptreact",
+    "onLanguage:javascript",
+    "onLanguage:html"
   ],
   "contributes": {
-    "configuration": {
-      "title": "Simple Web Component LSP",
-      "properties": {
-        "simpleWebComponentLsp.trace.server": {
-          "scope": "window",
-          "type": "string",
-          "enum": [
-            "off",
-            "messages",
-            "verbose"
-          ],
-          "default": "off"
+    "grammars": [
+      {
+        "scopeName": "swc.injection",
+        "path": "./syntaxes/swc.injection.json",
+        "injectTo": [
+          "source.ts",
+          "source.tsx",
+          "source.js",
+          "source.js.jsx",
+          "text.html.basic",
+          "text.html.derivative"
+        ],
+        "embeddedLanguages": {
+          "meta.embedded.swc": "javascript"
         }
       }
-    }
+    ]
   },
   "scripts": {
-    "compile": "tsc -p .",
-    "watch": "tsc -w -p .",
-    "build": "tsc -p ."
+    "build": "node build.mjs",
+    "watch": "node build.mjs --watch",
+    "typecheck": "tsc --noEmit -p .",
+    "test": "node build.mjs && node --test test/*.test.mjs"
   },
   "dependencies": {
+    "typescript": "^5.9.2"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "@types/vscode": "^1.85.0",
+    "esbuild": "^0.23.0",
     "vscode-languageclient": "^9.0.1",
     "vscode-languageserver": "^9.0.1",
     "vscode-languageserver-textdocument": "^1.0.11"
-  },
-  "devDependencies": {
-    "@types/node": "^20.0.0",
-    "@types/vscode": "^1.85.0",
-    "typescript": "^5.9.2"
   }
 }
