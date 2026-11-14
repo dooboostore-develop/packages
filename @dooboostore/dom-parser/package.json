@@ -1,6 +1,6 @@
 {
   "name": "@dooboostore/dom-parser",
-  "version": "1.0.30",
+  "version": "1.0.31",
   "license": "MIT",
   "type": "module",
   "sideEffects": [
@@ -9,6 +9,9 @@
   ],
   "main": "./dist/cjs/index.js",
   "module": "./dist/esm/index.js",
+  "bin": {
+    "dom-parser": "bin/dom-parser.js"
+  },
   "types": "./dist/types/index.d.ts",
   "browser": "./dist/esm-bundle/dooboostore-dom-parser.esm.js",
   "unpkg": "./dist/umd-bundle/dooboostore-dom-parser.umd.js",
@@ -42,7 +45,8 @@
     "types.d.ts",
     "LICENSE.md",
     "README.MD",
-    "tsconfig.json"
+    "tsconfig.json",
+    "bin"
   ],
   "publishConfig": {
     "access": "public"

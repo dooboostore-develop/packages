@@ -92,6 +92,23 @@ npm install @dooboostore/dom-parser
 yarn add @dooboostore/dom-parser
 ```
 
+## Command line
+
+Query any page from the terminal — no install, no browser:
+
+```bash
+npx @dooboostore/dom-parser https://example.com "document.title"
+# Example Domain
+
+npx @dooboostore/dom-parser ./page.html "el = $('#x'); console.log(el.getAttribute('vv'))"
+npx @dooboostore/dom-parser https://example.com "$$('a').map(a => a.getAttribute('href'))" --json
+curl -s https://example.com | npx @dooboostore/dom-parser - "$('h1').textContent"
+```
+
+- Source: a URL (Node 18+), a file, or `-` for stdin. Without a script the parsed HTML is printed.
+- The script runs like a browser console: `document`, `window`, `location` … plus `$` (querySelector) and `$$` (querySelectorAll as an array). A single expression prints its value — elements as HTML, lists one per line; `--json` prints JSON.
+- Scripts inside the page are not executed, so pages that build their content with client-side JavaScript (SPAs) show only what the server sent.
+
 ## Quick Start
 
 ### Basic HTML Parsing
