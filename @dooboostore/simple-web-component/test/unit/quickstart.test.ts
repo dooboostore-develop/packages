@@ -2,7 +2,7 @@ import 'reflect-metadata';
 import { test } from 'node:test';
 import assert from 'node:assert';
 import { createWindow, sleep } from './dom.ts';
-import { elementDefine, onConnectedBodyShadow, event, innerHtml, defineSwcAppAll } from '../../src/index.ts';
+import { elementDefine, onConnectedBodyShadow, eventClick, innerHtml, defineSwcAppAll } from '../../src/index.ts';
 
 // 쇼케이스 사이트 /start 페이지의 퀵스타트 코드와 같은 것 — 문서가 거짓이 되지 않게 실제로 돌린다.
 // (사이트 쪽: src/pages/start/index.ts. 한쪽을 바꾸면 다른 쪽도 맞출 것)
@@ -23,7 +23,7 @@ const helloCard = (w: Window) => {
               <button>clicked <b>0</b> times</button>`;
     }
 
-    @event('button', 'click')
+    @eventClick('button')
     @innerHtml('b')
     onClick() {
       return String(++this.count);

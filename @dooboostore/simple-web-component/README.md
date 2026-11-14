@@ -2024,7 +2024,7 @@ The package ships a language server for SWC templates — `npx swc-lsp --stdio`:
 tag / attribute / `@state@` / `$host.` completion, hover, go to definition, parameter hints, and type errors inside `swc-on-*`, `{{= }}` and `@x@`
 (`swc-on-click="$host.tt(4)"` → *number is not assignable to string*).
 
-Setup for IntelliJ, VS Code and Neovim: [lsp/README.md](./lsp/README.md).
+Setup for IntelliJ, VS Code and Neovim: [lsp/README.md](https://github.com/dooboostore-develop/packages/tree/main/@dooboostore/simple-web-component/lsp).
 
 ## 🧪 Testing
 
