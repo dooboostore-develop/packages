@@ -1,6 +1,6 @@
 {
   "name": "@dooboostore/simple-boot-front",
-  "version": "1.0.134",
+  "version": "1.0.135",
   "license": "MIT",
   "type": "module",
   "main": "./dist/cjs/index.js",

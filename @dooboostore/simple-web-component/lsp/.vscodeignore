@@ -1,0 +1,7 @@
+# vsix 에는 클라이언트·문법만. 서버는 프로젝트의 @dooboostore/simple-web-component/lsp 를 쓴다
+**
+!out/client/extension.js
+!syntaxes/**
+!package.json
+!README.md
+!LICENSE.md

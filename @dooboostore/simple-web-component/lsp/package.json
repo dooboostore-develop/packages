@@ -1,11 +1,26 @@
 {
-  "name": "@dooboostore/simple-web-component-lsp",
+  "name": "simple-web-component-lsp",
   "displayName": "Simple Web Component",
   "version": "0.1.0",
   "description": "SWC language server (shipped inside @dooboostore/simple-web-component as `swc-lsp`) + VS Code client",
   "private": true,
   "license": "MIT",
   "publisher": "dooboostore",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/dooboostore-develop/packages.git",
+    "directory": "@dooboostore/simple-web-component/lsp"
+  },
+  "homepage": "https://dooboostore-develop.github.io/start",
+  "categories": [
+    "Programming Languages"
+  ],
+  "keywords": [
+    "simple-web-component",
+    "swc",
+    "web components",
+    "lsp"
+  ],
   "main": "./out/client/extension.js",
   "engines": {
     "node": ">=18",
@@ -34,13 +49,24 @@
           "meta.embedded.swc": "javascript"
         }
       }
-    ]
+    ],
+    "configuration": {
+      "title": "Simple Web Component",
+      "properties": {
+        "swc.serverPath": {
+          "type": "string",
+          "default": "",
+          "description": "Path to the SWC language server (server.js). Empty: the one inside node_modules/@dooboostore/simple-web-component/lsp."
+        }
+      }
+    }
   },
   "scripts": {
     "build": "node build.mjs",
     "watch": "node build.mjs --watch",
     "typecheck": "tsc --noEmit -p .",
-    "test": "node build.mjs && node --test test/*.test.mjs"
+    "test": "node build.mjs && node --test test/*.test.mjs",
+    "package:vsix": "node build.mjs && npx --yes @vscode/vsce@3 package --no-dependencies"
   },
   "dependencies": {
     "typescript": "^5.9.2"

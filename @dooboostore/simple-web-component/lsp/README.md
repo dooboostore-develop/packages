@@ -105,16 +105,13 @@ Use VS Code for those, or wait for the IntelliJ plugin.
 
 ### VS Code
 
-VS Code has no "add a language server" setting — it needs an extension, which also adds the coloring. Until the extension is published, run it from source:
+VS Code has no "add a language server" setting — it needs an extension, which also adds the coloring.
 
-```sh
-git clone https://github.com/dooboostore-develop/packages.git
-cd packages && pnpm install
-cd @dooboostore/simple-web-component/lsp && pnpm build
-code --extensionDevelopmentPath="$PWD" /path/to/your/project
-```
+1. Download `simple-web-component-lsp-<version>.vsix` from [GitHub Releases](https://github.com/dooboostore-develop/packages/releases?q=swc-lsp-vscode).
+2. Extensions panel → `···` → **Install from VSIX…** (or `code --install-extension simple-web-component-lsp-<version>.vsix`).
+3. Open your project. The extension uses the server inside `node_modules/@dooboostore/simple-web-component` (1.0.56+), so the language server always matches your library version. The first line of the **Simple Web Component** output channel shows which server it started.
 
-After pulling changes: `pnpm build`, then **Developer: Reload Window** in that window.
+The extension looks for the server in: the `swc.serverPath` setting → `node_modules` of the workspace folder and its parents → any nested `node_modules` (monorepos).
 
 | Action | Key (macOS) |
 |---|---|
@@ -161,7 +158,10 @@ Any LSP client works: command `npx swc-lsp --stdio` (from the project root), lan
 pnpm build        # out/server/server.js, out/client/extension.js
 pnpm test         # analyzer + type tests
 pnpm typecheck
+pnpm package:vsix # simple-web-component-lsp-<version>.vsix (client + coloring; the server comes from the project)
 ```
+
+Run the extension from source: `code --extensionDevelopmentPath="$PWD" /path/to/project` (after `pnpm build`; **Developer: Reload Window** to pick up rebuilds).
 
 - `src/server/analyzer.ts` — templates, components, cursor context (syntax only, no types)
 - `src/server/typeService.ts` — TypeScript LanguageService over a virtual copy of the file with a probe method inserted into the component class, so `$host` is typed as `this`

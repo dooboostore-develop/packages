@@ -1,6 +1,6 @@
 {
   "name": "@dooboostore/simple-boot-http-server",
-  "version": "1.0.40",
+  "version": "1.0.41",
   "license": "MIT",
   "type": "module",
   "main": "./dist/cjs/index.js",
