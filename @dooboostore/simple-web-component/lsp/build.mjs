@@ -1,4 +1,4 @@
-// out/server/server.js 경로는 IntelliJ 플러그인(plugins/intellij)이 그대로 실행한다 — 바꾸지 말 것.
+// out/server/server.js — npm 패키지에 들어가고, 에디터 플러그인(plugins/vscode, plugins/intellij)이 프로젝트의 node_modules 에서 이 경로로 실행한다 — 바꾸지 말 것.
 import { build, context } from 'esbuild';
 import { cpSync, mkdirSync, readdirSync } from 'node:fs';
 import { createRequire } from 'node:module';
@@ -9,18 +9,15 @@ const options = {
     'server/server': 'src/server/server.ts',
     'server/analyzer': 'src/server/analyzer.ts', // 테스트(test/)가 직접 불러 쓴다
     'server/typeService': 'src/server/typeService.ts',
-    'client/extension': 'src/client/extension.ts',
   },
   outdir: 'out',
-  bundle: true,
+  bundle: true, // typescript 까지 묶는다 — 프로젝트가 TypeScript 7(Go) 이면 JS API 가 없어서 그걸 쓸 수 없다
   platform: 'node',
   format: 'cjs',
   target: 'node18',
   minify: true,
   keepNames: true,
   sourcemap: true,
-  // typescript 는 묶는다 — 프로젝트가 TypeScript 7(Go) 이면 JS API 가 없어서 그걸 쓸 수 없다
-  external: ['vscode'],
   logLevel: 'info',
 };
 

@@ -4,12 +4,12 @@ import { ExtensionContext, window, workspace } from 'vscode';
 import { LanguageClient, TransportKind } from 'vscode-languageclient/node';
 
 // 서버는 확장에 넣지 않는다 — 프로젝트에 설치된 @dooboostore/simple-web-component 안의 것을 쓴다.
-// 그래야 라이브러리와 LSP 버전이 같고, 서버가 쓰는 typescript 도 프로젝트 것이 된다.
+// 그래야 라이브러리와 LSP 버전이 같다.
 const SERVER_IN_PROJECT = path.join('node_modules', '@dooboostore', 'simple-web-component', 'lsp', 'out', 'server', 'server.js');
 
 let client: LanguageClient | undefined;
 
-/** 설정 swc.serverPath → 워크스페이스(와 상위 폴더)의 node_modules → 하위 패키지의 node_modules → 저장소에서 개발 실행할 때의 out/server */
+/** 설정 swc.serverPath → 워크스페이스(와 상위 폴더)의 node_modules → 하위 패키지의 node_modules → 저장소에서 개발 실행할 때의 ../../out/server */
 async function findServer(context: ExtensionContext): Promise<string | undefined> {
   const folders = workspace.workspaceFolders ?? [];
   const configured = workspace.getConfiguration('swc').get<string>('serverPath');
@@ -25,7 +25,7 @@ async function findServer(context: ExtensionContext): Promise<string | undefined
   const [nested] = await workspace.findFiles('**/' + SERVER_IN_PROJECT.split(path.sep).join('/'), undefined, 1);
   if (nested) return nested.fsPath;
 
-  const fromSource = context.asAbsolutePath(path.join('out', 'server', 'server.js'));
+  const fromSource = context.asAbsolutePath(path.join('..', '..', 'out', 'server', 'server.js'));
   return existsSync(fromSource) ? fromSource : undefined;
 }
 

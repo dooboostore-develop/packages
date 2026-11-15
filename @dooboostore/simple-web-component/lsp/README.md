@@ -78,30 +78,20 @@ node_modules/@dooboostore/simple-web-component/lsp/bin/swc-lsp.js
 
 ### IntelliJ IDEA / WebStorm
 
-Versions that have **Settings → Languages & Frameworks → Language Servers** (tested on 2026.3).
+Install **Simple Web Component** from the [JetBrains Marketplace](https://plugins.jetbrains.com/search?search=Simple%20Web%20Component) — **Settings → Plugins → Marketplace**, search "Simple Web Component". Needs 2026.1+ with the LSP API (IntelliJ IDEA, WebStorm, …).
 
-**Settings → Languages & Frameworks → Language Servers → `+`**
+Open your project — the plugin starts the server inside `node_modules/@dooboostore/simple-web-component` with the Node.js from **Settings → Languages & Frameworks → Node.js** (or `node` on `PATH`). A `{}` widget in the status bar shows it running; restart it from there after updating `@dooboostore/simple-web-component`.
 
-| Field | Value |
+Besides what the IDE's LSP client does (completion, hover, errors), the plugin handles what that client skips inside template strings — IntelliJ treats them as *injected HTML*:
+
+| Action | Key (macOS) |
 |---|---|
-| Name | `swc` |
-| Communication channel | `stdio` |
-| Executable path | absolute path to `node` (`which node`) — the IDE often does not see your shell `PATH` |
-| Arguments | `<project>/node_modules/@dooboostore/simple-web-component/lsp/bin/swc-lsp.js --stdio` |
-| File name patterns | `*.ts`, `*.html` (add `*.js` if you write components in JS) |
+| go to definition | Cmd+Click / `Cmd+B` |
+| go back | `Cmd+[` |
+| parameter info | `Cmd+P` |
+| quick documentation (hover) | `F1` |
 
-A `{}` widget appears in the status bar when the server is running; restart it from there after updating `@dooboostore/simple-web-component`.
-
-**Known limits in IntelliJ:** IntelliJ treats HTML inside template strings as *injected HTML*, and its built-in LSP client does not navigate there:
-
-| | IntelliJ |
-|---|---|
-| completion, hover (`F1` / `Ctrl+J`), errors | ✅ |
-| Cmd+Click / go to definition inside templates | ❌ (the server answers; the IDE does not jump) |
-| parameter hints (`Cmd+P`) inside templates | ❌ |
-| coloring | ❌ |
-
-Use VS Code for those, or wait for the IntelliJ plugin.
+plus SWC syntax coloring. If you had added `swc` under **Settings → Languages & Frameworks → Language Servers** by hand, remove it — otherwise two servers answer.
 
 ### VS Code
 
@@ -154,18 +144,23 @@ Any LSP client works: command `npx swc-lsp --stdio` (from the project root), lan
 ## Development
 
 ```sh
-pnpm build        # out/server/server.js, out/client/extension.js
+pnpm build        # out/server/server.js (+ the bundled TypeScript's lib.*.d.ts)
 pnpm test         # analyzer + type tests
 pnpm typecheck
-pnpm package:vsix # simple-web-component-lsp-<version>.vsix (client + coloring; the server comes from the project)
+
+cd plugins/vscode && pnpm package:vsix          # simple-web-component-lsp-<version>.vsix → VS Code Marketplace
+cd plugins/intellij && ./gradlew buildPlugin    # build/distributions/*.zip → JetBrains Marketplace
 ```
 
-Run the extension from source: `code --extensionDevelopmentPath="$PWD" /path/to/project` (after `pnpm build`; **Developer: Reload Window** to pick up rebuilds).
+Neither plugin contains the server — both start the one in the project's `node_modules`, so it always matches the library version.
+
+Run the VS Code extension from source: `code --extensionDevelopmentPath="$PWD/plugins/vscode" /path/to/project` (after `pnpm build` in both; **Developer: Reload Window** to pick up rebuilds). IntelliJ: `./gradlew runIde` in `plugins/intellij`.
 
 - `src/server/analyzer.ts` — templates, components, cursor context (syntax only, no types)
 - `src/server/typeService.ts` — TypeScript LanguageService over a virtual copy of the file with a probe method inserted into the component class, so `$host` is typed as `this`
 - `src/server/server.ts` — LSP wiring
-- `src/client/extension.ts` + `syntaxes/` — VS Code client and coloring
+- `plugins/vscode` — VS Code client + coloring (`syntaxes/`)
+- `plugins/intellij` — IntelliJ plugin: starts the server, go to definition / parameter info inside injected HTML, coloring
 
 Released with `@dooboostore/simple-web-component` — its `build` builds `lsp/` too, and its `files` include `lsp/bin`, `lsp/out/server/server.js` and `lsp/package.json` (keeps `lsp/` CommonJS inside the ESM package).
 

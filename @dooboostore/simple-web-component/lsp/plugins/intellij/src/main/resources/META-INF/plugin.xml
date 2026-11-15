@@ -1,0 +1,31 @@
+<idea-plugin>
+    <id>io.dooboostore.simple-web-component</id>
+    <name>Simple Web Component</name>
+    <vendor url="https://dooboostore-develop.github.io">dooboostore</vendor>
+    <description><![CDATA[
+<p>Editor support for <a href="https://www.npmjs.com/package/@dooboostore/simple-web-component">@dooboostore/simple-web-component</a> templates —
+the HTML you return from <code>@onConnectedBody</code> / <code>@innerHtml</code>, inside <code>.ts</code> / <code>.js</code> strings and in <code>.html</code> files.</p>
+<ul>
+  <li>Completion for component tags, attributes, <code>@state@</code>, <code>$host.</code>, <code>$w.</code>, <code>$d.</code></li>
+  <li>Go to definition (Cmd+Click) and parameter info (Cmd+P) inside templates — <code>$host</code> is typed as your component</li>
+  <li>Hover and type errors inside <code>swc-on-*</code>, <code>{{= }}</code> and <code>@x@</code></li>
+  <li>SWC syntax highlighting</li>
+</ul>
+<p>The language server comes with the library: install <code>@dooboostore/simple-web-component</code> 1.0.58+ in your project and open it.
+Node.js is taken from <b>Settings → Languages &amp; Frameworks → Node.js</b>, or <code>node</code> on PATH.</p>
+    ]]></description>
+
+    <depends>com.intellij.modules.platform</depends>
+    <depends>com.intellij.modules.lsp</depends>
+    <depends>JavaScript</depends>
+
+    <extensions defaultExtensionNs="com.intellij.platform.lsp">
+        <integrationProvider implementation="io.dooboostore.swc.SwcLspIntegrationProvider"/>
+    </extensions>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <gotoDeclarationHandler implementation="io.dooboostore.swc.SwcGotoDeclarationHandler" order="first"/>
+        <codeInsight.parameterInfo language="HTML" implementationClass="io.dooboostore.swc.SwcParameterInfoHandler" order="first"/>
+        <annotator language="HTML" implementationClass="io.dooboostore.swc.SwcAnnotator"/>
+    </extensions>
+</idea-plugin>

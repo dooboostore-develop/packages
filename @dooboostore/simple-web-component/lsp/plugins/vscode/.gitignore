@@ -1,2 +1,4 @@
 # vsce package 결과물
 *.vsix
+out/
+README.md

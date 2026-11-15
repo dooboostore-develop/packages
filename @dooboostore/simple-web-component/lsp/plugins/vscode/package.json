@@ -1,0 +1,79 @@
+{
+  "name": "simple-web-component-lsp",
+  "displayName": "Simple Web Component",
+  "version": "0.1.1",
+  "description": "Completion, hover, go to definition, type errors and highlighting for @dooboostore/simple-web-component templates",
+  "private": true,
+  "license": "MIT",
+  "publisher": "dooboostore",
+  "icon": "icon.png",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/dooboostore-develop/packages.git",
+    "directory": "@dooboostore/simple-web-component/lsp/plugins/vscode"
+  },
+  "homepage": "https://dooboostore-develop.github.io/start",
+  "categories": [
+    "Programming Languages",
+    "Linters"
+  ],
+  "keywords": [
+    "simple-web-component",
+    "swc",
+    "web components",
+    "custom elements",
+    "lsp",
+    "dooboostore"
+  ],
+  "main": "./out/extension.js",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "activationEvents": [
+    "onLanguage:typescript",
+    "onLanguage:typescriptreact",
+    "onLanguage:javascript",
+    "onLanguage:html"
+  ],
+  "contributes": {
+    "grammars": [
+      {
+        "scopeName": "swc.injection",
+        "path": "./syntaxes/swc.injection.json",
+        "injectTo": [
+          "source.ts",
+          "source.tsx",
+          "source.js",
+          "source.js.jsx",
+          "text.html.basic",
+          "text.html.derivative"
+        ],
+        "embeddedLanguages": {
+          "meta.embedded.swc": "javascript"
+        }
+      }
+    ],
+    "configuration": {
+      "title": "Simple Web Component",
+      "properties": {
+        "swc.serverPath": {
+          "type": "string",
+          "default": "",
+          "description": "Path to the SWC language server (server.js). Empty: the one inside node_modules/@dooboostore/simple-web-component/lsp."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "build": "node build.mjs",
+    "typecheck": "tsc --noEmit -p .",
+    "package:vsix": "node build.mjs && cp ../../README.md README.md && npx --yes @vscode/vsce@3 package --no-dependencies"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "@types/vscode": "^1.85.0",
+    "esbuild": "^0.23.0",
+    "typescript": "6.0.3",
+    "vscode-languageclient": "^9.0.1"
+  }
+}
