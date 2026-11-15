@@ -1,6 +1,6 @@
 # SWC Language Server (`swc-lsp`)
 
-Language server for [Simple Web Component](../README.md) templates — the HTML you return from `@onConnectedBody*` / `@innerHtml` …, inside `.ts` / `.js` strings, and in `.html` files.
+Language server for [Simple Web Component](https://github.com/dooboostore-develop/packages/tree/main/%40dooboostore/simple-web-component) templates — the HTML you return from `@onConnectedBody*` / `@innerHtml` …, inside `.ts` / `.js` strings, and in `.html` files.
 
 It runs next to your normal TypeScript support and only answers inside SWC templates.
 
@@ -107,9 +107,8 @@ Use VS Code for those, or wait for the IntelliJ plugin.
 
 VS Code has no "add a language server" setting — it needs an extension, which also adds the coloring.
 
-1. Download `simple-web-component-lsp-<version>.vsix` from [GitHub Releases](https://github.com/dooboostore-develop/packages/releases?q=swc-lsp-vscode).
-2. Extensions panel → `···` → **Install from VSIX…** (or `code --install-extension simple-web-component-lsp-<version>.vsix`).
-3. Open your project. The extension uses the server inside `node_modules/@dooboostore/simple-web-component` (1.0.56+), so the language server always matches your library version. The first line of the **Simple Web Component** output channel shows which server it started.
+1. Install **Simple Web Component** (`dooboostore.simple-web-component-lsp`) from the [Marketplace](https://marketplace.visualstudio.com/items?itemName=dooboostore.simple-web-component-lsp) — or search it in the Extensions panel, or `code --install-extension dooboostore.simple-web-component-lsp`.
+2. Open your project. The extension uses the server inside `node_modules/@dooboostore/simple-web-component` (1.0.56+), so the language server always matches your library version. The first line of the **Simple Web Component** output channel shows which server it started.
 
 The extension looks for the server in: the `swc.serverPath` setting → `node_modules` of the workspace folder and its parents → any nested `node_modules` (monorepos).
 

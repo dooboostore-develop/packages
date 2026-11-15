@@ -1,7 +1,7 @@
 {
   "name": "simple-web-component-lsp",
   "displayName": "Simple Web Component",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Completion, hover, go to definition, type errors and highlighting for @dooboostore/simple-web-component templates",
   "private": true,
   "license": "MIT",
