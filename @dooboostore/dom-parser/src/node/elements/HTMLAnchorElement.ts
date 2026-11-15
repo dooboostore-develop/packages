@@ -1,3 +1,4 @@
+import { reflectUrl } from '../../utils/reflect-url';
 import { HTMLElementBase } from './HTMLElementBase';
 import {HTMLElement} from "./HTMLElement";
 
@@ -7,7 +8,6 @@ import {HTMLElement} from "./HTMLElement";
  * [MDN Reference](https://developer.mozilla.org/docs/Web/API/HTMLAnchorElement)
  */
 export class HTMLAnchorElement extends HTMLElement  {
-    private _href: string = '';
     private _target: string = '';
 
     constructor(tagName: string, ownerDocument?: any) {
@@ -15,11 +15,10 @@ export class HTMLAnchorElement extends HTMLElement  {
     }
 
     get href(): string {
-        return this._href;
+        return reflectUrl(this, 'href');
     }
 
     set href(value: string) {
-        this._href = value;
         this.setAttribute('href', value);
     }
 
@@ -38,9 +37,6 @@ export class HTMLAnchorElement extends HTMLElement  {
         
         const name = qualifiedName.toLowerCase();
         switch (name) {
-            case 'href':
-                this._href = value;
-                break;
             case 'target':
                 this._target = value;
                 break;
@@ -53,9 +49,6 @@ export class HTMLAnchorElement extends HTMLElement  {
         
         const name = qualifiedName.toLowerCase();
         switch (name) {
-            case 'href':
-                this._href = '';
-                break;
             case 'target':
                 this._target = '';
                 break;

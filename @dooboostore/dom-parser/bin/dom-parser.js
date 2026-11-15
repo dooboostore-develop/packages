@@ -20,7 +20,7 @@ const HELP = `Usage: dom-parser <url | file | -> [script] [--json]
 
 Examples:
   npx @dooboostore/dom-parser https://example.com "document.title"
-  npx @dooboostore/dom-parser https://example.com "$$('a').map(a => a.getAttribute('href'))" --json
+  npx @dooboostore/dom-parser https://example.com "$$('a').map(a => a.href)" --json
   npx @dooboostore/dom-parser ./page.html "const el = $('#x'); console.log(el.getAttribute('vv'))"
   curl -s https://example.com | npx @dooboostore/dom-parser - "$('h1').textContent"
 

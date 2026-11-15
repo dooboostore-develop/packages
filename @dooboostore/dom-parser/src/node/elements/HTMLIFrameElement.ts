@@ -1,3 +1,4 @@
+import { reflectUrl } from '../../utils/reflect-url';
 import {HTMLElementBase} from './HTMLElementBase';
 import {HTMLElement} from "./HTMLElement";
 
@@ -7,7 +8,7 @@ export class HTMLIFrameElement extends HTMLElement {
   }
 
   get src(): string {
-      return this.getAttribute('src') || '';
+      return reflectUrl(this, 'src');
   }
 
   set src(value: string) {

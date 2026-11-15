@@ -78,7 +78,7 @@ node_modules/@dooboostore/simple-web-component/lsp/bin/swc-lsp.js
 
 ### IntelliJ IDEA / WebStorm
 
-Install **Simple Web Component** from the [JetBrains Marketplace](https://plugins.jetbrains.com/search?search=Simple%20Web%20Component) — **Settings → Plugins → Marketplace**, search "Simple Web Component". Needs 2026.1+ with the LSP API (IntelliJ IDEA, WebStorm, …).
+Install **Simple Web Component** from the [JetBrains Marketplace](https://plugins.jetbrains.com/plugin/36155-simple-web-component) — **Settings → Plugins → Marketplace**, search "Simple Web Component". Needs 2026.1+ with the LSP API (IntelliJ IDEA, WebStorm, …).
 
 Open your project — the plugin starts the server inside `node_modules/@dooboostore/simple-web-component` with the Node.js from **Settings → Languages & Frameworks → Node.js** (or `node` on `PATH`). A `{}` widget in the status bar shows it running; restart it from there after updating `@dooboostore/simple-web-component`.
 

@@ -1,3 +1,4 @@
+import { reflectUrl } from '../../utils/reflect-url';
 import { HTMLElementBase } from './HTMLElementBase';
 import {HTMLElement} from "./HTMLElement";
 
@@ -7,7 +8,6 @@ import {HTMLElement} from "./HTMLElement";
  * [MDN Reference](https://developer.mozilla.org/docs/Web/API/HTMLScriptElement)
  */
 export class HTMLScriptElement extends HTMLElement {
-    private _src: string = '';
     private _type: string = 'text/javascript';
     private _async: boolean = false;
     private _defer: boolean = false;
@@ -18,11 +18,10 @@ export class HTMLScriptElement extends HTMLElement {
     }
 
     get src(): string {
-        return this._src;
+        return reflectUrl(this, 'src');
     }
 
     set src(value: string) {
-        this._src = value;
         this.setAttribute('src', value);
     }
 
@@ -84,9 +83,6 @@ export class HTMLScriptElement extends HTMLElement {
         
         const name = qualifiedName.toLowerCase();
         switch (name) {
-            case 'src':
-                this._src = value;
-                break;
             case 'type':
                 this._type = value;
                 break;
@@ -108,9 +104,6 @@ export class HTMLScriptElement extends HTMLElement {
         
         const name = qualifiedName.toLowerCase();
         switch (name) {
-            case 'src':
-                this._src = '';
-                break;
             case 'type':
                 this._type = 'text/javascript';
                 break;

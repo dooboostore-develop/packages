@@ -1,3 +1,4 @@
+import { reflectUrl } from '../../utils/reflect-url';
 import { HTMLElementBase } from './HTMLElementBase';
 import {HTMLElement} from "./HTMLElement";
 
@@ -25,7 +26,13 @@ export class HTMLAreaElement extends HTMLElement {
     /**
      * A string containing the URL that the hyperlink points to.
      */
-    href: string = '';
+    get href(): string {
+        return reflectUrl(this, 'href');
+    }
+
+    set href(value: string) {
+        this.setAttribute('href', value);
+    }
 
     /**
      * A string indicating where to display the linked resource.

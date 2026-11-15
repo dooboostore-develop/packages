@@ -1,3 +1,4 @@
+import { reflectUrl } from '../../utils/reflect-url';
 import { HTMLElementBase } from './HTMLElementBase';
 import {HTMLElement} from "./HTMLElement";
 import { HTMLCollectionImp } from '../collection/HTMLCollectionImp';
@@ -9,7 +10,6 @@ import { formOwnerFor, isListedElement, LISTED_FORM_TAGS } from '../../utils/for
  * [MDN Reference](https://developer.mozilla.org/docs/Web/API/HTMLFormElement)
  */
 export class HTMLFormElement extends HTMLElement {
-    private _action: string = '';
     private _method: string = 'get';
     private _enctype: string = 'application/x-www-form-urlencoded';
     private _target: string = '';
@@ -20,11 +20,10 @@ export class HTMLFormElement extends HTMLElement {
     }
 
     get action(): string {
-        return this._action;
+        return this.getAttribute('action') ? reflectUrl(this, 'action') : this.ownerDocument?.URL ?? '';
     }
 
     set action(value: string) {
-        this._action = value;
         this.setAttribute('action', value);
     }
 
@@ -120,9 +119,6 @@ export class HTMLFormElement extends HTMLElement {
         
         const name = qualifiedName.toLowerCase();
         switch (name) {
-            case 'action':
-                this._action = value;
-                break;
             case 'method':
                 this._method = value.toLowerCase();
                 break;
@@ -144,9 +140,6 @@ export class HTMLFormElement extends HTMLElement {
         
         const name = qualifiedName.toLowerCase();
         switch (name) {
-            case 'action':
-                this._action = '';
-                break;
             case 'method':
                 this._method = 'get';
                 break;

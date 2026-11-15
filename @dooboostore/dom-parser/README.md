@@ -101,7 +101,7 @@ npx @dooboostore/dom-parser https://example.com "document.title"
 # Example Domain
 
 npx @dooboostore/dom-parser ./page.html "el = $('#x'); console.log(el.getAttribute('vv'))"
-npx @dooboostore/dom-parser https://example.com "$$('a').map(a => a.getAttribute('href'))" --json
+npx @dooboostore/dom-parser https://example.com "$$('a').map(a => a.href)" --json
 curl -s https://example.com | npx @dooboostore/dom-parser - "$('h1').textContent"
 ```
 

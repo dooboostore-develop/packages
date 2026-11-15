@@ -137,7 +137,16 @@ export abstract class NodeBase implements Node {
 
   // Node interface implementation
   get baseURI(): string {
-    return this._ownerDocument?.URL || '';
+    // 문서 주소, 문서에 <base href> 가 있으면 그 주소 (문서 주소 기준으로 푼 것)
+    const doc: any = this._ownerDocument;
+    const url: string = doc?.URL || '';
+    const base = doc?.querySelector?.('base[href]');
+    if (!base) return url;
+    try {
+      return new URL(base.getAttribute('href').trim(), url || undefined).href;
+    } catch {
+      return url;
+    }
   }
 
   // External interface - returns proper Node interface types

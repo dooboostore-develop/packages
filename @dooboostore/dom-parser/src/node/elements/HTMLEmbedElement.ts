@@ -1,3 +1,4 @@
+import { reflectUrl } from '../../utils/reflect-url';
 import { HTMLElementBase } from './HTMLElementBase';
 import {HTMLElement} from "./HTMLElement";
 
@@ -10,7 +11,13 @@ export class HTMLEmbedElement extends HTMLElement {
     /**
      * A string reflecting the `src` HTML attribute, containing the address of the resource.
      */
-    src: string = '';
+    get src(): string {
+        return reflectUrl(this, 'src');
+    }
+
+    set src(value: string) {
+        this.setAttribute('src', value);
+    }
 
     /**
      * A string reflecting the `type` HTML attribute, containing the type of the resource.

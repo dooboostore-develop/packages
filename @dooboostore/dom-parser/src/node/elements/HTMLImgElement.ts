@@ -1,3 +1,4 @@
+import { reflectUrl } from '../../utils/reflect-url';
 import { HTMLElementBase } from './HTMLElementBase';
 import {HTMLElement} from "./HTMLElement";
 
@@ -7,7 +8,6 @@ import {HTMLElement} from "./HTMLElement";
  * [MDN Reference](https://developer.mozilla.org/docs/Web/API/HTMLImageElement)
  */
 export class HTMLImgElement extends HTMLElement  {
-    private _src: string = '';
     private _alt: string = '';
     private _width: number = 0;
     private _height: number = 0;
@@ -18,11 +18,10 @@ export class HTMLImgElement extends HTMLElement  {
 
 
     get src(): string {
-        return this._src;
+        return reflectUrl(this, 'src');
     }
 
     set src(value: string) {
-        this._src = value;
         this.setAttribute('src', value);
     }
 
@@ -59,9 +58,6 @@ export class HTMLImgElement extends HTMLElement  {
         
         const name = qualifiedName.toLowerCase();
         switch (name) {
-            case 'src':
-                this._src = value;
-                break;
             case 'alt':
                 this._alt = value;
                 break;
@@ -80,9 +76,6 @@ export class HTMLImgElement extends HTMLElement  {
         
         const name = qualifiedName.toLowerCase();
         switch (name) {
-            case 'src':
-                this._src = '';
-                break;
             case 'alt':
                 this._alt = '';
                 break;

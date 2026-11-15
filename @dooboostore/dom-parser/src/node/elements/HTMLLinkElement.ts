@@ -1,3 +1,4 @@
+import { reflectUrl } from '../../utils/reflect-url';
 import { HTMLElementBase } from './HTMLElementBase';
 import {HTMLElement} from "./HTMLElement";
 
@@ -7,7 +8,6 @@ import {HTMLElement} from "./HTMLElement";
  * [MDN Reference](https://developer.mozilla.org/docs/Web/API/HTMLLinkElement)
  */
 export class HTMLLinkElement extends HTMLElement {
-    private _href: string = '';
     private _rel: string = '';
     private _type: string = '';
     private _media: string = '';
@@ -17,11 +17,10 @@ export class HTMLLinkElement extends HTMLElement {
     }
 
     get href(): string {
-        return this._href;
+        return reflectUrl(this, 'href');
     }
 
     set href(value: string) {
-        this._href = value;
         this.setAttribute('href', value);
     }
 
@@ -58,9 +57,6 @@ export class HTMLLinkElement extends HTMLElement {
         
         const name = qualifiedName.toLowerCase();
         switch (name) {
-            case 'href':
-                this._href = value;
-                break;
             case 'rel':
                 this._rel = value;
                 break;
@@ -79,9 +75,6 @@ export class HTMLLinkElement extends HTMLElement {
         
         const name = qualifiedName.toLowerCase();
         switch (name) {
-            case 'href':
-                this._href = '';
-                break;
             case 'rel':
                 this._rel = '';
                 break;
