@@ -4039,10 +4039,6 @@ importers:
         version: 4.15.2(webpack-cli@5.1.4)(webpack@5.105.4)
 
   '@dooboostore/simple-web-component/lsp':
-    dependencies:
-      typescript:
-        specifier: ^5.9.2
-        version: 5.9.3
     devDependencies:
       '@types/node':
         specifier: ^20
@@ -4053,6 +4049,9 @@ importers:
       esbuild:
         specifier: ^0.23.0
         version: 0.23.1
+      typescript:
+        specifier: 6.0.3
+        version: 6.0.3
       vscode-languageclient:
         specifier: ^9.0.1
         version: 9.0.1
@@ -9392,6 +9391,11 @@ packages:
 
   typescript@5.9.3:
     resolution: {integrity: sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw==}
+    engines: {node: '>=14.17'}
+    hasBin: true
+
+  typescript@6.0.3:
+    resolution: {integrity: sha512-y2TvuxSZPDyQakkFRPZHKFm+KKVqIisdg9/CZwm9ftvKXLP8NRWj38/ODjNbr43SsoXqNuAisEf1GdCxqWcdBw==}
     engines: {node: '>=14.17'}
     hasBin: true
 
@@ -16127,6 +16131,8 @@ snapshots:
   typescript@4.9.5: {}
 
   typescript@5.9.3: {}
+
+  typescript@6.0.3: {}
 
   uhyphen@0.2.0: {}
 

@@ -61,7 +61,7 @@ npm i @dooboostore/simple-web-component   # provides the `swc-lsp` command
 npx swc-lsp --stdio                       # what editors run
 ```
 
-- Uses **your project's `typescript`** (optional peer dependency — install it if you write components in TypeScript, which you almost certainly do).
+- Ships its own TypeScript 6 compiler API, so it works whatever `typescript` your project uses — 5, 6 or 7 (TypeScript 7 is written in Go and has no JavaScript API). It still reads your `tsconfig.json`.
 - Node.js 18+.
 - The server version always matches the library version in your project.
 - Not part of your app bundle: the library build (`dist/`) does not contain it, and nothing imports it.

@@ -1,6 +1,6 @@
 {
   "name": "@dooboostore/simple-web-component",
-  "version": "1.0.57",
+  "version": "1.0.58",
   "license": "MIT",
   "type": "module",
   "main": "./dist/cjs/index.js",
@@ -49,7 +49,9 @@
     "/tsconfig.json",
     "lsp/package.json",
     "lsp/bin",
-    "lsp/out/server/server.js"
+    "lsp/out/server/server.js",
+    "lsp/out/server/lib.d.ts",
+    "lsp/out/server/lib.*.d.ts"
   ],
   "publishConfig": {
     "access": "public"
@@ -73,8 +75,7 @@
   },
   "author": "dooboostore <dooboostore@gmail.com> (https://github.com/dooboostore)",
   "peerDependencies": {
-    "reflect-metadata": "^0.2.2",
-    "typescript": ">=5"
+    "reflect-metadata": "^0.2.2"
   },
   "devDependencies": {
     "@babel/core": "^7.24.0",
@@ -128,10 +129,5 @@
   },
   "contributors": [
     "visualkhh <visualkhh@gmail.com> (https://github.com/visualkhh)"
-  ],
-  "peerDependenciesMeta": {
-    "typescript": {
-      "optional": true
-    }
-  }
+  ]
 }

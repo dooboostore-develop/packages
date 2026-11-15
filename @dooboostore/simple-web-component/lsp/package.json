@@ -72,13 +72,11 @@
     "test": "node build.mjs && node --test test/*.test.mjs",
     "package:vsix": "node build.mjs && npx --yes @vscode/vsce@3 package --no-dependencies"
   },
-  "dependencies": {
-    "typescript": "^5.9.2"
-  },
   "devDependencies": {
     "@types/node": "^20",
     "@types/vscode": "^1.85.0",
     "esbuild": "^0.23.0",
+    "typescript": "6.0.3",
     "vscode-languageclient": "^9.0.1",
     "vscode-languageserver": "^9.0.1",
     "vscode-languageserver-textdocument": "^1.0.11"
