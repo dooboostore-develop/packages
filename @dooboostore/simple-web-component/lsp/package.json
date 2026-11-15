@@ -2,10 +2,11 @@
   "name": "simple-web-component-lsp",
   "displayName": "Simple Web Component",
   "version": "0.1.0",
-  "description": "SWC language server (shipped inside @dooboostore/simple-web-component as `swc-lsp`) + VS Code client",
+  "description": "Completion, hover, go to definition, type errors and highlighting for @dooboostore/simple-web-component templates",
   "private": true,
   "license": "MIT",
   "publisher": "dooboostore",
+  "icon": "icon.png",
   "repository": {
     "type": "git",
     "url": "https://github.com/dooboostore-develop/packages.git",
@@ -13,13 +14,16 @@
   },
   "homepage": "https://dooboostore-develop.github.io/start",
   "categories": [
-    "Programming Languages"
+    "Programming Languages",
+    "Linters"
   ],
   "keywords": [
     "simple-web-component",
     "swc",
     "web components",
-    "lsp"
+    "custom elements",
+    "lsp",
+    "dooboostore"
   ],
   "main": "./out/client/extension.js",
   "engines": {
