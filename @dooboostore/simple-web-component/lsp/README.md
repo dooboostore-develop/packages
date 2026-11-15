@@ -148,8 +148,8 @@ pnpm build        # out/server/server.js (+ the bundled TypeScript's lib.*.d.ts)
 pnpm test         # analyzer + type tests
 pnpm typecheck
 
-cd plugins/vscode && pnpm package:vsix          # simple-web-component-lsp-<version>.vsix → VS Code Marketplace
-cd plugins/intellij && ./gradlew buildPlugin    # build/distributions/*.zip → JetBrains Marketplace
+pnpm package:vsix      # plugins/vscode/simple-web-component-lsp-<version>.vsix → VS Code Marketplace
+pnpm package:intellij  # plugins/intellij/build/distributions/*.zip → JetBrains Marketplace
 ```
 
 Neither plugin contains the server — both start the one in the project's `node_modules`, so it always matches the library version.
